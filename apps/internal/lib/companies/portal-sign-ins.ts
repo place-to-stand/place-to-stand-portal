@@ -53,7 +53,9 @@ const STAFF_EMAIL_ERROR = (name: string) =>
  */
 export async function prepareClientSignIns(
   requests: SignInRequest[]
-): Promise<{ ok: true; signIns: PreparedSignIn[] } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; signIns: PreparedSignIn[] } | { ok: false; error: string }
+> {
   const missingEmail = requests.filter(request => !request.email?.trim())
   if (missingEmail.length) {
     const names = missingEmail.map(request => request.name).join(', ')
@@ -77,7 +79,10 @@ export async function prepareClientSignIns(
       .select({ id: users.id, role: users.role })
       .from(users)
       .where(
-        and(sql`lower(${users.email}) = lower(${email})`, isNull(users.deletedAt))
+        and(
+          sql`lower(${users.email}) = lower(${email})`,
+          isNull(users.deletedAt)
+        )
       )
       .limit(1)
 
@@ -231,7 +236,7 @@ export async function discardPreparedSignIns(
 export async function afterSignInsCommitted(
   actor: AppUser,
   signIns: PreparedSignIn[],
-  clientId: string
+  companyId: string
 ): Promise<void> {
   const adminClient = getSupabaseServiceClient()
   for (const signIn of signIns) {
@@ -257,7 +262,7 @@ export async function afterSignInsCommitted(
         fullName: signIn.name,
         role: 'CLIENT',
         email: signIn.email,
-        clientIds: [clientId],
+        companyIds: [companyId],
       })
       await logActivity({
         actorId: actor.id,
@@ -266,7 +271,7 @@ export async function afterSignInsCommitted(
         summary: created.summary,
         targetType: 'USER',
         targetId: signIn.userId,
-        targetCompanyId: clientId,
+        targetCompanyId: companyId,
         metadata: created.metadata,
       })
     }
@@ -274,7 +279,7 @@ export async function afterSignInsCommitted(
     const invited = contactInvitedToPortalEvent({
       email: signIn.email,
       name: signIn.name,
-      clientIds: [clientId],
+      companyIds: [companyId],
     })
     await logActivity({
       actorId: actor.id,
@@ -283,7 +288,7 @@ export async function afterSignInsCommitted(
       summary: invited.summary,
       targetType: 'CONTACT',
       targetId: signIn.contactId,
-      targetCompanyId: clientId,
+      targetCompanyId: companyId,
       metadata: invited.metadata,
     })
   }

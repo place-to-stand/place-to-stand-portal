@@ -57,19 +57,19 @@ export async function createUpdateDraft(
   assertAdmin(user)
 
   const client = await resolveClientIdentifier(user, input.clientRef)
-  const clientId = client.resolvedId
-  const window = await resolveUpdateWindow(clientId, input.since)
+  const companyId = client.resolvedId
+  const window = await resolveUpdateWindow(companyId, input.since)
 
   const [contacts, staff, items] = await Promise.all([
-    fetchContactsForClient(clientId),
+    fetchContactsForClient(companyId),
     fetchActiveStaff(),
     input.items?.length
-      ? materializeItems(clientId, input.items)
-      : scaffoldItems(user, clientId, window),
+      ? materializeItems(companyId, input.items)
+      : scaffoldItems(user, companyId, window),
   ])
 
   const update = await createClientUpdate({
-    clientId,
+    companyId,
     subject: input.subject?.trim() || `${client.name} updates`,
     intro: input.intro ?? DEFAULT_INTRO,
     items,
@@ -97,7 +97,7 @@ export async function createUpdateDraft(
     summary: event.summary,
     targetType: 'CLIENT_UPDATE',
     targetId: update.id,
-    targetCompanyId: clientId,
+    targetCompanyId: companyId,
     metadata: event.metadata,
   })
 
@@ -110,7 +110,7 @@ export async function createUpdateDraft(
  * no link.
  */
 async function materializeItems(
-  clientId: string,
+  companyId: string,
   inputs: DraftItemInput[]
 ): Promise<ClientUpdateItem[]> {
   const taskIds = inputs
@@ -125,7 +125,7 @@ async function materializeItems(
       .where(
         and(
           inArray(tasks.id, taskIds),
-          eq(projects.companyId, clientId),
+          eq(projects.companyId, companyId),
           isNull(tasks.deletedAt)
         )
       )

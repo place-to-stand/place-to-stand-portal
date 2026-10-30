@@ -5,7 +5,7 @@ const DEFAULT_HOURS_PURCHASED = 5
 export const HOUR_BLOCK_NOTES_MAX_LENGTH = 2000
 
 export const hourBlockFormSchema = z.object({
-  clientId: z.string().uuid('Select a client'),
+  companyId: z.string().uuid('Select a client'),
   hoursPurchased: z.coerce
     .number()
     .int('Hours purchased must be a whole number.')
@@ -55,7 +55,7 @@ type ClientRow = {
 export type HourBlockWithClient = HourBlockRow & { client: ClientRow | null }
 
 export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
-  'clientId',
+  'companyId',
   'hoursPurchased',
   'notes',
 ]
@@ -63,14 +63,14 @@ export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
 export const buildHourBlockFormDefaults = (
   hourBlock: HourBlockWithClient | null
 ): HourBlockFormValues => ({
-  clientId: hourBlock?.company_id ?? '',
+  companyId: hourBlock?.company_id ?? '',
   hoursPurchased: hourBlock?.hours_purchased ?? DEFAULT_HOURS_PURCHASED,
   notes: hourBlock?.notes ?? '',
 })
 
 export type HourBlockSavePayload = {
   id?: string
-  clientId: string
+  companyId: string
   hoursPurchased: number
   notes: string | null
 }
@@ -80,7 +80,7 @@ export const createHourBlockSavePayload = (
   hourBlock: HourBlockWithClient | null
 ): HourBlockSavePayload => ({
   id: hourBlock?.id,
-  clientId: values.clientId,
+  companyId: values.companyId,
   hoursPurchased: values.hoursPurchased,
   notes: values.notes.trim().length > 0 ? values.notes.trim() : null,
 })

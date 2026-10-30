@@ -25,15 +25,15 @@ export default async function DashboardPage() {
     ]
   )
 
-  const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
+  const needsClientSelection = isAdmin(user) && scope.companyIds.length === 0
   const clients = [...scope.scopedClients].sort((a, b) =>
     a.name.localeCompare(b.name)
   )
   const sections = clients.map(client => ({
     client,
-    hoursSummary: hoursSummaries.find(s => s.clientId === client.id),
+    hoursSummary: hoursSummaries.find(s => s.companyId === client.id),
     invoiceSummary: invoiceSummaries.get(client.id) ?? EMPTY_INVOICE_SUMMARY,
-    projects: projects.filter(p => p.clientId === client.id),
+    projects: projects.filter(p => p.companyId === client.id),
   }))
 
   return (
@@ -83,7 +83,7 @@ export default async function DashboardPage() {
                 min-height, not by stretching the cards. */}
             <div className='dash:grid-cols-2 grid grid-cols-1 items-start gap-6'>
               <AccountCard
-                clientId={section.client.id}
+                companyId={section.client.id}
                 hoursSummary={section.hoursSummary}
                 invoiceSummary={section.invoiceSummary}
               />

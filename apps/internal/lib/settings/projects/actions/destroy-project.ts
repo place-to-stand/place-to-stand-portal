@@ -49,7 +49,7 @@ export async function destroyProject(
         | {
             id: string
             name: string
-            clientId: string | null
+            companyId: string | null
             deletedAt: string | null
           }
         | undefined
@@ -59,7 +59,7 @@ export async function destroyProject(
           .select({
             id: projects.id,
             name: projects.name,
-            clientId: projects.companyId,
+            companyId: projects.companyId,
             deletedAt: projects.deletedAt,
           })
           .from(projects)
@@ -143,7 +143,7 @@ export async function destroyProject(
         targetType: 'PROJECT',
         targetId: existingProject.id,
         targetProjectId: existingProject.id,
-        targetCompanyId: existingProject.clientId,
+        targetCompanyId: existingProject.companyId,
         metadata: event.metadata,
       })
 

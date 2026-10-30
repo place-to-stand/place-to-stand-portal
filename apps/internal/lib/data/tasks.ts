@@ -92,7 +92,7 @@ function assigneeJoinCondition(userId: string | null) {
  * view — but it's applied unconditionally so the two never disagree.
  */
 function projectScopeConditions(
-  clientId: string | null,
+  companyId: string | null,
   hiddenProjectTypes: readonly ProjectTypeValue[],
   projectIds: readonly string[] | null = null
 ) {
@@ -103,7 +103,7 @@ function projectScopeConditions(
       : projectIds.length > 0
         ? [inArray(projectsTable.id, [...projectIds])]
         : [sql`false`]),
-    ...(clientId ? [eq(projectsTable.companyId, clientId)] : []),
+    ...(companyId ? [eq(projectsTable.companyId, companyId)] : []),
     ...(hiddenProjectTypes.length > 0
       ? [notInArray(projectsTable.type, [...hiddenProjectTypes])]
       : []),
@@ -136,7 +136,7 @@ type FetchAssignedTasksSummaryOptions = {
   /** Null = tasks assigned to ANYONE (the board's "All tasks" view). */
   userId: string | null
   /** Restrict to one client's projects (null/undefined = every client). */
-  clientId?: string | null
+  companyId?: string | null
   /** Project types to withhold (e.g. PERSONAL, INTERNAL); empty = show all. */
   hiddenProjectTypes?: readonly ProjectTypeValue[]
   /** Only these projects (a non-admin's workable set); null = every project. */
@@ -165,7 +165,7 @@ type FetchAssignedTasksSummaryOptions = {
 
 async function loadAssignedTaskSummaries({
   userId,
-  clientId = null,
+  companyId = null,
   hiddenProjectTypes = [],
   projectIds = null,
   limit = DEFAULT_LIMIT,
@@ -185,7 +185,7 @@ async function loadAssignedTaskSummaries({
 
   const baseConditions = [
     ...assignedTaskConditions(userId),
-    ...projectScopeConditions(clientId, hiddenProjectTypes, projectIds),
+    ...projectScopeConditions(companyId, hiddenProjectTypes, projectIds),
   ]
 
   if (!includeCompletedStatuses) {
@@ -303,7 +303,7 @@ async function loadAssignedTaskSummaries({
     ? await countAssignedDoneBefore(
         userId,
         doneSince,
-        clientId,
+        companyId,
         hiddenProjectTypes,
         projectIds
       )
@@ -362,7 +362,7 @@ async function loadAssignedTaskSummaries({
 async function countAssignedDoneBefore(
   userId: string | null,
   before: string,
-  clientId: string | null = null,
+  companyId: string | null = null,
   hiddenProjectTypes: readonly ProjectTypeValue[] = [],
   projectIds: readonly string[] | null = null
 ): Promise<number> {
@@ -375,7 +375,7 @@ async function countAssignedDoneBefore(
     .where(
       and(
         ...assignedTaskConditions(userId),
-        ...projectScopeConditions(clientId, hiddenProjectTypes, projectIds),
+        ...projectScopeConditions(companyId, hiddenProjectTypes, projectIds),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         lt(tasksTable.completedAt, before)
@@ -401,14 +401,14 @@ export type AssignedDoneSliceResult = {
  */
 export async function listAssignedDoneSlice({
   userId,
-  clientId = null,
+  companyId = null,
   hiddenProjectTypes = [],
   projectIds = null,
   since,
   before,
 }: {
   userId: string | null
-  clientId?: string | null
+  companyId?: string | null
   hiddenProjectTypes?: readonly ProjectTypeValue[]
   projectIds?: readonly string[] | null
   since: string
@@ -452,7 +452,7 @@ export async function listAssignedDoneSlice({
     .where(
       and(
         ...assignedTaskConditions(userId),
-        ...projectScopeConditions(clientId, hiddenProjectTypes, projectIds),
+        ...projectScopeConditions(companyId, hiddenProjectTypes, projectIds),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         gte(tasksTable.completedAt, since),
@@ -500,7 +500,7 @@ export async function listAssignedDoneSlice({
     olderDoneCount: await countAssignedDoneBefore(
       userId,
       since,
-      clientId,
+      companyId,
       hiddenProjectTypes,
       projectIds
     ),

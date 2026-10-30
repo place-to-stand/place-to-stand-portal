@@ -117,7 +117,7 @@ export function registerBillingTools(server: McpServer) {
 
       const result = await listInvoices(user, {
         status: archived ? 'archived' : 'active',
-        clientId,
+        companyId: clientId,
         invoiceStatus: status,
         search,
         limit,
@@ -164,7 +164,7 @@ export function registerBillingTools(server: McpServer) {
 
       const result = await listHourBlocksForSettings(user, {
         status: archived ? 'archived' : 'active',
-        clientId,
+        companyId: clientId,
         search,
         offset: 0,
         limit,
@@ -191,7 +191,7 @@ export function registerBillingTools(server: McpServer) {
       const [totals, blocks] = await Promise.all([
         getClientHoursTotals(db, [client.id]),
         listHourBlocksForSettings(user, {
-          clientId: client.id,
+          companyId: client.id,
           offset: 0,
           limit: RECENT_BLOCKS,
         }),

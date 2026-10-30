@@ -1,5 +1,5 @@
 /**
- * Time logs page filters (`?from=&to=&clientId=&projectId=&personId=&page=`).
+ * Time logs page filters (`?from=&to=&companyId=&projectId=&personId=&page=`).
  * Not `client`/`project`: those params open the client and project sheets.
  * Client-safe.
  */
@@ -33,7 +33,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export type TimeLogsListParams = {
   from: string
   to: string
-  clientId?: string
+  companyId?: string
   projectId?: string
   personId?: string
   page: number
@@ -65,7 +65,7 @@ export function parseTimeLogsSearchParams(
   return {
     from: from ?? defaults.from,
     to: to ?? defaults.to,
-    clientId: uuid('clientId'),
+    companyId: uuid('companyId'),
     projectId: uuid('projectId'),
     personId: uuid('personId'),
     page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),

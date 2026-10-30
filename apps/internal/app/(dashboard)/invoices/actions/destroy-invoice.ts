@@ -13,14 +13,14 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceDeletedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { companies, invoices, } from '@/lib/db/schema'
+import { companies, invoices } from '@/lib/db/schema'
 
 import { destroySchema } from './schemas'
 import type { ActionResult, DestroyInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
 export async function destroyInvoice(
-  input: DestroyInput,
+  input: DestroyInput
 ): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
@@ -43,7 +43,7 @@ export async function destroyInvoice(
       const existingRows = await db
         .select({
           id: invoices.id,
-          clientId: invoices.companyId,
+          companyId: invoices.companyId,
           invoiceNumber: invoices.invoiceNumber,
           deletedAt: invoices.deletedAt,
         })
@@ -66,7 +66,12 @@ export async function destroyInvoice(
       const clientRows = await db
         .select({ name: clientNameSql })
         .from(companies)
-        .where(and(wasClientCompany(), and(eq(companies.id, existing.clientId), isNull(clientEndedAtSql)),))
+        .where(
+          and(
+            wasClientCompany(),
+            and(eq(companies.id, existing.companyId), isNull(clientEndedAtSql))
+          )
+        )
         .limit(1)
 
       const clientName = clientRows[0]?.name ?? null
@@ -103,14 +108,14 @@ export async function destroyInvoice(
         summary: event.summary,
         targetType: 'INVOICE',
         targetId: existing.id,
-        targetCompanyId: existing.clientId,
+        targetCompanyId: existing.companyId,
         metadata: event.metadata,
       })
 
       revalidatePath(INVOICES_PATH)
 
       return {}
-    },
+    }
   )
 }
 

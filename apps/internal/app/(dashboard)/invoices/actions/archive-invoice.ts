@@ -47,7 +47,7 @@ async function performArchiveInvoice(
   const existingRows = await db
     .select({
       id: invoices.id,
-      clientId: invoices.companyId,
+      companyId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
     })
     .from(invoices)
@@ -63,7 +63,7 @@ async function performArchiveInvoice(
   const clientRows = await db
     .select({ name: clientNameSql })
     .from(companies)
-    .where(and(isClientCompany(), eq(companies.id, existing.clientId)))
+    .where(and(isClientCompany(), eq(companies.id, existing.companyId)))
     .limit(1)
 
   const clientName = clientRows[0]?.name ?? null
@@ -97,7 +97,7 @@ async function performArchiveInvoice(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: existing.id,
-    targetCompanyId: existing.clientId,
+    targetCompanyId: existing.companyId,
     metadata: event.metadata,
   })
 

@@ -15,22 +15,18 @@ import { unsendSchema } from './schemas'
 import type { ActionResult, UnsendInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
-export async function unsendInvoice(
-  input: UnsendInput,
-): Promise<ActionResult> {
+export async function unsendInvoice(input: UnsendInput): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
       entity: 'invoice',
       mode: 'unsend',
       targetId: input.id,
     },
-    async () => performUnsendInvoice(input),
+    async () => performUnsendInvoice(input)
   )
 }
 
-async function performUnsendInvoice(
-  input: UnsendInput,
-): Promise<ActionResult> {
+async function performUnsendInvoice(input: UnsendInput): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
 
@@ -47,7 +43,7 @@ async function performUnsendInvoice(
       id: invoices.id,
       status: invoices.status,
       invoiceNumber: invoices.invoiceNumber,
-      clientId: invoices.companyId,
+      companyId: invoices.companyId,
     })
     .from(invoices)
     .where(eq(invoices.id, invoiceId))
@@ -85,7 +81,7 @@ async function performUnsendInvoice(
       summary: `Reverted invoice ${existing.invoiceNumber ?? invoiceId} to draft`,
       targetType: 'INVOICE',
       targetId: invoiceId,
-      targetCompanyId: existing.clientId,
+      targetCompanyId: existing.companyId,
       metadata: { invoiceNumber: existing.invoiceNumber },
     })
 

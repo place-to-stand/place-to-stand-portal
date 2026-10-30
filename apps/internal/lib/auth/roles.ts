@@ -79,12 +79,12 @@ export function canReadActivity(
   filters: {
     targetType?: string | readonly string[]
     projectId?: string
-    clientId?: string
+    companyId?: string
   }
 ): boolean {
   if (role === 'ADMIN') return true
   if (role !== 'SALES') return false
-  if (filters.projectId || filters.clientId) return false
+  if (filters.projectId || filters.companyId) return false
 
   const types =
     typeof filters.targetType === 'string'
@@ -92,6 +92,7 @@ export function canReadActivity(
       : (filters.targetType ?? [])
 
   return (
-    types.length > 0 && types.every(type => SALES_ACTIVITY_TARGET_TYPES.has(type))
+    types.length > 0 &&
+    types.every(type => SALES_ACTIVITY_TARGET_TYPES.has(type))
   )
 }

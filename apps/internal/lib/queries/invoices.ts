@@ -18,7 +18,8 @@ import {
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { companies,
+import {
+  companies,
   hourBlocks,
   invoices,
   invoiceLineItems,
@@ -53,7 +54,7 @@ const invoiceSelection = {
   id: invoices.id,
   invoiceNumber: invoices.invoiceNumber,
   status: invoices.status,
-  clientId: invoices.companyId,
+  companyId: invoices.companyId,
   createdBy: invoices.createdBy,
   issuedDate: invoices.issuedDate,
   dueDate: invoices.dueDate,
@@ -109,7 +110,7 @@ type InvoiceSelectionRow = {
     id: string
     invoiceNumber: string | null
     status: string
-    clientId: string
+    companyId: string
     createdBy: string | null
     issuedDate: string | null
     dueDate: string | null
@@ -176,7 +177,7 @@ export type ListInvoicesInput = {
   /** Invoice status filter (DRAFT/SENT/…), distinct from the tab `status`. */
   invoiceStatus?: InvoiceStatusValue
   /** Only this client's invoices. */
-  clientId?: string
+  companyId?: string
   /** Fuzzy search on invoice number + client name (PRD 004 §03). */
   search?: string
   sort?: ParsedSort<InvoiceSortField>
@@ -242,8 +243,8 @@ export async function listInvoices(
   if (input.invoiceStatus) {
     baseConditions.push(eq(invoices.status, input.invoiceStatus))
   }
-  if (input.clientId) {
-    baseConditions.push(eq(invoices.companyId, input.clientId))
+  if (input.companyId) {
+    baseConditions.push(eq(invoices.companyId, input.companyId))
   }
   const searchQuery = input.search?.trim() ?? ''
   if (searchQuery) {
@@ -295,7 +296,8 @@ export async function listInvoices(
       .where(statusCondition),
     db
       .select(clientSelection)
-      .from(companies).where(wasClientCompany())
+      .from(companies)
+      .where(wasClientCompany())
       .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
     listProductCatalogItems(),
     listTaxRates(),
@@ -380,7 +382,8 @@ export async function listInvoiceReferenceData(
   const [clientDirectory, productCatalog, activeTaxRates] = await Promise.all([
     db
       .select(clientSelection)
-      .from(companies).where(wasClientCompany())
+      .from(companies)
+      .where(wasClientCompany())
       .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
     listProductCatalogItems(),
     listTaxRates(),
@@ -611,7 +614,7 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
     id: row.invoice.id,
     invoice_number: row.invoice.invoiceNumber,
     status: row.invoice.status,
-    company_id: row.invoice.clientId,
+    company_id: row.invoice.companyId,
     created_by: row.invoice.createdBy,
     issued_date: row.invoice.issuedDate,
     due_date: row.invoice.dueDate,

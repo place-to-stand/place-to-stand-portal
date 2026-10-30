@@ -183,7 +183,7 @@ export function InvoiceSheet({
     }
   }, [open, isPending])
 
-  const watchedClientId = useWatch({ control: form.control, name: 'clientId' })
+  const watchedClientId = useWatch({ control: form.control, name: 'companyId' })
   const selectedClientBillingType = useMemo(() => {
     if (!watchedClientId) return null
     const option = clientOptions.find(c => c.value === watchedClientId)
@@ -411,7 +411,7 @@ export function InvoiceSheet({
                       <div className='grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2'>
                         <FormField
                           control={form.control}
-                          name='clientId'
+                          name='companyId'
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Client</FormLabel>

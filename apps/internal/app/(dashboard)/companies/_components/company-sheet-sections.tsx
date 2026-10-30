@@ -31,7 +31,6 @@ import {
 } from './billing/billing-effective-choice'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
-
 export function CompanyLeadsSection({
   leads,
 }: {
@@ -64,17 +63,17 @@ export function CompanyLeadsSection({
  * with the sheet's Save.
  */
 export function CompanyBillingTab({
-  clientId,
+  companyId,
   disabled,
 }: {
-  clientId: string | null
+  companyId: string | null
   disabled: boolean
 }) {
   const billing = useCompanyBilling()
   const { data: work } = useQuery({
-    queryKey: ['companyClientWork', clientId],
-    queryFn: () => loadCompanyClientWork(clientId!),
-    enabled: Boolean(clientId),
+    queryKey: ['companyClientWork', companyId],
+    queryFn: () => loadCompanyClientWork(companyId!),
+    enabled: Boolean(companyId),
     staleTime: 0,
   })
   const { mode, billingOn, effective, setEffective } = billing
@@ -201,17 +200,17 @@ const formatHours = (value: number) =>
 
 /** The Projects tab: the client's projects and its latest updates. */
 export function CompanyProjectsTab({
-  clientId,
+  companyId,
   isCreating = false,
 }: {
-  clientId: string | null
+  companyId: string | null
   /** The create sheet: the company has nothing yet. */
   isCreating?: boolean
 }) {
   const { data: work, isLoading } = useQuery({
-    queryKey: ['companyClientWork', clientId],
-    queryFn: () => loadCompanyClientWork(clientId!),
-    enabled: Boolean(clientId),
+    queryKey: ['companyClientWork', companyId],
+    queryFn: () => loadCompanyClientWork(companyId!),
+    enabled: Boolean(companyId),
     staleTime: 0,
   })
 
@@ -222,7 +221,7 @@ export function CompanyProjectsTab({
       </SheetSection>
     )
   }
-  if (!clientId) {
+  if (!companyId) {
     return (
       <SheetSection title='Projects'>
         <EmptyState message='Projects belong to clients, and this company isn’t billed yet.' />
@@ -274,7 +273,7 @@ export function CompanyProjectsTab({
           </SheetRecordList>
         )}
       </SheetSection>
-      <ClientUpdatesSection clientId={clientId} updates={work.updates} />
+      <ClientUpdatesSection companyId={companyId} updates={work.updates} />
     </>
   )
 }

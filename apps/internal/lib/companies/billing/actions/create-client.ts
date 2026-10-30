@@ -9,7 +9,10 @@ import { db } from '@/lib/db'
 import { companies, leads } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
-import { startBilling, type BillingEffective } from '@/lib/companies/billing/periods'
+import {
+  startBilling,
+  type BillingEffective,
+} from '@/lib/companies/billing/periods'
 import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
 import type { CloserShare } from '@/lib/companies/billing/closers'
 import {
@@ -88,14 +91,14 @@ export async function startClientBillingInTx(
     actorId: input.actorId,
   })
   await insertInitialBillingTerm(tx, {
-    clientId: companyId,
+    companyId: companyId,
     billingType: input.billingType,
     createdBy: input.actorId,
   })
   // Same atomicity for the commission split (PRD 007): the client's first
   // month must resolve its closers/origination.
   await insertInitialCommissionTerm(tx, {
-    clientId: companyId,
+    companyId: companyId,
     closers: input.closers,
     originationUserId: input.originationUserId,
     originationContactId: input.originationContactId,
@@ -164,7 +167,9 @@ export async function createClient(
   }
   // A client is a company's billing record, so it always has one.
   if (!companyId) {
-    return buildMutationResult({ error: 'Unable to find or create the company.' })
+    return buildMutationResult({
+      error: 'Unable to find or create the company.',
+    })
   }
   await fillCompanyWebsiteIfBlank(user, companyId, website)
 
@@ -200,7 +205,7 @@ export async function createClient(
       // Client + initial billing + commission terms are atomic: a client
       // without a terms row is invisible to every monthly close. A slug unique-violation
       // aborts the transaction and the loop retries with a fresh slug.
-      const clientId = await db.transaction(async tx => {
+      const startedId = await db.transaction(async tx => {
         await startClientBillingInTx(tx, {
           companyId,
           slug: slugCandidate,
@@ -215,7 +220,7 @@ export async function createClient(
         return companyId
       })
 
-      if (!clientId) {
+      if (!startedId) {
         console.error('Client created without returning identifier')
         return buildMutationResult({ error: 'Unable to create client.' })
       }
@@ -231,12 +236,12 @@ export async function createClient(
         verb: event.verb,
         summary: event.summary,
         targetType: 'COMPANY',
-        targetId: clientId,
-        targetCompanyId: clientId,
+        targetId: companyId,
+        targetCompanyId: companyId,
         metadata: event.metadata,
       })
 
-      return buildMutationResult({ clientId, slug: slugCandidate })
+      return buildMutationResult({ companyId, slug: slugCandidate })
     } catch (error) {
       if (!isUniqueViolation(error)) {
         console.error('Failed to create client', error)

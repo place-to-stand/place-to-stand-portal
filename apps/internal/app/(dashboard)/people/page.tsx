@@ -32,7 +32,7 @@ export default async function ContactsPage({
   const {
     page: currentPage,
     search,
-    clientId,
+    companyId,
     signIn,
     sort,
   } = parseContactsSearchParams(params)
@@ -53,7 +53,7 @@ export default async function ContactsPage({
       listContactsForSettings(user, {
         status: 'active',
         search,
-        clientId,
+        companyId,
         signIn,
         offset,
         limit: pageSize,
@@ -97,7 +97,7 @@ export default async function ContactsPage({
         <ContactsFilters
           basePath='/people'
           search={search}
-          clientId={clientId}
+          companyId={companyId}
           clients={allClients}
           signIn={isAdmin ? signIn : undefined}
           showSignInFilter={isAdmin}

@@ -22,7 +22,7 @@ export type ClientUpdateSummary = {
 }
 
 type ClientUpdatesSectionProps = {
-  clientId: string
+  companyId: string
   updates: ClientUpdateSummary[]
 }
 
@@ -32,7 +32,7 @@ type ClientUpdatesSectionProps = {
  * covers the "find the one I was working on" case.
  */
 export function ClientUpdatesSection({
-  clientId,
+  companyId,
   updates,
 }: ClientUpdatesSectionProps) {
   const router = useRouter()
@@ -41,7 +41,7 @@ export function ClientUpdatesSection({
 
   const handleDraft = () => {
     startTransition(async () => {
-      const result = await draftUpdateForClient(clientId)
+      const result = await draftUpdateForClient(companyId)
       if (!result.success) {
         toast({
           title: 'Unable to draft update',

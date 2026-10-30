@@ -22,7 +22,8 @@ import type { AppUser } from '@/lib/auth/session'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
-import { companies,
+import {
+  companies,
   hourBlocks,
   projects,
   tasks,
@@ -134,7 +135,7 @@ export async function fetchMyMonthTimeLogs(
 
 export type TimeLogPageFilters = {
   userId?: string
-  clientId?: string
+  clientCompanyId?: string
   projectId?: string
   /** Inclusive `logged_on` bounds, `YYYY-MM-DD`. */
   from?: string
@@ -161,7 +162,9 @@ export async function fetchTimeLogPage(
 
   const where = and(
     filters.userId ? eq(timeLogs.userId, filters.userId) : undefined,
-    filters.clientId ? eq(projects.companyId, filters.clientId) : undefined,
+    filters.clientCompanyId
+      ? eq(projects.companyId, filters.clientCompanyId)
+      : undefined,
     filters.projectId ? eq(timeLogs.projectId, filters.projectId) : undefined,
     filters.from ? gte(timeLogs.loggedOn, filters.from) : undefined,
     filters.to ? lte(timeLogs.loggedOn, filters.to) : undefined,
@@ -188,7 +191,7 @@ export async function fetchTimeLogPage(
         projectName: projects.name,
         projectSlug: projects.slug,
         projectType: projects.type,
-        clientId: companies.id,
+        clientCompanyId: companies.id,
         clientName: clientNameSql,
         clientSlug: companies.slug,
         companyId: companies.id,
@@ -242,7 +245,7 @@ export async function fetchTimeLogPage(
     projectName: row.projectName ?? 'Untitled project',
     projectSlug: row.projectSlug ?? null,
     projectType: row.projectType,
-    clientId: row.clientId ?? null,
+    clientCompanyId: row.clientCompanyId ?? null,
     clientName: row.clientName ?? null,
     clientSlug: row.clientSlug ?? null,
     companyId: row.companyId,

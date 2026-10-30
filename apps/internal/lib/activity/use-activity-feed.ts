@@ -9,15 +9,13 @@ import type {
 const ACTIVITY_FEED_QUERY_KEY = 'activity-feed' as const
 
 type ActivityFeedQueryTarget =
-  | ActivityTargetType
-  | string
-  | ReadonlyArray<ActivityTargetType | string>
+  ActivityTargetType | string | ReadonlyArray<ActivityTargetType | string>
 
 export type UseActivityFeedOptions = {
   targetType: ActivityFeedQueryTarget
   targetId?: string | null
   projectId?: string | null
-  clientId?: string | null
+  companyId?: string | null
   pageSize?: number
   requireContext?: boolean
 }
@@ -44,7 +42,7 @@ export function useActivityFeed(
     targetType,
     targetId = null,
     projectId = null,
-    clientId = null,
+    companyId = null,
     pageSize = DEFAULT_PAGE_SIZE,
     requireContext = true,
   } = options
@@ -54,7 +52,7 @@ export function useActivityFeed(
     [targetType]
   )
   const targetTypeKey = normalizedTargetTypes.join(',')
-  const hasContext = Boolean(targetId || projectId || clientId)
+  const hasContext = Boolean(targetId || projectId || companyId)
   const queryEnabled = requireContext
     ? Boolean(normalizedTargetTypes.length > 0 && hasContext)
     : normalizedTargetTypes.length > 0
@@ -66,11 +64,11 @@ export function useActivityFeed(
         targetTypeKey,
         targetId,
         projectId,
-        clientId,
+        companyId,
         pageSize,
         requireContext,
       ] as const,
-    [targetTypeKey, targetId, projectId, clientId, pageSize, requireContext]
+    [targetTypeKey, targetId, projectId, companyId, pageSize, requireContext]
   )
 
   const query = useInfiniteQuery<
@@ -97,7 +95,7 @@ export function useActivityFeed(
 
       appendIfDefined(params, 'targetId', targetId)
       appendIfDefined(params, 'projectId', projectId)
-      appendIfDefined(params, 'clientId', clientId)
+      appendIfDefined(params, 'companyId', companyId)
 
       params.set('limit', pageSize.toString())
 
@@ -117,8 +115,7 @@ export function useActivityFeed(
 
   const logs = useMemo(() => {
     const data = query.data as
-      | InfiniteData<ActivityApiResponse, string | null>
-      | undefined
+      InfiniteData<ActivityApiResponse, string | null> | undefined
 
     if (!data) {
       return []

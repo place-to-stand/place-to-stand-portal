@@ -200,7 +200,7 @@ export type ActivityQueryFilters = {
   targetType?: ActivityTargetType | ActivityTargetType[]
   targetId?: string
   projectId?: string
-  clientId?: string
+  companyId?: string
   /** Narrow to one channel (e.g. `MCP` for agent writes). */
   source?: ActivitySourceValue
   /** Narrow to rows one user acted on. */

@@ -25,7 +25,7 @@ export type TaskCommentsPanelProps = {
   currentUserName?: string | null
   canComment: boolean
   taskTitle?: string | null
-  clientId?: string | null
+  companyId?: string | null
 }
 
 export function TaskCommentsPanel(props: TaskCommentsPanelProps) {

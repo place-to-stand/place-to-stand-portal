@@ -30,8 +30,7 @@ const startThreadSchema = z.object({
 })
 
 type StartThreadResult =
-  | { sessionId: string; thread: PlanThreadData }
-  | { error: string }
+  { sessionId: string; thread: PlanThreadData } | { error: string }
 
 /**
  * The first write planning makes, and only on an explicit action (Start
@@ -69,7 +68,7 @@ export async function startPlanningThread(input: {
       .select({
         title: tasks.title,
         projectId: tasks.projectId,
-        clientId: projects.companyId,
+        companyId: projects.companyId,
       })
       .from(tasks)
       .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -88,7 +87,7 @@ export async function startPlanningThread(input: {
       targetType: 'PLAN',
       targetId: session.id,
       targetProjectId: task?.projectId ?? null,
-      targetCompanyId: task?.clientId ?? null,
+      targetCompanyId: task?.companyId ?? null,
       metadata: event.metadata,
     })
   }

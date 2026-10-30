@@ -68,8 +68,16 @@ export async function saveProject(
     return { error: message, fieldErrors }
   }
 
-  const { id, name, clientId, projectType, status, startsOn, endsOn, slug } =
-    parsed.data
+  const {
+    id,
+    name,
+    companyId: pickedCompanyId,
+    projectType,
+    status,
+    startsOn,
+    endsOn,
+    slug,
+  } = parsed.data
 
   // Without `projects.manage` the sheet can only create a project of a type
   // the role may create, owned by the user: no edits, client, members or
@@ -107,11 +115,11 @@ export async function saveProject(
     return { error: 'Project name is required.' }
   }
 
-  const companyId = projectType === 'CLIENT' ? clientId : null
+  const companyId = projectType === 'CLIENT' ? pickedCompanyId : null
   if (projectType === 'CLIENT') {
     const notClient = await ensureClientCompany(companyId)
     if (notClient)
-      return { error: notClient, fieldErrors: { clientId: [notClient] } }
+      return { error: notClient, fieldErrors: { companyId: [notClient] } }
   }
   const fields = {
     name: trimmedName,
@@ -128,7 +136,7 @@ export async function saveProject(
       entity: 'project',
       mode: id ? 'edit' : 'create',
       targetId: id ?? null,
-      metadata: { clientId, status },
+      metadata: { companyId, status },
     },
     async () => {
       // Reads and outside calls first: nothing is written until the

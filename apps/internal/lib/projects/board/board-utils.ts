@@ -33,8 +33,8 @@ export const getProjectClientSegment = (
     return PROJECT_SPECIAL_SEGMENTS.PERSONAL
   }
 
-  const clientId = project.company_id ?? null
-  if (!clientId) {
+  const companyId = project.company_id ?? null
+  if (!companyId) {
     return null
   }
 
@@ -42,8 +42,8 @@ export const getProjectClientSegment = (
     return project.client.slug
   }
 
-  if (clientSlugLookup?.has(clientId)) {
-    return clientSlugLookup.get(clientId) ?? null
+  if (clientSlugLookup?.has(companyId)) {
+    return clientSlugLookup.get(companyId) ?? null
   }
 
   return null

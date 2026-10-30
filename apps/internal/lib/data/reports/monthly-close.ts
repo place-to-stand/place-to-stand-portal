@@ -134,7 +134,7 @@ export const fetchMonthlyCloseReport = cache(
       const key = `${row.originatorKind}:${row.originatorId}`
       const hours = toFiniteNumber(row.hours)
       const detail: OriginationClientDetail = {
-        clientId: row.clientId,
+        companyId: row.companyId,
         clientName: row.clientName,
         billingType: row.clientBillingType,
         hours,
@@ -200,7 +200,7 @@ export const fetchMonthlyCloseReport = cache(
       const key = `${row.closerKind}:${row.closerId}`
       const hours = (toFiniteNumber(row.hours) * row.sharePercent) / 100
       const detail: CloserClientDetail = {
-        clientId: row.clientId,
+        companyId: row.companyId,
         clientName: row.clientName,
         billingType: row.clientBillingType,
         hours,
@@ -371,7 +371,7 @@ export const fetchMonthlyCloseReport = cache(
     const prepaidData: PrepaidBillingRow[] = prepaidRows.map(row => {
       const totalHours = toFiniteNumber(row.totalHours)
       return {
-        clientId: row.clientId,
+        companyId: row.companyId,
         clientName: row.clientName,
         totalHours,
         amount: totalHours * rates.billablePerHour,
@@ -396,7 +396,7 @@ export const fetchMonthlyCloseReport = cache(
     const net30Data: Net30Row[] = net30Rows.map(row => {
       const totalHours = toFiniteNumber(row.totalHours)
       return {
-        clientId: row.clientId,
+        companyId: row.companyId,
         clientName: row.clientName,
         totalHours,
         amount: totalHours * rates.billablePerHour,
@@ -422,7 +422,7 @@ export const fetchMonthlyCloseReport = cache(
     const salesTaxData = salesTaxRows.map(row => ({
       invoiceId: row.invoiceId,
       invoiceNumber: row.invoiceNumber,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       paidOn: row.paidOn,
       taxableAmount: toFiniteNumber(row.subtotal),

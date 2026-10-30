@@ -106,7 +106,7 @@ export function useProjectTimeLogDialog(
     projectId,
     projectName,
     projectType,
-    clientId,
+    companyId,
     clientName,
     clientBillingType,
     clientRemainingHours,
@@ -335,7 +335,7 @@ export function useProjectTimeLogDialog(
     project: {
       id: projectId,
       name: projectName,
-      clientId,
+      companyId,
     },
     formValues: {
       hoursInput,

@@ -86,6 +86,8 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
   originationUserId: { label: 'Originated by', kind: 'user' },
   originationContactId: { label: 'Originating person', kind: 'contact' },
   projectId: { label: 'Project', kind: 'project' },
+  companyId: { label: 'Client', kind: 'client' },
+  // Rows logged before the clientId → companyId rename.
   clientId: { label: 'Client', kind: 'client' },
   clientName: { label: 'Client', kind: 'text' },
   invoiceNumber: { label: 'Invoice', kind: 'text' },
@@ -117,7 +119,10 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
 }
 
 /** Membership keys: `user` lists hold user ids the feed resolves, `text` lists are shown verbatim. */
-const MEMBERSHIP_SPECS: Record<string, { label: string; kind: 'user' | 'text' }> = {
+const MEMBERSHIP_SPECS: Record<
+  string,
+  { label: string; kind: 'user' | 'text' }
+> = {
   assignees: { label: 'Assignees', kind: 'user' },
   contractors: { label: 'Contractors', kind: 'user' },
   members: { label: 'Members', kind: 'user' },
@@ -140,9 +145,7 @@ export function getActivityChanges(log: ActivityLogWithActor): ActivityChanges {
   }
 }
 
-function collectFieldChanges(
-  metadata: Record<string, unknown>
-): FieldChange[] {
+function collectFieldChanges(metadata: Record<string, unknown>): FieldChange[] {
   const changes: FieldChange[] = []
   const details = toRecord(metadata.details)
 
@@ -194,13 +197,15 @@ function buildFieldChange(
 }
 
 /**
- * Hour-block writers record both `clientId` and `clientName`; the name row is
+ * Hour-block writers record both `companyId` and `clientName`; the name row is
  * the readable one, so drop the id row when both are present.
  */
 function dedupeClientRows(changes: FieldChange[]): FieldChange[] {
   const hasClientName = changes.some(change => change.key === 'clientName')
   return hasClientName
-    ? changes.filter(change => change.key !== 'clientId')
+    ? changes.filter(
+        change => change.key !== 'companyId' && change.key !== 'clientId'
+      )
     : changes
 }
 

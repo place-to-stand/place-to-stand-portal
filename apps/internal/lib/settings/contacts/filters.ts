@@ -51,10 +51,10 @@ export type ContactsSearchParams = {
   page: number
   search: string | undefined
   /**
-   * Linked-client filter (`?clientId=<uuid>`). Named `clientId` because
+   * Linked-client filter (`?companyId=<uuid>`). Named `companyId` because
    * `?client=` is an old deep-link param (it opens the company sheet).
    */
-  clientId: string | undefined
+  companyId: string | undefined
   /** Who can sign in (admins only; ignored for others). */
   signIn: SignInFilter | undefined
   sort: ParsedSort<ContactSortField>
@@ -80,7 +80,7 @@ export function parseContactsSearchParams(
 ): ContactsSearchParams {
   const pageParam = Number.parseInt(firstParam(params.page) ?? '1', 10)
   const searchParam = firstParam(params.q)?.trim()
-  const clientIdParam = firstParam(params.clientId)?.trim()
+  const clientIdParam = firstParam(params.companyId)?.trim()
   const signInParam = firstParam(params.signIn)?.trim() ?? ''
   const sort = parseSortParam(
     firstParam(params.sort),
@@ -91,7 +91,7 @@ export function parseContactsSearchParams(
   return {
     page: Math.max(1, Number.isFinite(pageParam) ? pageParam : 1),
     search: searchParam || undefined,
-    clientId:
+    companyId:
       clientIdParam && UUID_PATTERN.test(clientIdParam)
         ? clientIdParam
         : undefined,

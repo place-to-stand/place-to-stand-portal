@@ -31,7 +31,7 @@ import {
 
 export type ProjectRelationsFetchArgs = {
   projectIds: string[]
-  clientIds: string[]
+  companyIds: string[]
   ownerIds: string[]
   /**
    * Archived tasks grow without bound and only the project review/archive
@@ -58,7 +58,9 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
   const rows = await db
     .select({
       id: users.id,
-      contact_id: sql<string | null>`(select ${contacts.id} from ${contacts} where ${contacts.userId} = ${users.id} and ${contacts.deletedAt} is null limit 1)`,
+      contact_id: sql<
+        string | null
+      >`(select ${contacts.id} from ${contacts} where ${contacts.userId} = ${users.id} and ${contacts.deletedAt} is null limit 1)`,
       full_name: personNameSql,
       avatar_url: personAvatarSql,
     })
@@ -75,13 +77,13 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
 
 export async function fetchProjectRelations({
   projectIds,
-  clientIds,
+  companyIds,
   ownerIds,
   includeArchivedTasks = false,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
   const clientDataPromise: Promise<[ClientRow[], MemberRow[]]> = Promise.all([
-    loadClientRows(clientIds),
-    loadMemberRows(clientIds),
+    loadClientRows(companyIds),
+    loadMemberRows(companyIds),
   ])
 
   const taskDataPromise: Promise<[TaskRow[], TaskRow[]]> = Promise.all([
@@ -118,11 +120,11 @@ export async function fetchProjectRelations({
 
   const tasks: RawTaskWithRelations[] = mapTaskRowsToRaw(
     activeTaskRows,
-    assigneesByTask,
+    assigneesByTask
   )
   const archivedTasks: RawTaskWithRelations[] = mapTaskRowsToRaw(
     archivedTaskRows,
-    assigneesByTask,
+    assigneesByTask
   )
 
   // Map GitHub repos to summary format

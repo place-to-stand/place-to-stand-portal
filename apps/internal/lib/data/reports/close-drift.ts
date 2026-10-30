@@ -135,13 +135,22 @@ export function computeDeltas(
     {
       section: 'prepaidBilling',
       label: 'Prepaid billing',
-      snap: { ...snapshot.prepaidBilling, rate: snapshot.prepaidBilling.hourlyRate },
-      liveSection: { ...live.prepaidBilling, rate: live.prepaidBilling.hourlyRate },
+      snap: {
+        ...snapshot.prepaidBilling,
+        rate: snapshot.prepaidBilling.hourlyRate,
+      },
+      liveSection: {
+        ...live.prepaidBilling,
+        rate: live.prepaidBilling.hourlyRate,
+      },
     },
     {
       section: 'net30Billing',
       label: 'Net 30 billing',
-      snap: { ...snapshot.net30Billing, rate: snapshot.net30Billing.hourlyRate },
+      snap: {
+        ...snapshot.net30Billing,
+        rate: snapshot.net30Billing.hourlyRate,
+      },
       liveSection: { ...live.net30Billing, rate: live.net30Billing.hourlyRate },
     },
     {
@@ -153,8 +162,14 @@ export function computeDeltas(
     {
       section: 'origination',
       label: 'Origination',
-      snap: { ...snapshot.origination, rate: snapshot.origination.commissionPerHour },
-      liveSection: { ...live.origination, rate: live.origination.commissionPerHour },
+      snap: {
+        ...snapshot.origination,
+        rate: snapshot.origination.commissionPerHour,
+      },
+      liveSection: {
+        ...live.origination,
+        rate: live.origination.commissionPerHour,
+      },
     },
     {
       section: 'closer',
@@ -171,29 +186,137 @@ export function computeDeltas(
   }
 
   // ---- House and the summary figures ----
-  push('house', 'House hours', 'hours', snapshot.house.billableHours, live.house.billableHours)
-  push('house', 'House (est.)', 'amount', snapshot.house.totalAmount, live.house.totalAmount)
-  push('house', 'House rate', 'rate', snapshot.house.ratePerHour, live.house.ratePerHour)
-  push('house', 'House · unassigned closer hours', 'hours', snapshot.house.unassignedCloserHours, live.house.unassignedCloserHours)
-  push('house', 'House · unassigned closer', 'amount', snapshot.house.unassignedCloserAmount, live.house.unassignedCloserAmount)
-  push('house', 'House · unassigned origination hours', 'hours', snapshot.house.unassignedOriginationHours, live.house.unassignedOriginationHours)
-  push('house', 'House · unassigned origination', 'amount', snapshot.house.unassignedOriginationAmount, live.house.unassignedOriginationAmount)
+  push(
+    'house',
+    'House hours',
+    'hours',
+    snapshot.house.billableHours,
+    live.house.billableHours
+  )
+  push(
+    'house',
+    'House (est.)',
+    'amount',
+    snapshot.house.totalAmount,
+    live.house.totalAmount
+  )
+  push(
+    'house',
+    'House rate',
+    'rate',
+    snapshot.house.ratePerHour,
+    live.house.ratePerHour
+  )
+  push(
+    'house',
+    'House · unassigned closer hours',
+    'hours',
+    snapshot.house.unassignedCloserHours,
+    live.house.unassignedCloserHours
+  )
+  push(
+    'house',
+    'House · unassigned closer',
+    'amount',
+    snapshot.house.unassignedCloserAmount,
+    live.house.unassignedCloserAmount
+  )
+  push(
+    'house',
+    'House · unassigned origination hours',
+    'hours',
+    snapshot.house.unassignedOriginationHours,
+    live.house.unassignedOriginationHours
+  )
+  push(
+    'house',
+    'House · unassigned origination',
+    'amount',
+    snapshot.house.unassignedOriginationAmount,
+    live.house.unassignedOriginationAmount
+  )
 
-  push('summary', 'Work billable hours', 'hours', snapshot.workBillableHours, live.workBillableHours)
-  push('summary', 'Work billable total', 'amount', snapshot.workBillableTotal, live.workBillableTotal)
-  push('summary', 'Combined billing in', 'amount', snapshot.combinedBillingTotal, live.combinedBillingTotal)
-  push('summary', 'Combined payouts', 'amount', snapshot.combinedPayoutTotal, live.combinedPayoutTotal)
+  push(
+    'summary',
+    'Work billable hours',
+    'hours',
+    snapshot.workBillableHours,
+    live.workBillableHours
+  )
+  push(
+    'summary',
+    'Work billable total',
+    'amount',
+    snapshot.workBillableTotal,
+    live.workBillableTotal
+  )
+  push(
+    'summary',
+    'Combined billing in',
+    'amount',
+    snapshot.combinedBillingTotal,
+    live.combinedBillingTotal
+  )
+  push(
+    'summary',
+    'Combined payouts',
+    'amount',
+    snapshot.combinedPayoutTotal,
+    live.combinedPayoutTotal
+  )
 
   // A late Stripe payment or an edited rate moves what's owed to the state.
-  push('salesTax', 'Sales tax collected', 'amount', snapshot.salesTax.totalAmount, live.salesTax.totalAmount)
-  push('salesTax', 'Taxable sales', 'amount', snapshot.salesTax.totalTaxable, live.salesTax.totalTaxable)
+  push(
+    'salesTax',
+    'Sales tax collected',
+    'amount',
+    snapshot.salesTax.totalAmount,
+    live.salesTax.totalAmount
+  )
+  push(
+    'salesTax',
+    'Taxable sales',
+    'amount',
+    snapshot.salesTax.totalTaxable,
+    live.salesTax.totalTaxable
+  )
 
   // ---- Rate schedule: an edit here silently re-prices every payout ----
-  push('rates', 'Billable rate', 'rate', snapshot.rates.billablePerHour, live.rates.billablePerHour)
-  push('rates', 'Payroll rate', 'rate', snapshot.rates.payrollPerHour, live.rates.payrollPerHour)
-  push('rates', 'Closer rate', 'rate', snapshot.rates.closerPerHour, live.rates.closerPerHour)
-  push('rates', 'Origination rate', 'rate', snapshot.rates.originationPerHour, live.rates.originationPerHour)
-  push('rates', 'House rate', 'rate', snapshot.rates.housePerHour, live.rates.housePerHour)
+  push(
+    'rates',
+    'Billable rate',
+    'rate',
+    snapshot.rates.billablePerHour,
+    live.rates.billablePerHour
+  )
+  push(
+    'rates',
+    'Payroll rate',
+    'rate',
+    snapshot.rates.payrollPerHour,
+    live.rates.payrollPerHour
+  )
+  push(
+    'rates',
+    'Closer rate',
+    'rate',
+    snapshot.rates.closerPerHour,
+    live.rates.closerPerHour
+  )
+  push(
+    'rates',
+    'Origination rate',
+    'rate',
+    snapshot.rates.originationPerHour,
+    live.rates.originationPerHour
+  )
+  push(
+    'rates',
+    'House rate',
+    'rate',
+    snapshot.rates.housePerHour,
+    live.rates.housePerHour
+  )
   push(
     'rates',
     'Internal origination payable',
@@ -212,7 +335,7 @@ export function computeDeltas(
       prefix,
       snapRows: snapSection.rows,
       liveRows: liveSection.rows,
-      key: row => row.clientId,
+      key: row => row.companyId,
       name: row => row.clientName,
       fields: [
         { unit: 'hours', value: row => row.totalHours },
@@ -250,21 +373,28 @@ export function computeDeltas(
   })
 
   for (const originatorKey of new Set([
-    ...snapshot.origination.rows.map(r => `${r.originatorKind}:${r.originatorId}`),
+    ...snapshot.origination.rows.map(
+      r => `${r.originatorKind}:${r.originatorId}`
+    ),
     ...live.origination.rows.map(r => `${r.originatorKind}:${r.originatorId}`),
   ])) {
     const keyOf = (r: { originatorKind: string; originatorId: string }) =>
       `${r.originatorKind}:${r.originatorId}`
-    const snapGroup = snapshot.origination.rows.find(r => keyOf(r) === originatorKey)
-    const liveGroup = live.origination.rows.find(r => keyOf(r) === originatorKey)
-    const who = snapGroup?.originatorName ?? liveGroup?.originatorName ?? originatorKey
+    const snapGroup = snapshot.origination.rows.find(
+      r => keyOf(r) === originatorKey
+    )
+    const liveGroup = live.origination.rows.find(
+      r => keyOf(r) === originatorKey
+    )
+    const who =
+      snapGroup?.originatorName ?? liveGroup?.originatorName ?? originatorKey
 
     diffRows(rowDeltas, {
       section: 'origination',
       prefix: `Origination · ${who}`,
       snapRows: snapGroup?.clients ?? [],
       liveRows: liveGroup?.clients ?? [],
-      key: row => row.clientId,
+      key: row => row.companyId,
       name: row => row.clientName,
       fields: [
         { unit: 'hours', value: row => row.hours },
@@ -302,7 +432,7 @@ export function computeDeltas(
       prefix: `Closer · ${who}`,
       snapRows: snapGroup?.clients ?? [],
       liveRows: liveGroup?.clients ?? [],
-      key: row => row.clientId,
+      key: row => row.companyId,
       name: row => row.clientName,
       fields: [
         { unit: 'hours', value: row => row.hours },
@@ -324,16 +454,44 @@ export function computeDeltas(
     name: row => row.name,
     fields: [
       { unit: 'amount', note: 'payroll', value: row => row.payrollAmount },
-      { unit: 'amount', note: 'origination', value: row => row.originationAmount },
+      {
+        unit: 'amount',
+        note: 'origination',
+        value: row => row.originationAmount,
+      },
       { unit: 'amount', note: 'closer', value: row => row.closerAmount },
       { unit: 'amount', value: row => row.totalAmount },
     ],
   })
 
-  push('partnerPayouts', 'Payouts · payroll total', 'amount', snapshot.partnerPayouts.totalPayroll, live.partnerPayouts.totalPayroll)
-  push('partnerPayouts', 'Payouts · origination total', 'amount', snapshot.partnerPayouts.totalOrigination, live.partnerPayouts.totalOrigination)
-  push('partnerPayouts', 'Payouts · closer total', 'amount', snapshot.partnerPayouts.totalCloser, live.partnerPayouts.totalCloser)
-  push('partnerPayouts', 'Payouts · grand total', 'amount', snapshot.partnerPayouts.totalAmount, live.partnerPayouts.totalAmount)
+  push(
+    'partnerPayouts',
+    'Payouts · payroll total',
+    'amount',
+    snapshot.partnerPayouts.totalPayroll,
+    live.partnerPayouts.totalPayroll
+  )
+  push(
+    'partnerPayouts',
+    'Payouts · origination total',
+    'amount',
+    snapshot.partnerPayouts.totalOrigination,
+    live.partnerPayouts.totalOrigination
+  )
+  push(
+    'partnerPayouts',
+    'Payouts · closer total',
+    'amount',
+    snapshot.partnerPayouts.totalCloser,
+    live.partnerPayouts.totalCloser
+  )
+  push(
+    'partnerPayouts',
+    'Payouts · grand total',
+    'amount',
+    snapshot.partnerPayouts.totalAmount,
+    live.partnerPayouts.totalAmount
+  )
 
   return [...rowDeltas, ...totalDeltas]
 }

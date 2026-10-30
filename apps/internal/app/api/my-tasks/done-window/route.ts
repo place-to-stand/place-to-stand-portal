@@ -24,7 +24,7 @@ const payloadSchema = z.object({
   /** An admin id, `'all'` for every assignee, or absent for self. */
   assigneeId: z.union([z.string().uuid(), z.literal('all')]).optional(),
   /** Restrict the widened window to one client's projects. */
-  clientId: z.string().uuid().nullable().optional(),
+  companyId: z.string().uuid().nullable().optional(),
   /** Project types the board is hiding, so the wider window matches it. */
   hiddenProjectTypes: z.array(z.enum(HIDEABLE_PROJECT_TYPE_VALUES)).optional(),
   /** Window width already on screen, in weeks. */
@@ -61,7 +61,10 @@ export async function POST(request: Request) {
 
   if (payload.toWeeks <= payload.fromWeeks) {
     return NextResponse.json(
-      { ok: false, error: 'The new window must be wider than the current one.' },
+      {
+        ok: false,
+        error: 'The new window must be wider than the current one.',
+      },
       { status: 400 }
     )
   }
@@ -80,7 +83,7 @@ export async function POST(request: Request) {
   try {
     const slice = await listAssignedDoneSlice({
       userId: boardOwnerId,
-      clientId: payload.clientId ?? null,
+      companyId: payload.companyId ?? null,
       hiddenProjectTypes: payload.hiddenProjectTypes ?? [],
       projectIds: workableProjectIds,
       since: resolveDoneWindowStart(payload.toWeeks, payload.now),

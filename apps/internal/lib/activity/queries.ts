@@ -124,7 +124,7 @@ async function canReadActivityFor(
 ): Promise<boolean> {
   if (canReadActivity(user.role, filters)) return true
   if (user.role !== 'SALES') return false
-  if (filters.projectId || filters.clientId || !filters.targetId) return false
+  if (filters.projectId || filters.companyId || !filters.targetId) return false
 
   const types =
     typeof filters.targetType === 'string'
@@ -196,7 +196,9 @@ export async function fetchActivityLogs(
   )
   const lastRow = limitedRows[limitedRows.length - 1]
   const nextCursor =
-    hasMore && lastRow ? encodeCursor(lastRow.log.createdAt, lastRow.log.id) : null
+    hasMore && lastRow
+      ? encodeCursor(lastRow.log.createdAt, lastRow.log.id)
+      : null
 
   return {
     logs,
@@ -247,7 +249,9 @@ export async function fetchActivityLogsSince(
     gte(activityLogs.createdAt, since),
     until ? lte(activityLogs.createdAt, until) : undefined,
     ...buildAttributionConditions({ source, actorId }),
-    targetTypes.length ? inArray(activityLogs.targetType, targetTypes) : undefined,
+    targetTypes.length
+      ? inArray(activityLogs.targetType, targetTypes)
+      : undefined,
   ])
 
   const baseQuery = db
@@ -283,8 +287,8 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
     conditions.push(eq(activityLogs.targetProjectId, filters.projectId))
   }
 
-  if (filters.clientId) {
-    conditions.push(eq(activityLogs.targetCompanyId, filters.clientId))
+  if (filters.companyId) {
+    conditions.push(eq(activityLogs.targetCompanyId, filters.companyId))
   }
 
   conditions.push(...buildAttributionConditions(filters))
@@ -338,7 +342,7 @@ function buildAttributionConditions({
   ]
 }
 
-const CURSOR_SEPARATOR = "|"
+const CURSOR_SEPARATOR = '|'
 
 function encodeCursor(createdAt: string, id: string): string {
   return `${createdAt}${CURSOR_SEPARATOR}${id}`
@@ -357,8 +361,8 @@ function decodeCursor(value: string): { createdAt: string; id: string | null } {
 }
 
 function combineConditions(conditions: Array<SqlExpression | undefined>) {
-  const filtered = conditions.filter(
-    (condition): condition is SqlExpression => Boolean(condition)
+  const filtered = conditions.filter((condition): condition is SqlExpression =>
+    Boolean(condition)
   )
 
   if (!filtered.length) {

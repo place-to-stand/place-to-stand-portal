@@ -56,7 +56,7 @@ export async function createTaskForActor({
   const projectContext = await db
     .select({
       id: projects.id,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
       name: projects.name,
     })
     .from(projects)
@@ -67,7 +67,7 @@ export async function createTaskForActor({
     return { error: 'Selected project is unavailable.' }
   }
 
-  const clientId = projectContext[0].clientId ?? null
+  const companyId = projectContext[0].companyId ?? null
 
   const blockedAssignees = await findAssigneesWithoutAccess(
     projectId,
@@ -163,7 +163,7 @@ export async function createTaskForActor({
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: projectId,
-    targetCompanyId: clientId,
+    targetCompanyId: companyId,
     metadata: event.metadata,
   })
 
@@ -172,7 +172,7 @@ export async function createTaskForActor({
     taskId,
     actorId: actor.id,
     actorRole: actor.role,
-    activity: { taskTitle: title, projectId, clientId, source },
+    activity: { taskTitle: title, projectId, companyId, source },
     changes: attachmentChanges,
   })
 

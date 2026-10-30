@@ -31,11 +31,11 @@ export default async function InvoicesPage({
       ? scope.scopedClients.find(option => option.id === client)
       : undefined
   const invoices = filterClient
-    ? allInvoices.filter(invoice => invoice.clientId === filterClient.id)
+    ? allInvoices.filter(invoice => invoice.companyId === filterClient.id)
     : allInvoices
   const hasSeveralClients = scope.scopedClients.length > 1
 
-  const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
+  const needsClientSelection = isAdmin(user) && scope.companyIds.length === 0
   const internalPortalUrl = getEnv().INTERNAL_PORTAL_URL
 
   return (

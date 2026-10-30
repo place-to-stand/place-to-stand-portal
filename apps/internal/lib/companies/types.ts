@@ -6,7 +6,7 @@ export type CompanyListItem = {
   name: string
   website: string | null
   /** The company's (first live) client, when it has signed. */
-  clientId: string | null
+  companyId: string | null
   clientName: string | null
   /** Was a client (billing stopped), not one now. */
   formerClient: boolean

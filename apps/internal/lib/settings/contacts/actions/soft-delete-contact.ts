@@ -61,7 +61,7 @@ export async function softDeleteContactMutation(
         | undefined
       let accessRows: {
         companyId: string
-        clientId: string | null
+        clientCompanyId: string | null
         endedAt: string | null
       }[] = []
 
@@ -83,11 +83,12 @@ export async function softDeleteContactMutation(
         accessRows = await db
           .select({
             companyId: memberships.companyId,
-            clientId: companies.id,
+            clientCompanyId: companies.id,
             endedAt: memberships.endedAt,
           })
           .from(memberships)
-          .leftJoin(companies,
+          .leftJoin(
+            companies,
             and(
               eq(companies.id, memberships.companyId),
               isNull(clientEndedAtSql)
@@ -172,7 +173,10 @@ export async function softDeleteContactMutation(
           disabled: true,
         })
         if (offResult.error) {
-          console.error('Archived contact, but sign-in off failed', offResult.error)
+          console.error(
+            'Archived contact, but sign-in off failed',
+            offResult.error
+          )
           return buildMutationResult({
             error: `Archived, but their sign-in could not be fully switched off: ${offResult.error}. Turn it off on their sign-in.`,
           })
@@ -183,10 +187,10 @@ export async function softDeleteContactMutation(
       const accessChanges: ContactClientLinkChange[] = []
       for (const row of accessRows) {
         // Only a current membership was granting access.
-        if (!row.clientId || row.endedAt) continue
+        if (!row.clientCompanyId || row.endedAt) continue
         accessChanges.push({
           contactId: existingContact.id,
-          clientId: row.clientId,
+          clientCompanyId: row.clientCompanyId,
           action: 'unlinked',
         })
       }

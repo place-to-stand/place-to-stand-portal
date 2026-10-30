@@ -15,7 +15,7 @@ import { companies, invoices } from '@/lib/db/schema'
 export type SendableInvoice = {
   id: string
   status: (typeof invoices.$inferSelect)['status']
-  clientId: string
+  companyId: string
   clientName: string | null
   invoiceNumber: string | null
   total: string
@@ -32,7 +32,7 @@ export async function fetchSendableInvoice(
     .select({
       id: invoices.id,
       status: invoices.status,
-      clientId: invoices.companyId,
+      companyId: invoices.companyId,
       clientName: clientNameSql,
       invoiceNumber: invoices.invoiceNumber,
       total: invoices.total,
@@ -41,7 +41,8 @@ export async function fetchSendableInvoice(
       shareEnabled: invoices.shareEnabled,
     })
     .from(invoices)
-    .leftJoin(companies,
+    .leftJoin(
+      companies,
       and(eq(companies.id, invoices.companyId), isNull(clientEndedAtSql))
     )
     .where(and(eq(invoices.id, id), isNull(invoices.deletedAt)))
@@ -129,7 +130,7 @@ export async function markInvoiceSent(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoice.id,
-    targetCompanyId: invoice.clientId,
+    targetCompanyId: invoice.companyId,
     metadata: event.metadata,
   })
 

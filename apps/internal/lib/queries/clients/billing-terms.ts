@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, desc, eq, gt, isNull, lte, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies, billingTerms, } from '@/lib/db/schema'
+import { companies, billingTerms } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -37,13 +37,13 @@ export function nextMonthStartUtc(): string {
 export async function insertInitialBillingTerm(
   tx: DbOrTransaction,
   params: {
-    clientId: string
+    companyId: string
     billingType: ClientBillingTypeValue
     createdBy: string | null
   }
 ): Promise<void> {
   await tx.insert(billingTerms).values({
-    companyId: params.clientId,
+    companyId: params.companyId,
     billingType: params.billingType,
     effectiveFrom: currentMonthStartUtc(),
     createdBy: params.createdBy,
@@ -59,7 +59,7 @@ export async function insertInitialBillingTerm(
 export async function upsertBillingTerm(
   tx: DbOrTransaction,
   params: {
-    clientId: string
+    companyId: string
     billingType: ClientBillingTypeValue
     effectiveFrom: string
     createdBy: string | null
@@ -68,7 +68,7 @@ export async function upsertBillingTerm(
   await tx
     .insert(billingTerms)
     .values({
-      companyId: params.clientId,
+      companyId: params.companyId,
       billingType: params.billingType,
       effectiveFrom: params.effectiveFrom,
       createdBy: params.createdBy,
@@ -107,7 +107,7 @@ export function billingTypeAsOfSql(periodStart: string) {
  * Resolves a client's billing type as of a given month start ('yyyy-MM-dd').
  */
 async function resolveBillingTypeAsOf(
-  clientId: string,
+  companyId: string,
   periodStart: string,
   tx: DbOrTransaction = db
 ): Promise<ClientBillingTypeValue | null> {
@@ -116,7 +116,7 @@ async function resolveBillingTypeAsOf(
     .from(billingTerms)
     .where(
       and(
-        eq(billingTerms.companyId, clientId),
+        eq(billingTerms.companyId, companyId),
         lte(billingTerms.effectiveFrom, periodStart),
         isNull(billingTerms.deletedAt)
       )
@@ -134,11 +134,11 @@ async function resolveBillingTypeAsOf(
  * first month it can actually be billed instead of being orphaned.
  */
 export async function resolveHourBlockBillingMonth(
-  clientId: string,
+  companyId: string,
   tx: DbOrTransaction = db
 ): Promise<string> {
   const monthStart = currentMonthStartUtc()
-  const current = await resolveBillingTypeAsOf(clientId, monthStart, tx)
+  const current = await resolveBillingTypeAsOf(companyId, monthStart, tx)
 
   if (current === 'prepaid') {
     return monthStart
@@ -149,7 +149,7 @@ export async function resolveHourBlockBillingMonth(
     .from(billingTerms)
     .where(
       and(
-        eq(billingTerms.companyId, clientId),
+        eq(billingTerms.companyId, companyId),
         eq(billingTerms.billingType, 'prepaid'),
         gt(billingTerms.effectiveFrom, monthStart),
         isNull(billingTerms.deletedAt)
@@ -165,7 +165,7 @@ export async function resolveHourBlockBillingMonth(
   // Defensive: an hour block for a client with no prepaid term anywhere.
   // Attribute to the current month rather than failing the write.
   console.error(
-    `[resolveHourBlockBillingMonth] Client ${clientId} has no prepaid billing term; attributing block to ${monthStart}`
+    `[resolveHourBlockBillingMonth] Client ${companyId} has no prepaid billing term; attributing block to ${monthStart}`
   )
   return monthStart
 }

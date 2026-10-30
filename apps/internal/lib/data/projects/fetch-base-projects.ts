@@ -10,7 +10,7 @@ import type { DbProject } from '@/lib/types'
 export type BaseProjectFetchResult = {
   projects: DbProject[]
   projectIds: string[]
-  clientIds: string[]
+  companyIds: string[]
   ownerIds: string[]
   projectClientLookup: Map<string, string | null>
 }
@@ -29,7 +29,7 @@ export type FetchBaseProjectsOptions = {
 const EMPTY_RESULT: BaseProjectFetchResult = {
   projects: [],
   projectIds: [],
-  clientIds: [],
+  companyIds: [],
   ownerIds: [],
   projectClientLookup: new Map(),
 }
@@ -73,7 +73,7 @@ export async function fetchBaseProjects(
       name: projects.name,
       status: projects.status,
       type: projects.type,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
       slug: projects.slug,
       startsOn: projects.startsOn,
       endsOn: projects.endsOn,
@@ -86,9 +86,10 @@ export async function fetchBaseProjects(
     .from(projects)
 
   // Join clients only when searching — the client name is a search target.
-  const rows = await (trimmedSearch
-    ? baseQuery.leftJoin(companies, eq(projects.companyId, companies.id))
-    : baseQuery
+  const rows = await (
+    trimmedSearch
+      ? baseQuery.leftJoin(companies, eq(projects.companyId, companies.id))
+      : baseQuery
   )
     .where(and(...conditions))
     .orderBy(asc(projects.name))
@@ -98,7 +99,7 @@ export async function fetchBaseProjects(
     name: row.name,
     status: row.status,
     type: row.type,
-    company_id: row.clientId,
+    company_id: row.companyId,
     slug: row.slug,
     starts_on: row.startsOn,
     ends_on: row.endsOn,
@@ -110,11 +111,11 @@ export async function fetchBaseProjects(
   }))
 
   const projectIds = normalizedProjects.map(project => project.id)
-  const clientIds = Array.from(
+  const companyIds = Array.from(
     new Set(
       normalizedProjects
         .map(project => project.company_id)
-        .filter((clientId): clientId is string => Boolean(clientId))
+        .filter((companyId): companyId is string => Boolean(companyId))
     )
   )
   const ownerIds = Array.from(
@@ -133,7 +134,7 @@ export async function fetchBaseProjects(
   return {
     projects: normalizedProjects,
     projectIds,
-    clientIds,
+    companyIds,
     ownerIds,
     projectClientLookup,
   }

@@ -15,7 +15,7 @@ export default async function HoursPage() {
     resolvePortalScope(user),
   ])
 
-  const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
+  const needsClientSelection = isAdmin(user) && scope.companyIds.length === 0
 
   return (
     <div className='space-y-6'>
@@ -40,7 +40,7 @@ export default async function HoursPage() {
         <div className='grid gap-3'>
           {summaries.map(summary => (
             <HoursSummaryCard
-              key={summary.clientId}
+              key={summary.companyId}
               summary={summary}
               showClientName={summaries.length > 1}
             />

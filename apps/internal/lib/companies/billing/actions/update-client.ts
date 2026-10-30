@@ -10,7 +10,7 @@ import { clientUpdatedEvent } from '@/lib/activity/events'
 import type { AppUser, UserRole } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { companies, } from '@/lib/db/schema'
+import { companies } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import {
@@ -254,7 +254,7 @@ export async function applyClientUpdateInTx(
       throw new ClosedMonthError(plan.billingEffectiveFrom)
     }
     await upsertBillingTerm(tx, {
-      clientId: id,
+      companyId: id,
       billingType: plan.billingType,
       effectiveFrom: plan.billingEffectiveFrom,
       createdBy: actorId,
@@ -266,7 +266,7 @@ export async function applyClientUpdateInTx(
       throw new ClosedMonthError(plan.commissionEffectiveFrom)
     }
     await upsertCommissionTerm(tx, {
-      clientId: id,
+      companyId: id,
       effectiveFrom: plan.commissionEffectiveFrom,
       ...plan.commission,
       createdBy: actorId,

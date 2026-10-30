@@ -29,7 +29,9 @@ export async function fetchLeadConversionSummary(
 
   const [lead] = await db
     .select({
-      convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
+      convertedToClientId: sql<
+        string | null
+      >`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
       contactId: leads.contactId,
     })
     .from(leads)
@@ -40,8 +42,8 @@ export async function fetchLeadConversionSummary(
     throw new NotFoundError('Lead not found')
   }
 
-  const clientId = lead.convertedToClientId
-  if (!clientId) return null
+  const companyId = lead.convertedToClientId
+  if (!companyId) return null
 
   const [clientRows, contactRows, projectRows] = await Promise.all([
     db
@@ -53,7 +55,7 @@ export async function fetchLeadConversionSummary(
         deletedAt: clientEndedAtSql,
       })
       .from(companies)
-      .where(and(wasClientCompany(), eq(companies.id, clientId)))
+      .where(and(wasClientCompany(), eq(companies.id, companyId)))
       .limit(1),
     db
       .select({
@@ -72,7 +74,7 @@ export async function fetchLeadConversionSummary(
         status: projects.status,
       })
       .from(projects)
-      .where(and(eq(projects.companyId, clientId), isNull(projects.deletedAt)))
+      .where(and(eq(projects.companyId, companyId), isNull(projects.deletedAt)))
       .orderBy(asc(projects.name)),
   ])
 

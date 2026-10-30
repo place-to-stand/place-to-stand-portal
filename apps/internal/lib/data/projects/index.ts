@@ -32,7 +32,7 @@ export type ProjectDetail = {
   slug: string | null
   type: 'CLIENT' | 'PERSONAL' | 'INTERNAL'
   status: 'ONBOARDING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED'
-  clientId: string | null
+  companyId: string | null
   startsOn: string | null
   endsOn: string | null
   createdBy: string | null
@@ -66,7 +66,7 @@ export type FetchProjectsWithRelationsOptions = {
 export const fetchProjectsLite = cache(
   async (): Promise<ProjectWithRelations[]> => {
     const baseProjects = await fetchBaseProjects({})
-    const clients = await loadClientRows(baseProjects.clientIds)
+    const clients = await loadClientRows(baseProjects.companyIds)
 
     return assembleProjectsWithRelations({
       projects: baseProjects.projects,
@@ -108,27 +108,27 @@ export async function fetchProjectsForLanding(
 
   const [clients, owners, reposMap, integrationLinksMap, progressRows] =
     await Promise.all([
-    loadClientRows(baseProjects.clientIds),
-    loadOwners(baseProjects.ownerIds),
-    getReposForProjects(baseProjects.projectIds),
-    getIntegrationLinksForProjects(baseProjects.projectIds),
-    baseProjects.projectIds.length
-      ? db
-          .select({
-            projectId: tasks.projectId,
-            total: sql<number>`count(*)`,
-            done: sql<number>`count(*) filter (where ${tasks.status} = 'DONE')`,
-          })
-          .from(tasks)
-          .where(
-            and(
-              inArray(tasks.projectId, baseProjects.projectIds),
-              isNull(tasks.deletedAt)
+      loadClientRows(baseProjects.companyIds),
+      loadOwners(baseProjects.ownerIds),
+      getReposForProjects(baseProjects.projectIds),
+      getIntegrationLinksForProjects(baseProjects.projectIds),
+      baseProjects.projectIds.length
+        ? db
+            .select({
+              projectId: tasks.projectId,
+              total: sql<number>`count(*)`,
+              done: sql<number>`count(*) filter (where ${tasks.status} = 'DONE')`,
+            })
+            .from(tasks)
+            .where(
+              and(
+                inArray(tasks.projectId, baseProjects.projectIds),
+                isNull(tasks.deletedAt)
+              )
             )
-          )
-          .groupBy(tasks.projectId)
-      : Promise.resolve([]),
-  ])
+            .groupBy(tasks.projectId)
+        : Promise.resolve([]),
+    ])
 
   const githubReposByProject = new Map(
     Array.from(reposMap.entries(), ([projectId, repos]) => [
@@ -190,7 +190,7 @@ export async function fetchProjectsWithRelationsByIds(
   const baseProjects = await fetchBaseProjects({ projectIds })
   const relations = await fetchProjectRelations({
     projectIds: baseProjects.projectIds,
-    clientIds: baseProjects.clientIds,
+    companyIds: baseProjects.companyIds,
     ownerIds: baseProjects.ownerIds,
     includeArchivedTasks: options.includeArchivedTasks,
   })
@@ -200,7 +200,7 @@ export async function fetchProjectsWithRelationsByIds(
   // burndown from `timeLogSummaries` would ignore the client's other projects.
   const [timeLogSummaries, clientHours] = await Promise.all([
     getTimeLogSummariesForProjects(baseProjects.projectIds),
-    getClientHoursTotals(db, baseProjects.clientIds),
+    getClientHoursTotals(db, baseProjects.companyIds),
   ])
 
   return assembleProjectsWithRelations({
@@ -278,7 +278,7 @@ const fetchProjectById = cache(
         slug: projects.slug,
         type: projects.type,
         status: projects.status,
-        clientId: projects.companyId,
+        companyId: projects.companyId,
         startsOn: projects.startsOn,
         endsOn: projects.endsOn,
         createdBy: projects.createdBy,

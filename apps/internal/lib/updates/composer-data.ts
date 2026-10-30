@@ -18,7 +18,7 @@ export type ComposerTaskOption = {
  * finished on the client's projects. Sorted so recent work is at the top.
  */
 export async function fetchComposerTaskOptions(
-  clientId: string
+  companyId: string
 ): Promise<ComposerTaskOption[]> {
   return db
     .select({
@@ -31,7 +31,7 @@ export async function fetchComposerTaskOptions(
     .innerJoin(projects, eq(tasks.projectId, projects.id))
     .where(
       and(
-        eq(projects.companyId, clientId),
+        eq(projects.companyId, companyId),
         isNull(projects.deletedAt),
         isNull(tasks.deletedAt),
         ne(projects.status, 'COMPLETED')

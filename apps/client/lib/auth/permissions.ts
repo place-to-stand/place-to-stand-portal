@@ -16,17 +16,17 @@ export function isAdmin(user: AppUser | null | undefined): boolean {
  * In the client portal, users need portal access to it: a current,
  * portal-enabled membership at the client's company (`client_portal_access`).
  */
-export async function ensureClientAccess(user: AppUser, clientId: string) {
+export async function ensureClientAccess(user: AppUser, companyId: string) {
   if (isAdmin(user)) {
     return
   }
 
   const [access] = await db
-    .select({ clientId: clientPortalAccess.companyId })
+    .select({ companyId: clientPortalAccess.companyId })
     .from(clientPortalAccess)
     .where(
       and(
-        eq(clientPortalAccess.companyId, clientId),
+        eq(clientPortalAccess.companyId, companyId),
         eq(clientPortalAccess.userId, user.id)
       )
     )

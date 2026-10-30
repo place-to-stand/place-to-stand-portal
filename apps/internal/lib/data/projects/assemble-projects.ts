@@ -70,8 +70,7 @@ export function assembleProjectsWithRelations({
       timeLogTotalsByProject
     ),
     githubRepos: relations.githubReposByProject.get(project.id) ?? [],
-    integrationLinks:
-      relations.integrationLinksByProject.get(project.id) ?? [],
+    integrationLinks: relations.integrationLinksByProject.get(project.id) ?? [],
   }))
 }
 
@@ -122,9 +121,9 @@ function organizeMembers(
   })
 
   // Then, map client members to all projects under that client
-  projectClientLookup.forEach((clientId, projectId) => {
-    if (clientId) {
-      const clientMembers = membersByClient.get(clientId) ?? []
+  projectClientLookup.forEach((companyId, projectId) => {
+    if (companyId) {
+      const clientMembers = membersByClient.get(companyId) ?? []
       const projectMembers: ProjectMemberWithUser[] = clientMembers.map(
         member => ({
           id: member.id,
@@ -180,9 +179,7 @@ function buildAcceptedTasksLookup(
 
   activeTasksByProject.forEach((tasks, projectId) => {
     const accepted = tasks
-      .filter(
-        task => task.status === 'DONE' && task.accepted_at !== null
-      )
+      .filter(task => task.status === 'DONE' && task.accepted_at !== null)
       .sort((a, b) => {
         const aTime = a.accepted_at ? Date.parse(a.accepted_at) : 0
         const bTime = b.accepted_at ? Date.parse(b.accepted_at) : 0
@@ -205,8 +202,7 @@ function buildProjectBurndown(
   // project of the client counts toward the burndown, not just this one.
   const clientTotals = clientHoursTotalsFor(clientHours, project.company_id)
   const totalProjectLoggedHours = projectLogSummary?.totalHours ?? 0
-  const projectMonthToDateLoggedHours =
-    projectLogSummary?.monthToDateHours ?? 0
+  const projectMonthToDateLoggedHours = projectLogSummary?.monthToDateHours ?? 0
   const lastLogAt = projectLogSummary?.lastLogAt ?? null
 
   return {

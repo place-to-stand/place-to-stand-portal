@@ -15,7 +15,7 @@ import { companies, contacts } from '@/lib/db/schema'
 
 export type ContactClientLinkChange = {
   contactId: string
-  clientId: string
+  clientCompanyId: string
   action: 'linked' | 'unlinked'
 }
 
@@ -32,7 +32,7 @@ export async function logContactClientLinkChanges(
   if (changes.length === 0) return
 
   const contactIds = [...new Set(changes.map(change => change.contactId))]
-  const clientIds = [...new Set(changes.map(change => change.clientId))]
+  const companyIds = [...new Set(changes.map(change => change.clientCompanyId))]
 
   let contactRows: { id: string; name: string | null; email: string | null }[]
   let clientRows: { id: string; name: string }[]
@@ -46,13 +46,13 @@ export async function logContactClientLinkChanges(
       db
         .select({ id: companies.id, name: clientNameSql })
         .from(companies)
-        .where(and(wasClientCompany(), inArray(companies.id, clientIds))),
+        .where(and(wasClientCompany(), inArray(companies.id, companyIds))),
     ])
   } catch (error) {
     // The links already landed; like `logActivity`, never fail the caller.
     console.error('Failed to resolve names for contact link activity', {
       contactIds,
-      clientIds,
+      companyIds,
       error,
     })
     return
@@ -63,7 +63,7 @@ export async function logContactClientLinkChanges(
 
   for (const change of changes) {
     const contact = contactsById.get(change.contactId)
-    const client = clientsById.get(change.clientId)
+    const client = clientsById.get(change.clientCompanyId)
     if (!contact || !client) continue
 
     const args = {
@@ -82,7 +82,7 @@ export async function logContactClientLinkChanges(
       summary: event.summary,
       targetType: 'CONTACT',
       targetId: change.contactId,
-      targetCompanyId: change.clientId,
+      targetCompanyId: change.clientCompanyId,
       metadata: event.metadata,
     })
   }

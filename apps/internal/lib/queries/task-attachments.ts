@@ -22,7 +22,7 @@ type AttachmentSelection = {
   } | null
   project: {
     id: string
-    clientId: string | null
+    companyId: string | null
     deletedAt: string | null
   } | null
 }
@@ -36,7 +36,7 @@ export type TaskAttachmentDownloadMetadata = {
 
 export async function getTaskAttachmentForDownload(
   user: AppUser,
-  attachmentId: string,
+  attachmentId: string
 ): Promise<TaskAttachmentDownloadMetadata> {
   const rows = (await db
     .select({
@@ -52,7 +52,7 @@ export async function getTaskAttachmentForDownload(
       },
       project: {
         id: projects.id,
-        clientId: projects.companyId,
+        companyId: projects.companyId,
         deletedAt: projects.deletedAt,
       },
     })
@@ -87,7 +87,7 @@ export async function getTaskAttachmentForDownload(
 
 export async function listTaskAttachments(
   user: AppUser,
-  taskId: string,
+  taskId: string
 ): Promise<DbTaskAttachment[]> {
   await ensureTaskWorkAccess(user, taskId)
 
@@ -106,10 +106,7 @@ export async function listTaskAttachments(
     })
     .from(taskAttachments)
     .where(
-      and(
-        eq(taskAttachments.taskId, taskId),
-        isNull(taskAttachments.deletedAt),
-      ),
+      and(eq(taskAttachments.taskId, taskId), isNull(taskAttachments.deletedAt))
     )
     .orderBy(asc(taskAttachments.createdAt))) as Array<{
     id: string

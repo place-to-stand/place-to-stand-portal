@@ -12,7 +12,12 @@ import {
 import type { AppUser } from '@/lib/auth/session'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { db } from '@/lib/db'
-import { clientPortalAccess, contacts, userRoleTerms, users } from '@/lib/db/schema'
+import {
+  clientPortalAccess,
+  contacts,
+  userRoleTerms,
+  users,
+} from '@/lib/db/schema'
 import { revokeUserOauthConnections } from '@/lib/oauth/revoke-user-connections'
 import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
 import { setRoleTerm } from '@/lib/queries/users/role-terms'
@@ -93,11 +98,14 @@ export async function runSignInAuth(
 
   // Turning on lifts the auth ban (a sign-in found by email may have one);
   // turning off sets it. Both are undone if the save fails.
-  const wasBlocked = Boolean(plan.current?.disabledAt || plan.current?.deletedAt)
+  const wasBlocked = Boolean(
+    plan.current?.disabledAt || plan.current?.deletedAt
+  )
   if (plan.enable === true && (wasBlocked || plan.create?.source === 'auth')) {
     const error = await setAuthBanned(userId, false)
     if (error) return error
-    if (wasBlocked) undo.push(async () => void (await setAuthBanned(userId, true)))
+    if (wasBlocked)
+      undo.push(async () => void (await setAuthBanned(userId, true)))
   }
   if (plan.enable === false) {
     const error = await setAuthBanned(userId, true)
@@ -197,7 +205,12 @@ export async function finishSignIn(
     const { email, role, temporaryPassword } = plan.create
     try {
       if (temporaryPassword) {
-        await sendSignInInvite({ email, fullName: person.name, role, temporaryPassword })
+        await sendSignInInvite({
+          email,
+          fullName: person.name,
+          role,
+          temporaryPassword,
+        })
       } else if (role === 'CLIENT') {
         await dispatchPortalInvite({ email, fullName: person.name })
       } else {
@@ -215,7 +228,8 @@ export async function finishSignIn(
       await revokeUserOauthConnections(userId)
     } catch (error) {
       console.error('Failed to revoke provider connections', error)
-      warning = 'Sign-in turned off, but their connected accounts couldn’t be disconnected.'
+      warning =
+        'Sign-in turned off, but their connected accounts couldn’t be disconnected.'
     }
   }
 
@@ -229,7 +243,12 @@ async function logSignInChanges(
   person: { contactId: string; name: string }
 ) {
   const userId = plan.userId!
-  const base = { actorId: actor.id, actorRole: actor.role, targetType: 'USER' as const, targetId: userId }
+  const base = {
+    actorId: actor.id,
+    actorRole: actor.role,
+    targetType: 'USER' as const,
+    targetId: userId,
+  }
 
   if (plan.create && plan.create.source !== 'user') {
     const event = userCreatedEvent({
@@ -237,7 +256,12 @@ async function logSignInChanges(
       role: plan.create.role,
       email: plan.create.email,
     })
-    await logActivity({ ...base, verb: event.verb, summary: event.summary, metadata: event.metadata })
+    await logActivity({
+      ...base,
+      verb: event.verb,
+      summary: event.summary,
+      metadata: event.metadata,
+    })
     if (plan.create.role === 'CLIENT') {
       const clients = await db
         .select({ id: clientPortalAccess.companyId })
@@ -246,7 +270,7 @@ async function logSignInChanges(
       const invited = contactInvitedToPortalEvent({
         email: plan.create.email,
         name: person.name,
-        clientIds: clients.map(client => client.id),
+        companyIds: clients.map(client => client.id),
       })
       await logActivity({
         ...base,
@@ -267,7 +291,12 @@ async function logSignInChanges(
       email: plan.current?.email,
       role: plan.roleChange?.role ?? plan.current?.role,
     })
-    await logActivity({ ...base, verb: event.verb, summary: event.summary, metadata: event.metadata })
+    await logActivity({
+      ...base,
+      verb: event.verb,
+      summary: event.summary,
+      metadata: event.metadata,
+    })
   }
 
   const changedFields: string[] = []
@@ -302,5 +331,10 @@ async function logSignInChanges(
     changedFields,
     details: { before, after },
   })
-  await logActivity({ ...base, verb: event.verb, summary: event.summary, metadata: event.metadata })
+  await logActivity({
+    ...base,
+    verb: event.verb,
+    summary: event.summary,
+    metadata: event.metadata,
+  })
 }

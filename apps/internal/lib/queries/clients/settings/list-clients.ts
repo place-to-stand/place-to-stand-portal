@@ -42,7 +42,7 @@ type ClientMetricsResult = SelectClient & {
 function buildBaseConditions(
   status: StatusFilter,
   searchQuery: string,
-  billing: ListClientsForSettingsInput['billing'],
+  billing: ListClientsForSettingsInput['billing']
 ): SQL[] {
   const conditions: SQL[] = [buildStatusCondition(status)]
 
@@ -63,7 +63,7 @@ async function queryClientRows(
   whereClause: SQL | undefined,
   ordering: SQL[],
   limit: number,
-  offset: number,
+  offset: number
 ) {
   return db
     .select({
@@ -119,15 +119,19 @@ async function resolveCount(conditions: SQL[]) {
   const result = await db
     .select({ count: sql<number>`count(*)` })
     .from(companies)
-    .where(and(wasClientCompany(), conditions.length ? and(...conditions) : undefined))
+    .where(
+      and(
+        wasClientCompany(),
+        conditions.length ? and(...conditions) : undefined
+      )
+    )
 
   return Number(result[0]?.count ?? 0)
 }
 
-
 export async function listClientsForSettings(
   user: AppUser,
-  input: ListClientsForSettingsInput = {},
+  input: ListClientsForSettingsInput = {}
 ): Promise<ClientsSettingsResult> {
   assertAdmin(user)
 
@@ -143,7 +147,7 @@ export async function listClientsForSettings(
   const baseConditions = buildBaseConditions(
     normalizedStatus,
     searchQuery,
-    input.billing,
+    input.billing
   )
 
   // Offset paging (page numbers + total, like every other list). The id
@@ -164,10 +168,10 @@ export async function listClientsForSettings(
   )
   const mappedItems = mapClientMetrics(rows, closersByClient)
 
-  const clientIds = mappedItems.map(item => item.id)
+  const companyIds = mappedItems.map(item => item.id)
 
   const [membersByClient, clientUsers] = await Promise.all([
-    buildMembersByClient(clientIds),
+    buildMembersByClient(companyIds),
     listClientUsers(),
   ])
 

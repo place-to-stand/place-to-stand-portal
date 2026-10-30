@@ -47,11 +47,11 @@ export function buildSearchCondition(
  * `linkedClientsCountSql` below.
  */
 export function buildClientCondition(
-  clientId: string | null | undefined,
+  companyId: string | null | undefined,
   /** portal: can see the client in the portal; member: works there. */
   match: 'portal' | 'member' = 'portal'
 ): SQL | null {
-  if (!clientId) {
+  if (!companyId) {
     return null
   }
 
@@ -60,7 +60,7 @@ export function buildClientCondition(
       select 1
       from memberships m
       where m.contact_id = contacts.id
-        and m.company_id = ${clientId}
+        and m.company_id = ${companyId}
         and m.ended_at is null
     )`
   }
@@ -69,7 +69,7 @@ export function buildClientCondition(
     select 1
     from client_portal_access cpa
     where cpa.contact_id = contacts.id
-      and cpa.company_id = ${clientId}
+      and cpa.company_id = ${companyId}
   )`
 }
 

@@ -60,7 +60,6 @@ export async function restoreClient(
   return runClientMutation(input, restoreClientMutation)
 }
 
-
 async function runClientMutation<TInput>(
   input: TInput,
   mutate: (
@@ -83,10 +82,10 @@ async function runClientMutation<TInput>(
  * Fetches all data needed for the company's Billing tab pickers.
  */
 export async function getClientSheetContactData(
-  clientId?: string
+  companyId?: string
 ): Promise<ClientSheetContactData> {
   const user = await requireUser()
-  return getContactData(user, clientId)
+  return getContactData(user, companyId)
 }
 
 /**
@@ -94,11 +93,11 @@ export async function getClientSheetContactData(
  * primary contact is the company's, set on the company sheet.
  */
 export async function syncClientContacts(
-  clientId: string,
+  companyId: string,
   contactIds: string[]
 ): Promise<{ ok: boolean; error?: string }> {
   const user = await requireUser()
-  const result = await syncContacts(user, clientId, contactIds)
+  const result = await syncContacts(user, companyId, contactIds)
 
   if (result.ok) {
     revalidateClientPaths()

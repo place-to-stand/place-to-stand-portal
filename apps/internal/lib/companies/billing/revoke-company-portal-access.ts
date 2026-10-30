@@ -19,7 +19,7 @@ type Executor = typeof db | Tx
 export async function revokeCompanyPortalAccess(
   executor: Executor,
   companyId: string,
-  clientId: string
+  clientCompanyId: string
 ): Promise<ContactClientLinkChange[]> {
   const revoked = await executor
     .update(memberships)
@@ -40,8 +40,7 @@ export async function revokeCompanyPortalAccess(
     .filter(row => !row.endedAt)
     .map(row => ({
       contactId: row.contactId,
-      clientId,
+      clientCompanyId,
       action: 'unlinked' as const,
     }))
 }
-

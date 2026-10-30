@@ -48,7 +48,7 @@ export type ListContactsForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
   /** Only contacts with a live link to this client (validated UUID). */
-  clientId?: string | null
+  companyId?: string | null
   /** Who can sign in; only honoured for admins. */
   signIn?: SignInFilter | null
   cursor?: string | null

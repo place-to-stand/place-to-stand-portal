@@ -32,7 +32,7 @@ export async function POST() {
   const acmeWebsite = await upsertProject({
     slug: 'acme-website',
     name: 'Acme Website',
-    clientId: acme.id,
+    companyId: acme.id,
     createdBy: user.id,
   })
 
@@ -113,7 +113,7 @@ async function upsertClient(input: {
 async function upsertProject(input: {
   slug: string
   name: string
-  clientId: string
+  companyId: string
   createdBy: string
 }) {
   const existing = await db
@@ -127,7 +127,7 @@ async function upsertProject(input: {
     .values({
       slug: input.slug,
       name: input.name,
-      companyId: input.clientId,
+      companyId: input.companyId,
       createdBy: input.createdBy,
     })
     .returning()

@@ -26,12 +26,12 @@ function invoiceLine(summary: ClientInvoiceSummary): string {
  * section, so the card never names the client itself.
  */
 export function AccountCard({
-  clientId,
+  companyId,
   hoursSummary,
   invoiceSummary,
   className,
 }: {
-  clientId: string
+  companyId: string
   /** Absent when the client has no billing terms on record yet. */
   hoursSummary: ClientHoursSummary | undefined
   invoiceSummary: ClientInvoiceSummary
@@ -42,7 +42,7 @@ export function AccountCard({
       {hoursSummary ? <HoursSummaryContent summary={hoursSummary} /> : null}
 
       <NavRow
-        href={`/invoices?client=${clientId}`}
+        href={`/invoices?client=${companyId}`}
         title='Invoices'
         meta={
           <span className='text-muted-foreground truncate text-sm'>

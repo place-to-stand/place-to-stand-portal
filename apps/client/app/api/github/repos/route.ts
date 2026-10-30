@@ -11,27 +11,30 @@ import { isInstallationNotFoundError } from '@pts/github/app-auth'
 import { ensureInstallationVerified } from '@/lib/github/verify-installation'
 
 /**
- * GET /api/github/repos?clientId=xxx
+ * GET /api/github/repos?companyId=xxx
  *
  * Lists repositories accessible to a client's GitHub App installation.
  */
 export async function GET(request: Request) {
   const user = await getCurrentUser()
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    )
   }
 
   const url = new URL(request.url)
-  const clientId = url.searchParams.get('clientId')
+  const companyId = url.searchParams.get('companyId')
 
-  if (!clientId) {
+  if (!companyId) {
     return NextResponse.json(
-      { ok: false, error: 'clientId is required' },
+      { ok: false, error: 'companyId is required' },
       { status: 400 }
     )
   }
 
-  await ensureClientAccess(user, clientId)
+  await ensureClientAccess(user, companyId)
 
   const env = getGitHubAppEnv()
 
@@ -41,7 +44,7 @@ export async function GET(request: Request) {
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.companyId, clientId),
+        eq(githubAppInstallations.companyId, companyId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )

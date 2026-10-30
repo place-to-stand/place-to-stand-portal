@@ -51,7 +51,7 @@ export function serializeContactCompanies(
     ...(viewer.seesPortalAccess
       ? { portalAccess: membership.hasPortalAccess }
       : {}),
-    clientId: membership.clientId,
+    clientId: membership.clientCompanyId,
   }))
 }
 

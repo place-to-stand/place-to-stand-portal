@@ -462,14 +462,14 @@ export function TaskSheet(props: TaskSheetProps) {
                           currentUserName={currentUserName}
                           canComment
                           taskTitle={props.task.title}
-                          clientId={taskPanelClientId}
+                          companyId={taskPanelClientId}
                         />
                       </TabsContent>
                       <TabsContent value='activity' className='mt-2'>
                         <TaskActivityPanel
                           taskId={props.task.id}
                           projectId={taskPanelProjectId}
-                          clientId={taskPanelClientId}
+                          companyId={taskPanelClientId}
                         />
                       </TabsContent>
                     </Tabs>

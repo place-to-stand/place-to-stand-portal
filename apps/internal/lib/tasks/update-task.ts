@@ -61,7 +61,7 @@ export async function updateTaskForActor(
       dueOn: tasks.dueOn,
       completedAt: tasks.completedAt,
       leadId: tasks.leadId,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -75,14 +75,14 @@ export async function updateTaskForActor(
   }
 
   const projectChanged = existingTask.projectId !== projectId
-  let targetCompanyId = existingTask.clientId ?? null
+  let targetCompanyId = existingTask.companyId ?? null
 
   // When moving the task to a different project, authorize access to the
   // destination project (mirrors the create path) and resolve its client.
   if (projectChanged) {
     // A client task's time logs stay on its client project, so moving it
     // elsewhere breaks billing. Only admins may do that.
-    if (actor.role !== 'ADMIN' && existingTask.clientId) {
+    if (actor.role !== 'ADMIN' && existingTask.companyId) {
       return { error: 'Only an admin can move a task off a client project.' }
     }
 
@@ -100,7 +100,7 @@ export async function updateTaskForActor(
     }
 
     const newProjectContext = await db
-      .select({ clientId: projects.companyId })
+      .select({ companyId: projects.companyId })
       .from(projects)
       .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
       .limit(1)
@@ -109,7 +109,7 @@ export async function updateTaskForActor(
       return { error: 'Selected project is unavailable.' }
     }
 
-    targetCompanyId = newProjectContext[0].clientId ?? null
+    targetCompanyId = newProjectContext[0].companyId ?? null
   }
 
   const existingAssignees = await db
@@ -257,7 +257,12 @@ export async function updateTaskForActor(
     taskId,
     actorId: actor.id,
     actorRole: actor.role,
-    activity: { taskTitle: title, projectId, clientId: targetCompanyId, source },
+    activity: {
+      taskTitle: title,
+      projectId,
+      companyId: targetCompanyId,
+      source,
+    },
     changes: attachmentChanges,
   })
 

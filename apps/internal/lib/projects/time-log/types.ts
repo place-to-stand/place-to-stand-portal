@@ -11,7 +11,7 @@ export type ProjectTimeLogDialogParams = {
   projectId: string
   projectName: string
   projectType: ProjectTypeValue
-  clientId: string | null
+  companyId: string | null
   clientName: string | null
   clientBillingType: ClientBillingTypeValue | null
   clientRemainingHours: number | null
@@ -22,11 +22,7 @@ export type ProjectTimeLogDialogParams = {
 }
 
 export type TimeLogFormField =
-  | 'hours'
-  | 'loggedOn'
-  | 'user'
-  | 'note'
-  | 'general'
+  'hours' | 'loggedOn' | 'user' | 'note' | 'general'
 
 export type TimeLogFormErrors = Partial<Record<TimeLogFormField, string>>
 

@@ -6,13 +6,13 @@ import { Separator } from '@pts/ui/separator'
 type TaskActivityPanelProps = {
   taskId: string | null
   projectId: string
-  clientId?: string | null
+  companyId?: string | null
 }
 
 export function TaskActivityPanel({
   taskId,
   projectId,
-  clientId,
+  companyId,
 }: TaskActivityPanelProps) {
   if (!taskId) {
     return (
@@ -32,7 +32,7 @@ export function TaskActivityPanel({
         targetType='TASK'
         targetId={taskId}
         projectId={projectId}
-        clientId={clientId ?? null}
+        companyId={companyId ?? null}
         pageSize={20}
         emptyState='No activity recorded yet.'
       />

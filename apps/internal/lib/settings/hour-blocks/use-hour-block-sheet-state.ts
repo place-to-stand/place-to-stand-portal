@@ -139,7 +139,7 @@ export function useHourBlockSheetState({
           mode: isEditing ? 'edit' : 'create',
           targetId: payload.id ?? null,
           metadata: {
-            clientId: payload.clientId ?? null,
+            companyId: payload.companyId ?? null,
           },
         })
 
@@ -243,7 +243,7 @@ export function useHourBlockSheetState({
         mode: 'delete',
         targetId: hourBlock.id,
         metadata: {
-          clientId: hourBlock.client?.id ?? null,
+          companyId: hourBlock.client?.id ?? null,
         },
       })
 

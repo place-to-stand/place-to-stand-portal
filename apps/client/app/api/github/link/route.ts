@@ -16,7 +16,7 @@ import { isInstallationNotFoundError } from '@pts/github/app-auth'
 
 const linkSchema = z.object({
   projectId: z.string().uuid(),
-  clientId: z.string().uuid(),
+  companyId: z.string().uuid(),
   repoOwner: z.string().min(1),
   repoName: z.string().min(1),
 })
@@ -29,7 +29,10 @@ const linkSchema = z.object({
 export async function GET(request: Request) {
   const user = await getCurrentUser()
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    )
   }
 
   const url = new URL(request.url)
@@ -43,19 +46,19 @@ export async function GET(request: Request) {
   }
 
   const [project] = await db
-    .select({ id: projects.id, clientId: projects.companyId })
+    .select({ id: projects.id, companyId: projects.companyId })
     .from(projects)
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
     .limit(1)
 
-  if (!project || !project.clientId) {
+  if (!project || !project.companyId) {
     return NextResponse.json(
       { ok: false, error: 'Project not found or not accessible' },
       { status: 404 }
     )
   }
 
-  await ensureClientAccess(user, project.clientId)
+  await ensureClientAccess(user, project.companyId)
 
   const links = await db
     .select()
@@ -94,20 +97,18 @@ export async function POST(request: Request) {
     )
   }
 
-  const { projectId, clientId, repoOwner, repoName } = result.data
+  const { projectId, companyId, repoOwner, repoName } = result.data
 
-  await ensureClientAccess(user, clientId)
+  await ensureClientAccess(user, companyId)
 
   // Verify project belongs to this client
   const [project] = await db
-    .select({ id: projects.id, clientId: projects.companyId })
+    .select({ id: projects.id, companyId: projects.companyId })
     .from(projects)
-    .where(
-      and(eq(projects.id, projectId), isNull(projects.deletedAt))
-    )
+    .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
     .limit(1)
 
-  if (!project || project.clientId !== clientId) {
+  if (!project || project.companyId !== companyId) {
     return NextResponse.json(
       { ok: false, error: 'Project not found or not accessible' },
       { status: 404 }
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.companyId, clientId),
+        eq(githubAppInstallations.companyId, companyId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )
@@ -191,9 +192,6 @@ export async function POST(request: Request) {
         ? 'Repository not found or not accessible by the GitHub App'
         : 'Failed to link repository'
 
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: 500 }
-    )
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }

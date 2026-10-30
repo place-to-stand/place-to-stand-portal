@@ -77,7 +77,7 @@ export const useCompanyBilling = () => useContext(BillingContext)
 
 type CompanyBillingProviderProps = {
   /** The company's live client (billed now), if any. */
-  clientId: string | null
+  companyId: string | null
   /** It was billed before and isn't now (billing can restart). */
   wasClient: boolean
   /** The last month billed while a stop is scheduled. */
@@ -90,9 +90,9 @@ type CompanyBillingProviderProps = {
   children: ReactNode
 }
 
-async function fetchClientBilling(clientId: string): Promise<ClientRow> {
+async function fetchClientBilling(companyId: string): Promise<ClientRow> {
   const response = await fetch(
-    `/api/sheets/init?entity=client&id=${encodeURIComponent(clientId)}`
+    `/api/sheets/init?entity=client&id=${encodeURIComponent(companyId)}`
   )
   const result = (await response.json()) as
     | { ok: true; data: { client: ClientRow | null } }
@@ -114,16 +114,16 @@ const defaultEffective = (stopping: boolean): BillingEffectiveValue =>
  * writes it in the same transaction as the company.
  */
 export function CompanyBillingProvider(props: CompanyBillingProviderProps) {
-  const { clientId } = props
+  const { companyId } = props
   const { data: client, isError } = useQuery({
-    queryKey: ['clientBilling', clientId],
-    queryFn: () => fetchClientBilling(clientId!),
-    enabled: Boolean(clientId),
+    queryKey: ['clientBilling', companyId],
+    queryFn: () => fetchClientBilling(companyId!),
+    enabled: Boolean(companyId),
     staleTime: 0,
     refetchOnWindowFocus: false,
   })
 
-  if (clientId && !client) {
+  if (companyId && !client) {
     return (
       <BillingContext.Provider
         value={{

@@ -243,7 +243,7 @@ export function useProjectSheetState({
           mode: isEditing ? 'edit' : 'create',
           targetId: payload.id ?? null,
           metadata: {
-            clientId: payload.clientId,
+            companyId: payload.companyId,
             status: payload.status,
           },
         })
@@ -295,7 +295,7 @@ export function useProjectSheetState({
           form.reset({
             name: payload.name,
             projectType: payload.projectType,
-            clientId: payload.clientId ?? '',
+            companyId: payload.companyId ?? '',
             status: payload.status,
             startsOn: payload.startsOn ?? '',
             endsOn: payload.endsOn ?? '',
@@ -364,7 +364,7 @@ export function useProjectSheetState({
         mode: 'delete',
         targetId: project.id,
         metadata: {
-          clientId: project.company_id ?? null,
+          companyId: project.company_id ?? null,
         },
       })
 

@@ -88,7 +88,6 @@ export async function assertValidProjectMemberIds(
   }
 }
 
-
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /**
@@ -164,7 +163,7 @@ export async function logProjectMembersChanged(args: {
   if (!added.length && !removed.length) return
 
   const [project] = await db
-    .select({ name: projects.name, clientId: projects.companyId })
+    .select({ name: projects.name, companyId: projects.companyId })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)
@@ -183,7 +182,7 @@ export async function logProjectMembersChanged(args: {
     targetType: 'PROJECT',
     targetId: projectId,
     targetProjectId: projectId,
-    targetCompanyId: project?.clientId ?? null,
+    targetCompanyId: project?.companyId ?? null,
     metadata: event.metadata,
   })
 }

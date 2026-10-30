@@ -169,46 +169,46 @@ export const fetchClientsWithMetrics = cache(
       return []
     }
 
-    const clientIds = rows.map(r => r.id)
+    const companyIds = rows.map(r => r.id)
 
     // Fetch every non-deleted project per client (any status). The active
     // list is derived below — the definition of "active" (ACTIVE/ONBOARDING)
     // is unchanged; "total" is any status, deletedAt IS NULL.
     const [clientHours, projectsData, contactsByClient, closersByClient] =
       await Promise.all([
-        getClientHoursTotals(db, clientIds),
+        getClientHoursTotals(db, companyIds),
         db
           .select({
             id: projects.id,
             name: projects.name,
             slug: projects.slug,
             status: projects.status,
-            clientId: projects.companyId,
+            companyId: projects.companyId,
           })
           .from(projects)
           .where(
             and(
-              inArray(projects.companyId, clientIds),
+              inArray(projects.companyId, companyIds),
               isNull(projects.deletedAt)
             )
           )
           .orderBy(asc(projects.name)),
-        fetchContactSummariesByClient(clientIds),
-        fetchLatestClosersByClient(clientIds),
+        fetchContactSummariesByClient(companyIds),
+        fetchLatestClosersByClient(companyIds),
       ])
 
     // Group projects by client ID
     const projectsMap = new Map<string, ClientProjectSummary[]>()
     for (const project of projectsData) {
-      if (!project.clientId) continue
-      const existing = projectsMap.get(project.clientId) ?? []
+      if (!project.companyId) continue
+      const existing = projectsMap.get(project.companyId) ?? []
       existing.push({
         id: project.id,
         name: project.name,
         slug: project.slug,
         status: project.status,
       })
-      projectsMap.set(project.clientId, existing)
+      projectsMap.set(project.companyId, existing)
     }
 
     return rows.map(row => {
@@ -296,7 +296,7 @@ export const fetchClientHoursSummaries = cache(
 )
 
 export const fetchClientById = cache(
-  async (user: AppUser, clientId: string): Promise<ClientDetail> => {
+  async (user: AppUser, companyId: string): Promise<ClientDetail> => {
     assertAdmin(user)
 
     const rows = await db
@@ -317,15 +317,15 @@ export const fetchClientById = cache(
         deletedAt: clientEndedAtSql,
       })
       .from(companies)
-      .where(and(isClientCompany(), eq(companies.id, clientId)))
+      .where(and(isClientCompany(), eq(companies.id, companyId)))
       .limit(1)
 
     if (!rows.length) {
       throw new NotFoundError('Client not found')
     }
 
-    const closersByClient = await fetchLatestClosersByClient([clientId])
-    return { ...rows[0], closers: closersByClient.get(clientId) ?? [] }
+    const closersByClient = await fetchLatestClosersByClient([companyId])
+    return { ...rows[0], closers: closersByClient.get(companyId) ?? [] }
   }
 )
 
@@ -359,7 +359,7 @@ export type ClientProject = {
 }
 
 export const fetchProjectsForClient = cache(
-  async (user: AppUser, clientId: string): Promise<ClientProject[]> => {
+  async (user: AppUser, companyId: string): Promise<ClientProject[]> => {
     assertAdmin(user)
 
     const rows = await db
@@ -373,7 +373,7 @@ export const fetchProjectsForClient = cache(
         endsOn: projects.endsOn,
       })
       .from(projects)
-      .where(and(eq(projects.companyId, clientId), isNull(projects.deletedAt)))
+      .where(and(eq(projects.companyId, companyId), isNull(projects.deletedAt)))
       .orderBy(asc(projects.name))
 
     // Fetch task counts for each project

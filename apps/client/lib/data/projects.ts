@@ -6,7 +6,8 @@ import { cache } from 'react'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies,
+import {
+  companies,
   githubAppInstallations,
   githubRepoLinks,
   projects,
@@ -21,7 +22,7 @@ export type ClientProject = {
   name: string
   status: string
   slug: string | null
-  clientId: string | null
+  companyId: string | null
   clientName: string | null
   /** Queued or underway — the same set the project page lists as current. */
   openTaskCount: number
@@ -37,8 +38,8 @@ export type ClientProject = {
 
 export const fetchClientProjects = cache(
   async (user: AppUser): Promise<ClientProject[]> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return []
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return []
 
     const [projectRows, clientRows] = await Promise.all([
       db
@@ -47,16 +48,19 @@ export const fetchClientProjects = cache(
           name: projects.name,
           status: projects.status,
           slug: projects.slug,
-          clientId: projects.companyId,
+          companyId: projects.companyId,
         })
         .from(projects)
         .where(
-          and(inArray(projects.companyId, clientIds), isNull(projects.deletedAt))
+          and(
+            inArray(projects.companyId, companyIds),
+            isNull(projects.deletedAt)
+          )
         ),
       db
         .select({ id: companies.id, name: clientNameSql })
         .from(companies)
-        .where(and(wasClientCompany(), inArray(companies.id, clientIds))),
+        .where(and(wasClientCompany(), inArray(companies.id, companyIds))),
     ])
 
     const clientNameMap = new Map(clientRows.map(c => [c.id, c.name]))
@@ -68,20 +72,20 @@ export const fetchClientProjects = cache(
     const [taskCounts, linkedRows, installationRows] = await Promise.all([
       projectIds.length
         ? db
-          .select({
-            projectId: tasks.projectId,
-            status: tasks.status,
-            count: sql<number>`count(*)::int`,
-          })
-          .from(tasks)
-          .where(
-            and(
-              inArray(tasks.projectId, projectIds),
-              isNull(tasks.deletedAt),
-              inArray(tasks.status, [...CURRENT_STATUSES, 'DONE'])
+            .select({
+              projectId: tasks.projectId,
+              status: tasks.status,
+              count: sql<number>`count(*)::int`,
+            })
+            .from(tasks)
+            .where(
+              and(
+                inArray(tasks.projectId, projectIds),
+                isNull(tasks.deletedAt),
+                inArray(tasks.status, [...CURRENT_STATUSES, 'DONE'])
+              )
             )
-          )
-          .groupBy(tasks.projectId, tasks.status)
+            .groupBy(tasks.projectId, tasks.status)
         : [],
       projectIds.length
         ? db
@@ -95,11 +99,11 @@ export const fetchClientProjects = cache(
             )
         : [],
       db
-        .selectDistinct({ clientId: githubAppInstallations.companyId })
+        .selectDistinct({ companyId: githubAppInstallations.companyId })
         .from(githubAppInstallations)
         .where(
           and(
-            inArray(githubAppInstallations.companyId, clientIds),
+            inArray(githubAppInstallations.companyId, companyIds),
             eq(githubAppInstallations.status, 'ACTIVE'),
             isNull(githubAppInstallations.deletedAt)
           )
@@ -107,7 +111,7 @@ export const fetchClientProjects = cache(
     ])
 
     const linkedProjectIds = new Set(linkedRows.map(r => r.projectId))
-    const installedClientIds = new Set(installationRows.map(r => r.clientId))
+    const installedClientIds = new Set(installationRows.map(r => r.companyId))
 
     const countsByProject = new Map<string, { open: number; done: number }>()
     for (const row of taskCounts) {
@@ -124,13 +128,15 @@ export const fetchClientProjects = cache(
         name: p.name,
         status: p.status,
         slug: p.slug,
-        clientId: p.clientId,
-        clientName: p.clientId ? (clientNameMap.get(p.clientId) ?? null) : null,
+        companyId: p.companyId,
+        clientName: p.companyId
+          ? (clientNameMap.get(p.companyId) ?? null)
+          : null,
         openTaskCount: counts?.open ?? 0,
         doneTaskCount: counts?.done ?? 0,
         needsGitHubConnection:
           !linkedProjectIds.has(p.id) &&
-          !(p.clientId && installedClientIds.has(p.clientId)),
+          !(p.companyId && installedClientIds.has(p.companyId)),
       }
     })
   }

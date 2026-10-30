@@ -48,7 +48,7 @@ export type PortalContactOption = {
 
 export type PortalScope = {
   /** Clients whose data this request may touch. Empty means show nothing. */
-  clientIds: string[]
+  companyIds: string[]
   /** The same clients, with names, for display in the header. */
   scopedClients: PortalClientOption[]
   /** True when an admin has a valid contact selected. */
@@ -59,7 +59,7 @@ export type PortalScope = {
 }
 
 const EMPTY_ADMIN_SCOPE: PortalScope = {
-  clientIds: [],
+  companyIds: [],
   scopedClients: [],
   isAdminPreview: false,
   viewingAsClientId: null,
@@ -88,7 +88,7 @@ export const resolvePortalScope = cache(
       .orderBy(asc(clientNameSql))
 
     return {
-      clientIds: accessible.map(m => m.id),
+      companyIds: accessible.map(m => m.id),
       scopedClients: accessible,
       isAdminPreview: false,
       viewingAsClientId: null,
@@ -108,30 +108,32 @@ export const fetchPortalContactOptions = cache(
   async (user: AppUser): Promise<PortalContactOption[]> => {
     if (!isAdmin(user)) return []
 
-    return db
-      .select({
-        id: contacts.id,
-        name: contacts.name,
-        email: contacts.email,
-        // mapWith(Boolean): isNotNull is SQL<unknown>, and the postgres driver
-        // hands the flag back as a real boolean.
-        isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
-      })
-      .from(contacts)
-      // Only people who can see the portal: previewing anyone else shows an
-      // empty portal and reads as "nobody picked".
-      .where(
-        and(
-          isNull(contacts.deletedAt),
-          inArray(
-            contacts.id,
-            db
-              .selectDistinct({ id: clientPortalAccess.contactId })
-              .from(clientPortalAccess)
+    return (
+      db
+        .select({
+          id: contacts.id,
+          name: contacts.name,
+          email: contacts.email,
+          // mapWith(Boolean): isNotNull is SQL<unknown>, and the postgres driver
+          // hands the flag back as a real boolean.
+          isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
+        })
+        .from(contacts)
+        // Only people who can see the portal: previewing anyone else shows an
+        // empty portal and reads as "nobody picked".
+        .where(
+          and(
+            isNull(contacts.deletedAt),
+            inArray(
+              contacts.id,
+              db
+                .selectDistinct({ id: clientPortalAccess.contactId })
+                .from(clientPortalAccess)
+            )
           )
         )
-      )
-      .orderBy(asc(contacts.name))
+        .orderBy(asc(contacts.name))
+    )
   }
 )
 
@@ -150,10 +152,11 @@ async function resolveAdminScope(): Promise<PortalScope> {
   // (fail closed); rows with a null client mean a valid contact with nothing
   // linked yet, which is still a valid preview.
   const rows = await db
-    .select({ clientId: companies.id, clientName: clientNameSql })
+    .select({ companyId: companies.id, clientName: clientNameSql })
     .from(contacts)
     .leftJoin(clientPortalAccess, eq(clientPortalAccess.contactId, contacts.id))
-    .leftJoin(companies,
+    .leftJoin(
+      companies,
       and(
         eq(companies.id, clientPortalAccess.companyId),
         isNull(clientEndedAtSql)
@@ -168,13 +171,13 @@ async function resolveAdminScope(): Promise<PortalScope> {
 
   const linkedClients: PortalClientOption[] = []
   for (const row of rows) {
-    if (row.clientId && row.clientName) {
-      linkedClients.push({ id: row.clientId, name: row.clientName })
+    if (row.companyId && row.clientName) {
+      linkedClients.push({ id: row.companyId, name: row.clientName })
     }
   }
 
   return {
-    clientIds: linkedClients.map(c => c.id),
+    companyIds: linkedClients.map(c => c.id),
     scopedClients: linkedClients,
     isAdminPreview: true,
     viewingAsClientId: null,

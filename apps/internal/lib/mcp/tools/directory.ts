@@ -155,7 +155,7 @@ export function registerDirectoryTools(server: McpServer) {
 
       const result = await listContactsForSettings(user, {
         search: search ?? null,
-        clientId,
+        companyId: clientId,
         limit,
       })
 

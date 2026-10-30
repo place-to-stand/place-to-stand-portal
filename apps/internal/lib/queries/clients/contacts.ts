@@ -28,7 +28,7 @@ export type ClientContactRow = {
  * a client's people are. Portal access is separate.
  */
 export async function fetchContactsForClient(
-  clientId: string
+  companyId: string
 ): Promise<ClientContactRow[]> {
   return db
     .select({
@@ -51,10 +51,15 @@ export async function fetchContactsForClient(
     .from(companies)
     .innerJoin(memberships, eq(memberships.companyId, companies.id))
     .innerJoin(contacts, eq(contacts.id, memberships.contactId))
-    .where(and(wasClientCompany(), and(
-        eq(companies.id, clientId),
-        isNull(memberships.endedAt),
-        isNull(contacts.deletedAt)
-      )))
+    .where(
+      and(
+        wasClientCompany(),
+        and(
+          eq(companies.id, companyId),
+          isNull(memberships.endedAt),
+          isNull(contacts.deletedAt)
+        )
+      )
+    )
     .orderBy(desc(memberships.isPrimary), asc(contacts.email))
 }

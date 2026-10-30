@@ -4,7 +4,7 @@ import { HOUR_BLOCK_NOTES_MAX_LENGTH } from '@/lib/settings/hour-blocks/hour-blo
 
 export const hourBlockSchema = z.object({
   id: z.string().uuid().optional(),
-  clientId: z.string().uuid('Select a client'),
+  companyId: z.string().uuid('Select a client'),
   hoursPurchased: z
     .number()
     .int('Hours purchased must be a whole number.')

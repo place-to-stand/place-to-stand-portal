@@ -220,7 +220,7 @@ export function MyTasksPage({
           // to every assignee. The client scope rides along so the wider
           // window matches what the board is showing.
           assigneeId: selectedAssigneeId,
-          clientId: selectedClientId === 'all' ? null : selectedClientId,
+          companyId: selectedClientId === 'all' ? null : selectedClientId,
           hiddenProjectTypes,
           fromWeeks: doneWeeks,
           toWeeks,
@@ -473,7 +473,7 @@ export function MyTasksPage({
     <>
       <ClientSelector
         clients={clients}
-        selectedClientId={boardScope.clientId}
+        selectedClientId={boardScope.companyId}
         hiddenProjectTypes={boardScope.hiddenProjectTypes}
         onScopeChange={applyBoardScope}
       />
@@ -488,7 +488,7 @@ export function MyTasksPage({
     </>
   )
   const scopeCount =
-    (boardScope.clientId !== 'all' ? 1 : 0) +
+    (boardScope.companyId !== 'all' ? 1 : 0) +
     (boardScope.hiddenProjectTypes.length > 0 ? 1 : 0) +
     (selectedAssigneeId !== user.id ? 1 : 0)
 

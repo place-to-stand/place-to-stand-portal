@@ -1,5 +1,11 @@
 import { billedInMonth } from '@pts/db/client-state'
-import { clientNameSql, personAvatarOf, personAvatarSql, personNameOf, personNameSql } from '@pts/db/names'
+import {
+  clientNameSql,
+  personAvatarOf,
+  personAvatarSql,
+  personNameOf,
+  personNameSql,
+} from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -15,7 +21,8 @@ import {
 } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies,
+import {
+  companies,
   commissionTermClosers,
   contacts,
   hourBlocks,
@@ -72,7 +79,7 @@ export type OriginationQueryRow = {
   /** Populated only for user originators so we can render their avatar. */
   originatorAvatarUrl: string | null
   originatorUpdatedAt: string | null
-  clientId: string
+  companyId: string
   clientName: string
   clientBillingType: 'prepaid' | 'net_30'
   hours: string | null
@@ -88,7 +95,7 @@ export type CloserQueryRow = {
   closerUpdatedAt: string | null
   /** Share of the closer rate this closer takes on this client (0–100]. */
   sharePercent: number
-  clientId: string
+  companyId: string
   clientName: string
   clientBillingType: 'prepaid' | 'net_30'
   /** The client's full billing hours — the data layer applies the share. */
@@ -96,13 +103,13 @@ export type CloserQueryRow = {
 }
 
 type PrepaidBillingQueryRow = {
-  clientId: string
+  companyId: string
   clientName: string
   totalHours: string | null
 }
 
 type Net30QueryRow = {
-  clientId: string
+  companyId: string
   clientName: string
   totalHours: string | null
 }
@@ -221,7 +228,7 @@ export async function fetchOriginationCommissions(
           originatorEmail: users.email,
           originatorAvatarUrl: personAvatarSql,
           originatorUpdatedAt: users.updatedAt,
-          clientId: companies.id,
+          companyId: companies.id,
           clientName: clientNameSql,
           hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
         })
@@ -254,13 +261,16 @@ export async function fetchOriginationCommissions(
           originatorId: contacts.id,
           originatorName: contacts.name,
           originatorEmail: contacts.email,
-          clientId: companies.id,
+          companyId: companies.id,
           clientName: clientNameSql,
           hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
         })
         .from(hourBlocks)
         .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
-        .innerJoin(contacts, eq(originationContactIdAsOfSql(startDate), contacts.id))
+        .innerJoin(
+          contacts,
+          eq(originationContactIdAsOfSql(startDate), contacts.id)
+        )
         .where(
           and(
             isPrepaidAsOf(startDate),
@@ -287,7 +297,7 @@ export async function fetchOriginationCommissions(
           originatorEmail: users.email,
           originatorAvatarUrl: personAvatarSql,
           originatorUpdatedAt: users.updatedAt,
-          clientId: companies.id,
+          companyId: companies.id,
           clientName: clientNameSql,
           hours: sql<string | null>`SUM(${timeLogs.hours})`,
         })
@@ -323,14 +333,17 @@ export async function fetchOriginationCommissions(
           originatorId: contacts.id,
           originatorName: contacts.name,
           originatorEmail: contacts.email,
-          clientId: companies.id,
+          companyId: companies.id,
           clientName: clientNameSql,
           hours: sql<string | null>`SUM(${timeLogs.hours})`,
         })
         .from(timeLogs)
         .innerJoin(projects, eq(timeLogs.projectId, projects.id))
         .innerJoin(companies, eq(projects.companyId, companies.id))
-        .innerJoin(contacts, eq(originationContactIdAsOfSql(startDate), contacts.id))
+        .innerJoin(
+          contacts,
+          eq(originationContactIdAsOfSql(startDate), contacts.id)
+        )
         .where(
           and(
             isNet30AsOf(startDate),
@@ -362,7 +375,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: row.originatorAvatarUrl,
       originatorUpdatedAt: row.originatorUpdatedAt,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'prepaid',
       hours: row.hours,
@@ -376,7 +389,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: null,
       originatorUpdatedAt: null,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'prepaid',
       hours: row.hours,
@@ -390,7 +403,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: row.originatorAvatarUrl,
       originatorUpdatedAt: row.originatorUpdatedAt,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'net_30',
       hours: row.hours,
@@ -404,7 +417,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: null,
       originatorUpdatedAt: null,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'net_30',
       hours: row.hours,
@@ -444,7 +457,7 @@ export async function fetchCloserCommissions(
     userUpdatedAt: closerUsers.updatedAt,
     contactName: closerContacts.name,
     contactEmail: closerContacts.email,
-    clientId: companies.id,
+    companyId: companies.id,
     clientName: clientNameSql,
   }
   const closerGroupBy = [
@@ -468,8 +481,14 @@ export async function fetchCloserCommissions(
   // A closer is paid only while their user/contact record is live — same rule
   // the origination joins apply.
   const payableCloser = or(
-    and(isNotNull(closerUsers.id), liveDuring(closerUsers.deletedAt, startDate)),
-    and(isNotNull(closerContacts.id), liveDuring(closerContacts.deletedAt, startDate))
+    and(
+      isNotNull(closerUsers.id),
+      liveDuring(closerUsers.deletedAt, startDate)
+    ),
+    and(
+      isNotNull(closerContacts.id),
+      liveDuring(closerContacts.deletedAt, startDate)
+    )
   )
 
   const [prepaid, net30] = await Promise.all([
@@ -552,7 +571,7 @@ export async function fetchCloserCommissions(
       closerAvatarUrl: isUser ? row.userAvatarUrl : null,
       closerUpdatedAt: isUser ? row.userUpdatedAt : null,
       sharePercent: Number(row.sharePercent),
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType,
       hours: row.hours,
@@ -576,7 +595,7 @@ export async function fetchPrepaidBilling(
 ): Promise<PrepaidBillingQueryRow[]> {
   const rows = await db
     .select({
-      clientId: companies.id,
+      companyId: companies.id,
       clientName: clientNameSql,
       totalHours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
     })
@@ -599,7 +618,7 @@ export async function fetchPrepaidBilling(
 export type SalesTaxQueryRow = {
   invoiceId: string
   invoiceNumber: string | null
-  clientId: string
+  companyId: string
   clientName: string
   paidOn: string
   subtotal: string
@@ -623,7 +642,7 @@ export async function fetchSalesTaxCollected(
     .select({
       invoiceId: invoices.id,
       invoiceNumber: invoices.invoiceNumber,
-      clientId: companies.id,
+      companyId: companies.id,
       clientName: clientNameSql,
       paidOn: sql<string>`${paidOn}::text`,
       subtotal: invoices.subtotal,
@@ -658,7 +677,7 @@ export async function fetchNet30Billing(
 ): Promise<Net30QueryRow[]> {
   const rows = await db
     .select({
-      clientId: companies.id,
+      companyId: companies.id,
       clientName: clientNameSql,
       totalHours: sql<string | null>`SUM(${timeLogs.hours})`,
     })

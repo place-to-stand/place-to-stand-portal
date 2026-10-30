@@ -13,10 +13,12 @@ const lineItemSchema = z.object({
 
 export const invoiceSchema = z.object({
   id: z.string().uuid().optional(),
-  clientId: z.string().uuid('Select a client.'),
+  companyId: z.string().uuid('Select a client.'),
   notes: z.string().optional().nullable(),
   taxRate: z.number().min(0, 'Tax rate cannot be negative.'),
-  lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
+  lineItems: z
+    .array(lineItemSchema)
+    .min(1, 'At least one line item is required.'),
 })
 
 export const deleteSchema = z.object({ id: z.string().uuid() })

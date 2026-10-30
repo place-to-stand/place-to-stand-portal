@@ -14,7 +14,7 @@ export const projectSchema = z
     id: z.string().uuid().optional(),
     name: z.string().min(1, 'Project name is required'),
     projectType: z.enum(PROJECT_TYPE_ENUM_VALUES),
-    clientId: z
+    companyId: z
       .string()
       .uuid('Select a client')
       .or(z.literal(''))
@@ -94,11 +94,11 @@ export const projectSchema = z
       }
     }
     const requiresClient = data.projectType === 'CLIENT'
-    const hasClient = Boolean(data.clientId)
+    const hasClient = Boolean(data.companyId)
 
     if (requiresClient && !hasClient) {
       ctx.addIssue({
-        path: ['clientId'],
+        path: ['companyId'],
         code: z.ZodIssueCode.custom,
         message: 'Select a client for client projects.',
       })
@@ -106,7 +106,7 @@ export const projectSchema = z
 
     if (!requiresClient && hasClient) {
       ctx.addIssue({
-        path: ['clientId'],
+        path: ['companyId'],
         code: z.ZodIssueCode.custom,
         message: 'Personal and internal projects cannot be linked to clients.',
       })
@@ -152,4 +152,3 @@ export async function projectSlugExists(
 export async function generateUniqueProjectSlug(base: string): Promise<string> {
   return generateUniqueProjectSlugDrizzle(base)
 }
-

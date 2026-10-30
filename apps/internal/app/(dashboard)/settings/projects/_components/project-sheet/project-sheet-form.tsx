@@ -235,11 +235,11 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
 
   useEffect(() => {
     if (projectType !== 'CLIENT') {
-      const currentClientId = form.getValues('clientId')
+      const currentClientId = form.getValues('companyId')
       if (currentClientId) {
-        form.setValue('clientId', '', { shouldDirty: true })
+        form.setValue('companyId', '', { shouldDirty: true })
       }
-      form.clearErrors('clientId')
+      form.clearErrors('companyId')
     }
   }, [form, projectType])
 
@@ -291,7 +291,9 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 <FormItem>
                   {/* Create and edit show the same field; a new project
                       takes its slug from the name when this is blank. */}
-                  <FormLabel>{isEditing ? 'Slug' : 'Slug (optional)'}</FormLabel>
+                  <FormLabel>
+                    {isEditing ? 'Slug' : 'Slug (optional)'}
+                  </FormLabel>
                   <FormControl>
                     <DisabledFieldTooltip
                       disabled={fieldState.slug.disabled}
@@ -301,7 +303,9 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                         {...field}
                         value={field.value ?? ''}
                         placeholder={
-                          isEditing ? 'website-redesign' : 'Generated from the name'
+                          isEditing
+                            ? 'website-redesign'
+                            : 'Generated from the name'
                         }
                         disabled={fieldState.slug.disabled}
                       />
@@ -351,7 +355,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
             {isAdmin ? (
               <FormField
                 control={form.control}
-                name='clientId'
+                name='companyId'
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client</FormLabel>

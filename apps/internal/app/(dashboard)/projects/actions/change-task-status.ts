@@ -58,7 +58,7 @@ export async function changeTaskStatus(input: {
       status: tasks.status,
       completedAt: tasks.completedAt,
       projectId: tasks.projectId,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
       deletedAt: tasks.deletedAt,
     })
     .from(tasks)
@@ -103,7 +103,10 @@ export async function changeTaskStatus(input: {
       await pinTaskToTopOfAssigneeBoards(taskId, status)
     } catch (sortError) {
       console.error('Failed to pin task on assignee boards', sortError)
-      return { error: 'Status saved but the task could not be moved to the top of My Tasks.' }
+      return {
+        error:
+          'Status saved but the task could not be moved to the top of My Tasks.',
+      }
     }
 
     const event = taskStatusChangedEvent({
@@ -120,7 +123,7 @@ export async function changeTaskStatus(input: {
       targetType: 'TASK',
       targetId: taskId,
       targetProjectId: task.projectId,
-      targetCompanyId: task.clientId ?? null,
+      targetCompanyId: task.companyId ?? null,
       metadata: event.metadata,
     })
   }

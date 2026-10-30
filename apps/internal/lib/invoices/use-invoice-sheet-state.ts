@@ -246,7 +246,7 @@ export function useInvoiceSheetState({
       }
 
       // Mark the pre-filled client (if any) so auto-fill skips hydration
-      loadedClientIdRef.current = prefillData?.clientId ?? null
+      loadedClientIdRef.current = prefillData?.companyId ?? null
 
       startResetTransition(() => {
         if (prefillData) {
@@ -295,7 +295,7 @@ export function useInvoiceSheetState({
   // Auto-fill: due date + tax rate based on selected client
   // ---------------------------------------------------------------------------
 
-  const watchedClientId = useWatch({ control: form.control, name: 'clientId' })
+  const watchedClientId = useWatch({ control: form.control, name: 'companyId' })
 
   // Build a map of state → tax rate for lookup
   const taxRateMap = useMemo(() => {
@@ -385,7 +385,7 @@ export function useInvoiceSheetState({
           mode: isEditing ? 'edit' : 'create',
           targetId: payload.id ?? null,
           metadata: {
-            clientId: payload.clientId ?? null,
+            companyId: payload.companyId ?? null,
           },
         })
 
@@ -483,7 +483,7 @@ export function useInvoiceSheetState({
         mode: 'delete',
         targetId: invoice.id,
         metadata: {
-          clientId: invoice.company_id ?? null,
+          companyId: invoice.company_id ?? null,
         },
       })
 

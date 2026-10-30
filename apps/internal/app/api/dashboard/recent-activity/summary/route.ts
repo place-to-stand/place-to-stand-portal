@@ -26,7 +26,13 @@ import {
 import { getCurrentUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { companies, activityLogs, leads, projects, tasks } from '@/lib/db/schema'
+import {
+  companies,
+  activityLogs,
+  leads,
+  projects,
+  tasks,
+} from '@/lib/db/schema'
 
 const VALID_TIMEFRAMES = [1, 7, 14, 28] as const
 const ONE_HOUR_MS = 60 * 60 * 1000
@@ -507,7 +513,7 @@ type ActivityContext = {
     {
       id: string
       name: string
-      clientId: string | null
+      companyId: string | null
     }
   >
   clients: Record<
@@ -613,7 +619,7 @@ async function buildActivityContext(
           .select({
             id: projects.id,
             name: projects.name,
-            clientId: projects.companyId,
+            companyId: projects.companyId,
           })
           .from(projects)
           .where(
@@ -630,10 +636,15 @@ async function buildActivityContext(
             name: clientNameSql,
           })
           .from(companies)
-          .where(and(wasClientCompany(), and(
-              inArray(companies.id, allowedClientIds),
-              isNull(clientEndedAtSql)
-            )))
+          .where(
+            and(
+              wasClientCompany(),
+              and(
+                inArray(companies.id, allowedClientIds),
+                isNull(clientEndedAtSql)
+              )
+            )
+          )
       : Promise.resolve([]),
   ])
 
@@ -642,7 +653,7 @@ async function buildActivityContext(
       acc[row.id] = {
         id: row.id,
         name: row.name?.trim() || 'Unnamed Project',
-        clientId: row.clientId,
+        companyId: row.companyId,
       }
       return acc
     },
@@ -681,8 +692,9 @@ function resolveProjectClientLabels(
     : null
 
   const clientFromProject =
-    projectFromContext?.clientId && context.clients[projectFromContext.clientId]
-      ? context.clients[projectFromContext.clientId]
+    projectFromContext?.companyId &&
+    context.clients[projectFromContext.companyId]
+      ? context.clients[projectFromContext.companyId]
       : null
 
   const clientFromContext = log.target_company_id

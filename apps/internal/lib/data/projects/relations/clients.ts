@@ -39,7 +39,7 @@ export type MemberRow = {
   membership: {
     /** The contact behind the login. */
     id: string
-    clientId: string
+    companyId: string
     userId: string
   }
   user: {
@@ -56,9 +56,9 @@ export type MemberRow = {
 }
 
 export async function loadClientRows(
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<ClientRow[]> {
-  if (!clientIds.length) {
+  if (!companyIds.length) {
     return []
   }
 
@@ -80,14 +80,14 @@ export async function loadClientRows(
     })
     .from(companiesTable)
     .where(
-      and(inArray(companiesTable.id, clientIds), isNull(clientEndedAtSql))
+      and(inArray(companiesTable.id, companyIds), isNull(clientEndedAtSql))
     )
 }
 
 export async function loadMemberRows(
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<MemberRow[]> {
-  if (!clientIds.length) {
+  if (!companyIds.length) {
     return []
   }
 
@@ -95,7 +95,7 @@ export async function loadMemberRows(
     .select({
       membership: {
         id: clientPortalAccess.contactId,
-        clientId: clientPortalAccess.companyId,
+        companyId: clientPortalAccess.companyId,
         userId: clientPortalAccess.userId,
       },
       user: {
@@ -114,7 +114,7 @@ export async function loadMemberRows(
     .leftJoin(usersTable, eq(clientPortalAccess.userId, usersTable.id))
     .where(
       and(
-        inArray(clientPortalAccess.companyId, clientIds),
+        inArray(clientPortalAccess.companyId, companyIds),
         isNotNull(clientPortalAccess.userId)
       )
     )
@@ -152,7 +152,7 @@ export function mapClientRows(rows: ClientRow[]): DbClient[] {
 export function mapMemberRows(rows: MemberRow[]): MemberWithUser[] {
   return rows.map(row => ({
     id: row.membership.id,
-    company_id: row.membership.clientId,
+    company_id: row.membership.companyId,
     user_id: row.membership.userId,
     // Access has no date of its own; the login's creation stands in.
     created_at: row.user?.createdAt ?? '',

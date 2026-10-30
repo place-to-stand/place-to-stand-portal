@@ -5,25 +5,24 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { hourBlocks, projects } from '@/lib/db/schema'
 
-export async function countProjectsForClient(clientId: string) {
+export async function countProjectsForClient(companyId: string) {
   const result = await db
     .select({
       count: sql<number>`count(*)`,
     })
     .from(projects)
-    .where(eq(projects.companyId, clientId))
+    .where(eq(projects.companyId, companyId))
 
   return Number(result[0]?.count ?? 0)
 }
 
-export async function countHourBlocksForClient(clientId: string) {
+export async function countHourBlocksForClient(companyId: string) {
   const result = await db
     .select({
       count: sql<number>`count(*)`,
     })
     .from(hourBlocks)
-    .where(eq(hourBlocks.companyId, clientId))
+    .where(eq(hourBlocks.companyId, companyId))
 
   return Number(result[0]?.count ?? 0)
 }
-

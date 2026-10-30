@@ -55,9 +55,7 @@ import type { CompanyActionResult } from '@/lib/companies/types'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import { db } from '@/lib/db'
 import { companies, contacts } from '@/lib/db/schema'
-import {
-  currentMonthStartUtc,
-} from '@/lib/queries/clients/billing-terms'
+import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
 import {
   applyPortalAccessInTx,
   PortalAccessRefusal,
@@ -246,9 +244,7 @@ async function planBilling(
   actor: AppUser,
   plan: CompanyWritePlan,
   intent: ReturnType<typeof saveCompanySheetSchema.parse>['billing']
-): Promise<
-  { plan: BillingPlan; billingOpen: boolean } | { error: string }
-> {
+): Promise<{ plan: BillingPlan; billingOpen: boolean } | { error: string }> {
   const companyId = plan.existing?.id ?? null
   const [current] = companyId
     ? await db
@@ -392,17 +388,14 @@ async function planPortalAccess(
   billingOpenBefore: boolean,
   wantedIds: string[] | undefined
 ): Promise<
-  | { changes: PortalPlan | null; signIns: SignInRequest[] }
-  | { error: string }
+  { changes: PortalPlan | null; signIns: SignInRequest[] } | { error: string }
 > {
   // Stopping billing switches everyone's access off.
   if (wantedIds === undefined || billing.kind === 'stop') {
     return { changes: null, signIns: [] }
   }
   const billedAfter =
-    billing.kind === 'start' ||
-    billing.kind === 'restart' ||
-    billingOpenBefore
+    billing.kind === 'start' || billing.kind === 'restart' || billingOpenBefore
   const wanted = new Set(wantedIds)
   if (!billedAfter && wanted.size) {
     return {
@@ -514,12 +507,12 @@ async function logAfterCommit(
     ...committed.accessChanges,
     ...(portal.changes?.grant ?? []).map(contactId => ({
       contactId,
-      clientId: companyId,
+      clientCompanyId: companyId,
       action: 'linked' as const,
     })),
     ...(portal.changes?.revoke ?? []).map(contactId => ({
       contactId,
-      clientId: companyId,
+      clientCompanyId: companyId,
       action: 'unlinked' as const,
     })),
   ])

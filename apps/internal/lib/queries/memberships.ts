@@ -119,7 +119,7 @@ export type ContactMembership = {
   /** Real access: a row in client_portal_access (switch on, a login, live client). */
   hasPortalAccess: boolean
   /** The company's live client, if it has one. */
-  clientId: string | null
+  clientCompanyId: string | null
   clientName: string | null
   startedAt: string
   /** The company is archived, or its client is (history; hidden in active views). */
@@ -148,8 +148,12 @@ export async function listContactMemberships(
       isPrimary: memberships.isPrimary,
       portalAccess: memberships.portalAccess,
       // A company billed now is a client: its id is the client's.
-      clientId: sql<string | null>`case when ${isClientCompany()} then ${companies.id} end`,
-      clientName: sql<string | null>`case when ${isClientCompany()} then ${companies.name} end`,
+      clientCompanyId: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.id} end`,
+      clientName: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.name} end`,
       startedAt: memberships.startedAt,
       archived: sql<boolean>`not ${activeCompanySql('companies')}`,
       hasPortalAccess: sql<boolean>`exists (
@@ -181,7 +185,7 @@ export async function listContactMemberships(
       title: row.title,
       isPrimary: row.isPrimary,
       portalAccess: row.portalAccess,
-      clientId: row.clientId ?? null,
+      clientCompanyId: row.clientCompanyId ?? null,
       clientName: row.clientName ?? null,
       startedAt: row.startedAt,
       archived: row.archived,

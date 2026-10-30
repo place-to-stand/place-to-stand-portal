@@ -61,9 +61,7 @@ type ContactMetricsResult = SelectContact &
 function buildSignInCondition(signIn: SignInFilter | null | undefined) {
   if (!signIn) return null
   const live = sql`exists (select 1 from users u where u.id = ${contacts.userId} and u.deleted_at is null${
-    signIn === 'any' || signIn === 'none'
-      ? sql``
-      : sql` and u.role = ${signIn}`
+    signIn === 'any' || signIn === 'none' ? sql`` : sql` and u.role = ${signIn}`
   })`
   return signIn === 'none' ? sql`not ${live}` : live
 }
@@ -71,7 +69,7 @@ function buildSignInCondition(signIn: SignInFilter | null | undefined) {
 function buildBaseConditions(
   status: StatusFilter,
   searchQuery: string,
-  clientId: string | null | undefined,
+  clientCompanyId: string | null | undefined,
   signIn?: SignInFilter | null,
   clientMatch: 'portal' | 'member' = 'portal'
 ): SQL[] {
@@ -82,7 +80,7 @@ function buildBaseConditions(
     conditions.push(searchCondition)
   }
 
-  const clientCondition = buildClientCondition(clientId, clientMatch)
+  const clientCondition = buildClientCondition(clientCompanyId, clientMatch)
   if (clientCondition) {
     conditions.push(clientCondition)
   }
@@ -140,7 +138,7 @@ async function fetchClientDetails(
   const rows = await db
     .select({
       contactId: clientPortalAccess.contactId,
-      clientId: companies.id,
+      clientCompanyId: companies.id,
       clientName: clientNameSql,
       clientSlug: companies.slug,
       companyId: companies.id,
@@ -159,9 +157,9 @@ async function fetchClientDetails(
   for (const row of rows) {
     const existing = result.get(row.contactId) ?? []
     existing.push({
-      id: row.clientId,
+      id: row.clientCompanyId,
       name: row.clientName,
-      slug: row.clientSlug ?? row.clientId,
+      slug: row.clientSlug ?? row.clientCompanyId,
       companyId: row.companyId,
     })
     result.set(row.contactId, existing)
@@ -195,7 +193,7 @@ function mapContactMetrics(
     companies: (membershipsMap.get(row.id) ?? []).map(membership => ({
       id: membership.companyId,
       name: membership.companyName,
-      isClient: Boolean(membership.clientId),
+      isClient: Boolean(membership.clientCompanyId),
     })),
     metrics: {
       totalClients: Number(row.totalClients ?? 0),
@@ -274,7 +272,7 @@ export async function listContactsForSettings(
   const baseConditions = buildBaseConditions(
     normalizedStatus,
     searchQuery,
-    input.clientId,
+    input.companyId,
     // Sign-ins are admin-only information.
     seesAccess ? input.signIn : null,
     // Without portal access to go on, a client filter means "at the client".

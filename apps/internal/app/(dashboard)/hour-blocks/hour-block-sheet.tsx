@@ -127,7 +127,7 @@ export function HourBlockSheet({
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                     <FormField
                       control={form.control}
-                      name='clientId'
+                      name='companyId'
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Client</FormLabel>

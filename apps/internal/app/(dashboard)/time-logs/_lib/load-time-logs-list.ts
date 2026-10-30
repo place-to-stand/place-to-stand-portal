@@ -26,7 +26,7 @@ export async function loadTimeLogsList(
       fetchTimeLogPage({
         from: params.from,
         to: params.to,
-        clientId: params.clientId,
+        clientCompanyId: params.companyId,
         projectId: params.projectId,
         userId: params.personId,
         limit: pageSize,
@@ -45,7 +45,7 @@ export async function loadTimeLogsList(
     .map(client => ({ value: client.id, label: client.name }))
   const projectOptions = toProjectOptions(
     projects.filter(
-      project => !params.clientId || project.company_id === params.clientId
+      project => !params.companyId || project.company_id === params.companyId
     )
   )
   const people = admins.map(admin => ({

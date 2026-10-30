@@ -6,10 +6,10 @@ import type { ProjectTypeValue } from '@/lib/types'
 
 import type { TaskLookup } from './my-tasks-board'
 
-/** The client selector's scope: `?clientId=` plus `?hide=`. */
+/** The client selector's scope: `?companyId=` plus `?hide=`. */
 export type MyTasksBoardScope = {
   /** A client id, or `'all'` when unscoped. */
-  clientId: string
+  companyId: string
   /** Project types withheld from the board; empty = show all. */
   hiddenProjectTypes: ProjectTypeValue[]
 }
@@ -33,14 +33,14 @@ function applyScopePatch(
  * is still in flight keeps both changes.
  */
 export function useOptimisticBoardScope(
-  clientId: string,
+  companyId: string,
   hiddenProjectTypes: ProjectTypeValue[]
 ) {
   // Stable between server renders, so "pending" is a reference check: the
   // props only get new identities when a navigation or refresh lands.
   const serverScope = useMemo<MyTasksBoardScope>(
-    () => ({ clientId, hiddenProjectTypes }),
-    [clientId, hiddenProjectTypes]
+    () => ({ companyId, hiddenProjectTypes }),
+    [companyId, hiddenProjectTypes]
   )
   const [scope, applyScope] = useOptimistic(serverScope, applyScopePatch)
 
@@ -58,7 +58,7 @@ export function filterEntriesToScope<T extends { taskId: string }>(
   taskLookup: TaskLookup,
   scope: MyTasksBoardScope
 ): T[] {
-  const isAllClients = scope.clientId === 'all'
+  const isAllClients = scope.companyId === 'all'
 
   if (isAllClients && !scope.hiddenProjectTypes.length) {
     return entries
@@ -72,7 +72,7 @@ export function filterEntriesToScope<T extends { taskId: string }>(
     }
 
     if (!isAllClients) {
-      return project.company_id === scope.clientId
+      return project.company_id === scope.companyId
     }
 
     return !scope.hiddenProjectTypes.includes(project.type)

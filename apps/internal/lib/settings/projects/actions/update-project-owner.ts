@@ -53,7 +53,7 @@ export async function updateProjectOwner(
             id: string
             name: string
             ownerId: string | null
-            clientId: string | null
+            companyId: string | null
           }
         | undefined
 
@@ -63,7 +63,7 @@ export async function updateProjectOwner(
             id: projects.id,
             name: projects.name,
             ownerId: projects.ownerId,
-            clientId: projects.companyId,
+            companyId: projects.companyId,
           })
           .from(projects)
           .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
@@ -139,7 +139,7 @@ export async function updateProjectOwner(
         targetType: 'PROJECT',
         targetId: projectId,
         targetProjectId: projectId,
-        targetCompanyId: existingProject.clientId,
+        targetCompanyId: existingProject.companyId,
         metadata: event.metadata,
       })
 

@@ -1,4 +1,14 @@
-import { and, eq, gte, inArray, isNull, or, sql, type AnyColumn, type SQL } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  or,
+  sql,
+  type AnyColumn,
+  type SQL,
+} from 'drizzle-orm'
 
 import type { DbClient } from './client'
 import { billingTerms, hourBlocks, projects, timeLogs } from './schema'
@@ -32,12 +42,12 @@ const EMPTY_TOTALS: ClientHoursTotals = { purchased: 0, used: 0, remaining: 0 }
  */
 export function clientHoursTotalsFor(
   totals: Map<string, ClientHoursTotals>,
-  clientId: string | null | undefined
+  companyId: string | null | undefined
 ): ClientHoursTotals {
-  if (!clientId) {
+  if (!companyId) {
     return EMPTY_TOTALS
   }
-  return totals.get(clientId) ?? EMPTY_TOTALS
+  return totals.get(companyId) ?? EMPTY_TOTALS
 }
 
 /**
@@ -63,17 +73,17 @@ export function clientHoursTotalsFor(
  */
 async function fetchPrepaidEraStarts(
   db: DbClient,
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, string>> {
   const rows = await db
     .select({
-      clientId: billingTerms.companyId,
+      companyId: billingTerms.companyId,
       eraStart: sql<string>`min(${billingTerms.effectiveFrom})`,
     })
     .from(billingTerms)
     .where(
       and(
-        inArray(billingTerms.companyId, clientIds),
+        inArray(billingTerms.companyId, companyIds),
         eq(billingTerms.billingType, 'prepaid'),
         isNull(billingTerms.deletedAt),
         sql`${billingTerms.effectiveFrom} <= CURRENT_DATE`,
@@ -92,7 +102,7 @@ async function fetchPrepaidEraStarts(
   const eraByClient = new Map<string, string>()
   for (const row of rows) {
     if (row.eraStart) {
-      eraByClient.set(row.clientId, row.eraStart)
+      eraByClient.set(row.companyId, row.eraStart)
     }
   }
   return eraByClient
@@ -111,14 +121,14 @@ async function fetchPrepaidEraStarts(
 function buildEraScopedCondition(
   clientIdColumn: AnyColumn,
   dateColumn: AnyColumn,
-  clientIds: string[],
+  companyIds: string[],
   eraByClient: Map<string, string>
 ): SQL {
   const idsByEra = new Map<string | null, string[]>()
-  for (const clientId of clientIds) {
-    const era = eraByClient.get(clientId) ?? null
+  for (const companyId of companyIds) {
+    const era = eraByClient.get(companyId) ?? null
     const ids = idsByEra.get(era) ?? []
-    ids.push(clientId)
+    ids.push(companyId)
     idsByEra.set(era, ids)
   }
 
@@ -156,19 +166,19 @@ function buildEraScopedCondition(
  */
 export async function getClientHoursTotals(
   db: DbClient,
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, ClientHoursTotals>> {
   const totals = new Map<string, ClientHoursTotals>()
-  if (clientIds.length === 0) {
+  if (companyIds.length === 0) {
     return totals
   }
 
-  const eraByClient = await fetchPrepaidEraStarts(db, clientIds)
+  const eraByClient = await fetchPrepaidEraStarts(db, companyIds)
 
   const [purchasedRows, usedRows] = await Promise.all([
     db
       .select({
-        clientId: hourBlocks.companyId,
+        companyId: hourBlocks.companyId,
         purchased: sql<string>`coalesce(sum(${hourBlocks.hoursPurchased}), 0)`,
       })
       .from(hourBlocks)
@@ -178,7 +188,7 @@ export async function getClientHoursTotals(
           buildEraScopedCondition(
             hourBlocks.companyId,
             hourBlocks.billingMonth,
-            clientIds,
+            companyIds,
             eraByClient
           )
         )
@@ -186,7 +196,7 @@ export async function getClientHoursTotals(
       .groupBy(hourBlocks.companyId),
     db
       .select({
-        clientId: projects.companyId,
+        companyId: projects.companyId,
         used: sql<string>`coalesce(sum(${timeLogs.hours}), 0)`,
       })
       .from(timeLogs)
@@ -196,14 +206,14 @@ export async function getClientHoursTotals(
           isNull(timeLogs.deletedAt),
           isNull(projects.deletedAt),
           // Only client work draws down a prepaid balance. Redundant while
-          // `save-project.ts` nulls `clientId` for non-CLIENT projects, but the
+          // `save-project.ts` nulls `companyId` for non-CLIENT projects, but the
           // schema does not enforce that pairing, and the monthly-close queries
           // all carry the same guard.
           eq(projects.type, 'CLIENT'),
           buildEraScopedCondition(
             projects.companyId,
             timeLogs.loggedOn,
-            clientIds,
+            companyIds,
             eraByClient
           )
         )
@@ -213,20 +223,20 @@ export async function getClientHoursTotals(
 
   const purchasedByClient = new Map<string, number>()
   for (const row of purchasedRows) {
-    if (!row.clientId) continue
-    purchasedByClient.set(row.clientId, toHours(row.purchased))
+    if (!row.companyId) continue
+    purchasedByClient.set(row.companyId, toHours(row.purchased))
   }
 
   const usedByClient = new Map<string, number>()
   for (const row of usedRows) {
-    if (!row.clientId) continue
-    usedByClient.set(row.clientId, toHours(row.used))
+    if (!row.companyId) continue
+    usedByClient.set(row.companyId, toHours(row.used))
   }
 
-  for (const clientId of clientIds) {
-    const purchased = purchasedByClient.get(clientId) ?? 0
-    const used = usedByClient.get(clientId) ?? 0
-    totals.set(clientId, { purchased, used, remaining: purchased - used })
+  for (const companyId of companyIds) {
+    const purchased = purchasedByClient.get(companyId) ?? 0
+    const used = usedByClient.get(companyId) ?? 0
+    totals.set(companyId, { purchased, used, remaining: purchased - used })
   }
 
   return totals

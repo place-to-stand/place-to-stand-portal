@@ -18,7 +18,7 @@ import { resolvePortalScope } from '@/lib/auth/view-as'
 export type ClientHoursSummary =
   | {
       kind: 'prepaid'
-      clientId: string
+      companyId: string
       clientName: string
       purchased: number
       used: number
@@ -26,7 +26,7 @@ export type ClientHoursSummary =
     }
   | {
       kind: 'net_30'
-      clientId: string
+      companyId: string
       clientName: string
     }
 
@@ -43,8 +43,8 @@ export type ClientHoursSummary =
  */
 export const fetchClientHoursSummaries = cache(
   async (user: AppUser): Promise<ClientHoursSummary[]> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return []
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return []
 
     const [clientRows, hoursByClient] = await Promise.all([
       db
@@ -62,8 +62,8 @@ export const fetchClientHoursSummaries = cache(
           ), 'prepaid')`,
         })
         .from(companies)
-        .where(and(isClientCompany(), inArray(companies.id, clientIds))),
-      getClientHoursTotals(db, clientIds),
+        .where(and(isClientCompany(), inArray(companies.id, companyIds))),
+      getClientHoursTotals(db, companyIds),
     ])
 
     return clientRows
@@ -71,7 +71,7 @@ export const fetchClientHoursSummaries = cache(
         if (client.billingType === 'net_30') {
           return {
             kind: 'net_30',
-            clientId: client.id,
+            companyId: client.id,
             clientName: client.name,
           }
         }
@@ -83,7 +83,7 @@ export const fetchClientHoursSummaries = cache(
 
         return {
           kind: 'prepaid',
-          clientId: client.id,
+          companyId: client.id,
           clientName: client.name,
           purchased,
           used,

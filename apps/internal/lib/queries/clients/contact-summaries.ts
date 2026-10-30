@@ -20,16 +20,16 @@ export type ClientContactSummary = {
  * access column. `isPrimary` marks the company's primary contact.
  */
 export async function fetchContactSummariesByClient(
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, ClientContactSummary[]>> {
   const result = new Map<string, ClientContactSummary[]>()
-  if (clientIds.length === 0) {
+  if (companyIds.length === 0) {
     return result
   }
 
   const rows = await db
     .select({
-      clientId: companies.id,
+      companyId: companies.id,
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
@@ -38,14 +38,19 @@ export async function fetchContactSummariesByClient(
     .from(companies)
     .innerJoin(memberships, eq(memberships.companyId, companies.id))
     .innerJoin(contacts, eq(contacts.id, memberships.contactId))
-    .where(and(wasClientCompany(), and(
-        inArray(companies.id, clientIds),
-        isNull(memberships.endedAt),
-        eq(memberships.portalAccess, true),
-        // Access needs a portal login.
-        isNotNull(contacts.userId),
-        isNull(contacts.deletedAt)
-      )))
+    .where(
+      and(
+        wasClientCompany(),
+        and(
+          inArray(companies.id, companyIds),
+          isNull(memberships.endedAt),
+          eq(memberships.portalAccess, true),
+          // Access needs a portal login.
+          isNotNull(contacts.userId),
+          isNull(contacts.deletedAt)
+        )
+      )
+    )
     .orderBy(
       desc(memberships.isPrimary),
       asc(contacts.name),
@@ -53,14 +58,14 @@ export async function fetchContactSummariesByClient(
     )
 
   for (const row of rows) {
-    const existing = result.get(row.clientId) ?? []
+    const existing = result.get(row.companyId) ?? []
     existing.push({
       id: row.id,
       name: row.name,
       email: row.email,
       isPrimary: row.isPrimary,
     })
-    result.set(row.clientId, existing)
+    result.set(row.companyId, existing)
   }
 
   return result

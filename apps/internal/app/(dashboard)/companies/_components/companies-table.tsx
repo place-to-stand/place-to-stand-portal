@@ -171,9 +171,8 @@ export function CompaniesTable({
                     <EmptyValue />
                   )}
                 </TableCell>
-                <TableCell label='Client' className='text-sm md:text-center'
-                >
-                  {company.clientId ? <ClientBadge /> : <EmptyValue />}
+                <TableCell label='Client' className='text-sm md:text-center'>
+                  {company.companyId ? <ClientBadge /> : <EmptyValue />}
                 </TableCell>
                 <TableCell
                   label='People'

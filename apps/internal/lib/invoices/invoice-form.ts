@@ -94,7 +94,7 @@ const invoiceLineItemFormSchema = z.object({
 })
 
 export const invoiceFormSchema = z.object({
-  clientId: z.string().uuid('Select a client'),
+  companyId: z.string().uuid('Select a client'),
   notes: z.string().optional().nullable(),
   taxRate: z.coerce.number().min(0).max(100).default(0),
   lineItems: z
@@ -112,7 +112,7 @@ export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>
 // ---------------------------------------------------------------------------
 
 export const INVOICE_FORM_FIELDS: Array<keyof InvoiceFormValues> = [
-  'clientId',
+  'companyId',
   'notes',
   'taxRate',
   'lineItems',
@@ -132,7 +132,7 @@ export const createEmptyLineItem = (): InvoiceLineItemFormValues => ({
 })
 
 export const createLineItemFromCatalog = (
-  product: ProductCatalogItemRow,
+  product: ProductCatalogItemRow
 ): InvoiceLineItemFormValues => ({
   id: undefined,
   productCatalogItemId: product.id,
@@ -151,7 +151,7 @@ export const buildInvoiceFormDefaults = (
 ): InvoiceFormValues => {
   if (!invoice) {
     return {
-      clientId: '',
+      companyId: '',
       notes: null,
       taxRate: 0,
       lineItems: [createEmptyLineItem()],
@@ -162,7 +162,7 @@ export const buildInvoiceFormDefaults = (
   const taxRatePercent = taxRateDecimal * 100
 
   return {
-    clientId: invoice.company_id,
+    companyId: invoice.company_id,
     notes: invoice.notes ?? null,
     taxRate: taxRatePercent,
     lineItems:
@@ -196,7 +196,7 @@ type InvoiceLineItemSavePayload = {
 
 export type InvoiceSavePayload = {
   id?: string
-  clientId: string
+  companyId: string
   notes: string | null
   taxRate: number
   subtotal: number
@@ -229,7 +229,7 @@ export const createInvoiceSavePayload = (
 
   return {
     id: invoice?.id,
-    clientId: values.clientId,
+    companyId: values.companyId,
     notes:
       values.notes && values.notes.trim().length > 0
         ? values.notes.trim()

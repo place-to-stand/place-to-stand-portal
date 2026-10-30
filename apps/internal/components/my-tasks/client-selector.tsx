@@ -70,7 +70,7 @@ type ClientSelectorProps = {
  * Client + project-type scope for the My Tasks board — the person selector's
  * sibling, for walking one client at a time in weekly planning.
  *
- * State lives in two params next to `?assignee=`: `?clientId=` (NOT
+ * State lives in two params next to `?assignee=`: `?companyId=` (NOT
  * `?client=`, which is an old deep-link param (it opens the company sheet) and would open the
  * edit sheet on every dashboard route) and `?hide=personal,internal`. The
  * "Show" checkboxes only matter under "All clients": PERSONAL and INTERNAL
@@ -127,13 +127,13 @@ export function ClientSelector({
   )
 
   const handleSelectClient = useCallback(
-    (clientId: string) => {
+    (companyId: string) => {
       setOpen(false)
-      changeScope({ clientId }, params => {
-        if (clientId !== ALL_CLIENTS_VALUE) {
-          params.set('clientId', clientId)
+      changeScope({ companyId }, params => {
+        if (companyId !== ALL_CLIENTS_VALUE) {
+          params.set('companyId', companyId)
         } else {
-          params.delete('clientId')
+          params.delete('companyId')
         }
       })
     },

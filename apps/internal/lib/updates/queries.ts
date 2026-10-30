@@ -15,7 +15,7 @@ import {
 } from './types'
 
 type CreateClientUpdateInput = {
-  clientId: string
+  companyId: string
   subject: string
   intro: string
   items: ClientUpdateItem[]
@@ -29,10 +29,10 @@ type CreateClientUpdateInput = {
 export async function createClientUpdate(
   input: CreateClientUpdateInput
 ): Promise<ClientUpdateRow> {
-  const { clientId, ...rest } = input
+  const { companyId, ...rest } = input
   const [row] = await db
     .insert(clientUpdates)
-    .values({ ...rest, companyId: clientId })
+    .values({ ...rest, companyId: companyId })
     .returning()
   return normalizeClientUpdateRow(row)
 }
@@ -49,7 +49,7 @@ export async function fetchClientUpdate(id: string): Promise<ClientUpdateRow> {
 }
 
 type ListClientUpdatesOptions = {
-  clientId?: string
+  companyId?: string
   status?: ClientUpdateStatus
   limit?: number
 }
@@ -58,8 +58,8 @@ export async function listClientUpdates(
   options: ListClientUpdatesOptions = {}
 ): Promise<ClientUpdateRow[]> {
   const conditions = [isNull(clientUpdates.deletedAt)]
-  if (options.clientId)
-    conditions.push(eq(clientUpdates.companyId, options.clientId))
+  if (options.companyId)
+    conditions.push(eq(clientUpdates.companyId, options.companyId))
   if (options.status) conditions.push(eq(clientUpdates.status, options.status))
 
   const rows = await db
@@ -123,14 +123,14 @@ export async function markClientUpdateSent(
 
 /** `period_end` of the most recently sent update for a client, if any. */
 export async function fetchLastSentPeriodEnd(
-  clientId: string
+  companyId: string
 ): Promise<string | null> {
   const [row] = await db
     .select({ periodEnd: clientUpdates.periodEnd })
     .from(clientUpdates)
     .where(
       and(
-        eq(clientUpdates.companyId, clientId),
+        eq(clientUpdates.companyId, companyId),
         eq(clientUpdates.status, 'SENT'),
         isNull(clientUpdates.deletedAt)
       )

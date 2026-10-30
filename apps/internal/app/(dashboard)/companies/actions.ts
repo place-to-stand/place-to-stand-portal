@@ -126,10 +126,10 @@ export type CompanyClientWork = {
 
 /** A client company's work for its Projects and Billing tabs (admins). */
 export async function loadCompanyClientWork(
-  clientId: string
+  companyId: string
 ): Promise<CompanyClientWork | null> {
   const user = await requireUser()
-  if (!UUID_PATTERN.test(clientId)) return null
+  if (!UUID_PATTERN.test(companyId)) return null
 
   const [client] = await db
     .select({ slug: companies.slug, billingType: currentBillingTypeSql() })
@@ -137,7 +137,7 @@ export async function loadCompanyClientWork(
     .where(
       and(
         wasClientCompany(),
-        eq(companies.id, clientId),
+        eq(companies.id, companyId),
         isNull(clientEndedAtSql)
       )
     )
@@ -145,11 +145,11 @@ export async function loadCompanyClientWork(
   if (!client) return null
 
   const [projectRows, updates, totals] = await Promise.all([
-    fetchProjectsForClient(user, clientId),
-    listClientUpdates({ clientId, limit: 5 }),
-    getClientHoursTotals(db, [clientId]),
+    fetchProjectsForClient(user, companyId),
+    listClientUpdates({ companyId, limit: 5 }),
+    getClientHoursTotals(db, [companyId]),
   ])
-  const balance = clientHoursTotalsFor(totals, clientId)
+  const balance = clientHoursTotalsFor(totals, companyId)
 
   return {
     clientSlug: client.slug,
@@ -180,14 +180,14 @@ export type DraftUpdateResult =
  * `pts updates draft` (see `lib/updates`); the caller navigates to it.
  */
 export async function draftUpdateForClient(
-  clientId: string
+  companyId: string
 ): Promise<DraftUpdateResult> {
   const user = await requireUser()
-  if (!UUID_PATTERN.test(clientId)) {
+  if (!UUID_PATTERN.test(companyId)) {
     return { success: false, error: 'Invalid client id' }
   }
   try {
-    const update = await createUpdateDraft(user, { clientRef: clientId })
+    const update = await createUpdateDraft(user, { clientRef: companyId })
     revalidatePath('/companies')
     return { success: true, id: update.id }
   } catch (error) {

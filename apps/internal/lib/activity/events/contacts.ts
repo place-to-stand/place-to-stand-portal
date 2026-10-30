@@ -60,13 +60,13 @@ export const contactInvitedToPortalEvent = (args: {
   email: string | null
   name: string | null
   /** Clients the new portal user was granted access to. */
-  clientIds?: string[]
+  companyIds?: string[]
 }): ActivityEvent => ({
   verb: ActivityVerbs.CONTACT_INVITED_TO_PORTAL,
   summary: `Invited person "${args.name || args.email}" to the client portal`,
   metadata: toMetadata({
     contact: { email: args.email, name: args.name },
-    clientIds: args.clientIds,
+    companyIds: args.companyIds,
   }),
 })
 

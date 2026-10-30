@@ -53,7 +53,7 @@ export async function removeTask(input: {
       id: tasks.id,
       title: tasks.title,
       projectId: tasks.projectId,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -144,7 +144,7 @@ export async function removeTask(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: existingTask.projectId,
-    targetCompanyId: existingTask.clientId ?? null,
+    targetCompanyId: existingTask.companyId ?? null,
     metadata: archiveMetadata,
   })
 

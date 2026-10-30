@@ -6,11 +6,7 @@ import { eq } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
-import { companies,
-  projects,
-  taskAssignees,
-  tasks,
-} from '@/lib/db/schema'
+import { companies, projects, taskAssignees, tasks } from '@/lib/db/schema'
 
 type TaskSummarySelection = {
   task: {
@@ -27,7 +23,7 @@ type TaskSummarySelection = {
     id: string
     name: string | null
     slug: string | null
-    clientId: string | null
+    companyId: string | null
   } | null
   client: {
     id: string
@@ -65,7 +61,7 @@ export type TaskSummaryRow = {
 
 export async function getTaskSummaryForUser(
   user: AppUser,
-  taskId: string,
+  taskId: string
 ): Promise<TaskSummaryRow | null> {
   await ensureTaskWorkAccess(user, taskId)
 
@@ -85,7 +81,7 @@ export async function getTaskSummaryForUser(
         id: projects.id,
         name: projects.name,
         slug: projects.slug,
-        clientId: projects.companyId,
+        companyId: projects.companyId,
       },
       client: {
         id: companies.id,

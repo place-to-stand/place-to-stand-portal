@@ -42,7 +42,7 @@ const contactFormSchema = z.object({
       /** Set on the company sheet; shown read-only here. */
       isPrimary: z.boolean(),
       portalAccess: z.boolean(),
-      clientId: z.string().nullable(),
+      clientCompanyId: z.string().nullable(),
       clientName: z.string().nullable(),
       /** The company or its client is archived: shown muted, kept on save. */
       archived: z.boolean().optional(),
@@ -180,7 +180,7 @@ export function useContactSheetState({
                 title: '',
                 isPrimary: false,
                 portalAccess: false,
-                clientId: null,
+                clientCompanyId: null,
                 clientName: null,
               },
             ]
@@ -207,7 +207,7 @@ export function useContactSheetState({
             title: membership.title ?? '',
             isPrimary: membership.isPrimary,
             portalAccess: membership.portalAccess,
-            clientId: membership.clientId,
+            clientCompanyId: membership.clientCompanyId,
             clientName: membership.clientName,
             archived: membership.archived,
           })),

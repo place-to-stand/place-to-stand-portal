@@ -57,7 +57,7 @@ export async function unacceptTask(input: {
       status: tasks.status,
       acceptedAt: tasks.acceptedAt,
       projectId: tasks.projectId,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -78,10 +78,7 @@ export async function unacceptTask(input: {
     return { error: 'Only tasks marked as Done can be unaccepted.' }
   }
 
-  await db
-    .update(tasks)
-    .set({ acceptedAt: null })
-    .where(eq(tasks.id, taskId))
+  await db.update(tasks).set({ acceptedAt: null }).where(eq(tasks.id, taskId))
 
   const event = taskAcceptanceRevertedEvent({ title: task.title ?? 'Task' })
 
@@ -93,7 +90,7 @@ export async function unacceptTask(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetCompanyId: task.clientId ?? null,
+    targetCompanyId: task.companyId ?? null,
     metadata: event.metadata,
   })
 

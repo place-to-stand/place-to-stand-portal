@@ -71,7 +71,7 @@ export function applyCompanyListParams(
   const filtered = rows.filter(
     row =>
       (!type ||
-        (type === 'client' ? Boolean(row.clientId) : row.formerClient)) &&
+        (type === 'client' ? Boolean(row.companyId) : row.formerClient)) &&
       (!leads || (leads === 'open') === row.openLeadCount > 0)
   )
   const value = (row: CompanyListItem): string | number => {

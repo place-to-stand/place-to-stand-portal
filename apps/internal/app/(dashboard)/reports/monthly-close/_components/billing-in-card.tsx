@@ -23,7 +23,7 @@ function Group({
   hours: number
   amount: number
   rows: Array<{
-    clientId: string
+    companyId: string
     clientName: string
     totalHours: number
     amount: number
@@ -52,7 +52,7 @@ function Group({
       </div>
       {rows.map((row, index) => (
         <div
-          key={row.clientId}
+          key={row.companyId}
           className='flex items-center gap-3 px-5 py-1.5 text-sm'
         >
           <span className='flex min-w-0 flex-1 items-center gap-2'>

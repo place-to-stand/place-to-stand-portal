@@ -11,10 +11,7 @@ import {
   ACTIVITY_TARGET_TYPES,
   type ActivityTargetType,
 } from '@/lib/activity/types'
-import {
-  canReadActivity,
-  SALES_ACTIVITY_TARGET_TYPES,
-} from '@/lib/auth/roles'
+import { canReadActivity, SALES_ACTIVITY_TARGET_TYPES } from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
 import { resolveUserIds } from '@/lib/cli/queries/users'
 import { serializeActivity } from '@/lib/cli/serializers/activity'
@@ -146,7 +143,7 @@ export function registerActivityTools(server: McpServer) {
         !canReadActivity(user.role, {
           targetType,
           projectId: project,
-          clientId: client,
+          companyId: client,
         })
       ) {
         throw new ForbiddenError(
@@ -168,7 +165,7 @@ export function registerActivityTools(server: McpServer) {
         targetType,
         targetId,
         projectId,
-        clientId,
+        companyId: clientId,
         source,
         actorId,
         since: from,
@@ -216,7 +213,10 @@ export function registerActivityTools(server: McpServer) {
           `Maximum entries, 1–${RECENT_MAX}. Default ${RECENT_DEFAULT}.`
         ),
     },
-    run: async ({ since, until, targetType, source, actor, limit }, { user }) => {
+    run: async (
+      { since, until, targetType, source, actor, limit },
+      { user }
+    ) => {
       const from = startOf(since)
       const to = until ? endOf(until) : undefined
 

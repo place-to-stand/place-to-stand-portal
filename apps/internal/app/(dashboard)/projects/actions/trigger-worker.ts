@@ -25,15 +25,28 @@ import {
 import { composeIssueBody } from '@/lib/github/compose-issue-body'
 import { serverEnv } from '@/lib/env.server'
 import { customAlphabet } from 'nanoid'
-import { getRevisionByVersion, getThreadById, updateSessionStatus } from '@/lib/queries/planning'
-import { PLANNING_MODEL_TIERS, type PlanningModelTier } from '@/lib/planning/models'
+import {
+  getRevisionByVersion,
+  getThreadById,
+  updateSessionStatus,
+} from '@/lib/queries/planning'
+import {
+  PLANNING_MODEL_TIERS,
+  type PlanningModelTier,
+} from '@/lib/planning/models'
 
 const generatePlanId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 6)
 
 // Worker accepts the same generic model tiers used across the planning UI.
 const modelSchema = z.enum(PLANNING_MODEL_TIERS)
 type TriggerResult =
-  | { deploymentId: string; issueNumber: number; issueUrl: string; commentUrl: string; workerStatus: 'working' | 'implementing' | 'dispatched' }
+  | {
+      deploymentId: string
+      issueNumber: number
+      issueUrl: string
+      commentUrl: string
+      workerStatus: 'working' | 'implementing' | 'dispatched'
+    }
   | { error: string }
 // ---------------------------------------------------------------------------
 // Cancel Deployment
@@ -96,7 +109,7 @@ export async function cancelDeployment(input: {
       id: tasks.id,
       title: tasks.title,
       projectId: tasks.projectId,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -114,7 +127,10 @@ export async function cancelDeployment(input: {
     repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to resolve GitHub credentials.',
     }
   }
 
@@ -204,7 +220,7 @@ export async function cancelDeployment(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetCompanyId: task.clientId ?? null,
+    targetCompanyId: task.companyId ?? null,
     metadata: event.metadata,
   })
 
@@ -263,7 +279,7 @@ export async function deployPlan(input: {
       title: tasks.title,
       description: tasks.description,
       projectId: tasks.projectId,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -281,7 +297,10 @@ export async function deployPlan(input: {
     repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to resolve GitHub credentials.',
     }
   }
 
@@ -326,7 +345,8 @@ export async function deployPlan(input: {
   const planId = `PLN-${generatePlanId()}`
 
   // Build portal URL for issue body
-  const baseUrl = serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
+  const baseUrl =
+    serverEnv.APP_BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? ''
   const portalUrl = baseUrl ? `${baseUrl}/projects` : ''
 
   // Create GitHub issue
@@ -349,9 +369,10 @@ export async function deployPlan(input: {
   } catch (error) {
     console.error('deployPlan: Failed to create GitHub issue', error)
     return {
-      error: error instanceof Error
-        ? `GitHub API error: ${error.message}`
-        : 'Failed to create GitHub issue.',
+      error:
+        error instanceof Error
+          ? `GitHub API error: ${error.message}`
+          : 'Failed to create GitHub issue.',
     }
   }
 
@@ -405,9 +426,10 @@ export async function deployPlan(input: {
   } catch (error) {
     console.error('deployPlan: Failed to post worker comment', error)
     return {
-      error: error instanceof Error
-        ? `GitHub API error: ${error.message}`
-        : 'Failed to post worker comment.',
+      error:
+        error instanceof Error
+          ? `GitHub API error: ${error.message}`
+          : 'Failed to post worker comment.',
     }
   }
 
@@ -426,8 +448,12 @@ export async function deployPlan(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetCompanyId: task.clientId ?? null,
-    metadata: { ...(event.metadata as Record<string, unknown> ?? {}), planId, prdPath },
+    targetCompanyId: task.companyId ?? null,
+    metadata: {
+      ...((event.metadata as Record<string, unknown>) ?? {}),
+      planId,
+      prdPath,
+    },
   })
 
   // Mark the planning session deployed so it stops showing as still-drafting

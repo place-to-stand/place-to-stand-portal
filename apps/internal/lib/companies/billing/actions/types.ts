@@ -10,7 +10,7 @@ export type ClientMutationResult = ClientActionResult & {
 }
 
 type MutationResultInput = ClientActionResult & {
-  clientId?: string
+  companyId?: string
   slug?: string
 }
 

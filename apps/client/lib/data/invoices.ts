@@ -23,7 +23,7 @@ export type ClientInvoice = {
   id: string
   invoiceNumber: string | null
   status: ClientInvoiceStatusValue
-  clientId: string
+  companyId: string
   clientName: string
   issuedDate: string | null
   total: string
@@ -43,15 +43,15 @@ export type ClientInvoice = {
  */
 export const fetchClientInvoices = cache(
   async (user: AppUser): Promise<ClientInvoice[]> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return []
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return []
 
     const rows = await db
       .select({
         id: invoices.id,
         invoiceNumber: invoices.invoiceNumber,
         status: invoices.status,
-        clientId: invoices.companyId,
+        companyId: invoices.companyId,
         clientName: clientNameSql,
         issuedDate: invoices.issuedDate,
         total: invoices.total,
@@ -63,7 +63,7 @@ export const fetchClientInvoices = cache(
       .innerJoin(companies, eq(companies.id, invoices.companyId))
       .where(
         and(
-          inArray(invoices.companyId, clientIds),
+          inArray(invoices.companyId, companyIds),
           isNull(invoices.deletedAt),
           isNull(clientEndedAtSql),
           ne(invoices.status, 'DRAFT')
@@ -87,7 +87,7 @@ export const fetchClientInvoices = cache(
         id: row.id,
         invoiceNumber: row.invoiceNumber,
         status,
-        clientId: row.clientId,
+        companyId: row.companyId,
         clientName: row.clientName,
         issuedDate: row.issuedDate,
         total: row.total,
@@ -119,26 +119,28 @@ export const EMPTY_INVOICE_SUMMARY: ClientInvoiceSummary = {
  */
 export const fetchClientInvoiceSummaries = cache(
   async (user: AppUser): Promise<Map<string, ClientInvoiceSummary>> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return new Map()
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return new Map()
 
     const rows = await db
       .select({
-        clientId: invoices.companyId,
+        companyId: invoices.companyId,
         unpaidCount: sql<number>`count(*)::int`,
         unpaidTotal: sql<string>`coalesce(sum(${invoices.total}), 0)::text`,
       })
       .from(invoices)
       .where(
         and(
-          inArray(invoices.companyId, clientIds),
+          inArray(invoices.companyId, companyIds),
           isNull(invoices.deletedAt),
           inArray(invoices.status, ['SENT', 'VIEWED'])
         )
       )
       .groupBy(invoices.companyId)
 
-    return new Map(rows.map(({ clientId, ...summary }) => [clientId, summary]))
+    return new Map(
+      rows.map(({ companyId, ...summary }) => [companyId, summary])
+    )
   }
 )
 
@@ -156,8 +158,8 @@ export const fetchClientInvoiceForPdf = cache(
     user: AppUser,
     invoiceId: string
   ): Promise<InvoiceWithLineItems | null> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return null
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return null
 
     const [row] = await db
       .select({
@@ -174,7 +176,7 @@ export const fetchClientInvoiceForPdf = cache(
       .where(
         and(
           eq(invoices.id, invoiceId),
-          inArray(invoices.companyId, clientIds),
+          inArray(invoices.companyId, companyIds),
           isNull(invoices.deletedAt),
           ne(invoices.status, 'DRAFT')
         )

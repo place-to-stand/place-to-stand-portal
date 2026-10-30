@@ -44,7 +44,7 @@ async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
     .select({
       id: invoices.id,
       status: invoices.status,
-      clientId: invoices.companyId,
+      companyId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
     })
     .from(invoices)
@@ -64,7 +64,7 @@ async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
   const clientRows = await db
     .select({ name: clientNameSql })
     .from(companies)
-    .where(and(isClientCompany(), eq(companies.id, existing.clientId)))
+    .where(and(isClientCompany(), eq(companies.id, existing.companyId)))
     .limit(1)
 
   const clientName = clientRows[0]?.name ?? null
@@ -97,7 +97,7 @@ async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoiceId,
-    targetCompanyId: existing.clientId,
+    targetCompanyId: existing.companyId,
     metadata: event.metadata,
   })
 

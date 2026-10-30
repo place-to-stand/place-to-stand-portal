@@ -72,7 +72,7 @@ export function ContactCompaniesSection({
                   title: '',
                   isPrimary: false,
                   portalAccess: false,
-                  clientId: null,
+                  clientCompanyId: null,
                   clientName: null,
                 },
               ])
@@ -106,9 +106,11 @@ export function ContactCompaniesSection({
                 company={{ id: entry.companyId, name: entry.companyName }}
                 className={entry.archived ? 'opacity-60' : undefined}
                 titleAddon={
-                  entry.clientId && !entry.archived && !canManageAccess ? (
+                  entry.clientCompanyId &&
+                  !entry.archived &&
+                  !canManageAccess ? (
                     <ClientBadge />
-                  ) : entry.clientId && !entry.archived ? (
+                  ) : entry.clientCompanyId && !entry.archived ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
@@ -127,7 +129,9 @@ export function ContactCompaniesSection({
                   entry.archived ? (
                     'Archived'
                   ) : entry.isPrimary ||
-                    (canManageAccess && entry.clientId && entry.portalAccess) ? (
+                    (canManageAccess &&
+                      entry.clientCompanyId &&
+                      entry.portalAccess) ? (
                     <span className='inline-flex items-center gap-2'>
                       {entry.isPrimary ? (
                         <span className='inline-flex items-center gap-1'>
@@ -135,7 +139,9 @@ export function ContactCompaniesSection({
                           Primary contact
                         </span>
                       ) : null}
-                      {canManageAccess && entry.clientId && entry.portalAccess ? (
+                      {canManageAccess &&
+                      entry.clientCompanyId &&
+                      entry.portalAccess ? (
                         <span>Portal access</span>
                       ) : null}
                     </span>
@@ -156,7 +162,7 @@ export function ContactCompaniesSection({
                       className='text-muted-foreground hover:text-destructive'
                       disabled={
                         disabled ||
-                        (Boolean(entry.clientId) && !canManageAccess)
+                        (Boolean(entry.clientCompanyId) && !canManageAccess)
                       }
                       onClick={() =>
                         onChange(

@@ -4,7 +4,8 @@ import 'server-only'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies,
+import {
+  companies,
   hourBlocks,
   invoiceLineItems,
   invoices,
@@ -27,7 +28,7 @@ export async function createHourBlocksFromInvoice(
   const [invoice] = await db
     .select({
       id: invoices.id,
-      clientId: invoices.companyId,
+      companyId: invoices.companyId,
       billingType: invoices.billingType,
       invoiceNumber: invoices.invoiceNumber,
       createdBy: invoices.createdBy,
@@ -76,7 +77,7 @@ export async function createHourBlocksFromInvoice(
   // Attribute webhook-created blocks to the first month they can be billed
   // in — clamped forward past a pending prepaid cutover, since no UI warning
   // can reach this path (PRD 002 D13).
-  const billingMonth = await resolveHourBlockBillingMonth(invoice.clientId)
+  const billingMonth = await resolveHourBlockBillingMonth(invoice.companyId)
 
   const inserted: Array<{ id: string; hoursPurchased: number }> = []
 
@@ -89,7 +90,7 @@ export async function createHourBlocksFromInvoice(
     const rows = await db
       .insert(hourBlocks)
       .values({
-        companyId: invoice.clientId,
+        companyId: invoice.companyId,
         hoursPurchased,
         // The invoice is read through the line.
         invoiceLineItemId: item.id,
@@ -125,7 +126,7 @@ export async function createHourBlocksFromInvoice(
     summary: event.summary,
     targetType: 'HOUR_BLOCK',
     targetId: inserted[0]?.id ?? null,
-    targetCompanyId: invoice.clientId,
+    targetCompanyId: invoice.companyId,
     metadata: event.metadata,
   })
 }

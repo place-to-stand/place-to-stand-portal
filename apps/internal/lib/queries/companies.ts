@@ -126,7 +126,7 @@ export async function listCompanies(
       name: companies.name,
       website: companies.website,
       // Billed now: the company is its own client.
-      clientId: sql<
+      companyId: sql<
         string | null
       >`case when ${isClientCompany()} then ${companies.id} end`,
       clientName: sql<
@@ -180,7 +180,7 @@ export async function listCompanies(
     id: row.id,
     name: row.name,
     website: row.website,
-    clientId: row.clientId ?? null,
+    companyId: row.companyId ?? null,
     clientName: row.clientName ?? null,
     formerClient: Boolean(row.formerClient),
     people: row.people ?? [],
@@ -398,8 +398,7 @@ export async function planCompanyWrite(
   }
   const titles = values.contactTitles ?? []
 
-  let existing: (CompanyFields & { id: string; isStaff: boolean }) | null =
-    null
+  let existing: (CompanyFields & { id: string; isStaff: boolean }) | null = null
   if (values.id) {
     const [row] = await db
       .select({
@@ -997,12 +996,12 @@ export async function fillCompanyWebsiteIfBlank(
 
 /** The company a client is: itself (a client is a company you bill). */
 export async function getClientCompanyId(
-  clientId: string
+  companyId: string
 ): Promise<string | null> {
   const [row] = await db
     .select({ id: companies.id })
     .from(companies)
-    .where(and(eq(companies.id, clientId), wasClientCompany()))
+    .where(and(eq(companies.id, companyId), wasClientCompany()))
     .limit(1)
   return row?.id ?? null
 }

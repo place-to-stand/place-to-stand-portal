@@ -13,12 +13,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { HttpError, NotFoundError } from '@/lib/errors/http'
 import { db } from '@/lib/db'
-import {
-  projects,
-  tasks,
-  timeLogTasks,
-  timeLogs,
-} from '@/lib/db/schema'
+import { projects, tasks, timeLogTasks, timeLogs } from '@/lib/db/schema'
 import type { ActivitySourceValue } from '@/lib/types'
 
 type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -34,7 +29,7 @@ type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 async function assertLinkedTasksEligible(
   tx: TransactionClient,
   projectId: string,
-  taskIds: string[],
+  taskIds: string[]
 ): Promise<void> {
   if (!taskIds.length) {
     return
@@ -62,7 +57,7 @@ async function assertLinkedTasksEligible(
     if (!row || row.projectId !== projectId || row.deletedAt !== null) {
       throw new HttpError(
         'One or more linked tasks are no longer available.',
-        400,
+        400
       )
     }
   }
@@ -79,21 +74,21 @@ export type TimeLogMutationOptions = {
 
 type TimeLogProjectContext = {
   name: string | null
-  clientId: string | null
+  companyId: string | null
 }
 
 async function getTimeLogProjectContext(
   projectId: string
 ): Promise<TimeLogProjectContext> {
   const rows = await db
-    .select({ name: projects.name, clientId: projects.companyId })
+    .select({ name: projects.name, companyId: projects.companyId })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)
 
   return {
     name: rows[0]?.name ?? null,
-    clientId: rows[0]?.clientId ?? null,
+    companyId: rows[0]?.companyId ?? null,
   }
 }
 
@@ -138,7 +133,7 @@ export type UpdateTimeLogInput = {
 export async function createTimeLog(
   user: AppUser,
   input: CreateTimeLogInput,
-  options: TimeLogMutationOptions = {},
+  options: TimeLogMutationOptions = {}
 ): Promise<string> {
   const { projectId, userId, hours, loggedOn, note, taskIds } = input
 
@@ -196,7 +191,7 @@ export async function createTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetCompanyId: project.clientId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 
@@ -207,7 +202,7 @@ export async function softDeleteTimeLog(
   user: AppUser,
   projectId: string,
   timeLogId: string,
-  options: TimeLogMutationOptions = {},
+  options: TimeLogMutationOptions = {}
 ): Promise<{ loggedOn: string }> {
   const rows = await db
     .select({
@@ -263,7 +258,7 @@ export async function softDeleteTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetCompanyId: project.clientId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 
@@ -275,7 +270,7 @@ export async function restoreTimeLog(
   user: AppUser,
   projectId: string,
   timeLogId: string,
-  options: TimeLogMutationOptions = {},
+  options: TimeLogMutationOptions = {}
 ): Promise<{ loggedOn: string }> {
   const rows = await db
     .select({
@@ -331,7 +326,7 @@ export async function restoreTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetCompanyId: project.clientId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 
@@ -341,7 +336,7 @@ export async function restoreTimeLog(
 export async function updateTimeLog(
   user: AppUser,
   input: UpdateTimeLogInput,
-  options: TimeLogMutationOptions = {},
+  options: TimeLogMutationOptions = {}
 ): Promise<{ previousLoggedOn: string }> {
   const { projectId, timeLogId, userId, hours, loggedOn, note, taskIds } = input
 
@@ -508,8 +503,7 @@ async function logTimeLogUpdate(args: {
     targetType: 'TIME_LOG',
     targetId: args.timeLogId,
     targetProjectId: args.projectId,
-    targetCompanyId: project.clientId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 }
-

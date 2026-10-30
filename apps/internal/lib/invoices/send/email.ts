@@ -116,7 +116,7 @@ export async function buildInvoiceEmailDraft(
 
   const invoice = await loadEmailableInvoice(invoiceId)
   const [clientContacts, staff] = await Promise.all([
-    fetchContactsForClient(invoice.clientId),
+    fetchContactsForClient(invoice.companyId),
     fetchActiveStaff(),
   ])
   // Only contacts with an email can be sent the invoice.
@@ -242,7 +242,7 @@ export async function emailInvoice(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoice.id,
-    targetCompanyId: invoice.clientId,
+    targetCompanyId: invoice.companyId,
     metadata: event.metadata,
   })
 

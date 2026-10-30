@@ -44,7 +44,7 @@ export function TimeLogsFilters({
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
-    filters: { from: {}, to: {}, clientId: {}, projectId: {}, personId: {} },
+    filters: { from: {}, to: {}, companyId: {}, projectId: {}, personId: {} },
   })
 
   // The server picks "this month" in its own timezone. Near a month's
@@ -59,7 +59,7 @@ export function TimeLogsFilters({
 
   const activeCount =
     (params.isDefaultRange ? 0 : 1) +
-    [params.clientId, params.projectId, params.personId].filter(Boolean).length
+    [params.companyId, params.projectId, params.personId].filter(Boolean).length
 
   return (
     <FilterBar
@@ -93,11 +93,11 @@ export function TimeLogsFilters({
         className='w-52'
         ariaLabel='Client'
         items={clients}
-        value={params.clientId ?? ''}
+        value={params.companyId ?? ''}
         onChange={value =>
-          update({ clientId: value || undefined, projectId: undefined })
+          update({ companyId: value || undefined, projectId: undefined })
         }
-        onClear={() => update({ clientId: undefined, projectId: undefined })}
+        onClear={() => update({ companyId: undefined, projectId: undefined })}
         placeholder='All clients'
         searchPlaceholder='Search clients…'
         emptyMessage='No clients found.'

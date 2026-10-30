@@ -4,7 +4,8 @@ import 'server-only'
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies,
+import {
+  companies,
   commissionTermClosers,
   commissionTerms,
   contacts,
@@ -68,14 +69,14 @@ async function insertTermClosers(
 export async function insertInitialCommissionTerm(
   tx: DbOrTransaction,
   params: CommissionAssignment & {
-    clientId: string
+    companyId: string
     createdBy: string | null
   }
 ): Promise<void> {
   const [term] = await tx
     .insert(commissionTerms)
     .values({
-      companyId: params.clientId,
+      companyId: params.companyId,
       effectiveFrom: currentMonthStartUtc(),
       originationUserId: params.originationUserId,
       originationContactId: params.originationContactId,
@@ -96,7 +97,7 @@ export async function insertInitialCommissionTerm(
 export async function upsertCommissionTerm(
   tx: DbOrTransaction,
   params: CommissionAssignment & {
-    clientId: string
+    companyId: string
     effectiveFrom: string
     createdBy: string | null
   }
@@ -105,17 +106,14 @@ export async function upsertCommissionTerm(
   const [term] = await tx
     .insert(commissionTerms)
     .values({
-      companyId: params.clientId,
+      companyId: params.companyId,
       effectiveFrom: params.effectiveFrom,
       originationUserId: params.originationUserId,
       originationContactId: params.originationContactId,
       createdBy: params.createdBy,
     })
     .onConflictDoUpdate({
-      target: [
-        commissionTerms.companyId,
-        commissionTerms.effectiveFrom,
-      ],
+      target: [commissionTerms.companyId, commissionTerms.effectiveFrom],
       targetWhere: sql`deleted_at IS NULL`,
       set: {
         originationUserId: params.originationUserId,
@@ -146,32 +144,29 @@ export async function upsertCommissionTerm(
  * keeps its history even after someone leaves.
  */
 export async function fetchLatestClosersByClient(
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, ClientCloser[]>> {
   const result = new Map<string, ClientCloser[]>()
-  if (clientIds.length === 0) return result
+  if (companyIds.length === 0) return result
 
   const latestTerms = db
     .selectDistinctOn([commissionTerms.companyId], {
       termId: commissionTerms.id,
-      clientId: commissionTerms.companyId,
+      companyId: commissionTerms.companyId,
     })
     .from(commissionTerms)
     .where(
       and(
-        inArray(commissionTerms.companyId, clientIds),
+        inArray(commissionTerms.companyId, companyIds),
         isNull(commissionTerms.deletedAt)
       )
     )
-    .orderBy(
-      commissionTerms.companyId,
-      desc(commissionTerms.effectiveFrom)
-    )
+    .orderBy(commissionTerms.companyId, desc(commissionTerms.effectiveFrom))
     .as('latest_terms')
 
   const rows = await db
     .select({
-      clientId: latestTerms.clientId,
+      companyId: latestTerms.companyId,
       closerUserId: commissionTermClosers.closerUserId,
       closerContactId: commissionTermClosers.closerContactId,
       sharePercent: commissionTermClosers.sharePercent,
@@ -191,10 +186,7 @@ export async function fetchLatestClosersByClient(
       )
     )
     .leftJoin(users, eq(users.id, commissionTermClosers.closerUserId))
-    .leftJoin(
-      contacts,
-      eq(contacts.id, commissionTermClosers.closerContactId)
-    )
+    .leftJoin(contacts, eq(contacts.id, commissionTermClosers.closerContactId))
     .orderBy(desc(commissionTermClosers.sharePercent))
 
   for (const row of rows) {
@@ -212,15 +204,14 @@ export async function fetchLatestClosersByClient(
           kind: 'contact',
           id: row.closerContactId as string,
           sharePercent: Number(row.sharePercent),
-          name:
-            row.contactName?.trim() || row.contactEmail || 'Unknown person',
+          name: row.contactName?.trim() || row.contactEmail || 'Unknown person',
           email: row.contactEmail,
           avatarUrl: null,
           avatarUpdatedAt: null,
         }
-    const list = result.get(row.clientId) ?? []
+    const list = result.get(row.companyId) ?? []
     list.push(closer)
-    result.set(row.clientId, list)
+    result.set(row.companyId, list)
   }
 
   return result

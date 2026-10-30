@@ -21,7 +21,7 @@ export type DashboardTimeLogEntry = {
   projectName: string
   projectSlug: string | null
   projectType: string
-  clientId: string | null
+  clientCompanyId: string | null
   clientName: string | null
   clientSlug: string | null
   /** The client's company: links open its sheet. */

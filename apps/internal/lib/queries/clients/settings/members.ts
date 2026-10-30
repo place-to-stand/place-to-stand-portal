@@ -14,15 +14,15 @@ import type { ClientsSettingsMembersMap } from './types'
  * whose live CLIENT login exists.
  */
 export async function buildMembersByClient(
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<ClientsSettingsMembersMap> {
-  if (!clientIds.length) {
+  if (!companyIds.length) {
     return {}
   }
 
   const rows = await db
     .select({
-      clientId: clientPortalAccess.companyId,
+      companyId: clientPortalAccess.companyId,
       userId: users.id,
       email: users.email,
       fullName: personNameSql,
@@ -31,20 +31,20 @@ export async function buildMembersByClient(
     .innerJoin(users, eq(users.id, clientPortalAccess.userId))
     .where(
       and(
-        inArray(clientPortalAccess.companyId, clientIds),
+        inArray(clientPortalAccess.companyId, companyIds),
         eq(users.role, 'CLIENT'),
         isNull(users.deletedAt)
       )
     )
 
   return rows.reduce<ClientsSettingsMembersMap>((acc, row) => {
-    const list = acc[row.clientId] ?? []
+    const list = acc[row.companyId] ?? []
     list.push({
       id: row.userId,
       email: row.email,
       fullName: row.fullName,
     })
-    acc[row.clientId] = list
+    acc[row.companyId] = list
     return acc
   }, {})
 }

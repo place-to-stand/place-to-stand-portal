@@ -29,7 +29,7 @@ export async function saveInvoice(input: InvoiceInput): Promise<ActionResult> {
       mode,
       targetId,
       metadata: {
-        clientId: input.clientId,
+        companyId: input.companyId,
       },
     },
     async () => performSaveInvoice(input)
@@ -49,9 +49,9 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
     return { error: message, fieldErrors }
   }
 
-  const { id, clientId, notes, taxRate, lineItems } = parsed.data
+  const { id, companyId, notes, taxRate, lineItems } = parsed.data
 
-  const notClient = await ensureClientCompany(clientId)
+  const notClient = await ensureClientCompany(companyId)
   if (notClient) {
     return { error: notClient }
   }
@@ -63,7 +63,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       billingType: currentBillingTypeSql(),
     })
     .from(companies)
-    .where(and(isClientCompany(), eq(companies.id, clientId)))
+    .where(and(isClientCompany(), eq(companies.id, companyId)))
     .limit(1)
 
   const client = clientRows[0]
@@ -95,7 +95,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         const [inv] = await tx
           .insert(invoices)
           .values({
-            companyId: clientId,
+            companyId: companyId,
             invoiceNumber,
             billingType: client.billingType,
             notes: notes ?? null,
@@ -144,7 +144,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         summary: event.summary,
         targetType: 'INVOICE',
         targetId: inserted.id,
-        targetCompanyId: clientId,
+        targetCompanyId: companyId,
         metadata: event.metadata,
       })
     } catch (error) {
@@ -160,7 +160,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       .select({
         id: invoices.id,
         status: invoices.status,
-        clientId: invoices.companyId,
+        companyId: invoices.companyId,
         invoiceNumber: invoices.invoiceNumber,
         notes: invoices.notes,
         taxRate: invoices.taxRate,
@@ -184,7 +184,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
     try {
       await db.transaction(async tx => {
         const updateData: Record<string, unknown> = {
-          clientId,
+          companyId,
           notes: notes ?? null,
           taxRate: taxRate.toString(),
           subtotal: subtotal.toFixed(2),
@@ -194,7 +194,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         }
 
         // Re-sync billing type when client changes
-        if (existing.clientId !== clientId) {
+        if (existing.companyId !== companyId) {
           updateData.billingType = client.billingType
         }
 
@@ -275,10 +275,10 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
     const previousDetails: Record<string, unknown> = {}
     const nextDetails: Record<string, unknown> = {}
 
-    if (existing.clientId !== clientId) {
+    if (existing.companyId !== companyId) {
       changedFields.push('client')
-      previousDetails.clientId = existing.clientId
-      nextDetails.clientId = clientId
+      previousDetails.companyId = existing.companyId
+      nextDetails.companyId = companyId
       nextDetails.clientName = targetClientName
     }
 
@@ -335,7 +335,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         summary: event.summary,
         targetType: 'INVOICE',
         targetId: id,
-        targetCompanyId: clientId,
+        targetCompanyId: companyId,
         metadata: event.metadata,
       })
     }

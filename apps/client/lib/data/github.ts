@@ -43,10 +43,10 @@ export type ProjectGitHubStatus = {
 export const fetchProjectGitHubStatus = cache(
   async (user: AppUser, projectId: string): Promise<ProjectGitHubStatus> => {
     const project = await fetchProjectDetail(user, projectId)
-    if (!project?.clientId) return { hasInstallation: false, links: [] }
+    if (!project?.companyId) return { hasInstallation: false, links: [] }
 
     const [installation, linkRows] = await Promise.all([
-      fetchActiveInstallation(project.clientId),
+      fetchActiveInstallation(project.companyId),
       db
         .select({
           id: githubRepoLinks.id,
@@ -83,7 +83,7 @@ export const fetchProjectGitHubStatus = cache(
   }
 )
 
-async function fetchActiveInstallation(clientId: string) {
+async function fetchActiveInstallation(companyId: string) {
   const [installation] = await db
     .select({
       id: githubAppInstallations.id,
@@ -93,7 +93,7 @@ async function fetchActiveInstallation(clientId: string) {
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.companyId, clientId),
+        eq(githubAppInstallations.companyId, companyId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )

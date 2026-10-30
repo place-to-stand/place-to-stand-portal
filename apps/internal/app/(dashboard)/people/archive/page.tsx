@@ -31,7 +31,7 @@ export default async function ContactsArchivePage({
   const {
     page: currentPage,
     search,
-    clientId,
+    companyId,
     sort,
   } = parseContactsSearchParams(params)
   const offset = (currentPage - 1) * pageSize
@@ -50,7 +50,7 @@ export default async function ContactsArchivePage({
       listContactsForSettings(admin, {
         status: 'archived',
         search,
-        clientId,
+        companyId,
         offset,
         limit: pageSize,
         sort,
@@ -93,7 +93,7 @@ export default async function ContactsArchivePage({
         <ContactsFilters
           basePath='/people/archive'
           search={search}
-          clientId={clientId}
+          companyId={companyId}
           clients={allClients}
         />
         <ContactsManagementTable

@@ -15,8 +15,8 @@ import {
 
 type ContactsFiltersProps = {
   search?: string
-  /** Validated linked-client filter value (`?clientId=<uuid>`). */
-  clientId?: string
+  /** Validated linked-client filter value (`?companyId=<uuid>`). */
+  companyId?: string
   /** Active clients for the linked-client filter options. */
   clients: ClientOption[]
   /** Base path to push filter changes to — '/people' or '/people/archive'. */
@@ -28,7 +28,7 @@ type ContactsFiltersProps = {
 
 export function ContactsFilters({
   search,
-  clientId,
+  companyId,
   clients,
   basePath,
   signIn,
@@ -41,7 +41,7 @@ export function ContactsFilters({
     resetKeys: ['page'],
     filters: {
       q: {},
-      clientId: { isValid: value => UUID_PATTERN.test(value) },
+      companyId: { isValid: value => UUID_PATTERN.test(value) },
       signIn: { isValid: isSignInFilter },
     },
   })
@@ -55,13 +55,13 @@ export function ContactsFilters({
           placeholder='Search people…'
         />
       }
-      activeFilterCount={(clientId ? 1 : 0) + (signIn ? 1 : 0)}
+      activeFilterCount={(companyId ? 1 : 0) + (signIn ? 1 : 0)}
       showReset={hasActiveFilters}
       onReset={reset}
     >
       <FilterSelect
-        value={clientId}
-        onChange={value => update({ clientId: value })}
+        value={companyId}
+        onChange={value => update({ companyId: value })}
         placeholder='All clients'
         options={clients.map(client => ({
           value: client.id,

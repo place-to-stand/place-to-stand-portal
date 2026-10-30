@@ -49,7 +49,7 @@ export type HourBlockClientSummary = {
 type HourBlockSelection = {
   block: {
     id: string
-    clientId: string
+    companyId: string
     hoursPurchased: string | null
     invoiceId: string | null
     invoiceNumber: string | null
@@ -83,7 +83,7 @@ type ClientSelection = {
 // hourBlocks.invoiceLineItemId, then invoices on invoiceLineItems.invoiceId.
 const hourBlockSelection = {
   id: hourBlocks.id,
-  clientId: hourBlocks.companyId,
+  companyId: hourBlocks.companyId,
   hoursPurchased: hourBlocks.hoursPurchased,
   invoiceId: invoiceLineItems.invoiceId,
   invoiceNumber: invoices.invoiceNumber,
@@ -109,7 +109,7 @@ export type ListHourBlocksForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
   /** Only this client's blocks. */
-  clientId?: string | null
+  companyId?: string | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
@@ -185,8 +185,8 @@ export async function listHourBlocksForSettings(
     )
   }
 
-  if (input.clientId) {
-    baseConditions.push(eq(hourBlocks.companyId, input.clientId))
+  if (input.companyId) {
+    baseConditions.push(eq(hourBlocks.companyId, input.companyId))
   }
 
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
@@ -343,14 +343,14 @@ export async function listHourBlocksForSettings(
 
 export async function getActiveClientSummary(
   user: AppUser,
-  clientId: string
+  companyId: string
 ): Promise<HourBlockClientSummary | null> {
   assertAdmin(user)
 
   const rows = await db
     .select(clientSelection)
     .from(companies)
-    .where(and(isClientCompany(), eq(companies.id, clientId)))
+    .where(and(isClientCompany(), eq(companies.id, companyId)))
     .limit(1)
 
   if (!rows.length) {
@@ -422,7 +422,7 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
 
   return {
     id: row.block.id,
-    company_id: row.block.clientId,
+    company_id: row.block.companyId,
     hours_purchased: Number(row.block.hoursPurchased ?? '0'),
     invoice_id: row.block.invoiceId,
     invoice_number: row.block.invoiceNumber,

@@ -64,7 +64,7 @@ export async function getPlanningContextForThread(threadId: string) {
       taskId: tasks.id,
       taskTitle: tasks.title,
       projectId: tasks.projectId,
-      clientId: projects.companyId,
+      companyId: projects.companyId,
     })
     .from(planThreads)
     .innerJoin(planningSessions, eq(planningSessions.id, planThreads.sessionId))

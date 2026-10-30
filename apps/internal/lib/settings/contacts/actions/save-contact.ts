@@ -52,7 +52,7 @@ type CurrentMembership = {
   companyName: string
   title: string | null
   portalAccess: boolean
-  clientId: string | null
+  clientCompanyId: string | null
 }
 
 type MembershipPlan = ReturnType<typeof planMembershipChanges>
@@ -122,7 +122,9 @@ async function loadCurrentMemberships(
       title: memberships.title,
       portalAccess: memberships.portalAccess,
       // A company billed now is its own client.
-      clientId: sql<string | null>`case when ${isClientCompany()} then ${companies.id} end`,
+      clientCompanyId: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.id} end`,
     })
     .from(memberships)
     .innerJoin(companies, eq(companies.id, memberships.companyId))
@@ -284,7 +286,7 @@ export async function prepareContactSave(
   if (
     !canManageAccess &&
     existing.email !== email &&
-    current.some(m => m.clientId)
+    current.some(m => m.clientCompanyId)
   ) {
     return {
       error:
@@ -361,7 +363,10 @@ export async function logContactSave(
 ): Promise<void> {
   const { contactId: id, values, membership, currentById } = plan
   if (plan.mode === 'create') {
-    const event = contactCreatedEvent({ email: values.email, name: values.name })
+    const event = contactCreatedEvent({
+      email: values.email,
+      name: values.name,
+    })
     await logActivity({
       actorId: user.id,
       actorRole: user.role,
@@ -378,10 +383,10 @@ export async function logContactSave(
   const accessChanges: ContactClientLinkChange[] = []
   for (const companyId of membership.leave) {
     const left = currentById.get(companyId)
-    if (left?.portalAccess && left.clientId) {
+    if (left?.portalAccess && left.clientCompanyId) {
       accessChanges.push({
         contactId: id,
-        clientId: left.clientId,
+        clientCompanyId: left.clientCompanyId,
         action: 'unlinked',
       })
     }
@@ -522,8 +527,8 @@ async function clientJoinError(
   joins: { companyId: string }[]
 ): Promise<string | null> {
   if (canManageAccess || !joins.length) return null
-  const clientIds = await clientIdsByCompany(joins.map(join => join.companyId))
-  return clientIds.size > 0
+  const companyIds = await clientIdsByCompany(joins.map(join => join.companyId))
+  return companyIds.size > 0
     ? 'This company is a client, so only an admin can change its people.'
     : null
 }

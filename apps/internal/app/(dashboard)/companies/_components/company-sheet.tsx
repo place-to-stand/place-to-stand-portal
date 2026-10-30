@@ -147,27 +147,36 @@ export function CompanySheet({
   const { requestConfirmation, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty })
 
-  const refresh = useCallback(async (closing = true) => {
-    // A sheet about to close only marks its own queries stale for next open.
-    const refetchType = closing ? ('none' as const) : ('active' as const)
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['companySheet'], refetchType }),
-      queryClient.invalidateQueries({ queryKey: ['clientBilling'], refetchType }),
-      queryClient.invalidateQueries({
-        queryKey: ['companyClientWork'],
-        refetchType,
-      }),
-      queryClient.invalidateQueries({ queryKey: COMPANY_OPTIONS_QUERY_KEY }),
-      queryClient.invalidateQueries({ queryKey: CONTACT_OPTIONS_QUERY_KEY }),
-    ])
-    router.refresh()
-  }, [queryClient, router])
+  const refresh = useCallback(
+    async (closing = true) => {
+      // A sheet about to close only marks its own queries stale for next open.
+      const refetchType = closing ? ('none' as const) : ('active' as const)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['companySheet'],
+          refetchType,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['clientBilling'],
+          refetchType,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['companyClientWork'],
+          refetchType,
+        }),
+        queryClient.invalidateQueries({ queryKey: COMPANY_OPTIONS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: CONTACT_OPTIONS_QUERY_KEY }),
+      ])
+      router.refresh()
+    },
+    [queryClient, router]
+  )
 
   // Portal access and billing are client records: admins only.
   const { isAdmin, role } = useViewerAccess()
   const canManageClients = roleCan(role, 'clients.manage')
 
-  const clientId = company?.clients[0]?.id ?? null
+  const clientCompanyId = company?.clients[0]?.id ?? null
   const tabValues = isAdmin
     ? ['details', 'people', 'projects', 'billing']
     : ['details', 'people']
@@ -175,8 +184,7 @@ export function CompanySheet({
 
   // What the form was seeded with (reset values), not the live query data.
   const seededTitles = form.formState.defaultValues?.titles as
-    | Record<string, string>
-    | undefined
+    Record<string, string> | undefined
   const seededPrimaryContactId =
     form.formState.defaultValues?.primaryContactId ?? null
   const handleSubmit = useCallback(
@@ -215,7 +223,7 @@ export function CompanySheet({
               return seeded !== undefined
                 ? seeded.trim() !== title.trim()
                 : values.addedContacts.some(c => c.id === contactId) &&
-                  title.trim() !== ''
+                    title.trim() !== ''
             })
             .map(([contactId, title]) => ({ contactId, title })),
           // Only when the star moved here.
@@ -321,16 +329,16 @@ export function CompanySheet({
   const dirtyFields = form.formState.dirtyFields
   const detailsDirty = Boolean(
     dirtyFields.name ||
-      dirtyFields.website ||
-      dirtyFields.linkedinUrl ||
-      dirtyFields.notes
+    dirtyFields.website ||
+    dirtyFields.linkedinUrl ||
+    dirtyFields.notes
   )
   const peopleDirty = Boolean(
     dirtyFields.addedContacts ||
-      dirtyFields.removedContactIds ||
-      dirtyFields.titles ||
-      dirtyFields.primaryContactId ||
-      dirtyFields.portalAccessIds
+    dirtyFields.removedContactIds ||
+    dirtyFields.titles ||
+    dirtyFields.primaryContactId ||
+    dirtyFields.portalAccessIds
   )
 
   const handleOpenChange = useCallback(
@@ -353,16 +361,14 @@ export function CompanySheet({
         >
           <SheetFormHeader
             entity='company'
-            title={
-              isEditing ? (company?.name ?? 'Company') : 'Create company'
-            }
+            title={isEditing ? (company?.name ?? 'Company') : 'Create company'}
             leading={
               <ENTITY_ICONS.company
                 aria-hidden
                 className={`${ENTITY_ACCENTS.company.icon} size-4 shrink-0`}
               />
             }
-            badges={clientId ? <ClientBadge /> : null}
+            badges={clientCompanyId ? <ClientBadge /> : null}
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>
@@ -387,7 +393,7 @@ export function CompanySheet({
                 >
                   <CompanyBillingProvider
                     key={company?.id ?? 'new'}
-                    clientId={isAdmin ? clientId : null}
+                    companyId={isAdmin ? clientCompanyId : null}
                     wasClient={Boolean(isAdmin && company?.formerClientId)}
                     billingEndsOn={company?.billingEndsOn ?? null}
                     open={open && isAdmin}
@@ -460,7 +466,7 @@ export function CompanySheet({
                                 label: 'Projects',
                                 content: (
                                   <CompanyProjectsTab
-                                    clientId={clientId}
+                                    companyId={clientCompanyId}
                                     isCreating={!isEditing}
                                   />
                                 ),
@@ -471,7 +477,7 @@ export function CompanySheet({
                                 dirty: billingDirty,
                                 content: (
                                   <CompanyBillingTab
-                                    clientId={clientId}
+                                    companyId={clientCompanyId}
                                     disabled={fieldsDisabled}
                                   />
                                 ),

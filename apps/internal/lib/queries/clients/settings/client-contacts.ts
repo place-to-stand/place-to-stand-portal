@@ -116,7 +116,7 @@ async function listAllActiveContacts(
 /** The client's company members who have portal access. */
 async function listClientContacts(
   user: AppUser,
-  clientId: string
+  clientCompanyId: string
 ): Promise<ContactOption[]> {
   assertAdmin(user)
 
@@ -134,14 +134,19 @@ async function listClientContacts(
     .from(companies)
     .innerJoin(memberships, eq(memberships.companyId, companies.id))
     .innerJoin(contacts, eq(contacts.id, memberships.contactId))
-    .where(and(wasClientCompany(), and(
-        eq(companies.id, clientId),
-        isNull(memberships.endedAt),
-        eq(memberships.portalAccess, true),
-        // Access needs a login (same rule as client_portal_access).
-        isNotNull(contacts.userId),
-        isNull(contacts.deletedAt)
-      )))
+    .where(
+      and(
+        wasClientCompany(),
+        and(
+          eq(companies.id, clientCompanyId),
+          isNull(memberships.endedAt),
+          eq(memberships.portalAccess, true),
+          // Access needs a login (same rule as client_portal_access).
+          isNotNull(contacts.userId),
+          isNull(contacts.deletedAt)
+        )
+      )
+    )
     .orderBy(asc(contacts.name), asc(contacts.email))
 
   return rows.map(row => ({
@@ -186,24 +191,26 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
 
 /**
  * Fetches all data needed for the Billing tab's contact and partner pickers.
- * If clientId is provided, also fetches the client's linked contacts.
+ * If clientCompanyId is provided, also fetches the client's linked contacts.
  */
 export async function getClientSheetContactData(
   user: AppUser,
-  clientId?: string
+  clientCompanyId?: string
 ): Promise<ClientSheetContactData> {
   assertAdmin(user)
 
-  const [client] = clientId
+  const [client] = clientCompanyId
     ? await db
         .select({ companyId: companies.id })
         .from(companies)
-        .where(and(wasClientCompany(), eq(companies.id, clientId)))
+        .where(and(wasClientCompany(), eq(companies.id, clientCompanyId)))
         .limit(1)
     : []
   const [allContacts, linkedContacts, allAdminUsers] = await Promise.all([
     listAllActiveContacts(user, client?.companyId),
-    clientId ? listClientContacts(user, clientId) : Promise.resolve([]),
+    clientCompanyId
+      ? listClientContacts(user, clientCompanyId)
+      : Promise.resolve([]),
     listAllAdminUsers(user),
   ])
 
@@ -247,14 +254,14 @@ export async function applyPortalAccessInTx(
  */
 export async function syncClientContacts(
   user: AppUser,
-  clientId: string,
+  clientCompanyId: string,
   contactIds: string[]
 ): Promise<{ ok: boolean; error?: string }> {
   assertAdmin(user)
 
   // Ids reach a uuid column cast; a malformed one would surface as a 500.
   if (
-    !UUID_PATTERN.test(clientId) ||
+    !UUID_PATTERN.test(clientCompanyId) ||
     !contactIds.every(id => UUID_PATTERN.test(id))
   ) {
     return { ok: false, error: 'Invalid client or person.' }
@@ -263,7 +270,7 @@ export async function syncClientContacts(
   const [client] = await db
     .select({ companyId: companies.id })
     .from(companies)
-    .where(and(wasClientCompany(), eq(companies.id, clientId)))
+    .where(and(wasClientCompany(), eq(companies.id, clientCompanyId)))
     .limit(1)
   const companyId = client?.companyId ?? null
   if (!companyId) {
@@ -324,12 +331,12 @@ export async function syncClientContacts(
   const changes: ContactClientLinkChange[] = [
     ...toGrant.map(m => ({
       contactId: m.contactId,
-      clientId,
+      clientCompanyId,
       action: 'linked' as const,
     })),
     ...toRevoke.map(m => ({
       contactId: m.contactId,
-      clientId,
+      clientCompanyId,
       action: 'unlinked' as const,
     })),
   ]

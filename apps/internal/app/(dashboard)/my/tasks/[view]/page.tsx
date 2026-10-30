@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 
 type PageSearchParams = {
   assignee?: string
-  clientId?: string
+  companyId?: string
   /** Comma list of `personal,internal` — project types to withhold. */
   [HIDE_PARAM]?: string
   task?: string
@@ -57,7 +57,9 @@ export default async function MyTasksViewRoute({
   if (!isMyTasksView(viewParam)) {
     // Carry the whole query string across the redirect — the sheet stack and
     // the `?assignee=` filter both live there.
-    redirect(`/my/tasks/${DEFAULT_VIEW}${buildQuerySuffix(resolvedSearchParams)}`)
+    redirect(
+      `/my/tasks/${DEFAULT_VIEW}${buildQuerySuffix(resolvedSearchParams)}`
+    )
   }
 
   // Lite projects feed only the sheet's project selector; the task graph is
@@ -96,7 +98,7 @@ export default async function MyTasksViewRoute({
 
   // Optional client scope. Validated against the directory so a stale or
   // hand-edited id quietly falls back to all clients.
-  const requestedClientId = resolvedSearchParams.clientId ?? null
+  const requestedClientId = resolvedSearchParams.companyId ?? null
   const activeClients = clientDirectory.filter(client => !client.deletedAt)
   const selectedClientId =
     requestedClientId &&
@@ -121,7 +123,7 @@ export default async function MyTasksViewRoute({
 
   const assignedSummaries = await listAssignedTaskSummaries({
     userId: selectedAssigneeId === 'all' ? null : selectedAssigneeId,
-    clientId: selectedClientId,
+    companyId: selectedClientId,
     hiddenProjectTypes,
     projectIds: workableProjectIds,
     limit: null,
@@ -181,9 +183,7 @@ export default async function MyTasksViewRoute({
       Boolean(project)
     )
 
-  const selectionProjects = liteProjects.filter(
-    project => !project.deleted_at
-  )
+  const selectionProjects = liteProjects.filter(project => !project.deleted_at)
 
   return (
     <MyTasksPage
@@ -213,4 +213,3 @@ const UUID_PATTERN =
 function isMyTasksView(value: string): value is MyTasksView {
   return value === 'board' || value === 'calendar'
 }
-
