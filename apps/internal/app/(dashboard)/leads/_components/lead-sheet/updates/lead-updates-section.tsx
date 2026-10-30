@@ -95,7 +95,7 @@ export function LeadUpdatesSection({
             onClick={openLogDialog}
           >
             <Plus className='h-3 w-3' />
-            Log
+            Add update
           </Button>
         )}
       </div>
@@ -124,7 +124,7 @@ export function LeadUpdatesSection({
           }
         />
       ) : updates.length === 0 ? (
-        <EmptyState message='No interactions logged yet.' />
+        <EmptyState message='No updates on this lead yet.' />
       ) : (
         <div className='space-y-2'>
           {updates.map(update => (
