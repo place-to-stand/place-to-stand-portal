@@ -46,7 +46,7 @@ Each kind of record has one icon and one colour everywhere it appears: sidebar, 
 | Work | Project | `FolderKanban` | blue-600, 5.3:1 | blue-400, 6.8:1 |
 |  | Task | `ListTodo` | sky-700, 5.9:1 | sky-300, 10.8:1 |
 |  | Time log | `Clock` | indigo-500, 4.6:1 | indigo-300, 8.9:1 |
-| Money | Client (a company state) | `Briefcase` | emerald-600, 3.7:1 | emerald-400, 9.3:1 |
+| Money | Client (a company state) | `Briefcase` | lime-700, 5.0:1 | lime-400, 11.7:1 |
 |  | Invoice | `Receipt` | teal-700, 5.4:1 | teal-300, 12.2:1 |
 |  | Hour block | `Hourglass` | green-800, 7.1:1 | green-500, 8.1:1 |
 | Admin | Submission | `Inbox` | slate-500, 4.8:1 | slate-400, 6.8:1 |
@@ -61,7 +61,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 ## Content fundamentals
 
 - **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Create lead", "Save changes", "Project archived". Title Case is only for the brand name.
-- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role. Icons and colours follow the entity (see **Entities** below): a company is `Building2`, a person (with or without a sign-in) is `UserRound`, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in green, with money. "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
+- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role. Icons and colours follow the entity (see **Entities** below): a company is `Building2`, a person (with or without a sign-in) is `UserRound`, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in lime, with money (lime keeps it apart from the emerald `success` token). "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
 - **Name the entity.** Copy names the record type it acts on, using the entity names: person, company, lead, project, task, invoice, hour block, time log, plus client for a company you bill and sign-in for a person who can sign in. Never "user", "account" or "login", and never a vague stand-in (record, item, entry, member) when an entity is meant: "Can sign in" and "No portal access", not "Create user" or "No portal account".
 - **Create vs Add vs Link.** "Create <thing>" makes a new record (page buttons, create sheets, a picker's pinned Create row). "Add <thing>" puts an existing record on a list (Add person, Add member). There is no "Link" between a company and a client: a client is a company you bill ("Bill this company" on its Billing tab). Exception: on the lead sheet, the Tasks and Updates sections use "Add task" and "Add update" for new records added to that lead.
 - **The name.** The wordmark reads **Place To Stand**, with a capital T, as `BrandLogo` renders it. The favicon abbreviation is **PTS**. Some older page metadata still says "Place to Stand Portal". Use the wordmark casing in new copy.
@@ -82,7 +82,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - `accent` for hover and highlight.
   - `border` / `input` / `ring` for edges and focus.
 - **`primary` is ink, not a hue.** It's near-black in light mode and near-white in dark. Text on it is always `primary-foreground`. Use one primary Button per view, for the thing the view is for.
-- **Three status tokens, and only three.** Use them for status text, icons and tints (`text-success`, `bg-warning/10`); never a raw red, green, emerald or amber shade.
+- **Three status tokens, and only three.** Use them for status text, icons and tints (`text-success`, `bg-warning/10`); never a raw red, green, emerald or amber shade. They are kept visibly apart from every entity colour (ΔE_OK ≥ 0.06 in both themes, checked by `scripts/check-entities.mjs` in `npm run lint`), so a success check never reads as a client badge and an error never reads as a person.
   - **`destructive`**: errors, deletion, negative balances, removal. It also fills the destructive Button and Badge (white label; 60% fill in dark) and colors invalid-field borders and rings.
   - **`success`**: paid, connected, done, hours remaining.
   - **`warning`**: pending, expiring, low, drift.

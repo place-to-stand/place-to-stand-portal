@@ -34,7 +34,7 @@ const GROUPS: Array<{ label: string; note: string; names: string[] }> = [
   },
   {
     label: 'Action and status',
-    note: 'Primary is ink, not a hue. Three status colours, and only three.',
+    note: 'Primary is ink, not a hue. Three status colours, and only three, kept visibly apart from every entity colour (lint checks ΔE ≥ 0.06).',
     names: [
       'primary',
       'primary-foreground',

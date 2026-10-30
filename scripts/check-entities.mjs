@@ -6,6 +6,9 @@
  *   - shares its icon with another entity,
  *   - has no `--entity-<token>` value in theme.css for light or dark,
  *   - or its colour is under 3:1 on a card in either theme (WCAG 1.4.11).
+ * And fails when a status colour (success, warning, destructive) sits within
+ * ΔE_OK 0.06 of any entity colour in either theme, so a green check never
+ * reads as a client badge (and a red error never reads as a person).
  * Imports of entity icons outside the registry are blocked by eslint
  * (apps/internal/eslint.config.mjs reads the same icon list).
  */
@@ -40,6 +43,32 @@ function tokensIn(selector) {
   )
 }
 const values = { light: tokensIn(':root'), dark: tokensIn('.dark') }
+
+/** Status tokens, by theme: --success, --warning, --destructive. */
+const STATUS = ['success', 'warning', 'destructive']
+function statusIn(selector) {
+  const start = theme.indexOf(`${selector} {`)
+  const block = theme.slice(start, theme.indexOf('}', start))
+  return new Map(
+    STATUS.map(name => [
+      name,
+      block.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1],
+    ])
+  )
+}
+const statuses = { light: statusIn(':root'), dark: statusIn('.dark') }
+const MIN_STATUS_DISTANCE = 0.06
+
+/** OKLab of an oklch() value, for ΔE_OK. */
+function oklab(value) {
+  const m = value?.match(/oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/)
+  if (!m) return null
+  const l = Number(m[1]) / (m[2] ? 100 : 1)
+  const c = Number(m[3])
+  const h = (Number(m[4]) * Math.PI) / 180
+  return [l, c * Math.cos(h), c * Math.sin(h)]
+}
+const deltaE = (x, y) => Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2])
 
 function luminance(value) {
   const m = value.match(/oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/)
@@ -108,11 +137,31 @@ for (const entity of entities) {
   }
 }
 
+for (const mode of ['light', 'dark']) {
+  for (const status of STATUS) {
+    const statusLab = oklab(statuses[mode].get(status))
+    if (!statusLab) {
+      errors.push(`--${status} (${mode}) is missing or not oklch()`)
+      continue
+    }
+    for (const entity of entities) {
+      const entityLab = oklab(values[mode].get(entity.token))
+      if (!entityLab) continue
+      const distance = deltaE(statusLab, entityLab)
+      if (distance < MIN_STATUS_DISTANCE) {
+        errors.push(
+          `--${status} is ΔE ${distance.toFixed(3)} from ${entity.key} in ${mode}; keep status colours ≥ ${MIN_STATUS_DISTANCE} from every entity`
+        )
+      }
+    }
+  }
+}
+
 if (errors.length) {
   console.error('Entity registry check failed:')
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
 }
 console.log(
-  `Entity registry: ${entities.length} entities, icons unique, contrast ≥ ${MIN_CONTRAST}:1 in both themes`
+  `Entity registry: ${entities.length} entities, icons unique, contrast ≥ ${MIN_CONTRAST}:1 in both themes, status colours ≥ ΔE ${MIN_STATUS_DISTANCE} from every entity`
 )
