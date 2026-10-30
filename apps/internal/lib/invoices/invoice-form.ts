@@ -73,6 +73,9 @@ export type InvoiceWithClient = InvoiceRow & {
 export type InvoiceHourBlockSummary = {
   id: string
   hours_purchased: number
+  /** The invoice line that created the block. */
+  description: string
+  amount: number
 }
 
 export type InvoiceWithLineItems = InvoiceWithClient & {

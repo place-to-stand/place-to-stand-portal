@@ -7,7 +7,8 @@ import { Separator } from '@pts/ui/separator'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { formatCalendarDate } from '@pts/ui/dates'
 
-import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
+import { HourBlockRecordRow } from '@/components/sheets/entity-record-rows'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { InvoiceLinkField } from './invoice-link-field'
 import { InvoiceStatusBadge } from './invoice-status-badge'
 
@@ -164,14 +165,23 @@ export function InvoiceSheetRightColumn({
               </div>
             ) : null}
             {invoice.hour_blocks?.length ? (
-              <div className='flex items-center justify-between'>
-                <span className='text-muted-foreground text-sm'>
+              <div className='space-y-2 pt-1'>
+                <span className='text-muted-foreground block text-sm'>
                   Hour blocks
                 </span>
-                <InvoiceHourBlocksCell
-                  hourBlocks={invoice.hour_blocks}
-                  invoiceNumber={invoice.invoice_number}
-                />
+                <SheetRecordList>
+                  {invoice.hour_blocks.map(block => (
+                    <HourBlockRecordRow
+                      key={block.id}
+                      hourBlock={{
+                        id: block.id,
+                        name: block.description,
+                        hours: block.hours_purchased,
+                        amount: block.amount,
+                      }}
+                    />
+                  ))}
+                </SheetRecordList>
               </div>
             ) : null}
           </div>
