@@ -1,4 +1,5 @@
 import { Card } from '@pts/ui/card'
+import { formatCurrency } from '@pts/ui/numbers'
 
 import { HoursSummaryContent } from '@/components/hours/hours-summary-card'
 import { NavRow } from '@/components/ui/nav-row'
@@ -6,15 +7,9 @@ import { cn } from '@/lib/utils'
 import type { ClientHoursSummary } from '@/lib/data/hours'
 import type { ClientInvoiceSummary } from '@/lib/data/invoices'
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
 function invoiceLine(summary: ClientInvoiceSummary): string {
   if (summary.unpaidCount > 0) {
-    return `${summary.unpaidCount} unpaid · ${CURRENCY_FORMATTER.format(Number(summary.unpaidTotal))}`
+    return `${summary.unpaidCount} unpaid · ${formatCurrency(summary.unpaidTotal)}`
   }
 
   return 'All paid'

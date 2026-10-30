@@ -1,16 +1,8 @@
 import { Card } from '@pts/ui/card'
+import { formatHours } from '@pts/ui/numbers'
 
 import { SummaryHeader } from '@/components/ui/summary-header'
 import type { ClientHoursSummary } from '@/lib/data/hours'
-
-const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 0,
-})
-
-export function formatHours(hours: number): string {
-  return `${HOURS_FORMATTER.format(hours)}h`
-}
 
 type HoursSummaryProps = {
   summary: ClientHoursSummary
