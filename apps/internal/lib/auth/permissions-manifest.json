@@ -512,6 +512,13 @@
   },
   {
     "type": "action",
+    "name": "fetchCompanyClient",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/fetch-client-options.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
     "name": "moveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/move-lead.ts",
     "kind": "capability",

@@ -192,13 +192,13 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
       <TooltipTrigger asChild>
         <span
           role='img'
-          aria-label='Converted to client'
+          aria-label='Made a client'
           className='text-success inline-flex size-5 shrink-0 items-center justify-center'
         >
           <CheckCircle className='size-4' aria-hidden />
         </span>
       </TooltipTrigger>
-      <TooltipContent side='top'>Converted to client</TooltipContent>
+      <TooltipContent side='top'>Made a client</TooltipContent>
     </Tooltip>
   ) : null
 

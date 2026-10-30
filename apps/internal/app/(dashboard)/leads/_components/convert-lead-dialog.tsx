@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'next/navigation'
-import { Link2, UserPlus } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Checkbox } from '@pts/ui/checkbox'
@@ -33,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { useToast } from '@/components/ui/use-toast'
 import {
   leadConversionSchema,
@@ -42,11 +41,9 @@ import {
 import { convertLeadToClient } from '@/lib/leads/actions/convert-lead'
 import type { LeadRecord } from '@/lib/leads/types'
 import {
-  fetchClientOptions,
+  fetchCompanyClient,
   type ClientOption,
 } from '../_actions/fetch-client-options'
-
-type ConversionMode = 'create' | 'link'
 
 interface ConvertLeadDialogProps {
   lead: LeadRecord
@@ -64,9 +61,12 @@ export function ConvertLeadDialog({
   const { toast } = useToast()
   const router = useRouter()
   const [isConverting, setIsConverting] = useState(false)
-  const [mode, setMode] = useState<ConversionMode>('create')
-  const [clientOptions, setClientOptions] = useState<ClientOption[]>([])
-  const [loadingClients, setLoadingClients] = useState(false)
+  // The lead's company may already be a client: then the lead links to it.
+  // undefined = still checking.
+  const [companyClient, setCompanyClient] = useState<
+    ClientOption | null | undefined
+  >(lead.companyId ? undefined : null)
+  const companyName = lead.companyName || lead.contactName
 
   const form = useForm<LeadConversionFormValues>({
     resolver: zodResolver(leadConversionSchema),
@@ -84,41 +84,26 @@ export function ConvertLeadDialog({
     },
   })
 
-  // Load existing clients when switching to "link" mode
-  const hasFetchedClients = useRef(false)
   useEffect(() => {
-    if (mode === 'link' && !hasFetchedClients.current && !loadingClients) {
-      hasFetchedClients.current = true
-      setLoadingClients(true)
-      fetchClientOptions()
-        .then(setClientOptions)
-        .catch(() => {
-          toast({
-            title: 'Unable to load clients',
-            description: 'Please try again.',
-            variant: 'destructive',
-          })
-        })
-        .finally(() => setLoadingClients(false))
+    if (!open || !lead.companyId) return
+    let cancelled = false
+    fetchCompanyClient(lead.companyId)
+      .then(client => {
+        if (!cancelled) setCompanyClient(client)
+      })
+      .catch(() => {
+        if (!cancelled) setCompanyClient(null)
+      })
+    return () => {
+      cancelled = true
     }
-  }, [mode, loadingClients, toast])
+  }, [lead.companyId, open])
+  const isLinking = Boolean(companyClient)
 
   const watchCreateProject = useWatch({
     control: form.control,
     name: 'createProject',
   })
-  const watchExistingClientId = useWatch({
-    control: form.control,
-    name: 'existingClientId',
-  })
-
-  // Clear existingClientId when switching modes
-  useEffect(() => {
-    if (mode === 'create') {
-      form.setValue('existingClientId', undefined)
-    }
-  }, [mode, form])
-
   async function onSubmit(values: LeadConversionFormValues) {
     setIsConverting(true)
     try {
@@ -126,7 +111,7 @@ export function ConvertLeadDialog({
 
       if (result.error) {
         toast({
-          title: 'Unable to convert lead',
+          title: 'Unable to make client',
           description: result.error,
           variant: 'destructive',
         })
@@ -145,17 +130,17 @@ export function ConvertLeadDialog({
       }
 
       const parts = []
-      if (mode === 'link') {
-        parts.push('Lead linked to existing client')
+      if (isLinking) {
+        parts.push(`Lead linked to ${companyName}, already a client`)
       } else {
-        parts.push(`Client "${values.clientName}" created`)
+        parts.push(`${companyName} is now a client`)
       }
       if (result.projectId) {
         parts.push('project created')
       }
       const description = parts.join(', ') + '.'
 
-      toast({ title: 'Lead converted', description })
+      toast({ title: 'Client made', description })
 
       onOpenChange(false)
       onSuccess?.()
@@ -166,7 +151,7 @@ export function ConvertLeadDialog({
     } catch (error) {
       console.error('Lead conversion failed:', error)
       toast({
-        title: 'Unable to convert lead',
+        title: 'Unable to make client',
         description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       })
@@ -180,71 +165,23 @@ export function ConvertLeadDialog({
       <DialogContent className='max-h-[85vh] overflow-y-auto sm:max-w-[480px]'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
-            <UserPlus className='h-5 w-5' />
-            Convert lead to client
+            <Building2 className='h-5 w-5' />
+            Make client
           </DialogTitle>
           <DialogDescription>
-            Create a new client or link to an existing one. Any linked email
-            threads will be transferred to the client.
+            {companyClient === undefined
+              ? `Checking ${companyName}…`
+              : isLinking
+                ? `${companyName} is already a client, so this lead is linked to it.`
+                : `${companyName} becomes a client: its billing is set up on the company.`}{' '}
+            Any linked email threads move to the client.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={v => setMode(v as ConversionMode)}>
-          <TabsList className='w-full'>
-            <TabsTrigger value='create' className='flex-1'>
-              <UserPlus className='h-3.5 w-3.5' />
-              Create client
-            </TabsTrigger>
-            <TabsTrigger value='link' className='flex-1'>
-              <Link2 className='h-3.5 w-3.5' />
-              Existing client
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
-            {mode === 'create' ? (
+            {isLinking ? null : (
               <>
-                <FormField
-                  control={form.control}
-                  name='clientName'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client name</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder='Enter client name'
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name='clientSlug'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel optional>URL slug</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder='auto-generated-if-empty'
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Leave blank to auto-generate from client name.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name='billingType'
@@ -291,41 +228,6 @@ export function ConvertLeadDialog({
                   )}
                 />
               </>
-            ) : (
-              <FormField
-                control={form.control}
-                name='existingClientId'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select client</FormLabel>
-                    <Select
-                      value={field.value ?? ''}
-                      onValueChange={field.onChange}
-                      disabled={loadingClients}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={
-                              loadingClients
-                                ? 'Loading clients...'
-                                : 'Choose a client'
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clientOptions.map(client => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             )}
 
             {
@@ -343,9 +245,9 @@ export function ConvertLeadDialog({
                     <div className='space-y-1 leading-none'>
                       <FormLabel>Give portal access</FormLabel>
                       <FormDescription>
-                        {lead.contactName} joins the client’s company either
-                        way. Tick to also let them see it in the client portal
-                        (they need a portal user).
+                        {lead.contactName} joins {companyName} either way. Tick
+                        to also let them see it in the client portal (they need
+                        a sign-in).
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -405,15 +307,13 @@ export function ConvertLeadDialog({
               </Button>
               <Button
                 type='submit'
-                disabled={
-                  isConverting || (mode === 'link' && !watchExistingClientId)
-                }
+                disabled={isConverting || companyClient === undefined}
               >
                 {isConverting
-                  ? 'Converting...'
-                  : mode === 'link'
+                  ? 'Saving…'
+                  : isLinking
                     ? 'Link to client'
-                    : 'Create client'}
+                    : 'Make client'}
               </Button>
             </DialogFooter>
           </form>

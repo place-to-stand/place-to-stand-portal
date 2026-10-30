@@ -6,7 +6,6 @@ import {
   Building2,
   CheckCircle,
   FolderKanban,
-  UserPlus,
   UserRound,
   type LucideIcon,
 } from 'lucide-react'
@@ -58,7 +57,7 @@ export function LeadConversionSection({
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <UserPlus className='text-muted-foreground h-4 w-4' />
+          <Building2 className='text-muted-foreground h-4 w-4' />
           <span className='text-sm font-medium'>Client</span>
         </div>
         <Button
@@ -67,12 +66,12 @@ export function LeadConversionSection({
           size='sm'
           onClick={onConvertToClient}
         >
-          <UserPlus className='h-3 w-3' />
-          Convert
+          <Building2 className='h-3 w-3' />
+          Make client
         </Button>
       </div>
       <p className='text-muted-foreground text-sm'>
-        Not converted to a client yet.
+        Not a client yet. Make client sets up billing on the lead’s company.
       </p>
     </div>
   )

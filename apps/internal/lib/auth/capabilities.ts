@@ -199,7 +199,7 @@ export const CAPABILITIES = {
   },
   'leads.convert': {
     area: 'Sales',
-    label: 'Convert a lead to a client',
+    label: 'Make a lead’s company a client',
     description: 'Creates the client and links the company.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],

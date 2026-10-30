@@ -90,12 +90,25 @@ export async function convertLeadToClient(
   let finalClientId: string
   let finalClientSlug: string | undefined
 
-  if (existingClientId) {
+  // A company has one billing record: when the lead's company is already a
+  // client, Make client links the lead to it instead of making another.
+  const [companyClient] = leadCompanyId
+    ? await db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(
+          and(eq(clients.companyId, leadCompanyId), isNull(clients.deletedAt))
+        )
+        .limit(1)
+    : []
+  const linkClientId = existingClientId ?? companyClient?.id
+
+  if (linkClientId) {
     // 2a. Link to existing client
     const [existingClient] = await db
       .select({ id: clients.id, slug: clients.slug })
       .from(clients)
-      .where(and(eq(clients.id, existingClientId), isNull(clients.deletedAt)))
+      .where(and(eq(clients.id, linkClientId), isNull(clients.deletedAt)))
       .limit(1)
 
     if (!existingClient) {
@@ -153,14 +166,6 @@ export async function convertLeadToClient(
 
     finalClientId = clientResult.clientId
     finalClientSlug = createdClient?.slug ?? undefined
-  }
-
-  // An existing client becomes the lead's company when it has none yet.
-  if (existingClientId && leadCompanyId) {
-    await db
-      .update(clients)
-      .set({ companyId: leadCompanyId, updatedAt: new Date().toISOString() })
-      .where(and(eq(clients.id, finalClientId), isNull(clients.companyId)))
   }
 
   // 3. Winning the lead is the one deliberate step that puts its contact on
@@ -290,9 +295,9 @@ export async function convertLeadToClient(
     revalidatePath('/leads')
     revalidatePath('/clients')
     return {
-      error: existingClientId
+      error: linkClientId
         ? 'This lead was converted or archived while you were converting it.'
-        : 'This lead was converted or archived while you were converting it. Check Clients for a duplicate client to archive.',
+        : 'This lead was converted or archived while you were converting it. Check its company for a client to stop billing.',
     }
   }
 
