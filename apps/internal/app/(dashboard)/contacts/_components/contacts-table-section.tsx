@@ -36,7 +36,7 @@ import {
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
-import { UserAvatar } from '@/components/ui/user-avatar'
+import { PersonAvatar } from '@/components/ui/user-avatar'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -273,14 +273,13 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell label='User' className='text-sm md:text-center'>
                   {contact.userId ? (
-                    <span className='inline-flex'>
-                      <UserAvatar
-                        userId={contact.userId}
-                        name={contact.name}
-                        hasPhoto={Boolean(contact.userHasPhoto)}
-                        alt={`${contact.name} has a portal user`}
-                      />
-                    </span>
+                    // Named in a tooltip, like the other avatar-only cells.
+                    <PersonAvatar
+                      userId={contact.userId}
+                      name={contact.name}
+                      ariaLabel={`${contact.name}, portal user`}
+                      hasPhoto={Boolean(contact.userHasPhoto)}
+                    />
                   ) : (
                     <EmptyValue />
                   )}

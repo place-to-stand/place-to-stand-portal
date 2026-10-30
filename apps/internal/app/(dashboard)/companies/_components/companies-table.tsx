@@ -188,7 +188,12 @@ export function CompaniesTable({
                           aria-label={`Open client ${company.clientName}`}
                           className='text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex rounded-sm transition outline-none focus-visible:ring-[3px]'
                         >
-                          <Building2 className='h-4 w-4' />
+                          <Building2
+                            className={cn(
+                              ENTITY_ACCENTS.client.icon,
+                              'h-4 w-4'
+                            )}
+                          />
                         </Link>
                       </TooltipTrigger>
                       <TooltipContent>{company.clientName}</TooltipContent>
@@ -230,7 +235,7 @@ export function CompaniesTable({
                     count={company.openLeadCount}
                     withIcon
                     icon={Handshake}
-                    iconClassName={ENTITY_ACCENTS.client.icon}
+                    iconClassName={ENTITY_ACCENTS.lead.icon}
                     ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
                     contentClassName='min-w-72'
                     items={company.openLeads.map(lead => ({

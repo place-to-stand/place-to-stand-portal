@@ -4,6 +4,17 @@
  * literally (never interpolated) so Tailwind's scanner can see them.
  */
 
+import {
+  Briefcase,
+  Building2,
+  Clock3,
+  Contact,
+  FolderKanban,
+  Handshake,
+  ListTodo,
+  Receipt,
+} from 'lucide-react'
+
 export type AccentEntity =
   | 'task'
   | 'lead'
@@ -103,4 +114,26 @@ export const ENTITY_ACCENTS: Record<AccentEntity, EntityAccent> = {
     cardStatic: 'border-slate-500/35',
     icon: 'text-slate-500',
   },
+}
+
+/**
+ * The entity a sidebar icon stands for, so a shared cell can tint an icon
+ * with its entity's accent without each caller passing it. Keep in step with
+ * components/layout/navigation-config.ts.
+ */
+const ENTITY_BY_ICON = new Map<unknown, AccentEntity>([
+  [ListTodo, 'task'],
+  [Handshake, 'lead'],
+  [Receipt, 'invoice'],
+  [Clock3, 'hourBlock'],
+  [Briefcase, 'company'],
+  [Contact, 'contact'],
+  [Building2, 'client'],
+  [FolderKanban, 'project'],
+])
+
+/** The accent icon class for a sidebar entity icon, or null for others. */
+export function entityIconAccent(icon: unknown): string | null {
+  const entity = ENTITY_BY_ICON.get(icon)
+  return entity ? ENTITY_ACCENTS[entity].icon : null
 }

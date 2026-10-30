@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/hover-card'
 import { EmptyValue } from '@/components/table/empty-value'
 import { cn } from '@/lib/utils'
+import { entityIconAccent } from '@/lib/entity-accents'
 
 export type LinkedRecordItem = {
   id: string
@@ -137,7 +138,7 @@ export function LinkedRecordsHoverCell({
     <span className='inline-flex items-center gap-2'>
       <Icon
         className={cn(
-          iconClassName ?? 'text-muted-foreground',
+          iconClassName ?? entityIconAccent(Icon) ?? 'text-muted-foreground',
           'h-4 w-4 shrink-0'
         )}
         aria-hidden
@@ -162,7 +163,7 @@ function LinkedRecordRow({
     <>
       <Icon
         className={cn(
-          iconClassName ?? 'text-muted-foreground',
+          iconClassName ?? entityIconAccent(Icon) ?? 'text-muted-foreground',
           'h-4 w-4 shrink-0'
         )}
       />

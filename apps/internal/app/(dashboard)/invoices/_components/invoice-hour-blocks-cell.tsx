@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { Clock3 } from 'lucide-react'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
 
 import type { InvoiceHourBlockSummary } from '@/lib/invoices/invoice-form'
 import { hourBlockHref, hourBlocksForInvoiceHref } from '@/lib/sheets/hrefs'
@@ -42,7 +44,9 @@ export function InvoiceHourBlocksCell({
       aria-label={`${toHours(totalHours)} in ${blockCount}`}
       className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm hover:underline'
     >
-      <Clock3 className='h-4 w-4 shrink-0' />
+      <Clock3
+        className={cn(ENTITY_ACCENTS.hourBlock.icon, 'h-4 w-4 shrink-0')}
+      />
       {toHours(totalHours)}
     </Link>
   )

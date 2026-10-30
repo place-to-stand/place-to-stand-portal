@@ -177,7 +177,12 @@ export function HourBlocksTableSection({
                 </TableCell>
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+                    <Building2
+                      className={cn(
+                        ENTITY_ACCENTS.client.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
                     {client ? (
                       // Opens the client; the row ignores clicks on links.
                       <Link
@@ -198,7 +203,12 @@ export function HourBlocksTableSection({
                 <TableCell label='Invoice' className='text-sm'>
                   {block.invoice_number ? (
                     <div className='flex min-w-0 items-center gap-2'>
-                      <Receipt className='text-muted-foreground h-4 w-4 shrink-0' />
+                      <Receipt
+                        className={cn(
+                          ENTITY_ACCENTS.invoice.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
                       {block.invoice_id ? (
                         <Link
                           href={invoiceHref(block.invoice_id)}
