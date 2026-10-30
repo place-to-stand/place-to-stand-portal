@@ -2,6 +2,7 @@ export * from './selectors'
 export { listContactsForSettings } from './settings/list-contacts'
 export {
   listAllActiveClients,
+  listCompanyFilterOptions,
   getContactSheetData,
   getContactSheetInputById,
   getContactDeepLinkRowById,

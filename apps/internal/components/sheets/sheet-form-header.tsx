@@ -4,13 +4,21 @@ import { type ReactNode } from 'react'
 import { XIcon } from 'lucide-react'
 
 import { SheetClose, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { ENTITY_ACCENTS, type AccentEntity } from '@/lib/entity-accents'
+import {
+  ENTITY_ACCENTS,
+  ENTITY_ICONS,
+  type AccentEntity,
+} from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
 type SheetFormHeaderProps = {
   entity: AccentEntity
+  /** The record's name when editing; "Create <entity>" when creating. */
   title: string
-  /** Before the title: the entity icon or the person's avatar. */
+  /**
+   * Before the title: the person's avatar, say. Defaults to the entity's
+   * icon; pass `null` for none.
+   */
   leading?: ReactNode
   /** After the title: a state badge ("Client", a role). */
   badges?: ReactNode
@@ -30,6 +38,16 @@ export function SheetFormHeader({
   children,
   className,
 }: SheetFormHeaderProps) {
+  const EntityIcon = ENTITY_ICONS[entity]
+  const lead =
+    leading === undefined ? (
+      <EntityIcon
+        aria-hidden
+        className={cn(ENTITY_ACCENTS[entity].icon, 'size-4 shrink-0')}
+      />
+    ) : (
+      leading
+    )
   return (
     <SheetHeader
       className={cn(
@@ -38,9 +56,9 @@ export function SheetFormHeader({
         className
       )}
     >
-      {leading || badges || menu ? (
+      {lead || badges || menu ? (
         <div className='flex min-w-0 items-center gap-2'>
-          {leading}
+          {lead}
           <SheetTitle className='truncate text-base'>{title}</SheetTitle>
           {badges}
           {menu ? <div className='ml-auto shrink-0'>{menu}</div> : null}

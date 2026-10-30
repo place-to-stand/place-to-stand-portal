@@ -40,7 +40,10 @@ test('lead: the create sheet uses the edit sheet’s split layout', async ({
   if (!(await card.count())) return
   await card.click()
   const editSheet = page.getByRole('dialog')
-  await expect(editSheet.getByText('Edit lead').first()).toBeVisible()
+  // The edit sheet is titled with the lead's name (its contact), as on the card.
+  const title = editSheet.locator('h2').first()
+  await expect(title).toBeVisible()
+  expect(await card.innerText()).toContain(await title.innerText())
   expect(await sheetWidth(editSheet)).toBe(createWidth)
 })
 

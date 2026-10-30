@@ -12,7 +12,7 @@ const firstParam = (value: string | string[] | undefined) =>
 /**
  * A user is a person's sign-in, so Users is People filtered to sign-ins, and
  * a sign-in is managed on the person's sheet. Old links keep working:
- * `?user=<id>` opens that person, `?user=new` still opens the create sheet.
+ * `?user=<id>` opens that person, `?user=new` the create-person sheet.
  */
 export default async function UsersSettingsPage({
   searchParams,
@@ -23,8 +23,9 @@ export default async function UsersSettingsPage({
   const userParam = firstParam(params.user)
 
   if (userParam === 'new') {
-    next.set('user', 'new')
-  } else if (userParam && UUID_PATTERN.test(userParam)) {
+    redirect('/people?contact=new')
+  }
+  if (userParam && UUID_PATTERN.test(userParam)) {
     const [person] = await db
       .select({ id: contacts.id })
       .from(contacts)

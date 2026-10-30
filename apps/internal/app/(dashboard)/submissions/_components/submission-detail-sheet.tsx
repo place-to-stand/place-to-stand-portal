@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -530,9 +531,7 @@ export function SubmissionDetailSheet({
                   }
                 >
                   {displaySubmission.responses.length === 0 ? (
-                    <p className='text-muted-foreground text-sm'>
-                      No answers recorded.
-                    </p>
+                    <EmptyState message='No answers recorded.' />
                   ) : (
                     <ol className='flex flex-col gap-3'>
                       {displaySubmission.responses.map((response, index) => (

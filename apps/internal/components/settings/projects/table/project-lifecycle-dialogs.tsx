@@ -1,3 +1,4 @@
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import type { ProjectWithClient } from './types'
@@ -23,17 +24,12 @@ export function ProjectLifecycleDialogs({
 }: ProjectLifecycleDialogsProps) {
   return (
     <>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={Boolean(deleteTarget)}
-        title='Archive project?'
-        description={
-          deleteTarget
-            ? `Archiving ${deleteTarget.name} hides it from active views but keeps the history intact.`
-            : 'Archiving this project hides it from active views but keeps the history intact.'
-        }
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='project'
+        name={deleteTarget?.name ?? 'this project'}
+        list='active projects'
+        pending={isPending}
         onCancel={onCancelDelete}
         onConfirm={onConfirmDelete}
       />

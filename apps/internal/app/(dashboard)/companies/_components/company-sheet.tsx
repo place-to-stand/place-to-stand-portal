@@ -512,10 +512,10 @@ export function CompanySheet({
                 canUndo={canUndo}
                 canRedo={canRedo}
                 isEditing={isEditing}
-                deleteDisabled={isPending || !isEditing}
-                deleteDisabledReason={isPending ? PENDING_REASON : null}
-                onRequestDelete={() => setArchiveOpen(true)}
-                deleteAriaLabel={
+                archiveDisabled={isPending || !isEditing}
+                archiveDisabledReason={isPending ? PENDING_REASON : null}
+                onRequestArchive={() => setArchiveOpen(true)}
+                archiveAriaLabel={
                   isArchived ? 'Restore company' : 'Archive company'
                 }
                 deleteKind={isArchived ? 'restore' : 'archive'}

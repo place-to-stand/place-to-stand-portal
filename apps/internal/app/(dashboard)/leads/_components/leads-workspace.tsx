@@ -15,6 +15,10 @@ import {
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { LEAD_WON_NEEDS_COMPANY_MESSAGE } from '@/lib/leads/won-rule'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
@@ -30,7 +34,6 @@ type LeadsWorkspaceProps = {
   /** A user id (only their leads) or `'all'`. */
   assigneeFilter?: string
   viewerId: string
-  /** `leads.convert`: dropping into Closed Won offers conversion. */
 }
 
 export function LeadsWorkspace({
@@ -48,6 +51,11 @@ export function LeadsWorkspace({
   const { selectedId, isCreating, select, openCreate, clear } =
     useSheetParamSelection('lead')
   const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
+    null
+  )
+  // Set when a Won drag was refused for want of a company: the lead's sheet
+  // opens with the reason on its Company field.
+  const [companyErrorLeadId, setCompanyErrorLeadId] = useState<string | null>(
     null
   )
   const [, startRefresh] = useTransition()
@@ -102,9 +110,19 @@ export function LeadsWorkspace({
       }
 
       setInitialStatus(null)
+      setCompanyErrorLeadId(null)
       select(lead.id)
     },
     [canManage, select]
+  )
+
+  const handleWonNeedsCompany = useCallback(
+    (lead: LeadRecord) => {
+      setInitialStatus(null)
+      setCompanyErrorLeadId(lead.id)
+      select(lead.id)
+    },
+    [select]
   )
 
   const handleSheetOpenChange = useCallback(
@@ -114,12 +132,27 @@ export function LeadsWorkspace({
       }
 
       setInitialStatus(null)
+      setCompanyErrorLeadId(null)
       clear()
       startRefresh(() => {
         router.refresh()
       })
     },
     [clear, router, startRefresh]
+  )
+
+  // Winning a lead opens its company's Billing tab next, for whoever can
+  // make it a client there (the same step the lead sheet takes on save).
+  const { role } = useViewerAccess()
+  const canManageClients = roleCan(role, 'clients.manage')
+  const handleLeadClosedWon = useCallback(
+    (lead: LeadRecord) => {
+      if (!lead.companyId) return
+      router.push(companySheetHref(lead.companyId, 'billing'), {
+        scroll: false,
+      })
+    },
+    [router]
   )
 
   const handleSheetSuccess = useCallback(() => {
@@ -187,6 +220,11 @@ export function LeadsWorkspace({
           onOpenChange={handleSheetOpenChange}
           lead={sheetLead}
           initialStatus={initialStatus}
+          initialCompanyError={
+            sheetLead && sheetLead.id === companyErrorLeadId
+              ? LEAD_WON_NEEDS_COMPANY_MESSAGE
+              : null
+          }
           assignees={assignees}
           canManage={canManage}
           senderName={senderName}
@@ -199,6 +237,8 @@ export function LeadsWorkspace({
         canManage={canManage}
         onEditLead={handleEditLead}
         onCreateLead={handleCreateLead}
+        onLeadClosedWon={canManageClients ? handleLeadClosedWon : undefined}
+        onWonNeedsCompany={handleWonNeedsCompany}
         activeLeadId={boardActiveLeadId}
       />
     </PageShell>

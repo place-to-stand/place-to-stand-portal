@@ -345,10 +345,10 @@ function SampleEntitySheet({
             canUndo={false}
             canRedo={false}
             isEditing
-            deleteDisabled={false}
-            deleteDisabledReason={null}
-            onRequestDelete={() => setArchiveOpen(true)}
-            deleteAriaLabel={`Archive ${shown.noun}`}
+            archiveDisabled={false}
+            archiveDisabledReason={null}
+            onRequestArchive={() => setArchiveOpen(true)}
+            archiveAriaLabel={`Archive ${shown.noun}`}
           />
         </SheetContent>
       </Sheet>

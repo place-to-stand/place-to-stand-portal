@@ -35,6 +35,7 @@ export function useLeadSheetState({
   onOpenChange,
   lead,
   initialStatus,
+  initialCompanyError,
   onSuccess,
   onCreated,
   initialValues,
@@ -104,6 +105,14 @@ export function useLeadSheetState({
     lastResetKey.current = resetKey
     form.reset(defaultValues)
   }, [defaultValues, form, open, resetKey])
+
+  // Shown after the reset above, which clears errors: e.g. the board refused
+  // a Won drag because the lead has no company.
+  useEffect(() => {
+    if (open && initialCompanyError) {
+      form.setError('company', { message: initialCompanyError })
+    }
+  }, [form, initialCompanyError, open])
 
   const selectedSourceType = useWatch({
     control: form.control,

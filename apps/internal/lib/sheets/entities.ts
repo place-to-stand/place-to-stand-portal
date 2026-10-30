@@ -72,7 +72,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   client: {
     // Old links only: `?client=<id>` opens that company's sheet (a client is
     // a company you bill). Billing is switched on from the company's Billing tab.
-    auxParams: ['clientName', 'clientCompanyId', 'tab'],
+    auxParams: ['tab'],
     claimsPathname: () => false,
   },
   contact: {
@@ -95,7 +95,8 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   user: {
     auxParams: [],
-    // Sign-ins are managed on the person; ?user= links open nothing here.
+    // Old links only: a sign-in is managed on its person, so the global host
+    // opens `?user=<id>` as that person's sheet.
     claimsPathname: () => false,
   },
   project: {

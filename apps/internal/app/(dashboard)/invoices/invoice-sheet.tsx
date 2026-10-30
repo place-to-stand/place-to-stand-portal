@@ -362,11 +362,12 @@ export function InvoiceSheet({
 
   // ── Titles ────────────────────────────────────────────────────────────
 
-  const sheetTitle = isReadOnly
-    ? `Invoice ${invoice?.invoice_number ?? 'details'}`
-    : isEditing
-      ? 'Edit invoice'
-      : 'Create invoice'
+  // The invoice's name is its number; a draft may not have one yet.
+  const sheetTitle = isEditing
+    ? invoice?.invoice_number
+      ? `Invoice ${invoice.invoice_number}`
+      : 'Draft invoice'
+    : 'Create invoice'
 
   const combinedPending = isPending || actionPending
 
@@ -589,10 +590,10 @@ export function InvoiceSheet({
                         canUndo={canUndo}
                         canRedo={canRedo}
                         isEditing={isEditing}
-                        deleteDisabled={deleteButton.disabled}
-                        deleteDisabledReason={deleteButton.reason}
-                        onRequestDelete={handleRequestDelete}
-                        deleteAriaLabel='Archive invoice'
+                        archiveDisabled={deleteButton.disabled}
+                        archiveDisabledReason={deleteButton.reason}
+                        onRequestArchive={handleRequestDelete}
+                        archiveAriaLabel='Archive invoice'
                       />
                     </div>
                   ) : null}

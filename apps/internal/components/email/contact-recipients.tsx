@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 
@@ -69,9 +70,7 @@ export function ContactRecipients({
   return (
     <div className='space-y-3'>
       {contacts.length === 0 ? (
-        <p className='text-muted-foreground text-sm'>
-          No people are linked to this client yet.
-        </p>
+        <EmptyState message='No people are linked to this client yet.' />
       ) : (
         <ul className='space-y-2'>
           {contacts.map(contact => {

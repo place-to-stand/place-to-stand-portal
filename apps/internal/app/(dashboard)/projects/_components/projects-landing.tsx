@@ -15,7 +15,7 @@ import { IntegrationProviderIcon } from '@/components/integrations/provider-icon
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Progress } from '@pts/ui/progress'
 import {
@@ -701,17 +701,12 @@ export function ProjectsLanding({
 
   return (
     <div className='space-y-12'>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={Boolean(deleteTarget)}
-        title='Archive project?'
-        description={
-          deleteTarget
-            ? `Archiving ${deleteTarget.name} hides it from active views but keeps the history intact.`
-            : 'Archiving this project hides it from active views but keeps the history intact.'
-        }
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={isArchivePending}
+        entity='project'
+        name={deleteTarget?.name ?? 'this project'}
+        list='active projects'
+        pending={isArchivePending}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />

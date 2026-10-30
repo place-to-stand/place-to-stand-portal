@@ -5,7 +5,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireCrmUser } from '@/lib/auth/session'
 import {
   listContactsForSettings,
-  listAllActiveClients,
+  listCompanyFilterOptions,
 } from '@/lib/queries/contacts'
 import { parseContactsSearchParams } from '@/lib/settings/contacts/filters'
 import { serverEnv } from '@/lib/env.server'
@@ -45,7 +45,7 @@ export default async function ContactsArchivePage({
     'archive'
   )
 
-  const [{ items, totalCount, unfilteredTotalCount }, allClients] =
+  const [{ items, totalCount, unfilteredTotalCount }, companyOptions] =
     await Promise.all([
       listContactsForSettings(admin, {
         status: 'archived',
@@ -55,7 +55,7 @@ export default async function ContactsArchivePage({
         limit: pageSize,
         sort,
       }),
-      listAllActiveClients(admin),
+      listCompanyFilterOptions(admin),
     ])
 
   const contactsForTable = items.map(mapContactToTableRow)
@@ -94,7 +94,7 @@ export default async function ContactsArchivePage({
           basePath='/people/archive'
           search={search}
           companyId={companyId}
-          clients={allClients}
+          companies={companyOptions}
         />
         <ContactsManagementTable
           contacts={contactsForTable}

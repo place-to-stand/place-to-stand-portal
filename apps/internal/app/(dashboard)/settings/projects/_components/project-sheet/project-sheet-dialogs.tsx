@@ -1,6 +1,9 @@
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
+
 export type ProjectSheetDialogsProps = {
   isDeleteDialogOpen: boolean
+  /** The project's name, for the archive confirmation. */
+  projectName?: string | null
   isPending: boolean
   unsavedChangesDialog: React.ReactNode
   onCancelDelete: () => void
@@ -10,6 +13,7 @@ export type ProjectSheetDialogsProps = {
 export function ProjectSheetDialogs(props: ProjectSheetDialogsProps) {
   const {
     isDeleteDialogOpen,
+    projectName,
     isPending,
     unsavedChangesDialog,
     onCancelDelete,
@@ -18,13 +22,12 @@ export function ProjectSheetDialogs(props: ProjectSheetDialogsProps) {
 
   return (
     <>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={isDeleteDialogOpen}
-        title='Archive project?'
-        description='Archiving this project hides it from active views but keeps the history intact.'
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='project'
+        name={projectName || 'this project'}
+        list='active projects'
+        pending={isPending}
         onCancel={onCancelDelete}
         onConfirm={onConfirmDelete}
       />

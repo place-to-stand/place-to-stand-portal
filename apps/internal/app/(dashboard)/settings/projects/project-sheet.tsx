@@ -80,7 +80,9 @@ export function ProjectSheet(props: Props) {
         >
           <SheetFormHeader
             entity='project'
-            title={isEditing ? 'Edit project' : 'Create project'}
+            title={
+              isEditing ? props.project?.name || 'Project' : 'Create project'
+            }
           />
           <ProjectSheetForm
             form={form}
@@ -103,6 +105,7 @@ export function ProjectSheet(props: Props) {
       </Sheet>
       <ProjectSheetDialogs
         isDeleteDialogOpen={isDeleteDialogOpen}
+        projectName={props.project?.name}
         isPending={isPending}
         unsavedChangesDialog={unsavedChangesDialog}
         onCancelDelete={handleCancelDelete}
