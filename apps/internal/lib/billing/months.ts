@@ -37,3 +37,14 @@ export function monthLabel(monthStart: string): string {
 export function monthLabelFromNow(offset: number): string {
   return monthLabel(addMonths(currentMonthStartUtc(), offset))
 }
+
+/** "October 2026 (this month)", then "November 2026 (next month)". */
+export function thisOrNextMonthOptions(): {
+  value: 'current_month' | 'next_month'
+  label: string
+}[] {
+  return [
+    { value: 'current_month', label: `${monthLabelFromNow(0)} (this month)` },
+    { value: 'next_month', label: `${monthLabelFromNow(1)} (next month)` },
+  ]
+}

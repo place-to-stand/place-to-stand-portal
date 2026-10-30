@@ -26,7 +26,10 @@ import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
-import { monthLabelFromNow } from '@/lib/billing/months'
+import {
+  monthLabelFromNow,
+  thisOrNextMonthOptions,
+} from '@/lib/billing/months'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 export function CompanyLeadsSection({
@@ -101,32 +104,22 @@ export function CompanyBillingTab({
   const isClient = mode === 'live' || mode === 'ending'
   const choice = stopping
     ? {
-        title: 'Billing stops',
+        title: 'Last month billed',
+        // Stopping next month bills this month; stopping now leaves last
+        // month as the last one billed.
         options: [
           {
             value: 'next_month' as const,
-            label: 'Bill through the end of this month',
+            label: `${monthLabelFromNow(0)} (this month)`,
           },
           {
             value: 'current_month' as const,
-            label: 'Stop now (not billed this month)',
+            label: `${monthLabelFromNow(-1)} (last month)`,
           },
         ],
       }
     : billingOn && (mode === 'new' || mode === 'former')
-      ? {
-          title: mode === 'new' ? 'Billing starts' : 'Billing restarts',
-          options: [
-            {
-              value: 'current_month' as const,
-              label: `This month (${monthLabelFromNow(0)})`,
-            },
-            {
-              value: 'next_month' as const,
-              label: `Next month (${monthLabelFromNow(1)})`,
-            },
-          ],
-        }
+      ? { title: 'First month billed', options: thisOrNextMonthOptions() }
       : null
 
   return (
