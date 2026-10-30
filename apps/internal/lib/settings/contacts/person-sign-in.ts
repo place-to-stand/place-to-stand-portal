@@ -68,6 +68,10 @@ export async function sendPersonPasswordReset(
     type: 'recovery',
     redirect_to: '/reset-password',
   })
-  await sendPasswordResetEmail(signIn.email, `${origin}/auth/confirm?${params}`)
+  await sendPasswordResetEmail(
+    signIn.email,
+    `${origin}/auth/confirm?${params}`,
+    signIn.role === 'CLIENT' ? 'client' : 'internal'
+  )
   return {}
 }
