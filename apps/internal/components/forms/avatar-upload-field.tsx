@@ -145,7 +145,7 @@ export function AvatarUploadField({
       } catch (error) {
         console.error('Avatar upload failed', error)
         toast({
-          title: 'Unable to upload avatar',
+          title: 'Unable to upload photo',
           description:
             error instanceof Error ? error.message : 'Please try again.',
           variant: 'destructive',
@@ -236,7 +236,7 @@ export function AvatarUploadField({
     <div className='flex items-start gap-4'>
       <Avatar className='h-16 w-16'>
         {remoteImage ? (
-          <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Avatar'} />
+          <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Photo'} />
         ) : null}
         <AvatarFallback className='text-base font-semibold uppercase'>
           {initials}
@@ -260,7 +260,7 @@ export function AvatarUploadField({
               ) : (
                 <ImagePlus />
               )}
-              {value || previewUrl ? 'Replace avatar' : 'Upload avatar'}
+              {value || previewUrl ? 'Replace photo' : 'Upload photo'}
             </Button>
           </DisabledFieldTooltip>
           {(value || previewUrl) && (
