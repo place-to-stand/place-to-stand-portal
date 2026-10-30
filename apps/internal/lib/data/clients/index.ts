@@ -21,7 +21,6 @@ import { companies, contacts, projects, users } from '@/lib/db/schema'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 import { NotFoundError } from '@/lib/errors/http'
 import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
-import { clientWebsiteSql } from '@/lib/queries/clients/website'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
 import type { ClientCloser } from '@/lib/companies/billing/closers'
@@ -48,7 +47,7 @@ export type ClientWithMetrics = {
   companyName: string | null
   slug: string | null
   notes: string | null
-  /** The company's website, falling back to the client's legacy copy. */
+  /** The company's website (blank reads as null). */
   website: string | null
   billingType: 'prepaid' | 'net_30'
   state: string | null
@@ -83,7 +82,7 @@ export type ClientDetail = {
   companyName: string | null
   slug: string | null
   notes: string | null
-  /** The company's website, falling back to the client's legacy copy. */
+  /** The company's website (blank reads as null). */
   website: string | null
   state: string | null
   originationContactId: string | null
@@ -139,7 +138,7 @@ export const fetchClientsWithMetrics = cache(
         name: clientNameSql,
         slug: companies.slug,
         notes: companies.notes,
-        website: clientWebsiteSql,
+        website: sql<string | null>`nullif(btrim(${companies.website}), '')`,
         billingType: currentBillingTypeSql(),
         state: companies.state,
         originationContactId: currentOriginationContactIdSql(),
@@ -304,7 +303,7 @@ export const fetchClientById = cache(
         name: clientNameSql,
         slug: companies.slug,
         notes: companies.notes,
-        website: clientWebsiteSql,
+        website: sql<string | null>`nullif(btrim(${companies.website}), '')`,
         state: companies.state,
         originationContactId: currentOriginationContactIdSql(),
         originationUserId: currentOriginationUserIdSql(),
