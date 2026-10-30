@@ -79,7 +79,7 @@ Known and harmless (both were already in production before this PR):
 | Low | S7 | Anyone with the public key could call SECURITY DEFINER functions | **Fixed** in 0115 (revoked; dead functions dropped). The Data API is already off in production (checked 30 Oct) |
 | Low | S8 / R12 / I4 | Scheduled role changes weren't applied on CLI, MCP or the client portal until the nightly cron | **Fixed** |
 | Low | S9 | Editor sanitizer failed open | **Fixed** (also nested children) |
-| Low | S10 | No app-side throttle on password sign-in | **Approved**: per-email and per-IP limit in both portals (in progress) |
+| Low | S10 | No app-side throttle on password sign-in | **Fixed**: 10 attempts per email and 30 per IP every 15 min, in both portals; refuses sign-in if the database is down. **Known gap:** someone calling Supabase directly with the public key skips the app's count (Supabase's own per-IP limit still applies). Closing that needs a Supabase-side control, such as a password-verification Auth hook or CAPTCHA on sign-in. That's a later decision |
 | Low | R6 | Sales could set titles on client people | **Fixed** |
 | Low | R7 | Sales can read and edit client notes | **Decision** |
 | Low | R8 | Sales could archive a client's primary contact | **Fixed** |
