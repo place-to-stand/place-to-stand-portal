@@ -51,21 +51,3 @@ export function getProjectStatusToken(value: string): string {
 
   return BADGE_TINTS.neutral
 }
-
-const STATUS_BADGE_TOKENS = {
-  active: PROJECT_STATUS_TOKENS.ACTIVE,
-  depleted: BADGE_TINTS.amber,
-  archived: BADGE_TINTS.rose,
-  inactive: BADGE_TINTS.neutral,
-} as const
-
-type StatusBadgeValue = keyof typeof STATUS_BADGE_TOKENS
-
-export function getStatusBadgeToken(value: string): string {
-  const normalized = value.toLowerCase() as StatusBadgeValue
-  if (normalized in STATUS_BADGE_TOKENS) {
-    return STATUS_BADGE_TOKENS[normalized]
-  }
-
-  return BADGE_TINTS.neutral
-}

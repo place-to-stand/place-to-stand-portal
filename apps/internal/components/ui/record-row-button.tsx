@@ -13,8 +13,6 @@ type RecordRowButtonProps = {
   /** Right-aligned, e.g. a status badge or a due date. */
   trailing?: ReactNode
   onClick: () => void
-  /** `bleed` fills the row edge to edge (widget lists); `inset` is rounded (sheet lists). */
-  variant?: 'bleed' | 'inset'
   className?: string
 }
 
@@ -29,7 +27,6 @@ export function RecordRowButton({
   leading,
   trailing,
   onClick,
-  variant = 'bleed',
   className,
 }: RecordRowButtonProps) {
   return (
@@ -37,8 +34,7 @@ export function RecordRowButton({
       type='button'
       onClick={onClick}
       className={cn(
-        'hover:bg-muted/50 focus-visible:bg-muted/50 flex w-full min-w-0 items-center gap-3 text-left outline-none',
-        variant === 'bleed' ? 'px-4 py-2.5' : 'rounded-md px-2 py-2',
+        'hover:bg-muted/50 focus-visible:bg-muted/50 flex w-full min-w-0 items-center gap-3 px-4 py-2.5 text-left outline-none',
         className
       )}
     >

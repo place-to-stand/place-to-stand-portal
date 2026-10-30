@@ -9,19 +9,7 @@ export const createUserSchema = z.object({
   role: z.enum(USER_ROLES),
 })
 
-export const updateUserSchema = z.object({
-  id: z.string().uuid(),
-  fullName: z.string().min(1),
-  role: z.enum(USER_ROLES),
-  password: z.string().min(8).optional(),
-  disabled: z.boolean().optional(),
-})
-
 export const deleteUserSchema = z.object({
-  id: z.string().uuid(),
-})
-
-export const restoreUserSchema = z.object({
   id: z.string().uuid(),
 })
 
@@ -31,7 +19,5 @@ export const setUserDisabledSchema = z.object({
 })
 
 export type CreateUserInput = z.infer<typeof createUserSchema>
-export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type DeleteUserInput = z.infer<typeof deleteUserSchema>
-export type RestoreUserInput = z.infer<typeof restoreUserSchema>
 export type SetUserDisabledInput = z.infer<typeof setUserDisabledSchema>

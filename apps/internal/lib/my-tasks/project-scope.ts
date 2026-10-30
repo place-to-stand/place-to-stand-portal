@@ -37,12 +37,6 @@ function isHideableToken(value: string): value is HideableProjectTypeToken {
   return (HIDEABLE_PROJECT_TYPE_TOKENS as readonly string[]).includes(value)
 }
 
-export function isHideableProjectType(
-  value: string
-): value is HideableProjectType {
-  return (HIDEABLE_PROJECT_TYPE_VALUES as readonly string[]).includes(value)
-}
-
 /**
  * `?hide=` → project types to exclude. Unknown tokens and duplicates are
  * dropped; the result is in canonical order regardless of URL order.

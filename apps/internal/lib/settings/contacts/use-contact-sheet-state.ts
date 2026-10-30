@@ -266,9 +266,6 @@ export function useContactSheetState({
 
   const contactDisplayName = contact?.name || contact?.email || 'this person'
   const sheetTitle = isEditing ? 'Edit person' : 'Create person'
-  const sheetDescription = isEditing
-    ? `Update the details for ${contactDisplayName}.`
-    : 'Add a new person to your organization.'
 
   // Unsaved changes warning
   const { requestConfirmation, dialog: unsavedChangesDialog } =
@@ -444,7 +441,6 @@ export function useContactSheetState({
     companiesLoadFailed,
     pendingReason: PENDING_REASON,
     sheetTitle,
-    sheetDescription,
     contactDisplayName,
     submitDisabled,
     submitDisabledReason,
