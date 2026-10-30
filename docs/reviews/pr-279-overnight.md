@@ -2,7 +2,7 @@
 
 ## Read this first
 
-- **Nothing failed the rehearsal.** On a copy of production, all 24 migrations (0089–0112) ran in one transaction in about a second. All 41 data checks pass. The documented rollback returns the copy exactly to its 0104 state, schema and data. The browser suite passes against that copy as an admin, as Sales and with the portal preview.
+- **Nothing failed the rehearsal.** On a copy of production, all 26 migrations (0089–0114) ran in one transaction in about a second. All 41 data checks pass, every month's monthly close is identical to the pre-batch code (and every closed month to its snapshot). The documented rollback returns the copy exactly to its 0104 state, schema and data. The browser suite passes against that copy as an admin, as Sales and with the portal preview.
 - **The production copy is from Oct 29 17:13, not fresh.** A new read-only `pg_dump` needs the production connection string, and this machine's permission check (rightly) blocked me from reading the credentials file. To rehearse on a fresh copy, run these two commands yourself; the second is local only:
 
   ```bash
@@ -29,7 +29,7 @@
 
 ## Rehearsal (production copy of Oct 29 17:13)
 
-- **Forward run:** 0089 → 0112 in one drizzle transaction, about 1.1s, behind the network guard.
+- **Forward run:** 0089 → 0114 in one drizzle transaction, about 1s, behind the network guard.
 - **Data checks** (`scripts/compare-rollout.mjs`, 41/41 pass):
   - every row kept, for people, sign-ins, projects, tasks, time logs, hour blocks, invoices, leads, comments, assignees, activity and close snapshots;
   - new people are only sign-ins' and leads' people;
@@ -43,8 +43,8 @@
   - every closed-month snapshot is unchanged once ids are mapped;
   - hours bought, hours logged and invoice totals per client are unchanged.
 - **September 2026 close:** $15,850 billing in and $14,657.50 payouts, identical before and after and equal to its snapshot. (An earlier version of this report gave $5,200 / $4,462.50: that was October to date, not September.)
-- **Undo:** run on a second copy after the whole batch. 0112-undo, then 0111-undo, then the §5 blocks for 0110, 0109, 0108 and 0105–0107. It returns the copy to exactly its own 0104 state (schema, constraints, indexes and every table's data) in under a second. Option B goes back to the 0104 shape; going all the way back to production's current code is still Option A (restore the backup).
-- **Browser suite on a throwaway app over the migrated copy:** 72 pass; the 2 skips are lists with fewer than two rows. The data-changing tests (make, stop and restart billing; the lead warning and its fix) ran only there.
+- **Undo:** run on a second copy after the whole batch. 0114-undo, 0113-undo, 0112-undo, then 0111-undo, then the §5 blocks for 0110, 0109, 0108 and 0105–0107. It returns the copy to exactly its own 0104 state (schema, constraints, indexes and every table's data) in under a second. Option B goes back to the 0104 shape; going all the way back to production's current code is still Option A (restore the backup).
+- **Browser suite on a throwaway app over the migrated copy:** 83 pass, 4 skip (lists with fewer than two rows; planning needs a task with a linked repo). The data-changing tests (one-Save company, person, project and task sheets; billing stop and restart; Won needs a company) ran only there. On :3003 (read-only): 76 pass.
 - **Found in production data:**
   - A few `time_log_tasks` rows fail their own check `time_log_tasks_project_match`. It reads other tables, which changed after the rows were written. The batch never writes those rows, but any future update to them will fail.
   - Some activity rows point at clients that no longer exist. They were orphaned before the batch and stay so.
