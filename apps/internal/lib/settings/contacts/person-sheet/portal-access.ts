@@ -24,7 +24,7 @@ import type { Undo } from './undo'
 export type PersonPortalPlan = { grant: string[]; revoke: string[] }
 
 /**
- * The person sheet's portal switches, as the company sheet's People tab
+ * The person sheet's portal switches, as the company sheet's People section
  * saves them: who gains and loses access with this Save. Only a billed
  * company gives access; a former client's switch can only go off. A
  * company the person leaves loses its access with the membership.

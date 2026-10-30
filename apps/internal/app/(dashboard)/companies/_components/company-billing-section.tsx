@@ -33,7 +33,7 @@ export type CompanyBillingHandle = {
    */
   collect: () => CompanyBillingIntent | null
   /**
-   * The People tab shows portal switches: "Bill this company" is on, or it
+   * The People section shows portal switches: "Bill this company" is on, or it
    * is a former client (its switches show as they are).
    */
   portalShown: () => boolean

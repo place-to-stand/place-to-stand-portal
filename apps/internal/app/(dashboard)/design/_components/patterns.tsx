@@ -186,7 +186,7 @@ export function PatternsHouseRules() {
             </label>
           </div>
         }
-        doCaption='One switch per person, on the company’s People tab.'
+        doCaption='One switch per person, on the company’s People section.'
         dontExample={
           <div className='flex flex-wrap items-center gap-3'>
             <Switch defaultChecked aria-label='Portal access' />

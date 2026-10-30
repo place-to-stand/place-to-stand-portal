@@ -90,14 +90,13 @@ test('sales sees no portal switches on a client company’s people', async ({
   await clientRow.click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
-  await sheet.getByRole('tab', { name: 'People' }).click()
   await expect(
     sheet.getByRole('switch', { name: /^Portal access for / })
   ).toHaveCount(0)
   await expect(sheet.getByText('Portal', { exact: true })).toHaveCount(0)
 })
 
-/** The first client company on the list, opened on its People tab. */
+/** The first client company on the list, opened (People is on Details). */
 async function openClientPeople(page: Page) {
   await page.goto('/companies')
   const clientRow = page
@@ -111,7 +110,6 @@ async function openClientPeople(page: Page) {
   await clientRow.click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
-  await sheet.getByRole('tab', { name: 'People' }).click()
   return { sheet, name }
 }
 
@@ -132,7 +130,7 @@ test('sales can’t change a client’s primary contact', async ({ page }) => {
   await expect(stars.first()).toBeDisabled()
 })
 
-// R4: Sales adds someone to a client company from its People tab; and a
+// R4: Sales adds someone to a client company from its People list; and a
 // Sales save that asks for portal access (replayed with the field added) is
 // refused by the server. Cleans up: removes them again and archives them.
 test('sales adds a person to a client company, never with portal access', async ({

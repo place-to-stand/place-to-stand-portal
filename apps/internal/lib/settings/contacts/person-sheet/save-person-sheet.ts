@@ -127,7 +127,7 @@ async function save(
   const signInPlan = signInPrepared.plan
 
   // Portal access to their client companies (admins), as on the company
-  // sheet's People tab.
+  // sheet's People section.
   const portalPlanned = await planPersonPortalAccess(
     plan,
     contactInput.companies

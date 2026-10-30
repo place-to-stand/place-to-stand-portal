@@ -51,7 +51,7 @@ type ContactCompaniesSectionProps = {
  * The companies a person belongs to: title at each and the primary-contact
  * star (set on the company sheet, read-only here). People who manage
  * clients get a Portal switch on each client row, the same control as the
- * company's People tab: turning it on for someone with no sign-in gives
+ * company sheet's People section: turning it on for someone with no sign-in gives
  * them a Client sign-in on Save. All staged until Save, like the rest of
  * the sheet. The first one is their main company in lists.
  */

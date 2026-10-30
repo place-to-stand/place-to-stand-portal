@@ -52,10 +52,12 @@ import { CompanyDetailsFields } from './company-details-fields'
 import { CompanyPeopleTab } from './company-people-tab'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { SheetTabs, useSheetTab } from '@/components/sheets/sheet-tabs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
+const COMPANY_PEOPLE_SECTION_ID = 'company-people'
 
 type CompanySheetProps = {
   /** `null` opens the create sheet. */
@@ -69,7 +71,7 @@ type CompanySheetProps = {
 }
 
 /**
- * Create and edit are the same sheet: Details, People, Projects and Billing
+ * Create and edit are the same sheet: Details (with its People), Projects and Billing
  * (the last two for admins). One Save writes all of it — the company, its
  * people, billing and portal access — in one transaction.
  */
@@ -199,12 +201,24 @@ export function CompanySheet({
       ? formerClientId
       : null)
   const showProjects = isAdmin && isEditing && Boolean(projectsCompanyId)
+  // People sit on Details (referenced often); an old `tab=people` link
+  // lands there too.
   const tabValues = isAdmin
     ? showProjects
-      ? ['details', 'people', 'projects', 'billing']
-      : ['details', 'people', 'billing']
-    : ['details', 'people']
+      ? ['details', 'projects', 'billing']
+      : ['details', 'billing']
+    : ['details']
   const [tab, setTab] = useSheetTab(tabValues)
+  // A link to a company's people (`tab=people`) opens Details scrolled to
+  // the People section.
+  const { getAux } = useSheetParams()
+  const wantsPeople = open && getAux('tab') === 'people' && Boolean(data)
+  useEffect(() => {
+    if (!wantsPeople) return
+    document
+      .getElementById(COMPANY_PEOPLE_SECTION_ID)
+      ?.scrollIntoView({ block: 'start' })
+  }, [wantsPeople])
 
   // What the form was seeded with (reset values), not the live query data.
   const seededTitles = form.formState.defaultValues?.titles as
@@ -447,7 +461,7 @@ export function CompanySheet({
                         {
                           value: 'details',
                           label: 'Details',
-                          dirty: detailsDirty,
+                          dirty: detailsDirty || peopleDirty,
                           content: (
                             <>
                               <CompanyDetailsFields
@@ -455,48 +469,44 @@ export function CompanySheet({
                                 disabled={fieldsDisabled}
                               />
                               <Separator />
+                              <div id={COMPANY_PEOPLE_SECTION_ID}>
+                                <CompanyPeopleTab
+                                  contacts={company?.contacts ?? []}
+                                  added={addedContacts}
+                                  removedIds={removedContactIds}
+                                  movesFrom={movesFrom}
+                                  primaryContactId={primaryContactId}
+                                  clientName={company?.clients[0]?.name ?? null}
+                                  disabled={fieldsDisabled || peopleLocked}
+                                  lockedReason={
+                                    peopleLocked
+                                      ? `Only an admin can change the people at ${company?.name ?? 'this company'}.`
+                                      : null
+                                  }
+                                  primaryLockedReason={primaryLockedReason}
+                                  titles={titles}
+                                  titleDisabled={fieldsDisabled || peopleLocked}
+                                  onTitleChange={handleTitleChange}
+                                  onSetPrimary={handleSetPrimary}
+                                  onAdd={handleAddPerson}
+                                  onRemove={handleRemovePerson}
+                                  onUndoRemove={handleUndoRemovePerson}
+                                  portal={
+                                    canManageClients
+                                      ? {
+                                          ids: portalAccessIds,
+                                          onChange: handlePortalAccessChange,
+                                          disabled: fieldsDisabled,
+                                        }
+                                      : null
+                                  }
+                                />
+                              </div>
+                              <Separator />
                               <CompanyLeadsSection
                                 leads={company?.leads ?? []}
                               />
                             </>
-                          ),
-                        },
-                        {
-                          value: 'people',
-                          label: 'People',
-                          dirty: peopleDirty,
-                          content: (
-                            <CompanyPeopleTab
-                              contacts={company?.contacts ?? []}
-                              added={addedContacts}
-                              removedIds={removedContactIds}
-                              movesFrom={movesFrom}
-                              primaryContactId={primaryContactId}
-                              clientName={company?.clients[0]?.name ?? null}
-                              disabled={fieldsDisabled || peopleLocked}
-                              lockedReason={
-                                peopleLocked
-                                  ? `Only an admin can change the people at ${company?.name ?? 'this company'}.`
-                                  : null
-                              }
-                              primaryLockedReason={primaryLockedReason}
-                              titles={titles}
-                              titleDisabled={fieldsDisabled || peopleLocked}
-                              onTitleChange={handleTitleChange}
-                              onSetPrimary={handleSetPrimary}
-                              onAdd={handleAddPerson}
-                              onRemove={handleRemovePerson}
-                              onUndoRemove={handleUndoRemovePerson}
-                              portal={
-                                canManageClients
-                                  ? {
-                                      ids: portalAccessIds,
-                                      onChange: handlePortalAccessChange,
-                                      disabled: fieldsDisabled,
-                                    }
-                                  : null
-                              }
-                            />
                           ),
                         },
                         ...(showProjects && projectsCompanyId

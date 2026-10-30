@@ -43,7 +43,6 @@ async function startCompany(page: Page, name: string) {
   await expect(sheet).toBeVisible()
   await sheet.getByLabel('Name').fill(name)
 
-  await sheet.getByRole('tab', { name: 'People' }).click()
   await sheet.getByRole('button', { name: 'Add person' }).first().click()
   const person = page
     .getByRole('option')
@@ -109,7 +108,6 @@ test('creating a company with a person and billing is one Save', async ({
 
   const saved = await openCompany(page, name)
   await expect(saved.getByText('Client', { exact: true }).first()).toBeVisible()
-  await saved.getByRole('tab', { name: 'People' }).click()
   await expect(
     saved.getByText(personName, { exact: true }).first()
   ).toBeVisible()
