@@ -4,16 +4,17 @@ Covers PR #279's database chain, migrations **0089 → 0112**, and the matching 
 
 ## Summary
 
-1. This PR adds 24 migrations (0089–0112) on top of 0088. Pre-flight P0 confirms production is at 0088.
+1. This PR adds 26 migrations (0089–0114) on top of 0088. Pre-flight P0 confirms production is at 0088.
 2. Net effect:
    - leads, contacts and clients are reorganised around **companies**;
    - people belong to companies through **memberships** (several per person allowed);
    - portal access becomes one flag on a membership, read through the `client_portal_access` view;
    - leads read their person's name, email and phone from the linked **contact**;
    - a client is its company's billing record and takes the company's name; a user is a person's sign-in and takes the contact's name (0109);
-   - then (0111) a client is simply a company you bill: `clients` folds into `companies` (`slug`, `state`, `client_since`, `client_ended_at`) and everything keyed on `client_id` keys on `company_id`. Old client ids stay in `archive_sales_tools.client_id_map` for good, and the CLI and MCP keep accepting them.
+   - then (0111) a client is simply a company you bill: `clients` folds into `companies` (`slug`, `state`, `client_since`, `client_ended_at`) and everything keyed on `client_id` keys on `company_id`. Old client ids stay in `archive_sales_tools.client_id_map` for good, and the CLI and MCP keep accepting them;
+   - then (0113, 0114) when a company is billed lives in `client_billing_periods` (by month; the close counts a client in each month it was billed), read through one SQL definition (`company_is_client`, `company_billed_in`) that the portal view also uses; a sign-in's role is kept by month in `user_role_terms` (the close pays on the role in force); the staff company is marked `companies.is_staff`; hour blocks, client updates, time logs and comments can no longer be deleted with their company or sign-in; billing events move onto the company in the activity log.
 3. Every backfill runs **before** any drop.
-4. 0107, 0108, 0109, 0111 and 0112 copy every table and column they drop into the `archive_sales_tools` schema.
+4. 0107, 0108, 0109, 0111, 0112 and 0114 copy every table and column they drop into the `archive_sales_tools` schema.
 5. 0097 also archives the three columns it drops, and 0090 archives every lead's company name as typed before it respells them (see [Archives made before 0107](#archives-made-before-0107)).
 6. **Seven migrations stop the release on bad data** (drizzle runs the whole batch in one transaction, so a stop leaves production at 0088):
    - 0104: a company would end up with two live clients;
@@ -64,6 +65,8 @@ Run the read-only pre-flight queries (P0–P14) and compare with the values shar
 | 0110 `person_avatar` | Adds `contacts.avatar_url` (a photo belongs to the person, with or without a sign-in) and fills it from their sign-in's `users.avatar_url`. `users.avatar_url` stays and is kept in step until the sign-in table is slimmed. | Yes (re-copies the same paths) | — |
 | 0111 `clients_into_companies` | Folds `clients` into `companies`: adds `slug`, `state`, `client_since`, `client_ended_at` (from the company's live client, else its most recently stopped one; `client_since` is its first client's creation, `client_ended_at` set only when no client is live), keeps every client's notes after the company's and fills a blank company website. Rewrites every `client_id` (projects, hour blocks, invoices, billing and commission terms, client updates, GitHub installs, activity targets, ids inside closed-month snapshots) to the company's id and renames the columns `company_id`; renames `client_billing_terms`, `client_commission_terms`, `client_commission_term_closers` to `billing_terms`, `commission_terms`, `commission_term_closers` (with their keys and indexes); drops `leads.converted_to_client_id` (a won lead's client is its company); drops `clients`; recreates `client_portal_access` keyed by company. Updated-at triggers stay off while ids move. Archives `clients`, `companies`, every old reference and every snapshot first, plus `client_id_map`. | No | **Stops** on a client with no company, terms that collide when two clients of one company merge, a company with two live clients, or a client with a label; stops if an archive table already exists. |
 | 0112 `thin_sign_in` | Drops `users.avatar_url`: a photo is the person's (`contacts.avatar_url`, 0110). First copies any photo only the sign-in has onto its person, and archives every sign-in photo (`user_avatars_0112`). `users` is then the sign-in only: id, email, role, `disabled_at`, `deleted_at`, onboarding, timestamps. | No | **Stops** on a sign-in with a photo and no live person to carry it; stops if the archive table already exists. |
+| 0113 `billing_periods_role_terms` | Adds `client_billing_periods` (one row per stretch of billing, by month), backfilled from `client_since` / `client_ended_at`: a stretch starts at the first month anything was billed (hour blocks, client time, billing terms, or `client_since`, whichever is earliest), so no month the close counted drops out; a former client's ends in the month it stopped. Adds the SQL functions `company_billed_in`, `company_billing_open`, `company_is_client` and rebuilds `client_portal_access` on them. Adds `user_role_terms` (every sign-in's current role from Oct 2025) and `companies.is_staff` (set on the live "Place To Stand"). Changes `hour_blocks` and `client_updates` → company, and `time_logs` and `task_comments` → sign-in, from CASCADE to RESTRICT. Moves billing events (`target_type` CLIENT) onto COMPANY, keeping their ids in `client_activity_0113`. Updated-at triggers stay off. | No | — |
+| 0114 `drop_client_columns` | Archives `client_since` / `client_ended_at` (`company_client_dates_0114`), then drops them and their index. | No | Stops if the archive table already exists. |
 
 ### Archives made before 0107
 
@@ -455,7 +458,9 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
 
 Option B SQL. Run it inside one transaction. Re-add constraints as they were in the pre-PR schema (`0000_supabase_baseline` and later).
 
-Undo 0112 first: run [`0112-undo.sql`](0112-undo.sql) the same way. It puts `users.avatar_url` back from each person's photo (and the archive) with the updated-at trigger off. Tested on a copy: `users` comes back identical (the column returns last).
+Undo 0114, then 0113, first: run [`0114-undo.sql`](0114-undo.sql) then [`0113-undo.sql`](0113-undo.sql) the same way. They put `client_since` / `client_ended_at` back (the archived values where billing is unchanged since the release, else derived from the billing periods), restore the portal view, the CASCADE keys and the CLIENT activity targets, and drop the billing periods, role terms and staff flag. Tested on a copy: schema and every table's data come back identical.
+
+Then undo 0112: run [`0112-undo.sql`](0112-undo.sql) the same way. It puts `users.avatar_url` back from each person's photo (and the archive) with the updated-at trigger off. Tested on a copy: `users` comes back identical (the column returns last).
 
 Then undo 0111: run [`0111-undo.sql`](0111-undo.sql) in one transaction (`psql "$DATABASE_URL" --single-transaction -v ON_ERROR_STOP=1 -f docs/migrations/0111-undo.sql`). It rebuilds `clients` from the archive, puts every `client_id` back (rows made since map to their company's client; a company first billed after the release gets a client row with the company's id), restores the snapshots, `leads.converted_to_client_id`, the company notes and websites, the old names and the view, and removes the 0111 migration row. Tested on a copy of the 0111 database: schema and every table's data come back identical (the one difference is `leads.converted_to_client_id` returning as the last column).
 
