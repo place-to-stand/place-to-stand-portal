@@ -130,7 +130,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - a list's `FilterBar`: search, then its filters inline. Below `md` the search keeps the row beside a Filters button and the filters open in a sheet (`FilterSheetButton`, `components/table-toolbar/filter-sheet.tsx`); reuse that button for any other page's filters on phones. Every list filter is `FilterSelect` (`components/table-toolbar/filter-select.tsx`): a single-choice filter is a searchable combobox, however short its list (it opens on the selected option, typing narrows it, the first option is "All …"); a multi-choice filter is the checkbox popover. Never a plain `Select` in a filter bar
   - the scrolling content. The body itself never scrolls.
 - **The left sidebar** uses the `sidebar-*` tokens and collapses to icons. When collapsed, the blueprint mark stands in for the logo.
-- **Entities open in sheets, not pages.** Sheets are right-side panels over the list, sized `sm`–`xwide`. They're addressed by a query param (`?task=<uuid>`, `?client=new`).
+- **Entities open in sheets, not pages.** Sheets are right-side panels over the list in one of two widths: `narrow` for a simple form, `wide` for a record with lists (see `components/sheet.md`). They're addressed by a query param (`?task=<uuid>`, `?client=new`).
 
 ### States and motion
 - **Focus** on every control is `focus-visible:border-ring` plus a 3px `ring-ring/50` halo (`focus-ring`). An invalid field swaps both to `destructive` (the ring at 20%, 40% in dark).
@@ -176,5 +176,5 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 11. **Icon-only row actions use `RowActionButton`** (`@pts/ui/row-action-button`): a real tooltip plus a matching accessible name. Never `title=` as a tooltip.
 12. **Pick a size, don't override it.** Buttons take `size` (`xs` 28px, `sm` 32px, default 36px, `icon-sm`), Avatars take `size` (`xs`–`lg`, initials scale with it). No `h-*` or `text-[9px]` overrides.
 13. **Focus is `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`** on every custom interactive element. Never remove the outline without that replacement.
-14. **Toasts:** success is short and past tense ("Invoice sent"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks.
+14. **Toasts:** success is short and past tense ("Invoice sent", "Company saved"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks. **Every sheet and dialog reports its save result, success or failure, as a toast**, never an inline error box; only a field's own error stays under the field (`FormMessage`).
 15. **A responsive grid declares its phone column.** Write `grid grid-cols-1 lg:grid-cols-2`, never a bare `grid lg:grid-cols-2`: the implicit column grows to its widest child (an editor toolbar, a row of amounts) and pushes the whole page sideways on a phone.

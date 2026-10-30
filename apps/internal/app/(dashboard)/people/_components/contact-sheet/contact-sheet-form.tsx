@@ -5,7 +5,6 @@ import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -39,7 +38,6 @@ type ContactFormValues = ContactFormData
 
 type ContactSheetFormProps = {
   form: UseFormReturn<ContactFormValues>
-  feedback: string | null
   isPending: boolean
   isEditing: boolean
   /** The contact's companies failed to load; the list can't be edited. */
@@ -77,7 +75,6 @@ function initialsOf(name: string) {
 
 export function ContactSheetForm({
   form,
-  feedback,
   isPending,
   companiesLoadFailed,
   isEditing,
@@ -354,9 +351,6 @@ export function ContactSheetForm({
                 </SheetSection>
               </>
             ) : null}
-          </div>
-          <div className='px-6 pb-6 empty:hidden'>
-            <FormFeedback>{feedback}</FormFeedback>
           </div>
         </form>
       </div>

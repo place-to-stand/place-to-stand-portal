@@ -35,7 +35,6 @@ type Props = {
 export function ProjectSheet(props: Props) {
   const {
     form,
-    feedback,
     isEditing,
     isPending,
     requiresClientSelection,
@@ -77,7 +76,7 @@ export function ProjectSheet(props: Props) {
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='2xl'
+          size='wide'
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
@@ -91,7 +90,6 @@ export function ProjectSheet(props: Props) {
             fieldState={fieldState}
             isEditing={isEditing}
             isPending={isPending}
-            feedback={feedback}
             clientOptions={clientOptions}
             ownerOptions={ownerOptions}
             submitButton={submitButton}

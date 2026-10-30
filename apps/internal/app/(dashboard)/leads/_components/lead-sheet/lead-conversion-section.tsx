@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
@@ -16,7 +15,8 @@ import {
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
-import { companySheetHref, projectBoardHref } from '@/lib/sheets/hrefs'
+import { projectBoardHref } from '@/lib/sheets/hrefs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const MAX_PROJECTS = 4
@@ -141,7 +141,7 @@ function ConvertedSummary({
 
 function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
   const { client, contact, projects } = summary
-  const clientHref = companySheetHref(client.companyId, 'billing')
+  const { open: openSheet } = useSheetParams()
   const clientSegment = client.slug ?? client.id
   const hiddenProjectCount = projects.length - MAX_PROJECTS
 
@@ -170,13 +170,16 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
         ))}
       </SheetRecordList>
       {hiddenProjectCount > 0 && !client.archived && (
-        <Link
-          href={clientHref}
-          className='text-muted-foreground hover:text-foreground block text-xs'
+        <button
+          type='button'
+          onClick={() =>
+            openSheet('company', client.companyId, { tab: 'projects' })
+          }
+          className='text-muted-foreground hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 block rounded-sm text-xs outline-none hover:underline focus-visible:ring-[3px]'
         >
           +{hiddenProjectCount} more{' '}
           {hiddenProjectCount === 1 ? 'project' : 'projects'}
-        </Link>
+        </button>
       )}
     </div>
   )

@@ -81,7 +81,7 @@ const VARIANTS: Variant[] = [
   },
 ]
 
-const SIZES = ['sm', 'md', 'lg', 'xl', '2xl', 'wide'] as const
+const SIZES = ['narrow', 'wide'] as const
 
 export function ComponentsSheets() {
   const [variant, setVariant] = useState<Variant | null>(null)
@@ -114,7 +114,7 @@ export function ComponentsSheets() {
 
       <Specimen
         label='Sizes'
-        note="SheetContent size='…' (plus split, xwide, full)"
+        note="SheetContent size='narrow' (a simple form) or 'wide' (a record with lists); nothing else"
       >
         {SIZES.map(size => (
           <SizeSheet key={size} size={size} />
@@ -136,7 +136,9 @@ function SizeSheet({ size }: { size: (typeof SIZES)[number] }) {
           <SheetHeader>
             <SheetTitle>Sheet size {size}</SheetTitle>
             <SheetDescription>
-              Pick the smallest size that fits the form without wrapping.
+              {size === 'narrow'
+                ? 'A simple form: an hour block, the phone filters.'
+                : 'A record with lists: company, person, lead, task, project, invoice.'}
             </SheetDescription>
           </SheetHeader>
         </SheetContent>
@@ -173,7 +175,7 @@ function SampleEntitySheet({
       <Sheet open={Boolean(variant)} onOpenChange={next => !next && onClose()}>
         <SheetContent
           hideCloseButton
-          size='xl'
+          size='wide'
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader

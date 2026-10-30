@@ -12,6 +12,8 @@ A short note that something just happened, in the bottom corner (bottom centre o
 
 **Copy:** past tense on success ("Invoice sent"); "Unable to <verb> <noun>" on failure, with the reason in the description; sentence case.
 
-**Toast or Alert?** A toast reports what just happened and leaves. An Alert stays on the page or sheet while its cause does (a lead's person isn't at its company). An error someone must fix before saving stays in the form (`FormMessage` for a field, `FormFeedback` for the save), never only in a toast.
+**Toast or Alert?** A toast reports what just happened and leaves. An Alert stays on the page or sheet while its cause does (a lead's person isn't at its company).
+
+**Save results are toasts, on every sheet and dialog.** A save, archive, send or log either succeeds ("Company saved", "Company created", "Time logged") or fails ("Unable to save company") as a toast, the same way everywhere, and a failed save leaves the sheet open with its edits. A refusal gives its reason in the description: "Someone else saved this company. Reload to see their changes.", a closed month, "Only an admin can …". There is no inline save-error box. Only a field's own error (required, format, a lead's Won needing a company) stays under that field (`FormMessage`), and it may also be the reason a save toast gives.
 
 **Don't:** put actions in a toast, use one for a field error, or call `toast` with hand-rolled classes.

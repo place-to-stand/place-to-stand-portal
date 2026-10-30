@@ -18,7 +18,6 @@ export const TASK_FORM_ID = 'task-form'
 type TaskSheetFormProps = {
   form: UseFormReturn<TaskSheetFormValues>
   onSubmit: (values: TaskSheetFormValues) => void
-  feedback: string | null
   isPending: boolean
   canManage: boolean
   assigneeItems: SearchableComboboxItem[]
@@ -43,7 +42,6 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
   const {
     form,
     onSubmit,
-    feedback,
     isPending,
     canManage,
     assigneeItems,
@@ -115,7 +113,6 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           isDragActive={isDragActive}
           acceptedAttachmentTypes={acceptedAttachmentTypes}
           maxAttachmentSize={maxAttachmentSize}
-          feedback={feedback}
           isSheetOpen={isSheetOpen}
         />
       </form>

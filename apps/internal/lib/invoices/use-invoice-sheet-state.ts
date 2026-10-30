@@ -87,7 +87,6 @@ export type UseInvoiceSheetStateArgs = {
 export type UseInvoiceSheetStateReturn = {
   form: UseFormReturn<InvoiceFormValues>
   fieldArray: UseFieldArrayReturn<InvoiceFormValues, 'lineItems', 'id'>
-  feedback: string | null
   isEditing: boolean
   isReadOnly: boolean
   isPending: boolean
@@ -110,7 +109,6 @@ export type UseInvoiceSheetStateReturn = {
   handleRemoveLineItem: (index: number) => void
   handleMoveLineItem: (fromIndex: number, toIndex: number) => void
   handleProductSelect: (index: number, productId: string) => void
-  setFeedback: (value: string | null) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +128,6 @@ export function useInvoiceSheetState({
   const invoiceStatus = invoice?.status ?? null
   const readOnly = !isInvoiceEditable(invoiceStatus)
 
-  const [feedback, setFeedback] = useState<string | null>(null)
   // `isLoading` is the open-time fetch of line items: it blocks submit (you
   // can't save a half-loaded form) but is not a save, so it never reaches the
   // button label. The save transition and the quiet one come from
@@ -169,7 +166,6 @@ export function useInvoiceSheetState({
     (data: InvoiceWithLineItems | null) => {
       form.reset(buildInvoiceFormDefaults(data))
       form.clearErrors()
-      setFeedback(null)
     },
     [form]
   )
@@ -252,7 +248,6 @@ export function useInvoiceSheetState({
         if (prefillData) {
           form.reset(prefillData)
           form.clearErrors()
-          setFeedback(null)
         } else {
           const defaults = buildInvoiceFormDefaults(null)
           // Default the first line item to the first active catalog product
@@ -262,7 +257,6 @@ export function useInvoiceSheetState({
           }
           form.reset(defaults)
           form.clearErrors()
-          setFeedback(null)
         }
       })
       return
@@ -278,7 +272,11 @@ export function useInvoiceSheetState({
         invoiceWithLineItemsRef.current = fullInvoice
         resetFormState(fullInvoice)
       } catch {
-        setFeedback('Unable to load invoice details.')
+        toast({
+          title: 'Unable to load invoice',
+          description: 'Close the sheet and open it again.',
+          variant: 'destructive',
+        })
       }
     })
   }, [
@@ -289,6 +287,7 @@ export function useInvoiceSheetState({
     productCatalog,
     startLoadTransition,
     startResetTransition,
+    toast,
   ])
 
   // ---------------------------------------------------------------------------
@@ -372,7 +371,6 @@ export function useInvoiceSheetState({
       if (readOnly) return
 
       startSave(async () => {
-        setFeedback(null)
         form.clearErrors()
 
         const payload = createInvoiceSavePayload(
@@ -399,7 +397,6 @@ export function useInvoiceSheetState({
               status: 'error',
               error: result.error,
             })
-            setFeedback(result.error)
             toast({
               title: 'Unable to save invoice',
               description: result.error,
@@ -414,10 +411,7 @@ export function useInvoiceSheetState({
           })
 
           toast({
-            title: isEditing ? 'Invoice updated' : 'Invoice created',
-            description: isEditing
-              ? 'Changes saved.'
-              : 'The invoice is ready to send.',
+            title: isEditing ? 'Invoice saved' : 'Invoice created',
           })
 
           resetFormState(null)
@@ -428,7 +422,6 @@ export function useInvoiceSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('Unable to save the invoice.')
           toast({
             title: 'Unable to save invoice',
             description:
@@ -475,7 +468,6 @@ export function useInvoiceSheetState({
 
     setIsDeleteDialogOpen(false)
     startSave(async () => {
-      setFeedback(null)
       form.clearErrors()
 
       const interaction = startSettingsInteraction({
@@ -496,7 +488,6 @@ export function useInvoiceSheetState({
             targetId: invoice.id,
             error: result.error,
           })
-          setFeedback(result.error)
           toast({
             title: 'Unable to archive invoice',
             description: result.error,
@@ -524,7 +515,6 @@ export function useInvoiceSheetState({
           targetId: invoice.id,
           error: error instanceof Error ? error.message : 'Unknown error',
         })
-        setFeedback('We could not archive this invoice. Please try again.')
         toast({
           title: 'Unable to archive invoice',
           description:
@@ -642,7 +632,6 @@ export function useInvoiceSheetState({
   return {
     form,
     fieldArray,
-    feedback,
     isEditing,
     isReadOnly: readOnly,
     isPending,
@@ -665,6 +654,5 @@ export function useInvoiceSheetState({
     handleRemoveLineItem,
     handleMoveLineItem,
     handleProductSelect,
-    setFeedback,
   }
 }

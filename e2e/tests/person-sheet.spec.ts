@@ -62,7 +62,10 @@ test('stopping being Admin starts next month, and warns about this month', async
   await page.goto('/people?role=ADMIN')
   await expectHealthy(page)
   const rows = page.locator('tbody tr').filter({ hasNotText: adminEmail })
-  test.skip((await rows.count()) === 0, 'needs a second person with an Admin sign-in')
+  test.skip(
+    (await rows.count()) === 0,
+    'needs a second person with an Admin sign-in'
+  )
   await rows.first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet.getByText('Can sign in')).toBeVisible()
@@ -73,7 +76,9 @@ test('stopping being Admin starts next month, and warns about this month', async
   await page.getByRole('option', { name: 'Sales' }).click()
   const roleStarts = sheet.getByRole('combobox', { name: 'Role starts' })
   await expect(roleStarts).toContainText('(next month)')
-  const warning = sheet.getByText('Their hours this month won’t count as payroll.')
+  const warning = sheet.getByText(
+    'Their hours this month won’t count as payroll.'
+  )
   await expect(warning).toHaveCount(0)
 
   await roleStarts.click()
@@ -188,13 +193,14 @@ test.describe('writes', () => {
     await first.getByRole('button', { name: 'Save changes' }).click()
     await expect(first).toBeHidden()
 
-    // The second, loaded before that save, is refused inline and stays open.
+    // The second, loaded before that save, is refused with a toast and
+    // stays open.
     await second
       .getByPlaceholder('linkedin.com/in/jane-doe')
       .fill(`linkedin.com/in/second-${stamp}`)
     await second.getByRole('button', { name: 'Save changes' }).click()
     await expect(
-      second.getByText(
+      other.getByText(
         'Someone else saved this person. Reload to see their changes.'
       )
     ).toBeVisible()

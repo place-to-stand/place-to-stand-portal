@@ -260,8 +260,9 @@ test('a save made since the sheet opened refuses the older sheet', async ({
     .getByRole('textbox', { name: 'Website' })
     .fill('https://second.example.com')
   await second.getByRole('button', { name: 'Save changes' }).click()
+  // Refused with a toast (outside the sheet); the sheet stays open.
   await expect(
-    second.getByText(
+    other.getByText(
       'Someone else saved this company. Reload to see their changes.'
     )
   ).toBeVisible()

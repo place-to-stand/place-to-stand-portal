@@ -110,7 +110,6 @@ export function useContactSheetState({
 }: UseContactSheetStateOptions) {
   const [isTransitionPending, startTransition] = useTransition()
   const isPending = isTransitionPending
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   // An edit's Companies list arrives after the sheet opens. Until it has,
   // a save leaves their companies alone rather than sending an empty list.
@@ -154,16 +153,17 @@ export function useContactSheetState({
 
     const contactId = contact?.id
 
-    // Reset form - intentional setState during effect to sync UI with prop changes
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFeedback(null)
     form.reset({
       avatarPath: null,
       avatarRemoved: false,
       // No sign-in yet: off, and Client if they turn it on. Shown on create
       // too, so a new person can get a sign-in in the same Save.
       signIn: canManageSignIn
-        ? { enabled: false, role: 'CLIENT', effectiveFrom: currentMonthStartUtc() }
+        ? {
+            enabled: false,
+            role: 'CLIENT',
+            effectiveFrom: currentMonthStartUtc(),
+          }
         : undefined,
       email: contact?.email ?? '',
       name: contact?.name ?? initialName ?? '',
@@ -187,6 +187,8 @@ export function useContactSheetState({
           : [],
     })
 
+    // Reset state - intentional setState during effect to sync UI with prop changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCompaniesLoaded(!contactId)
     setCompaniesLoadFailed(false)
     setLoadedUpdatedAt(null)
@@ -323,14 +325,15 @@ export function useContactSheetState({
 
   const handleFormSubmit = useCallback(
     (data: ContactFormData) => {
-      setFeedback(null)
       startTransition(async () => {
         // One Save: the person, their companies, photo and sign-in in one
         // request (one transaction on the server).
         const dirty = form.formState.dirtyFields
         const result = await savePersonSheetAction({
           id: contact?.id || undefined,
-          loadedUpdatedAt: contact?.id ? (loadedUpdatedAt ?? undefined) : undefined,
+          loadedUpdatedAt: contact?.id
+            ? (loadedUpdatedAt ?? undefined)
+            : undefined,
           email: data.email,
           name: data.name,
           phone: data.phone || null,
@@ -364,10 +367,9 @@ export function useContactSheetState({
         })
 
         if (result.error) {
-          setFeedback(result.error)
           toast({
             title: isEditing
-              ? 'Unable to update person'
+              ? 'Unable to save person'
               : 'Unable to create person',
             description: result.error,
             variant: 'destructive',
@@ -376,12 +378,8 @@ export function useContactSheetState({
         }
 
         toast({
-          title: isEditing ? 'Person updated' : 'Person created',
-          description:
-            result.warning ??
-            (isEditing
-              ? `${data.name || data.email} has been updated.`
-              : `${data.name || data.email} has been created.`),
+          title: isEditing ? 'Person saved' : 'Person created',
+          description: result.warning ?? (data.name || data.email),
         })
 
         // Call onCreated with the new contact ID if this was a create operation
@@ -443,7 +441,6 @@ export function useContactSheetState({
       const result = await softDeleteContact({ id: contactId })
 
       if (result.error) {
-        setFeedback(result.error)
         toast({
           title: 'Unable to archive person',
           description: result.error,
@@ -462,7 +459,6 @@ export function useContactSheetState({
 
   return {
     form,
-    feedback,
     isPending,
     isEditing,
     companiesLoadFailed,

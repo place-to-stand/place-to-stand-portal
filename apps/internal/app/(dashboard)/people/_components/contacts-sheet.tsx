@@ -41,7 +41,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
   }, [onComplete, queryClient])
   const {
     form,
-    feedback,
     isPending,
     companiesLoadFailed,
     isEditing,
@@ -74,7 +73,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='2xl'
+          size='wide'
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
@@ -112,7 +111,6 @@ export function ContactsSheet(props: ContactsSheetProps) {
 
           <ContactSheetForm
             form={form}
-            feedback={feedback}
             isPending={isPending}
             companiesLoadFailed={companiesLoadFailed}
             isEditing={isEditing}

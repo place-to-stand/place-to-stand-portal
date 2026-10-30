@@ -195,16 +195,6 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
           </p>
         ) : null}
       </div>
-      {formErrors.general ? (
-        <div
-          id={fieldErrorIds.general}
-          className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm sm:col-span-2'
-          role='alert'
-          aria-live='assertive'
-        >
-          {formErrors.general}
-        </div>
-      ) : null}
       <div className='flex items-center justify-end gap-3 sm:col-span-2'>
         {isEditMode && onRequestDelete ? (
           <Button

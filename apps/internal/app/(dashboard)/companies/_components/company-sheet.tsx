@@ -12,7 +12,6 @@ import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { Form } from '@/components/ui/form'
@@ -30,7 +29,6 @@ import {
   archiveCompany,
   loadCompanyClientWork,
   loadCompanySheet,
-  restoreCompany,
   saveCompanySheet,
 } from '../actions'
 import {
@@ -58,6 +56,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
 const COMPANY_PEOPLE_SECTION_ID = 'company-people'
+const ARCHIVED_COMPANY_NOTE = 'Archived. Restore it from the archive list.'
 
 type CompanySheetProps = {
   /** `null` opens the create sheet. */
@@ -86,7 +85,6 @@ export function CompanySheet({
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
   // The Billing tab's state (admins); read by Save.
   const billingRef = useRef<CompanyBillingHandle>(null)
@@ -227,14 +225,17 @@ export function CompanySheet({
     form.formState.defaultValues?.primaryContactId ?? null
   const handleSubmit = useCallback(
     (values: CompanyFormValues) => {
-      setFeedback(null)
       const handle = billingRef.current
       let billing: CompanyBillingIntent = { kind: 'none' }
       if (isAdmin && handle) {
         const collected = handle.collect()
         if (!collected) {
           setTab('billing')
-          setFeedback('Check the Billing tab before saving.')
+          toast({
+            variant: 'destructive',
+            title: 'Unable to save company',
+            description: 'Check the Billing tab before saving.',
+          })
           return
         }
         billing = collected
@@ -283,7 +284,11 @@ export function CompanySheet({
         })
 
         if (!result.ok) {
-          setFeedback(result.error ?? 'Unable to save the company.')
+          toast({
+            variant: 'destructive',
+            title: 'Unable to save company',
+            description: result.error ?? 'Please try again.',
+          })
           return
         }
 
@@ -291,7 +296,7 @@ export function CompanySheet({
           onCreated?.({ id: result.id, name: values.name.trim() })
         }
         toast({
-          title: isEditing ? 'Company updated' : 'Company created',
+          title: isEditing ? 'Company saved' : 'Company created',
           description: values.name,
         })
         form.reset(values)
@@ -331,24 +336,23 @@ export function CompanySheet({
     historyKey: companyId ?? 'company:new',
   })
 
-  const handleArchiveToggle = useCallback(() => {
-    if (!companyId) return
+  // Archived companies are restored from the archive list, not here.
+  const handleArchive = useCallback(() => {
+    if (!companyId || isArchived) return
     startTransition(async () => {
-      const result = isArchived
-        ? await restoreCompany(companyId)
-        : await archiveCompany(companyId)
+      const result = await archiveCompany(companyId)
       setArchiveOpen(false)
       if (!result.ok) {
-        setFeedback(result.error ?? 'Unable to update the company.')
+        toast({
+          variant: 'destructive',
+          title: 'Unable to archive company',
+          description: result.error ?? 'Please try again.',
+        })
         return
       }
-      toast({
-        title: isArchived ? 'Company restored' : 'Company archived',
-        description: company?.name,
-      })
-      // Archiving closes the sheet; restoring keeps it open on the record.
-      await refresh(!isArchived)
-      if (!isArchived) onClose()
+      toast({ title: 'Company archived', description: company?.name })
+      await refresh()
+      onClose()
     })
   }, [company?.name, companyId, isArchived, onClose, refresh, toast])
 
@@ -398,15 +402,14 @@ export function CompanySheet({
 
   const fieldsDisabled = isPending || isArchived
   // Same rule as the server: a billed company stops billing before archiving.
-  const archiveRefusal =
-    !isArchived && clientCompanyId ? ARCHIVE_BILLED_REFUSAL : null
+  const archiveRefusal = clientCompanyId ? ARCHIVE_BILLED_REFUSAL : null
 
   return (
     <>
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent
           hideCloseButton
-          size='xl'
+          size='wide'
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
@@ -441,6 +444,11 @@ export function CompanySheet({
                   }}
                   className='flex flex-col'
                 >
+                  {isArchived ? (
+                    <p className='text-muted-foreground px-6 pt-4 text-sm'>
+                      {ARCHIVED_COMPANY_NOTE}
+                    </p>
+                  ) : null}
                   <CompanyBillingProvider
                     key={company?.id ?? 'new'}
                     companyId={
@@ -541,9 +549,6 @@ export function CompanySheet({
                       ]}
                     />
                   </CompanyBillingProvider>
-                  <div className='px-6 pb-6 empty:hidden'>
-                    <FormFeedback>{feedback}</FormFeedback>
-                  </div>
                 </form>
               </div>
               <SheetFormFooter
@@ -558,14 +563,15 @@ export function CompanySheet({
                   isPending
                     ? PENDING_REASON
                     : isArchived
-                      ? 'Restore the company to edit it.'
+                      ? ARCHIVED_COMPANY_NOTE
                       : null
                 }
                 undo={undo}
                 redo={redo}
                 canUndo={canUndo}
                 canRedo={canRedo}
-                isEditing={isEditing}
+                // An archived company has no archive action here.
+                isEditing={isEditing && !isArchived}
                 archiveDisabled={
                   isPending || !isEditing || Boolean(archiveRefusal)
                 }
@@ -573,10 +579,7 @@ export function CompanySheet({
                   isPending ? PENDING_REASON : archiveRefusal
                 }
                 onRequestArchive={() => setArchiveOpen(true)}
-                archiveAriaLabel={
-                  isArchived ? 'Restore company' : 'Archive company'
-                }
-                deleteKind={isArchived ? 'restore' : 'archive'}
+                archiveAriaLabel='Archive company'
               />
             </Form>
           )}
@@ -584,20 +587,16 @@ export function CompanySheet({
       </Sheet>
       <ConfirmDialog
         open={archiveOpen}
-        title={isArchived ? 'Restore company?' : 'Archive company?'}
-        description={
-          isArchived
-            ? `${company?.name ?? 'This company'} comes back to the Companies list.`
-            : archiveCompanyDescription(
-                company?.name,
-                Boolean(company?.formerClientId)
-              )
-        }
-        confirmLabel={isArchived ? 'Restore company' : 'Archive company'}
-        confirmVariant={isArchived ? 'default' : 'destructive'}
+        title='Archive company?'
+        description={archiveCompanyDescription(
+          company?.name,
+          Boolean(company?.formerClientId)
+        )}
+        confirmLabel='Archive company'
+        confirmVariant='destructive'
         confirmDisabled={isPending}
         onCancel={() => setArchiveOpen(false)}
-        onConfirm={handleArchiveToggle}
+        onConfirm={handleArchive}
       />
       {unsavedChangesDialog}
     </>

@@ -24,7 +24,6 @@ import { Badge } from '@pts/ui/badge'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { DatePicker } from '@/components/ui/date-picker'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { TaskSheetFormValues } from '@/lib/projects/task-sheet/task-sheet-schema'
@@ -54,7 +53,6 @@ export type TaskSheetFormFieldsProps = {
   isDragActive: boolean
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
-  feedback: string | null
   isSheetOpen: boolean
 }
 
@@ -79,7 +77,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
     isDragActive,
     acceptedAttachmentTypes,
     maxAttachmentSize,
-    feedback,
     isSheetOpen,
   } = props
 
@@ -325,7 +322,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
         acceptedMimeTypes={acceptedAttachmentTypes}
         maxFileSize={maxAttachmentSize}
       />
-      <FormFeedback>{feedback}</FormFeedback>
     </>
   )
 }

@@ -8,7 +8,6 @@ import {
   useState,
   useTransition,
 } from 'react'
-import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -23,7 +22,7 @@ import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
-import { companySheetHref } from '@/lib/sheets/hrefs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import {
   leadFormSchema,
   type LeadFormValues,
@@ -40,7 +39,7 @@ export function useLeadSheetState({
   onCreated,
   initialValues,
 }: Omit<LeadSheetProps, 'assignees' | 'canManage'>) {
-  const router = useRouter()
+  const { open: openSheet } = useSheetParams()
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
@@ -174,10 +173,8 @@ export function useLeadSheetState({
         }
 
         toast({
-          title: isEditing ? 'Lead updated' : 'Lead created',
-          description: isEditing
-            ? 'Changes saved.'
-            : 'Your new lead has been added to the pipeline.',
+          title: isEditing ? 'Lead saved' : 'Lead created',
+          description: contact?.name || undefined,
         })
 
         form.reset({
@@ -199,13 +196,12 @@ export function useLeadSheetState({
         }
 
         // Just won: billing the company is the next step, so open its
-        // Billing tab now that the lead sheet has closed.
+        // Billing tab where we are, in place of the lead sheet that just
+        // closed (an empty aux value drops `lead` in the same write).
         const justWon =
           values.status === 'CLOSED_WON' && lead?.status !== 'CLOSED_WON'
         if (justWon && company && canManageClients) {
-          router.push(companySheetHref(company.id, 'billing'), {
-            scroll: false,
-          })
+          openSheet('company', company.id, { tab: 'billing', lead: '' })
         }
       })
     },
@@ -217,7 +213,7 @@ export function useLeadSheetState({
       onOpenChange,
       onSuccess,
       onCreated,
-      router,
+      openSheet,
       toast,
     ]
   )

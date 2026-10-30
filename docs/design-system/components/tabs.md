@@ -8,4 +8,6 @@ Segmented tabs on Base UI Tabs, kept on the Radix names `TabsList`/`TabsTrigger`
 
 **Compact switch:** to flip what a sheet is showing (not to navigate), `SheetSwitch` in `settings/templates/_components/template-sheet.tsx` shrinks the same Tabs to `TabsList h-7 p-0.5` and `TabsTrigger px-2 text-xs`, with a muted `text-xs` label beside it ("Recipient", "Format"). Reuse that rather than hand-rolling a toggle.
 
+**In a sheet:** only `SheetTabs` (`components/sheets/sheet-tabs.tsx`), the line tabs under the header. No inner tab group inside a sheet; use `SheetSection`s instead (comments last).
+
 **Rules:** style against `data-active`, never `data-[state=active]`; use `asChild` for navigable tabs; labels are one or two words, sentence case.

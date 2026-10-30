@@ -11,4 +11,4 @@ A notice that stays on the page or in a sheet while its cause does. From `@pts/u
 **Alignment:** the icon and the action are each one text line tall, so both centre on the first line of text, however the text wraps.
 
 **Do:** say what is wrong in one sentence and put the fix in the action. Use it for mismatches in a form (a lead's person not at its company), advisories (below a product's minimum quantity), and page-level failures (the saved close can't be read).
-**Don't:** use it for something that just happened (that's a toast), for a field error (`FormMessage`) or a save error (`FormFeedback`), or hand-roll an amber or red box.
+**Don't:** use it for something that just happened (that's a toast), for a field error (`FormMessage`) or a save result (a toast), or hand-roll an amber or red box.

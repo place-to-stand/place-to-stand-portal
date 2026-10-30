@@ -27,7 +27,7 @@ export function TaskActivityPanel({
 
   return (
     <div className='space-y-4'>
-      {/* No heading here — the enclosing tab is already labelled "Activity". */}
+      {/* No heading here — the enclosing section is already titled "Activity". */}
       <ActivityFeed
         targetType='TASK'
         targetId={taskId}

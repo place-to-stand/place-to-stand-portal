@@ -28,7 +28,7 @@ export function TemplateSheet({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent size='2xl' className='gap-0 p-0' hideCloseButton>
+      <SheetContent size='wide' className='gap-0 p-0' hideCloseButton>
         {children}
       </SheetContent>
     </Sheet>
