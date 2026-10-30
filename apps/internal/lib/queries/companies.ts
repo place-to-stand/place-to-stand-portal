@@ -481,17 +481,25 @@ export async function planCompanyWrite(
     // gives portal access, and client records are admin-only.
     if (!roleCan(actor.role, 'clients.manage')) {
       const touchesClient =
-        renamed || people.moves.length > 0 || primaryChange !== null
+        renamed ||
+        people.moves.length > 0 ||
+        titles.length > 0 ||
+        primaryChange !== null
       if (touchesClient && (await companyHasClient(existing.id))) {
         return {
           ok: false,
           error: renamed
             ? 'This company is a client, so only an admin can rename it.'
-            : people.moves.length
+            : people.moves.length || titles.length
               ? 'This company is a client, so only an admin can change its people.'
               : 'This company is a client, so only an admin can change its primary contact.',
         }
       }
+    }
+    // Staff sign in as members of the agency's own company, so only an admin
+    // renames it.
+    if (existing.isStaff && renamed && !isAdminRole(actor.role)) {
+      return { ok: false, error: `Only an admin can change ${existing.name}.` }
     }
     // Staff sign in as members of the agency's own company.
     if (
@@ -503,6 +511,16 @@ export async function planCompanyWrite(
         ok: false,
         error: `Only an admin can remove people from ${existing.name}.`,
       }
+    }
+  }
+
+  // Someone who can sign in sees what their companies give them, so only an
+  // admin moves them between companies (as on the person sheet).
+  if (!isAdminRole(actor.role) && people.moves.some(move => move.hasSignIn)) {
+    return {
+      ok: false,
+      error:
+        'Only an admin can change the companies of someone who can sign in.',
     }
   }
 
@@ -734,6 +752,8 @@ type PeopleMove = {
   email: string | null
   /** Joins this company (true) or leaves it (false). */
   joins: boolean
+  /** Has a sign-in (`contacts.user_id`): admin-only to move. */
+  hasSignIn: boolean
 }
 
 /**
@@ -757,6 +777,7 @@ async function resolvePeopleChanges(
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
+      userId: contacts.userId,
       isMember: companyId
         ? isMemberSql(contacts.id, sql`${companyId}::uuid`)
         : sql<boolean>`false`,
@@ -766,7 +787,12 @@ async function resolvePeopleChanges(
 
   const moves: PeopleMove[] = []
   for (const row of rows) {
-    const base = { contactId: row.id, name: row.name, email: row.email }
+    const base = {
+      contactId: row.id,
+      name: row.name,
+      email: row.email,
+      hasSignIn: row.userId !== null,
+    }
     if (removeSet.has(row.id)) {
       if (row.isMember) moves.push({ ...base, joins: false })
     } else if (!row.isMember) {
@@ -793,6 +819,7 @@ export async function setCompanyArchived(
       id: companies.id,
       name: companies.name,
       deletedAt: companies.deletedAt,
+      isStaff: companies.isStaff,
     })
     .from(companies)
     .where(eq(companies.id, companyId))
@@ -803,6 +830,11 @@ export async function setCompanyArchived(
   }
   if (Boolean(existing.deletedAt) === archived) {
     return { ok: true, id: existing.id }
+  }
+
+  // Staff sign in as members of the agency's own company.
+  if (existing.isStaff && !isAdminRole(actor.role)) {
+    return { ok: false, error: `Only an admin can change ${existing.name}.` }
   }
 
   // Client records are admin-only, and a client is its company (same rule
