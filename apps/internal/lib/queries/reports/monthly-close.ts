@@ -116,7 +116,9 @@ type Net30QueryRow = {
 
 /**
  * Fetches employee payroll data for ADMIN users who logged time on CLIENT
- * projects in the given date range. Non-client time (PERSONAL, INTERNAL) is
+ * projects in the given date range. Deliberately no `billedInMonth`: payroll
+ * counts all client work by the month it was worked, whether or not the
+ * client was billed that month. Non-client time (PERSONAL, INTERNAL) is
  * excluded because it isn't billable and therefore can't fund a payroll
  * payout from the partner formula.
  *
@@ -164,7 +166,8 @@ export async function fetchEmployeePayroll(
 /**
  * Fetches the total billable work hours (admin hours logged on CLIENT
  * projects) for the period — the "accrual" basis that grounds all partner
- * payouts. This is the denominator for the work-billable reconciliation:
+ * payouts. Like payroll, deliberately no `billedInMonth`: all client work
+ * counts by the month it was worked, billed or not. This is the denominator for the work-billable reconciliation:
  * work_billable_total × billablePerHour = Payroll + Origination + Closer + House
  */
 export async function fetchBillableWorkHours(
