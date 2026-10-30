@@ -5,7 +5,6 @@ import { Star, X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
@@ -106,23 +105,8 @@ export function ContactCompaniesSection({
                 company={{ id: entry.companyId, name: entry.companyName }}
                 className={entry.archived ? 'opacity-60' : undefined}
                 titleAddon={
-                  entry.clientCompanyId &&
-                  !entry.archived &&
-                  !canManageAccess ? (
+                  entry.clientCompanyId && !entry.archived ? (
                     <ClientBadge />
-                  ) : entry.clientCompanyId && !entry.archived ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          <ClientBadge />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {entry.portalAccess
-                          ? 'Can see this client in the portal'
-                          : 'No portal access'}
-                      </TooltipContent>
-                    </Tooltip>
                   ) : null
                 }
                 note={

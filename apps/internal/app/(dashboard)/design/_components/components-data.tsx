@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react'
 import { Star } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   Table,
@@ -17,7 +16,9 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import {
   CompanyRecordRow,
   ContactRecordRow,
+  InvoiceRecordRow,
   LeadRecordRow,
+  ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
 import {
   SheetRecordList,
@@ -39,7 +40,7 @@ import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { PersonAvatar, UserAvatar } from '@/components/ui/user-avatar'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
-import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 
 import { DesignSection, Example, Specimen } from './specimen'
 
@@ -134,6 +135,25 @@ export function ComponentsRecordRows() {
             }}
             openable={false}
           />
+          <ProjectRecordRow
+            project={{
+              id: 'design-project',
+              name: 'Website rebuild',
+              status: 'ACTIVE',
+              doneTasks: 12,
+              totalTasks: 30,
+            }}
+          />
+          <InvoiceRecordRow
+            invoice={{
+              id: 'design-invoice',
+              number: 'INV-0042',
+              status: 'PAID',
+              total: 4800,
+              issuedDate: '2026-09-23',
+            }}
+            openable={false}
+          />
         </SheetRecordList>
         <div className='space-y-4'>
           <SheetRecordRow
@@ -146,12 +166,7 @@ export function ComponentsRecordRows() {
               title='Ship pricing page'
               subtitle='Website rebuild · Due Sep 30, 2026'
               trailing={
-                <Badge
-                  variant='outline'
-                  className={getProjectStatusToken('ACTIVE')}
-                >
-                  {getProjectStatusLabel('ACTIVE')}
-                </Badge>
+                <ProjectStatusBadge status='ACTIVE' />
               }
               onClick={() => undefined}
               className='rounded-t-lg'
@@ -349,12 +364,7 @@ export function SampleProjectList({
                     {row.company}
                   </TableCell>
                   <TableCell label='Status'>
-                    <Badge
-                      variant='outline'
-                      className={cn(getProjectStatusToken(row.status))}
-                    >
-                      {getProjectStatusLabel(row.status)}
-                    </Badge>
+                    <ProjectStatusBadge status={row.status} />
                   </TableCell>
                   <TableCell label='People'>
                     <LinkedRecordsHoverCell

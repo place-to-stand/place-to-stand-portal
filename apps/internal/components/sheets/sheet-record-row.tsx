@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
@@ -16,6 +17,7 @@ export function SheetRecordRow({
   description,
   actions,
   onOpen,
+  href,
   openLabel,
   className,
 }: {
@@ -29,7 +31,9 @@ export function SheetRecordRow({
   actions?: ReactNode
   /** Makes the row's body a button that opens the record. */
   onOpen?: () => void
-  /** Accessible name for the open button: "Open Acme". */
+  /** Makes the row's body a link instead (a record that is a page, e.g. a project board). */
+  href?: string
+  /** Accessible name for the open button or link: "Open Acme". */
   openLabel?: string
   className?: string
 }) {
@@ -51,21 +55,28 @@ export function SheetRecordRow({
     </>
   )
 
+  const openClassName =
+    'focus-visible:ring-ring/50 -my-1.5 -ml-3 flex min-w-0 flex-1 cursor-pointer items-center gap-3 self-stretch rounded-l-md py-1.5 pl-3 outline-none focus-visible:ring-2'
+
   return (
     <div
       className={cn(
         'bg-muted/40 flex min-h-11 items-center gap-3 rounded-md border py-1.5 pr-1.5 pl-3 transition-colors',
         // Rows that open their record light up on hover, like table rows.
-        onOpen && 'hover:bg-muted hover:border-foreground/20',
+        (onOpen || href) && 'hover:bg-muted hover:border-foreground/20',
         className
       )}
     >
-      {onOpen ? (
+      {href ? (
+        <Link href={href} aria-label={openLabel} className={openClassName}>
+          {body}
+        </Link>
+      ) : onOpen ? (
         <button
           type='button'
           onClick={onOpen}
           aria-label={openLabel}
-          className='focus-visible:ring-ring/50 -my-1.5 -ml-3 flex min-w-0 flex-1 cursor-pointer items-center gap-3 self-stretch rounded-l-md py-1.5 pl-3 outline-none focus-visible:ring-2'
+          className={openClassName}
         >
           {body}
         </button>

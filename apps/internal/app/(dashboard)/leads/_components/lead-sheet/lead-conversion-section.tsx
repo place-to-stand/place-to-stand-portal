@@ -1,21 +1,22 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle, type LucideIcon } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
-import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { ClientBadge } from '@/components/clients/client-badge'
+import {
+  CompanyRecordRow,
+  ContactRecordRow,
+  ProjectRecordRow,
+} from '@/components/sheets/entity-record-rows'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
-import {
-  companySheetHref,
-  contactSheetHref,
-  projectBoardHref,
-} from '@/lib/sheets/hrefs'
-import { cn } from '@/lib/utils'
+import { companySheetHref, projectBoardHref } from '@/lib/sheets/hrefs'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const MAX_PROJECTS = 4
@@ -146,42 +147,28 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
 
   return (
     <div className='space-y-2'>
-      <ul className='bg-card divide-y overflow-hidden rounded-md border'>
-        <RecordRow
-          icon={ENTITY_ICONS.company}
-          label='Client'
-          name={client.name}
-          href={client.archived ? null : clientHref}
-          trailing={
-            client.archived ? <Badge variant='outline'>Archived</Badge> : null
+      <SheetRecordList>
+        <CompanyRecordRow
+          company={{ id: client.companyId, name: client.name }}
+          titleAddon={client.archived ? null : <ClientBadge />}
+          openable={!client.archived}
+          actions={
+            client.archived ? (
+              <span className='pr-1.5'>
+                <Badge variant='outline'>Archived</Badge>
+              </span>
+            ) : null
           }
         />
-        {contact && (
-          <RecordRow
-            icon={ENTITY_ICONS.contact}
-            label='Person'
-            name={contact.name}
-            href={contactSheetHref(contact.id)}
-          />
-        )}
+        {contact && <ContactRecordRow contact={contact} />}
         {projects.slice(0, MAX_PROJECTS).map(project => (
-          <RecordRow
+          <ProjectRecordRow
             key={project.id}
-            icon={ENTITY_ICONS.project}
-            label='Project'
-            name={project.name}
+            project={project}
             href={projectBoardHref(clientSegment, project.slug ?? project.id)}
-            trailing={
-              <Badge
-                variant='outline'
-                className={cn(getProjectStatusToken(project.status))}
-              >
-                {getProjectStatusLabel(project.status)}
-              </Badge>
-            }
           />
         ))}
-      </ul>
+      </SheetRecordList>
       {hiddenProjectCount > 0 && !client.archived && (
         <Link
           href={clientHref}
@@ -192,45 +179,5 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
         </Link>
       )}
     </div>
-  )
-}
-
-function RecordRow({
-  icon: Icon,
-  label,
-  name,
-  href,
-  trailing,
-}: {
-  icon: LucideIcon
-  label: string
-  name: string
-  href: string | null
-  trailing?: ReactNode
-}) {
-  const content = (
-    <>
-      <Icon className='text-muted-foreground size-4 shrink-0' aria-hidden />
-      <div className='min-w-0 flex-1'>
-        <p className='text-muted-foreground text-xs'>{label}</p>
-        <p className='truncate text-sm font-medium'>{name}</p>
-      </div>
-      {trailing}
-    </>
-  )
-
-  return (
-    <li>
-      {href ? (
-        <Link
-          href={href}
-          className='hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-ring/50 flex items-center gap-3 px-3 py-2 transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
-        >
-          {content}
-        </Link>
-      ) : (
-        <div className='flex items-center gap-3 px-3 py-2'>{content}</div>
-      )}
-    </li>
   )
 }

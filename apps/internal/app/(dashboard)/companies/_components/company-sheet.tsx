@@ -26,6 +26,7 @@ import type { CompanyBillingIntent } from '@/lib/companies/sheet-save-schema'
 
 import {
   archiveCompany,
+  loadCompanyClientWork,
   loadCompanySheet,
   restoreCompany,
   saveCompanySheet,
@@ -177,8 +178,24 @@ export function CompanySheet({
   const canManageClients = roleCan(role, 'clients.manage')
 
   const clientCompanyId = company?.clients[0]?.id ?? null
+  const formerClientId = clientCompanyId ? null : (company?.formerClientId ?? null)
+  // A former client keeps its Projects tab only while it has projects.
+  const { data: formerWork } = useQuery({
+    queryKey: ['companyClientWork', formerClientId],
+    queryFn: () => loadCompanyClientWork(formerClientId!),
+    enabled: Boolean(isAdmin && formerClientId),
+    staleTime: 0,
+  })
+  const projectsCompanyId =
+    clientCompanyId ??
+    (formerClientId && (formerWork?.projects.length ?? 0) > 0
+      ? formerClientId
+      : null)
+  const showProjects = isAdmin && isEditing && Boolean(projectsCompanyId)
   const tabValues = isAdmin
-    ? ['details', 'people', 'projects', 'billing']
+    ? showProjects
+      ? ['details', 'people', 'projects', 'billing']
+      : ['details', 'people', 'billing']
     : ['details', 'people']
   const [tab, setTab] = useSheetTab(tabValues)
 
@@ -459,18 +476,22 @@ export function CompanySheet({
                             />
                           ),
                         },
-                        ...(isAdmin
+                        ...(showProjects && projectsCompanyId
                           ? [
                               {
                                 value: 'projects',
                                 label: 'Projects',
                                 content: (
                                   <CompanyProjectsTab
-                                    companyId={clientCompanyId}
-                                    isCreating={!isEditing}
+                                    companyId={projectsCompanyId}
+                                    canCreate={Boolean(clientCompanyId)}
                                   />
                                 ),
                               },
+                            ]
+                          : []),
+                        ...(isAdmin
+                          ? [
                               {
                                 value: 'billing',
                                 label: 'Billing',

@@ -1,3 +1,7 @@
+import { addMonths, monthLabel } from '@/lib/billing/months'
+
+export { addMonths, monthLabel } from '@/lib/billing/months'
+
 /**
  * Which month a role change takes effect from. Role history starts in
  * October 2025 (0113); a change can start any month from then through next
@@ -17,22 +21,6 @@ export type RoleMonthOption = {
 
 export function isMonthStart(value: string): boolean {
   return MONTH_START.test(value)
-}
-
-/** 'yyyy-MM-01' plus `offset` months. */
-export function addMonths(monthStart: string, offset: number): string {
-  const [year, month] = monthStart.split('-').map(Number)
-  const date = new Date(Date.UTC(year, month - 1 + offset, 1))
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-01`
-}
-
-export function monthLabel(monthStart: string): string {
-  const [year, month] = monthStart.split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
 }
 
 /**

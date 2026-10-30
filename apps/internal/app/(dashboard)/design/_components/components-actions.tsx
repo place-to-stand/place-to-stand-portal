@@ -18,9 +18,8 @@ import {
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { InvoiceStatusBadge } from '@/app/(dashboard)/invoices/_components/invoice-status-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import {
-  getProjectStatusLabel,
-  getProjectStatusToken,
   PROJECT_STATUS_OPTIONS,
   type ProjectStatusValue,
 } from '@/lib/constants'
@@ -237,15 +236,9 @@ export function ComponentsBadges() {
             <LeadStatusBadge key={status} status={status} />
           ))}
         </Example>
-        <Example caption='Status: project · ProjectStatusCell (click to change)'>
+        <Example caption='Status: ProjectStatusBadge · ProjectStatusCell (click to change)'>
           {PROJECT_STATUS_OPTIONS.map(option => (
-            <Badge
-              key={option.value}
-              variant='outline'
-              className={cn(getProjectStatusToken(option.value))}
-            >
-              {getProjectStatusLabel(option.value)}
-            </Badge>
+            <ProjectStatusBadge key={option.value} status={option.value} />
           ))}
           <ProjectStatusCell
             projectId='design-sample'

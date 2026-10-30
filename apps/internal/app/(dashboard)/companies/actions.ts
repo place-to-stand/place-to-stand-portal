@@ -1,5 +1,5 @@
 'use server'
-import { isClientCompany } from '@pts/db/client-state'
+import { wasClientCompany } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
 
@@ -29,7 +29,8 @@ import {
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 // A client is named after (and linked to) its company, so company saves also
-// refresh the client and project lists that show client names.
+// refresh the client and project lists that show client names, and the hour
+// blocks and monthly close that change with billing.
 const COMPANY_ROUTES = [
   '/companies',
   '/invoices',
@@ -38,6 +39,8 @@ const COMPANY_ROUTES = [
   '/people',
   '/leads',
   '/projects',
+  '/hour-blocks',
+  '/reports/monthly-close',
 ]
 
 function revalidateCompanyRoutes() {
@@ -124,7 +127,8 @@ export async function loadCompanyClientWork(
     .select({ slug: companies.slug, billingType: currentBillingTypeSql() })
     .from(companies)
     .where(
-      and(isClientCompany(), eq(companies.id, companyId))
+      // Former clients too: their Projects tab keeps the history.
+      and(wasClientCompany(), eq(companies.id, companyId))
     )
     .limit(1)
   if (!client) return null

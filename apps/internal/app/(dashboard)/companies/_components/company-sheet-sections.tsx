@@ -1,18 +1,21 @@
 'use client'
 
-import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 
-import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
+import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { LeadRecordRow } from '@/components/sheets/entity-record-rows'
+import {
+  LeadRecordRow,
+  ProjectRecordRow,
+} from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
-import { getProjectStatusLabel } from '@/lib/constants'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 
 import { loadCompanyClientWork } from '../actions'
@@ -25,11 +28,11 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 import {
-  BillingEffectiveChoice,
-  monthLabel,
-} from './billing/billing-effective-choice'
-import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+  monthLabelFromNow,
+  thisOrNextMonthOptions,
+} from '@/lib/billing/months'
 
 export function CompanyLeadsSection({
   leads,
@@ -84,14 +87,17 @@ export function CompanyBillingTab({
       })
     : null
   const stopping = mode === 'live' && !billingOn
+  // Starting next month still makes it a client on save, portal included.
+  const portalNow =
+    effective === 'next_month' ? ' Their people can use the portal now.' : ''
   const line =
     mode === 'new'
       ? billingOn
-        ? 'Saving makes this company a client.'
+        ? `Saving makes this company a client.${portalNow}`
         : 'Not billed. Switch on and save to make this company a client.'
       : mode === 'former'
         ? billingOn
-          ? 'Saving restarts billing with its previous setup.'
+          ? `Saving restarts billing with its previous setup.${portalNow}`
           : 'Billing stopped. Switch on and save to restart it.'
         : mode === 'ending'
           ? billingOn
@@ -103,32 +109,22 @@ export function CompanyBillingTab({
   const isClient = mode === 'live' || mode === 'ending'
   const choice = stopping
     ? {
-        title: 'Billing stops',
+        title: 'Last month billed',
+        // Stopping next month bills this month; stopping now leaves last
+        // month as the last one billed.
         options: [
           {
             value: 'next_month' as const,
-            label: 'Bill through the end of this month',
+            label: `${monthLabelFromNow(0)} (this month)`,
           },
           {
             value: 'current_month' as const,
-            label: 'Stop now (not billed this month)',
+            label: `${monthLabelFromNow(-1)} (last month)`,
           },
         ],
       }
     : billingOn && (mode === 'new' || mode === 'former')
-      ? {
-          title: mode === 'new' ? 'Billing starts' : 'Billing restarts',
-          options: [
-            {
-              value: 'current_month' as const,
-              label: `This month (${monthLabel(0)})`,
-            },
-            {
-              value: 'next_month' as const,
-              label: `Next month (${monthLabel(1)})`,
-            },
-          ],
-        }
+      ? { title: 'First month billed', options: thisOrNextMonthOptions() }
       : null
 
   return (
@@ -154,7 +150,7 @@ export function CompanyBillingTab({
           </p>
         ) : null}
         {choice ? (
-          <BillingEffectiveChoice
+          <EffectiveMonthSelect
             id='company-billing-effective'
             title={choice.title}
             value={effective}
@@ -198,36 +194,25 @@ export function CompanyBillingTab({
 const formatHours = (value: number) =>
   `${Number.isInteger(value) ? value : value.toFixed(1)}h`
 
-/** The Projects tab: the client's projects and its latest updates. */
+/**
+ * The Projects tab (clients, and former clients with projects): the
+ * company's projects and its latest updates. Hidden on the create sheet.
+ */
 export function CompanyProjectsTab({
   companyId,
-  isCreating = false,
+  canCreate,
 }: {
-  companyId: string | null
-  /** The create sheet: the company has nothing yet. */
-  isCreating?: boolean
+  companyId: string
+  /** A current client: new projects can start here. */
+  canCreate: boolean
 }) {
+  const { openNew } = useSheetParams()
   const { data: work, isLoading } = useQuery({
     queryKey: ['companyClientWork', companyId],
-    queryFn: () => loadCompanyClientWork(companyId!),
-    enabled: Boolean(companyId),
+    queryFn: () => loadCompanyClientWork(companyId),
     staleTime: 0,
   })
 
-  if (isCreating) {
-    return (
-      <SheetSection title='Projects'>
-        <EmptyState message='No projects yet.' />
-      </SheetSection>
-    )
-  }
-  if (!companyId) {
-    return (
-      <SheetSection title='Projects'>
-        <EmptyState message='Projects belong to clients, and this company isn’t billed yet.' />
-      </SheetSection>
-    )
-  }
   if (isLoading || !work) {
     return <Skeleton className='h-24 w-full' />
   }
@@ -237,9 +222,24 @@ export function CompanyProjectsTab({
       <SheetSection
         title='Projects'
         action={
-          <span className='text-muted-foreground text-xs'>
-            {work.projects.length}
-          </span>
+          <div className='flex items-center gap-3'>
+            <span className='text-muted-foreground text-xs'>
+              {work.projects.length}
+            </span>
+            {canCreate ? (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() =>
+                  openNew('project', { projectCompanyId: companyId })
+                }
+              >
+                <ENTITY_ICONS.project />
+                Create project
+              </Button>
+            ) : null}
+          </div>
         }
       >
         {work.projects.length === 0 ? (
@@ -247,28 +247,15 @@ export function CompanyProjectsTab({
         ) : (
           <SheetRecordList>
             {work.projects.map(project => (
-              <Link
+              <ProjectRecordRow
                 key={project.id}
+                project={project}
                 href={
                   work.clientSlug && project.slug
                     ? projectBoardHref(work.clientSlug, project.slug)
-                    : '#'
+                    : null
                 }
-                className='hover:bg-muted/50 flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors'
-              >
-                <ENTITY_ICONS.project
-                  className={cn(ENTITY_ACCENTS.project.icon, 'size-4 shrink-0')}
-                />
-                <span className='min-w-0 flex-1 truncate font-medium'>
-                  {project.name}
-                </span>
-                <span className='text-muted-foreground text-xs tabular-nums'>
-                  {project.doneTasks}/{project.totalTasks} tasks
-                </span>
-                <Badge variant='outline'>
-                  {getProjectStatusLabel(project.status)}
-                </Badge>
-              </Link>
+              />
             ))}
           </SheetRecordList>
         )}
