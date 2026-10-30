@@ -1,24 +1,26 @@
 # Sales tools rollout: production migration plan
 
-Covers PR #279's database chain, migrations **0089 → 0108**, and the matching deploys of the internal app and the client portal. Nothing here has been run against production. This document holds no production data: the pre-flight queries produce the numbers and names to review at release time, and their expected values are shared outside the repo.
+Covers PR #279's database chain, migrations **0089 → 0109**, and the matching deploys of the internal app and the client portal. Nothing here has been run against production. This document holds no production data: the pre-flight queries produce the numbers and names to review at release time, and their expected values are shared outside the repo.
 
 ## Summary
 
-1. This PR adds 20 migrations (0089–0108) on top of 0088. Pre-flight P0 confirms production is at 0088.
+1. This PR adds 21 migrations (0089–0109) on top of 0088. Pre-flight P0 confirms production is at 0088.
 2. Net effect:
    - leads, contacts and clients are reorganised around **companies**;
    - people belong to companies through **memberships** (several per person allowed);
    - portal access becomes one flag on a membership, read through the `client_portal_access` view;
-   - leads read their person's name, email and phone from the linked **contact**.
+   - leads read their person's name, email and phone from the linked **contact**;
+   - a client is its company's billing record and takes the company's name; a user is a person's sign-in and takes the contact's name (0109).
 3. Every backfill runs **before** any drop.
-4. 0107 and 0108 copy every table and column they drop into the `archive_sales_tools` schema.
+4. 0107, 0108 and 0109 copy every table and column they drop into the `archive_sales_tools` schema.
 5. 0097 also archives the three columns it drops, and 0090 archives every lead's company name as typed before it respells them (see [Archives made before 0107](#archives-made-before-0107)).
-6. **Four migrations stop the release on bad data** (drizzle runs the whole batch in one transaction, so a stop leaves production at 0088):
+6. **Five migrations stop the release on bad data** (drizzle runs the whole batch in one transaction, so a stop leaves production at 0088):
    - 0104: a company would end up with two live clients;
    - 0106: a lead with no contact;
    - 0107: a live portal grant would be lost, or someone would gain portal access they didn't have;
-   - 0108: a client's origination or billing type differs from its newest term, an old term closer has no closer row, a live client has no billing term in force this month, a `contact_leads` row isn't its lead's contact, or an hour block's `invoice_id` isn't its line's invoice.
-7. **Rollout shape:** one short maintenance window. Run 0089–0108, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
+   - 0108: a client's origination or billing type differs from its newest term, an old term closer has no closer row, a live client has no billing term in force this month, a `contact_leads` row isn't its lead's contact, or an hour block's `invoice_id` isn't its line's invoice;
+   - 0109: a client has no company, or a live user doesn't have exactly one live contact.
+7. **Rollout shape:** one short maintenance window. Run 0089–0109, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
 8. **Rehearse first** on a Supabase branch or restored snapshot, using the same commands and checks.
 9. **Rollback:**
    - before 0107, roll back the code (the old tables are still there);
@@ -27,7 +29,7 @@ Covers PR #279's database chain, migrations **0089 → 0108**, and the matching 
 
 ## Expected pre-flight values
 
-Run the read-only pre-flight queries (P0–P12) and compare with the values shared in the project thread before the window. Anything different is a reason to stop and look before migrating. In particular: P1 (people with access at two companies) should list exactly the known cases, P2–P5 and P11 should all be 0, and P12 should show no `broken` trigger on a table the batch updates.
+Run the read-only pre-flight queries (P0–P14) and compare with the values shared in the project thread before the window. Anything different is a reason to stop and look before migrating. In particular: P1 (people with access at two companies) should list exactly the known cases, P2–P5 and P11 should all be 0, and P12 should show no `broken` trigger on a table the batch updates.
 
 ## The migrations
 
@@ -55,6 +57,7 @@ Run the read-only pre-flight queries (P0–P12) and compare with the values shar
 | 0106 `lead_contact_required` | Leads that still only have a typed company name (archived leads and long names, which 0090 skipped) get a company: an existing one with that name, else a new archived one. Then `leads.contact_id` becomes NOT NULL with `ON DELETE RESTRICT`, so a contact with leads can't be hard-deleted. | Yes (finds nothing the second time) | **Stops** and lists any lead with no contact. |
 | 0107 `archive_and_drop_copied_fields` | Copies everything it drops into `archive_sales_tools` (below) and records any client link that didn't become a membership and any real login grant missing from the view, including a grant whose contact is archived. **Stops before dropping anything** if that list isn't empty, or if the view grants any (login, client) pair that wasn't a live `client_members` grant (drizzle rolls the whole batch back and the old tables stay). Then drops `contact_clients`, `client_members`, `contacts.company_id`, `contacts.job_title`, `companies.primary_contact_id`, and the lead copies (`contact_name`, `contact_email`, `contact_phone`, `company_name`, `company_website`). | No | **Stops** on any lost live grant (P3, P11) or any gained access; stops if an archive table already exists. |
 | 0108 `drop_duplicated_data` | Drops five copies of data stored elsewhere: `client_commission_terms.closer_user_id` (superseded by the closer rows in 0086, never read since), `clients.billing_type` (billing type lives on `client_billing_terms`; the column was a cache of the newest term, so a change scheduled for next month showed at once, and readers keep that meaning; `invoices.billing_type` stays as a snapshot), `clients.origination_contact_id`, `origination_user_id`, `closer_user_id` (commission lives on `client_commission_terms` and its closer rows; the client columns were a cache of the newest term), the `contact_leads` table (`leads.contact_id` is the lead's contact), and `hour_blocks.invoice_id` (the invoice is read through `invoice_line_item_id`). Archives each first, gives a client with origination but no term one from its creation month, then **stops before dropping anything** if any value would be lost. | No | **Stops** on any client whose origination or billing type differs from its newest term, any live client with no billing term in force this month, any old term closer with no closer row on that term, any `contact_leads` row that isn't its lead's contact, or any hour block whose `invoice_id` isn't its line's invoice; stops if an archive table already exists. |
+| 0109 `one_company_one_person` | Drops `clients.name` (a client's name is its company's) and `users.full_name` (a user's name is their contact's), and makes `clients.company_id` NOT NULL. Archives both columns first. Gives every live user without a contact one: linked to an unlinked live contact with the same email when exactly one matches, else a new contact named as the user was. Staff (Admin, Sales) get a membership at a **Place To Stand** company, created if missing. Clients named differently from their company show the company's name afterwards (pre-flight lists them; rename the company before release if the client's name was better). | No | **Stops** on any client with no company or any live user without exactly one live contact; stops if an archive table already exists. |
 
 ### Archives made before 0107
 
@@ -111,7 +114,8 @@ Steps:
   - `lead_contact_copies` (lead → old name, email, phone, company name, website)
   - `unmapped_portal_access` (grants with no matching membership; **expected empty**)
   - plus `lead_company_names` (0090) and the three 0097 tables;
-  - and from 0108: `commission_term_closer_users` (term → old `closer_user_id`), `client_billing_types` (client → old `billing_type`), `client_commission_columns` (client → old origination and closer columns), `contact_leads` (full copy) and `hour_block_invoices` (block → old `invoice_id`, `invoice_line_item_id`).
+  - and from 0108: `commission_term_closer_users` (term → old `closer_user_id`), `client_billing_types` (client → old `billing_type`), `client_commission_columns` (client → old origination and closer columns), `contact_leads` (full copy) and `hour_block_invoices` (block → old `invoice_id`, `invoice_line_item_id`);
+  - and from 0109: `client_names` (client → old `name`, company name) and `user_names` (user → old `full_name`, email, role).
 - **Checks before and after.** If any check differs from expected, stop and roll back.
 
 ### 2a. Before (current production schema, read-only)
@@ -383,6 +387,28 @@ ROLLBACK;
 
 **Known P12 finding:** production has `activity_logs_set_updated_at` calling `set_updated_at()`, but `activity_logs` has no `updated_at` column, so any `UPDATE` on `activity_logs` fails. Nothing in 0089–0107 updates `activity_logs` (the batch never touches it) and the app only inserts and deletes there (retention prune, submission delete), which this trigger does not fire on, so the release is not affected and 0089–0107 do not drop it. Drop it in a follow-up migration (`DROP TRIGGER IF EXISTS activity_logs_set_updated_at ON activity_logs;`). Any other `broken = true` row on a table the batch updates (above) must be fixed before the window.
 
+P13 and P14 are for 0109. They need `clients.company_id`, so run them on the rehearsal copy after 0108 and before 0109 (section 4). They are reviews, not stops.
+
+```sql
+-- P13. Clients whose name differs from their company's (after 0109 they show
+-- the company's name). Rename the company before release if the client's name
+-- was the better one.
+SELECT cl.id, cl.name AS client_name, co.name AS company_name
+FROM clients cl
+LEFT JOIN companies co ON co.id = cl.company_id
+WHERE cl.deleted_at IS NULL AND co.name IS DISTINCT FROM cl.name;
+
+-- P14. Staff (Admin, Sales) and possible duplicate contacts by name: 0109
+-- links a staff user to an existing contact only on an exact email match, so
+-- a staff member with a contact under another email ends up with two.
+SELECT u.id AS user_id, u.email AS user_email, c.id AS contact_id, c.email AS contact_email
+FROM users u
+JOIN contacts c ON lower(btrim(c.name)) = lower(btrim(u.full_name))
+WHERE u.role IN ('ADMIN', 'SALES') AND u.deleted_at IS NULL AND c.deleted_at IS NULL
+  AND (c.user_id IS NULL OR c.user_id <> u.id)
+  AND lower(c.email) IS DISTINCT FROM lower(u.email);
+```
+
 Any non-empty P10 result has to be fixed in the app before release: rename, archive, or merge one of the clients. Otherwise 0104 stops the release, safely.
 
 ## 4. Rehearsal (branch or snapshot)
@@ -416,14 +442,42 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
 | When | How |
 | --- | --- |
 | Pre-flight fails | Nothing has changed. Fix the data in the app, then re-run pre-flight. |
-| A migration fails | drizzle-orm's pg migrator runs every pending migration in **one transaction**, so a failure anywhere (including the 0104/0106/0107 guards) rolls back the whole batch. Confirm with P0 that production is still at 89 rows, then fix and rehearse again. |
+| A migration fails | drizzle-orm's pg migrator runs every pending migration in **one transaction**, so a failure anywhere (including the 0104/0106/0107/0108/0109 guards) rolls back the whole batch. Confirm with P0 that production is still at 89 rows, then fix and rehearse again. |
 | Problem after migrating, **before promoting** the apps | Production is on the new schema with old code. Restore the step-3 backup (preferred: no writes happened during the window), or promote the new code and fix forward. |
 | Problem after promoting, within hours | **Option A, restore:** restore the step-3 backup (point in time) and promote the previous deployments of both apps. Writes made since the window are lost, so list them from `activity_logs` first. **Option B, rebuild old tables from the archive** (keeps new writes to everything else; see SQL below), then deploy a build matching the 0104 schema. |
 | Later | Fix forward. The archive stays available. |
 
 Option B SQL. Run it inside one transaction. Re-add constraints as they were in the pre-PR schema (`0000_supabase_baseline` and later).
 
-Undo 0108 first (it puts back the five copies; the old code reads them):
+Undo 0109 first (it puts back the client and user names; the 0108 code reads them). Tested on a copy of the production trial: every client and user name comes back as it was.
+
+```sql
+BEGIN;
+-- A client gets back its own name from the archive; a client created after
+-- the release takes its company's name.
+ALTER TABLE clients ADD COLUMN name text;
+UPDATE clients c SET name = coalesce(
+  (SELECT a.name FROM archive_sales_tools.client_names a WHERE a.client_id = c.id),
+  (SELECT co.name FROM companies co WHERE co.id = c.company_id));
+ALTER TABLE clients ALTER COLUMN name SET NOT NULL;
+CREATE INDEX idx_clients_name ON clients USING btree (name text_ops);
+CREATE INDEX idx_clients_name_trgm ON clients USING gin (name gin_trgm_ops);
+ALTER TABLE clients ALTER COLUMN company_id DROP NOT NULL;
+-- A user's name is their contact's (so renames since the release are kept),
+-- else the archived one.
+ALTER TABLE users ADD COLUMN full_name text;
+UPDATE users u SET full_name = coalesce(
+  (SELECT c.name FROM contacts c WHERE c.user_id = u.id AND c.deleted_at IS NULL
+   ORDER BY c.created_at LIMIT 1),
+  (SELECT a.full_name FROM archive_sales_tools.user_names a WHERE a.user_id = u.id));
+-- Optional: the staff contacts and Place To Stand memberships 0109 added are
+-- harmless to the old code and can stay. Leave them unless asked to remove.
+DELETE FROM drizzle.__drizzle_migrations
+WHERE id = (SELECT id FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 1);
+COMMIT;
+```
+
+Then undo 0108 (it puts back the five copies; the old code reads them):
 
 ```sql
 BEGIN;

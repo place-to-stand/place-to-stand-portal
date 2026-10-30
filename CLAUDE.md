@@ -138,10 +138,10 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 ### Database Schema
 
 **Core tables** (`packages/db/src/schema.ts`):
-- `users` - User accounts with roles (ADMIN, SALES, CLIENT)
-- `clients` - Client records with billing types (prepaid, net_30)
-- `contacts` - Contact records (may have a `userId` for portal access)
-- `companies` - Organizations; a client is linked to one company (`clients.company_id`)
+- `contacts` - People (UI: "People"). The person's name lives here; `contacts.user_id` links their sign-in
+- `users` - A person's sign-in: auth id, sign-in email, role (ADMIN, SALES, CLIENT), disabled/archived. No name column: read it with `personNameSql` / `personNameOf()` from `@pts/db/names`. Every live user has exactly one live contact; staff are at the "Place To Stand" company
+- `companies` - Every business (UI: "Companies"); a company you bill is a client
+- `clients` - A company's billing record (one per company, `company_id` NOT NULL): slug, state, notes, and everything keyed on `client_id`. No name column: read it with `clientNameSql` from `@pts/db/names`
 - `memberships` - Contact-to-company (title, primary contact, portal access); a contact can be at several companies
 - `client_portal_access` - View: who can see which client in the client portal
 - `client_commission_terms` + `client_commission_term_closers` - The one place commission (origination, closers) is stored, by effective month
