@@ -17,6 +17,8 @@ import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
+import { TriangleAlert } from 'lucide-react'
+import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 
 import { loadCompanyClientWork } from '../actions'
 import {
@@ -104,6 +106,11 @@ export function CompanyBillingTab({
           : billingOn
             ? null
             : 'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
+  // A stop before this month leaves this month's net 30 time unbilled.
+  const unbilledHours =
+    stopping && effective === 'current_month'
+      ? (work?.hoursLoggedThisMonth ?? 0)
+      : 0
   const choice = stopping
     ? {
         title: 'Last month billed',
@@ -171,6 +178,17 @@ export function CompanyBillingTab({
             disabledReason={disabled ? PENDING_REASON : null}
           />
         ) : null}
+        {unbilledHours > 0 ? (
+          <Alert variant='warning'>
+            <TriangleAlert />
+            <AlertContent>
+              <AlertDescription>
+                {formatHourCount(unbilledHours)} hrs logged this month won’t be
+                billed.
+              </AlertDescription>
+            </AlertContent>
+          </Alert>
+        ) : null}
       </SheetSection>
       {isClient && billingOn && work?.hours ? (
         <SheetSection title='Hours'>
@@ -202,8 +220,10 @@ export function CompanyBillingTab({
   )
 }
 
-const formatHours = (value: number) =>
-  `${Number.isInteger(value) ? value : value.toFixed(1)}h`
+const formatHourCount = (value: number) =>
+  Number.isInteger(value) ? String(value) : value.toFixed(1)
+
+const formatHours = (value: number) => `${formatHourCount(value)}h`
 
 /**
  * The Projects tab (clients, and former clients with projects): the
