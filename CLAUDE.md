@@ -140,7 +140,9 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 **Core tables** (`packages/db/src/schema.ts`):
 - `contacts` - People (UI: "People"). The person's name lives here; `contacts.user_id` links their sign-in
 - `users` - A person's sign-in: auth id, sign-in email, role (ADMIN, SALES, CLIENT), disabled/archived, onboarding. No name or photo: read them from the person with `personNameSql` / `personAvatarSql` (`@pts/db/names`). Every live user has exactly one live contact; staff are at the "Place To Stand" company
-- `companies` - Every business (UI: "Companies"). A company you bill is a client: `client_since` set, `client_ended_at` null (`isClientCompany()` / `wasClientCompany()` in `@pts/db/client-state`); `slug` and `state` serve its projects and invoices. Everything billed keys on `company_id`
+- `companies` - Every business (UI: "Companies"). A company you bill is a client: when it is billed lives in `client_billing_periods` (one row per stretch, by month), read only through the SQL functions behind `@pts/db/client-state` (`isClientCompany()`, `wasClientCompany()`, `billedInMonth()`); `slug` and `state` serve its projects and invoices; `is_staff` marks the agency's own company. Everything billed keys on `company_id`
+- `client_billing_periods` - When each company is billed (start and last month). The monthly close counts a client in every month a period covers
+- `user_role_terms` - A sign-in's role by month; `users.role` is the role in force today. Payroll uses the role in force for the month (`user_role_as_of`)
 - `memberships` - Contact-to-company (title, primary contact, portal access); a contact can be at several companies
 - `client_portal_access` - View: who can see which client company in the client portal (`company_id`, `contact_id`, `user_id`)
 - `commission_terms` + `commission_term_closers` - The one place commission (origination, closers) is stored, by effective month
