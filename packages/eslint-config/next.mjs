@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 import nextTypescript from 'eslint-config-next/typescript'
 
-import { IGNORES } from './base.mjs'
+import { IGNORES, common } from './base.mjs'
 
 function entityIconNames(dir, registry) {
   return [
@@ -43,6 +43,7 @@ export function nextApp({ dir, entityRegistry } = {}) {
   return [
     ...nextCoreWebVitals,
     ...nextTypescript,
+    ...common(),
     {
       // Lets eslint run from the repo root (pre-commit) as well as the app.
       settings: { next: { rootDir: dir } },

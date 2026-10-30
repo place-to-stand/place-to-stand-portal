@@ -5,10 +5,11 @@
   "type": "module",
   "exports": {
     "./base": "./base.mjs",
-    "./next": "./next.mjs"
+    "./next": "./next.mjs",
+    "./plugin": "./plugin.mjs"
   },
   "scripts": {
-    "lint": "eslint"
+    "lint": "eslint && node --test tests/"
   },
   "devDependencies": {
     "eslint": "^9.39.5"
