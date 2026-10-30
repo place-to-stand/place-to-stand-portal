@@ -8,6 +8,12 @@
 -- leads and long names) get a company record, so the name survives 0107
 -- dropping the copy: an existing company with that name (live first), else
 -- a new one, archived so it doesn't crowd the pickers.
+-- What existed before, so a rollback can remove exactly what this adds.
+CREATE SCHEMA IF NOT EXISTS "archive_sales_tools";--> statement-breakpoint
+CREATE TABLE "archive_sales_tools"."companies_before_0106" AS SELECT "id" FROM "companies";--> statement-breakpoint
+CREATE TABLE "archive_sales_tools"."lead_companies_0106" AS
+  SELECT "id" AS "lead_id" FROM "leads"
+  WHERE "company_id" IS NULL AND btrim(coalesce("company_name", '')) <> '';--> statement-breakpoint
 INSERT INTO "companies" ("name", "created_at", "updated_at", "deleted_at")
 SELECT DISTINCT ON (lower(btrim(l."company_name")))
   btrim(l."company_name"),
@@ -22,6 +28,10 @@ WHERE l."company_id" IS NULL
     WHERE lower(btrim(co."name")) = lower(btrim(l."company_name"))
   )
 ORDER BY lower(btrim(l."company_name")), l."created_at";
+--> statement-breakpoint
+CREATE TABLE "archive_sales_tools"."companies_created_0106" AS
+  SELECT co."id" FROM "companies" co
+  WHERE NOT EXISTS (SELECT 1 FROM "archive_sales_tools"."companies_before_0106" b WHERE b."id" = co."id");
 --> statement-breakpoint
 UPDATE "leads" l
 SET "company_id" = (

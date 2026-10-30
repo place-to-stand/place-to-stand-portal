@@ -448,7 +448,7 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
 | When | How |
 | --- | --- |
 | Pre-flight fails | Nothing has changed. Fix the data in the app, then re-run pre-flight. |
-| A migration fails | drizzle-orm's pg migrator runs every pending migration in **one transaction**, so a failure anywhere (including the 0104/0106/0107/0108/0109 guards) rolls back the whole batch. Confirm with P0 that production is still at 89 rows, then fix and rehearse again. |
+| A migration fails | drizzle-orm's pg migrator runs every pending migration in **one transaction**, so a failure anywhere (including the 0104/0106/0107/0108/0109 guards) rolls back the whole batch. Confirm with P0 that production is still at 0088 (production has 90 rows: one historical migration no longer in the repo), then fix and rehearse again. |
 | Problem after migrating, **before promoting** the apps | Production is on the new schema with old code. Restore the step-3 backup (preferred: no writes happened during the window), or promote the new code and fix forward. |
 | Problem after promoting, within hours | **Option A, restore:** restore the step-3 backup (point in time) and promote the previous deployments of both apps. Writes made since the window are lost, so list them from `activity_logs` first. **Option B, rebuild old tables from the archive** (keeps new writes to everything else; see SQL below), then deploy a build matching the 0104 schema. |
 | Later | Fix forward. The archive stays available. |
@@ -474,7 +474,10 @@ Then undo 0109 (it puts back the client and user names; the 0108 code reads them
 ```sql
 BEGIN;
 -- A client gets back its own name from the archive; a client created after
--- the release takes its company's name.
+-- the release takes its company's name. Updated-at triggers stay off so the
+-- rollback doesn't look like an edit.
+ALTER TABLE clients DISABLE TRIGGER USER;
+ALTER TABLE users DISABLE TRIGGER USER;
 ALTER TABLE clients ADD COLUMN name text;
 UPDATE clients c SET name = coalesce(
   (SELECT a.name FROM archive_sales_tools.client_names a WHERE a.client_id = c.id),
@@ -490,8 +493,25 @@ UPDATE users u SET full_name = coalesce(
   (SELECT c.name FROM contacts c WHERE c.user_id = u.id AND c.deleted_at IS NULL
    ORDER BY c.created_at LIMIT 1),
   (SELECT a.full_name FROM archive_sales_tools.user_names a WHERE a.user_id = u.id));
--- Optional: the staff contacts and Place To Stand memberships 0109 added are
--- harmless to the old code and can stay. Leave them unless asked to remove.
+ALTER TABLE clients ENABLE TRIGGER USER;
+ALTER TABLE users ENABLE TRIGGER USER;
+-- Remove what 0109 added (staff people, their memberships, the Place To
+-- Stand company: archive_sales_tools.created_0109), row by row: anything
+-- made since the release that still points at one of them keeps it.
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT kind, id FROM archive_sales_tools.created_0109
+    ORDER BY CASE kind WHEN 'membership' THEN 1 WHEN 'contact' THEN 2 ELSE 3 END LOOP
+    BEGIN
+      IF r.kind = 'membership' THEN DELETE FROM memberships WHERE id = r.id;
+      ELSIF r.kind = 'contact' THEN DELETE FROM contacts WHERE id = r.id;
+      ELSE DELETE FROM companies WHERE id = r.id;
+      END IF;
+    EXCEPTION WHEN foreign_key_violation THEN NULL;
+    END;
+  END LOOP;
+END $$;
 DELETE FROM drizzle.__drizzle_migrations
 WHERE id = (SELECT id FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 1);
 COMMIT;
@@ -501,6 +521,8 @@ Then undo 0108 (it puts back the five copies; the old code reads them):
 
 ```sql
 BEGIN;
+ALTER TABLE clients DISABLE TRIGGER USER;
+ALTER TABLE hour_blocks DISABLE TRIGGER USER;
 ALTER TABLE clients ADD COLUMN origination_contact_id uuid REFERENCES contacts(id),
   ADD COLUMN origination_user_id uuid REFERENCES users(id),
   ADD COLUMN closer_user_id uuid REFERENCES users(id);
@@ -513,8 +535,16 @@ UPDATE clients c SET (origination_user_id, origination_contact_id) = (
   WHERE t.client_id = c.id AND t.deleted_at IS NULL ORDER BY t.effective_from DESC LIMIT 1)
 WHERE EXISTS (SELECT 1 FROM client_commission_terms t
   WHERE t.client_id = c.id AND t.deleted_at IS NULL);
-CREATE TABLE contact_leads AS SELECT * FROM archive_sales_tools.contact_leads;
-ALTER TABLE contact_leads ADD PRIMARY KEY (id);
+CREATE TABLE contact_leads (
+  id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+  contact_id uuid NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  lead_id uuid NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT contact_leads_contact_lead_key UNIQUE (contact_id, lead_id)
+);
+INSERT INTO contact_leads SELECT id, contact_id, lead_id, created_at FROM archive_sales_tools.contact_leads;
+CREATE INDEX idx_contact_leads_contact ON contact_leads USING btree (contact_id);
+CREATE INDEX idx_contact_leads_lead ON contact_leads USING btree (lead_id);
 INSERT INTO contact_leads (contact_id, lead_id)
 SELECT l.contact_id, l.id FROM leads l
 WHERE NOT EXISTS (SELECT 1 FROM contact_leads cl WHERE cl.lead_id = l.id AND cl.contact_id = l.contact_id);
@@ -528,6 +558,13 @@ WHERE EXISTS (SELECT 1 FROM client_billing_terms t WHERE t.client_id = c.id AND 
 ALTER TABLE hour_blocks ADD COLUMN invoice_id uuid REFERENCES invoices(id) ON DELETE SET NULL;
 UPDATE hour_blocks hb SET invoice_id = li.invoice_id
 FROM invoice_line_items li WHERE li.id = hb.invoice_line_item_id;
+ALTER TABLE clients ADD CONSTRAINT clients_origination_mutex CHECK ((NOT ((origination_user_id IS NOT NULL) AND (origination_contact_id IS NOT NULL))));
+CREATE INDEX idx_clients_closer_user_id ON clients USING btree (closer_user_id) WHERE ((deleted_at IS NULL) AND (closer_user_id IS NOT NULL));
+CREATE INDEX idx_clients_origination_contact_id ON clients USING btree (origination_contact_id) WHERE ((deleted_at IS NULL) AND (origination_contact_id IS NOT NULL));
+CREATE INDEX idx_clients_origination_user_id ON clients USING btree (origination_user_id) WHERE ((deleted_at IS NULL) AND (origination_user_id IS NOT NULL));
+CREATE INDEX idx_hour_blocks_invoice_id ON hour_blocks USING btree (invoice_id) WHERE ((deleted_at IS NULL) AND (invoice_id IS NOT NULL));
+ALTER TABLE clients ENABLE TRIGGER USER;
+ALTER TABLE hour_blocks ENABLE TRIGGER USER;
 DELETE FROM drizzle.__drizzle_migrations
 WHERE id = (SELECT id FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 1);
 COMMIT;
@@ -536,23 +573,36 @@ COMMIT;
 ```sql
 BEGIN;
 -- Old link tables, from the full copies.
-CREATE TABLE contact_clients AS SELECT * FROM archive_sales_tools.contact_clients;
-ALTER TABLE contact_clients ADD PRIMARY KEY (id),
-  ADD CONSTRAINT contact_clients_contact_client_key UNIQUE (contact_id, client_id),
-  ADD CONSTRAINT contact_clients_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
-  ADD CONSTRAINT contact_clients_client_id_fkey FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE;
-CREATE TABLE client_members AS SELECT * FROM archive_sales_tools.client_members;
-ALTER TABLE client_members ADD PRIMARY KEY (id),
-  ADD CONSTRAINT client_members_client_id_user_id_key UNIQUE (client_id, user_id),
-  ADD CONSTRAINT client_members_client_id_fkey FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-  ADD CONSTRAINT client_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
--- (Re-add the client_members id identity and the contact_clients id default as in the baseline.)
+CREATE TABLE contact_clients (
+  id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+  contact_id uuid NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  client_id uuid NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT contact_clients_contact_client_key UNIQUE (contact_id, client_id)
+);
+INSERT INTO contact_clients SELECT id, contact_id, client_id, created_at FROM archive_sales_tools.contact_clients;
+CREATE INDEX idx_contact_clients_client ON contact_clients USING btree (client_id);
+CREATE INDEX idx_contact_clients_contact ON contact_clients USING btree (contact_id);
+CREATE TABLE client_members (
+  id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  client_id uuid NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  deleted_at timestamp with time zone,
+  CONSTRAINT client_members_client_id_user_id_key UNIQUE (client_id, user_id)
+);
+INSERT INTO client_members (id, client_id, user_id, created_at, deleted_at) OVERRIDING SYSTEM VALUE
+  SELECT id, client_id, user_id, created_at, deleted_at FROM archive_sales_tools.client_members;
+SELECT setval(pg_get_serial_sequence('client_members', 'id'), coalesce((SELECT max(id) FROM client_members), 1));
+CREATE INDEX idx_client_members_client ON client_members USING btree (client_id) WHERE (deleted_at IS NULL);
+CREATE INDEX idx_client_members_user ON client_members USING btree (user_id) WHERE (deleted_at IS NULL);
 
 -- Dropped columns.
 ALTER TABLE contacts ADD COLUMN company_id uuid REFERENCES companies(id) ON DELETE SET NULL,
                      ADD COLUMN job_title text;
 UPDATE contacts c SET company_id = a.company_id, job_title = a.job_title
 FROM archive_sales_tools.contact_company a WHERE a.contact_id = c.id;
+CREATE INDEX idx_contacts_company ON contacts USING btree (company_id) WHERE ((deleted_at IS NULL) AND (company_id IS NOT NULL));
 ALTER TABLE companies ADD COLUMN primary_contact_id uuid REFERENCES contacts(id) ON DELETE SET NULL;
 UPDATE companies co SET primary_contact_id = a.primary_contact_id
 FROM archive_sales_tools.company_primary_contact a WHERE a.company_id = co.id;
@@ -570,12 +620,23 @@ ALTER TABLE leads ALTER COLUMN contact_name SET NOT NULL;
 DROP VIEW client_portal_access;
 DROP TABLE memberships;
 ALTER TABLE leads ALTER COLUMN contact_id DROP NOT NULL;
+ALTER TABLE leads DROP CONSTRAINT leads_contact_id_fkey,
+  ADD CONSTRAINT leads_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL;
+-- 0106 gave leads with only a typed company name a company: undo that.
+UPDATE leads l SET company_id = NULL FROM archive_sales_tools.lead_companies_0106 a WHERE a.lead_id = l.id;
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN SELECT id FROM archive_sales_tools.companies_created_0106 LOOP
+    BEGIN DELETE FROM companies WHERE id = r.id; EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+  END LOOP;
+END $$;
 DELETE FROM drizzle.__drizzle_migrations
 WHERE id IN (SELECT id FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 3);
 COMMIT;
 ```
 
-Memberships made through the app after the release, such as new access grants, are not carried back by Option B. Re-apply them by hand from `activity_logs`. Option B returns the database to the 0104 shape. Going all the way back to production's current code means Option A.
+Memberships made through the app after the release, such as new access grants, are not carried back by Option B. Re-apply them by hand from `activity_logs`. Option B returns the database to the 0104 shape. Rehearsed on a copy of production: after the whole batch (0089–0112), the undo steps above return it to exactly the state of the same copy migrated to 0104, schema and data (`node scripts/compare-rollout.mjs` covers the forward run). Going all the way back to production's current code means Option A.
 
 ## 6. Decisions for Jason, and who does what
 

@@ -21,6 +21,11 @@ SELECT "id" AS "user_id", "full_name", "email", "role" FROM "users";
 --> statement-breakpoint
 
 -- Staff need a company to belong to.
+-- What existed before, so a rollback can remove exactly what this adds.
+CREATE TABLE "archive_sales_tools"."ids_before_0109" AS
+  SELECT 'company'::text AS "kind", "id" FROM "companies"
+  UNION ALL SELECT 'contact', "id" FROM "contacts"
+  UNION ALL SELECT 'membership', "id" FROM "memberships";--> statement-breakpoint
 INSERT INTO "companies" ("name", "website")
 SELECT 'Place To Stand', 'placetostandagency.com'
 WHERE EXISTS (
@@ -90,6 +95,13 @@ BEGIN
   END IF;
 END $$;--> statement-breakpoint
 
+CREATE TABLE "archive_sales_tools"."created_0109" AS
+  SELECT 'company'::text AS "kind", co."id" FROM "companies" co
+    WHERE NOT EXISTS (SELECT 1 FROM "archive_sales_tools"."ids_before_0109" b WHERE b."kind" = 'company' AND b."id" = co."id")
+  UNION ALL SELECT 'contact', c."id" FROM "contacts" c
+    WHERE NOT EXISTS (SELECT 1 FROM "archive_sales_tools"."ids_before_0109" b WHERE b."kind" = 'contact' AND b."id" = c."id")
+  UNION ALL SELECT 'membership', m."id" FROM "memberships" m
+    WHERE NOT EXISTS (SELECT 1 FROM "archive_sales_tools"."ids_before_0109" b WHERE b."kind" = 'membership' AND b."id" = m."id");--> statement-breakpoint
 DROP INDEX "idx_clients_name";--> statement-breakpoint
 DROP INDEX "idx_clients_name_trgm";--> statement-breakpoint
 ALTER TABLE "clients" ALTER COLUMN "company_id" SET NOT NULL;--> statement-breakpoint
