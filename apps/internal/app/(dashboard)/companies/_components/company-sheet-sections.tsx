@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { FolderKanban } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -24,6 +23,7 @@ import {
 import { Label } from '@pts/ui/label'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { Switch } from '@pts/ui/switch'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 
 export function CompanyLeadsSection({
@@ -189,7 +189,9 @@ export function CompanyProjectsTab({ clientId }: { clientId: string | null }) {
                 }
                 className='hover:bg-muted/50 flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors'
               >
-                <FolderKanban className='size-4 shrink-0 text-emerald-500' />
+                <ENTITY_ICONS.project
+                  className={cn(ENTITY_ACCENTS.project.icon, 'size-4 shrink-0')}
+                />
                 <span className='min-w-0 flex-1 truncate font-medium'>
                   {project.name}
                 </span>

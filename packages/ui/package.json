@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./alert": "./src/alert.tsx",
     "./alert-dialog": "./src/alert-dialog.tsx",
     "./auth-shell": "./src/auth-shell.tsx",
     "./avatar": "./src/avatar.tsx",

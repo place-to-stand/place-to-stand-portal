@@ -3,7 +3,6 @@
 import type { ReactElement } from 'react'
 
 import { useQuery } from '@tanstack/react-query'
-import { Building2 } from 'lucide-react'
 
 import { fetchCompanyOptions } from '@/app/(dashboard)/companies/actions'
 import {
@@ -11,6 +10,7 @@ import {
   type EntityLinkOption,
 } from '@/components/ui/entity-link-picker'
 import type { CompanyOption } from '@/lib/companies/types'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 export const COMPANY_OPTIONS_QUERY_KEY = ['companyOptions'] as const
 
@@ -68,7 +68,7 @@ export function CompanyLinkPicker({
       entity='company'
       entityLabel='company'
       aria-label='Company'
-      icon={Building2}
+      icon={ENTITY_ICONS.company}
       value={
         value
           ? toOption({

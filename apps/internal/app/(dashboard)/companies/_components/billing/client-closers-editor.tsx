@@ -1,13 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Handshake,
-  LinkIcon,
-  Plus,
-  UserRound,
-  X,
-} from 'lucide-react'
+import { LinkIcon, Plus, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
@@ -29,6 +23,7 @@ import type {
   CloserCandidate,
   CloserDraft,
 } from '@/lib/settings/clients/use-client-sheet-state'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 export type ClientClosersEditorProps = {
   closers: CloserDraft[]
@@ -85,7 +80,7 @@ export function ClientClosersEditor({
             return (
               <li key={key}>
                 <SheetRecordRow
-                  icon={closer.kind === 'user' ? Handshake : LinkIcon}
+                  icon={closer.kind === 'user' ? ENTITY_ICONS.lead : LinkIcon}
                   title={closer.name}
                   description={
                     closer.email && closer.email !== closer.name
@@ -208,7 +203,7 @@ function CloserAddButton({
               {hasClosers ? (
                 <Plus className='h-4 w-4' />
               ) : (
-                <Handshake className='h-4 w-4' />
+                <ENTITY_ICONS.lead className='h-4 w-4' />
               )}
               {hasClosers ? 'Add closer' : 'No closer'}
             </Button>
@@ -276,7 +271,7 @@ function CandidateItem({
         onAdd(candidate)
       }}
     >
-      <UserRound className='text-muted-foreground h-4 w-4' />
+      <ENTITY_ICONS.contact className='text-muted-foreground h-4 w-4' />
       <div className='flex min-w-0 flex-col'>
         <span className='truncate font-medium'>{candidate.name}</span>
         {candidate.email && candidate.email !== candidate.name ? (

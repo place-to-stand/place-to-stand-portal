@@ -1,14 +1,5 @@
 import Link from 'next/link'
-import {
-  Building2,
-  CalendarDays,
-  ChevronRight,
-  FolderKanban,
-  Handshake,
-  Loader2,
-  User,
-  Users,
-} from 'lucide-react'
+import { CalendarDays, ChevronRight, Loader2, User, Users } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -26,6 +17,7 @@ import {
 } from '@/lib/projects/task-status'
 import { cn } from '@/lib/utils'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TaskListProps = {
   items: AssignedTaskSummary[]
@@ -150,7 +142,10 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                     onClick={e => e.stopPropagation()}
                     className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                   >
-                    <Handshake className='size-3 shrink-0' aria-hidden />
+                    <ENTITY_ICONS.lead
+                      className='size-3 shrink-0'
+                      aria-hidden
+                    />
                     <span className='truncate-link'>{task.lead.name}</span>
                   </Link>
                   <MetaSeparator />
@@ -178,12 +173,18 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                   onClick={e => e.stopPropagation()}
                   className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
-                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <ENTITY_ICONS.project
+                    className='size-3 shrink-0'
+                    aria-hidden
+                  />
                   <span className='truncate-link'>{task.project.name}</span>
                 </Link>
               ) : (
                 <span className='inline-flex min-w-0 items-center gap-1'>
-                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <ENTITY_ICONS.project
+                    className='size-3 shrink-0'
+                    aria-hidden
+                  />
                   <span className='truncate'>{task.project.name}</span>
                 </span>
               )}
@@ -311,5 +312,5 @@ function renderProjectTypeIcon(
     return <User className={className} aria-hidden />
   }
 
-  return <Building2 className={className} aria-hidden />
+  return <ENTITY_ICONS.company className={className} aria-hidden />
 }

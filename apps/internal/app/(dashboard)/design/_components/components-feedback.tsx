@@ -1,8 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { Archive, Copy, Loader2, MoreHorizontal, Pencil } from 'lucide-react'
+import {
+  Archive,
+  Copy,
+  Info,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  TriangleAlert,
+} from 'lucide-react'
 
+import {
+  Alert,
+  AlertAction,
+  AlertContent,
+  AlertDescription,
+  AlertTitle,
+} from '@pts/ui/alert'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,9 +170,46 @@ export function ComponentsFeedback() {
   return (
     <DesignSection
       id='feedback'
-      title='Toasts and errors'
-      when='A toast confirms what just happened: short and past tense on success; "Unable to <verb> <noun>" on failure, with the reason in the description. Errors a person must fix stay in the form, in FormFeedback.'
+      title='Alerts, toasts and errors'
+      when='A toast confirms what just happened: short and past tense on success; "Unable to <verb> <noun>" on failure, with the reason in the description. An Alert stays on the page while its cause does: warning for something worth a look that never blocks saving (with the fix as its action), destructive for something broken. Errors a person must fix stay in the form, in FormFeedback.'
     >
+      <Specimen label='Alert' note='@pts/ui/alert' className='block space-y-3'>
+        <Alert variant='warning'>
+          <TriangleAlert />
+          <AlertContent>
+            <AlertDescription>
+              Ada Lovelace isn’t at Acme Industries.
+            </AlertDescription>
+          </AlertContent>
+          <AlertAction>
+            <Button type='button' variant='outline' size='xs'>
+              Add to Acme Industries
+            </Button>
+          </AlertAction>
+        </Alert>
+        <Alert variant='destructive'>
+          <TriangleAlert />
+          <AlertContent>
+            <AlertTitle>Unable to read the saved close</AlertTitle>
+            <AlertDescription>
+              The figures below are live, not the saved close.
+            </AlertDescription>
+          </AlertContent>
+        </Alert>
+        <Alert>
+          <Info />
+          <AlertContent>
+            <AlertDescription>
+              Ada Lovelace will be added to Acme Industries when you save.
+            </AlertDescription>
+          </AlertContent>
+          <AlertAction>
+            <Button type='button' variant='ghost' size='xs'>
+              Undo
+            </Button>
+          </AlertAction>
+        </Alert>
+      </Specimen>
       <Specimen label='Toast' note='components/ui/use-toast'>
         <Button
           variant='outline'

@@ -259,6 +259,8 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `BRAND` or `EMAIL_COLORS`.
 
+**Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes).
+
 **Component library:**
 - Radix UI primitives in `apps/internal/components/ui/`
 - Custom business components in `apps/internal/components/` organized by feature

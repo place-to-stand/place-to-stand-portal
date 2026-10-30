@@ -14,8 +14,6 @@ import {
   CalendarDays,
   CheckCircle,
   Globe,
-  Handshake,
-  ListTodo,
   Mail,
   MessageSquareText,
   Phone,
@@ -23,7 +21,7 @@ import {
 } from 'lucide-react'
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
   getLeadSourceLabel,
@@ -39,7 +37,7 @@ import { formatPhoneUS } from '@/lib/utils/phone-format'
  * assignee avatar pinned bottom-right.
  */
 const LEAD_SOURCE_ICONS: Record<LeadSourceTypeValue, LucideIcon> = {
-  REFERRAL: Handshake,
+  REFERRAL: ENTITY_ICONS.lead,
   WEBSITE: Globe,
   EVENT: CalendarDays,
 }
@@ -253,7 +251,7 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
                   className='inline-flex items-center gap-1'
                   aria-label={openTasksLabel}
                 >
-                  <ListTodo className='h-3.5 w-3.5' aria-hidden />
+                  <ENTITY_ICONS.task className='h-3.5 w-3.5' aria-hidden />
                   {lead.openTaskCount}
                 </span>
               ) : null}

@@ -3,14 +3,7 @@
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
-import {
-  Building2,
-  Check,
-  Copy,
-  ExternalLink,
-  Mail,
-  Receipt,
-} from 'lucide-react'
+import { Check, Copy, ExternalLink, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -34,7 +27,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { invoiceShareHref } from '@/lib/invoices/links'
@@ -291,7 +284,7 @@ export function InvoicesTableSection({
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>
-                    <Receipt
+                    <ENTITY_ICONS.invoice
                       aria-hidden
                       className={cn(
                         'h-4 w-4 shrink-0',
@@ -312,7 +305,7 @@ export function InvoicesTableSection({
                 </TableCell>
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <Building2
+                    <ENTITY_ICONS.company
                       className={cn(
                         ENTITY_ACCENTS.company.icon,
                         'h-4 w-4 shrink-0'

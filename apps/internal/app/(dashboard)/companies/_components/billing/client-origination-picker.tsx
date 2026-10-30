@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LinkIcon, UserRound, X } from 'lucide-react'
+import { LinkIcon, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
@@ -20,6 +20,7 @@ import type {
   OriginationContactOption,
   PartnerUserOption,
 } from '@/lib/settings/clients/use-client-sheet-state'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 export type ClientOriginationPickerProps = {
   selectedUser: PartnerUserOption | null
@@ -92,7 +93,7 @@ export function ClientOriginationPicker({
     const locked = isPending || disabled
     return (
       <SheetRecordRow
-        icon={selected.kind === 'user' ? UserRound : LinkIcon}
+        icon={selected.kind === 'user' ? ENTITY_ICONS.contact : LinkIcon}
         title={selected.name}
         description={
           selected.email && selected.email !== selected.name
@@ -133,7 +134,7 @@ export function ClientOriginationPicker({
               className='w-full justify-start'
               disabled={disabled}
             >
-              <UserRound className='h-4 w-4' />
+              <ENTITY_ICONS.contact className='h-4 w-4' />
               No originator
             </Button>
           </PopoverTrigger>
@@ -199,7 +200,7 @@ function CandidateItem({
       value={`${display.kind} ${display.name} ${display.email ?? ''}`}
       onSelect={onSelect}
     >
-      <UserRound className='text-muted-foreground h-4 w-4' />
+      <ENTITY_ICONS.contact className='text-muted-foreground h-4 w-4' />
       <div className='flex min-w-0 flex-col'>
         <span className='truncate font-medium'>{display.name}</span>
         {display.email && display.email !== display.name ? (

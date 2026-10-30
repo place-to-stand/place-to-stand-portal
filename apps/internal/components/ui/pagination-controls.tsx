@@ -57,7 +57,7 @@ function CursorPagination({
   }
 
   return (
-    <div className='flex items-center justify-between gap-4'>
+    <div className='flex flex-wrap items-center justify-between gap-x-4 gap-y-2'>
       {showPageSize ? <PageSizeSelect value={pageSize} /> : <span />}
       {hasMorePages ? (
         <div className='flex justify-end gap-1'>
@@ -173,7 +173,11 @@ function PagedPagination({
       >
         <ChevronLeft />
       </Button>
-      <div className='flex items-center'>
+      {/* A phone has no room for nine page links: "3 / 5" instead. */}
+      <span className='text-muted-foreground px-1.5 text-sm tabular-nums sm:hidden'>
+        {currentPage} / {totalPages}
+      </span>
+      <div className='hidden items-center sm:flex'>
         {paginationItems.map((item, index) => {
           if (item === 'ellipsis') {
             return (
@@ -218,9 +222,9 @@ function PagedPagination({
   ) : null
 
   return (
-    <div className='flex items-center justify-between gap-4'>
+    <div className='flex flex-wrap items-center justify-between gap-x-4 gap-y-2'>
       <PageSizeSelect value={pageSize} />
-      <div className='flex items-center gap-4'>
+      <div className='flex items-center gap-3 sm:gap-4'>
         {showCount ? (
           <p className='text-muted-foreground text-xs tabular-nums'>
             {(currentPage - 1) * pageSize + 1}–

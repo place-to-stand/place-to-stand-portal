@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Briefcase, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
+import { CalendarClock, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 import {
@@ -51,6 +51,7 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
 // column in all three section tables; grouping semantics stay unchanged —
@@ -413,7 +414,9 @@ export function ProjectsLanding({
               </span>
             )}
             <Link href={href} className='flex min-w-0 items-center gap-2 py-1'>
-              <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
+              <ENTITY_ICONS.project
+                className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
+              />
               <span className='truncate font-medium' title={project.name}>
                 {project.name}
               </span>
@@ -556,13 +559,18 @@ export function ProjectsLanding({
       >
         <TableCell
           colSpan={6}
-          className='bg-blue-100 py-2.5 align-middle max-md:px-3 max-md:py-2.5 dark:bg-blue-500/8'
+          className={cn(
+            ENTITY_ACCENTS.client.tint,
+            'py-2.5 align-middle max-md:px-3 max-md:py-2.5'
+          )}
         >
           <div className='flex items-center gap-4'>
             {readOnly ? (
               // Client pages are admin-only, so members get the name alone.
               <span className='flex w-fit shrink items-center gap-2 opacity-65'>
-                <Briefcase className='h-4 w-4 shrink-0 text-blue-500/80' />
+                <ENTITY_ICONS.client
+                  className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4 shrink-0')}
+                />
                 <span className='text-sm font-semibold'>{client.name}</span>
               </span>
             ) : (
@@ -574,13 +582,15 @@ export function ProjectsLanding({
                 }
                 className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
               >
-                <Briefcase className='h-4 w-4 shrink-0 text-blue-500/80' />
+                <ENTITY_ICONS.client
+                  className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4 shrink-0')}
+                />
                 <span className='text-sm font-semibold'>{client.name}</span>
               </Link>
             )}
             {hours && hours.billingType === 'prepaid' && (
               <div className='flex items-center gap-1 text-xs'>
-                <Clock
+                <ENTITY_ICONS.hourBlock
                   className={cn(
                     'h-3 w-3',
                     hours.hoursRemaining > 0
@@ -605,7 +615,7 @@ export function ProjectsLanding({
             )}
             {hours && hours.billingType === 'net_30' && (
               <div className='flex items-center gap-1 text-xs'>
-                <Clock className='text-muted-foreground h-3 w-3' />
+                <CalendarClock className='text-muted-foreground h-3 w-3' />
                 <span className='text-muted-foreground font-medium'>
                   Net 30
                 </span>
@@ -666,7 +676,7 @@ export function ProjectsLanding({
     {
       key: 'personal',
       title: 'Personal projects',
-      icon: UserRound,
+      icon: ENTITY_ICONS.contact,
       count: personalProjects.length,
       content:
         personalProjects.length > 0

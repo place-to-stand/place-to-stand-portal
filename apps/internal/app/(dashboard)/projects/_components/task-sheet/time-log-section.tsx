@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
@@ -12,6 +12,8 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { useTaskTimeLogs } from './use-task-time-logs'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
 
 type TimeLogSectionProps = {
   taskId: string
@@ -44,7 +46,9 @@ export function TimeLogSection({
     <section className='space-y-1 px-6' aria-label='Time logged on this task'>
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
-          <Clock className='text-muted-foreground h-4 w-4' />
+          <ENTITY_ICONS.timeLog
+            className={cn(ENTITY_ACCENTS.timeLog.icon, 'h-4 w-4')}
+          />
           <h3 className='text-sm font-medium'>Time logs</h3>
           <span className='text-muted-foreground text-sm'>
             {totalHours}h logged

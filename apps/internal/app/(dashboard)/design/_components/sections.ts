@@ -8,7 +8,7 @@ export const DESIGN_SECTION_GROUPS = [
     title: 'Foundations',
     sections: [
       { id: 'colour', label: 'Colour tokens' },
-      { id: 'entities', label: 'Entity palette' },
+      { id: 'entities', label: 'Entities' },
       { id: 'type', label: 'Type' },
       { id: 'space', label: 'Spacing and size' },
       { id: 'radius', label: 'Radius and shadow' },
@@ -29,7 +29,7 @@ export const DESIGN_SECTION_GROUPS = [
       { id: 'record-rows', label: 'Record rows' },
       { id: 'tables', label: 'Tables and toolbar' },
       { id: 'empty-loading', label: 'Empty and loading' },
-      { id: 'feedback', label: 'Toasts and errors' },
+      { id: 'feedback', label: 'Alerts, toasts and errors' },
       { id: 'overlays', label: 'Tooltips and menus' },
       { id: 'dialogs', label: 'Dialogs' },
       { id: 'sheets', label: 'Sheets' },

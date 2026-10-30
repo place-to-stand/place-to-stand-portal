@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, Clock3, Info, Receipt } from 'lucide-react'
+import { Info } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
@@ -151,7 +151,7 @@ export function HourBlocksTableSection({
               >
                 <TableCell label='Hours' className='text-sm'>
                   <span className='inline-flex items-center gap-2'>
-                    <Clock3
+                    <ENTITY_ICONS.hourBlock
                       className={cn(
                         ENTITY_ACCENTS.hourBlock.icon,
                         'h-4 w-4 shrink-0'
@@ -177,7 +177,7 @@ export function HourBlocksTableSection({
                 </TableCell>
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <Building2
+                    <ENTITY_ICONS.company
                       className={cn(
                         ENTITY_ACCENTS.company.icon,
                         'h-4 w-4 shrink-0'
@@ -203,7 +203,7 @@ export function HourBlocksTableSection({
                 <TableCell label='Invoice' className='text-sm'>
                   {block.invoice_number ? (
                     <div className='flex min-w-0 items-center gap-2'>
-                      <Receipt
+                      <ENTITY_ICONS.invoice
                         className={cn(
                           ENTITY_ACCENTS.invoice.icon,
                           'h-4 w-4 shrink-0'

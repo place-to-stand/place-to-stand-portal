@@ -9,6 +9,14 @@ import {
   ContactLinkPicker,
   useContactOptions,
 } from '@/components/contacts/contact-link-picker'
+import { TriangleAlert, UserPlus } from 'lucide-react'
+
+import {
+  Alert,
+  AlertAction,
+  AlertContent,
+  AlertDescription,
+} from '@pts/ui/alert'
 import { Button } from '@pts/ui/button'
 import {
   FormControl,
@@ -271,7 +279,7 @@ export function LeadSheetFormFields({
 }
 
 /**
- * A quiet note when the lead's contact isn't at the chosen company, with an
+ * A warning when the lead's contact isn't at the chosen company, with an
  * "Add to <company>" that joins them on save. Never blocks saving: a contact
  * from another company (a referral) is fine.
  */
@@ -298,13 +306,16 @@ function ContactCompanyMismatchNote({
 
   const contactName = contact.name || 'This person'
   const companyName = company.name || 'this company'
-  return (
-    <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-sm'>
-      {addField.value ? (
-        <>
-          <span>
+  if (addField.value) {
+    return (
+      <Alert>
+        <UserPlus />
+        <AlertContent>
+          <AlertDescription>
             {contactName} will be added to {companyName} when you save.
-          </span>
+          </AlertDescription>
+        </AlertContent>
+        <AlertAction>
           <Button
             type='button'
             variant='ghost'
@@ -313,22 +324,28 @@ function ContactCompanyMismatchNote({
           >
             Undo
           </Button>
-        </>
-      ) : (
-        <>
-          <span>
-            {contactName} isn&apos;t at {companyName}.
-          </span>
-          <Button
-            type='button'
-            variant='outline'
-            size='xs'
-            onClick={() => addField.onChange(true)}
-          >
-            Add to {companyName}
-          </Button>
-        </>
-      )}
-    </div>
+        </AlertAction>
+      </Alert>
+    )
+  }
+  return (
+    <Alert variant='warning'>
+      <TriangleAlert />
+      <AlertContent>
+        <AlertDescription>
+          {contactName} isn&apos;t at {companyName}.
+        </AlertDescription>
+      </AlertContent>
+      <AlertAction>
+        <Button
+          type='button'
+          variant='outline'
+          size='xs'
+          onClick={() => addField.onChange(true)}
+        >
+          Add to {companyName}
+        </Button>
+      </AlertAction>
+    </Alert>
   )
 }

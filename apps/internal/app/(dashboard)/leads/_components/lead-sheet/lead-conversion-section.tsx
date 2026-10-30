@@ -2,13 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import {
-  Building2,
-  CheckCircle,
-  FolderKanban,
-  UserRound,
-  type LucideIcon,
-} from 'lucide-react'
+import { CheckCircle, type LucideIcon } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -22,6 +16,7 @@ import {
   projectBoardHref,
 } from '@/lib/sheets/hrefs'
 import { cn } from '@/lib/utils'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const MAX_PROJECTS = 4
 
@@ -57,7 +52,7 @@ export function LeadConversionSection({
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <Building2 className='text-muted-foreground h-4 w-4' />
+          <ENTITY_ICONS.company className='text-muted-foreground h-4 w-4' />
           <span className='text-sm font-medium'>Client</span>
         </div>
         <Button
@@ -66,7 +61,7 @@ export function LeadConversionSection({
           size='sm'
           onClick={onConvertToClient}
         >
-          <Building2 className='h-3 w-3' />
+          <ENTITY_ICONS.company className='h-3 w-3' />
           Make client
         </Button>
       </div>
@@ -153,7 +148,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
     <div className='space-y-2'>
       <ul className='bg-card divide-y overflow-hidden rounded-md border'>
         <RecordRow
-          icon={Building2}
+          icon={ENTITY_ICONS.company}
           label='Client'
           name={client.name}
           href={client.archived ? null : clientHref}
@@ -167,7 +162,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
         />
         {contact && (
           <RecordRow
-            icon={UserRound}
+            icon={ENTITY_ICONS.contact}
             label='Person'
             name={contact.name}
             href={contactSheetHref(contact.id)}
@@ -176,7 +171,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
         {projects.slice(0, MAX_PROJECTS).map(project => (
           <RecordRow
             key={project.id}
-            icon={FolderKanban}
+            icon={ENTITY_ICONS.project}
             label='Project'
             name={project.name}
             href={projectBoardHref(clientSegment, project.slug ?? project.id)}

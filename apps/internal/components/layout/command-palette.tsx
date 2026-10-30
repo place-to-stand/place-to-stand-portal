@@ -11,7 +11,6 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Building2, UserRound, FolderKanban } from 'lucide-react'
 
 import {
   CommandDialog,
@@ -24,9 +23,8 @@ import {
 import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
-import type {
-  PaletteSearchResult,
-} from '@/lib/queries/command-palette'
+import type { PaletteSearchResult } from '@/lib/queries/command-palette'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -220,7 +218,7 @@ function CommandPalette() {
                   navigate(`/clients/${client.slug ?? client.id}`)
                 }
               >
-                <Building2 className='size-4' />
+                <ENTITY_ICONS.company className='size-4' />
                 <span>{client.name}</span>
               </CommandItem>
             ))}
@@ -238,7 +236,7 @@ function CommandPalette() {
                   )
                 }
               >
-                <FolderKanban className='size-4' />
+                <ENTITY_ICONS.project className='size-4' />
                 <span>
                   {project.clientLabel ? (
                     <span className='text-muted-foreground'>
@@ -266,7 +264,7 @@ function CommandPalette() {
                   )
                 }
               >
-                <UserRound className='size-4' />
+                <ENTITY_ICONS.contact className='size-4' />
                 <span>
                   {contact.name}{' '}
                   <span className='text-muted-foreground'>{contact.email}</span>

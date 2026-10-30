@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, FolderKanban, Loader2, User, Users } from 'lucide-react'
+import { Loader2, User, Users } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -9,6 +9,7 @@ import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 import { formatHours } from './month-cursor'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TimeLogListProps = {
   items: DashboardTimeLogEntry[]
@@ -181,7 +182,7 @@ function TimeLogRow({
                 {entry.clientName
                   ? null
                   : renderProjectTypeIcon(entry.projectType)}
-                <FolderKanban className='size-3 shrink-0' aria-hidden />
+                <ENTITY_ICONS.project className='size-3 shrink-0' aria-hidden />
                 <span className='truncate-link'>{entry.projectName}</span>
               </Link>
             ) : (
@@ -189,7 +190,7 @@ function TimeLogRow({
                 {entry.clientName
                   ? null
                   : renderProjectTypeIcon(entry.projectType)}
-                <FolderKanban className='size-3 shrink-0' aria-hidden />
+                <ENTITY_ICONS.project className='size-3 shrink-0' aria-hidden />
                 <span className='truncate'>{entry.projectName}</span>
               </span>
             )}
@@ -238,8 +239,8 @@ function renderProjectTypeIcon(projectType: string) {
   }
 
   if (projectType === 'CLIENT') {
-    return <Building2 className={className} aria-hidden />
+    return <ENTITY_ICONS.company className={className} aria-hidden />
   }
 
-  return <FolderKanban className={className} aria-hidden />
+  return <ENTITY_ICONS.project className={className} aria-hidden />
 }

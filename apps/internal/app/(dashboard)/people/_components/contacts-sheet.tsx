@@ -12,12 +12,11 @@ import {
 } from '@/lib/settings/contacts/use-contact-sheet-state'
 
 import { useWatch } from 'react-hook-form'
-import { UserRound } from 'lucide-react'
 import { Badge } from '@pts/ui/badge'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { ROLE_LABELS } from '@/lib/auth/roles'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
 
@@ -88,7 +87,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
                   size='sm'
                 />
               ) : (
-                <UserRound
+                <ENTITY_ICONS.contact
                   aria-hidden
                   className={`${ENTITY_ACCENTS.contact.icon} size-4`}
                 />

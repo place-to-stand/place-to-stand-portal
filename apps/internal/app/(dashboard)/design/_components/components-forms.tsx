@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Building2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -44,6 +43,7 @@ import {
 import { UrlInput } from '@/components/ui/url-input'
 
 import { DesignSection, Example, Specimen } from './specimen'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const STATIC_COMPANIES = [
   { id: 'design-acme', label: 'Acme Industries', description: 'Client' },
@@ -263,7 +263,7 @@ export function ComponentsPickers() {
             entity='company'
             entityLabel='company'
             aria-label='Company'
-            icon={Building2}
+            icon={ENTITY_ICONS.company}
             value={staticCompany}
             onChange={setStaticCompany}
             options={STATIC_COMPANIES}

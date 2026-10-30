@@ -81,6 +81,7 @@
 
 - **Deletion & Data Retention:** Implement soft deletes for all records unless stated otherwise. All delete actions should have a conbfirmation step.
 - **UI/UX:** Maintain a clean, professional aesthetic using the default shadcn theme. Favor consistent spacing, typography, and interactive states sourced from Tailwind design tokens.
+- **Design system:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes).
 - **Responsiveness:** Support 320px+ viewports with mobile-first layouts, accessible navigation, and no horizontal scroll.
 - **Accessibility:** Meet WCAG 2.1 AA. Provide keyboard access, ARIA labels when semantic HTML is insufficient, focus outlines, and respect `prefers-reduced-motion`.
 - **Performance:** Target Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1). Use lazy loading, image optimization, and caching headers. Track metrics in Vercel Analytics.

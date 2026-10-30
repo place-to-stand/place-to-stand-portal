@@ -12,10 +12,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
 import {
   Bot,
-  Building2,
   CalendarDays,
-  Clock,
-  FolderKanban,
   MessageCircle,
   Paperclip,
   User,
@@ -29,7 +26,7 @@ import {
   CardAssigneeAvatars,
   type CardAssignee,
 } from '@/components/cards/card-assignee-avatars'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type {
   ProjectTypeValue,
@@ -149,7 +146,10 @@ function CardContent({
                       className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                       onClick={event => event.stopPropagation()}
                     >
-                      <FolderKanban className='h-3.5 w-3.5 shrink-0' aria-hidden />
+                      <ENTITY_ICONS.project
+                        className='h-3.5 w-3.5 shrink-0'
+                        aria-hidden
+                      />
                       <span className='truncate'>{context.projectLabel}</span>
                     </Link>
                   </div>
@@ -158,7 +158,10 @@ function CardContent({
                     className='inline-flex max-w-full min-w-0 items-center gap-1'
                     title={context.projectLabel}
                   >
-                    <FolderKanban className='h-3.5 w-3.5 shrink-0' aria-hidden />
+                    <ENTITY_ICONS.project
+                      className='h-3.5 w-3.5 shrink-0'
+                      aria-hidden
+                    />
                     <span className='truncate'>{context.projectLabel}</span>
                   </span>
                 )
@@ -194,7 +197,7 @@ function CardContent({
               ) : null}
               {loggedHours > 0 ? (
                 <span className='inline-flex items-center gap-1'>
-                  <Clock className='h-3.5 w-3.5' aria-hidden />
+                  <ENTITY_ICONS.timeLog className='h-3.5 w-3.5' aria-hidden />
                   {formatLoggedHours(loggedHours)}
                   <span className='sr-only'> logged</span>
                 </span>
@@ -388,7 +391,7 @@ function renderProjectTypeIcon(
     return <User className={className} aria-hidden />
   }
 
-  return <Building2 className={className} aria-hidden />
+  return <ENTITY_ICONS.company className={className} aria-hidden />
 }
 
 const WORKER_BADGE_CONFIG: Partial<

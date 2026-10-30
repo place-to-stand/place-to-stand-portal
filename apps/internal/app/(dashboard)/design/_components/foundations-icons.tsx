@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsUpDown,
-  Clock,
+  CalendarClock,
   Copy,
   ExternalLink,
   Eye,
@@ -38,10 +38,9 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITIES, ENTITY_KEYS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
-import { ENTITIES } from './palettes'
 import { DesignSection, Specimen } from './specimen'
 import { useCopy } from './use-copy'
 
@@ -67,7 +66,7 @@ const COMMON: Array<[string, LucideIcon]> = [
   ['Eye', Eye],
   ['Mail', Mail],
   ['Send', Send],
-  ['Clock', Clock],
+  ['CalendarClock', CalendarClock],
   ['CalendarIcon', CalendarIcon],
   ['Search', Search],
   ['SlidersHorizontal', SlidersHorizontal],
@@ -94,16 +93,16 @@ export function FoundationsIcons() {
     >
       <Specimen
         label='Entity icons'
-        note='One icon per entity, tinted with its accent in lists'
+        note='From the entity registry (lib/entity-accents.ts): use ENTITY_ICONS, never import these from lucide-react'
         className='grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6'
       >
-        {ENTITIES.map(entity => (
+        {ENTITY_KEYS.map(key => (
           <IconTile
-            key={entity.key}
-            name={entity.iconName}
-            caption={entity.label}
-            icon={entity.icon}
-            iconClassName={ENTITY_ACCENTS[entity.key].icon}
+            key={key}
+            name={ENTITIES[key].iconName}
+            caption={ENTITIES[key].label}
+            icon={ENTITIES[key].icon}
+            iconClassName={ENTITIES[key].accent.icon}
             onCopy={copy}
           />
         ))}

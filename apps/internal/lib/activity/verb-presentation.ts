@@ -1,10 +1,8 @@
 import {
   Archive,
   ArrowRightLeft,
-  Inbox,
   Paperclip,
   CheckCircle2,
-  Clock,
   DollarSign,
   Eye,
   FileText,
@@ -25,6 +23,7 @@ import {
 } from 'lucide-react'
 
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 /**
  * Icon + colour tone for each activity verb family. Tone is only ever a
@@ -57,7 +56,8 @@ const TONE_CLASSES: Record<ActivityTone, string> = {
   archive: BADGE_TINTS.neutral,
   delete: BADGE_TINTS.rose,
   comment: BADGE_TINTS.amber,
-  time: BADGE_TINTS.teal,
+  // Time logs wear their entity colour (the work family's green).
+  time: ENTITY_ACCENTS.timeLog.badge,
   money: BADGE_TINTS.emerald,
   view: BADGE_TINTS.neutral,
   integration: BADGE_TINTS.orange,
@@ -74,7 +74,7 @@ const EXACT: Record<string, VerbPresentation> = {
   TASK_ACCEPTED: { icon: CheckCircle2, tone: 'create' },
   TASKS_ACCEPTED: { icon: CheckCircle2, tone: 'create' },
   TASK_ACCEPTANCE_REVERTED: { icon: RotateCcw, tone: 'status' },
-  TIME_LOG_CREATED: { icon: Clock, tone: 'time' },
+  TIME_LOG_CREATED: { icon: ENTITY_ICONS.timeLog, tone: 'time' },
   INVOICE_SENT: { icon: Send, tone: 'money' },
   INVOICE_EMAILED: { icon: Mail, tone: 'money' },
   INVOICE_PAID: { icon: DollarSign, tone: 'money' },
@@ -100,14 +100,14 @@ const EXACT: Record<string, VerbPresentation> = {
   CONTACT_CLIENT_UNLINKED: { icon: Link2, tone: 'archive' },
   COMPANY_PRIMARY_CONTACT_SET: { icon: Sparkles, tone: 'update' },
   USER_PASSWORD_CHANGED: { icon: Lock, tone: 'update' },
-  SUBMISSION_RECEIVED: { icon: Inbox, tone: 'create' },
+  SUBMISSION_RECEIVED: { icon: ENTITY_ICONS.submission, tone: 'create' },
   SUBMISSIONS_ABANDONED: { icon: Archive, tone: 'archive' },
   MONTHLY_CLOSE_RECLOSED: { icon: Lock, tone: 'money' },
   PLANNING_SESSION_CREATED: { icon: Sparkles, tone: 'create' },
   PLAN_REVISION_CREATED: { icon: Sparkles, tone: 'update' },
-  TIME_LOG_UPDATED: { icon: Clock, tone: 'update' },
-  TIME_LOG_DELETED: { icon: Clock, tone: 'delete' },
-  TIME_LOG_RESTORED: { icon: Clock, tone: 'status' },
+  TIME_LOG_UPDATED: { icon: ENTITY_ICONS.timeLog, tone: 'update' },
+  TIME_LOG_DELETED: { icon: ENTITY_ICONS.timeLog, tone: 'delete' },
+  TIME_LOG_RESTORED: { icon: ENTITY_ICONS.timeLog, tone: 'status' },
   TASK_CREATED_FROM_EMAIL: { icon: Mail, tone: 'create' },
   OAUTH_CONNECTED: { icon: Lock, tone: 'integration' },
   OAUTH_DISCONNECTED: { icon: Lock, tone: 'archive' },

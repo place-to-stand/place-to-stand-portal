@@ -15,7 +15,7 @@ This folder describes; the code decides. When they disagree, the code wins and t
 | Components | `packages/ui/src/*` (`@pts/ui/*`), app-only ones in `apps/internal/components/ui/*` | `components/*.md` |
 | Status badge tints | `packages/ui/src/badge-tints.ts` (`BADGE_TINTS`) | this README |
 | Date formatting | `packages/ui/src/dates.ts` (`@pts/ui/dates`) | this README |
-| Sheet header accent colors | `apps/internal/lib/entity-accents.ts` | `components/sheet.md` |
+| Entities: name, icon, colour (sidebar, sheets, badges, list cells, activity) | `apps/internal/lib/entity-accents.ts` (the registry) + `--entity-*` in `theme.css` | `## Entities` below, `/design#entities` |
 
 `tokens.json` color values and the radius scale are written by `npm run design-tokens` (from the repo root), which reads the sources above and keeps the hand-written usage notes. `npm run lint` fails when the file is stale. Type, spacing, size, shadow and opacity entries are hand-written.
 
@@ -25,9 +25,35 @@ This folder describes; the code decides. When they disagree, the code wins and t
 
 - `README.md`: this brand book.
 - `tokens.json`: every token with a usage note.
-- `components/`: one note per component family: badge, brand-logo, button, card, dialog, dropdown-menu, empty-state, input, row-action-button, select, sheet, switch, table, tabs.
+- `components/`: one note per component family: alert, badge, brand-logo, button, card, dialog, dropdown-menu, empty-state, input, row-action-button, select, sheet, switch, table, tabs.
 
 Both portals share `packages/ui` and its theme. The client portal layers a few tokens of its own on top (a grey page, `chrome` for the top bar, `surface-1/2/3`), defined in `apps/client/styles/globals.css`.
+
+## Entities
+
+Each kind of record has one icon and one colour everywhere it appears: sidebar, sheet header rule, card border, list icon, badge, activity feed. Both live only in the registry, `apps/internal/lib/entity-accents.ts` (`ENTITIES`, with `ENTITY_ICONS` and `ENTITY_ACCENTS` derived from it); the colour values are the `--entity-*` tokens in `theme.css`. `/design#entities` renders the registry with live contrast numbers.
+
+- **Use** `<ENTITY_ICONS.company />` and `ENTITY_ACCENTS.company.icon | card | cardStatic | tint | badge | sheetHeader`. Never import an entity's icon from `lucide-react`, and never write a `text-entity-*` / `bg-entity-*` / `border-entity-*` class outside the registry: eslint fails on both. Need the same glyph for something else (a timestamp)? Pick another one (`CalendarClock`).
+- **Add an entity** by adding it to `ENTITIES` and its `--entity-<token>` to `theme.css` (`:root`, `.dark` and `.email-paper`), then `npm run design-tokens` and a usage note. `scripts/check-entities.mjs` (run by `npm run lint`) fails on a missing icon or token, a shared icon, or under 3:1 icon-on-card contrast in either theme.
+- **Palette B, grouped by job.** Each theme gets its own step: darker in light, lighter in dark.
+
+| Group | Entity | Icon | Light | Dark |
+| --- | --- | --- | --- | --- |
+| Sales | Lead | `Handshake` | amber (62% L), 3.8:1 | amber-300, 12.4:1 |
+|  | Company | `Building2` | orange-700, 5.2:1 | orange-400, 7.5:1 |
+|  | Person | `UserRound` | rose-600, 4.5:1 | rose-400, 6.3:1 |
+|  | Sign-in | `KeyRound` | rose-800, 7.9:1 | rose-300, 9.3:1 |
+| Work | Project | `FolderKanban` | emerald-600, 3.7:1 | emerald-400, 9.3:1 |
+|  | Task | `ListTodo` | teal-700, 5.4:1 | teal-300, 12.2:1 |
+|  | Suggestion | `Lightbulb` | lime-700, 5.0:1 | lime-400, 11.7:1 |
+|  | Time log | `Clock` | green-800, 7.1:1 | green-500, 8.1:1 |
+| Money | Client (a company state) | `Briefcase` | blue-600, 5.3:1 | blue-400, 6.8:1 |
+|  | Invoice | `Receipt` | sky-700, 5.9:1 | sky-300, 10.8:1 |
+|  | Hour block | `Hourglass` | indigo-500, 4.6:1 | indigo-300, 8.9:1 |
+| Admin | Submission | `Inbox` | slate-500, 4.8:1 | slate-400, 6.8:1 |
+|  | Template | `LayoutTemplate` | stone-600, 7.6:1 | stone-300, 12.0:1 |
+
+Contrast is the icon on `card` (WCAG 1.4.11 asks 3:1). Time log and hour block are different things: a time log is hours worked (`Clock`), an hour block is prepaid hours bought (`Hourglass`). `Mail`, `Sparkles` and `CalendarClock` stay free for email, AI and timestamps.
 
 ## The product
 
@@ -36,7 +62,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 ## Content fundamentals
 
 - **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Create lead", "Save changes", "Project archived". Title Case is only for the brand name.
-- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role. Icons and colours follow the entity: a company is `Building2` in indigo, a person (with or without a sign-in) is `UserRound` in rose, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in blue (`lib/entity-accents.ts`). "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
+- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role. Icons and colours follow the entity (see **Entities** below): a company is `Building2`, a person (with or without a sign-in) is `UserRound`, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in blue. "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
 - **Name the entity.** Copy names the record type it acts on, using the entity names: person, company, user, lead, project, task, invoice, hour block, time log, plus client for a company you bill. Never a vague stand-in (account, login, contact, record, item, entry, member) when an entity is meant: "Create user" and "No portal user", not "Create login" or "No portal account".
 - **Create vs Add vs Link.** "Create <thing>" makes a new record (page buttons, create sheets, a picker's pinned Create row). "Add <thing>" puts an existing record on a list (Add person, Add member). "Link" joins a company and its client, the same record seen from two sides. Exception: on the lead sheet, the Tasks and Updates sections use "Add task" and "Add update" for new records added to that lead.
 - **The name.** The wordmark reads **Place To Stand**, with a capital T, as `BrandLogo` renders it. The favicon abbreviation is **PTS**. Some older page metadata still says "Place to Stand Portal". Use the wordmark casing in new copy.
@@ -63,7 +89,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - **`warning`**: pending, expiring, low, drift.
 - **Status badges use `BADGE_TINTS`** (`@pts/ui/badge-tints`) on an outline `Badge`: one recipe, `bg-X-100 text-X-800` in light and `bg-X-900/40 text-X-200` in dark, keyed by hue, plus `neutral` (muted) for done, void and resting states. Map a domain's statuses to hues in one constants file; never write a tint inline.
 - **`chart-1`–`chart-5`** are for data series only. Their hues change between themes, so never describe a series by its color.
-- **Fixed exceptions.** The checked Switch is `emerald-500` (set inside the component; never override it), the dev-environment band in the sidebar is `amber-500` with `amber-950` text, and entity accents come from `lib/entity-accents.ts`. Don't extend these into a palette.
+- **Fixed exceptions.** The checked Switch is `emerald-500` (set inside the component; never override it), the dev-environment band in the sidebar is `amber-500` with `amber-950` text, and entity colours come from the entity registry (`lib/entity-accents.ts`). Don't extend these into a palette.
 - **The brand lime `brand-lime` (#b5f542) is used sparingly and only on dark grounds.** It belongs to `brand-bg` (#0e0f11): the auth screens, the dark email masthead, and the dark theme's logo mark. On white it all but vanishes, so:
   - Use `brand-lime-600` (#65a30d) for the mark in the light theme.
   - Use `email-accent-ink` (#4d7c0f, lime-700) for any lime text on paper.

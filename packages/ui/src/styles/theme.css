@@ -49,6 +49,20 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Entity colours (palette B, grouped by job): icon on card ≥ 3:1 in both themes. */
+  --entity-task: oklch(51.1% 0.096 186.4);
+  --entity-lead: oklch(62.0% 0.175 55.0);
+  --entity-project: oklch(59.6% 0.145 163.2);
+  --entity-suggestion: oklch(53.2% 0.157 131.6);
+  --entity-time-log: oklch(44.8% 0.119 151.3);
+  --entity-company: oklch(55.3% 0.195 38.4);
+  --entity-person: oklch(58.6% 0.253 17.6);
+  --entity-sign-in: oklch(45.5% 0.188 13.7);
+  --entity-client: oklch(54.6% 0.245 262.9);
+  --entity-invoice: oklch(50.0% 0.134 242.7);
+  --entity-hour-block: oklch(58.5% 0.233 277.1);
+  --entity-submission: oklch(55.4% 0.046 257.4);
+  --entity-template: oklch(44.4% 0.011 73.6);
 }
 
 .dark {
@@ -86,6 +100,20 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Entity colours (palette B, grouped by job), dark theme. */
+  --entity-task: oklch(85.5% 0.138 181.1);
+  --entity-lead: oklch(87.9% 0.169 91.6);
+  --entity-project: oklch(76.5% 0.177 163.2);
+  --entity-suggestion: oklch(84.1% 0.238 128.8);
+  --entity-time-log: oklch(72.3% 0.219 149.6);
+  --entity-company: oklch(75.0% 0.183 55.9);
+  --entity-person: oklch(71.2% 0.194 13.4);
+  --entity-sign-in: oklch(81.0% 0.117 11.6);
+  --entity-client: oklch(70.7% 0.165 254.6);
+  --entity-invoice: oklch(82.8% 0.111 230.3);
+  --entity-hour-block: oklch(78.5% 0.115 274.7);
+  --entity-submission: oklch(70.4% 0.040 256.8);
+  --entity-template: oklch(86.9% 0.005 56.4);
 }
 
 /*
@@ -115,6 +143,20 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  /* Entity colours stay light here too (the /design light preview). */
+  --entity-task: oklch(51.1% 0.096 186.4);
+  --entity-lead: oklch(62.0% 0.175 55.0);
+  --entity-project: oklch(59.6% 0.145 163.2);
+  --entity-suggestion: oklch(53.2% 0.157 131.6);
+  --entity-time-log: oklch(44.8% 0.119 151.3);
+  --entity-company: oklch(55.3% 0.195 38.4);
+  --entity-person: oklch(58.6% 0.253 17.6);
+  --entity-sign-in: oklch(45.5% 0.188 13.7);
+  --entity-client: oklch(54.6% 0.245 262.9);
+  --entity-invoice: oklch(50.0% 0.134 242.7);
+  --entity-hour-block: oklch(58.5% 0.233 277.1);
+  --entity-submission: oklch(55.4% 0.046 257.4);
+  --entity-template: oklch(44.4% 0.011 73.6);
 }
 
 @theme inline {
@@ -163,6 +205,20 @@
     monospace;
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui,
     sans-serif;
+  /* Entity colours: text-entity-lead, border-entity-lead/35, … */
+  --color-entity-task: var(--entity-task);
+  --color-entity-lead: var(--entity-lead);
+  --color-entity-project: var(--entity-project);
+  --color-entity-suggestion: var(--entity-suggestion);
+  --color-entity-time-log: var(--entity-time-log);
+  --color-entity-company: var(--entity-company);
+  --color-entity-person: var(--entity-person);
+  --color-entity-sign-in: var(--entity-sign-in);
+  --color-entity-client: var(--entity-client);
+  --color-entity-invoice: var(--entity-invoice);
+  --color-entity-hour-block: var(--entity-hour-block);
+  --color-entity-submission: var(--entity-submission);
+  --color-entity-template: var(--entity-template);
 }
 
 /*

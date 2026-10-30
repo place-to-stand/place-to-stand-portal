@@ -59,8 +59,7 @@ import {
 import { CompanyPeopleSection } from './company-people-section'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { SheetTabs, useSheetTab } from '@/components/sheets/sheet-tabs'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
-import { Building2 } from 'lucide-react'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
@@ -328,7 +327,7 @@ export function CompanySheet({
               isEditing ? (company?.name ?? 'Company') : 'Create company'
             }
             leading={
-              <Building2
+              <ENTITY_ICONS.company
                 aria-hidden
                 className={`${ENTITY_ACCENTS.company.icon} size-4 shrink-0`}
               />

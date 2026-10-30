@@ -1,13 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import {
-  Building2,
-  FolderKanban,
-  KeyRound,
-  Star,
-  UserRound,
-} from 'lucide-react'
+import { Star } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -45,7 +39,7 @@ import { PaginationControls } from '@/components/ui/pagination-controls'
 import { RecordRowButton } from '@/components/ui/record-row-button'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { PersonAvatar, UserAvatar } from '@/components/ui/user-avatar'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
 
@@ -151,7 +145,7 @@ export function ComponentsRecordRows() {
             description='SheetRecordRow with an avatar in place of the icon'
           />
           <LinkedRecordCard
-            icon={KeyRound}
+            icon={ENTITY_ICONS.user}
             title='ada@acme.com'
             description='Sign-in · Sales'
             details={[
@@ -339,7 +333,7 @@ export function SampleProjectList({
                 <TableRow key={row.name}>
                   <TableCell>
                     <span className='flex min-w-0 items-center gap-2'>
-                      <FolderKanban
+                      <ENTITY_ICONS.project
                         className={cn(
                           ENTITY_ACCENTS.project.icon,
                           'size-4 shrink-0'
@@ -373,7 +367,7 @@ export function SampleProjectList({
                         label: name,
                         sublabel: 'Member',
                       }))}
-                      icon={UserRound}
+                      icon={ENTITY_ICONS.contact}
                       ariaLabel={`${row.people.length} people on ${row.name}`}
                     />
                   </TableCell>
@@ -404,17 +398,14 @@ export function SampleProjectList({
           </TableBody>
         </Table>
       </div>
-      {/* Paged controls need ~420px; let them scroll on a phone. */}
-      <div className='overflow-x-auto'>
-        <PaginationControls
-          mode='paged'
-          currentPage={page}
-          totalPages={5}
-          totalItems={118}
-          pageSize={25}
-          onPageChange={setPage}
-        />
-      </div>
+      <PaginationControls
+        mode='paged'
+        currentPage={page}
+        totalPages={5}
+        totalItems={118}
+        pageSize={25}
+        onPageChange={setPage}
+      />
     </div>
   )
 }
@@ -450,7 +441,7 @@ export function ComponentsTables() {
             <TableRow>
               <TableCell>
                 <span className='flex items-center gap-2'>
-                  <Building2
+                  <ENTITY_ICONS.company
                     className={cn(ENTITY_ACCENTS.company.icon, 'size-4')}
                     aria-hidden
                   />
@@ -465,7 +456,7 @@ export function ComponentsTables() {
             <TableRow>
               <TableCell>
                 <span className='flex items-center gap-2'>
-                  <Building2
+                  <ENTITY_ICONS.company
                     className={cn(ENTITY_ACCENTS.company.icon, 'size-4')}
                     aria-hidden
                   />

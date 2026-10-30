@@ -1,13 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Building2,
-  Handshake,
-  MoreHorizontal,
-  UserRound,
-  type LucideIcon,
-} from 'lucide-react'
+import { MoreHorizontal, type LucideIcon } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -48,7 +42,11 @@ import {
 } from '@/components/ui/sheet'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { useToast } from '@/components/ui/use-toast'
-import { ENTITY_ACCENTS, type AccentEntity } from '@/lib/entity-accents'
+import {
+  type AccentEntity,
+  ENTITY_ACCENTS,
+  ENTITY_ICONS,
+} from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
 import { DesignSection, Specimen } from './specimen'
@@ -67,14 +65,19 @@ const VARIANTS: Variant[] = [
     entity: 'company',
     noun: 'company',
     title: 'Acme Industries',
-    icon: Building2,
+    icon: ENTITY_ICONS.company,
   },
-  { entity: 'contact', noun: 'person', title: 'Ada Lovelace', icon: UserRound },
+  {
+    entity: 'contact',
+    noun: 'person',
+    title: 'Ada Lovelace',
+    icon: ENTITY_ICONS.contact,
+  },
   {
     entity: 'lead',
     noun: 'lead',
     title: 'Northwind redesign',
-    icon: Handshake,
+    icon: ENTITY_ICONS.lead,
   },
 ]
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronDown, ListTodo, Plus } from 'lucide-react'
+import { ChevronDown, Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -19,6 +19,7 @@ import type { TaskWithRelations } from '@/lib/types'
 import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type AssigneeInfo = {
   id: string
@@ -121,7 +122,7 @@ export function LeadTasksSection({
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <ListTodo className='text-muted-foreground h-4 w-4' />
+          <ENTITY_ICONS.task className='text-muted-foreground h-4 w-4' />
           <span className='text-sm font-medium'>Tasks</span>
           {tasks.length > 0 && (
             <Badge variant='secondary' className='text-xs'>

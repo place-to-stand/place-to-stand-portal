@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { Building2, Clock, FolderKanban, ListTodo } from 'lucide-react'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -27,7 +26,7 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { clientSheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 import { cn } from '@/lib/utils'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
@@ -176,7 +175,7 @@ export function TimeLogsTable({
                   <TableCell label='Client' className='text-sm'>
                     {item.clientName ? (
                       <div className='flex min-w-0 items-center gap-2'>
-                        <Building2
+                        <ENTITY_ICONS.company
                           className={cn(
                             ENTITY_ACCENTS.company.icon,
                             'h-4 w-4 shrink-0'
@@ -203,7 +202,7 @@ export function TimeLogsTable({
                   </TableCell>
                   <TableCell label='Project' className='text-sm'>
                     <div className='flex min-w-0 items-center gap-2'>
-                      <FolderKanban
+                      <ENTITY_ICONS.project
                         className={cn(
                           ENTITY_ACCENTS.project.icon,
                           'h-4 w-4 shrink-0'
@@ -231,7 +230,7 @@ export function TimeLogsTable({
                     <LinkedRecordsHoverCell
                       withIcon
                       count={item.tasks.length}
-                      icon={ListTodo}
+                      icon={ENTITY_ICONS.task}
                       iconClassName={ENTITY_ACCENTS.task.icon}
                       ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
                       items={item.tasks.map(task => ({
@@ -246,7 +245,12 @@ export function TimeLogsTable({
                     className='text-sm font-medium tabular-nums'
                   >
                     <span className='inline-flex items-center gap-2'>
-                      <Clock className='text-muted-foreground h-4 w-4 shrink-0' />
+                      <ENTITY_ICONS.timeLog
+                        className={cn(
+                          ENTITY_ACCENTS.timeLog.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
                       {HOURS.format(item.hours)}
                     </span>
                   </TableCell>

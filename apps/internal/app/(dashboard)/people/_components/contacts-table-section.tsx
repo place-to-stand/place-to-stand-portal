@@ -1,11 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import {
-  Building2,
-  Mail,
-  Phone,
-} from 'lucide-react'
+import { Mail, Phone } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import {
@@ -38,7 +34,7 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { Badge } from '@pts/ui/badge'
@@ -178,7 +174,6 @@ export function ContactsTableSection({
             const showDestroy = isAdmin && mode === 'archive'
             const showPreview = isAdmin && mode === 'active'
 
-
             return (
               <TableRow
                 key={contact.id}
@@ -205,7 +200,7 @@ export function ContactsTableSection({
                 <TableCell label='Companies' className='text-sm'>
                   {contact.companyId && contact.companyName ? (
                     <span className='flex min-w-0 items-center gap-2'>
-                      <Building2
+                      <ENTITY_ICONS.company
                         className={cn(
                           ENTITY_ACCENTS.company.icon,
                           'h-4 w-4 shrink-0'
@@ -227,7 +222,7 @@ export function ContactsTableSection({
                           count={contact.companies.length}
                           triggerLabel={`+${contact.companies.length - 1}`}
                           triggerClassName='text-muted-foreground shrink-0'
-                          icon={Building2}
+                          icon={ENTITY_ICONS.company}
                           iconClassName={ENTITY_ACCENTS.company.icon}
                           ariaLabel={`${contact.companies.length} companies`}
                           items={contact.companies.map(company => ({
@@ -276,10 +271,7 @@ export function ContactsTableSection({
                   )}
                 </TableCell>
                 {isAdmin ? (
-                  <TableCell
-                    label='Sign-in'
-                    className='text-sm md:text-center'
-                  >
+                  <TableCell label='Sign-in' className='text-sm md:text-center'>
                     {contact.signInRole ? (
                       <Badge variant='outline' className='text-xs font-normal'>
                         {ROLE_LABELS[contact.signInRole]}

@@ -2,13 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Building2,
-  UserRound,
-  ExternalLink,
-  Handshake,
-  Star,
-} from 'lucide-react'
+import { ExternalLink, Star } from 'lucide-react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -43,7 +37,7 @@ import {
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
 import { ClientBadge } from '@/components/clients/client-badge'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 export function CompaniesTable({
   companies,
@@ -146,7 +140,12 @@ export function CompaniesTable({
               >
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
-                    <Building2 className='h-4 w-4 shrink-0 text-indigo-500' />
+                    <ENTITY_ICONS.company
+                      className={cn(
+                        ENTITY_ACCENTS.company.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
                     <span className='truncate font-medium' title={company.name}>
                       {company.name}
                     </span>
@@ -183,7 +182,7 @@ export function CompaniesTable({
                   <LinkedRecordsHoverCell
                     count={company.contactCount}
                     withIcon
-                    icon={UserRound}
+                    icon={ENTITY_ICONS.contact}
                     iconClassName={ENTITY_ACCENTS.contact.icon}
                     ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'person' : 'people'}`}
                     items={company.people.map(person => ({
@@ -208,7 +207,7 @@ export function CompaniesTable({
                   <LinkedRecordsHoverCell
                     count={company.openLeadCount}
                     withIcon
-                    icon={Handshake}
+                    icon={ENTITY_ICONS.lead}
                     iconClassName={ENTITY_ACCENTS.lead.icon}
                     ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
                     contentClassName='min-w-72'

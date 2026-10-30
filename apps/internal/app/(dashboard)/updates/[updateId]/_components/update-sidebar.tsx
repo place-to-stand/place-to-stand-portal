@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { CalendarRange, Clock, UserCog, Users } from 'lucide-react'
+import { CalendarRange, UserCog, Users } from 'lucide-react'
 
 import type { ClientHoursTotals } from '@pts/db/hours'
 
 import { formatCalendarDate } from '@pts/ui/dates'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type SidebarCardProps = {
   icon: ReactNode
@@ -55,7 +56,10 @@ export function HoursCard({ hours }: { hours: ClientHoursTotals }) {
     ['Purchased', hours.purchased],
   ]
   return (
-    <SidebarCard icon={<Clock className={iconClass} />} title='Hours'>
+    <SidebarCard
+      icon={<ENTITY_ICONS.timeLog className={iconClass} />}
+      title='Hours'
+    >
       <dl className='space-y-1.5'>
         {rows.map(([label, value], index) => (
           <div

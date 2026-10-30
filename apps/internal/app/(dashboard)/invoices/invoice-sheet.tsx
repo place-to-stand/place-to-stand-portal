@@ -19,8 +19,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { AlertTriangle, GripVertical, Plus, Trash2 } from 'lucide-react'
+import { GripVertical, Plus, Trash2, TriangleAlert } from 'lucide-react'
 
+import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -946,11 +947,15 @@ function LineItemRow({
 
         {/* Min quantity advisory warning */}
         {showMinQuantityWarning ? (
-          <div className='border-warning/30 bg-warning/10 text-warning flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs'>
-            <AlertTriangle className='h-3 w-3 shrink-0' />
-            Recommended minimum: {minQuantity}{' '}
-            {selectedProduct?.unitLabel ?? 'units'}.
-          </div>
+          <Alert variant='warning' className='py-1.5 text-xs'>
+            <TriangleAlert />
+            <AlertContent>
+              <AlertDescription>
+                Recommended minimum: {minQuantity}{' '}
+                {selectedProduct?.unitLabel ?? 'units'}.
+              </AlertDescription>
+            </AlertContent>
+          </Alert>
         ) : null}
       </div>
     </div>

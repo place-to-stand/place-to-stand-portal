@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Archive,
   Check,
-  Clock,
+  CalendarClock,
   ExternalLink,
   RefreshCw,
   ThumbsDown,
@@ -407,7 +407,10 @@ export function SubmissionDetailSheet({
                   than mid-timestamp. */}
               <ul className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
                 <li className='flex items-center gap-1.5 whitespace-nowrap'>
-                  <Clock className='size-3.5 shrink-0' aria-hidden='true' />
+                  <CalendarClock
+                    className='size-3.5 shrink-0'
+                    aria-hidden='true'
+                  />
                   {/* Company timezone, like the email stamps below — an
                       ambient-TZ format here put two clocks in one sheet. */}
                   <span>

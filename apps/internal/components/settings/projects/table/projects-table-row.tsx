@@ -1,4 +1,4 @@
-import { Building2, FolderKanban, User, Users } from 'lucide-react'
+import { User, Users } from 'lucide-react'
 
 import {
   RecordRowAction,
@@ -15,6 +15,7 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -81,7 +82,9 @@ export function ProjectsTableRow({
     >
       <TableCell>
         <div className='flex min-w-0 items-center gap-2'>
-          <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
+          <ENTITY_ICONS.project
+            className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
+          />
           <span className='truncate font-medium' title={project.name}>
             {project.name}
           </span>
@@ -174,7 +177,7 @@ function resolveProjectOwnerDisplay(project: ProjectWithClient): OwnerDisplay {
 
   if (client) {
     return {
-      Icon: Building2,
+      Icon: ENTITY_ICONS.company,
       label: client.name,
       message: client.deleted_at ? 'Client archived' : undefined,
       messageTone: client.deleted_at ? 'destructive' : undefined,
@@ -182,7 +185,7 @@ function resolveProjectOwnerDisplay(project: ProjectWithClient): OwnerDisplay {
   }
 
   return {
-    Icon: Building2,
+    Icon: ENTITY_ICONS.company,
     label: 'Client missing',
     message: 'Reassign this project to a client.',
     messageTone: 'destructive',

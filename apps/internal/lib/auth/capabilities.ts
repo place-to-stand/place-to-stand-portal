@@ -280,6 +280,13 @@ export const CAPABILITIES = {
     roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
+  'settings.design': {
+    area: 'Settings',
+    label: 'Design system',
+    description: 'Colours, components and patterns used across the portal.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app'],
+  },
   'settings.permissions': {
     area: 'Settings',
     label: 'View roles & permissions',

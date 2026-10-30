@@ -1,12 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import {
-  Building2,
-  UserRound,
-  Handshake,
-  Link2,
-} from 'lucide-react'
+import { Link2 } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
@@ -14,10 +9,11 @@ import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 /**
- * One preview row per entity, with the entity's sidebar icon (UserRound for
- * people, Building2 for companies and clients, Handshake for leads), so a person (or company, lead) looks
+ * One preview row per entity, with the entity's registry icon (ENTITY_ICONS),
+ * so a person (or company, lead) looks
  * the same in every sheet list: the same icon, the same detail line, and a
  * click opens its sheet. Callers add only state (a note like "Pending save")
  * and actions.
@@ -58,7 +54,7 @@ export function ContactRecordRow({
   const name = contact.name || contact.email || 'Unnamed person'
   return (
     <SheetRecordRow
-      icon={UserRound}
+      icon={ENTITY_ICONS.contact}
       title={
         titleAddon ? (
           <span className='flex items-center gap-1.5'>
@@ -80,7 +76,6 @@ export function ContactRecordRow({
   )
 }
 
-
 export function CompanyRecordRow({
   company,
   titleAddon,
@@ -97,7 +92,7 @@ export function CompanyRecordRow({
   const { open } = useSheetParams()
   return (
     <SheetRecordRow
-      icon={Building2}
+      icon={ENTITY_ICONS.company}
       title={
         titleAddon ? (
           <span className='flex items-center gap-1.5'>
@@ -134,7 +129,7 @@ export function LeadRecordRow({
   const { open } = useSheetParams()
   return (
     <SheetRecordRow
-      icon={Handshake}
+      icon={ENTITY_ICONS.lead}
       title={lead.contactName}
       description={note ?? lead.assigneeName}
       onOpen={openable ? () => open('lead', lead.id) : undefined}

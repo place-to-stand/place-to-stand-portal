@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { startTransition, useCallback, useMemo, useState } from 'react'
-import { Building2, Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 
 import { ClientScopeRow } from './client-scope-row'
 import type { MyTasksBoardScopePatch } from './use-optimistic-board-scope'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const ALL_CLIENTS_VALUE = 'all'
 const ALL_CLIENTS_LABEL = 'All clients'
@@ -196,7 +197,7 @@ export function ClientSelector({
               className='w-full justify-between px-3 py-0 font-normal'
             >
               <span className='flex min-w-0 items-center gap-2'>
-                <Building2 className='text-muted-foreground size-4 shrink-0' />
+                <ENTITY_ICONS.company className='text-muted-foreground size-4 shrink-0' />
                 <span className='truncate font-medium'>{selectedLabel}</span>
                 {hiddenHint ? (
                   <span className='text-muted-foreground shrink-0 text-xs'>
@@ -240,7 +241,7 @@ export function ClientSelector({
                     onSelect={() => handleSelectClient(ALL_CLIENTS_VALUE)}
                     className={cn('whitespace-nowrap', ITEM_HOVER_CLASSES)}
                   >
-                    <Building2 />
+                    <ENTITY_ICONS.company />
                     {ALL_CLIENTS_LABEL}
                     {isAllClients ? <Check className='ml-auto' /> : null}
                   </CommandItem>
@@ -254,7 +255,7 @@ export function ClientSelector({
                       onSelect={() => handleSelectClient(client.id)}
                       className={cn('whitespace-nowrap', ITEM_HOVER_CLASSES)}
                     >
-                      <Building2 />
+                      <ENTITY_ICONS.company />
                       <span className='truncate'>{client.name}</span>
                       {selectedClientId === client.id ? (
                         <Check className='ml-auto' />

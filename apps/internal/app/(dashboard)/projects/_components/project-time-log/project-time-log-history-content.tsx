@@ -1,4 +1,4 @@
-import { ListTodo, Loader2, RotateCcw } from 'lucide-react'
+import { Loader2, RotateCcw } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -19,7 +19,7 @@ import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cel
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectTimeLogHistoryState } from '@/lib/projects/time-log/use-project-time-log-history'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
@@ -177,7 +177,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
       <TableCell label='Tasks' className='text-sm tabular-nums md:text-center'>
         <LinkedRecordsHoverCell
           count={visibleTaskLinks.length}
-          icon={ListTodo}
+          icon={ENTITY_ICONS.task}
           iconClassName={ENTITY_ACCENTS.task.icon}
           ariaLabel={`${visibleTaskLinks.length} ${visibleTaskLinks.length === 1 ? 'task' : 'tasks'}`}
           items={visibleTaskLinks.map(link => ({
