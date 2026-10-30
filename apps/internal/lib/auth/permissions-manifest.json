@@ -687,13 +687,6 @@
   },
   {
     "type": "action",
-    "name": "fetchTaskDeployments",
-    "file": "apps/internal/app/(dashboard)/projects/actions/fetch-deployments.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "fetchWorkerStatus",
     "file": "apps/internal/app/(dashboard)/projects/actions/fetch-worker-status.ts",
     "kind": "admin",
@@ -701,21 +694,7 @@
   },
   {
     "type": "action",
-    "name": "getOrCreatePlanningSession",
-    "file": "apps/internal/app/(dashboard)/projects/actions/planning.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "addPlanThread",
-    "file": "apps/internal/app/(dashboard)/projects/actions/planning.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "fetchPlanRevisions",
+    "name": "startPlanningThread",
     "file": "apps/internal/app/(dashboard)/projects/actions/planning.ts",
     "kind": "admin",
     "capability": null
@@ -1548,6 +1527,13 @@
   },
   {
     "type": "route",
+    "name": "GET /api/planning/threads/[threadId]/revisions",
+    "file": "apps/internal/app/api/planning/threads/[threadId]/revisions/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
     "name": "GET /api/project-members",
     "file": "apps/internal/app/api/project-members/route.ts",
     "kind": "admin",
@@ -1727,6 +1713,20 @@
     "file": "apps/internal/app/api/tasks/[taskId]/comments/route.ts",
     "kind": "capability",
     "capability": "portal.sign_in"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/tasks/[taskId]/deployments",
+    "file": "apps/internal/app/api/tasks/[taskId]/deployments/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/tasks/[taskId]/planning",
+    "file": "apps/internal/app/api/tasks/[taskId]/planning/route.ts",
+    "kind": "admin",
+    "capability": null
   },
   {
     "type": "route",

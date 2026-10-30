@@ -3,10 +3,6 @@ import 'server-only'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { resolveMovedTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
-import {
-  syncAssignees,
-  syncAttachments,
-} from '@/app/(dashboard)/projects/actions/task-helpers'
 import { logActivity } from '@/lib/activity/logger'
 import { db } from '@/lib/db'
 import { projects, taskAssignees, tasks } from '@/lib/db/schema'
@@ -21,6 +17,16 @@ import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { pinTaskToTopOfAssigneeBoards } from './assignee-sort'
 import { buildTaskUpdateEvent } from './save-task-activity'
 import { assigneeAccessError } from './assignee-access'
+import {
+  finishAttachmentChanges,
+  saveFailedMessage,
+  stageAttachments,
+  syncAssignees,
+  unstageAttachments,
+  writeAttachmentRows,
+  type AttachmentRowChanges,
+  type StagedAttachment,
+} from './save-task-children'
 import type { SaveTaskResult, TaskWriteContext } from './types'
 import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
 
@@ -141,64 +147,76 @@ export async function updateTaskForActor(
     }
   }
 
+  let staged: StagedAttachment[]
   try {
-    await db
-      .update(tasks)
-      .set({
-        projectId,
-        // PATCH semantics: an omitted leadId keeps the existing lead link,
-        // only an explicit null clears it. `?? null` here once let any save
-        // path that didn't know about leads silently sever tasks.lead_id.
-        leadId: leadId !== undefined ? leadId : existingTask.leadId,
-        title,
-        description,
-        status,
-        dueOn,
-        updatedBy: actor.id,
-        // There is no on-update trigger for `updated_at`, so an edit that does
-        // not set it here leaves the row looking untouched.
-        updatedAt: new Date().toISOString(),
-        rank: nextRank,
-        ...resolveCompletedAt(status, existingTask.completedAt),
-      })
-      .where(eq(tasks.id, taskId))
-  } catch (error) {
-    console.error('Failed to update task', error)
-    return {
-      error: error instanceof Error ? error.message : 'Unable to update task.',
-    }
-  }
-
-  try {
-    await syncAssignees(taskId, assigneeIds)
-    await syncAttachments({
+    staged = await stageAttachments({
       storage,
       taskId,
       actorId: actor.id,
       actorRole: actor.role,
       attachmentsInput: attachments,
-      activity: { taskTitle: title, projectId, clientId: targetCompanyId, source },
     })
-  } catch (assigneeError) {
-    console.error('Failed to sync task assignees', assigneeError)
-    return { error: 'Task saved but assignees could not be updated.' }
+  } catch (error) {
+    console.error('Failed to stage task attachments', error)
+    return { error: 'Unable to attach files. Remove them and upload again.' }
   }
 
+  // One transaction: the task row, its assignee, its attachment rows and the
+  // My Tasks pin are saved together or not at all.
+  let attachmentChanges: AttachmentRowChanges
+  try {
+    attachmentChanges = await db.transaction(async tx => {
+      await tx
+        .update(tasks)
+        .set({
+          projectId,
+          // PATCH semantics: an omitted leadId keeps the existing lead link,
+          // only an explicit null clears it. `?? null` here once let any save
+          // path that didn't know about leads silently sever tasks.lead_id.
+          leadId: leadId !== undefined ? leadId : existingTask.leadId,
+          title,
+          description,
+          status,
+          dueOn,
+          updatedBy: actor.id,
+          // There is no on-update trigger for `updated_at`, so an edit that
+          // does not set it here leaves the row looking untouched.
+          updatedAt: new Date().toISOString(),
+          rank: nextRank,
+          ...resolveCompletedAt(status, existingTask.completedAt),
+        })
+        .where(eq(tasks.id, taskId))
+
+      await syncAssignees(tx, taskId, assigneeIds)
+
+      const changes = await writeAttachmentRows(tx, {
+        taskId,
+        actorId: actor.id,
+        actorRole: actor.role,
+        staged,
+        toRemove: attachments?.toRemove ?? [],
+      })
+
+      // After the assignee sync, so the pin lands on the final assignee set.
+      if (statusChanged) {
+        await pinTaskToTopOfAssigneeBoards(taskId, status, tx)
+      }
+
+      return changes
+    })
+  } catch (error) {
+    console.error('Failed to update task', error)
+    const restored = await unstageAttachments(storage, staged)
+    return { error: saveFailedMessage('Unable to update task.', restored) }
+  }
+
+  // Committed. What follows are side effects of the save, not part of it:
+  // each logs its own failure and the save still stands.
   await notifyTaskAssigned(
     actor,
     { id: taskId, title },
     assigneeIds.filter(id => !existingAssigneeIds.includes(id))
   )
-
-  // After the assignee sync, so the pin lands on the final assignee set.
-  if (statusChanged) {
-    try {
-      await pinTaskToTopOfAssigneeBoards(taskId, status)
-    } catch (sortError) {
-      console.error('Failed to pin task on assignee boards', sortError)
-      return { taskId, error: 'Task saved but could not be moved to the top of My Tasks.' }
-    }
-  }
 
   const event = buildTaskUpdateEvent(
     {
@@ -233,6 +251,15 @@ export async function updateTaskForActor(
       metadata: event.metadata,
     })
   }
+
+  await finishAttachmentChanges({
+    storage,
+    taskId,
+    actorId: actor.id,
+    actorRole: actor.role,
+    activity: { taskTitle: title, projectId, clientId: targetCompanyId, source },
+    changes: attachmentChanges,
+  })
 
   return { taskId }
 }

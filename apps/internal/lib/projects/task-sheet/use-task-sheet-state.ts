@@ -195,30 +195,19 @@ export const useTaskSheetState = ({
             attachments: attachmentsPayload,
           })
 
-          // Partial-failure contract: a create result carrying `taskId` means
-          // the row exists — surface the failed sub-step via toast but still
-          // close, so the create form can't be re-submitted into a duplicate.
-          const createdTaskId = !task ? (result.taskId ?? null) : null
-
-          if (result.error && !createdTaskId) {
+          // All or nothing: an error means nothing was written, so the sheet
+          // stays open with the user's edits for another try.
+          if (result.error !== undefined) {
             setFeedback(result.error)
             return
           }
 
-          if (result.error) {
-            toast({
-              title: 'Task created with issues',
-              description: result.error,
-              variant: 'destructive',
-            })
-          } else {
-            toast({
-              title: task ? 'Task updated' : 'Task created',
-              description: task
-                ? undefined
-                : 'The task was added to the project board.',
-            })
-          }
+          toast({
+            title: task ? 'Task updated' : 'Task created',
+            description: task
+              ? undefined
+              : 'The task was added to the project board.',
+          })
 
           resetFormState({ preservePending: true })
           onOpenChange(false)
