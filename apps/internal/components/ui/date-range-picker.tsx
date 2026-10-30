@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import { CalendarIcon } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Calendar } from '@pts/ui/calendar'
@@ -9,7 +8,8 @@ import { formatCalendarDate } from '@pts/ui/dates'
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { focusCalendarDay } from '@/components/ui/date-picker'
-import { fieldTriggerClasses } from '@/components/ui/searchable-combobox'
+import { FieldClearButton } from '@/components/ui/field-clear-button'
+import { FieldTrigger } from '@/components/ui/field-trigger'
 import {
   DATE_RANGE_PRESETS,
   matchDateRangePreset,
@@ -32,6 +32,13 @@ type DateRangePickerProps = {
   ariaLabel?: string
   disabled?: boolean
   className?: string
+  /**
+   * True while the range is the filter's default (this month): the label
+   * shows muted and the × hides.
+   */
+  isDefault?: boolean
+  /** Shows a clear (×) back to the default while the range differs from it. */
+  onClear?: () => void
 }
 
 /**
@@ -47,6 +54,8 @@ export function DateRangePicker({
   ariaLabel = 'Date range',
   disabled,
   className,
+  isDefault = false,
+  onClear,
 }: DateRangePickerProps) {
   const isMobile = useIsMobile()
   const [open, setOpen] = React.useState(false)
@@ -64,6 +73,7 @@ export function DateRangePicker({
   const preset = matchDateRangePreset(value)
   const presetLabel = DATE_RANGE_PRESETS.find(p => p.key === preset)?.label
   const datesLabel = formatRange(value)
+  const showClear = Boolean(onClear) && !isDefault && !disabled
 
   const handleOpenChange = (next: boolean) => {
     if (disabled) return
@@ -77,89 +87,89 @@ export function DateRangePicker({
   }
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          type='button'
-          variant='outline'
-          aria-haspopup='dialog'
-          aria-expanded={open}
-          aria-label={`${ariaLabel}: ${presetLabel ? `${presetLabel}, ` : ''}${datesLabel}`}
-          title={datesLabel}
-          disabled={disabled}
-          className={cn(fieldTriggerClasses, 'w-56', className)}
+    <div className={cn('relative w-56', className)}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
+          <FieldTrigger
+            aria-haspopup='dialog'
+            aria-expanded={open}
+            aria-label={`${ariaLabel}: ${presetLabel ? `${presetLabel}, ` : ''}${datesLabel}`}
+            labelTitle={datesLabel}
+            disabled={disabled}
+            // At its default range the filter reads like an unset one.
+            placeholder={isDefault}
+            clearable={showClear}
+            className='w-full'
+            label={presetLabel ?? datesLabel}
+          />
+        </PopoverTrigger>
+        <PopoverContent
+          className='flex w-auto max-w-[calc(100vw-2rem)] flex-col p-0 sm:flex-row'
+          sideOffset={8}
+          initialFocus={focusCalendarDay}
         >
-          <span className='flex min-w-0 items-center gap-2'>
-            <CalendarIcon className='size-4 shrink-0 opacity-50' />
-            <span className='min-w-0 truncate font-medium'>
-              {presetLabel ?? datesLabel}
-            </span>
-          </span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className='flex w-auto max-w-[calc(100vw-2rem)] flex-col p-0 sm:flex-row'
-        sideOffset={8}
-        initialFocus={focusCalendarDay}
-      >
-        <div
-          role='group'
-          aria-label='Presets'
-          className='grid grid-cols-2 gap-1 border-b p-2 sm:flex sm:w-36 sm:flex-col sm:border-r sm:border-b-0'
-        >
-          {DATE_RANGE_PRESETS.map(option => (
+          <div
+            role='group'
+            aria-label='Presets'
+            className='grid grid-cols-2 gap-1 border-b p-2 sm:flex sm:w-36 sm:flex-col sm:border-r sm:border-b-0'
+          >
+            {DATE_RANGE_PRESETS.map(option => (
+              <Button
+                key={option.key}
+                type='button'
+                variant='ghost'
+                size='sm'
+                aria-pressed={preset === option.key}
+                onClick={() => apply(resolveDateRangePreset(option.key))}
+                className={cn(
+                  'justify-start font-normal',
+                  preset === option.key && 'bg-accent text-accent-foreground'
+                )}
+              >
+                {option.label}
+              </Button>
+            ))}
             <Button
-              key={option.key}
               type='button'
               variant='ghost'
               size='sm'
-              aria-pressed={preset === option.key}
-              onClick={() => apply(resolveDateRangePreset(option.key))}
+              aria-pressed={preset === null}
+              // Custom is the calendar itself: this just moves focus there.
+              onClick={() => {
+                const day = focusCalendarDay()
+                if (day instanceof HTMLElement) day.focus()
+              }}
               className={cn(
                 'justify-start font-normal',
-                preset === option.key && 'bg-accent text-accent-foreground'
+                preset === null && 'bg-accent text-accent-foreground'
               )}
             >
-              {option.label}
+              Custom
             </Button>
-          ))}
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            aria-pressed={preset === null}
-            // Custom is the calendar itself: this just moves focus there.
-            onClick={() => {
-              const day = focusCalendarDay()
-              if (day instanceof HTMLElement) day.focus()
+          </div>
+          <Calendar
+            mode='range'
+            resetOnSelect
+            numberOfMonths={isMobile ? 1 : 2}
+            defaultMonth={isMobile ? committed.to : committed.from}
+            weekStartsOn={WEEK_STARTS_ON}
+            selected={draft}
+            onSelect={range => {
+              setDraft(range)
+              if (range?.from && range.to) {
+                apply({
+                  from: toCalendarDate(range.from),
+                  to: toCalendarDate(range.to),
+                })
+              }
             }}
-            className={cn(
-              'justify-start font-normal',
-              preset === null && 'bg-accent text-accent-foreground'
-            )}
-          >
-            Custom
-          </Button>
-        </div>
-        <Calendar
-          mode='range'
-          resetOnSelect
-          numberOfMonths={isMobile ? 1 : 2}
-          defaultMonth={isMobile ? committed.to : committed.from}
-          weekStartsOn={WEEK_STARTS_ON}
-          selected={draft}
-          onSelect={range => {
-            setDraft(range)
-            if (range?.from && range.to) {
-              apply({
-                from: toCalendarDate(range.from),
-                to: toCalendarDate(range.to),
-              })
-            }
-          }}
-        />
-      </PopoverContent>
-    </Popover>
+          />
+        </PopoverContent>
+      </Popover>
+      {showClear ? (
+        <FieldClearButton label='date range' onClear={() => onClear?.()} />
+      ) : null}
+    </div>
   )
 }
 

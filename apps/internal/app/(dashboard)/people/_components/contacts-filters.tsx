@@ -78,6 +78,8 @@ export function ContactsFilters({
           options={ROLE_FILTER_VALUES.map(value => ({
             value,
             label: ROLE_FILTER_LABELS[value],
+            // A role is the list's plain outline badge; "No user" is text.
+            badgeClassName: value === 'none' ? undefined : '',
           }))}
         />
       ) : null}

@@ -26,7 +26,7 @@ This folder describes; the code decides. When they disagree, the code wins and t
 
 - `README.md`: this brand book.
 - `tokens.json`: every token with a usage note.
-- `components/`: one note per component family: alert, badge, brand-logo, button, card, dialog, dropdown-menu, empty-state, input, row-action-button, select, sheet, switch, table, tabs, toast.
+- `components/`: one note per component family: alert, badge, brand-logo, button, card, dialog, dropdown-menu, empty-state, filter, input, row-action-button, select, sheet, switch, table, tabs, toast.
 
 Both portals share `packages/ui` and its theme. The client portal layers a few tokens of its own on top (a grey page, `chrome` for the top bar, `surface-1/2/3`), defined in `apps/client/styles/globals.css`.
 
@@ -127,7 +127,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Layout.** The app shell is `muted`. Each page is a `PageShell`:
   - one compact header row (sidebar trigger, a vertical separator, the breadcrumb, then an optional right slot) on `background`, with a bottom border
   - an optional toolbar row (tabs, the count, one primary action). Tabs sit at the left at their own width and scroll sideways once they outgrow the screen; the count sits right, beside the primary action
-  - a list's `FilterBar`: search, then its filters inline. Below `md` the search keeps the row beside a Filters button and the filters open in a sheet (`FilterSheetButton`, `components/table-toolbar/filter-sheet.tsx`); reuse that button for any other page's filters on phones. Every list filter is `FilterSelect` (`components/table-toolbar/filter-select.tsx`): a single-choice filter is a searchable combobox, however short its list (it opens on the selected option, typing narrows it, the first option is "All …"); a multi-choice filter is the checkbox popover. Never a plain `Select` in a filter bar
+  - a list's `FilterBar`: search, then its filters inline. Below `md` the search keeps the row beside a Filters button and the filters open in a sheet (`FilterSheetButton`, `components/table-toolbar/filter-sheet.tsx`); reuse that button for any other page's filters on phones. Every filter has one trigger look, `FieldTrigger` (`w-52`, muted "All …" at its default, the pick in bold with a clear × otherwise, the up-down chevron). A single-choice filter is `FilterSelect` (`components/table-toolbar/filter-select.tsx`): the clearable searchable combobox, however short its list, opening on the pick with its check on the right; a multi-choice filter and the date range use the same trigger over their own popover. Values the list shows as badges show as the same badges in the filter. Never a plain `Select` in a filter bar. Details: `components/filter.md`
   - the scrolling content. The body itself never scrolls.
 - **The left sidebar** uses the `sidebar-*` tokens and collapses to icons. When collapsed, the blueprint mark stands in for the logo.
 - **Entities open in sheets, not pages.** Sheets are right-side panels over the list whose width follows their layout: one column (720px, fits the full rich text toolbar) or a form beside a side column (1184px) (see `components/sheet.md`). They're addressed by a query param (`?task=<uuid>`, `?client=new`).
