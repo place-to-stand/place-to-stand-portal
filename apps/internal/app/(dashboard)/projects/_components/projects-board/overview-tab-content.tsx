@@ -9,7 +9,7 @@ import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { TabsContent } from '@pts/ui/tabs'
-import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
@@ -86,8 +86,6 @@ function ProjectDetailsWidget({
   // Owner opens their person sheet over this page (global SheetHost).
   const { open } = useSheetParams()
   const owner = project.owner
-  const statusLabel = getProjectStatusLabel(project.status)
-  const statusToken = getProjectStatusToken(project.status)
   const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
 
   return (
@@ -108,7 +106,7 @@ function ProjectDetailsWidget({
         {project.slug && <DetailRow label='Slug' value={project.slug} mono />}
         <div className='flex items-center gap-3 px-4 py-2.5'>
           <span className='text-muted-foreground text-sm'>Status</span>
-          <Badge className={cn('ml-auto', statusToken)}>{statusLabel}</Badge>
+          <ProjectStatusBadge status={project.status} className='ml-auto' />
         </div>
         {project.client?.name && (
           <div className='flex items-center gap-3 px-4 py-2.5'>

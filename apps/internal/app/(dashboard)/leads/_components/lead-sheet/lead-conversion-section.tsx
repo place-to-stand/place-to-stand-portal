@@ -7,7 +7,7 @@ import { CheckCircle, type LucideIcon } from 'lucide-react'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
-import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
 import {
@@ -15,7 +15,6 @@ import {
   contactSheetHref,
   projectBoardHref,
 } from '@/lib/sheets/hrefs'
-import { cn } from '@/lib/utils'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const MAX_PROJECTS = 4
@@ -172,12 +171,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
             name={project.name}
             href={projectBoardHref(clientSegment, project.slug ?? project.id)}
             trailing={
-              <Badge
-                variant='outline'
-                className={cn(getProjectStatusToken(project.status))}
-              >
-                {getProjectStatusLabel(project.status)}
-              </Badge>
+              <ProjectStatusBadge status={project.status} />
             }
           />
         ))}

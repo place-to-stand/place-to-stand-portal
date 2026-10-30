@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react'
 import { Star } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   Table,
@@ -39,7 +38,7 @@ import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { PersonAvatar, UserAvatar } from '@/components/ui/user-avatar'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
-import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 
 import { DesignSection, Example, Specimen } from './specimen'
 
@@ -146,12 +145,7 @@ export function ComponentsRecordRows() {
               title='Ship pricing page'
               subtitle='Website rebuild · Due Sep 30, 2026'
               trailing={
-                <Badge
-                  variant='outline'
-                  className={getProjectStatusToken('ACTIVE')}
-                >
-                  {getProjectStatusLabel('ACTIVE')}
-                </Badge>
+                <ProjectStatusBadge status='ACTIVE' />
               }
               onClick={() => undefined}
               className='rounded-t-lg'
@@ -349,12 +343,7 @@ export function SampleProjectList({
                     {row.company}
                   </TableCell>
                   <TableCell label='Status'>
-                    <Badge
-                      variant='outline'
-                      className={cn(getProjectStatusToken(row.status))}
-                    >
-                      {getProjectStatusLabel(row.status)}
-                    </Badge>
+                    <ProjectStatusBadge status={row.status} />
                   </TableCell>
                   <TableCell label='People'>
                     <LinkedRecordsHoverCell

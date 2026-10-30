@@ -3,14 +3,13 @@
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 
-import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { LeadRecordRow } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
-import { getProjectStatusLabel } from '@/lib/constants'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { cn } from '@/lib/utils'
@@ -259,9 +258,7 @@ export function CompanyProjectsTab({
                 <span className='text-muted-foreground text-xs tabular-nums'>
                   {project.doneTasks}/{project.totalTasks} tasks
                 </span>
-                <Badge variant='outline'>
-                  {getProjectStatusLabel(project.status)}
-                </Badge>
+                <ProjectStatusBadge status={project.status} />
               </Link>
             ))}
           </SheetRecordList>
