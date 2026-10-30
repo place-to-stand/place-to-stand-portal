@@ -139,7 +139,7 @@ export function CompanyPeopleSection({
           />
         </RecordRowField>
         {portal ? (
-          <RecordRowField label='Portal'>{portal}</RecordRowField>
+          <RecordRowField label='Portal access'>{portal}</RecordRowField>
         ) : null}
       </>
     )

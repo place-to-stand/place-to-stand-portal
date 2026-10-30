@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
  * icon, the name, one muted detail line and trailing actions. Every list
  * in a sheet uses it so they read the same. A row that holds form fields
  * (a title, a portal switch, a share) puts them on a second line inside the
- * card, each a `RecordRowField` with its label on the left.
+ * card, one per line, each a `RecordRowField` with its label on the left.
  */
 export function SheetRecordRow({
   icon: Icon,
@@ -104,8 +104,9 @@ export function SheetRecordRow({
   return (
     <div className={cn('flex flex-col', cardClassName)}>
       <div className={lineClassName}>{line}</div>
-      {/* Under the name (past the icon), the same on every card. */}
-      <div className='flex flex-wrap items-center gap-x-6 gap-y-2 pr-3 pb-2.5 pl-10'>
+      {/* Under the name (past the icon), one field per line, labels aligned
+          the same on every card. */}
+      <div className='flex flex-col gap-2 pr-3 pb-2.5 pl-10'>
         {fields}
       </div>
     </div>
@@ -113,9 +114,9 @@ export function SheetRecordRow({
 }
 
 /**
- * One form field on a record row's second line: a visible label on the
- * left ("Title", "Portal", "Share"), the control after it. Labels share
- * one width so fields line up from card to card.
+ * One form field under a record row's first line, one per line: a visible
+ * label on the left ("Title", "Portal access", "Share"), the control after
+ * it. Labels share one width so fields line up from card to card.
  */
 export function RecordRowField({
   label,
@@ -126,7 +127,7 @@ export function RecordRowField({
 }) {
   return (
     <label className='flex items-center gap-2'>
-      <span className='text-muted-foreground w-10 shrink-0 text-xs'>
+      <span className='text-muted-foreground w-24 shrink-0 text-xs'>
         {label}
       </span>
       {children}

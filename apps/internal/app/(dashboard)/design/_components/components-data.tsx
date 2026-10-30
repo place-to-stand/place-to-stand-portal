@@ -143,7 +143,7 @@ export function ComponentsRecordRows() {
                     ariaLabel='Linus Torvalds’s title'
                   />
                 </RecordRowField>
-                <RecordRowField label='Portal'>
+                <RecordRowField label='Portal access'>
                   <PortalAccessControl
                     person={{
                       id: 'design-linus',
