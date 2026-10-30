@@ -1,7 +1,9 @@
 import { EmptyState } from '@pts/ui/empty-state'
 import type { SalesTaxData } from '@/lib/data/reports/types'
 
-import { formatMoney, formatShortDay } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
+
+import { formatShortDay } from './format'
 import { TreeBranch } from './tree-branch'
 
 type SalesTaxCardProps = {
@@ -28,7 +30,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
           Sales tax owed
         </h2>
         <span className='text-base font-semibold tabular-nums'>
-          {formatMoney(salesTax.totalAmount)}
+          {formatCurrency(salesTax.totalAmount)}
         </span>
       </div>
       {rows.length === 0 ? (
@@ -43,7 +45,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
               <span className='text-muted-foreground'> · invoices paid</span>
             </span>
             <span className='text-muted-foreground text-right text-[13px] tabular-nums'>
-              on {formatMoney(salesTax.totalTaxable)}
+              on {formatCurrency(salesTax.totalTaxable)}
             </span>
           </div>
           {rows.map((row, index) => (
@@ -69,7 +71,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
                 {formatRate(row.taxRate)}
               </span>
               <span className='w-24 text-right tabular-nums'>
-                {formatMoney(row.taxAmount)}
+                {formatCurrency(row.taxAmount)}
               </span>
             </div>
           ))}

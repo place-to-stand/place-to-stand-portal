@@ -1,7 +1,7 @@
 import type { ProfitShareData } from '@/lib/billing/profit-share'
 import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 
-import { formatHours, formatMoney } from './format'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
 
 export type PayoutColumn = 'payroll' | 'origination' | 'closer' | 'profitShare'
 
@@ -110,7 +110,7 @@ export function buildPayoutTable(
     })
     draft.hoursWorked = row.totalHours
     draft.details.push({
-      label: `Payroll · ${formatHours(row.totalHours)} hrs worked × $${report.payroll.hourlyRate}`,
+      label: `Payroll · ${formatHours(row.totalHours)} worked × ${formatCurrency(report.payroll.hourlyRate)}`,
       column: 'payroll',
       amount: row.amount,
     })
@@ -128,7 +128,7 @@ export function buildPayoutTable(
     for (const client of group.clients) {
       draft.referredClients.push(client.clientName)
       draft.details.push({
-        label: `Origination · ${client.clientName} · ${formatHours(client.hours)} hrs`,
+        label: `Origination · ${client.clientName} · ${formatHours(client.hours)}`,
         column: 'origination',
         amount: client.commission,
       })
@@ -148,8 +148,8 @@ export function buildPayoutTable(
       // against the whole so the line reads back to the billing.
       const hoursLabel =
         client.sharePercent === 100
-          ? `${formatHours(client.hours)} hrs`
-          : `${client.sharePercent}% of ${formatHours((client.hours * 100) / client.sharePercent)} hrs`
+          ? `${formatHours(client.hours)}`
+          : `${client.sharePercent}% of ${formatHours((client.hours * 100) / client.sharePercent)}`
       draft.details.push({
         label: `Closer · ${client.clientName} · ${hoursLabel}`,
         column: 'closer',
@@ -169,7 +169,7 @@ export function buildPayoutTable(
       })
       draft.profitShare = partner.amount
       draft.details.push({
-        label: `Profit share · ${percent}% of ${formatMoney(profitShare.available)}`,
+        label: `Profit share · ${percent}% of ${formatCurrency(profitShare.available)}`,
         column: 'profitShare',
         amount: partner.amount,
       })
@@ -183,7 +183,7 @@ export function buildPayoutTable(
         draft.kind === 'contact'
           ? describeContactPayee(referredClients, closedClients)
           : hoursWorked !== null
-            ? `${formatHours(hoursWorked)} hrs worked`
+            ? `${formatHours(hoursWorked)} worked`
             : 'No hours this month',
       total:
         draft.payroll + draft.origination + draft.closer + draft.profitShare,
