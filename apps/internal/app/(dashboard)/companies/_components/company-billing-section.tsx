@@ -90,7 +90,9 @@ type CompanyBillingProviderProps = {
   children: ReactNode
 }
 
-async function fetchClientBilling(companyId: string): Promise<ClientWithClosers> {
+async function fetchClientBilling(
+  companyId: string
+): Promise<ClientWithClosers> {
   const response = await fetch(
     `/api/sheets/init?entity=client&id=${encodeURIComponent(companyId)}`
   )

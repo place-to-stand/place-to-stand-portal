@@ -6,7 +6,9 @@ export type ClientOption = {
   keywords: string[]
 }
 
-export const buildClientOptions = (clients: HourBlockClient[]): ClientOption[] =>
+export const buildClientOptions = (
+  clients: HourBlockClient[]
+): ClientOption[] =>
   clients.map(client => ({
     value: client.id,
     label: client.deleted_at ? `${client.name} (Archived)` : client.name,

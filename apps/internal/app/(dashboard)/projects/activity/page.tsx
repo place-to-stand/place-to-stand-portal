@@ -22,11 +22,13 @@ export default async function ProjectsActivityPage() {
     limit: 1,
   })
 
-  const clientRows: ClientPickerRow[] = managementResult.clients.map(client => ({
-    id: client.id,
-    name: client.name,
-    deleted_at: client.deletedAt,
-  }))
+  const clientRows: ClientPickerRow[] = managementResult.clients.map(
+    client => ({
+      id: client.id,
+      name: client.name,
+      deleted_at: client.deletedAt,
+    })
+  )
 
   return (
     <PageShell

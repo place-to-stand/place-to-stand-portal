@@ -6,11 +6,7 @@ import {
   PROJECT_STATUS_VALUES,
   type ProjectStatusValue,
 } from '@/lib/constants'
-import type {
-  ClientPickerRow,
-  DbProject,
-  ProjectTypeValue,
-} from '@/lib/types'
+import type { ClientPickerRow, DbProject, ProjectTypeValue } from '@/lib/types'
 import type { IntegrationProvider } from '@/lib/types/integrations'
 
 type ProjectRow = DbProject
@@ -210,7 +206,9 @@ export const createProjectSavePayload = ({
   }
 }
 
-export const sortClientsByName = (clients: ClientPickerRow[]): ClientPickerRow[] =>
+export const sortClientsByName = (
+  clients: ClientPickerRow[]
+): ClientPickerRow[] =>
   [...clients].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   )

@@ -51,7 +51,9 @@ type HourBlockClient = ClientPickerRow & {
   company_id: string
 }
 
-export type HourBlockWithClient = HourBlockRow & { client: HourBlockClient | null }
+export type HourBlockWithClient = HourBlockRow & {
+  client: HourBlockClient | null
+}
 
 export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
   'companyId',
@@ -84,7 +86,9 @@ export const createHourBlockSavePayload = (
   notes: values.notes.trim().length > 0 ? values.notes.trim() : null,
 })
 
-export const sortClientsByName = (clients: HourBlockClient[]): HourBlockClient[] =>
+export const sortClientsByName = (
+  clients: HourBlockClient[]
+): HourBlockClient[] =>
   [...clients].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   )

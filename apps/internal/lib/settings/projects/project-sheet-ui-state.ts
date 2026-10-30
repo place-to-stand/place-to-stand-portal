@@ -85,7 +85,9 @@ export const buildOwnerOptions = (
 export const PROJECT_SHEET_MISSING_CLIENT_REASON =
   'Add a client before creating a project.'
 
-export const buildClientOptions = (clients: ClientPickerRow[]): ClientOption[] =>
+export const buildClientOptions = (
+  clients: ClientPickerRow[]
+): ClientOption[] =>
   clients.map(client => ({
     value: client.id,
     label: client.deleted_at ? `${client.name} (Archived)` : client.name,
