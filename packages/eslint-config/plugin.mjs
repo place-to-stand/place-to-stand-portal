@@ -16,6 +16,7 @@ import {
   saveNotGatedOnDirty,
   toastCopy,
 } from './rules/house-rules.mjs'
+import { clientBoundary, queryLayerPurity } from './rules/layering.mjs'
 
 export const pts = {
   meta: { name: 'pts' },
@@ -31,5 +32,7 @@ export const pts = {
     'save-not-gated-on-dirty': saveNotGatedOnDirty,
     'ellipsis-character': ellipsisCharacter,
     'filter-select': filterSelect,
+    'client-boundary': clientBoundary,
+    'query-layer-purity': queryLayerPurity,
   },
 }

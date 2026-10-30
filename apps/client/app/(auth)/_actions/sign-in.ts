@@ -5,7 +5,8 @@ import {
   SIGN_IN_THROTTLED_MESSAGE,
 } from '@/lib/auth/throttle'
 
-export type SignInAttemptResult = { allowed: true } | { allowed: false; error: string }
+export type SignInAttemptResult =
+  { allowed: true } | { allowed: false; error: string }
 
 /**
  * Counts one password sign-in attempt before the browser sends it to Supabase.
@@ -16,6 +17,7 @@ export type SignInAttemptResult = { allowed: true } | { allowed: false; error: s
  * address is counted the same way, so a refusal says nothing about whether an
  * account exists.
  */
+// permission: public — signed out by design; only counts an attempt against the throttle
 export async function recordSignInAttempt(
   email: string
 ): Promise<SignInAttemptResult> {

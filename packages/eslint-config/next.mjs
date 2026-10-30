@@ -85,6 +85,10 @@ export function nextApp({ dir, entityRegistry } = {}) {
       // "House rules (verified in code)"); each message quotes its rule.
       rules: HOUSE_RULES,
     },
+    {
+      // Layering: no server code in a 'use client' file.
+      rules: { 'pts/client-boundary': ['error', { appDir: dir }] },
+    },
     IGNORES,
   ]
 }
