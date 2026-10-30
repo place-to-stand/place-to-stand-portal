@@ -1219,13 +1219,6 @@
   },
   {
     "type": "route",
-    "name": "GET /api/clients",
-    "file": "apps/internal/app/api/clients/route.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "route",
     "name": "GET /api/command-palette/search",
     "file": "apps/internal/app/api/command-palette/search/route.ts",
     "kind": "admin",
