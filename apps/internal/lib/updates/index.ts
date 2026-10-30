@@ -1,6 +1,6 @@
 export { createUpdateDraft, type DraftItemInput } from './create-draft'
 export { buildUpdateEmailContent } from './content'
-export { DEFAULT_CLOSING, DEFAULT_INTRO, formatHours } from './body'
+export { DEFAULT_CLOSING, DEFAULT_INTRO } from './body'
 export { fetchClientUpdate, listClientUpdates } from './queries'
 export { saveUpdateDraft, type SaveUpdateDraftInput } from './save-draft'
 export {

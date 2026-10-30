@@ -1,10 +1,5 @@
 import type { Json } from '@/lib/types/json'
 
-const HOURS_FORMAT = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
-})
-
 export const joinWithCommas = (items: string[]): string => {
   if (items.length === 0) {
     return ''
@@ -30,5 +25,3 @@ export const toMetadata = (
 
   return JSON.parse(JSON.stringify(value)) as Json
 }
-
-export const formatHours = (hours: number): string => HOURS_FORMAT.format(hours)

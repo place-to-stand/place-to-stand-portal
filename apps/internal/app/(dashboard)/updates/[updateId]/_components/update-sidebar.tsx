@@ -4,6 +4,7 @@ import { CalendarRange, UserCog, Users } from 'lucide-react'
 import type { ClientHoursTotals } from '@pts/db/hours'
 
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type SidebarCardProps = {
@@ -93,10 +94,6 @@ export function RecipientsCard({ children }: { children: ReactNode }) {
       {children}
     </SidebarCard>
   )
-}
-
-function formatHours(value: number): string {
-  return `${Math.round(value * 100) / 100} h`
 }
 
 export function StaffCard({ children }: { children: ReactNode }) {

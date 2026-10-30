@@ -1,4 +1,5 @@
 import type { ActivityLogWithActor } from './types'
+import { formatHours } from '@pts/ui/numbers'
 
 /**
  * Normalised view of what an activity log actually changed.
@@ -286,7 +287,7 @@ function collectFacts(
   push(
     'Stale after',
     typeof metadata.staleAfterHours === 'number'
-      ? `${metadata.staleAfterHours}h`
+      ? formatHours(metadata.staleAfterHours)
       : null
   )
   push('Form', metadata.formType)
