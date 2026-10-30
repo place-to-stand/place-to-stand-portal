@@ -47,6 +47,7 @@ import type {
 type ContactMetricsResult = SelectContact &
   ContactProfile & {
     totalClients: number | string | null
+    userHasPhoto: boolean | null
   }
 
 function buildBaseConditions(
@@ -83,6 +84,11 @@ async function queryContactRows(
       ...contactFields,
       ...contactProfileFields,
       totalClients: linkedClientsCountSql,
+      // Their portal user has a photo (the User column's avatar).
+      userHasPhoto: sql<boolean>`exists (
+        select 1 from users u
+        where u.id = "contacts"."user_id" and u.avatar_url is not null
+      )`,
     })
     .from(contacts)
     .where(whereClause)
@@ -147,6 +153,7 @@ function mapContactMetrics(
     phone: row.phone,
     createdBy: row.createdBy,
     userId: row.userId,
+    userHasPhoto: Boolean(row.userHasPhoto),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

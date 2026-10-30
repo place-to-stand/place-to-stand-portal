@@ -27,6 +27,8 @@ export type ContactsSettingsListItem = SelectContact &
   ContactProfile & {
     companies: ContactCompanyItem[]
     metrics: ContactListMetrics
+    /** Their portal user (`userId`) has a photo. */
+    userHasPhoto?: boolean
   }
 
 export type ContactsSettingsResult = {

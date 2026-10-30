@@ -10,6 +10,7 @@ export function mapContactToTableRow(
     name: item.name,
     phone: item.phone,
     userId: item.userId,
+    userHasPhoto: item.userHasPhoto ?? false,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     deletedAt: item.deletedAt,

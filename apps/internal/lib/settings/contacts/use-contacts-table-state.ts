@@ -22,6 +22,8 @@ export type ContactsTableContact = ContactProfile & {
   name: string
   phone: string | null
   userId: string | null
+  /** Their portal user has a photo (the User column's avatar). */
+  userHasPhoto?: boolean
   createdAt: string
   updatedAt: string
   deletedAt: string | null

@@ -36,6 +36,7 @@ import {
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -121,6 +122,7 @@ export function ContactsTableSection({
             >
               Phone
             </SortableTableHead>
+            <TableHead className='w-20 text-center'>User</TableHead>
             <SortableTableHead
               field='clients'
               sort={sort}
@@ -269,6 +271,20 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
+                <TableCell label='User' className='text-sm md:text-center'>
+                  {contact.userId ? (
+                    <span className='inline-flex'>
+                      <UserAvatar
+                        userId={contact.userId}
+                        name={contact.name}
+                        hasPhoto={Boolean(contact.userHasPhoto)}
+                        alt={`${contact.name} has a portal user`}
+                      />
+                    </span>
+                  ) : (
+                    <EmptyValue />
+                  )}
+                </TableCell>
                 <TableCell
                   label='Portal access'
                   className='text-sm md:text-center'
@@ -330,7 +346,7 @@ export function ContactsTableSection({
           })}
           {contacts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className='p-4'>
+              <TableCell colSpan={7} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
