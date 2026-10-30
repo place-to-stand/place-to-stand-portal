@@ -125,12 +125,7 @@ export async function listCompanies(
       name: companies.name,
       website: companies.website,
       // Billed now: the company is its own client.
-      companyId: sql<
-        string | null
-      >`case when ${isClientCompany()} then ${companies.id} end`,
-      clientName: sql<
-        string | null
-      >`case when ${isClientCompany()} then ${companies.name} end`,
+      isClient: sql<boolean | null>`${isClientCompany()}`,
       // Billed before but not now.
       formerClient: isFormerClientSql,
       updatedAt: companies.updatedAt,
@@ -179,8 +174,8 @@ export async function listCompanies(
     id: row.id,
     name: row.name,
     website: row.website,
-    companyId: row.companyId ?? null,
-    clientName: row.clientName ?? null,
+    companyId: row.isClient ? row.id : null,
+    clientName: row.isClient ? row.name : null,
     formerClient: Boolean(row.formerClient),
     people: row.people ?? [],
     openLeads: row.openLeads ?? [],
