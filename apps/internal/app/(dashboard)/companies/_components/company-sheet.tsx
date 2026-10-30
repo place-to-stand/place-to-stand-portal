@@ -30,7 +30,6 @@ import {
   archiveCompany,
   loadCompanyClientWork,
   loadCompanySheet,
-  restoreCompany,
   saveCompanySheet,
 } from '../actions'
 import {
@@ -58,6 +57,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
 const COMPANY_PEOPLE_SECTION_ID = 'company-people'
+const ARCHIVED_COMPANY_NOTE = 'Archived. Restore it from the archive list.'
 
 type CompanySheetProps = {
   /** `null` opens the create sheet. */
@@ -331,24 +331,19 @@ export function CompanySheet({
     historyKey: companyId ?? 'company:new',
   })
 
-  const handleArchiveToggle = useCallback(() => {
-    if (!companyId) return
+  // Archived companies are restored from the archive list, not here.
+  const handleArchive = useCallback(() => {
+    if (!companyId || isArchived) return
     startTransition(async () => {
-      const result = isArchived
-        ? await restoreCompany(companyId)
-        : await archiveCompany(companyId)
+      const result = await archiveCompany(companyId)
       setArchiveOpen(false)
       if (!result.ok) {
         setFeedback(result.error ?? 'Unable to update the company.')
         return
       }
-      toast({
-        title: isArchived ? 'Company restored' : 'Company archived',
-        description: company?.name,
-      })
-      // Archiving closes the sheet; restoring keeps it open on the record.
-      await refresh(!isArchived)
-      if (!isArchived) onClose()
+      toast({ title: 'Company archived', description: company?.name })
+      await refresh()
+      onClose()
     })
   }, [company?.name, companyId, isArchived, onClose, refresh, toast])
 
@@ -398,8 +393,7 @@ export function CompanySheet({
 
   const fieldsDisabled = isPending || isArchived
   // Same rule as the server: a billed company stops billing before archiving.
-  const archiveRefusal =
-    !isArchived && clientCompanyId ? ARCHIVE_BILLED_REFUSAL : null
+  const archiveRefusal = clientCompanyId ? ARCHIVE_BILLED_REFUSAL : null
 
   return (
     <>
@@ -441,6 +435,11 @@ export function CompanySheet({
                   }}
                   className='flex flex-col'
                 >
+                  {isArchived ? (
+                    <p className='text-muted-foreground px-6 pt-4 text-sm'>
+                      {ARCHIVED_COMPANY_NOTE}
+                    </p>
+                  ) : null}
                   <CompanyBillingProvider
                     key={company?.id ?? 'new'}
                     companyId={
@@ -558,14 +557,15 @@ export function CompanySheet({
                   isPending
                     ? PENDING_REASON
                     : isArchived
-                      ? 'Restore the company to edit it.'
+                      ? ARCHIVED_COMPANY_NOTE
                       : null
                 }
                 undo={undo}
                 redo={redo}
                 canUndo={canUndo}
                 canRedo={canRedo}
-                isEditing={isEditing}
+                // An archived company has no archive action here.
+                isEditing={isEditing && !isArchived}
                 archiveDisabled={
                   isPending || !isEditing || Boolean(archiveRefusal)
                 }
@@ -573,10 +573,7 @@ export function CompanySheet({
                   isPending ? PENDING_REASON : archiveRefusal
                 }
                 onRequestArchive={() => setArchiveOpen(true)}
-                archiveAriaLabel={
-                  isArchived ? 'Restore company' : 'Archive company'
-                }
-                deleteKind={isArchived ? 'restore' : 'archive'}
+                archiveAriaLabel='Archive company'
               />
             </Form>
           )}
@@ -584,20 +581,16 @@ export function CompanySheet({
       </Sheet>
       <ConfirmDialog
         open={archiveOpen}
-        title={isArchived ? 'Restore company?' : 'Archive company?'}
-        description={
-          isArchived
-            ? `${company?.name ?? 'This company'} comes back to the Companies list.`
-            : archiveCompanyDescription(
-                company?.name,
-                Boolean(company?.formerClientId)
-              )
-        }
-        confirmLabel={isArchived ? 'Restore company' : 'Archive company'}
-        confirmVariant={isArchived ? 'default' : 'destructive'}
+        title='Archive company?'
+        description={archiveCompanyDescription(
+          company?.name,
+          Boolean(company?.formerClientId)
+        )}
+        confirmLabel='Archive company'
+        confirmVariant='destructive'
         confirmDisabled={isPending}
         onCancel={() => setArchiveOpen(false)}
-        onConfirm={handleArchiveToggle}
+        onConfirm={handleArchive}
       />
       {unsavedChangesDialog}
     </>

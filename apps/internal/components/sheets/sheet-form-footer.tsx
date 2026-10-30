@@ -1,7 +1,7 @@
 'use client'
 
 import { type ReactNode } from 'react'
-import { Archive, Redo2, RefreshCw, Undo2 } from 'lucide-react'
+import { Archive, Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -39,11 +39,6 @@ export type SheetFormFooterProps = {
   onRequestArchive: () => void
   /** Accessible label for the destructive button, e.g. 'Archive task'. */
   archiveAriaLabel: string
-  /**
-   * 'restore' for an archived record whose sheet offers Restore in that
-   * slot: outlined with the restore icon, as in the list row actions.
-   */
-  deleteKind?: 'archive' | 'restore'
 }
 
 export function SheetFormFooter(props: SheetFormFooterProps) {
@@ -61,7 +56,6 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
     archiveDisabledReason,
     onRequestArchive,
     archiveAriaLabel,
-    deleteKind = 'archive',
   } = props
 
   return (
@@ -106,13 +100,13 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
         >
           <Button
             type='button'
-            variant={deleteKind === 'restore' ? 'outline' : 'destructive'}
+            variant='destructive'
             onClick={onRequestArchive}
             disabled={archiveDisabled}
             aria-label={archiveAriaLabel}
             size='icon-sm'
           >
-            {deleteKind === 'restore' ? <RefreshCw /> : <Archive />}
+            <Archive />
           </Button>
         </DisabledFieldTooltip>
       ) : null}
