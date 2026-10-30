@@ -1,8 +1,8 @@
 'use client'
 
 import { MessageSquareText } from 'lucide-react'
-import type { ComponentType } from 'react'
 
+import { PendingSection } from '@/components/sheets/pending-section'
 import { SHEET_SPLIT_SIDE_CLASS } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -69,39 +69,14 @@ export function LeadSheetRightColumn({
         // need the lead to point at. Conversion needs a Won lead, so it
         // stays hidden until then.
         <div className='space-y-10 p-6'>
-          <PendingLeadSection
-            icon={ENTITY_ICONS.task}
-            title='Tasks'
-            message='Add tasks after you save the lead.'
-          />
-          <PendingLeadSection
-            icon={MessageSquareText}
-            title='Updates'
-            message='Add updates after you save the lead.'
-          />
+          <PendingSection icon={ENTITY_ICONS.task} title='Tasks'>
+            Add tasks after you save the lead.
+          </PendingSection>
+          <PendingSection icon={MessageSquareText} title='Updates'>
+            Add updates after you save the lead.
+          </PendingSection>
         </div>
       )}
-    </div>
-  )
-}
-
-/** A section's heading row (as in the edit sheet) over one muted line. */
-function PendingLeadSection({
-  icon: Icon,
-  title,
-  message,
-}: {
-  icon: ComponentType<{ className?: string }>
-  title: string
-  message: string
-}) {
-  return (
-    <div className='space-y-3'>
-      <div className='flex items-center gap-2'>
-        <Icon className='text-muted-foreground h-4 w-4' />
-        <span className='text-sm font-medium'>{title}</span>
-      </div>
-      <p className='text-muted-foreground text-sm'>{message}</p>
     </div>
   )
 }
