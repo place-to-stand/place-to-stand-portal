@@ -61,6 +61,7 @@ import {
   PortalAccessRefusal,
 } from '@/lib/queries/clients/settings/client-contacts'
 import {
+  CompanySaveRefusal,
   companySaveErrorMessage,
   logCompanyWrite,
   planCompanyWrite,
@@ -97,6 +98,10 @@ type BillingPlan =
 type PortalPlan = { grant: string[]; revoke: string[] }
 
 const SLUG_RETRY_LIMIT = 3
+
+/** Another save landed on the company after this sheet loaded it. */
+export const STALE_COMPANY_MESSAGE =
+  'Someone else saved this company. Reload to see their changes.'
 
 /**
  * The company sheet's Save: one server action, one transaction. The company
@@ -161,14 +166,23 @@ export async function saveCompanySheet(
   for (;;) {
     try {
       committed = await db.transaction(async tx => {
-        if (billingPlan.kind !== 'none') {
-          // One billing change per company at a time: start, stop and
-          // restart for the same company queue here.
-          if (plan.existing) {
-            await tx.execute(
-              sql`select id from companies where id = ${plan.existing.id} for update`
-            )
+        if (plan.existing) {
+          // One save per company at a time: saves (and billing starts,
+          // stops and restarts) for the same company queue here, and one
+          // made since this sheet loaded the company refuses this one.
+          const [locked] = await tx
+            .select({ updatedAt: companies.updatedAt })
+            .from(companies)
+            .where(eq(companies.id, plan.existing.id))
+            .for('update')
+          if (
+            values.expectedUpdatedAt !== undefined &&
+            locked?.updatedAt !== values.expectedUpdatedAt
+          ) {
+            throw new CompanySaveRefusal(STALE_COMPANY_MESSAGE)
           }
+        }
+        if (billingPlan.kind !== 'none') {
           // Re-checked inside the transaction: the month could be closed
           // between planning and commit.
           const changesThisMonth =
@@ -225,6 +239,20 @@ export async function saveCompanySheet(
         await writeClientSignIns(tx, actor, signIns)
         if (portal.changes) {
           await applyPortalAccessInTx(tx, companyId, portal.changes)
+        }
+        // Any change to the company, its billing, people or portal access
+        // moves its updated_at, so a sheet still open on the old version
+        // can't save over it.
+        const touched =
+          !plan.unchanged ||
+          billingPlan.kind !== 'none' ||
+          signIns.length > 0 ||
+          Boolean(portal.changes?.grant.length || portal.changes?.revoke.length)
+        if (plan.existing && touched) {
+          await tx
+            .update(companies)
+            .set({ updatedAt: new Date().toISOString() })
+            .where(eq(companies.id, companyId))
         }
         return { companyId }
       })

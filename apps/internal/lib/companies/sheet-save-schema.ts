@@ -74,6 +74,11 @@ export const saveCompanySheetSchema = saveCompanySchema.extend({
    * it on for someone without a sign-in gives them one.
    */
   portalAccessContactIds: z.array(z.string().uuid()).max(500).optional(),
+  /**
+   * The company's `updated_at` as the sheet loaded it (edits). A save made
+   * since then refuses this one instead of overwriting it.
+   */
+  expectedUpdatedAt: z.string().max(64).optional(),
 })
 
 export type SaveCompanySheetInput = z.input<typeof saveCompanySheetSchema>

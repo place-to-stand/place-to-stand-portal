@@ -117,15 +117,18 @@ export function CompanySheet({
   })
 
   // Seed the form once per loaded record, and never over unsaved edits (a
-  // refetch while dirty waits until the form is clean again).
+  // refetch while dirty waits until the form is clean again). The version it
+  // was seeded from goes back with Save, so a save made since is caught.
   const seededFor = useRef<string | null>(null)
+  const seededUpdatedAt = useRef<string | null>(null)
   const isDirty = form.formState.isDirty || billingDirty
   useEffect(() => {
     if (!data) return
     const key = company ? `${company.id}:${company.updatedAt}` : 'new'
     if (seededFor.current === key) return
-    if (seededFor.current !== null && form.formState.isDirty) return
+    if (seededFor.current !== null && isDirty) return
     seededFor.current = key
+    seededUpdatedAt.current = company?.updatedAt ?? null
     form.reset({
       name: company?.name ?? initialName ?? '',
       website: company?.website ?? '',
@@ -257,6 +260,10 @@ export function CompanySheet({
             ? values.portalAccessIds.filter(
                 id => !values.removedContactIds.includes(id)
               )
+            : undefined,
+          // The version this sheet loaded: a save made since refuses this one.
+          expectedUpdatedAt: isEditing
+            ? (seededUpdatedAt.current ?? undefined)
             : undefined,
         })
 
