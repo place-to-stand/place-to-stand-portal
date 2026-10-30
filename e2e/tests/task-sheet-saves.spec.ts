@@ -59,6 +59,50 @@ test('opening the planning panel writes nothing', async ({ page }) => {
   expect(writes.posts.map(request => request.url())).toEqual([])
 })
 
+test('Activity sits below Comments, collapsed, and loads when opened', async ({
+  page,
+}) => {
+  const path = process.env.E2E_PLANNING_TASK_PATH
+  test.skip(!path, 'set E2E_PLANNING_TASK_PATH to an existing task')
+
+  const isFeedRead = (url: string) => {
+    const parsed = new URL(url)
+    return (
+      parsed.pathname === '/api/activity' &&
+      parsed.searchParams.get('count') !== '1'
+    )
+  }
+  const feedReads: string[] = []
+  page.on('request', request => {
+    if (isFeedRead(request.url())) feedReads.push(request.url())
+  })
+
+  await page.goto(path!)
+  const sheet = page.getByRole('dialog')
+  await expect(sheet).toBeVisible()
+
+  const toggle = sheet.getByRole('button', { name: /^Activity/ })
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  // The count arrives with the sheet; the entries do not.
+  await expect(toggle).toHaveText(/^Activity \(\d+\)$/)
+  await page.waitForLoadState('networkidle')
+  expect(feedReads).toEqual([])
+
+  // Comments come first, Activity last.
+  const comments = sheet.getByRole('heading', { name: 'Comments' })
+  const commentsBox = await comments.boundingBox()
+  const toggleBox = await toggle.boundingBox()
+  expect(commentsBox && toggleBox && commentsBox.y < toggleBox.y).toBe(true)
+
+  const feedRead = page.waitForResponse(response =>
+    isFeedRead(response.url())
+  )
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  expect((await feedRead).ok()).toBe(true)
+  await expect(sheet.getByRole('region', { name: /^Activity/ })).toBeVisible()
+})
+
 test('creating a task with an assignee is one request on Save', async ({
   page,
 }) => {
