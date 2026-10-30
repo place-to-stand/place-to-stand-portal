@@ -55,7 +55,6 @@ type ReviewProps = Pick<
   | 'onAcceptTask'
   | 'onUnacceptTask'
   | 'onRestoreTask'
-  | 'onDestroyTask'
   | 'reviewActionTaskId'
   | 'reviewActionType'
   | 'isReviewActionPending'

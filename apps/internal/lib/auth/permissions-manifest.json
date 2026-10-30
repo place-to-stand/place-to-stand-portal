@@ -610,13 +610,6 @@
   },
   {
     "type": "action",
-    "name": "destroyTask",
-    "file": "apps/internal/app/(dashboard)/projects/actions/destroy-task.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "fetchWorkerStatus",
     "file": "apps/internal/app/(dashboard)/projects/actions/fetch-worker-status.ts",
     "kind": "admin",
