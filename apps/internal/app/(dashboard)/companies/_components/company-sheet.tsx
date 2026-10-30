@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { archiveCompanyDescription } from '../_lib/archive-copy'
+import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
 import { FormFeedback } from '@/components/sheets/form-feedback'
@@ -367,6 +368,9 @@ export function CompanySheet({
   )
 
   const fieldsDisabled = isPending || isArchived
+  // Same rule as the server: a billed company stops billing before archiving.
+  const archiveRefusal =
+    !isArchived && clientCompanyId ? ARCHIVE_BILLED_REFUSAL : null
 
   return (
     <>
@@ -533,8 +537,12 @@ export function CompanySheet({
                 canUndo={canUndo}
                 canRedo={canRedo}
                 isEditing={isEditing}
-                archiveDisabled={isPending || !isEditing}
-                archiveDisabledReason={isPending ? PENDING_REASON : null}
+                archiveDisabled={
+                  isPending || !isEditing || Boolean(archiveRefusal)
+                }
+                archiveDisabledReason={
+                  isPending ? PENDING_REASON : archiveRefusal
+                }
                 onRequestArchive={() => setArchiveOpen(true)}
                 archiveAriaLabel={
                   isArchived ? 'Restore company' : 'Archive company'
@@ -553,7 +561,7 @@ export function CompanySheet({
             ? `${company?.name ?? 'This company'} comes back to the Companies list.`
             : archiveCompanyDescription(
                 company?.name,
-                company?.clients[0]?.name
+                Boolean(company?.formerClientId)
               )
         }
         confirmLabel={isArchived ? 'Restore company' : 'Archive company'}

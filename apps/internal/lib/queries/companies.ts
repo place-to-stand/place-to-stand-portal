@@ -62,6 +62,7 @@ import {
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
+import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { companies, contacts, leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { LeadStatusValue } from '@/lib/leads/constants'
@@ -167,11 +168,14 @@ export async function listCompanies(
     contactCount: row.people?.length ?? 0,
     openLeadCount: row.openLeads?.length ?? 0,
     primaryContactName: row.primaryContactName ?? null,
-    // Same rule as setCompanyArchived: staff sign in through this company.
+    // Same rules as setCompanyArchived: staff sign in through this company,
+    // and a billed company stops billing before it is archived.
     archiveRefusal:
       row.isStaff && !isAdminRole(user.role)
         ? `Only an admin can change ${row.name}.`
-        : null,
+        : row.isClient && !row.deletedAt
+          ? ARCHIVE_BILLED_REFUSAL
+          : null,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   }))
@@ -749,8 +753,10 @@ async function resolvePeopleChanges(
 
 /**
  * Archiving keeps the company's contacts and leads linked, so a restore
- * brings them back. Portal access to its client ends (same as unlinking or
- * archiving the client) and is not switched back on by a restore.
+ * brings them back. A company whose billing is still open (billed now, or
+ * through the end of this month) can't be archived: stop billing first.
+ * Archiving a former client switches off its people's portal access, and a
+ * restore doesn't switch it back on.
  */
 export async function setCompanyArchived(
   actor: AppUser,
@@ -796,17 +802,34 @@ export async function setCompanyArchived(
     }
   }
 
+  if (archived && (await companyHasClient(existing.id))) {
+    return { ok: false, error: ARCHIVE_BILLED_REFUSAL }
+  }
+
   const timestamp = new Date().toISOString()
   let accessChanges: ContactClientLinkChange[] = []
 
   try {
     await db.transaction(async tx => {
+      if (archived) {
+        // Re-checked under the row lock the company sheet's Save takes, so a
+        // billing restart saved meanwhile can't slip past the check above.
+        const [locked] = await tx
+          .select({ billingOpen: sql<boolean>`${billingOpenSql()}` })
+          .from(companies)
+          .where(eq(companies.id, companyId))
+          .for('update')
+        if (locked?.billingOpen) {
+          throw new CompanySaveRefusal(ARCHIVE_BILLED_REFUSAL)
+        }
+      }
       await tx
         .update(companies)
         .set({ deletedAt: archived ? timestamp : null, updatedAt: timestamp })
         .where(eq(companies.id, companyId))
       if (!archived) return
-      // Archiving a client company ends its people's portal access.
+      // Archiving a former client ends its people's portal access, so a
+      // later restart doesn't bring it back unasked.
       const [client] = await tx
         .select({ id: companies.id })
         .from(companies)
@@ -821,6 +844,9 @@ export async function setCompanyArchived(
       }
     })
   } catch (error) {
+    if (error instanceof CompanySaveRefusal) {
+      return { ok: false, error: error.message }
+    }
     if (!archived && uniqueViolation(error)) {
       return {
         ok: false,
