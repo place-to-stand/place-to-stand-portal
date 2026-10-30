@@ -302,6 +302,8 @@ export const contacts = pgTable(
     name: text().notNull(),
     phone: text(),
     linkedinUrl: text('linkedin_url'),
+    /** Their photo: a path in the avatar bucket (anyone can have one). */
+    avatarUrl: text('avatar_url'),
     createdBy: uuid('created_by'),
     userId: uuid('user_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })

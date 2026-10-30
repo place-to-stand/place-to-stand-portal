@@ -771,6 +771,13 @@
       "when": 1793327002124,
       "tag": "0109_one_company_one_person",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1793330803353,
+      "tag": "0110_person_avatar",
+      "breakpoints": true
     }
   ]
 }
