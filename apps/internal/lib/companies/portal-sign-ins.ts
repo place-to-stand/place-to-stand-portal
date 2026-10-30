@@ -8,8 +8,14 @@ import { userCreatedEvent } from '@/lib/activity/events/users'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts, users } from '@/lib/db/schema'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
-import { setRoleTerm } from '@/lib/queries/users/role-terms'
+import {
+  firstRoleTermStart,
+  setRoleTerm,
+} from '@/lib/queries/users/role-terms'
+import {
+  setAuthBanned,
+  takeOverExistingAuthUser,
+} from '@/lib/settings/users/services'
 import {
   dispatchPortalInvite,
   generateTemporaryPassword,
@@ -38,6 +44,8 @@ export type PreparedSignIn = {
   createdAuthUser: boolean
   /** How the `users` row is written: inserted, restored, or already live. */
   row: 'insert' | 'restore' | 'existing'
+  /** This save lifted the auth ban of a restored sign-in: re-ban on failure. */
+  liftedBan?: boolean
 }
 
 const STAFF_EMAIL_ERROR = (name: string) =>
@@ -117,7 +125,6 @@ export async function prepareClientSignIns(
       email_confirm: true,
       user_metadata: {
         full_name: request.name,
-        role: 'CLIENT',
         must_reset_password: true,
       },
     })
@@ -156,12 +163,23 @@ export async function prepareClientSignIns(
     if (archived && archived.role !== 'CLIENT') {
       return fail(STAFF_EMAIL_ERROR(request.name))
     }
+    // Whoever registered it may know its password: reset it and end its
+    // sessions before it is linked to this person.
+    const takeOverError = await takeOverExistingAuthUser(authRow.id)
+    if (takeOverError) return fail(takeOverError)
+    // Archiving a sign-in bans it at Supabase Auth: lift that before the
+    // save (re-banned by discardPreparedSignIns if the save fails).
+    if (archived) {
+      const banError = await setAuthBanned(authRow.id, false)
+      if (banError) return fail(banError)
+    }
     signIns.push({
       ...request,
       email,
       userId: authRow.id,
       createdAuthUser: false,
       row: archived ? 'restore' : 'insert',
+      liftedBan: Boolean(archived),
     })
   }
 
@@ -179,6 +197,9 @@ export async function writeClientSignIns(
   signIns: PreparedSignIn[]
 ): Promise<void> {
   const now = new Date().toISOString()
+  const roleFrom = signIns.some(signIn => signIn.row === 'insert')
+    ? await firstRoleTermStart()
+    : null
   for (const signIn of signIns) {
     if (signIn.row === 'insert') {
       await tx
@@ -187,13 +208,14 @@ export async function writeClientSignIns(
       await setRoleTerm(tx, {
         userId: signIn.userId,
         role: 'CLIENT',
-        effectiveFrom: currentMonthStartUtc(),
+        // This month, or next if this month is closed.
+        effectiveFrom: roleFrom!,
         createdBy: actor.id,
       })
     } else if (signIn.row === 'restore') {
       await tx
         .update(users)
-        .set({ deletedAt: null, updatedAt: now })
+        .set({ deletedAt: null, disabledAt: null, updatedAt: now })
         .where(eq(users.id, signIn.userId))
     }
 
@@ -213,10 +235,16 @@ export async function writeClientSignIns(
 /** A sign-in the save can't write (someone linked one meanwhile). */
 export class SignInConflictError extends Error {}
 
-/** A failed save: delete the auth users it made, so nothing is left behind. */
+/**
+ * A failed save: delete the auth users it made, so nothing is left behind,
+ * and re-ban the archived sign-ins it un-banned.
+ */
 export async function discardPreparedSignIns(
   signIns: PreparedSignIn[]
 ): Promise<void> {
+  for (const signIn of signIns) {
+    if (signIn.liftedBan) await setAuthBanned(signIn.userId, true)
+  }
   const made = signIns.filter(signIn => signIn.createdAuthUser)
   if (!made.length) return
   const adminClient = getSupabaseServiceClient()
@@ -245,7 +273,7 @@ export async function afterSignInsCommitted(
         signIn.userId,
         {
           email_confirm: true,
-          user_metadata: { full_name: signIn.name, role: 'CLIENT' },
+          user_metadata: { full_name: signIn.name },
         }
       )
       if (error) console.error('Failed to confirm reused auth user', error)

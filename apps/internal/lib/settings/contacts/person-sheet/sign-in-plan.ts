@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { contacts, users } from '@/lib/db/schema'
 import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
 import { listClosedMonthStarts } from '@/lib/queries/reports/close-snapshots'
+import { firstRoleTermStart } from '@/lib/queries/users/role-terms'
 import { roleMonthError } from '@/lib/settings/users/role-months'
 
 import type { ExistingContact } from '../actions/save-contact'
@@ -164,9 +165,10 @@ export async function prepareSignIn(
         temporaryPassword: null,
       },
       current: found,
+      // From this month, or next if this month is closed.
       roleChange:
         !found || found.role !== signIn.role
-          ? { role: signIn.role, effectiveFrom: currentMonthStartUtc() }
+          ? { role: signIn.role, effectiveFrom: await firstRoleTermStart() }
           : null,
       enable: true,
       restore: Boolean(found?.deletedAt),
