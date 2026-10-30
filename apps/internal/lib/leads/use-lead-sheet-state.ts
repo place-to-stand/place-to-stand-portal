@@ -41,7 +41,7 @@ export function useLeadSheetState({
   const hasInitialAction = Boolean(lead && initialAction)
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
   // Converting creates a client, so it's admin-only (`leads.convert`).
-  const { role } = useViewerAccess()
+  const { role, userId } = useViewerAccess()
   const canConvert =
     roleCan(role, 'leads.convert') &&
     lead?.status === 'CLOSED_WON' &&
@@ -80,10 +80,11 @@ export function useLeadSheetState({
       sourceType: lead?.sourceType ?? null,
       sourceDetail: lead?.sourceDetail ?? '',
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
-      assigneeId: lead?.assigneeId ?? null,
+      // A new lead starts assigned to you, like a new task.
+      assigneeId: lead ? (lead.assigneeId ?? null) : userId,
       notes: lead?.notesHtml ?? initialValues?.notes ?? '',
     }),
-    [lead, initialStatus, initialValues]
+    [lead, initialStatus, initialValues, userId]
   )
 
   const form = useForm<LeadFormValues>({

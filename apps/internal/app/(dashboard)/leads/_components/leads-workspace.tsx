@@ -8,6 +8,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import { useListParams } from '@/hooks/use-list-params'
 import {
   useSheetParams,
@@ -143,6 +144,15 @@ export function LeadsWorkspace({
   const sheetLead = isCreating ? null : (activeLead ?? lastOpenedLead)
   const boardActiveLeadId = isSheetOpen && sheetLead ? sheetLead.id : null
 
+  const assigneeFilter = (
+    <FilterSelect
+      value={onlyMine ? 'me' : undefined}
+      onChange={value => updateListParams({ assignee: value })}
+      placeholder='All leads'
+      options={ASSIGNEE_OPTIONS}
+    />
+  )
+
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/leads')}
@@ -150,25 +160,28 @@ export function LeadsWorkspace({
       activeTab='board'
       count={{ label: 'leads', total: totalLeads }}
       primaryAction={
-        <SheetCreateButton
-          entity='lead'
-          label='Create lead'
-          disabledReason={
-            canManage ? null : 'Admin access is required to create leads.'
-          }
-        />
+        // Same toolbar as My tasks: the filter sits beside Create, and moves
+        // into a slide-out below md.
+        <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
+          <FilterSheetButton
+            className='md:hidden'
+            activeCount={onlyMine ? 1 : 0}
+          >
+            {assigneeFilter}
+          </FilterSheetButton>
+          <div className='max-md:hidden md:contents'>{assigneeFilter}</div>
+          <SheetCreateButton
+            entity='lead'
+            label='Create lead'
+            disabledReason={
+              canManage ? null : 'Admin access is required to create leads.'
+            }
+          />
+        </div>
       }
       // Kanban board: pin to the viewport (columns scroll internally).
       contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
-      <div className='flex flex-wrap items-center gap-2'>
-        <FilterSelect
-          value={onlyMine ? 'me' : undefined}
-          onChange={value => updateListParams({ assignee: value })}
-          placeholder='All leads'
-          options={ASSIGNEE_OPTIONS}
-        />
-      </div>
       {leadNotFound && !isCreating ? (
         <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}

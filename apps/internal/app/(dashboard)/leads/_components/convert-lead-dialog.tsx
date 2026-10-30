@@ -74,7 +74,8 @@ export function ConvertLeadDialog({
       leadId: lead.id,
       clientName: lead.companyName || lead.contactName,
       clientSlug: '',
-      billingType: 'net_30',
+      // New clients usually start on prepaid hours.
+      billingType: 'prepaid',
       copyNotesToClient: true,
       givePortalAccess: false,
       createProject: false,

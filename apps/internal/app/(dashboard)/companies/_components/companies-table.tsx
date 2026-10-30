@@ -36,6 +36,7 @@ import { useListParams } from '@/hooks/use-list-params'
 import { useToast } from '@/components/ui/use-toast'
 import type { CompanyListItem } from '@/lib/companies/types'
 import { displayWebsiteHost, toWebsiteHref } from '@/lib/companies/website'
+import { archiveCompanyDescription } from '../_lib/archive-copy'
 import { archiveCompany, restoreCompany } from '../actions'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -274,7 +275,10 @@ export function CompaniesTable({
       <ConfirmDialog
         open={Boolean(archiveTarget)}
         title='Archive company?'
-        description={`Archiving ${archiveTarget?.name ?? 'this company'} hides it from the Companies list. Its contacts and leads stay as they are.`}
+        description={archiveCompanyDescription(
+          archiveTarget?.name,
+          archiveTarget?.clientName
+        )}
         confirmLabel='Archive'
         confirmVariant='destructive'
         confirmDisabled={isPending}

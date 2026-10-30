@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useWatch, type Control } from 'react-hook-form'
+import { useController, useWatch, type Control } from 'react-hook-form'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
@@ -50,7 +50,8 @@ export function LeadSheetFormFields({
   // them as a disabled entry so the picker still names the assignee.
   const currentAssigneeId = useWatch({ control, name: 'assigneeId' }) ?? null
   // A contact created from here starts at the lead's company.
-  const leadCompanyId = useWatch({ control, name: 'company' })?.id ?? null
+  const { field: companyField } = useController({ control, name: 'company' })
+  const leadCompanyId = companyField.value?.id ?? null
   const assigneeItems = useMemo(
     () => [
       ...assignees
@@ -81,7 +82,17 @@ export function LeadSheetFormFields({
             <FormControl>
               <ContactLinkPicker
                 value={field.value ?? null}
-                onChange={next => field.onChange(next)}
+                onChange={next => {
+                  field.onChange(next)
+                  // Fill the company from the contact's main company, only
+                  // while it's empty: never overwrite one already chosen.
+                  if (next?.companyId && !companyField.value) {
+                    companyField.onChange({
+                      id: next.companyId,
+                      name: next.companyName ?? '',
+                    })
+                  }
+                }}
                 showCreateButton
                 createCompanyId={leadCompanyId}
               />

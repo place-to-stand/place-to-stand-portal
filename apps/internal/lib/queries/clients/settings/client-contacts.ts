@@ -151,7 +151,8 @@ async function listClientContacts(
 }
 
 /**
- * Fetches all active ADMIN users for use in origination + closer pickers.
+ * Fetches all staff users (ADMIN and SALES) for the origination and closer
+ * pickers, so a salesperson can take credit for a client they brought in.
  */
 async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
   assertAdmin(user)
@@ -164,7 +165,9 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
       disabledAt: users.disabledAt,
     })
     .from(users)
-    .where(and(eq(users.role, 'ADMIN'), isNull(users.deletedAt)))
+    .where(
+      and(inArray(users.role, ['ADMIN', 'SALES']), isNull(users.deletedAt))
+    )
     .orderBy(asc(users.fullName), asc(users.email))
 
   return rows.map(row => ({

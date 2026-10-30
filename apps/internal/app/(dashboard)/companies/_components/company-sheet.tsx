@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { archiveCompanyDescription } from '../_lib/archive-copy'
 import { Input } from '@pts/ui/input'
 import { UrlInput } from '@/components/ui/url-input'
 import { Separator } from '@pts/ui/separator'
@@ -492,7 +493,10 @@ export function CompanySheet({
         description={
           isArchived
             ? `${company?.name ?? 'This company'} comes back to the Companies list.`
-            : `Archiving ${company?.name ?? 'this company'} hides it from the Companies list. Its contacts and leads stay as they are.`
+            : archiveCompanyDescription(
+                company?.name,
+                company?.clients[0]?.name
+              )
         }
         confirmLabel={isArchived ? 'Restore' : 'Archive'}
         confirmVariant={isArchived ? 'default' : 'destructive'}

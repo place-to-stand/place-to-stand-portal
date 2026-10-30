@@ -111,9 +111,9 @@ export const clientSchema = z
 
 /**
  * Verifies that any user IDs referenced by origination / closer fields
- * correspond to active ADMIN users, and that closer contacts exist and are
- * not archived. Non-admin assignment could otherwise silently accrue
- * commissions to CLIENT-role users.
+ * correspond to active staff users (ADMIN or SALES, so a salesperson can
+ * take credit), and that closer contacts exist and are not archived. Staff
+ * only: commissions must never accrue to CLIENT-role users.
  */
 export async function assertClientPartnerUserRoles(params: {
   originationUserId: string | null
@@ -151,9 +151,9 @@ export async function assertClientPartnerUserRoles(params: {
       if (user.deletedAt !== null) {
         return { error: 'Selected partner user is archived.' }
       }
-      if (user.role !== 'ADMIN') {
+      if (user.role !== 'ADMIN' && user.role !== 'SALES') {
         return {
-          error: 'Only PTS admin users can be set as origination or closer.',
+          error: 'Only PTS staff users can be set as origination or closer.',
         }
       }
     }

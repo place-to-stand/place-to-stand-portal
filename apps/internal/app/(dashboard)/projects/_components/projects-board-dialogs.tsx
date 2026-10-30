@@ -93,7 +93,8 @@ export function ProjectsBoardDialogs({
         defaultDueOn={defaultDueOn}
         projects={projects}
         defaultProjectId={activeProject.id}
-        defaultAssigneeId={null}
+        // A new task starts assigned to you, like My tasks.
+        defaultAssigneeId={currentUserId}
       />
 
       <ProjectTimeLogDialog

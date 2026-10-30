@@ -41,7 +41,7 @@ export function AppShell({
   return (
     // Palette provider wraps the sidebar too — the search affordance lives
     // there (user-revised placement of PW1).
-    <ViewerAccessProvider role={user.role}>
+    <ViewerAccessProvider role={user.role} userId={user.id}>
     <CommandPaletteProvider>
       <SidebarProvider
         defaultOpen={sidebarDefaultOpen}

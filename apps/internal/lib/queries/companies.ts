@@ -796,7 +796,8 @@ async function resolvePeopleChanges(
 
 /**
  * Archiving keeps the company's contacts and leads linked, so a restore
- * brings everything back as it was.
+ * brings them back. Portal access to its client ends (same as unlinking or
+ * archiving the client) and is not switched back on by a restore.
  */
 export async function setCompanyArchived(
   actor: AppUser,
@@ -837,12 +838,28 @@ export async function setCompanyArchived(
   }
 
   const timestamp = new Date().toISOString()
+  let accessChanges: ContactClientLinkChange[] = []
 
   try {
-    await db
-      .update(companies)
-      .set({ deletedAt: archived ? timestamp : null, updatedAt: timestamp })
-      .where(eq(companies.id, companyId))
+    await db.transaction(async tx => {
+      await tx
+        .update(companies)
+        .set({ deletedAt: archived ? timestamp : null, updatedAt: timestamp })
+        .where(eq(companies.id, companyId))
+      if (!archived) return
+      const [client] = await tx
+        .select({ id: clients.id })
+        .from(clients)
+        .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+        .limit(1)
+      if (client) {
+        accessChanges = await revokeCompanyPortalAccess(
+          tx,
+          companyId,
+          client.id
+        )
+      }
+    })
   } catch (error) {
     if (!archived && isUniqueViolation(error)) {
       return {
@@ -863,6 +880,7 @@ export async function setCompanyArchived(
       ? companyArchivedEvent({ name: existing.name })
       : companyRestoredEvent({ name: existing.name })),
   })
+  await logContactClientLinkChanges(actor, accessChanges)
 
   return { ok: true, id: existing.id }
 }

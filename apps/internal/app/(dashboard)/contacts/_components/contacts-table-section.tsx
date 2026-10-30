@@ -35,7 +35,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -207,17 +207,15 @@ export function ContactsTableSection({
                       />
                       {/* The row ignores clicks on links, so this opens the
                           company, not the contact. */}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Link
-                            href={companySheetHref(contact.companyId)}
-                            className='hover:text-foreground truncate-link min-w-0 underline-offset-4 transition hover:underline'
-                          >
-                            {contact.companyName}
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent>{contact.companyName}</TooltipContent>
-                      </Tooltip>
+                      {/* Names only get a tooltip when they're cut off. */}
+                      <TruncationTooltip content={contact.companyName}>
+                        <Link
+                          href={companySheetHref(contact.companyId)}
+                          className='hover:text-foreground truncate-link min-w-0 underline-offset-4 transition hover:underline'
+                        >
+                          {contact.companyName}
+                        </Link>
+                      </TruncationTooltip>
                       {contact.companies.length > 1 ? (
                         <LinkedRecordsHoverCell
                           count={contact.companies.length}
