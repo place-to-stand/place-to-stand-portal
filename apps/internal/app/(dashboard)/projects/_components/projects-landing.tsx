@@ -52,6 +52,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
 // column in all three section tables; grouping semantics stay unchanged —
@@ -109,7 +110,12 @@ export type ClientHoursData =
     }
 
 type ClientProjectSection = {
-  client: { id: string; name: string; slug: string | null }
+  client: {
+    id: string
+    name: string
+    slug: string | null
+    company_id: string | null
+  }
   projects: LandingProject[]
 }
 
@@ -310,6 +316,7 @@ export function ProjectsLanding({
             id: project.client.id,
             name: project.client.name,
             slug: project.client.slug,
+            company_id: project.client.company_id ?? null,
           },
           projects: [project],
         })
@@ -549,6 +556,7 @@ export function ProjectsLanding({
     id: string
     name: string
     slug: string | null
+    company_id: string | null
   }) => {
     const hours = clientHoursMap[client.id]
 
@@ -560,8 +568,9 @@ export function ProjectsLanding({
         <TableCell
           colSpan={6}
           className={cn(
+            // The shared cell sets the height: same as the project rows.
             ENTITY_ACCENTS.client.tint,
-            'py-2.5 align-middle max-md:px-3 max-md:py-2.5'
+            'max-md:px-3 max-md:py-2.5'
           )}
         >
           <div className='flex items-center gap-4'>
@@ -573,13 +582,9 @@ export function ProjectsLanding({
                 />
                 <span className='text-sm font-semibold'>{client.name}</span>
               </span>
-            ) : (
+            ) : client.company_id ? (
               <Link
-                href={
-                  client.slug
-                    ? `/clients/${client.slug}`
-                    : `/clients/${client.id}`
-                }
+                href={companySheetHref(client.company_id, 'projects')}
                 className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
               >
                 <ENTITY_ICONS.client
@@ -587,6 +592,13 @@ export function ProjectsLanding({
                 />
                 <span className='text-sm font-semibold'>{client.name}</span>
               </Link>
+            ) : (
+              <span className='flex w-fit shrink items-center gap-2 opacity-65'>
+                <ENTITY_ICONS.client
+                  className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4 shrink-0')}
+                />
+                <span className='text-sm font-semibold'>{client.name}</span>
+              </span>
             )}
             {hours && hours.billingType === 'prepaid' && (
               <div className='flex items-center gap-1 text-xs'>

@@ -13,7 +13,7 @@ import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@pts/ui/dates'
-import { clientSheetHref, invoiceHref } from '@/lib/sheets/hrefs'
+import { companySheetHref, invoiceHref } from '@/lib/sheets/hrefs'
 import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
   Table,
@@ -186,7 +186,7 @@ export function HourBlocksTableSection({
                     {client ? (
                       // Opens the client; the row ignores clicks on links.
                       <Link
-                        href={clientSheetHref(client.id)}
+                        href={companySheetHref(client.company_id, 'billing')}
                         title={client.name}
                         className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
                       >

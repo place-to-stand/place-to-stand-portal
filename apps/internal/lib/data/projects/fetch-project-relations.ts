@@ -1,9 +1,9 @@
 import { personNameSql } from '@pts/db/names'
-import { and, inArray, isNull } from 'drizzle-orm'
+import { and, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
 import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { contacts, users } from '@/lib/db/schema'
 
 import type { MemberWithUser, RawTaskWithRelations } from './types'
 
@@ -58,6 +58,7 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
   const rows = await db
     .select({
       id: users.id,
+      contact_id: sql<string | null>`(select ${contacts.id} from ${contacts} where ${contacts.userId} = ${users.id} and ${contacts.deletedAt} is null limit 1)`,
       full_name: personNameSql,
       avatar_url: users.avatarUrl,
     })
@@ -66,6 +67,7 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
 
   return rows.map(row => ({
     id: row.id,
+    contact_id: row.contact_id,
     full_name: row.full_name,
     avatar_url: row.avatar_url,
   }))

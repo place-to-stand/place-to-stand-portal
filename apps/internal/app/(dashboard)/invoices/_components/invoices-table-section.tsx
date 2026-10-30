@@ -40,6 +40,7 @@ import {
 import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
 import { InvoiceStatusBadge } from './invoice-status-badge'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 type InvoicesTableMode = 'active' | 'archive'
 
@@ -312,9 +313,9 @@ export function InvoicesTableSection({
                       )}
                     />
                     {client ? (
-                      client.slug ? (
+                      client.company_id ? (
                         <Link
-                          href={`/clients/${client.slug}`}
+                          href={companySheetHref(client.company_id, 'billing')}
                           className='hover:text-foreground truncate-link hover:underline'
                         >
                           {client.name}

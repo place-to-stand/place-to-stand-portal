@@ -206,6 +206,8 @@ export type GitHubRepoLinkSummary = {
 
 export type ProjectOwner = {
   id: string
+  /** Their person record: the Owner link opens it. */
+  contact_id: string | null
   full_name: string | null
   avatar_url: string | null
 }

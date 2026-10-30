@@ -61,6 +61,7 @@ type HourBlockSelection = {
   client: {
     id: string
     name: string
+    companyId: string
     deletedAt: string | null
   } | null
 }
@@ -68,6 +69,7 @@ type HourBlockSelection = {
 type ClientSelection = {
   id: string
   name: string
+  companyId: string
   deletedAt: string | null
 }
 
@@ -94,6 +96,7 @@ const hourBlockSelection = {
 const clientSelection = {
   id: clients.id,
   name: clientNameSql,
+  companyId: clients.companyId,
   deletedAt: clients.deletedAt,
 } as const
 
@@ -402,6 +405,7 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
       ? {
           id: row.client.id,
           name: row.client.name,
+          company_id: row.client.companyId,
           deleted_at: row.client.deletedAt,
         }
       : null
@@ -430,6 +434,7 @@ function mapClientRow(row: ClientSelection): ClientRow {
   return {
     id: row.id,
     name: row.name,
+    company_id: row.companyId,
     deleted_at: row.deletedAt,
   }
 }

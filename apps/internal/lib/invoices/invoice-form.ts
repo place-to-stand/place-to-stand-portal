@@ -56,7 +56,14 @@ export type ClientRow = {
 }
 
 export type InvoiceWithClient = InvoiceRow & {
-  client: { id: string; name: string; slug: string | null; deleted_at: string | null } | null
+  client: {
+    id: string
+    name: string
+    slug: string | null
+    /** The client's company: the list links open its sheet. */
+    company_id: string
+    deleted_at: string | null
+  } | null
   /**
    * Active hour blocks linked to this invoice (created on payment, or linked
    * by hand). Only populated by the invoices list.

@@ -24,6 +24,8 @@ export type DashboardTimeLogEntry = {
   clientId: string | null
   clientName: string | null
   clientSlug: string | null
+  /** The client's company: links open its sheet. */
+  companyId: string | null
   /** Linked live tasks, for the Tasks hover card. */
   tasks: { id: string; title: string }[]
   taskTitles: string[]

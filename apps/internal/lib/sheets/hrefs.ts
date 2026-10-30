@@ -11,12 +11,13 @@
 import { BOARD_VIEW_SEGMENTS } from '@/lib/projects/board/board-constants'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 
-export const clientSheetHref = (id: string) => `/clients?client=${id}`
-
 export const contactSheetHref = (id: string) => `/people?contact=${id}`
 
-export const companySheetHref = (id: string) => `/companies?company=${id}`
-
+/** A company's sheet, optionally on a tab (Details, People, Projects, Billing). */
+export const companySheetHref = (
+  id: string,
+  tab?: 'details' | 'people' | 'projects' | 'billing'
+) => `/companies?company=${id}${tab ? `&tab=${tab}` : ''}`
 
 export const invoiceHref = (id: string) => `/invoices?invoice=${id}`
 
@@ -25,10 +26,6 @@ export const hourBlockHref = (id: string) => `/hour-blocks?hour-block=${id}`
 /** Hour blocks list searched by invoice number (the search matches it). */
 export const hourBlocksForInvoiceHref = (invoiceNumber: string) =>
   `/hour-blocks?q=${encodeURIComponent(invoiceNumber)}`
-
-/** Client detail page; slugs are canonical but the page also resolves ids. */
-export const clientDetailHref = (client: { slug: string | null; id: string }) =>
-  `/clients/${client.slug ?? client.id}`
 
 /** The client-update composer — a full page, not a sheet. */
 export const updateComposerHref = (id: string) => `/updates/${id}`

@@ -136,7 +136,7 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
     }
   }
 
-  revalidatePath("/settings/users");
+  revalidatePath("/people");
 
   return { emailConfirmationSent: Boolean(isEmailChange) };
 }

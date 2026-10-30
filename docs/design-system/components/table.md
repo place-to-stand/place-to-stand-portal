@@ -2,7 +2,7 @@
 
 The data table: plain semantic markup with shadcn styling and three options, `density`, `layout` and `stack`, plus a floor width set through `className`. From `@pts/ui/table`.
 
-**Look:** `text-sm`, rows `border-b hover:bg-muted/50`, selected `bg-muted`. `TableHead` is `h-10 px-2 font-medium text-foreground`; `TableCell` is `p-2`. `density="compact"`: heads `h-8 text-xs`, cells `px-2 py-1.5`. `TableFooter` is `bg-muted/50 border-t font-medium`. Cells are `whitespace-nowrap`.
+**Look:** `text-sm`, rows `border-b hover:bg-muted/50`, selected `bg-muted`. `TableHead` is `h-10 px-2 font-medium text-foreground`; `TableCell` is `p-2` around a 28px content box. `density="compact"`: heads `h-8 text-xs`, cells `px-2 py-1.5`. `TableFooter` is `bg-muted/50 border-t font-medium`. Cells are `whitespace-nowrap`.
 
 **Phones (`stack`):** below `md` a stacked table drops its header and turns each row into a compact card: the first cell is a full-width title line and the rest wrap beneath it. Pass `label` to a cell whose value needs a name once the header is gone ("Hours", "Last sign-in"); self-describing values (badges, icon + text) go without. Give the actions cell `max-md:ml-auto`, and drop an empty cell with `max-md:hidden` rather than showing a lone dash. A cell that should lead the card instead of the first one takes `max-md:order-first max-md:basis-full` (the first cell then needs `max-md:first:basis-auto`).
 
@@ -12,6 +12,7 @@ The data table: plain semantic markup with shadcn styling and three options, `de
 - Every list table sets `stack`. A grid read across its columns (the monthly close payouts) keeps its columns instead and scrolls inside its card from a floor width.
 - Every `layout='fixed'` table whose columns overprint at 768px with the sidebar open sets an `md:min-w-[…]` floor (see above). Measure it rather than guess: widen the table in devtools until no cell's content spills, then round up. Card stacking stays below `md`; extending it to `lg` wouldn't help, since `lg` starts at 1024px, where the clients table already overprints.
 - Every sortable table sets `layout='fixed'`, gives each `TableHead` a width class, and puts `truncate` on long-text cells, so sorting and paging can't make columns jump. (Unwidthed columns split leftover space equally — set widths before switching.)
+- **One row height.** Every list row, group rows included (a client heading on Projects), is the shared `TableCell` height: a 28px content box (`box-content h-7`) plus its padding and the row border, so 41px compact and 45px default whatever the row holds (a cell's height is its minimum: text-only and group rows match rows with 28px buttons). Never set `py-*`, `p-*` or `h-*` on a row's cells to change it; above `md` only empty-state rows (`colSpan`, `p-4`) differ. Shown on `/design#tables`.
 - Numbers (hours, money, counts) are right-aligned with `tabular-nums`.
 - Dates render through `formatCalendarDate` ("Sep 23, 2026").
 - Row actions are `RowActionButton`s (every icon-only one, so each has a hover tooltip) or a DropdownMenu; in-row toggles may apply instantly (unlike sheet controls).

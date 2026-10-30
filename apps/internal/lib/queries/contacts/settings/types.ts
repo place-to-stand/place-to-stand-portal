@@ -9,6 +9,7 @@ export type LinkedClient = {
   id: string
   name: string
   slug: string
+  companyId: string
 }
 
 type ContactListMetrics = {

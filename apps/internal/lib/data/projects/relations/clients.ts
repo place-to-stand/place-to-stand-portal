@@ -25,6 +25,7 @@ export type ClientRow = {
   originationContactId: string | null
   originationUserId: string | null
   billingType: DbClient['billing_type']
+  companyId: string
   createdBy: string | null
   createdAt: string
   updatedAt: string
@@ -69,6 +70,7 @@ export async function loadClientRows(
       originationContactId: currentOriginationContactIdSql(),
       originationUserId: currentOriginationUserIdSql(),
       billingType: currentBillingTypeSql(),
+      companyId: clientsTable.companyId,
       createdBy: clientsTable.createdBy,
       createdAt: clientsTable.createdAt,
       updatedAt: clientsTable.updatedAt,
@@ -137,6 +139,7 @@ export function mapClientRows(rows: ClientRow[]): DbClient[] {
     origination_contact_id: row.originationContactId,
     origination_user_id: row.originationUserId,
     billing_type: row.billingType,
+    company_id: row.companyId,
     created_by: row.createdBy ?? null,
     created_at: row.createdAt,
     updated_at: row.updatedAt,

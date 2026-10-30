@@ -38,6 +38,7 @@ import {
   useOptimisticBoardScope,
 } from './use-optimistic-board-scope'
 import { Plus } from 'lucide-react'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -676,16 +677,11 @@ function resolveClientLabel(project: ProjectWithRelations): string {
 
 function buildClientHref(project: ProjectWithRelations): string | null {
   // Only link to client pages for CLIENT-type projects with a valid client
-  if (project.type !== 'CLIENT' || !project.client) {
+  if (project.type !== 'CLIENT' || !project.client?.company_id) {
     return null
   }
 
-  const clientSlug = project.client.slug
-  if (clientSlug) {
-    return `/clients/${clientSlug}`
-  }
-
-  return `/clients/${project.client.id}`
+  return companySheetHref(project.client.company_id, 'projects')
 }
 
 function buildProjectHref(project: ProjectWithRelations): string | null {

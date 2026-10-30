@@ -329,6 +329,23 @@ export function SampleProjectList({
           </TableHeader>
           <TableBody>
             {rows.length ? (
+              <TableRow className='hover:bg-transparent'>
+                {/* A group row: one cell across, the shared height. */}
+                <TableCell
+                  colSpan={6}
+                  className={cn(ENTITY_ACCENTS.client.tint, 'max-md:px-3')}
+                >
+                  <span className='flex items-center gap-2 text-sm font-semibold'>
+                    <ENTITY_ICONS.client
+                      className={cn(ENTITY_ACCENTS.client.icon, 'size-4')}
+                      aria-hidden
+                    />
+                    Acme Industries
+                  </span>
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {rows.length ? (
               rows.map(row => (
                 <TableRow key={row.name}>
                   <TableCell>
@@ -415,7 +432,7 @@ export function ComponentsTables() {
     <DesignSection
       id='tables'
       title='Tables and toolbar'
-      when='Lists of records. Search first, then filters inline (a Filters sheet on phones). Sortable tables use layout="fixed" with a width on every header; rows stack into cards below md. A missing value is an em dash.'
+      when='Lists of records. Search first, then filters inline (a Filters sheet on phones). Sortable tables use layout="fixed" with a width on every header; rows stack into cards below md. A missing value is an em dash. One row height for every list, group rows included: the shared TableCell sets it (a 28px content box: 41px compact, 45px default); never pad or size a cell to change it.'
     >
       <Specimen
         label='List: FilterBar, sortable fixed table, row actions, pagination'

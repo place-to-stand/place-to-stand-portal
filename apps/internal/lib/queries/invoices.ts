@@ -94,6 +94,7 @@ const clientSelection = {
   id: clients.id,
   name: clientNameSql,
   slug: clients.slug,
+  companyId: clients.companyId,
   billingType: currentBillingTypeSql(),
   state: clients.state,
   deletedAt: clients.deletedAt,
@@ -133,6 +134,7 @@ type InvoiceSelectionRow = {
     id: string
     name: string
     slug: string | null
+    companyId: string
     billingType: string
     state: string | null
     deletedAt: string | null
@@ -600,6 +602,7 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
           id: row.client.id,
           name: row.client.name,
           slug: row.client.slug,
+          company_id: row.client.companyId,
           deleted_at: row.client.deletedAt,
         }
       : null

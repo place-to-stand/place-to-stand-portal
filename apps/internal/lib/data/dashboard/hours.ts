@@ -191,6 +191,7 @@ export async function fetchTimeLogPage(
         clientId: clients.id,
         clientName: clientNameSql,
         clientSlug: clients.slug,
+        companyId: clients.companyId,
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
@@ -244,6 +245,7 @@ export async function fetchTimeLogPage(
     clientId: row.clientId ?? null,
     clientName: row.clientName ?? null,
     clientSlug: row.clientSlug ?? null,
+    companyId: row.companyId,
     tasks: tasksByLog.get(row.id) ?? [],
     taskTitles: (tasksByLog.get(row.id) ?? []).map(task => task.title),
   }))

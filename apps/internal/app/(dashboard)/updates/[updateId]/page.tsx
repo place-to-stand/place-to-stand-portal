@@ -11,7 +11,7 @@ import { NotFoundError } from '@/lib/errors/http'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { fetchContactsForClient } from '@/lib/queries/clients/contacts'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
-import { clientDetailHref } from '@/lib/sheets/hrefs'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 import { fetchClientUpdate, type ClientUpdateRow } from '@/lib/updates'
 import {
   fetchComposerTaskOptions,
@@ -80,7 +80,12 @@ export default async function UpdatePage({
     <PageShell
       breadcrumbs={[
         ...crumbsForNav('/companies'),
-        { label: client.name, href: clientDetailHref(client) },
+        {
+          label: client.name,
+          href: client.companyId
+            ? companySheetHref(client.companyId, 'projects')
+            : undefined,
+        },
         { label: update.status === 'SENT' ? 'Sent update' : 'Draft update' },
       ]}
     >

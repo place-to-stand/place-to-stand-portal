@@ -141,6 +141,7 @@ async function fetchClientDetails(
       clientId: clients.id,
       clientName: clientNameSql,
       clientSlug: clients.slug,
+      companyId: clients.companyId,
     })
     .from(clientPortalAccess)
     .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))
@@ -159,6 +160,7 @@ async function fetchClientDetails(
       id: row.clientId,
       name: row.clientName,
       slug: row.clientSlug ?? row.clientId,
+      companyId: row.companyId,
     })
     result.set(row.contactId, existing)
   }

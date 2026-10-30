@@ -61,7 +61,13 @@ export type LeadRecord = {
  * `fetchLeadConversionSummary` for how the contact and projects are resolved.
  */
 export type LeadConversionSummary = {
-  client: { id: string; name: string; slug: string | null; archived: boolean }
+  client: {
+    id: string
+    name: string
+    slug: string | null
+    companyId: string
+    archived: boolean
+  }
   contact: { id: string; name: string; email: string | null } | null
   projects: Array<{
     id: string

@@ -18,6 +18,7 @@ import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 export type OverviewTabContentProps = {
   isActive: boolean
@@ -82,7 +83,7 @@ function ProjectDetailsWidget({
 }: {
   project: NonNullable<ProjectsBoardActiveProject>
 }) {
-  // Owner opens the user sheet over this page via `?user=` (global SheetHost).
+  // Owner opens their person sheet over this page (global SheetHost).
   const { open } = useSheetParams()
   const owner = project.owner
   const statusLabel = getProjectStatusLabel(project.status)
@@ -115,16 +116,18 @@ function ProjectDetailsWidget({
           <div className='flex items-center gap-3 px-4 py-2.5'>
             <span className='text-muted-foreground text-sm'>Client</span>
             <div className='ml-auto flex items-center gap-2'>
-              <Link
-                href={
-                  project.client.slug
-                    ? `/clients/${project.client.slug}`
-                    : `/clients/${project.client.id}`
-                }
-                className='text-sm font-medium underline-offset-4 hover:underline'
-              >
-                {project.client.name}
-              </Link>
+              {project.client.company_id ? (
+                <Link
+                  href={companySheetHref(project.client.company_id, 'projects')}
+                  className='text-sm font-medium underline-offset-4 hover:underline'
+                >
+                  {project.client.name}
+                </Link>
+              ) : (
+                <span className='text-sm font-medium'>
+                  {project.client.name}
+                </span>
+              )}
               {project.client.billing_type && (
                 <Badge variant='outline' className='text-[10px] font-medium'>
                   {project.client.billing_type === 'net_30'
@@ -138,12 +141,14 @@ function ProjectDetailsWidget({
         <div className='flex items-center gap-3 px-4 py-2.5'>
           <span className='text-muted-foreground text-sm'>Owner</span>
           <div className='ml-auto flex items-center gap-2'>
-            {owner ? (
+            {owner?.contact_id ? (
               <button
                 type='button'
                 className='group focus-visible:border-ring focus-visible:ring-ring/50 flex cursor-pointer items-center gap-2 rounded-md outline-none focus-visible:ring-[3px]'
-                onPointerEnter={() => prefetchSheetInit('user', owner.id)}
-                onClick={() => open('user', owner.id)}
+                onPointerEnter={() =>
+                  prefetchSheetInit('contact', owner.contact_id!)
+                }
+                onClick={() => open('contact', owner.contact_id!)}
               >
                 <Avatar size='sm'>
                   {owner.avatar_url && (

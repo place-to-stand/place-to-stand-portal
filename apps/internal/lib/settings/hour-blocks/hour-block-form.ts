@@ -47,6 +47,8 @@ type HourBlockRow = {
 type ClientRow = {
   id: string
   name: string
+  /** The client's company: the list links open its sheet. */
+  company_id: string
   deleted_at: string | null
 }
 

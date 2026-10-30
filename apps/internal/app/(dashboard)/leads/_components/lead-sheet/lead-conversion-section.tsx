@@ -11,7 +11,7 @@ import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
 import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
 import {
-  clientDetailHref,
+  companySheetHref,
   contactSheetHref,
   projectBoardHref,
 } from '@/lib/sheets/hrefs'
@@ -140,7 +140,7 @@ function ConvertedSummary({
 
 function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
   const { client, contact, projects } = summary
-  const clientHref = clientDetailHref(client)
+  const clientHref = companySheetHref(client.companyId, 'billing')
   const clientSegment = client.slug ?? client.id
   const hiddenProjectCount = projects.length - MAX_PROJECTS
 

@@ -38,8 +38,6 @@ const COMPANY_ROUTES = [
   '/companies/activity',
   '/people',
   '/leads',
-  '/clients',
-  '/clients/archive',
   '/projects',
 ]
 
@@ -47,7 +45,6 @@ function revalidateCompanyRoutes() {
   for (const path of COMPANY_ROUTES) {
     revalidatePath(path)
   }
-  revalidatePath('/clients/[clientSlug]', 'page')
 }
 
 export type CompanySheetData = {

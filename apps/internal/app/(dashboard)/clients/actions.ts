@@ -24,10 +24,12 @@ import {
   type ClientSheetContactData,
 } from '@/lib/queries/clients/settings/client-contacts'
 
+// A client is a company you bill: its screens are the company's.
 const CLIENT_ROUTES_TO_REVALIDATE = [
-  '/clients',
-  '/clients/archive',
-  '/clients/activity',
+  '/companies',
+  '/companies/archive',
+  '/companies/activity',
+  '/projects',
 ]
 
 /**
@@ -35,9 +37,6 @@ const CLIENT_ROUTES_TO_REVALIDATE = [
  * Uses layout-level revalidation to cover all client pages including dynamic detail pages.
  */
 function revalidateClientPaths() {
-  // Revalidate the layout to cover all client pages including /clients/[clientSlug]
-  revalidatePath('/clients', 'layout')
-  // Also revalidate specific static routes for good measure
   for (const path of CLIENT_ROUTES_TO_REVALIDATE) {
     revalidatePath(path)
   }

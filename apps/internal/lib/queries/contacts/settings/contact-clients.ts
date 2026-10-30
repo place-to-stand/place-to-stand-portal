@@ -54,6 +54,7 @@ export async function listAllActiveClients(
       id: clients.id,
       name: clientNameSql,
       slug: clients.slug,
+      companyId: clients.companyId,
     })
     .from(clients)
     .where(sql`${clients.deletedAt} IS NULL`)
@@ -80,6 +81,7 @@ export async function listContactClients(
       id: clients.id,
       name: clientNameSql,
       slug: clients.slug,
+      companyId: clients.companyId,
     })
     .from(clientPortalAccess)
     .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))

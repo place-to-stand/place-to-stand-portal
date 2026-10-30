@@ -48,6 +48,7 @@ export async function fetchLeadConversionSummary(
         id: clients.id,
         name: clientNameSql,
         slug: clients.slug,
+        companyId: clients.companyId,
         deletedAt: clients.deletedAt,
       })
       .from(clients)
@@ -82,6 +83,7 @@ export async function fetchLeadConversionSummary(
       id: client.id,
       name: client.name,
       slug: client.slug,
+      companyId: client.companyId,
       archived: client.deletedAt !== null,
     },
     contact: contactRows[0] ?? null,

@@ -27,7 +27,7 @@ import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { clientSheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
+import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 import { cn } from '@/lib/utils'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
@@ -181,10 +181,10 @@ export function TimeLogsTable({
                             'h-4 w-4 shrink-0'
                           )}
                         />
-                        {item.clientId ? (
+                        {item.companyId ? (
                           // The row ignores clicks on links.
                           <Link
-                            href={clientSheetHref(item.clientId)}
+                            href={companySheetHref(item.companyId)}
                             title={item.clientName}
                             className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
                           >
