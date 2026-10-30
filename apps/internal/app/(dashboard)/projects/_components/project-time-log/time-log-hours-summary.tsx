@@ -20,6 +20,9 @@ export function TimeLogHoursSummary({ projectId }: { projectId: string }) {
     queryKey: [TIME_LOG_HOURS_QUERY_KEY, projectId],
     queryFn: () => loadTimeLogHours(projectId),
     staleTime: 0,
+    // Dropped when the dialog closes: reopening shows fresh numbers, never
+    // the previous ones while it refetches.
+    gcTime: 0,
   })
 
   if (isLoading) {

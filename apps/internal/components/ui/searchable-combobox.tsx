@@ -303,7 +303,12 @@ export const SearchableCombobox = React.forwardRef<
       }
     }, [contentWidth, lockedWidth])
 
-    const showClear = Boolean(onClear && selectedItem && !disabled)
+    // A value that isn't among the options (an archived company in an old
+    // link) still shows as picked, and can still be cleared.
+    const unmatched = Boolean(value) && !selectedItem
+    const showClear = Boolean(
+      onClear && (selectedItem || unmatched) && !disabled
+    )
 
     return (
       <div
@@ -332,17 +337,22 @@ export const SearchableCombobox = React.forwardRef<
                   aria-invalid={ariaInvalid ? true : undefined}
                   disabled={disabled}
                   id={id}
-                  placeholder={!selectedItem}
+                  placeholder={!selectedItem && !unmatched}
                   clearable={showClear}
                   className={triggerClassName}
-                  labelTitle={selectedItem?.label ?? resolvedPlaceholder}
+                  labelTitle={
+                    selectedItem?.label ??
+                    (unmatched ? 'Not in this list' : resolvedPlaceholder)
+                  }
                   leading={
                     selectedItem ? renderLeading(selectedItem, 'trigger') : null
                   }
                   label={
                     selectedItem
                       ? (selectedItem.render ?? selectedItem.label)
-                      : resolvedPlaceholder
+                      : unmatched
+                        ? 'Not in this list'
+                        : resolvedPlaceholder
                   }
                 />
               )}

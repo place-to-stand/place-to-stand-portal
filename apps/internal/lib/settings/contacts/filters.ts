@@ -4,12 +4,7 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
 // matching descriptor (order expr + cursor encode/compare) in the query.
 // An unknown field (e.g. the retired `clients`) falls back to the default.
-const CONTACT_SORT_FIELDS = [
-  'name',
-  'email',
-  'phone',
-  'created',
-] as const
+const CONTACT_SORT_FIELDS = ['name', 'email', 'phone', 'created'] as const
 export type ContactSortField = (typeof CONTACT_SORT_FIELDS)[number]
 
 export const DEFAULT_CONTACTS_SORT = {
@@ -104,7 +99,11 @@ export function parseContactsSearchParams(
       clientIdParam && UUID_PATTERN.test(clientIdParam)
         ? clientIdParam
         : undefined,
-    signIn: isSignInFilter(signInParam) ? signInParam : undefined,
+    // 'any' (has a user) is no longer offered; an old link shows everyone.
+    signIn:
+      isSignInFilter(signInParam) && signInParam !== 'any'
+        ? signInParam
+        : undefined,
     sort,
   }
 }
