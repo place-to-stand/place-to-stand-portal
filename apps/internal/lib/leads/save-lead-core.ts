@@ -10,10 +10,12 @@ import {
   leadUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import {
+  clients,
   contactLeads,
   contacts,
   leads,
@@ -175,7 +177,21 @@ async function resolveLeadContact(
   // A contact with no company joins the lead's. Membership grants no client
   // access (that's switched on per person on the client).
   const linkCompany = async (contact: { id: string; hasCompany: boolean }) => {
-    if (!companyId || contact.hasCompany) return
+    if (!companyId) return
+    if (contact.hasCompany) {
+      if (!normalized.addContactToCompany) return
+      // A client's contacts are admin-only (same rule as the contact sheet).
+      if (!roleCan(actor.role, 'clients.manage')) {
+        const [client] = await db
+          .select({ id: clients.id })
+          .from(clients)
+          .where(
+            and(eq(clients.companyId, companyId), isNull(clients.deletedAt))
+          )
+          .limit(1)
+        if (client) return
+      }
+    }
     await joinCompany(db, contact.id, companyId)
   }
 

@@ -15,6 +15,8 @@ export type ContactOption = {
   phone: string | null
   companyId: string | null
   companyName: string | null
+  /** Every company they're currently at (so a lead can flag a mismatch). */
+  companyIds: string[]
 }
 
 /** Live contacts for the contact pickers (lead sheet), A–Z. */
@@ -32,6 +34,10 @@ export async function listContactOptions(
       // Their main company (oldest current membership).
       companyId: mainCompanyIdSql(contacts.id),
       companyName: mainCompanyNameSql(contacts.id),
+      companyIds: sql<string[]>`coalesce((
+        select array_agg(m.company_id) from memberships m
+        where m.contact_id = "contacts"."id" and m.ended_at is null
+      ), '{}')`,
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))

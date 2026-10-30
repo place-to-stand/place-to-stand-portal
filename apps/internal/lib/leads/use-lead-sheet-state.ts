@@ -83,6 +83,7 @@ export function useLeadSheetState({
       // A new lead starts assigned to you, like a new task.
       assigneeId: lead ? (lead.assigneeId ?? null) : userId,
       notes: lead?.notesHtml ?? initialValues?.notes ?? '',
+      addContactToCompany: false,
     }),
     [lead, initialStatus, initialValues, userId]
   )
@@ -142,6 +143,7 @@ export function useLeadSheetState({
           contactPhone: contact?.phone ?? null,
           companyId: company?.id ?? null,
           companyName: company?.name ?? null,
+          addContactToCompany: Boolean(values.addContactToCompany && company),
         })
 
         if (!result.success) {
@@ -169,6 +171,7 @@ export function useLeadSheetState({
           status: values.status,
           assigneeId: values.assigneeId ?? null,
           notes: values.notes ?? '',
+          addContactToCompany: false,
         })
 
         setArchiveDialogOpen(false)

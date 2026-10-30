@@ -5,7 +5,11 @@ import { useController, useWatch, type Control } from 'react-hook-form'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
-import { ContactLinkPicker } from '@/components/contacts/contact-link-picker'
+import {
+  ContactLinkPicker,
+  useContactOptions,
+} from '@/components/contacts/contact-link-picker'
+import { Button } from '@pts/ui/button'
 import {
   FormControl,
   FormField,
@@ -115,6 +119,7 @@ export function LeadSheetFormFields({
               />
             </FormControl>
             <FormMessage />
+            <ContactCompanyMismatchNote control={control} />
           </FormItem>
         )}
       />
@@ -261,6 +266,69 @@ export function LeadSheetFormFields({
           </FormItem>
         )}
       />
+    </div>
+  )
+}
+
+/**
+ * A quiet note when the lead's contact isn't at the chosen company, with an
+ * "Add to <company>" that joins them on save. Never blocks saving: a contact
+ * from another company (a referral) is fine.
+ */
+function ContactCompanyMismatchNote({
+  control,
+}: {
+  control: Control<LeadFormValues>
+}) {
+  const contact = useWatch({ control, name: 'contact' })
+  const company = useWatch({ control, name: 'company' })
+  const { field: addField } = useController({
+    control,
+    name: 'addContactToCompany',
+  })
+  const { data: options = [] } = useContactOptions()
+
+  const companyIds = contact
+    ? options.find(option => option.id === contact.id)?.companyIds
+    : undefined
+  // Only once the contact's companies are known, and only for a mismatch.
+  if (!contact || !company || !companyIds || companyIds.includes(company.id)) {
+    return null
+  }
+
+  const contactName = contact.name || 'This contact'
+  const companyName = company.name || 'this company'
+  return (
+    <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-sm'>
+      {addField.value ? (
+        <>
+          <span>
+            {contactName} will be added to {companyName} when you save.
+          </span>
+          <Button
+            type='button'
+            variant='ghost'
+            size='xs'
+            onClick={() => addField.onChange(false)}
+          >
+            Undo
+          </Button>
+        </>
+      ) : (
+        <>
+          <span>
+            {contactName} isn&apos;t at {companyName}.
+          </span>
+          <Button
+            type='button'
+            variant='outline'
+            size='xs'
+            onClick={() => addField.onChange(true)}
+          >
+            Add to {companyName}
+          </Button>
+        </>
+      )}
     </div>
   )
 }

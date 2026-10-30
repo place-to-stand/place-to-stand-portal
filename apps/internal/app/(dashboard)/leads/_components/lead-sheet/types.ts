@@ -25,6 +25,8 @@ export const leadFormSchema = z.object({
   status: z.enum(LEAD_STATUS_VALUES),
   assigneeId: z.string().uuid().optional().nullable(),
   notes: z.string().optional(),
+  /** "Add to <company>": the contact joins the lead's company on save. */
+  addContactToCompany: z.boolean().optional(),
 })
 
 export type LeadFormValues = z.infer<typeof leadFormSchema>
