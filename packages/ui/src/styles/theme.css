@@ -53,7 +53,6 @@
   --entity-task: oklch(51.1% 0.096 186.4);
   --entity-lead: oklch(62.0% 0.175 55.0);
   --entity-project: oklch(59.6% 0.145 163.2);
-  --entity-suggestion: oklch(53.2% 0.157 131.6);
   --entity-time-log: oklch(44.8% 0.119 151.3);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
@@ -104,7 +103,6 @@
   --entity-task: oklch(85.5% 0.138 181.1);
   --entity-lead: oklch(87.9% 0.169 91.6);
   --entity-project: oklch(76.5% 0.177 163.2);
-  --entity-suggestion: oklch(84.1% 0.238 128.8);
   --entity-time-log: oklch(72.3% 0.219 149.6);
   --entity-company: oklch(75.0% 0.183 55.9);
   --entity-person: oklch(71.2% 0.194 13.4);
@@ -147,7 +145,6 @@
   --entity-task: oklch(51.1% 0.096 186.4);
   --entity-lead: oklch(62.0% 0.175 55.0);
   --entity-project: oklch(59.6% 0.145 163.2);
-  --entity-suggestion: oklch(53.2% 0.157 131.6);
   --entity-time-log: oklch(44.8% 0.119 151.3);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
@@ -209,7 +206,6 @@
   --color-entity-task: var(--entity-task);
   --color-entity-lead: var(--entity-lead);
   --color-entity-project: var(--entity-project);
-  --color-entity-suggestion: var(--entity-suggestion);
   --color-entity-time-log: var(--entity-time-log);
   --color-entity-company: var(--entity-company);
   --color-entity-person: var(--entity-person);

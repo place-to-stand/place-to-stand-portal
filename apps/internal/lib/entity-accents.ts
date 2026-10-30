@@ -22,7 +22,6 @@ import {
   Hourglass,
   Inbox,
   LayoutTemplate,
-  Lightbulb,
   KeyRound,
   ListTodo,
   Receipt,
@@ -38,7 +37,6 @@ export type AccentEntity =
   | 'user'
   | 'project'
   | 'task'
-  | 'suggestion'
   | 'timeLog'
   | 'client'
   | 'invoice'
@@ -179,23 +177,6 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       icon: 'text-entity-task',
       tint: 'bg-entity-task/10',
       badge: 'border-transparent bg-entity-task/15 text-entity-task',
-    },
-  },
-  suggestion: {
-    label: 'Suggestion',
-    group: 'work',
-    icon: Lightbulb,
-    iconName: 'Lightbulb',
-    token: 'suggestion',
-    example: 'Add uptime alerts',
-    accent: {
-      sheetHeader: 'border-b-2 border-b-entity-suggestion/60',
-      card: 'border-entity-suggestion/35 hover:border-entity-suggestion/60 hover:bg-entity-suggestion/5 hover:shadow-md',
-      cardStatic: 'border-entity-suggestion/35',
-      icon: 'text-entity-suggestion',
-      tint: 'bg-entity-suggestion/10',
-      badge:
-        'border-transparent bg-entity-suggestion/15 text-entity-suggestion',
     },
   },
   timeLog: {

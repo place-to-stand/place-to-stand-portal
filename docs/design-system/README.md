@@ -45,7 +45,6 @@ Each kind of record has one icon and one colour everywhere it appears: sidebar, 
 |  | Sign-in | `KeyRound` | rose-800, 7.9:1 | rose-300, 9.3:1 |
 | Work | Project | `FolderKanban` | emerald-600, 3.7:1 | emerald-400, 9.3:1 |
 |  | Task | `ListTodo` | teal-700, 5.4:1 | teal-300, 12.2:1 |
-|  | Suggestion | `Lightbulb` | lime-700, 5.0:1 | lime-400, 11.7:1 |
 |  | Time log | `Clock` | green-800, 7.1:1 | green-500, 8.1:1 |
 | Money | Client (a company state) | `Briefcase` | blue-600, 5.3:1 | blue-400, 6.8:1 |
 |  | Invoice | `Receipt` | sky-700, 5.9:1 | sky-300, 10.8:1 |
