@@ -6,16 +6,18 @@
 import drizzleQualifiedSubquery from './rules/drizzle-qualified-subquery.mjs'
 import {
   datesThroughUi,
-  ellipsisCharacter,
-  filterSelect,
-  gridPhoneColumn,
   noAlignStart,
   noRadix,
   noSizeOverride,
   noTitleTooltip,
+} from './rules/house-rules.mjs'
+import {
+  ellipsisCharacter,
+  filterSelect,
+  gridPhoneColumn,
   saveNotGatedOnDirty,
   toastCopy,
-} from './rules/house-rules.mjs'
+} from './rules/house-rules-copy.mjs'
 import { clientBoundary, queryLayerPurity } from './rules/layering.mjs'
 
 export const pts = {

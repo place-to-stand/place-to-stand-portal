@@ -72,3 +72,9 @@ export function hasDirective(program, directive) {
   }
   return false
 }
+
+export const README = 'docs/design-system/README.md'
+
+/** Elements that are buttons: native, ours, and icon/action buttons. */
+export const BUTTONISH =
+  /^(button|Button|RowActionButton|\w*IconButton|\w*ActionButton)$/
