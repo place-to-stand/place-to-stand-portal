@@ -1,4 +1,4 @@
-import { isClientCompany } from '@pts/db/client-state'
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
 import { clientFields } from '@/lib/queries/clients/selectors'
@@ -58,7 +58,9 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
   const rows = await db
     .select(clientFields)
     .from(companies)
-    .where(and(isClientCompany(), eq(companies.id, id)))
+    // Former clients too: the company sheet restarts billing from their
+    // last terms.
+    .where(and(wasClientCompany(), eq(companies.id, id)))
     .limit(1)
 
   const row = rows[0]

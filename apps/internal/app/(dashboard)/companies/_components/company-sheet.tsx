@@ -417,7 +417,10 @@ export function CompanySheet({
                 >
                   <CompanyBillingProvider
                     key={company?.id ?? 'new'}
-                    companyId={isAdmin ? clientCompanyId : null}
+                    companyId={
+                      isAdmin ? (clientCompanyId ?? formerClientId) : null
+                    }
+                    billed={Boolean(clientCompanyId)}
                     wasClient={Boolean(isAdmin && company?.formerClientId)}
                     billingEndsOn={company?.billingEndsOn ?? null}
                     open={open && isAdmin}

@@ -95,7 +95,7 @@ export function CompanyBillingTab({
         : 'Not billed. Switch on and save to make this company a client.'
       : mode === 'former'
         ? billingOn
-          ? 'Saving restarts billing with its previous setup. Its people with Portal on get portal access back.'
+          ? 'Saving restarts billing with these terms, any changes from its first month billed. Its people with Portal on get portal access back.'
           : 'Billing stopped. Switch on and save to restart it.'
         : mode === 'ending' && billingOn
           ? billing.keepBilling
@@ -197,7 +197,7 @@ export function CompanyBillingTab({
           </dl>
         </SheetSection>
       ) : null}
-      {billingOn && mode !== 'former' ? <CompanyBillingFields /> : null}
+      {billingOn ? <CompanyBillingFields /> : null}
     </>
   )
 }

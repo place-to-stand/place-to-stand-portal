@@ -391,7 +391,16 @@ async function planBilling(
       if (intent.fields) {
         const fieldError = await checkFields(intent.fields)
         if (fieldError) return { error: fieldError }
-        const result = await planUpdate(intent.fields)
+        // Restarting after a gap: changed terms start with the restart's
+        // first billed month (cancelling a stop keeps the months chosen).
+        const fields = stopping
+          ? intent.fields
+          : {
+              ...intent.fields,
+              billingEffective: intent.effective,
+              commissionEffective: intent.effective,
+            }
+        const result = await planUpdate(fields)
         if ('error' in result) return result
         update = result.update
       }
