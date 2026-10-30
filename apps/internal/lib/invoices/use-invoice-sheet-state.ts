@@ -428,7 +428,7 @@ export function useInvoiceSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('We could not save this invoice. Please try again.')
+          setFeedback('Unable to save the invoice.')
           toast({
             title: 'Unable to save invoice',
             description:
