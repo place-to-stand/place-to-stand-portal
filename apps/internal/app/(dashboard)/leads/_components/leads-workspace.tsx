@@ -7,9 +7,8 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
-import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { PersonSelector } from '@/components/my-tasks/person-selector'
 import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
-import { useListParams } from '@/hooks/use-list-params'
 import {
   useSheetParams,
   useSheetParamSelection,
@@ -30,14 +29,12 @@ type LeadsWorkspaceProps = {
   senderName?: string
   /** True when the `?lead=` share link points at a lead that no longer exists. */
   leadNotFound?: boolean
-  /** `?assignee=me`: the board shows only the viewer's leads. */
-  onlyMine?: boolean
+  /** A user id (only their leads) or `'all'`. */
+  assigneeFilter?: string
   viewerId: string
   /** `leads.convert`: dropping into Closed Won offers conversion. */
   canConvert?: boolean
 }
-
-const ASSIGNEE_OPTIONS = [{ value: 'me', label: 'My leads' }] as const
 
 export function LeadsWorkspace({
   initialColumns,
@@ -45,7 +42,7 @@ export function LeadsWorkspace({
   canManage,
   senderName,
   leadNotFound = false,
-  onlyMine = false,
+  assigneeFilter = 'all',
   viewerId,
   canConvert = false,
 }: LeadsWorkspaceProps) {
@@ -60,18 +57,31 @@ export function LeadsWorkspace({
   )
   const [convertingLead, setConvertingLead] = useState<LeadRecord | null>(null)
   const [, startRefresh] = useTransition()
-  const { update: updateListParams } = useListParams({
-    basePath: '/leads',
-    resetKeys: [],
-  })
   // The sheet opens any lead on the board, filtered out or not.
   const leadLookup = useMemo(
     () => buildLeadLookup(initialColumns),
     [initialColumns]
   )
   const { visibleColumns, hiddenLeads } = useMemo(
-    () => splitByAssignee(initialColumns, onlyMine ? viewerId : null),
-    [initialColumns, onlyMine, viewerId]
+    () =>
+      splitByAssignee(
+        initialColumns,
+        assigneeFilter === 'all' ? null : assigneeFilter
+      ),
+    [initialColumns, assigneeFilter]
+  )
+  // Lead owners (Admin and Sales), in the picker's user shape.
+  const pickerPeople = useMemo(
+    () =>
+      assignees.map(person => ({
+        id: person.id,
+        full_name: person.name,
+        email: person.email ?? '',
+        avatar_url: person.avatarUrl,
+        disabled_at: person.disabledAt,
+        deleted_at: null,
+      })),
+    [assignees]
   )
   const totalLeads = useMemo(
     () => visibleColumns.reduce((sum, column) => sum + column.leads.length, 0),
@@ -144,12 +154,13 @@ export function LeadsWorkspace({
   const sheetLead = isCreating ? null : (activeLead ?? lastOpenedLead)
   const boardActiveLeadId = isSheetOpen && sheetLead ? sheetLead.id : null
 
-  const assigneeFilter = (
-    <FilterSelect
-      value={onlyMine ? 'me' : undefined}
-      onChange={value => updateListParams({ assignee: value })}
-      placeholder='All leads'
-      options={ASSIGNEE_OPTIONS}
+  // The same person picker as My tasks; it writes `?assignee=`.
+  const assigneePicker = (
+    <PersonSelector
+      admins={pickerPeople}
+      selectedUserId={assigneeFilter}
+      currentUserId={viewerId}
+      allLabel='All leads'
     />
   )
 
@@ -165,11 +176,11 @@ export function LeadsWorkspace({
         <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
           <FilterSheetButton
             className='md:hidden'
-            activeCount={onlyMine ? 1 : 0}
+            activeCount={assigneeFilter === 'all' ? 0 : 1}
           >
-            {assigneeFilter}
+            {assigneePicker}
           </FilterSheetButton>
-          <div className='max-md:hidden md:contents'>{assigneeFilter}</div>
+          <div className='max-md:hidden md:contents'>{assigneePicker}</div>
           <SheetCreateButton
             entity='lead'
             label='Create lead'

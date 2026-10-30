@@ -28,8 +28,15 @@ export default async function LeadsBoardPage({
   const user = await requireCrmUser()
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
-  // `?assignee=me`: only the viewer's leads (the My aging leads "See all").
-  const onlyMine = firstParam(params.assignee) === 'me'
+  // `?assignee=`: a user id, `me` (the My aging leads "See all"), or absent
+  // / `all` for everyone's leads.
+  const assigneeParam = firstParam(params.assignee)
+  const assigneeFilter =
+    assigneeParam === 'me'
+      ? user.id
+      : assigneeParam && UUID_PATTERN.test(assigneeParam)
+        ? assigneeParam
+        : 'all'
 
   // The whole board goes to the client even with `?assignee=me`: it filters
   // what shows, while deep links and drag ranks still see every lead.
@@ -66,7 +73,7 @@ export default async function LeadsBoardPage({
       canManage
       senderName={user.full_name ?? user.email ?? ''}
       leadNotFound={leadNotFound}
-      onlyMine={onlyMine}
+      assigneeFilter={assigneeFilter}
       viewerId={user.id}
       canConvert={roleCan(user.role, 'leads.convert')}
     />
