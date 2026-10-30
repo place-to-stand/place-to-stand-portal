@@ -118,9 +118,8 @@ export function CompaniesTable({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[36%]')}
-            <TableHead className='w-[24%]'>Website</TableHead>
-            <TableHead className='w-[12%] text-center'>Client</TableHead>
+            {sortHead('name', 'Company', 'w-[44%]')}
+            <TableHead className='w-[28%]'>Website</TableHead>
             {sortHead('people', 'People', 'w-[12%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[12%]', 'center')}
             <TableHead className='w-16 text-right'>Actions</TableHead>
@@ -149,6 +148,10 @@ export function CompaniesTable({
                     <span className='truncate font-medium' title={company.name}>
                       {company.name}
                     </span>
+                    {/* Billed now: the badge sits by the name, as in ⌘K. */}
+                    {company.companyId ? (
+                      <ClientBadge className='shrink-0' />
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell
@@ -170,9 +173,6 @@ export function CompaniesTable({
                   ) : (
                     <EmptyValue />
                   )}
-                </TableCell>
-                <TableCell label='Client' className='text-sm md:text-center'>
-                  {company.companyId ? <ClientBadge /> : <EmptyValue />}
                 </TableCell>
                 <TableCell
                   label='People'
