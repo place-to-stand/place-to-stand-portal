@@ -133,7 +133,7 @@ export function ClientBillingFields({
 
   return (
     <>
-      <SheetSection title='Billing'>
+      <SheetSection title='Terms'>
         <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
           <FormField
             control={form.control}
@@ -197,7 +197,7 @@ export function ClientBillingFields({
             name='state'
             render={({ field }) => (
               <FormItem>
-                <FormLabel optional>State</FormLabel>
+                <FormLabel optional>Tax state</FormLabel>
                 <Select
                   value={field.value ?? ''}
                   onValueChange={value => {
