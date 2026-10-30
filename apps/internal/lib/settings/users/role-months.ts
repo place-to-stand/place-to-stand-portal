@@ -5,7 +5,8 @@ export { addMonths, monthLabel } from '@/lib/billing/months'
 /**
  * Which month a role change takes effect from. Role history starts in
  * October 2025 (0113); a change can start any month from then through next
- * month, except one that would rewrite a closed monthly close. Client-safe.
+ * month, except one that would rewrite a closed monthly close (the server
+ * enforces this; the picker offers only the recent months). Client-safe.
  */
 export const ROLE_TERMS_START = '2025-10-01'
 
@@ -49,28 +50,36 @@ export function roleMonthError(
     : null
 }
 
-/** Next month first, then this month, back to October 2025. */
+/**
+ * The months the "Role starts" picker offers: next month, this month, and
+ * the latest earlier month that isn't closed, when a change can still start
+ * then (no closed month between it and now). Older months are left out: the
+ * server still rejects any month that would rewrite a closed close.
+ */
 export function roleMonthOptions(
   currentMonth: string,
   closedMonths: readonly string[]
 ): RoleMonthOption[] {
-  const options: RoleMonthOption[] = []
+  const closed = new Set(closedMonths)
+  const months = [addMonths(currentMonth, 1), currentMonth]
   for (
-    let month = addMonths(currentMonth, 1);
+    let month = addMonths(currentMonth, -1);
     month >= ROLE_TERMS_START;
     month = addMonths(month, -1)
   ) {
-    const suffix =
+    if (closed.has(month)) continue
+    if (!roleMonthError(month, currentMonth, closedMonths)) months.push(month)
+    break
+  }
+  return months.map(month => ({
+    value: month,
+    label: `${monthLabel(month)}${
       month === currentMonth
         ? ' (this month)'
         : month > currentMonth
           ? ' (next month)'
           : ''
-    options.push({
-      value: month,
-      label: `${monthLabel(month)}${suffix}`,
-      disabledReason: roleMonthError(month, currentMonth, closedMonths),
-    })
-  }
-  return options
+    }`,
+    disabledReason: roleMonthError(month, currentMonth, closedMonths),
+  }))
 }
