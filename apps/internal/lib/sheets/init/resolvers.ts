@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { clientNameSql } from '@pts/db/names'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
@@ -65,6 +66,7 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
       ...getTableColumns(clients),
       // Billing type and commission live on the terms; these are the
       // newest terms'.
+      name: clientNameSql,
       billingType: currentBillingTypeSql(),
       originationContactId: currentOriginationContactIdSql(),
       originationUserId: currentOriginationUserIdSql(),

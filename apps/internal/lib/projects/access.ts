@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -158,7 +159,7 @@ export async function findAssigneesWithoutAccess(
     .select({
       id: users.id,
       role: users.role,
-      fullName: users.fullName,
+      fullName: personNameSql,
       email: users.email,
       memberId: projectMembers.id,
       deletedAt: users.deletedAt,

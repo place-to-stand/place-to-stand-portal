@@ -1,3 +1,4 @@
+import { clientNameSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -130,10 +131,12 @@ export async function listCompanies(
         where cl.company_id = companies.id and cl.deleted_at is null
         order by cl.created_at limit 1
       )`,
+      // A client is called by its company's name.
       clientName: sql<string | null>`(
-        select cl.name from clients cl
-        where cl.company_id = companies.id and cl.deleted_at is null
-        order by cl.created_at limit 1
+        select companies.name where exists (
+          select 1 from clients cl
+          where cl.company_id = companies.id and cl.deleted_at is null
+        )
       )`,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
@@ -242,7 +245,7 @@ export async function getCompanyDetail(
         id: leads.id,
         contactName: contacts.name,
         status: leads.status,
-        assigneeName: users.fullName,
+        assigneeName: personNameSql,
         assigneeEmail: users.email,
         updatedAt: leads.updatedAt,
       })
@@ -252,10 +255,10 @@ export async function getCompanyDetail(
       .where(and(eq(leads.companyId, companyId), isNull(leads.deletedAt)))
       .orderBy(desc(leads.updatedAt)),
     db
-      .select({ id: clients.id, name: clients.name, slug: clients.slug })
+      .select({ id: clients.id, name: clientNameSql, slug: clients.slug })
       .from(clients)
       .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
-      .orderBy(asc(clients.name)),
+      .orderBy(asc(clientNameSql)),
   ])
 
   const people = memberRows
@@ -403,7 +406,7 @@ export async function saveCompany(
   // Unlinking only applies to a client linked here now.
   const unlinkIds = (values.unlinkClientIds ?? []).length
     ? await db
-        .select({ id: clients.id, name: clients.name })
+        .select({ id: clients.id, name: clientNameSql })
         .from(clients)
         .where(
           and(
@@ -413,7 +416,16 @@ export async function saveCompany(
           )
         )
     : []
-  // A company has one client (an unlink in the same save frees the slot).
+  // A client is its company's billing record: it can't be unlinked (archive
+  // the client to stop billing).
+  if (unlinkIds.length) {
+    return {
+      ok: false,
+      error:
+        'Billing belongs to its company. Archive the client to stop billing.',
+    }
+  }
+  // A company has one client.
   if (
     clientMoves.length > 1 ||
     (clientMoves.length === 1 &&
@@ -515,40 +527,16 @@ export async function saveCompany(
         .set({ ...next, updatedAt: timestamp })
         .where(eq(companies.id, existing.id))
 
-      // A client is named after its company; follow a rename. Archived
-      // clients keep the name they were archived under.
-      if (renamed) {
-        await tx
-          .update(clients)
-          .set({
-            name: clientDisplayName(next.name),
-            updatedAt: timestamp,
-          })
-          .where(
-            and(eq(clients.companyId, existing.id), isNull(clients.deletedAt))
-          )
-      }
-
       // Unlink first so the one-client index allows the new link. Access is
       // a flag on this company's memberships: switch it off so the next
       // client linked here doesn't silently inherit it.
-      for (const client of unlinkIds) {
-        await tx
-          .update(clients)
-          .set({ companyId: null, updatedAt: timestamp })
-          .where(eq(clients.id, client.id))
-        accessChanges.push(
-          ...(await revokeCompanyPortalAccess(tx, existing.id, client.id))
-        )
-      }
 
-      // A client is named after its company.
+      // A client takes its company's name (read through the company).
       for (const move of clientMoves) {
         await tx
           .update(clients)
           .set({
             companyId: existing.id,
-            name: clientDisplayName(next.name),
             updatedAt: timestamp,
           })
           .where(eq(clients.id, move.clientId))
@@ -715,7 +703,7 @@ async function resolveClientMoves(companyId: string, clientIds: string[]) {
   const rows = await db
     .select({
       clientId: clients.id,
-      name: clients.name,
+      name: clientNameSql,
       fromCompanyId: clients.companyId,
     })
     .from(clients)
@@ -728,7 +716,7 @@ export async function listClientLinkOptions(): Promise<ClientLinkOption[]> {
   const rows = await db
     .select({
       id: clients.id,
-      name: clients.name,
+      name: clientNameSql,
       companyId: clients.companyId,
       companyName: companies.name,
     })
@@ -736,7 +724,7 @@ export async function listClientLinkOptions(): Promise<ClientLinkOption[]> {
     .leftJoin(companies, eq(companies.id, clients.companyId))
     // Only clients not linked to a company: a company has one client.
     .where(and(isNull(clients.deletedAt), isNull(clients.companyId)))
-    .orderBy(asc(sql`lower(${clients.name})`))
+    .orderBy(asc(sql`lower(${clientNameSql})`))
   return rows
 }
 

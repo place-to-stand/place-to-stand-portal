@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
@@ -92,7 +93,7 @@ const hourBlockSelection = {
 
 const clientSelection = {
   id: clients.id,
-  name: clients.name,
+  name: clientNameSql,
   deletedAt: clients.deletedAt,
 } as const
 
@@ -172,7 +173,7 @@ export async function listHourBlocksForSettings(
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clientNameSql} ILIKE ${pattern})`
     )
   }
 
@@ -282,7 +283,7 @@ export async function listHourBlocksForSettings(
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
         .where(statusCondition),
-      db.select(clientSelection).from(clients).orderBy(asc(clients.name)),
+      db.select(clientSelection).from(clients).orderBy(asc(clientNameSql)),
     ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
@@ -362,7 +363,7 @@ export async function listHourBlockClientDirectory(
   const rows = await db
     .select(clientSelection)
     .from(clients)
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 
   return rows.map(mapClientRow)
 }

@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import type { User } from '@supabase/supabase-js'
@@ -22,7 +23,7 @@ export async function ensureUserProfile(
     .select({
       id: usersTable.id,
       email: usersTable.email,
-      fullName: usersTable.fullName,
+      fullName: personNameSql,
       avatarUrl: usersTable.avatarUrl,
     })
     .from(usersTable)
@@ -32,8 +33,6 @@ export async function ensureUserProfile(
   const existing = existingRows[0]
 
   const nextEmail = user.email ?? ''
-  const metadataFullName =
-    (user.user_metadata?.full_name as string | undefined)?.trim() || null
   const metadataAvatar = user.user_metadata?.avatar_url as string | undefined
 
   // Accounts are provisioned by an admin — createPortalUser and
@@ -56,7 +55,6 @@ export async function ensureUserProfile(
   // avatar outright. The avatar column holds a bucket object path, not a URL,
   // so a provider CDN URL is rejected here rather than 404ing later in
   // /api/storage/user-avatar/[userId].
-  const seedFullName = !existing.fullName && metadataFullName ? metadataFullName : null
   const seedAvatar =
     !existing.avatarUrl && isUserAvatarPath(metadataAvatar, user.id)
       ? metadataAvatar
@@ -64,7 +62,6 @@ export async function ensureUserProfile(
 
   const shouldUpdate =
     existing.email !== nextEmail ||
-    seedFullName !== null ||
     seedAvatar !== null
 
   if (!shouldUpdate) {
@@ -76,7 +73,6 @@ export async function ensureUserProfile(
     .set({
       email: nextEmail,
       deletedAt: null,
-      ...(seedFullName ? { fullName: seedFullName } : {}),
       ...(seedAvatar ? { avatarUrl: seedAvatar } : {}),
     })
     .where(eq(usersTable.id, user.id))

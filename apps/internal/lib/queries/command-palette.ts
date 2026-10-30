@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
@@ -55,7 +56,7 @@ export async function searchCommandPalette(
 
   const clientCondition = and(
     isNull(clients.deletedAt),
-    sql`${clients.name} ILIKE ${pattern}`
+    sql`${clientNameSql} ILIKE ${pattern}`
   )
 
   // R3: PERSONAL projects visible only to their creator.
@@ -70,7 +71,7 @@ export async function searchCommandPalette(
     or(
       sql`${projects.name} ILIKE ${pattern}`,
       sql`${projects.slug} ILIKE ${pattern}`,
-      sql`${clients.name} ILIKE ${pattern}`
+      sql`${clientNameSql} ILIKE ${pattern}`
     )
   )
 
@@ -86,10 +87,10 @@ export async function searchCommandPalette(
 
   const [clientRows, projectRows, contactRows] = await Promise.all([
     db
-      .select({ id: clients.id, name: clients.name, slug: clients.slug })
+      .select({ id: clients.id, name: clientNameSql, slug: clients.slug })
       .from(clients)
       .where(clientCondition)
-      .orderBy(asc(clients.name))
+      .orderBy(asc(clientNameSql))
       .limit(RESULT_LIMIT),
     db
       .select({
@@ -97,13 +98,13 @@ export async function searchCommandPalette(
         name: projects.name,
         slug: projects.slug,
         type: projects.type,
-        clientName: clients.name,
+        clientName: clientNameSql,
         clientSlug: clients.slug,
       })
       .from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(projectCondition)
-      .orderBy(asc(clients.name), asc(projects.name))
+      .orderBy(asc(clientNameSql), asc(projects.name))
       .limit(RESULT_LIMIT),
     db
       .select({ id: contacts.id, name: contacts.name, email: contacts.email })

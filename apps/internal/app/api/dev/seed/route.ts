@@ -115,7 +115,6 @@ async function upsertClient(input: {
     .insert(clients)
     .values({
       slug: input.slug,
-      name: input.name,
       createdBy: input.createdBy,
       companyId,
     })

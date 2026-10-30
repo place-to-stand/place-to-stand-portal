@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -50,7 +51,7 @@ export const fetchClientInvoices = cache(
         invoiceNumber: invoices.invoiceNumber,
         status: invoices.status,
         clientId: invoices.clientId,
-        clientName: clients.name,
+        clientName: clientNameSql,
         issuedDate: invoices.issuedDate,
         total: invoices.total,
         paidAt: invoices.paidAt,
@@ -162,7 +163,7 @@ export const fetchClientInvoiceForPdf = cache(
         invoice: invoices,
         client: {
           id: clients.id,
-          name: clients.name,
+          name: clientNameSql,
           slug: clients.slug,
           deletedAt: clients.deletedAt,
         },

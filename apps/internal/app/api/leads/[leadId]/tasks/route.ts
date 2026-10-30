@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 
 import { inArray } from 'drizzle-orm'
@@ -44,7 +45,7 @@ export async function GET(
       ? await db
           .select({
             id: users.id,
-            fullName: users.fullName,
+            fullName: personNameSql,
             email: users.email,
             avatarUrl: users.avatarUrl,
           })

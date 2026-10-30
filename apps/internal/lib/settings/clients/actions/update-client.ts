@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import { eq } from 'drizzle-orm'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -161,7 +162,7 @@ export async function updateClient(
     const rows = await db
       .select({
         id: clients.id,
-        name: clients.name,
+        name: clientNameSql,
         slug: clients.slug,
         billingType: currentBillingTypeSql(),
         notes: clients.notes,
@@ -258,11 +259,11 @@ export async function updateClient(
       await tx
         .update(clients)
         .set({
-          name,
           slug: slugToUpdate,
           state,
           notes,
-          ...(companyId !== undefined ? { companyId } : {}),
+          // A client always has a company (it is that company's billing).
+          ...(companyId ? { companyId } : {}),
         })
         .where(eq(clients.id, id))
 

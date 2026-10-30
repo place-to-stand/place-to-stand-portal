@@ -1,5 +1,6 @@
 'use server'
 
+import { clientNameSql } from '@pts/db/names'
 import { asc, isNull } from 'drizzle-orm'
 
 import { requireRole } from '@/lib/auth/session'
@@ -18,10 +19,10 @@ export async function fetchClientOptions(): Promise<ClientOption[]> {
   return db
     .select({
       id: clients.id,
-      name: clients.name,
+      name: clientNameSql,
       slug: clients.slug,
     })
     .from(clients)
     .where(isNull(clients.deletedAt))
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 }

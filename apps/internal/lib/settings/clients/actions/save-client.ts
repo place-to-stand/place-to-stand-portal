@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import { and, eq, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
@@ -54,7 +55,7 @@ export async function saveClientMutation(
       return buildMutationResult({ error: 'That company no longer exists.' })
     }
     const [taken] = await db
-      .select({ id: clients.id, name: clients.name })
+      .select({ id: clients.id, name: clientNameSql })
       .from(clients)
       .where(
         and(

@@ -1,3 +1,4 @@
+import { clientNameSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -181,14 +182,14 @@ export async function fetchTimeLogPage(
         userId: timeLogs.userId,
         userName: sql<
           string | null
-        >`coalesce(${users.fullName}, ${users.email})`,
+        >`coalesce(${personNameSql}, ${users.email})`,
         userAvatarUrl: users.avatarUrl,
         projectId: projects.id,
         projectName: projects.name,
         projectSlug: projects.slug,
         projectType: projects.type,
         clientId: clients.id,
-        clientName: clients.name,
+        clientName: clientNameSql,
         clientSlug: clients.slug,
       })
       .from(timeLogs)
@@ -500,10 +501,10 @@ function timeLogSortOrder(sort: ParsedSort<TimeLogSortField> | undefined) {
     case 'hours':
       return [dir(timeLogs.hours)]
     case 'person':
-      return [dir(sql`lower(coalesce(${users.fullName}, ${users.email}))`)]
+      return [dir(sql`lower(coalesce(${personNameSql}, ${users.email}))`)]
     case 'client':
       // Logs without a client (internal/personal projects) sort last.
-      return [sql`${clients.name} is null`, dir(sql`lower(${clients.name})`)]
+      return [sql`${clientNameSql} is null`, dir(sql`lower(${clientNameSql})`)]
     case 'project':
       return [dir(sql`lower(${projects.name})`)]
   }

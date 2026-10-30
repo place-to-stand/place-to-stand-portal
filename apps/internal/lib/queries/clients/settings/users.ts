@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNull } from 'drizzle-orm'
@@ -10,11 +11,11 @@ export async function listClientUsers() {
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
     })
     .from(users)
     .where(and(eq(users.role, 'CLIENT'), isNull(users.deletedAt)))
-    .orderBy(asc(users.fullName), asc(users.email))
+    .orderBy(asc(personNameSql), asc(users.email))
 
   return rows.map(row => ({
     id: row.id,

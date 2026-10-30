@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, inArray, isNull } from 'drizzle-orm'
@@ -23,7 +24,7 @@ export async function fetchUsersByEmail(
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
       avatarUrl: users.avatarUrl,
       updatedAt: users.updatedAt,
     })

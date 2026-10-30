@@ -764,6 +764,13 @@
       "when": 1793323586748,
       "tag": "0108_drop_duplicated_data",
       "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1793327002124,
+      "tag": "0109_one_company_one_person",
+      "breakpoints": true
     }
   ]
 }

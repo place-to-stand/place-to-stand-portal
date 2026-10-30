@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -53,7 +54,7 @@ export const fetchClientProjects = cache(
           and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
         ),
       db
-        .select({ id: clients.id, name: clients.name })
+        .select({ id: clients.id, name: clientNameSql })
         .from(clients)
         .where(inArray(clients.id, clientIds)),
     ])

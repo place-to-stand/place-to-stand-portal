@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import { and, inArray, isNull } from 'drizzle-orm'
 
 import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
@@ -57,7 +58,7 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
   const rows = await db
     .select({
       id: users.id,
-      full_name: users.fullName,
+      full_name: personNameSql,
       avatar_url: users.avatarUrl,
     })
     .from(users)

@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { asc, eq } from 'drizzle-orm'
@@ -18,11 +19,11 @@ export async function fetchClientDirectory(): Promise<
   return db
     .select({
       id: clients.id,
-      name: clients.name,
+      name: clientNameSql,
       deletedAt: clients.deletedAt,
     })
     .from(clients)
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 }
 
 /**

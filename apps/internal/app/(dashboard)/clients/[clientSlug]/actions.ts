@@ -1,5 +1,6 @@
 'use server'
 
+import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -44,7 +45,7 @@ export async function updateClientNotes(
 
   try {
     const [existing] = await db
-      .select({ name: clients.name, notes: clients.notes })
+      .select({ name: clientNameSql, notes: clients.notes })
       .from(clients)
       .where(eq(clients.id, clientId))
       .limit(1)

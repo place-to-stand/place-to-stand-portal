@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
@@ -24,7 +25,7 @@ export async function buildMembersByClient(
       clientId: clientPortalAccess.clientId,
       userId: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
     })
     .from(clientPortalAccess)
     .innerJoin(users, eq(users.id, clientPortalAccess.userId))

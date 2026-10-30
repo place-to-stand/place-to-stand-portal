@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { eq } from 'drizzle-orm'
@@ -89,7 +90,7 @@ export async function getTaskSummaryForUser(
       },
       client: {
         id: clients.id,
-        name: clients.name,
+        name: clientNameSql,
         slug: clients.slug,
       },
     })

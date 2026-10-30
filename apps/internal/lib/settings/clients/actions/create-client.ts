@@ -95,9 +95,11 @@ export async function createClient(
     )
     companyId = company?.id ?? null
   }
-  if (companyId) {
-    await fillCompanyWebsiteIfBlank(user, companyId, website)
+  // A client is a company's billing record, so it always has one.
+  if (!companyId) {
+    return buildMutationResult({ error: 'Unable to find or create the company.' })
   }
+  await fillCompanyWebsiteIfBlank(user, companyId, website)
 
   // A company has one client.
   if (companyId) {
@@ -129,7 +131,6 @@ export async function createClient(
         const inserted = await tx
           .insert(clients)
           .values({
-            name,
             slug: slugCandidate,
             state,
             notes,

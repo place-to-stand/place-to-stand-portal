@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { and, eq, isNull } from 'drizzle-orm'
@@ -76,7 +77,7 @@ export default async function ClientDetailPage({
     ? db
         .select({
           id: users.id,
-          fullName: users.fullName,
+          fullName: personNameSql,
           email: users.email,
           avatarUrl: users.avatarUrl,
         })

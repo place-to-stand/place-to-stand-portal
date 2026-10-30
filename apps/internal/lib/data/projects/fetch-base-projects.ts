@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import { and, asc, eq, ilike, inArray, isNull, or } from 'drizzle-orm'
 
 import type { ProjectStatusValue } from '@/lib/constants'
@@ -59,7 +60,7 @@ export async function fetchBaseProjects(
     const searchCondition = or(
       ilike(projects.name, pattern),
       ilike(projects.slug, pattern),
-      ilike(clients.name, pattern)
+      ilike(clientNameSql, pattern)
     )
     if (searchCondition) {
       conditions.push(searchCondition)

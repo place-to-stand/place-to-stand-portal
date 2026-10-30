@@ -1,5 +1,6 @@
 'use server'
 
+import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
 
 import type { PostgresError } from 'postgres'
@@ -62,7 +63,7 @@ export async function destroyInvoice(
       }
 
       const clientRows = await db
-        .select({ name: clients.name })
+        .select({ name: clientNameSql })
         .from(clients)
         .where(
           and(eq(clients.id, existing.clientId), isNull(clients.deletedAt)),

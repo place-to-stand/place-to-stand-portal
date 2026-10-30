@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, count, desc, eq, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
@@ -123,7 +124,7 @@ export async function fetchNotificationFeed(
         href: notifications.href,
         readAt: notifications.readAt,
         createdAt: notifications.createdAt,
-        actorName: sql<string | null>`coalesce(${users.fullName}, ${users.email})`,
+        actorName: sql<string | null>`coalesce(${personNameSql}, ${users.email})`,
       })
       .from(notifications)
       .leftJoin(users, eq(users.id, notifications.actorId))

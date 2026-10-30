@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -160,7 +161,7 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
   const rows = await db
     .select({
       id: users.id,
-      fullName: users.fullName,
+      fullName: personNameSql,
       email: users.email,
       disabledAt: users.disabledAt,
     })
@@ -168,7 +169,7 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
     .where(
       and(inArray(users.role, ['ADMIN', 'SALES']), isNull(users.deletedAt))
     )
-    .orderBy(asc(users.fullName), asc(users.email))
+    .orderBy(asc(personNameSql), asc(users.email))
 
   return rows.map(row => ({
     id: row.id,

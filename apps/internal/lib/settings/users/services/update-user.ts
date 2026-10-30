@@ -1,3 +1,4 @@
+import { renamePersonForUser } from './person'
 import { eq } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
@@ -51,15 +52,18 @@ export async function updatePortalUser(
   const nextAvatarPath = avatarResolution.nextAvatarPath
 
   try {
-    await db
-      .update(users)
-      .set({
-        fullName: input.fullName,
-        role: input.role,
-        deletedAt: null,
-        avatarUrl: nextAvatarPath,
-      })
-      .where(eq(users.id, input.id))
+    await db.transaction(async tx => {
+      await tx
+        .update(users)
+        .set({
+          role: input.role,
+          deletedAt: null,
+          avatarUrl: nextAvatarPath,
+        })
+        .where(eq(users.id, input.id))
+      // The name is the person's (their contact's).
+      await renamePersonForUser(tx, input.id, input.fullName)
+    })
   } catch (error) {
     console.error('Failed to update user profile', error)
     return {

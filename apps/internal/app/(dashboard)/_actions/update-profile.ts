@@ -1,5 +1,6 @@
 'use server';
 
+import { renamePersonForUser } from '@/lib/settings/users/services/person';
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -88,13 +89,14 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
   const nextAvatarPath = avatarResolution.nextAvatarPath;
 
   try {
-    await db
-      .update(usersTable)
-      .set({
-        fullName,
-        avatarUrl: nextAvatarPath,
-      })
-      .where(eq(usersTable.id, user.id));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(usersTable)
+        .set({ avatarUrl: nextAvatarPath })
+        .where(eq(usersTable.id, user.id));
+      // Your name is your person's (contact's) name.
+      await renamePersonForUser(tx, user.id, fullName);
+    });
   } catch (error) {
     console.error('Failed to update profile row', error);
     return { error: 'Unable to persist profile changes.' };

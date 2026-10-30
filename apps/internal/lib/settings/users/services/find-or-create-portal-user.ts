@@ -60,11 +60,16 @@ export async function findOrCreatePortalUser(
   }
 
   // 2. Try creating through the normal flow (handles auth + DB + invite)
-  const createResult = await createPortalUser(actor, {
-    email: input.email,
-    fullName: input.fullName ?? input.email,
-    role: 'CLIENT',
-  })
+  // The caller (promoting a contact) links its own contact to the sign-in.
+  const createResult = await createPortalUser(
+    actor,
+    {
+      email: input.email,
+      fullName: input.fullName ?? input.email,
+      role: 'CLIENT',
+    },
+    { linkPerson: false }
+  )
 
   if (!createResult.error) {
     return { ...createResult, created: true }
@@ -123,7 +128,6 @@ export async function findOrCreatePortalUser(
     await db.insert(users).values({
       id: authUserId,
       email: input.email,
-      fullName: input.fullName ?? input.email,
       role: 'CLIENT',
     })
     created = true

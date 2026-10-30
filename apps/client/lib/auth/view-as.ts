@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -79,11 +80,11 @@ export const resolvePortalScope = cache(
 
     // The view only lists live clients and live contacts.
     const accessible = await db
-      .select({ id: clients.id, name: clients.name })
+      .select({ id: clients.id, name: clientNameSql })
       .from(clientPortalAccess)
       .innerJoin(clients, eq(clients.id, clientPortalAccess.clientId))
       .where(eq(clientPortalAccess.userId, user.id))
-      .orderBy(asc(clients.name))
+      .orderBy(asc(clientNameSql))
 
     return {
       clientIds: accessible.map(m => m.id),
@@ -136,7 +137,7 @@ async function resolveAdminScope(): Promise<PortalScope> {
   // (fail closed); rows with a null client mean a valid contact with nothing
   // linked yet, which is still a valid preview.
   const rows = await db
-    .select({ clientId: clients.id, clientName: clients.name })
+    .select({ clientId: clients.id, clientName: clientNameSql })
     .from(contacts)
     .leftJoin(clientPortalAccess, eq(clientPortalAccess.contactId, contacts.id))
     .leftJoin(
@@ -147,7 +148,7 @@ async function resolveAdminScope(): Promise<PortalScope> {
       )
     )
     .where(and(eq(contacts.id, selectedContactId), isNull(contacts.deletedAt)))
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 
   if (rows.length === 0) {
     return EMPTY_ADMIN_SCOPE

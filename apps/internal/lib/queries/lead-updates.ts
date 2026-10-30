@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, desc, eq, isNull } from 'drizzle-orm'
@@ -29,7 +30,7 @@ export async function listLeadUpdates(
       body: leadUpdates.body,
       occurredAt: leadUpdates.occurredAt,
       authorId: leadUpdates.authorId,
-      authorName: users.fullName,
+      authorName: personNameSql,
       authorEmail: users.email,
       authorAvatarUrl: users.avatarUrl,
       createdAt: leadUpdates.createdAt,

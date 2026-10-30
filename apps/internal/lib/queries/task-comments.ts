@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
@@ -100,7 +101,7 @@ async function getCommentSelectionById(commentId: string): Promise<CommentSelect
       deletedAt: taskComments.deletedAt,
       author: {
         id: users.id,
-        fullName: users.fullName,
+        fullName: personNameSql,
         email: users.email,
         avatarUrl: users.avatarUrl,
       },
@@ -228,7 +229,7 @@ export async function listTaskComments(
       deletedAt: taskComments.deletedAt,
       author: {
         id: users.id,
-        fullName: users.fullName,
+        fullName: personNameSql,
         email: users.email,
         avatarUrl: users.avatarUrl,
       },

@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateText } from 'ai'
@@ -625,7 +626,7 @@ async function buildActivityContext(
       ? db
           .select({
             id: clients.id,
-            name: clients.name,
+            name: clientNameSql,
           })
           .from(clients)
           .where(

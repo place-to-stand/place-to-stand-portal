@@ -1,3 +1,4 @@
+import { clientNameSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
@@ -107,12 +108,12 @@ export async function listProjectsForSettings(
       project: projectSelection,
       client: {
         id: clients.id,
-        name: clients.name,
+        name: clientNameSql,
         deletedAt: clients.deletedAt,
       },
       owner: {
         id: users.id,
-        fullName: users.fullName,
+        fullName: personNameSql,
         email: users.email,
       },
     })
@@ -170,11 +171,11 @@ export async function listProjectsForSettings(
     db
       .select({
         id: clients.id,
-        name: clients.name,
+        name: clientNameSql,
         deletedAt: clients.deletedAt,
       })
       .from(clients)
-      .orderBy(asc(clients.name)),
+      .orderBy(asc(clientNameSql)),
   ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)

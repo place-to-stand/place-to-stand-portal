@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
@@ -42,14 +43,14 @@ export async function listProjectMemberCandidates(): Promise<
   const rows = await db
     .select({
       id: users.id,
-      fullName: users.fullName,
+      fullName: personNameSql,
       email: users.email,
       avatarUrl: users.avatarUrl,
       disabledAt: users.disabledAt,
     })
     .from(users)
     .where(and(inArray(users.role, [...MEMBER_ROLES]), isNull(users.deletedAt)))
-    .orderBy(asc(users.fullName), asc(users.email))
+    .orderBy(asc(personNameSql), asc(users.email))
 
   return rows.map(row => ({
     id: row.id,

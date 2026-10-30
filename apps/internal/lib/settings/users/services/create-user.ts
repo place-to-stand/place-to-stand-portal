@@ -1,3 +1,4 @@
+import { ensurePersonForUser } from './person'
 import { headers } from 'next/headers'
 import { eq } from 'drizzle-orm'
 
@@ -20,7 +21,13 @@ import type { UserServiceResult } from '../types'
 
 export async function createPortalUser(
   actor: AppUser,
-  input: CreateUserInput
+  input: CreateUserInput,
+  /**
+   * A sign-in belongs to a person. The Users page creates or finds that
+   * person here, in the same transaction; promoting a contact links its own
+   * contact instead (`linkPerson: false`).
+   */
+  options: { linkPerson?: boolean } = {}
 ): Promise<UserServiceResult> {
   assertAdmin(actor)
 
@@ -60,12 +67,21 @@ export async function createPortalUser(
   }
 
   try {
-    await db.insert(users).values({
-      id: userId,
-      email: input.email,
-      fullName: input.fullName,
-      role: input.role,
-      avatarUrl: normalizedAvatarPath,
+    await db.transaction(async tx => {
+      await tx.insert(users).values({
+        id: userId,
+        email: input.email,
+        role: input.role,
+        avatarUrl: normalizedAvatarPath,
+      })
+      if (options.linkPerson !== false) {
+        await ensurePersonForUser(tx, {
+          userId,
+          email: input.email,
+          fullName: input.fullName,
+          role: input.role,
+        })
+      }
     })
   } catch (error) {
     console.error('Failed to insert user profile', error)

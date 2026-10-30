@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { inArray } from 'drizzle-orm'
@@ -42,7 +43,7 @@ export async function logContactClientLinkChanges(
         .from(contacts)
         .where(inArray(contacts.id, contactIds)),
       db
-        .select({ id: clients.id, name: clients.name })
+        .select({ id: clients.id, name: clientNameSql })
         .from(clients)
         .where(inArray(clients.id, clientIds)),
     ])

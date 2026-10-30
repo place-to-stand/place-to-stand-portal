@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -123,7 +124,7 @@ async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
       role: users.role,
       avatarUrl: users.avatarUrl,
       createdAt: users.createdAt,
@@ -151,7 +152,7 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
       role: users.role,
       avatarUrl: users.avatarUrl,
       createdAt: users.createdAt,

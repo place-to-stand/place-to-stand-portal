@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNull } from 'drizzle-orm'
@@ -45,7 +46,7 @@ export async function fetchLeadConversionSummary(
     db
       .select({
         id: clients.id,
-        name: clients.name,
+        name: clientNameSql,
         slug: clients.slug,
         deletedAt: clients.deletedAt,
       })

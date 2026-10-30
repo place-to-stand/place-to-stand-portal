@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import crypto from 'node:crypto'
@@ -31,7 +32,7 @@ export async function fetchSendableInvoice(
       id: invoices.id,
       status: invoices.status,
       clientId: invoices.clientId,
-      clientName: clients.name,
+      clientName: clientNameSql,
       invoiceNumber: invoices.invoiceNumber,
       total: invoices.total,
       issuedDate: invoices.issuedDate,

@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -61,7 +62,7 @@ export async function softDeleteClientMutation(
         const rows = await db
           .select({
             id: clients.id,
-            name: clients.name,
+            name: clientNameSql,
             companyId: clients.companyId,
           })
           .from(clients)

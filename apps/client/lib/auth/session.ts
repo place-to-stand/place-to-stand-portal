@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -45,7 +46,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       .select({
         id: users.id,
         email: users.email,
-        fullName: users.fullName,
+        fullName: personNameSql,
         role: users.role,
         avatarUrl: users.avatarUrl,
         createdAt: users.createdAt,

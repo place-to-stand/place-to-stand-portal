@@ -1,3 +1,4 @@
+import { clientNameSql, personNameSql } from '@pts/db/names'
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -61,7 +62,7 @@ export async function loadClientRows(
   return db
     .select({
       id: clientsTable.id,
-      name: clientsTable.name,
+      name: clientNameSql,
       slug: clientsTable.slug,
       notes: clientsTable.notes,
       state: clientsTable.state,
@@ -96,7 +97,7 @@ export async function loadMemberRows(
       user: {
         id: usersTable.id,
         email: usersTable.email,
-        fullName: usersTable.fullName,
+        fullName: personNameSql,
         role: usersTable.role,
         avatarUrl: usersTable.avatarUrl,
         createdAt: usersTable.createdAt,

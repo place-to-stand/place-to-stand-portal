@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 import { isNull } from 'drizzle-orm'
 
@@ -9,10 +10,10 @@ export async function GET() {
   await requireUser()
 
   const rows = await db
-    .select({ id: clients.id, name: clients.name })
+    .select({ id: clients.id, name: clientNameSql })
     .from(clients)
     .where(isNull(clients.deletedAt))
-    .orderBy(clients.name)
+    .orderBy(clientNameSql)
 
   return NextResponse.json(rows)
 }

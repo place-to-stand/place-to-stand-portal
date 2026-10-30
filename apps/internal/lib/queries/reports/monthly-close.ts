@@ -1,3 +1,4 @@
+import { clientNameSql, personNameOf, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -121,7 +122,7 @@ export async function fetchEmployeePayroll(
   const rows = await db
     .select({
       userId: users.id,
-      fullName: users.fullName,
+      fullName: personNameSql,
       email: users.email,
       avatarUrl: users.avatarUrl,
       updatedAt: users.updatedAt,
@@ -143,7 +144,7 @@ export async function fetchEmployeePayroll(
     )
     .groupBy(
       users.id,
-      users.fullName,
+      personNameSql,
       users.email,
       users.avatarUrl,
       users.updatedAt
@@ -215,12 +216,12 @@ export async function fetchOriginationCommissions(
       db
         .select({
           originatorId: users.id,
-          originatorName: users.fullName,
+          originatorName: personNameSql,
           originatorEmail: users.email,
           originatorAvatarUrl: users.avatarUrl,
           originatorUpdatedAt: users.updatedAt,
           clientId: clients.id,
-          clientName: clients.name,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
         })
         .from(hourBlocks)
@@ -238,12 +239,12 @@ export async function fetchOriginationCommissions(
         )
         .groupBy(
           users.id,
-          users.fullName,
+          personNameSql,
           users.email,
           users.avatarUrl,
           users.updatedAt,
           clients.id,
-          clients.name
+          clientNameSql
         ),
 
       // 2. Prepaid + external contact referrer (from hour_blocks)
@@ -253,7 +254,7 @@ export async function fetchOriginationCommissions(
           originatorName: contacts.name,
           originatorEmail: contacts.email,
           clientId: clients.id,
-          clientName: clients.name,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
         })
         .from(hourBlocks)
@@ -274,19 +275,19 @@ export async function fetchOriginationCommissions(
           contacts.name,
           contacts.email,
           clients.id,
-          clients.name
+          clientNameSql
         ),
 
       // 3. Net_30 + internal user originator (from time_logs on client projects)
       db
         .select({
           originatorId: users.id,
-          originatorName: users.fullName,
+          originatorName: personNameSql,
           originatorEmail: users.email,
           originatorAvatarUrl: users.avatarUrl,
           originatorUpdatedAt: users.updatedAt,
           clientId: clients.id,
-          clientName: clients.name,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${timeLogs.hours})`,
         })
         .from(timeLogs)
@@ -307,12 +308,12 @@ export async function fetchOriginationCommissions(
         )
         .groupBy(
           users.id,
-          users.fullName,
+          personNameSql,
           users.email,
           users.avatarUrl,
           users.updatedAt,
           clients.id,
-          clients.name
+          clientNameSql
         ),
 
       // 4. Net_30 + external contact referrer (from time_logs on client projects)
@@ -322,7 +323,7 @@ export async function fetchOriginationCommissions(
           originatorName: contacts.name,
           originatorEmail: contacts.email,
           clientId: clients.id,
-          clientName: clients.name,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${timeLogs.hours})`,
         })
         .from(timeLogs)
@@ -346,7 +347,7 @@ export async function fetchOriginationCommissions(
           contacts.name,
           contacts.email,
           clients.id,
-          clients.name
+          clientNameSql
         ),
     ])
 
@@ -436,28 +437,28 @@ export async function fetchCloserCommissions(
     closerUserId: clientCommissionTermClosers.closerUserId,
     closerContactId: clientCommissionTermClosers.closerContactId,
     sharePercent: clientCommissionTermClosers.sharePercent,
-    userName: closerUsers.fullName,
+    userName: personNameOf('closer_users'),
     userEmail: closerUsers.email,
     userAvatarUrl: closerUsers.avatarUrl,
     userUpdatedAt: closerUsers.updatedAt,
     contactName: closerContacts.name,
     contactEmail: closerContacts.email,
     clientId: clients.id,
-    clientName: clients.name,
+    clientName: clientNameSql,
   }
   const closerGroupBy = [
     clientCommissionTermClosers.id,
     clientCommissionTermClosers.closerUserId,
     clientCommissionTermClosers.closerContactId,
     clientCommissionTermClosers.sharePercent,
-    closerUsers.fullName,
+    personNameOf('closer_users'),
     closerUsers.email,
     closerUsers.avatarUrl,
     closerUsers.updatedAt,
     closerContacts.name,
     closerContacts.email,
     clients.id,
-    clients.name,
+    clientNameSql,
   ] as const
   const termClosersJoin = and(
     eq(clientCommissionTermClosers.termId, commissionTermIdAsOfSql(startDate)),
@@ -575,7 +576,7 @@ export async function fetchPrepaidBilling(
   const rows = await db
     .select({
       clientId: clients.id,
-      clientName: clients.name,
+      clientName: clientNameSql,
       totalHours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
     })
     .from(hourBlocks)
@@ -589,7 +590,7 @@ export async function fetchPrepaidBilling(
         lte(hourBlocks.billingMonth, endDate)
       )
     )
-    .groupBy(clients.id, clients.name)
+    .groupBy(clients.id, clientNameSql)
 
   return rows as PrepaidBillingQueryRow[]
 }
@@ -622,7 +623,7 @@ export async function fetchSalesTaxCollected(
       invoiceId: invoices.id,
       invoiceNumber: invoices.invoiceNumber,
       clientId: clients.id,
-      clientName: clients.name,
+      clientName: clientNameSql,
       paidOn: sql<string>`${paidOn}::text`,
       subtotal: invoices.subtotal,
       taxRate: invoices.taxRate,
@@ -657,7 +658,7 @@ export async function fetchNet30Billing(
   const rows = await db
     .select({
       clientId: clients.id,
-      clientName: clients.name,
+      clientName: clientNameSql,
       totalHours: sql<string | null>`SUM(${timeLogs.hours})`,
     })
     .from(timeLogs)
@@ -677,7 +678,7 @@ export async function fetchNet30Billing(
         lte(timeLogs.loggedOn, endDate)
       )
     )
-    .groupBy(clients.id, clients.name)
+    .groupBy(clients.id, clientNameSql)
 
   return rows as Net30QueryRow[]
 }

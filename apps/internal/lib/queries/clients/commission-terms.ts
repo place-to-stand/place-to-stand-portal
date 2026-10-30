@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
@@ -175,7 +176,7 @@ export async function fetchLatestClosersByClient(
       closerUserId: clientCommissionTermClosers.closerUserId,
       closerContactId: clientCommissionTermClosers.closerContactId,
       sharePercent: clientCommissionTermClosers.sharePercent,
-      userName: users.fullName,
+      userName: personNameSql,
       userEmail: users.email,
       userAvatarUrl: users.avatarUrl,
       userUpdatedAt: users.updatedAt,
@@ -238,7 +239,7 @@ export async function resolveClosers(
       ? db
           .select({
             id: users.id,
-            name: users.fullName,
+            name: personNameSql,
             email: users.email,
             avatarUrl: users.avatarUrl,
             updatedAt: users.updatedAt,

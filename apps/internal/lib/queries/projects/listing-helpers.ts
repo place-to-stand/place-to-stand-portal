@@ -1,3 +1,4 @@
+import { clientNameSql, personNameSql } from '@pts/db/names'
 import { clients, projects, users } from '@/lib/db/schema'
 import type { ProjectStatusValue } from '@/lib/constants'
 import type { ProjectTypeValue } from '@/lib/types'
@@ -68,10 +69,10 @@ export const projectGroupByColumns = [
   projects.updatedAt,
   projects.deletedAt,
   clients.id,
-  clients.name,
+  clientNameSql,
   clients.deletedAt,
   users.id,
-  users.fullName,
+  personNameSql,
   users.email,
 ] as const
 

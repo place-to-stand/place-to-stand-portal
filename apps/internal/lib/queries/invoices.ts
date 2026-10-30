@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -91,7 +92,7 @@ const lineItemSelection = {
 
 const clientSelection = {
   id: clients.id,
-  name: clients.name,
+  name: clientNameSql,
   slug: clients.slug,
   billingType: currentBillingTypeSql(),
   state: clients.state,
@@ -211,8 +212,8 @@ const INVOICE_SORT_ORDERINGS: Record<
   // (no client) sink to the bottom either way, and a client's own invoices
   // stay newest-first so the grouping reads like the default view.
   client: {
-    asc: sql`LOWER(${clients.name}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
-    desc: sql`LOWER(${clients.name}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
+    asc: sql`LOWER(${clientNameSql}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`LOWER(${clientNameSql}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
   },
 }
 
@@ -246,7 +247,7 @@ export async function listInvoices(
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clientNameSql} ILIKE ${pattern})`
     )
   }
 
@@ -293,7 +294,7 @@ export async function listInvoices(
     db
       .select(clientSelection)
       .from(clients)
-      .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
+      .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
     listProductCatalogItems(),
     listTaxRates(),
   ])
@@ -378,7 +379,7 @@ export async function listInvoiceReferenceData(
     db
       .select(clientSelection)
       .from(clients)
-      .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
+      .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
     listProductCatalogItems(),
     listTaxRates(),
   ])

@@ -1,3 +1,4 @@
+import { clientNameSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, eq, gt, gte, isNull, lte, or, sql } from 'drizzle-orm'
@@ -37,7 +38,7 @@ export async function getActiveSnapshot(
       report: monthlyCloseSnapshots.report,
       closedAt: monthlyCloseSnapshots.closedAt,
       closedBy: monthlyCloseSnapshots.closedBy,
-      closedByName: users.fullName,
+      closedByName: personNameSql,
     })
     .from(monthlyCloseSnapshots)
     .leftJoin(users, eq(monthlyCloseSnapshots.closedBy, users.id))
@@ -155,7 +156,7 @@ export async function fetchLateRecords(
     db
       .select({
         id: timeLogs.id,
-        clientName: clients.name,
+        clientName: clientNameSql,
         hours: timeLogs.hours,
         eventDate: timeLogs.loggedOn,
         createdAt: timeLogs.createdAt,
@@ -179,7 +180,7 @@ export async function fetchLateRecords(
     db
       .select({
         id: hourBlocks.id,
-        clientName: clients.name,
+        clientName: clientNameSql,
         hours: hourBlocks.hoursPurchased,
         eventDate: hourBlocks.billingMonth,
         createdAt: hourBlocks.createdAt,

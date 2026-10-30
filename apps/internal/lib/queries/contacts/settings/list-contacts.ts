@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
@@ -114,7 +115,7 @@ async function fetchClientDetails(
     .select({
       contactId: clientPortalAccess.contactId,
       clientId: clients.id,
-      clientName: clients.name,
+      clientName: clientNameSql,
       clientSlug: clients.slug,
     })
     .from(clientPortalAccess)
@@ -125,7 +126,7 @@ async function fetchClientDetails(
         sql`${clients.deletedAt} IS NULL`
       )
     )
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 
   const result = new Map<string, LinkedClient[]>()
   for (const row of rows) {

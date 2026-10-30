@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -45,7 +46,7 @@ export function buildSearchCondition(search: string | null | undefined): SQL | n
   }
 
   const pattern = createSearchPattern(trimmed)
-  return sql`(${clients.name} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
+  return sql`(${clientNameSql} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
 }
 
 /** Per-sort order expressions for the archive list (PRD 004 §03, R5). */
@@ -59,8 +60,8 @@ export const CLIENT_SORT_DESCRIPTORS: Record<
   ClientSortDescriptor
 > = {
   name: {
-    orderAsc: sql`${clients.name} ASC`,
-    orderDesc: sql`${clients.name} DESC`,
+    orderAsc: sql`${clientNameSql} ASC`,
+    orderDesc: sql`${clientNameSql} DESC`,
   },
   created: {
     orderAsc: sql`${clients.createdAt} ASC`,

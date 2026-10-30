@@ -1,5 +1,6 @@
 'use server'
 
+import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
 import { and, eq, isNull } from 'drizzle-orm'
 
@@ -59,7 +60,7 @@ async function performArchiveInvoice(
   }
 
   const clientRows = await db
-    .select({ name: clients.name })
+    .select({ name: clientNameSql })
     .from(clients)
     .where(and(eq(clients.id, existing.clientId), isNull(clients.deletedAt)))
     .limit(1)

@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
@@ -31,7 +32,7 @@ export async function createHourBlocksFromInvoice(
       billingType: invoices.billingType,
       invoiceNumber: invoices.invoiceNumber,
       createdBy: invoices.createdBy,
-      clientName: clients.name,
+      clientName: clientNameSql,
     })
     .from(invoices)
     .leftJoin(clients, eq(invoices.clientId, clients.id))

@@ -166,8 +166,10 @@ export const users = pgTable(
   'users',
   {
     id: uuid().primaryKey().notNull(),
+    /** The sign-in email (the auth provider's); the person's own email is on their contact. */
     email: text().notNull(),
-    fullName: text('full_name'),
+    // A user is a person's sign-in. Their name is their contact's (0109
+    // dropped users.full_name): read it with personNameSql (@pts/db/names).
     role: userRole().default('CLIENT').notNull(),
     avatarUrl: text('avatar_url'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -192,7 +194,8 @@ export const clients = pgTable(
   'clients',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    name: text().notNull(),
+    // A client is a company's billing record. Its name is its company's
+    // (0109 dropped clients.name): read it with clientNameSql (@pts/db/names).
     slug: text(),
     notes: text(),
     // Billing type lives only on `client_billing_terms` (0108 dropped the
@@ -206,7 +209,7 @@ export const clients = pgTable(
      * The organization this client is (every client has one). FK
      * `clients_company_id_fkey` (added in 0096) is declared below.
      */
-    companyId: uuid('company_id'),
+    companyId: uuid('company_id').notNull(),
     /**
      * Optional short label telling apart two billing setups for one company
      * ("Retainer"). The client's name is its company's name plus this.
@@ -232,17 +235,6 @@ export const clients = pgTable(
     index('idx_clients_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
-    // Client pickers and metrics listings all order by name.
-    index('idx_clients_name').using(
-      'btree',
-      table.name.asc().nullsLast().op('text_ops')
-    ),
-    // Clients landing/settings and the command palette search with
-    // ILIKE '%…%' over name and slug.
-    index('idx_clients_name_trgm').using(
-      'gin',
-      table.name.op('gin_trgm_ops')
-    ),
     index('idx_clients_slug_trgm').using(
       'gin',
       table.slug.op('gin_trgm_ops')

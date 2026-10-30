@@ -1,5 +1,6 @@
 'use server'
 
+import { clientNameSql } from '@pts/db/names'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { revalidatePath } from 'next/cache'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
@@ -51,7 +52,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const clientRows = await db
     .select({
       id: clients.id,
-      name: clients.name,
+      name: clientNameSql,
       billingType: currentBillingTypeSql(),
     })
     .from(clients)

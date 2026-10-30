@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -13,7 +14,7 @@ export const fetchAdminUsers = cache(async (): Promise<DbUser[]> => {
     .select({
       id: usersTable.id,
       email: usersTable.email,
-      fullName: usersTable.fullName,
+      fullName: personNameSql,
       role: usersTable.role,
       avatarUrl: usersTable.avatarUrl,
       createdAt: usersTable.createdAt,
@@ -23,7 +24,7 @@ export const fetchAdminUsers = cache(async (): Promise<DbUser[]> => {
     })
     .from(usersTable)
     .where(and(eq(usersTable.role, 'ADMIN'), isNull(usersTable.deletedAt)))
-    .orderBy(asc(usersTable.fullName), asc(usersTable.email))
+    .orderBy(asc(personNameSql), asc(usersTable.email))
 
   return rows.map(row => ({
     id: row.id,
@@ -47,7 +48,7 @@ export const fetchCrmUsers = cache(async (): Promise<DbUser[]> => {
     .select({
       id: usersTable.id,
       email: usersTable.email,
-      fullName: usersTable.fullName,
+      fullName: personNameSql,
       role: usersTable.role,
       avatarUrl: usersTable.avatarUrl,
       createdAt: usersTable.createdAt,
@@ -62,7 +63,7 @@ export const fetchCrmUsers = cache(async (): Promise<DbUser[]> => {
         isNull(usersTable.deletedAt)
       )
     )
-    .orderBy(asc(usersTable.fullName), asc(usersTable.email))
+    .orderBy(asc(personNameSql), asc(usersTable.email))
 
   return rows.map(row => ({
     id: row.id,

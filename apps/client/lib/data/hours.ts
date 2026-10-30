@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -48,7 +49,7 @@ export const fetchClientHoursSummaries = cache(
       db
         .select({
           id: clients.id,
-          name: clients.name,
+          name: clientNameSql,
           // The newest billing term (the one place billing type is stored).
           billingType: sql<'prepaid' | 'net_30'>`coalesce((
             select bt.billing_type from client_billing_terms bt

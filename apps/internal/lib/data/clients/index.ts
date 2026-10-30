@@ -1,3 +1,4 @@
+import { clientNameSql, personNameOf } from '@pts/db/names'
 import 'server-only'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -108,7 +109,7 @@ export const fetchClientsWithMetrics = cache(
     if (trimmedSearch) {
       const pattern = createSearchPattern(trimmedSearch)
       baseConditions.push(
-        sql`(${clients.name} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
+        sql`(${clientNameSql} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
       )
     }
 
@@ -129,7 +130,7 @@ export const fetchClientsWithMetrics = cache(
     const rows = await db
       .select({
         id: clients.id,
-        name: clients.name,
+        name: clientNameSql,
         slug: clients.slug,
         notes: clients.notes,
         website: clientWebsiteSql,
@@ -138,7 +139,7 @@ export const fetchClientsWithMetrics = cache(
         originationContactId: currentOriginationContactIdSql(),
         originationContactName: contacts.name,
         originationUserId: currentOriginationUserIdSql(),
-        originationUserName: originationUsers.fullName,
+        originationUserName: personNameOf('origination_users'),
         originationUserEmail: originationUsers.email,
         originationUserAvatarUrl: originationUsers.avatarUrl,
         originationUserUpdatedAt: originationUsers.updatedAt,
@@ -157,7 +158,7 @@ export const fetchClientsWithMetrics = cache(
         eq(currentOriginationUserIdSql(), originationUsers.id)
       )
       .where(and(...baseConditions))
-      .orderBy(asc(clients.name))
+      .orderBy(asc(clientNameSql))
 
     if (rows.length === 0) {
       return []
@@ -268,7 +269,7 @@ export const fetchClientCycleDirectory = cache(
       .select({ id: clients.id, slug: clients.slug })
       .from(clients)
       .where(isNull(clients.deletedAt))
-      .orderBy(asc(clients.name))
+      .orderBy(asc(clientNameSql))
   }
 )
 
@@ -317,7 +318,7 @@ export const fetchClientById = cache(
     const rows = await db
       .select({
         id: clients.id,
-        name: clients.name,
+        name: clientNameSql,
         slug: clients.slug,
         notes: clients.notes,
         website: clientWebsiteSql,

@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -150,7 +151,7 @@ export async function listContactMemberships(
       isPrimary: memberships.isPrimary,
       portalAccess: memberships.portalAccess,
       clientId: clients.id,
-      clientName: clients.name,
+      clientName: clientNameSql,
       startedAt: memberships.startedAt,
       archived: sql<boolean>`not ${activeCompanySql('companies')}`,
       hasPortalAccess: sql<boolean>`exists (

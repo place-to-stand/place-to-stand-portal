@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { asc, eq, and, sql } from 'drizzle-orm'
@@ -49,12 +50,12 @@ export async function listAllActiveClients(
   const rows = await db
     .select({
       id: clients.id,
-      name: clients.name,
+      name: clientNameSql,
       slug: clients.slug,
     })
     .from(clients)
     .where(sql`${clients.deletedAt} IS NULL`)
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 
   return rows.map(row => ({
     id: row.id,
@@ -75,7 +76,7 @@ export async function listContactClients(
   const rows = await db
     .select({
       id: clients.id,
-      name: clients.name,
+      name: clientNameSql,
       slug: clients.slug,
     })
     .from(clientPortalAccess)
@@ -86,7 +87,7 @@ export async function listContactClients(
         sql`${clients.deletedAt} IS NULL`
       )
     )
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 
   return rows.map(row => ({
     id: row.id,
