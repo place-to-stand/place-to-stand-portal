@@ -20,7 +20,8 @@ export const contactSchema = z.object({
   linkedinUrl: linkedinUrlSchema.optional(),
   /**
    * Every company the person belongs to (the sheet's Companies list), with
-   * their title at each. Portal access is set on the client, not here. When present it is the full set:
+   * their title at each, and (admins only) portal access to each one that
+   * is a client. When present it is the full set:
    * missing companies are left (history kept), new ones joined. Omitted
    * keeps their companies as they are.
    */
@@ -41,6 +42,11 @@ export const contactSchema = z.object({
                 ? value.trim()
                 : null
           ),
+        /**
+         * Portal access to this company (a client). Omitted leaves it as it
+         * is; only someone who can manage clients may send it.
+         */
+        portalAccess: z.boolean().optional(),
       })
     )
     .max(50)

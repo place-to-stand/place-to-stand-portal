@@ -15,6 +15,11 @@ import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
+import {
+  PortalAccessControl,
+  type PortalAccessPerson,
+} from '@/components/clients/portal-access-control'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sheet-state'
 
@@ -24,21 +29,34 @@ type ContactCompaniesSectionProps = {
   /** Companies failed to load: show that instead of an empty list. */
   loadFailed?: boolean
   onChange: (companies: ContactCompanyEntry[]) => void
+  /**
+   * Portal switches on client rows (people who manage clients only); null
+   * hides them.
+   */
+  portal?: {
+    person: PortalAccessPerson
+    /** The Sign-in fields give them a sign-in in this Save. */
+    signInStaged: boolean
+    /** Portal access as loaded, by company id. */
+    savedAccess: Record<string, boolean>
+    disabled: boolean
+  } | null
 }
 
 /**
  * The companies a person belongs to: title at each and the primary-contact
- * star (set on the company sheet, read-only here). Portal access shows here
- * (to people who manage clients) but is set in one place, the company's
- * People tab. All staged until
- * Save, like the rest of the sheet.
- * The first one is their main company in lists.
+ * star (set on the company sheet, read-only here). People who manage
+ * clients get a Portal switch on each client row, the same control as the
+ * company's People tab: turning it on for someone with no sign-in gives
+ * them a Client sign-in on Save. All staged until Save, like the rest of
+ * the sheet. The first one is their main company in lists.
  */
 export function ContactCompaniesSection({
   companies,
   disabled: disabledProp,
   loadFailed = false,
   onChange,
+  portal = null,
 }: ContactCompaniesSectionProps) {
   // A failed load must not look like "no companies": block edits until reopened.
   const disabled = disabledProp || loadFailed
@@ -52,6 +70,24 @@ export function ContactCompaniesSection({
       companies.map(entry =>
         entry.companyId === companyId ? { ...entry, ...patch } : entry
       )
+    )
+
+  // A client row, or a former client's (its switch shows as it is: access
+  // returns with billing, and it can only go off).
+  const showsPortal = (entry: ContactCompanyEntry) =>
+    portal !== null &&
+    ((Boolean(entry.clientCompanyId) && !entry.archived) ||
+      Boolean(entry.formerClient))
+  const invited =
+    portal !== null &&
+    !portal.person.hasSignIn &&
+    !portal.signInStaged &&
+    companies.some(
+      entry =>
+        showsPortal(entry) &&
+        !entry.formerClient &&
+        entry.portalAccess &&
+        !portal.savedAccess[entry.companyId]
     )
 
   return (
@@ -119,7 +155,9 @@ export function ContactCompaniesSection({
                   ) : null
                 }
                 note={
-                  entry.archived ? (
+                  entry.formerClient && portal ? (
+                    'Portal access returns if billing restarts.'
+                  ) : entry.archived ? (
                     'Archived'
                   ) : entry.isPrimary ||
                     (canManageAccess &&
@@ -142,6 +180,30 @@ export function ContactCompaniesSection({
                 }
                 actions={
                   <>
+                    {portal && showsPortal(entry) ? (
+                      <PortalAccessControl
+                        person={{
+                          ...portal.person,
+                          hasSignIn: portal.signInStaged
+                            ? null
+                            : portal.person.hasSignIn,
+                        }}
+                        hasAccess={entry.portalAccess}
+                        disabled={
+                          disabled ||
+                          portal.disabled ||
+                          (Boolean(entry.formerClient) && !entry.portalAccess)
+                        }
+                        disabledReason={
+                          disabled || portal.disabled
+                            ? PENDING_REASON
+                            : 'Bill this company before giving its people portal access.'
+                        }
+                        onChange={on =>
+                          update(entry.companyId, { portalAccess: on })
+                        }
+                      />
+                    ) : null}
                     <MembershipTitleInput
                       value={entry.title}
                       onChange={title => update(entry.companyId, { title })}
@@ -175,6 +237,11 @@ export function ContactCompaniesSection({
           })}
         </SheetRecordList>
       )}
+      {invited ? (
+        <p className='text-muted-foreground text-xs'>
+          Saving emails a portal invite to {portal!.person.name}.
+        </p>
+      ) : null}
     </SheetSection>
   )
 }

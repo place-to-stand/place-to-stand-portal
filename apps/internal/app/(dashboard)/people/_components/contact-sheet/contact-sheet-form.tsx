@@ -103,6 +103,16 @@ export function ContactSheetForm({
   // The sign-in uses the email as typed: it changes with the same Save.
   const typedEmail =
     (useWatch({ control: form.control, name: 'email' }) ?? '').trim()
+  const typedName =
+    (useWatch({ control: form.control, name: 'name' }) ?? '').trim()
+  const stagedSignIn = useWatch({ control: form.control, name: 'signIn' })
+  // Portal access as loaded, by company: Save emails an invite only to
+  // someone switched on here.
+  const savedPortalAccess = Object.fromEntries(
+    (form.formState.defaultValues?.companies ?? []).flatMap(entry =>
+      entry?.companyId ? [[entry.companyId, Boolean(entry.portalAccess)]] : []
+    )
+  ) as Record<string, boolean>
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -302,6 +312,27 @@ export function ContactSheetForm({
                 disabled={locked}
                 loadFailed={companiesLoadFailed}
                 onChange={next => field.onChange(next)}
+                portal={
+                  canManageSignIn
+                    ? {
+                        person: {
+                          id: contactId ?? 'new',
+                          name: typedName || personName || 'this person',
+                          email: typedEmail || null,
+                          hasSignIn: Boolean(portalUserId),
+                          signInDisabled: Boolean(
+                            portalUserId &&
+                              (signInAccount?.disabledAt ||
+                                signInAccount?.deletedAt)
+                          ),
+                        },
+                        signInStaged:
+                          !portalUserId && Boolean(stagedSignIn?.enabled),
+                        savedAccess: savedPortalAccess,
+                        disabled: locked,
+                      }
+                    : null
+                }
               />
             )}
           />

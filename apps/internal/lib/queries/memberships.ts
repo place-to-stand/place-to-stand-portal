@@ -15,7 +15,11 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import { roleCan, type Role } from '@/lib/auth/capabilities'
 import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, memberships } from '@/lib/db/schema'
-import { activeCompanySql, isClientCompany } from '@pts/db/client-state'
+import {
+  activeCompanySql,
+  isClientCompany,
+  isFormerClientSql,
+} from '@pts/db/client-state'
 
 /**
  * Memberships: a person at a company, with their title there, whether they
@@ -133,6 +137,8 @@ export type ContactMembership = {
   /** The company's live client, if it has one. */
   clientCompanyId: string | null
   clientName: string | null
+  /** Billed before but not now: its portal access returns if billing restarts. */
+  formerClient: boolean
   startedAt: string
   /** The company is archived, or its client is (history; hidden in active views). */
   archived: boolean
@@ -166,6 +172,7 @@ export async function listContactMemberships(
       clientName: sql<
         string | null
       >`case when ${isClientCompany()} then ${companies.name} end`,
+      formerClient: isFormerClientSql,
       startedAt: memberships.startedAt,
       archived: sql<boolean>`not ${activeCompanySql('companies')}`,
       hasPortalAccess: sql<boolean>`exists (
@@ -199,6 +206,7 @@ export async function listContactMemberships(
       portalAccess: row.portalAccess,
       clientCompanyId: row.clientCompanyId ?? null,
       clientName: row.clientName ?? null,
+      formerClient: Boolean(row.formerClient),
       startedAt: row.startedAt,
       archived: row.archived,
       hasPortalAccess: row.hasPortalAccess,

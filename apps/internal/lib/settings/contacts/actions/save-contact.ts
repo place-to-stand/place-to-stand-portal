@@ -189,6 +189,14 @@ export async function prepareContactSave(
 
   const { email, name, phone } = parsed.data
   const canManageAccess = roleCan(user.role, 'clients.manage')
+  // Portal access is for people who manage clients: a save from anyone
+  // else that names it is refused, never applied.
+  if (
+    !canManageAccess &&
+    parsed.data.companies?.some(entry => entry.portalAccess !== undefined)
+  ) {
+    return { error: 'Only an admin can change portal access.' }
+  }
 
   // The one-company shorthand (CLI, MCP, create-from-picker).
   let shorthandCompanyId: string | null = null
@@ -297,8 +305,8 @@ export async function prepareContactSave(
   // The staff company's people are admin-only (staff sign in through it).
   const staffError = await staffCompanyError(user, plan)
   if (staffError) return { error: staffError }
-  // Portal access is set only in the company's People tab. Leaving a
-  // company whose client they can see ends it, so that's admin-only.
+  // Leaving a company whose client they can see ends their portal access,
+  // so that's admin-only (portal access needs a sign-in, which is too).
   if (
     !canManageAccess &&
     plan.leave.some(companyId => currentById.get(companyId)?.portalAccess)

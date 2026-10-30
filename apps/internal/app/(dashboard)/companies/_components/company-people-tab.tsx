@@ -2,7 +2,7 @@
 
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 
-import { PortalAccessControl } from './billing/client-contact-picker'
+import { PortalAccessControl } from '@/components/clients/portal-access-control'
 import { useCompanyBilling } from './company-billing-section'
 import { CompanyPeopleSection } from './company-people-section'
 
