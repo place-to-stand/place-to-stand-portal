@@ -114,7 +114,7 @@ export function ComponentsSheets() {
 
       <Specimen
         label='Widths'
-        note='SheetContent columns={1} (600px) or columns={2} (1184px from lg): the layout sets the width; nothing else'
+        note='SheetContent columns={1} (672px: fits the full rich text toolbar) or columns={2} (1184px from lg): the layout sets the width; nothing else'
       >
         {SIZES.map(size => (
           <SizeSheet key={size} size={size} />
