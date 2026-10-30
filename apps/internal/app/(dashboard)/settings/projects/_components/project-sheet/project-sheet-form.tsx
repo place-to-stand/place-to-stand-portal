@@ -457,7 +457,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                           <SelectTrigger>
                             <SelectValue placeholder='Select status'>
                               {selectedLabel && selectedToken ? (
-                                <Badge className={cn('text-xs', selectedToken)}>
+                                <Badge className={cn(selectedToken)}>
                                   {selectedLabel}
                                 </Badge>
                               ) : null}
@@ -472,7 +472,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                           )
                           return (
                             <SelectItem key={status.value} value={status.value}>
-                              <Badge className={cn('text-xs', statusToken)}>
+                              <Badge className={cn(statusToken)}>
                                 {status.label}
                               </Badge>
                             </SelectItem>

@@ -82,10 +82,7 @@ function SingleFilterSelect({
         {options.map(option => (
           <SelectItem key={option.value} value={option.value}>
             {option.badgeClassName ? (
-              <Badge
-                variant='outline'
-                className={cn('text-xs', option.badgeClassName)}
-              >
+              <Badge variant='outline' className={cn(option.badgeClassName)}>
                 {option.label}
               </Badge>
             ) : (
@@ -137,7 +134,7 @@ function MultiFilterSelect({
                   <Badge
                     key={option.value}
                     variant='outline'
-                    className={cn('font-normal', option.badgeClassName)}
+                    className={cn(option.badgeClassName)}
                   >
                     {option.label}
                   </Badge>
@@ -163,7 +160,7 @@ function MultiFilterSelect({
                 {option.badgeClassName ? (
                   <Badge
                     variant='outline'
-                    className={cn('font-normal', option.badgeClassName)}
+                    className={cn(option.badgeClassName)}
                   >
                     {option.label}
                   </Badge>

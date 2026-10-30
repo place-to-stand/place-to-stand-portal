@@ -100,7 +100,7 @@ export function ClientUpdatesSection({
                 </span>
                 <Badge
                   variant={update.status === 'SENT' ? 'default' : 'outline'}
-                  className='shrink-0 text-[10px]'
+                  className='shrink-0'
                 >
                   {update.status === 'SENT' ? 'Sent' : 'Draft'}
                 </Badge>

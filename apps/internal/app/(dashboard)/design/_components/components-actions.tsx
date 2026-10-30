@@ -197,7 +197,7 @@ export function ComponentsBadges() {
     <DesignSection
       id='badges'
       title='Badges'
-      when='A badge marks a state, never an action. Status badges are an outline Badge with a BADGE_TINTS hue, mapped once per domain in a constants file; never write a tint inline.'
+      when='One badge, two looks. Status (a state that changes) is a soft tinted fill: an outline Badge with a BADGE_TINTS hue, mapped once per domain. Label (what something is: Client, a role) is an outline with no fill; an entity state carries its icon. Every badge is the same size and weight, in sentence case; lint fails on uppercase, tracking, weight or size overrides.'
     >
       <Specimen label='Variants' note='@pts/ui/badge'>
         <Badge>Default</Badge>
@@ -221,30 +221,28 @@ export function ComponentsBadges() {
         label='Domain badges'
         className='grid grid-cols-1 gap-6 md:grid-cols-2'
       >
-        <Example caption='ClientBadge: the client state of a company'>
+        <Example caption='Label: ClientBadge, the client state of a company (entity icon)'>
           <ClientBadge />
         </Example>
-        <Example caption='Sign-in role (ROLE_LABELS), on the person sheet'>
+        <Example caption='Label: sign-in role (ROLE_LABELS), no icon'>
           {ROLES.map(role => (
-            <Badge key={role} variant='outline' className='text-xs font-normal'>
+            <Badge key={role} variant='outline'>
               {ROLE_LABELS[role]}
             </Badge>
           ))}
-          <Badge variant='outline' className='text-xs font-normal'>
-            {ROLE_LABELS.SALES} · off
-          </Badge>
+          <Badge variant='outline'>{ROLE_LABELS.SALES} · off</Badge>
         </Example>
-        <Example caption='LeadStatusBadge'>
+        <Example caption='Status: LeadStatusBadge'>
           {LEAD_STATUS_VALUES.map(status => (
             <LeadStatusBadge key={status} status={status} />
           ))}
         </Example>
-        <Example caption='Project status · ProjectStatusCell (click to change)'>
+        <Example caption='Status: project · ProjectStatusCell (click to change)'>
           {PROJECT_STATUS_OPTIONS.map(option => (
             <Badge
               key={option.value}
               variant='outline'
-              className={cn('text-xs', getProjectStatusToken(option.value))}
+              className={cn(getProjectStatusToken(option.value))}
             >
               {getProjectStatusLabel(option.value)}
             </Badge>
@@ -256,18 +254,18 @@ export function ComponentsBadges() {
             onStatusChange={async (_id, next) => setProjectStatus(next)}
           />
         </Example>
-        <Example caption='Task status'>
+        <Example caption='Status: task'>
           {TASK_STATUSES.map(status => (
             <Badge
               key={status}
               variant='outline'
-              className={cn('text-xs', getTaskStatusToken(status))}
+              className={cn(getTaskStatusToken(status))}
             >
               {getTaskStatusLabel(status)}
             </Badge>
           ))}
         </Example>
-        <Example caption='InvoiceStatusBadge'>
+        <Example caption='Status: InvoiceStatusBadge'>
           {INVOICE_STATUSES.map(status => (
             <InvoiceStatusBadge key={status} status={status} />
           ))}

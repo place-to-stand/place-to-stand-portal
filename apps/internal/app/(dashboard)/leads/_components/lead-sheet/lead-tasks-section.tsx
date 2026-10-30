@@ -125,9 +125,7 @@ export function LeadTasksSection({
           <ENTITY_ICONS.task className='text-muted-foreground h-4 w-4' />
           <span className='text-sm font-medium'>Tasks</span>
           {tasks.length > 0 && (
-            <Badge variant='secondary' className='text-xs'>
-              {tasks.length}
-            </Badge>
+            <Badge variant='secondary'>{tasks.length}</Badge>
           )}
         </div>
         {canManage && (

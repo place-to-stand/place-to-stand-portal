@@ -150,10 +150,7 @@ export function ClientBillingFields({
                           <SelectValue placeholder='Select billing type'>
                             <Badge
                               variant='outline'
-                              className={cn(
-                                'text-xs',
-                                selectedBillingType.badgeClassName
-                              )}
+                              className={cn(selectedBillingType.badgeClassName)}
                             >
                               {selectedBillingType.label}
                             </Badge>
@@ -166,7 +163,7 @@ export function ClientBillingFields({
                         <SelectItem key={option.value} value={option.value}>
                           <Badge
                             variant='outline'
-                            className={cn('text-xs', option.badgeClassName)}
+                            className={cn(option.badgeClassName)}
                           >
                             {option.label}
                           </Badge>
@@ -312,7 +309,6 @@ export function ClientBillingFields({
           />
         ) : null}
       </SheetSection>
-
     </>
   )
 }

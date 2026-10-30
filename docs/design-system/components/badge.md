@@ -1,10 +1,15 @@
 # Badge
 
-A small pill of status or category text: `rounded-full border px-2 py-0.5 text-xs font-medium`. From `@pts/ui/badge`.
+A small pill of status or label text. From `@pts/ui/badge`: one size for every badge in both apps, `rounded-full border px-2 py-0.5 text-xs font-medium`, sentence case.
 
-**Consumer provides:** one or two words; optional 12px icon (`[&>svg]:size-3`, `gap-1`).
+**Two looks, and only two:**
+- **Status** (a state that changes: lead stage, project and task status, invoice state, billing type, deployment state): `variant='outline'` plus a soft tinted fill from `BADGE_TINTS` (`@pts/ui/badge-tints`) or the domain's status token (`getLeadStatusToken`, `getProjectStatusToken`, `getTaskStatusToken`, `invoiceStatusTint`). Use the domain components where they exist: `LeadStatusBadge`, `InvoiceStatusBadge`, `ProjectStatusCell`.
+- **Label** (what something is: Client, a sign-in role such as Admin, Sales, Client): `variant='outline'` with no fill. An entity state carries its entity icon and border (`ClientBadge`: the briefcase, `ENTITY_ACCENTS.client.cardStatic`). Roles carry no icon: a sign-in is part of the person and has no icon of its own.
 
-**Variants:** `default` (primary fill), `secondary` (quiet, the common status chip), `destructive` (white on `destructive`, 60% in dark), `outline` (border only, `text-foreground`). Rendered as a link (`asChild` with `<a>`), hover darkens the fill.
+`secondary` is a quiet neutral chip (a count, "Default"); `destructive` is for a failure state.
 
-**Do:** keep text sentence case ("On deck", "In progress"); let the word carry the meaning.
-**Don't:** use a badge as a button, invent new colored variants, or rely on color alone for status.
+**Rules (checked by `scripts/check-badges.mjs` in `npm run lint`):** never change a badge's case (`uppercase`), letter spacing, weight, text size, height, vertical padding or radius. Colour and layout (`gap`, margins, `shrink-0`) are fine. Text is sentence case ("New opportunities", "Closed won"); an acronym stays as written.
+
+**Consumer provides:** one to three words; optional 12px icon (`[&>svg]:size-3`, `gap-1`).
+
+**Don't:** use a badge as a button, invent new coloured variants, or rely on colour alone for status. Count bubbles on the sidebar and the notifications bell are counters, not badges.

@@ -108,9 +108,7 @@ function ProjectDetailsWidget({
         {project.slug && <DetailRow label='Slug' value={project.slug} mono />}
         <div className='flex items-center gap-3 px-4 py-2.5'>
           <span className='text-muted-foreground text-sm'>Status</span>
-          <Badge className={cn('ml-auto text-[10px]', statusToken)}>
-            {statusLabel}
-          </Badge>
+          <Badge className={cn('ml-auto', statusToken)}>{statusLabel}</Badge>
         </div>
         {project.client?.name && (
           <div className='flex items-center gap-3 px-4 py-2.5'>
@@ -129,7 +127,7 @@ function ProjectDetailsWidget({
                 </span>
               )}
               {project.client.billing_type && (
-                <Badge variant='outline' className='text-[10px] font-medium'>
+                <Badge variant='outline' className='font-medium'>
                   {project.client.billing_type === 'net_30'
                     ? 'Net 30'
                     : 'Prepaid'}

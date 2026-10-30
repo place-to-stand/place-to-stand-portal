@@ -140,10 +140,7 @@ function EntityPreview({ entity }: { entity: AccentEntity }) {
         {entity === 'client' ? (
           <ClientBadge />
         ) : (
-          <Badge
-            variant='outline'
-            className={cn('gap-1 text-xs font-normal', accent.cardStatic)}
-          >
+          <Badge variant='outline' className={cn('gap-1', accent.cardStatic)}>
             <Icon className={cn('size-3', accent.icon)} />
             {label}
           </Badge>

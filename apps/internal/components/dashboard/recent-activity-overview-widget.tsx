@@ -70,12 +70,7 @@ export function RecentActivityOverviewWidget({
           </div>
           <footer className='text-muted-foreground flex flex-wrap items-center justify-between gap-2 border-t px-4 py-2 text-xs'>
             <div className='flex flex-wrap items-center gap-2'>
-              <Badge
-                variant='outline'
-                className='text-[10px] font-semibold tracking-wide uppercase'
-              >
-                {statusLabel}
-              </Badge>
+              <Badge variant='outline'>{statusLabel}</Badge>
               {metaLabel ? <span>{metaLabel}</span> : null}
             </div>
             {modelLabel ? (

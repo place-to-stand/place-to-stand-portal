@@ -260,7 +260,7 @@ function CapabilityRow({
           })}
           <div className='hidden flex-wrap gap-1 sm:flex'>
             {definition.surfaces.map(surface => (
-              <Badge key={surface} variant='outline' className='text-xs'>
+              <Badge key={surface} variant='outline'>
                 {SURFACE_LABELS[surface]}
               </Badge>
             ))}

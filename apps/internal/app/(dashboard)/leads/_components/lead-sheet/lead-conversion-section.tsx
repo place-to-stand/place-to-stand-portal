@@ -153,11 +153,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
           name={client.name}
           href={client.archived ? null : clientHref}
           trailing={
-            client.archived ? (
-              <Badge variant='outline' className='text-xs'>
-                Archived
-              </Badge>
-            ) : null
+            client.archived ? <Badge variant='outline'>Archived</Badge> : null
           }
         />
         {contact && (
@@ -178,7 +174,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
             trailing={
               <Badge
                 variant='outline'
-                className={cn('text-xs', getProjectStatusToken(project.status))}
+                className={cn(getProjectStatusToken(project.status))}
               >
                 {getProjectStatusLabel(project.status)}
               </Badge>

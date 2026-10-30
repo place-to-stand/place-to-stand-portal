@@ -102,13 +102,7 @@ export function KanbanColumn({
     >
       <div className='flex items-center justify-between gap-2'>
         <div className='flex items-center gap-3'>
-          <Badge
-            variant='outline'
-            className={cn(
-              'text-xs font-semibold tracking-wide uppercase',
-              statusToken
-            )}
-          >
+          <Badge variant='outline' className={cn(statusToken)}>
             {displayLabel}
           </Badge>
           <span className='text-muted-foreground text-[10px]'>

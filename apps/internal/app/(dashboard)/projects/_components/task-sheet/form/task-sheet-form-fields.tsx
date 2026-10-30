@@ -218,10 +218,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                           {selectedStatus && (
                             <Badge
                               variant='outline'
-                              className={cn(
-                                'text-xs font-semibold tracking-wide uppercase',
-                                selectedStatus.token
-                              )}
+                              className={cn(selectedStatus.token)}
                             >
                               {selectedStatus.label}
                             </Badge>
@@ -233,13 +230,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                   <SelectContent>
                     {taskStatuses.map(status => (
                       <SelectItem key={status.value} value={status.value}>
-                        <Badge
-                          variant='outline'
-                          className={cn(
-                            'text-xs font-semibold tracking-wide uppercase',
-                            status.token
-                          )}
-                        >
+                        <Badge variant='outline' className={cn(status.token)}>
                           {status.label}
                         </Badge>
                       </SelectItem>

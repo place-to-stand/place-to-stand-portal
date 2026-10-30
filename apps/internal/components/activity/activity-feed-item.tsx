@@ -87,10 +87,7 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
           </span>
           <span className='text-foreground/90 min-w-0'>{summary}</span>
           {sourceBadge ? (
-            <Badge
-              variant='outline'
-              className={cn('h-5 px-1.5 text-[10px]', sourceBadge.className)}
-            >
+            <Badge variant='outline' className={cn(sourceBadge.className)}>
               {sourceLabel}
             </Badge>
           ) : null}

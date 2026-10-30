@@ -278,7 +278,7 @@ export function ContactsTableSection({
                 {seesAccess ? (
                   <TableCell label='Sign-in' className='text-sm md:text-center'>
                     {contact.signInRole ? (
-                      <Badge variant='outline' className='text-xs font-normal'>
+                      <Badge variant='outline'>
                         {ROLE_LABELS[contact.signInRole]}
                       </Badge>
                     ) : (

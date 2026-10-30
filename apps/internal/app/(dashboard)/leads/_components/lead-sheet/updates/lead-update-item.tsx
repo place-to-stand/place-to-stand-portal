@@ -80,9 +80,7 @@ export function LeadUpdateItem({
       <div className='flex items-start justify-between gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           {/* Icon + label + color together — color is never the only signal. */}
-          <Badge
-            className={cn('gap-1 text-xs', LEAD_UPDATE_TOKENS[update.type])}
-          >
+          <Badge className={cn('gap-1', LEAD_UPDATE_TOKENS[update.type])}>
             <Icon className='h-3 w-3' aria-hidden='true' />
             {label}
           </Badge>

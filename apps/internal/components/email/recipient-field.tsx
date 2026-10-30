@@ -186,7 +186,7 @@ export function RecipientField({
                             {option.isPrimary ? (
                               <Badge
                                 variant='outline'
-                                className='text-muted-foreground px-1.5 text-[10px]'
+                                className='text-muted-foreground'
                               >
                                 Primary
                               </Badge>

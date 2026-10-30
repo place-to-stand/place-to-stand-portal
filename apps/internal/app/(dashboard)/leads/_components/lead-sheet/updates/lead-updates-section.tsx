@@ -82,9 +82,7 @@ export function LeadUpdatesSection({
           <MessageSquareText className='text-muted-foreground h-4 w-4' />
           <span className='text-sm font-medium'>Updates</span>
           {updates.length > 0 && (
-            <Badge variant='secondary' className='text-xs'>
-              {updates.length}
-            </Badge>
+            <Badge variant='secondary'>{updates.length}</Badge>
           )}
         </div>
         {canManage && (

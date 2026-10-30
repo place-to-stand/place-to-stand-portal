@@ -265,7 +265,7 @@ export function CompanyProjectsTab({
                 <span className='text-muted-foreground text-xs tabular-nums'>
                   {project.doneTasks}/{project.totalTasks} tasks
                 </span>
-                <Badge variant='outline' className='text-xs font-normal'>
+                <Badge variant='outline'>
                   {getProjectStatusLabel(project.status)}
                 </Badge>
               </Link>

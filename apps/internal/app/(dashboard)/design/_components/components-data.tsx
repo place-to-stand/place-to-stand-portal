@@ -368,10 +368,7 @@ export function SampleProjectList({
                   <TableCell label='Status'>
                     <Badge
                       variant='outline'
-                      className={cn(
-                        'text-xs',
-                        getProjectStatusToken(row.status)
-                      )}
+                      className={cn(getProjectStatusToken(row.status))}
                     >
                       {getProjectStatusLabel(row.status)}
                     </Badge>

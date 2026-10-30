@@ -78,10 +78,7 @@ const formatDate = (value: string | null) =>
 
 function BillingTypeBadge() {
   return (
-    <Badge
-      variant='outline'
-      className={cn(BADGE_TINTS.amber, 'px-1.5 py-0 text-[10px] leading-4')}
-    >
+    <Badge variant='outline' className={cn(BADGE_TINTS.amber, 'leading-4')}>
       Net 30
     </Badge>
   )
@@ -295,9 +292,7 @@ export function InvoicesTableSection({
                     {invoice.invoice_number ? (
                       invoice.invoice_number
                     ) : (
-                      <Badge variant='secondary' className='text-xs'>
-                        Draft
-                      </Badge>
+                      <Badge variant='secondary'>Draft</Badge>
                     )}
                     {invoice.billing_type === 'net_30' ? (
                       <BillingTypeBadge />

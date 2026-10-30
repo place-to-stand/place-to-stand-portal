@@ -7,11 +7,7 @@ export function ClientBadge({ className }: { className?: string }) {
   return (
     <Badge
       variant='outline'
-      className={cn(
-        'gap-1 text-xs font-normal',
-        ENTITY_ACCENTS.client.cardStatic,
-        className
-      )}
+      className={cn('gap-1', ENTITY_ACCENTS.client.cardStatic, className)}
     >
       <ENTITY_ICONS.client
         className={cn(ENTITY_ACCENTS.client.icon, 'size-3')}

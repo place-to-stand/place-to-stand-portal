@@ -98,7 +98,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
             }
             badges={
               canManageSignIn && signInAccount ? (
-                <Badge variant='outline' className='text-xs font-normal'>
+                <Badge variant='outline'>
                   {ROLE_LABELS[signInAccount.role]}
                   {signInAccount.deletedAt
                     ? ' · archived'

@@ -64,11 +64,7 @@ export function ProjectStatusCell({
   const currentToken = getProjectStatusToken(optimisticStatus)
 
   if (disabled) {
-    return (
-      <Badge className={cn('text-xs', currentToken, className)}>
-        {currentLabel}
-      </Badge>
-    )
+    return <Badge className={cn(currentToken, className)}>{currentLabel}</Badge>
   }
 
   return (
@@ -83,7 +79,7 @@ export function ProjectStatusCell({
         )}
         disabled={isPending}
       >
-        <Badge className={cn('text-xs', currentToken)}>
+        <Badge className={cn(currentToken)}>
           {currentLabel}
           {isPending ? <Loader2 className='animate-spin' /> : null}
         </Badge>
@@ -106,9 +102,7 @@ export function ProjectStatusCell({
               onClick={() => handleSelect(option.value)}
               className={cn('cursor-pointer', isSelected && 'bg-accent/50')}
             >
-              <Badge className={cn('text-xs', optionToken)}>
-                {option.label}
-              </Badge>
+              <Badge className={cn(optionToken)}>{option.label}</Badge>
             </DropdownMenuItem>
           )
         })}

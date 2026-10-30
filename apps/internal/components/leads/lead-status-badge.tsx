@@ -20,11 +20,7 @@ export function LeadStatusBadge({
   return (
     <Badge
       variant='outline'
-      className={cn(
-        'shrink-0 text-xs font-semibold tracking-wide uppercase',
-        getLeadStatusToken(status),
-        className
-      )}
+      className={cn('shrink-0', getLeadStatusToken(status), className)}
     >
       {label ?? LEAD_STATUS_LABELS[status]}
     </Badge>

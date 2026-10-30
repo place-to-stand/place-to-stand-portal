@@ -59,10 +59,7 @@ export function ReviewDoneSection({
         <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
           <div className='flex flex-col gap-2'>
             <div className='flex items-center gap-2'>
-              <Badge
-                variant='outline'
-                className={cn('text-sm font-semibold uppercase', DONE_BADGE)}
-              >
+              <Badge variant='outline' className={cn(DONE_BADGE)}>
                 {getTaskStatusLabel('DONE')}
               </Badge>
               <span className='text-muted-foreground text-xs'>

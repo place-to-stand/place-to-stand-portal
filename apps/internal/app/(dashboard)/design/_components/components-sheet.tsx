@@ -196,9 +196,7 @@ function SampleEntitySheet({
               shown.entity === 'company' ? (
                 <ClientBadge />
               ) : shown.entity === 'contact' ? (
-                <Badge variant='outline' className='text-xs font-normal'>
-                  Sales
-                </Badge>
+                <Badge variant='outline'>Sales</Badge>
               ) : (
                 <LeadStatusBadge status='PROPOSAL_SENT' />
               )

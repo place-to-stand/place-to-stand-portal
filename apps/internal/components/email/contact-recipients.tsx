@@ -93,9 +93,7 @@ export function ContactRecipients({
                   <span className='flex items-center gap-1.5'>
                     <span className='truncate text-sm'>{contact.name}</span>
                     {contact.isPrimary ? (
-                      <Badge variant='outline' className='text-[10px]'>
-                        Primary
-                      </Badge>
+                      <Badge variant='outline'>Primary</Badge>
                     ) : null}
                   </span>
                   <span className='text-muted-foreground truncate text-xs'>
@@ -112,7 +110,7 @@ export function ContactRecipients({
         <ul className='flex flex-wrap gap-1.5'>
           {extras.map(email => (
             <li key={email}>
-              <Badge variant='secondary' className='gap-1 pr-1 font-normal'>
+              <Badge variant='secondary' className='gap-1 pr-1'>
                 {email}
                 <button
                   type='button'

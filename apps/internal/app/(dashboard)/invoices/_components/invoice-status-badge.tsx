@@ -19,10 +19,7 @@ export function invoiceStatusTint(status: string): string {
 /** The invoice status chip, shared by the invoices table and the invoice sheet. */
 export function InvoiceStatusBadge({ status }: { status: string }) {
   return (
-    <Badge
-      variant='outline'
-      className={cn('text-xs', invoiceStatusTint(status))}
-    >
+    <Badge variant='outline' className={cn(invoiceStatusTint(status))}>
       {INVOICE_STATUS_BADGES[status]?.label ?? status}
     </Badge>
   )

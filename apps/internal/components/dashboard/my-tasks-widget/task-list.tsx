@@ -120,13 +120,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
             </span>
           )}
           <div className='flex min-w-0 items-center gap-1.5'>
-            <Badge
-              variant='outline'
-              className={cn(
-                'text-[10px] font-semibold tracking-wide uppercase',
-                statusToken
-              )}
-            >
+            <Badge variant='outline' className={cn(statusToken)}>
               {statusLabel}
             </Badge>
             {/*

@@ -162,7 +162,6 @@ function ValueChip({
       <Badge
         variant='secondary'
         className={cn(
-          'h-5 px-1.5 text-[10px]',
           isTask && getTaskStatusToken(value),
           muted && 'opacity-60'
         )}

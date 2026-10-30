@@ -25,10 +25,7 @@ export function EndpointList({ endpoints }: { endpoints: Endpoint[] }) {
           className='flex min-w-0 items-center gap-2'
           title={endpoint.file}
         >
-          <Badge
-            variant='outline'
-            className='w-16 shrink-0 justify-center text-xs'
-          >
+          <Badge variant='outline' className='w-16 shrink-0 justify-center'>
             {TYPE_LABELS[endpoint.type]}
           </Badge>
           <code className='text-muted-foreground truncate font-mono text-xs'>

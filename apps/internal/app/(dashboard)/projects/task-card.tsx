@@ -410,10 +410,7 @@ function WorkerBadge({ status }: { status: WorkerStatusValue }) {
   const config = WORKER_BADGE_CONFIG[status]
   if (!config) return null
   return (
-    <Badge
-      variant='outline'
-      className={cn('w-fit text-[10px]', config.className)}
-    >
+    <Badge variant='outline' className={cn('w-fit', config.className)}>
       <Bot />
       {config.label}
     </Badge>
