@@ -87,7 +87,7 @@ test('sales sees no portal switches on a client company’s people', async ({
     .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
     .first()
   test.skip((await clientRow.count()) === 0, 'no client company to open')
-  await clientRow.click()
+  await clientRow.locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(
@@ -107,7 +107,7 @@ async function openClientPeople(page: Page) {
   const name = (
     (await clientRow.locator('span.font-medium').first().textContent()) ?? ''
   ).trim()
-  await clientRow.click()
+  await clientRow.locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   return { sheet, name }

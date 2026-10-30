@@ -66,7 +66,7 @@ test('stopping being Admin starts next month, and warns about this month', async
     (await rows.count()) === 0,
     'needs a second person with an Admin sign-in'
   )
-  await rows.first().click()
+  await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet.getByText('Can sign in')).toBeVisible()
   const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
@@ -176,7 +176,13 @@ test.describe('writes', () => {
     // which carries the version Save sends back).
     const openPerson = async (tab: Page) => {
       await tab.goto(`/people?q=${encodeURIComponent(email)}`)
-      await tab.locator('tbody tr').filter({ hasText: name }).first().click()
+      await tab
+        .locator('tbody tr')
+        .filter({ hasText: name })
+        .first()
+        .locator('td')
+        .first()
+        .click()
       const sheet = tab.getByRole('dialog')
       await expect(sheet.getByPlaceholder('John Doe')).toHaveValue(name)
       await tab.waitForLoadState('networkidle')
