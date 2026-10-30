@@ -15,6 +15,7 @@ async function openFirstNonClientCompany(page: Page) {
   await row.click()
   const sheet = page.getByRole('dialog')
   await sheet.getByRole('tab', { name: 'Billing' }).click()
+  await expect(page).toHaveURL(/tab=billing/)
   return sheet
 }
 
@@ -48,11 +49,12 @@ test('billing: make a client, stop billing, restart, and back', async ({ page })
 test('lead: a person who isn’t at the company gets a warning with the fix', async ({ page }) => {
   await page.goto('/leads?lead=new')
   const sheet = page.getByRole('dialog')
-  await sheet.getByRole('button', { name: 'Person' }).click()
-  await page.getByRole('option').first().click()
+  const records = page.getByRole('option').filter({ hasNotText: /^Create/ })
+  await sheet.getByRole('combobox', { name: 'Person' }).click()
+  await records.first().click()
   for (let attempt = 1; attempt <= 3; attempt++) {
-    await sheet.getByRole('button', { name: 'Company' }).click()
-    await page.getByRole('option').nth(attempt * 3).click()
+    await sheet.getByRole('combobox', { name: 'Company' }).click()
+    await records.nth(attempt * 3).click()
     if (await sheet.getByRole('alert').filter({ hasText: 'isn’t at' }).or(sheet.getByRole('alert').filter({ hasText: "isn't at" })).count()) break
   }
   const alert = sheet.getByRole('alert').filter({ hasText: /isn.t at/ })
