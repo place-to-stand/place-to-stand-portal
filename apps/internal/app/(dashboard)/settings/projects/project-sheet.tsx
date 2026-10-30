@@ -35,7 +35,6 @@ type Props = {
 export function ProjectSheet(props: Props) {
   const {
     form,
-    feedback,
     isEditing,
     isPending,
     requiresClientSelection,
@@ -91,7 +90,6 @@ export function ProjectSheet(props: Props) {
             fieldState={fieldState}
             isEditing={isEditing}
             isPending={isPending}
-            feedback={feedback}
             clientOptions={clientOptions}
             ownerOptions={ownerOptions}
             submitButton={submitButton}

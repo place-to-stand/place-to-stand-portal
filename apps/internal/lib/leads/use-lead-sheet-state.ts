@@ -173,10 +173,8 @@ export function useLeadSheetState({
         }
 
         toast({
-          title: isEditing ? 'Lead updated' : 'Lead created',
-          description: isEditing
-            ? 'Changes saved.'
-            : 'Your new lead has been added to the pipeline.',
+          title: isEditing ? 'Lead saved' : 'Lead created',
+          description: contact?.name || undefined,
         })
 
         form.reset({

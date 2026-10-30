@@ -92,7 +92,6 @@ export type ProjectSheetLinkChanges = {
 
 export type UseProjectSheetStateReturn = {
   form: UseFormReturn<ProjectSheetFormValues>
-  feedback: string | null
   isEditing: boolean
   isPending: boolean
   projectType: ProjectSheetFormValues['projectType']
@@ -131,7 +130,6 @@ export function useProjectSheetState({
     return creatable[0] ?? 'CLIENT'
   }, [role, initialCompanyId])
   const isEditing = Boolean(project)
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isReposDirty, setIsReposDirty] = useState(false)
   const { toast } = useToast()
@@ -174,7 +172,6 @@ export function useProjectSheetState({
 
     form.reset(defaults, { keepDefaultValues: false })
     form.clearErrors()
-    setFeedback(null)
     setIsReposDirty(false)
   }, [form, newProjectType, project, initialCompanyId])
 
@@ -217,7 +214,6 @@ export function useProjectSheetState({
         removedIntegrationLinkIds,
       } = changes
       startSave(async () => {
-        setFeedback(null)
         form.clearErrors()
 
         if (isEditing && !values.slug?.trim()) {
@@ -247,7 +243,10 @@ export function useProjectSheetState({
         }
 
         if (payload.slug && payload.slug.length < 3) {
-          setFeedback('Slug must be at least 3 characters when provided.')
+          form.setError('slug', {
+            type: 'manual',
+            message: 'Slug must be at least 3 characters when provided.',
+          })
           return
         }
 
@@ -271,7 +270,6 @@ export function useProjectSheetState({
               status: 'error',
               error: result.error,
             })
-            setFeedback(result.error)
             toast({
               title: 'Unable to save project',
               description: result.error,
@@ -299,10 +297,8 @@ export function useProjectSheetState({
           })
 
           toast({
-            title: isEditing ? 'Project updated' : 'Project created',
-            description: isEditing
-              ? 'Changes saved successfully.'
-              : 'The project is ready to track activity.',
+            title: isEditing ? 'Project saved' : 'Project created',
+            description: payload.name,
           })
 
           form.reset({
@@ -324,7 +320,6 @@ export function useProjectSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('Unable to save the project.')
           toast({
             title: 'Unable to save project',
             description:
@@ -370,7 +365,6 @@ export function useProjectSheetState({
 
     setIsDeleteDialogOpen(false)
     startSave(async () => {
-      setFeedback(null)
       form.clearErrors()
       const interaction = startSettingsInteraction({
         entity: 'project',
@@ -390,7 +384,6 @@ export function useProjectSheetState({
             targetId: project.id,
             error: result.error,
           })
-          setFeedback(result.error)
           toast({
             title: 'Unable to archive project',
             description: result.error,
@@ -417,7 +410,6 @@ export function useProjectSheetState({
           targetId: project.id,
           error: error instanceof Error ? error.message : 'Unknown error',
         })
-        setFeedback('We could not archive this project. Please try again.')
         toast({
           title: 'Unable to archive project',
           description:
@@ -446,7 +438,6 @@ export function useProjectSheetState({
 
   return {
     form,
-    feedback,
     isEditing,
     isPending,
     projectType,

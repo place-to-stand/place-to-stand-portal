@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { formatCalendarDate } from '@pts/ui/dates'
 import {
@@ -44,7 +45,7 @@ export function LeadUpdateItem({
   onEdit,
   onArchived,
 }: LeadUpdateItemProps) {
-  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
   const Icon = LEAD_UPDATE_ICONS[update.type]
@@ -70,7 +71,6 @@ export function LeadUpdateItem({
   )
 
   const handleArchive = () => {
-    setError(null)
     startTransition(async () => {
       const result = await deleteLeadUpdate({
         id: update.id,
@@ -78,11 +78,16 @@ export function LeadUpdateItem({
       })
 
       if (result.success) {
+        toast({ title: 'Update archived' })
         onArchived()
         return
       }
 
-      setError(result.error ?? 'Unable to archive update.')
+      toast({
+        variant: 'destructive',
+        title: 'Unable to archive update',
+        description: result.error ?? 'Please try again.',
+      })
     })
   }
 
@@ -159,11 +164,6 @@ export function LeadUpdateItem({
         </Avatar>
         <span>{authorDisplay}</span>
       </div>
-      {error ? (
-        <p role='alert' className='text-destructive mt-2 text-xs'>
-          {error}
-        </p>
-      ) : null}
 
       <ArchiveConfirmDialog
         open={showArchiveConfirm}

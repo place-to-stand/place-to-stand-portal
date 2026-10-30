@@ -12,7 +12,6 @@ import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { Form } from '@/components/ui/form'
@@ -86,7 +85,6 @@ export function CompanySheet({
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
   // The Billing tab's state (admins); read by Save.
   const billingRef = useRef<CompanyBillingHandle>(null)
@@ -227,14 +225,17 @@ export function CompanySheet({
     form.formState.defaultValues?.primaryContactId ?? null
   const handleSubmit = useCallback(
     (values: CompanyFormValues) => {
-      setFeedback(null)
       const handle = billingRef.current
       let billing: CompanyBillingIntent = { kind: 'none' }
       if (isAdmin && handle) {
         const collected = handle.collect()
         if (!collected) {
           setTab('billing')
-          setFeedback('Check the Billing tab before saving.')
+          toast({
+            variant: 'destructive',
+            title: 'Unable to save company',
+            description: 'Check the Billing tab before saving.',
+          })
           return
         }
         billing = collected
@@ -283,7 +284,11 @@ export function CompanySheet({
         })
 
         if (!result.ok) {
-          setFeedback(result.error ?? 'Unable to save the company.')
+          toast({
+            variant: 'destructive',
+            title: 'Unable to save company',
+            description: result.error ?? 'Please try again.',
+          })
           return
         }
 
@@ -291,7 +296,7 @@ export function CompanySheet({
           onCreated?.({ id: result.id, name: values.name.trim() })
         }
         toast({
-          title: isEditing ? 'Company updated' : 'Company created',
+          title: isEditing ? 'Company saved' : 'Company created',
           description: values.name,
         })
         form.reset(values)
@@ -338,7 +343,11 @@ export function CompanySheet({
       const result = await archiveCompany(companyId)
       setArchiveOpen(false)
       if (!result.ok) {
-        setFeedback(result.error ?? 'Unable to update the company.')
+        toast({
+          variant: 'destructive',
+          title: 'Unable to archive company',
+          description: result.error ?? 'Please try again.',
+        })
         return
       }
       toast({ title: 'Company archived', description: company?.name })
@@ -540,9 +549,6 @@ export function CompanySheet({
                       ]}
                     />
                   </CompanyBillingProvider>
-                  <div className='px-6 pb-6 empty:hidden'>
-                    <FormFeedback>{feedback}</FormFeedback>
-                  </div>
                 </form>
               </div>
               <SheetFormFooter

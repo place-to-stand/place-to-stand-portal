@@ -6,7 +6,6 @@ import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { DatePicker } from '@/components/ui/date-picker'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import {
   Form,
@@ -60,7 +59,6 @@ export type ProjectSheetFormProps = {
   fieldState: ProjectSheetFieldState
   isEditing: boolean
   isPending: boolean
-  feedback: string | null
   clientOptions: ClientOption[]
   ownerOptions: OwnerOption[]
   submitButton: SubmitButtonState
@@ -88,7 +86,6 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     form,
     fieldState,
     isEditing,
-    feedback,
     clientOptions,
     ownerOptions,
     submitButton,
@@ -555,8 +552,6 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
               />
             </>
           ) : null}
-
-          <FormFeedback>{feedback}</FormFeedback>
         </form>
       </div>
       <SheetFormFooter

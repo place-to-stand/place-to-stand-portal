@@ -76,7 +76,6 @@ export function TaskSheet(props: TaskSheetProps) {
   const { isAdmin } = useViewerAccess()
   const {
     form,
-    feedback,
     isPending,
     isDeleteDialogOpen,
     assigneeItems,
@@ -402,7 +401,6 @@ export function TaskSheet(props: TaskSheetProps) {
                 <TaskSheetForm
                   form={form}
                   onSubmit={handleFormSubmit}
-                  feedback={feedback}
                   isPending={isPending}
                   canManage={props.canManage}
                   assigneeItems={assigneeItems}

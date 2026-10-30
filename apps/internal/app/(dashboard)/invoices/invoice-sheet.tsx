@@ -35,7 +35,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -99,7 +98,6 @@ export function InvoiceSheet({
   const {
     form,
     fieldArray,
-    feedback,
     isEditing,
     isReadOnly,
     isPending,
@@ -571,8 +569,6 @@ export function InvoiceSheet({
                         </div>
                       </div>
 
-                      {/* ───── Feedback ───── */}
-                      <FormFeedback>{feedback}</FormFeedback>
                     </div>
                   </div>
 

@@ -66,7 +66,6 @@ import { Progress } from '@pts/ui/progress'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -174,7 +173,7 @@ export function ComponentsFeedback() {
     <DesignSection
       id='feedback'
       title='Alerts, toasts and errors'
-      when='A toast confirms what just happened: short and past tense on success; "Unable to <verb> <noun>" on failure, with the reason in the description. An Alert stays on the page while its cause does: warning for something worth a look that never blocks saving (with the fix as its action), destructive for something broken. Errors a person must fix stay in the form, in FormFeedback.'
+      when='A toast confirms what just happened: short and past tense on success; "Unable to <verb> <noun>" on failure, with the reason in the description. An Alert stays on the page while its cause does: warning for something worth a look that never blocks saving (with the fix as its action), destructive for something broken. A sheet or dialog’s save result, success or failure, is always a toast, the same on every sheet; only a field’s own error (required, format) stays under the field.'
     >
       <Specimen label='Alert' note='@pts/ui/alert' className='block space-y-3'>
         <Alert variant='warning'>
@@ -257,13 +256,21 @@ export function ComponentsFeedback() {
         </div>
       </Specimen>
       <Specimen
-        label='FormFeedback'
-        note='the error box at the foot of a sheet form'
-        className='block'
+        label='Sheet save results'
+        note='every sheet: a toast, never an inline box; a refusal gives its reason'
+        className='block space-y-2'
       >
-        <FormFeedback>
-          Unable to save company: the name is already taken.
-        </FormFeedback>
+        <ToastCard
+          title='Company saved'
+          description='Acme Industries'
+          onDismiss={() => {}}
+        />
+        <ToastCard
+          variant='destructive'
+          title='Unable to save company'
+          description='Someone else saved this company. Reload to see their changes.'
+          onDismiss={() => {}}
+        />
       </Specimen>
     </DesignSection>
   )

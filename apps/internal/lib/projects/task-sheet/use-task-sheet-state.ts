@@ -58,7 +58,6 @@ export type UseTaskSheetStateArgs = {
 
 type UseTaskSheetStateReturn = {
   form: UseFormReturn<TaskSheetFormValues>
-  feedback: string | null
   isPending: boolean
   isDeleteDialogOpen: boolean
   assigneeItems: ReturnType<typeof buildAssigneeItems>
@@ -105,7 +104,6 @@ export const useTaskSheetState = ({
   currentUserId,
 }: UseTaskSheetStateArgs): UseTaskSheetStateReturn => {
   const router = useRouter()
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
   // Synchronous in-flight lock: `isPending` is render state, so two submits
@@ -144,7 +142,6 @@ export const useTaskSheetState = ({
   const resetFormState = useCallback(
     (options?: { preservePending?: boolean }) => {
       form.reset(defaultValues)
-      setFeedback(null)
       setIsDeleteDialogOpen(false)
       resetAttachmentsState(options)
     },
@@ -178,7 +175,6 @@ export const useTaskSheetState = ({
 
       startSave(async () => {
         try {
-          setFeedback(null)
           const normalizedDescription = normalizeRichTextContent(
             values.description ?? null
           )
@@ -198,15 +194,17 @@ export const useTaskSheetState = ({
           // All or nothing: an error means nothing was written, so the sheet
           // stays open with the user's edits for another try.
           if (result.error !== undefined) {
-            setFeedback(result.error)
+            toast({
+              title: task ? 'Unable to save task' : 'Unable to create task',
+              description: result.error,
+              variant: 'destructive',
+            })
             return
           }
 
           toast({
-            title: task ? 'Task updated' : 'Task created',
-            description: task
-              ? undefined
-              : 'The task was added to the project board.',
+            title: task ? 'Task saved' : 'Task created',
+            description: values.title.trim(),
           })
 
           resetFormState({ preservePending: true })
@@ -252,11 +250,14 @@ export const useTaskSheetState = ({
 
     setIsDeleteDialogOpen(false)
     startSave(async () => {
-      setFeedback(null)
       const result = await removeTask({ taskId: task.id })
 
       if (result.error) {
-        setFeedback(result.error)
+        toast({
+          title: 'Unable to delete task',
+          description: result.error,
+          variant: 'destructive',
+        })
         return
       }
 
@@ -321,7 +322,6 @@ export const useTaskSheetState = ({
 
   return {
     form,
-    feedback,
     isPending,
     isDeleteDialogOpen,
     assigneeItems,

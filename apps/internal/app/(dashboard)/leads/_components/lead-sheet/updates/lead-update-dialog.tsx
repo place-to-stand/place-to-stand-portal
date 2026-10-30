@@ -14,6 +14,7 @@ import {
 } from '@pts/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { useToast } from '@/components/ui/use-toast'
 import {
   isContentEmpty,
   sanitizeEditorHtml,
@@ -65,8 +66,10 @@ export function LeadUpdateDialog({
   const [type, setType] = useState<LeadUpdateTypeValue>('PHONE_CALL')
   const [body, setBody] = useState('')
   const [occurredOn, setOccurredOn] = useState(() => toCalendarDate(new Date()))
+  // Only the empty-body check shows here, on the field; save results toast.
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const { toast } = useToast()
   // Any user edit arms the discard guard. The RTE's onChange only fires on
   // user transactions (external value syncs use setContent without emitting),
   // so this never trips on the dialog seeding its own fields.
@@ -134,9 +137,15 @@ export function LeadUpdateDialog({
         : await createLeadUpdate(payload)
 
       if (!result.success) {
-        setError(result.error ?? 'Unable to save update.')
+        toast({
+          variant: 'destructive',
+          title: isEditing ? 'Unable to save update' : 'Unable to log update',
+          description: result.error ?? 'Please try again.',
+        })
         return
       }
+
+      toast({ title: isEditing ? 'Update saved' : 'Update logged' })
 
       // Save = done = close (project convention: task-sheet-closes-on-save).
       // Saved edits are no longer discardable, so close directly.
@@ -144,7 +153,17 @@ export function LeadUpdateDialog({
       onSaved()
       onOpenChange(false)
     })
-  }, [body, leadId, occurredOn, onOpenChange, onSaved, type, update])
+  }, [
+    body,
+    isEditing,
+    leadId,
+    occurredOn,
+    onOpenChange,
+    onSaved,
+    toast,
+    type,
+    update,
+  ])
 
   return (
     <>

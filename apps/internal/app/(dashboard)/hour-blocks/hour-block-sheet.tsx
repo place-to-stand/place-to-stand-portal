@@ -14,7 +14,6 @@ import {
 import { Input } from '@pts/ui/input'
 import { Textarea } from '@pts/ui/textarea'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -50,7 +49,6 @@ export function HourBlockSheet({
 }: Props) {
   const {
     form,
-    feedback,
     isEditing,
     isPending,
     clientOptions,
@@ -219,7 +217,6 @@ export function HourBlockSheet({
                 {hourBlock ? (
                   <HourBlockInvoiceSection hourBlock={hourBlock} />
                 ) : null}
-                <FormFeedback>{feedback}</FormFeedback>
               </form>
             </div>
             <SheetFormFooter

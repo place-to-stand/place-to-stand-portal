@@ -18,7 +18,7 @@ async function setStatus(page: Page, leadUrl: string, label: string) {
   await sheet.getByRole('combobox', { name: 'Status' }).click()
   await page.getByRole('option', { name: label }).click()
   await sheet.getByRole('button', { name: 'Save changes' }).click()
-  await expect(page.getByText('Lead updated').first()).toBeVisible()
+  await expect(page.getByText('Lead saved').first()).toBeVisible()
 }
 
 test('lead: a converted Won lead moved back keeps its conversion', async ({

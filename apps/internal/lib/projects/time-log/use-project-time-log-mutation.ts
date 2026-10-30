@@ -202,9 +202,22 @@ export function useProjectTimeLogMutation(
         allFieldErrors?: TimeLogFormErrors
       }
 
+      // A field's error shows under that field; anything else (a closed
+      // month, a refusal) is a toast, like every other save result.
+      const failureTitle =
+        mode === 'edit' ? 'Unable to save time log' : 'Unable to log time'
+
       // If we have all field errors from the API, use those
       if (fieldError.allFieldErrors) {
-        setFormErrors(fieldError.allFieldErrors)
+        const { general, ...fields } = fieldError.allFieldErrors
+        setFormErrors(fields)
+        if (general) {
+          toast({
+            title: failureTitle,
+            description: general,
+            variant: 'destructive',
+          })
+        }
         return
       }
 
@@ -216,7 +229,11 @@ export function useProjectTimeLogMutation(
         return
       }
 
-      setFormErrors({ general: message })
+      toast({
+        title: failureTitle,
+        description: message,
+        variant: 'destructive',
+      })
     },
   })
 }

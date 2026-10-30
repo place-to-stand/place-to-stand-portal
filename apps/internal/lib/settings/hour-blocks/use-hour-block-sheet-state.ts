@@ -47,7 +47,6 @@ export type UseHourBlockSheetStateArgs = {
 
 export type UseHourBlockSheetStateReturn = {
   form: UseFormReturn<HourBlockFormValues>
-  feedback: string | null
   isEditing: boolean
   isPending: boolean
   clientOptions: ClientOption[]
@@ -63,7 +62,6 @@ export type UseHourBlockSheetStateReturn = {
   handleRequestDelete: () => void
   handleCancelDelete: () => void
   handleConfirmDelete: () => void
-  setFeedback: (value: string | null) => void
 }
 
 export function useHourBlockSheetState({
@@ -74,7 +72,6 @@ export function useHourBlockSheetState({
   clients,
 }: UseHourBlockSheetStateArgs): UseHourBlockSheetStateReturn {
   const isEditing = Boolean(hourBlock)
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
 
@@ -97,7 +94,6 @@ export function useHourBlockSheetState({
   const resetFormState = useCallback(() => {
     form.reset(buildHourBlockFormDefaults(hourBlock))
     form.clearErrors()
-    setFeedback(null)
   }, [form, hourBlock])
 
   const {
@@ -129,7 +125,6 @@ export function useHourBlockSheetState({
   const handleSubmit = useCallback(
     (values: HourBlockFormValues) => {
       startSave(async () => {
-        setFeedback(null)
         form.clearErrors()
 
         const payload = createHourBlockSavePayload(values, hourBlock)
@@ -153,7 +148,6 @@ export function useHourBlockSheetState({
               status: 'error',
               error: result.error,
             })
-            setFeedback(result.error)
             toast({
               title: 'Unable to save hour block',
               description: result.error,
@@ -168,7 +162,7 @@ export function useHourBlockSheetState({
           })
 
           toast({
-            title: isEditing ? 'Hour block updated' : 'Hour block created',
+            title: isEditing ? 'Hour block saved' : 'Hour block created',
           })
 
           // PRD 002 section 05: closed-month / future-billing notice.
@@ -187,7 +181,6 @@ export function useHourBlockSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('Unable to save the hour block.')
           toast({
             title: 'Unable to save hour block',
             description:
@@ -233,7 +226,6 @@ export function useHourBlockSheetState({
 
     setIsDeleteDialogOpen(false)
     startSave(async () => {
-      setFeedback(null)
       form.clearErrors()
       const interaction = startSettingsInteraction({
         entity: 'hour_block',
@@ -253,9 +245,8 @@ export function useHourBlockSheetState({
             targetId: hourBlock.id,
             error: result.error,
           })
-          setFeedback(result.error)
           toast({
-            title: 'Unable to delete hour block',
+            title: 'Unable to archive hour block',
             description: result.error,
             variant: 'destructive',
           })
@@ -288,9 +279,8 @@ export function useHourBlockSheetState({
           targetId: hourBlock.id,
           error: error instanceof Error ? error.message : 'Unknown error',
         })
-        setFeedback('We could not delete this hour block. Please try again.')
         toast({
-          title: 'Unable to delete hour block',
+          title: 'Unable to archive hour block',
           description:
             error instanceof Error ? error.message : 'Unknown error.',
           variant: 'destructive',
@@ -323,7 +313,6 @@ export function useHourBlockSheetState({
 
   return {
     form,
-    feedback,
     isEditing,
     isPending,
     clientOptions,
@@ -339,6 +328,5 @@ export function useHourBlockSheetState({
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
-    setFeedback,
   }
 }
