@@ -9,9 +9,9 @@ import {
 } from '@pts/db/client-state'
 
 import {
-  clientArchivedEvent,
+  clientBillingRestartedEvent,
+  clientBillingStoppedEvent,
   clientCreatedEvent,
-  clientRestoredEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { roleCan } from '@/lib/auth/capabilities'
@@ -93,6 +93,8 @@ type BillingPlan =
       kind: 'restart'
       effective: BillingEffective
       update: ClientUpdatePlan | null
+      /** Cancels a stop that hasn't taken effect: changes no month. */
+      cancelsStop: boolean
     }
 
 type PortalPlan = { grant: string[]; revoke: string[] }
@@ -162,6 +164,28 @@ export async function saveCompanySheet(
   for (;;) {
     try {
       committed = await db.transaction(async tx => {
+        if (billingPlan.kind !== 'none') {
+          // One billing change per company at a time: start, stop and
+          // restart for the same company queue here.
+          if (plan.existing) {
+            await tx.execute(
+              sql`select id from companies where id = ${plan.existing.id} for update`
+            )
+          }
+          // Re-checked inside the transaction: the month could be closed
+          // between planning and commit.
+          const changesThisMonth =
+            (billingPlan.kind === 'start' ||
+              billingPlan.kind === 'stop' ||
+              (billingPlan.kind === 'restart' && !billingPlan.cancelsStop)) &&
+            billingPlan.effective === 'current_month'
+          if (
+            changesThisMonth &&
+            (await isMonthClosed(currentMonthStartUtc()))
+          ) {
+            throw new ClosedMonthError(currentMonthStartUtc())
+          }
+        }
         const companyId = await writeCompany(tx, actor, plan)
         let accessChanges: ContactClientLinkChange[] = []
 
@@ -217,11 +241,16 @@ export async function saveCompanySheet(
         attempt < SLUG_RETRY_LIMIT
       ) {
         attempt += 1
-        billingPlan = {
-          ...billingPlan,
-          slug: await generateUniqueClientSlug(billingPlan.slugBase),
+        try {
+          billingPlan = {
+            ...billingPlan,
+            slug: await generateUniqueClientSlug(billingPlan.slugBase),
+          }
+          continue
+        } catch (slugError) {
+          // Fall through: undo the prepared sign-ins and report the failure.
+          error = slugError
         }
-        continue
       }
       await discardPreparedSignIns(signIns)
       const message = saveErrorMessage(error)
@@ -370,7 +399,12 @@ async function planBilling(
         update = result.update
       }
       return {
-        plan: { kind: 'restart', effective: intent.effective, update },
+        plan: {
+          kind: 'restart',
+          effective: intent.effective,
+          update,
+          cancelsStop: stopping,
+        },
         billingOpen,
       }
     }
@@ -493,10 +527,21 @@ async function logAfterCommit(
       await logClientUpdate(actor, billing.update)
       break
     case 'stop':
-      await clientActivity(clientArchivedEvent({ name: plan.next.name }))
+      await clientActivity(
+        clientBillingStoppedEvent({
+          name: plan.next.name,
+          effective: billing.effective,
+        })
+      )
       break
     case 'restart':
-      await clientActivity(clientRestoredEvent({ name: plan.next.name }))
+      await clientActivity(
+        clientBillingRestartedEvent({
+          name: plan.next.name,
+          effective: billing.effective,
+          cancelsStop: billing.cancelsStop,
+        })
+      )
       if (billing.update) await logClientUpdate(actor, billing.update)
       break
   }

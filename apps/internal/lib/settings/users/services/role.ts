@@ -1,5 +1,8 @@
 import 'server-only'
 
+import { userUpdatedEvent } from '@/lib/activity/events'
+import { logActivity } from '@/lib/activity/logger'
+
 import { and, eq, isNull, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
@@ -65,6 +68,8 @@ export async function applyDueRoleTerms(
       and(
         sql`${inForce} is not null`,
         ne(users.role, sql`${inForce}::user_role`),
+        // An archived sign-in keeps its last role.
+        isNull(users.deletedAt),
         onlyUserId ? eq(users.id, onlyUserId) : undefined
       )
     )
@@ -89,7 +94,36 @@ export async function applyDueRoleTerms(
         previousRole: locked.role,
       })
     })
-    if (change) changes.push(change)
+    if (change) {
+      changes.push(change)
+      // The audit trail shows when the scheduled role actually took effect.
+      await logActivity({
+        actorId: null,
+        source: 'SYSTEM',
+        targetType: 'USER',
+        targetId: id,
+        ...userUpdatedEvent({
+          fullName: (await personNameForUser(id)) ?? 'a sign-in',
+          changedFields: ['role'],
+          details: {
+            before: { role: change.from },
+            after: { role: change.to },
+            reason: 'scheduled role change took effect',
+          },
+        }),
+      }).catch(error =>
+        console.error('Failed to log a scheduled role change', error)
+      )
+    }
   }
   return changes
+}
+
+async function personNameForUser(userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ name: contacts.name })
+    .from(contacts)
+    .where(eq(contacts.userId, userId))
+    .limit(1)
+  return row?.name ?? null
 }
