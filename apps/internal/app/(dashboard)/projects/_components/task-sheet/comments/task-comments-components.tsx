@@ -159,7 +159,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
           value={editingDraft}
           onChange={onChangeEditingDraft}
           disabled={disableActions}
-          placeholder='Update your comment...'
+          placeholder='Update your comment…'
           contentMinHeightClassName='[&_.ProseMirror]:min-h-20'
         />
         <div className='mt-3 flex items-center justify-end gap-2'>

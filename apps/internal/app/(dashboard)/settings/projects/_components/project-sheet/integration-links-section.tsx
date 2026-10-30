@@ -379,7 +379,7 @@ export function IntegrationLinksSection({
                 groups={optionGroups}
                 value={selectedId ?? ''}
                 onChange={setSelectedId}
-                searchPlaceholder={`Search ${config.label} ${config.projectNoun}s...`}
+                searchPlaceholder={`Search ${config.label} ${config.projectNoun}s…`}
                 emptyMessage={`No ${config.projectNoun}s found.`}
               />
             )}

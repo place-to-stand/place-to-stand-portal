@@ -474,7 +474,7 @@ export function GitHubReposSection({
                 groups={repoGroups}
                 value={selectedRepo ?? ''}
                 onChange={setSelectedRepo}
-                searchPlaceholder='Search repositories...'
+                searchPlaceholder='Search repositories…'
                 emptyMessage='No repositories found.'
               />
             )}

@@ -116,7 +116,7 @@ export function PersonSelector({
           value={selectedUserId}
           onChange={handleChange}
           placeholder='Select person'
-          searchPlaceholder='Search people...'
+          searchPlaceholder='Search people…'
           emptyMessage='No people found.'
           disabled={disabled}
           className='w-full'

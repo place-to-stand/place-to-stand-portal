@@ -222,7 +222,7 @@ export function ClientSelector({
             sideOffset={8}
           >
             <Command defaultValue={selectedCommandValue}>
-              <CommandInput placeholder='Search clients...' className='h-9' />
+              <CommandInput placeholder='Search clients…' className='h-9' />
               <CommandList
                 ref={revealSelected}
                 className='max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain'

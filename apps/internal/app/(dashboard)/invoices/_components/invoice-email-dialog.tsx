@@ -265,7 +265,7 @@ function InvoiceEmailForm({
               label='Cc'
               options={staffOptions}
               groupHeading='Team'
-              searchPlaceholder='Search the team'
+              searchPlaceholder='Search people…'
               value={cc}
               onChange={setCc}
               disabled={sending}

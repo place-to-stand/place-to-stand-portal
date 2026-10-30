@@ -600,8 +600,8 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
             onKeyDown={handleKeyDown}
             placeholder={
               isQuestionsResponse
-                ? 'Answer the questions above...'
-                : 'Refine this plan...'
+                ? 'Answer the questions above…'
+                : 'Refine this plan…'
             }
             className='max-h-[100px] min-h-[36px] resize-none text-xs'
             rows={1}
