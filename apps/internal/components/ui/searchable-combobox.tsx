@@ -1,11 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
+import { CheckIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
-import { Button } from '@pts/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Command,
@@ -17,10 +16,8 @@ import {
   useRevealSelected,
 } from '@/components/ui/command'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
-import {
-  FIELD_CLEAR_LABEL_SPACE,
-  FieldClearButton,
-} from '@/components/ui/field-clear-button'
+import { FieldClearButton } from '@/components/ui/field-clear-button'
+import { FieldTrigger } from '@/components/ui/field-trigger'
 
 export type SearchableComboboxItem = {
   value: string
@@ -31,6 +28,11 @@ export type SearchableComboboxItem = {
   avatarUrl?: string | null
   userId?: string
   icon?: React.ComponentType<{ className?: string }>
+  /**
+   * Shown in place of the label, in the list row and in the trigger when
+   * picked (a status badge). Search still matches `label`.
+   */
+  render?: React.ReactNode
 }
 
 export type SearchableComboboxGroup = {
@@ -88,11 +90,12 @@ type SearchableComboboxProps = {
    * field shrinks to make room; the clear button stays inside the field.
    */
   trailingAction?: React.ReactNode
+  /**
+   * Rows above the options inside the list (e.g. My tasks' "Show" toggles),
+   * as cmdk `CommandGroup`s so they share the list's keyboard navigation.
+   */
+  listHeader?: React.ReactNode
 }
-
-/** The field-style trigger every picker shares (combobox, date pickers). */
-export const fieldTriggerClasses =
-  'border-input data-[placeholder=true]:text-muted-foreground [&_svg]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-left text-sm font-normal shadow-xs transition-[color,box-shadow] outline-hidden focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
 
 const itemWrapperClasses = 'flex min-w-0 flex-1 flex-col text-sm leading-tight'
 
@@ -128,6 +131,7 @@ export const SearchableCombobox = React.forwardRef<
       open: openProp,
       onOpenChange,
       trailingAction,
+      listHeader,
     },
     forwardedRef
   ) => {
@@ -244,42 +248,26 @@ export const SearchableCombobox = React.forwardRef<
           disabled={item.disabled}
           className='pr-3'
         >
-          {/* The check column only exists while something is selected: an
-              "Add …" picker (no value) shouldn't indent every option. */}
-          {selectedItem ? (
-            <CheckIcon
-              className={cn(
-                'mr-2 size-4 shrink-0',
-                selectedItem.value === item.value ? 'opacity-100' : 'opacity-0'
-              )}
-            />
-          ) : null}
-          {item.userId ? (
-            <Avatar size='xs' className='mr-2 shrink-0'>
-              {item.avatarUrl && (
-                <AvatarImage src={`/api/storage/user-avatar/${item.userId}`} />
-              )}
-              <AvatarFallback>
-                {item.label.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          ) : item.icon ? (
-            <Avatar size='xs' className='mr-2 shrink-0'>
-              <AvatarFallback className='bg-muted'>
-                <item.icon className='text-muted-foreground h-3 w-3' />
-              </AvatarFallback>
-            </Avatar>
-          ) : null}
+          {renderLeading(item, 'row')}
           <div className={cn(itemWrapperClasses, itemClassName)}>
-            <span className='truncate font-medium whitespace-nowrap'>
-              {item.label}
-            </span>
+            {item.render ? (
+              <span className='flex min-w-0'>{item.render}</span>
+            ) : (
+              <span className='truncate font-medium whitespace-nowrap'>
+                {item.label}
+              </span>
+            )}
             {item.description ? (
               <span className='text-muted-foreground truncate text-xs whitespace-nowrap'>
                 {item.description}
               </span>
             ) : null}
           </div>
+          {/* The selected option is marked on the right, so no row reserves
+              an empty column for it. */}
+          {selectedItem?.value === item.value ? (
+            <CheckIcon className='ml-2 size-4 shrink-0' />
+          ) : null}
         </CommandItem>
       )
     }
@@ -315,9 +303,6 @@ export const SearchableCombobox = React.forwardRef<
       }
     }, [contentWidth, lockedWidth])
 
-    const selectedTextClasses = 'font-medium'
-    const placeholderTextClasses = 'text-muted-foreground'
-
     const showClear = Boolean(onClear && selectedItem && !disabled)
 
     return (
@@ -336,10 +321,8 @@ export const SearchableCombobox = React.forwardRef<
           <Popover open={open} onOpenChange={handleOpenChange} modal>
             <PopoverTrigger asChild>
               {trigger ?? (
-                <Button
+                <FieldTrigger
                   ref={mergedRef}
-                  type='button'
-                  variant='outline'
                   role='combobox'
                   aria-expanded={open}
                   aria-haspopup='listbox'
@@ -348,52 +331,20 @@ export const SearchableCombobox = React.forwardRef<
                   aria-describedby={ariaDescribedBy}
                   aria-invalid={ariaInvalid ? true : undefined}
                   disabled={disabled}
-                  data-placeholder={selectedItem ? undefined : true}
                   id={id}
-                  className={cn(
-                    fieldTriggerClasses,
-                    // Room for the inline buttons, which sit over the field.
-                    triggerClassName
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'flex min-w-0 flex-1 items-center gap-2',
-                      showClear && FIELD_CLEAR_LABEL_SPACE
-                    )}
-                  >
-                    {selectedItem?.userId ? (
-                      <Avatar size='xs'>
-                        {selectedItem.avatarUrl && (
-                          <AvatarImage
-                            src={`/api/storage/user-avatar/${selectedItem.userId}`}
-                          />
-                        )}
-                        <AvatarFallback>
-                          {selectedItem.label.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : selectedItem?.icon ? (
-                      <Avatar size='xs'>
-                        <AvatarFallback className='bg-muted'>
-                          <selectedItem.icon className='text-muted-foreground h-3 w-3' />
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : null}
-                    <span
-                      title={selectedItem?.label}
-                      className={cn(
-                        'min-w-0 truncate',
-                        selectedItem
-                          ? selectedTextClasses
-                          : placeholderTextClasses
-                      )}
-                    >
-                      {selectedItem?.label ?? resolvedPlaceholder}
-                    </span>
-                  </div>
-                  <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
-                </Button>
+                  placeholder={!selectedItem}
+                  clearable={showClear}
+                  className={triggerClassName}
+                  labelTitle={selectedItem?.label ?? resolvedPlaceholder}
+                  leading={
+                    selectedItem ? renderLeading(selectedItem, 'trigger') : null
+                  }
+                  label={
+                    selectedItem
+                      ? (selectedItem.render ?? selectedItem.label)
+                      : resolvedPlaceholder
+                  }
+                />
               )}
             </PopoverTrigger>
             <PopoverContent
@@ -404,10 +355,7 @@ export const SearchableCombobox = React.forwardRef<
               sideOffset={8}
               style={contentStyle}
             >
-              <Command
-                className='max-h-80'
-                defaultValue={selectedCommandValue}
-              >
+              <Command className='max-h-80' defaultValue={selectedCommandValue}>
                 <CommandInput
                   placeholder={searchPlaceholder ?? resolvedPlaceholder}
                   className='h-9'
@@ -421,6 +369,7 @@ export const SearchableCombobox = React.forwardRef<
                   onWheel={stopScrollPropagation}
                   onTouchMove={stopScrollPropagation}
                 >
+                  {listHeader}
                   {resolvedGroups.length > 0 ? (
                     resolvedGroups.map(group => (
                       <CommandGroup key={group.label} heading={group.label}>
@@ -472,4 +421,32 @@ SearchableCombobox.displayName = 'SearchableCombobox'
 function commandValueOf(item: SearchableComboboxItem): string {
   const searchValue = [item.label, ...(item.keywords ?? [])].join(' ').trim()
   return searchValue.length > 0 ? searchValue : item.value
+}
+
+/** An option's avatar or icon, in its list row or in the trigger. */
+function renderLeading(
+  item: SearchableComboboxItem,
+  place: 'row' | 'trigger'
+): React.ReactNode {
+  const className = place === 'row' ? 'mr-2 shrink-0' : 'shrink-0'
+  if (item.userId) {
+    return (
+      <Avatar size='xs' className={className}>
+        {item.avatarUrl && (
+          <AvatarImage src={`/api/storage/user-avatar/${item.userId}`} />
+        )}
+        <AvatarFallback>{item.label.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+    )
+  }
+  if (item.icon) {
+    return (
+      <Avatar size='xs' className={className}>
+        <AvatarFallback className='bg-muted'>
+          <item.icon className='text-muted-foreground h-3 w-3' />
+        </AvatarFallback>
+      </Avatar>
+    )
+  }
+  return null
 }

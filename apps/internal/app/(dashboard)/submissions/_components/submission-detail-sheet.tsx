@@ -350,7 +350,7 @@ export function SubmissionDetailSheet({
     <Sheet open={Boolean(submission)} onOpenChange={onOpenChange}>
       <SheetContent
         hideCloseButton
-        size='wide'
+        columns={1}
         className='flex w-full flex-col gap-0 overflow-hidden p-0'
       >
         <SheetFormHeader
@@ -782,7 +782,6 @@ export function SubmissionDetailSheet({
           onCancel={() => setArchiveConfirmOpen(false)}
           onConfirm={handleArchiveConfirm}
         />
-
       </SheetContent>
     </Sheet>
   )

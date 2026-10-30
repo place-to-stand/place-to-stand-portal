@@ -193,7 +193,7 @@ export function ContactCompaniesSection({
                       />
                     </RecordRowField>
                     {portal && showsPortal(entry) ? (
-                      <RecordRowField label='Portal'>
+                      <RecordRowField label='Portal access'>
                         <PortalAccessControl
                           showLabel={false}
                           person={{

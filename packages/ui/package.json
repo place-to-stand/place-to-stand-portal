@@ -19,6 +19,7 @@
     "./card": "./src/card.tsx",
     "./checkbox": "./src/checkbox.tsx",
     "./cn": "./src/cn.ts",
+    "./accordion": "./src/accordion.tsx",
     "./collapsible": "./src/collapsible.tsx",
     "./confirm-dialog": "./src/confirm-dialog.tsx",
     "./dates": "./src/dates.ts",

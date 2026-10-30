@@ -44,7 +44,7 @@ import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
-import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
+import { SheetActivitySection } from '@/components/sheets/sheet-activity-section'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 
@@ -330,7 +330,9 @@ export function TaskSheet(props: TaskSheetProps) {
   const handleTimeLogMutationSuccess = useCallback(() => {
     if (taskId) {
       // Background refetch: its errors land in the query, not here.
-      void queryClient.invalidateQueries({ queryKey: [TASK_TIME_LOGS_KEY, taskId] })
+      void queryClient.invalidateQueries({
+        queryKey: [TASK_TIME_LOGS_KEY, taskId],
+      })
     }
   }, [queryClient, taskId])
 
@@ -363,16 +365,16 @@ export function TaskSheet(props: TaskSheetProps) {
         <SheetContent
           hideCloseButton
           skipMountAnimation={skipMountAnimation}
-          size='wide'
+          columns={1}
           className={cn(
             'flex w-full flex-col gap-0 overflow-hidden p-0',
             // The one exception to the two widths: the expanded planning
-            // panel (560px) widens the sheet beside the 672px task column
+            // panel (560px) widens the sheet beside the 720px task column
             // and the 36px rail, and gives it back when it collapses.
             props.task &&
               canDeploy &&
               isPlanningOpen &&
-              'sm:max-w-[1268px] lg:w-[1268px]'
+              'sm:max-w-[1316px] lg:w-[1316px] lg:max-w-[calc(100vw-2rem)]'
           )}
           // Inline so it wins over the primitive's transition classes: the
           // sheet edge glides in sync with the panel's width transition.
@@ -394,9 +396,9 @@ export function TaskSheet(props: TaskSheetProps) {
             <div
               className={cn(
                 'flex h-full w-full min-w-0 flex-col',
-                // Fills the wide sheet; held at 672px beside open planning.
+                // Fills the sheet; held at 720px beside open planning.
                 isPlanningOpen && canDeploy
-                  ? 'sm:w-[672px] sm:shrink-0'
+                  ? 'sm:w-[720px] sm:shrink-0'
                   : 'flex-1'
               )}
             >
@@ -449,17 +451,10 @@ export function TaskSheet(props: TaskSheetProps) {
                     <EmptyState message='Log time after you save the task.' />
                   </SheetSection>
                 ) : null}
-                {/* Sections, no inner tabs: Activity, then Comments, which
-                    always sit at the bottom of a sheet. */}
+                {/* Sections, no inner tabs: Comments, then the collapsed
+                    Activity, always last in a sheet. */}
                 {props.task && taskPanelProjectId ? (
                   <>
-                    <SheetSection title='Activity' className='px-6'>
-                      <TaskActivityPanel
-                        taskId={props.task.id}
-                        projectId={taskPanelProjectId}
-                        companyId={taskPanelClientId}
-                      />
-                    </SheetSection>
                     <SheetSection title='Comments' className='px-6'>
                       <TaskCommentsPanel
                         taskId={props.task.id}
@@ -471,6 +466,15 @@ export function TaskSheet(props: TaskSheetProps) {
                         companyId={taskPanelClientId}
                       />
                     </SheetSection>
+                    <SheetActivitySection
+                      // Remount per task so a newly opened task starts collapsed.
+                      key={props.task.id}
+                      className='px-6'
+                      targetType='TASK'
+                      targetId={props.task.id}
+                      projectId={taskPanelProjectId}
+                      companyId={taskPanelClientId}
+                    />
                   </>
                 ) : !props.task ? (
                   <SheetSection title='Comments' className='px-6'>

@@ -1,21 +1,11 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { startTransition, useCallback, useMemo, useState } from 'react'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { startTransition, useCallback, useMemo } from 'react'
 
-import { Button } from '@pts/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  useRevealSelected,
-} from '@/components/ui/command'
+import { CommandGroup, CommandSeparator } from '@/components/ui/command'
+import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
+import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
   HIDE_PARAM,
@@ -24,11 +14,9 @@ import {
   serializeHiddenProjectTypes,
   type HideableProjectType,
 } from '@/lib/my-tasks/project-scope'
-import { cn } from '@/lib/utils'
 
 import { ClientScopeRow } from './client-scope-row'
 import type { MyTasksBoardScopePatch } from './use-optimistic-board-scope'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const ALL_CLIENTS_VALUE = 'all'
 const ALL_CLIENTS_LABEL = 'All clients'
@@ -37,10 +25,6 @@ const SCOPE_ROWS: { type: HideableProjectType; label: string }[] = [
   { type: HIDEABLE_PROJECT_TYPES.personal, label: 'Personal projects' },
   { type: HIDEABLE_PROJECT_TYPES.internal, label: 'Internal projects' },
 ]
-
-// cmdk sets data-selected on pointer move, but Base UI-era items pair it with
-// an explicit hover: class so plain mouse hover always lights the row.
-const ITEM_HOVER_CLASSES = 'hover:bg-accent hover:text-accent-foreground'
 
 export type ClientSelectorOption = {
   id: string
@@ -87,7 +71,6 @@ export function ClientSelector({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [open, setOpen] = useState(false)
 
   const sortedClients = useMemo(
     () => [...clients].sort((a, b) => a.name.localeCompare(b.name)),
@@ -95,18 +78,6 @@ export function ClientSelector({
   )
 
   const isAllClients = selectedClientId === ALL_CLIENTS_VALUE
-  // Opens with the current choice in view and highlighted.
-  const selectedClient = clients.find(client => client.id === selectedClientId)
-  const selectedCommandValue = isAllClients
-    ? ALL_CLIENTS_LABEL
-    : selectedClient
-      ? `${selectedClient.name} ${selectedClient.id}`
-      : undefined
-  const revealSelected = useRevealSelected(selectedCommandValue)
-  const selectedLabel = isAllClients
-    ? ALL_CLIENTS_LABEL
-    : (clients.find(client => client.id === selectedClientId)?.name ??
-      ALL_CLIENTS_LABEL)
   // The hint reflects what the board is actually withholding. Under a single
   // client the type scope is implied, so it stays quiet there.
   const hiddenHint = isAllClients
@@ -137,7 +108,6 @@ export function ClientSelector({
 
   const handleSelectClient = useCallback(
     (companyId: string) => {
-      setOpen(false)
       changeScope({ companyId }, params => {
         if (companyId !== ALL_CLIENTS_VALUE) {
           params.set('companyId', companyId)
@@ -166,120 +136,55 @@ export function ClientSelector({
     [changeScope, hiddenProjectTypes]
   )
 
+  const items = useMemo(
+    () =>
+      sortedClients.map(client => ({
+        value: client.id,
+        label: client.name,
+        // The id keeps two same-named clients distinct rows for cmdk.
+        keywords: [client.id],
+      })),
+    [sortedClients]
+  )
+
+  // The shared filter trigger: "All clients" (plus what the Show group
+  // hides) as the placeholder, the picked client with a clear ×.
   return (
-    // Same invisible-sizer trick as PersonSelector: the trigger holds the
-    // widest label's width (including the longest hint) so switching scope
-    // never shifts the toolbar.
-    <div className='grid'>
-      <div
-        aria-hidden='true'
-        className='pointer-events-none invisible col-start-1 row-start-1 overflow-hidden'
-      >
-        {[
-          `${ALL_CLIENTS_LABEL} · ${describeHiddenProjectTypes(
-            SCOPE_ROWS.map(row => row.type)
-          )}`,
-          ...sortedClients.map(client => client.name),
-        ].map(label => (
-          <span
-            key={label}
-            className='flex h-0 items-center gap-2 border-x border-x-transparent px-3 text-sm whitespace-nowrap'
-          >
-            <span className='size-4 shrink-0' />
-            {label}
-            <span className='size-4 shrink-0' />
-          </span>
-        ))}
-      </div>
-      <div className='col-start-1 row-start-1'>
-        <Popover open={open} onOpenChange={setOpen} modal>
-          <PopoverTrigger asChild>
-            <Button
-              type='button'
-              variant='outline'
-              role='combobox'
-              aria-expanded={open}
-              aria-haspopup='listbox'
-              aria-label='Client scope'
-              disabled={disabled}
-              size='sm'
-              className='w-full justify-between px-3 py-0 font-normal'
-            >
-              <span className='flex min-w-0 items-center gap-2'>
-                <ENTITY_ICONS.company className='text-muted-foreground size-4 shrink-0' />
-                <span className='truncate font-medium'>{selectedLabel}</span>
-                {hiddenHint ? (
-                  <span className='text-muted-foreground shrink-0 text-xs'>
-                    · {hiddenHint}
-                  </span>
-                ) : null}
-              </span>
-              <ChevronsUpDown className='size-4 shrink-0 opacity-50' />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className='w-(--anchor-width) min-w-64 p-0'
-            sideOffset={8}
-          >
-            <Command defaultValue={selectedCommandValue}>
-              <CommandInput placeholder='Search clients…' className='h-9' />
-              <CommandList
-                ref={revealSelected}
-                className='max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain'
-              >
-                <CommandEmpty>No clients found.</CommandEmpty>
-                <CommandGroup heading='Show'>
-                  {SCOPE_ROWS.map(row => (
-                    <ClientScopeRow
-                      key={row.type}
-                      label={row.label}
-                      checked={!hiddenProjectTypes.includes(row.type)}
-                      disabled={!isAllClients}
-                      onToggle={() => handleToggleType(row.type)}
-                      className={ITEM_HOVER_CLASSES}
-                    />
-                  ))}
-                  {!isAllClients ? (
-                    <p className='text-muted-foreground px-2 pt-1 pb-1.5 text-xs'>
-                      Applies under All clients.
-                    </p>
-                  ) : null}
-                </CommandGroup>
-                <CommandSeparator />
-                <CommandGroup heading='Client'>
-                  <CommandItem
-                    value={ALL_CLIENTS_LABEL}
-                    keywords={['all', 'clients']}
-                    onSelect={() => handleSelectClient(ALL_CLIENTS_VALUE)}
-                    className={cn('whitespace-nowrap', ITEM_HOVER_CLASSES)}
-                  >
-                    <ENTITY_ICONS.company />
-                    {ALL_CLIENTS_LABEL}
-                    {isAllClients ? <Check className='ml-auto' /> : null}
-                  </CommandItem>
-                  {sortedClients.map(client => (
-                    <CommandItem
-                      key={client.id}
-                      // Label + id: two clients with the same name stay
-                      // distinct rows for cmdk without changing the search.
-                      value={`${client.name} ${client.id}`}
-                      keywords={['client']}
-                      onSelect={() => handleSelectClient(client.id)}
-                      className={cn('whitespace-nowrap', ITEM_HOVER_CLASSES)}
-                    >
-                      <ENTITY_ICONS.company />
-                      <span className='truncate'>{client.name}</span>
-                      {selectedClientId === client.id ? (
-                        <Check className='ml-auto' />
-                      ) : null}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </div>
-    </div>
+    <SearchableCombobox
+      items={items}
+      value={isAllClients ? null : selectedClientId}
+      onChange={companyId => handleSelectClient(companyId || ALL_CLIENTS_VALUE)}
+      onClear={() => handleSelectClient(ALL_CLIENTS_VALUE)}
+      clearLabel='client'
+      ariaLabel='Client scope'
+      placeholder={
+        hiddenHint ? `${ALL_CLIENTS_LABEL} · ${hiddenHint}` : ALL_CLIENTS_LABEL
+      }
+      searchPlaceholder='Search clients…'
+      emptyMessage='No clients found.'
+      disabled={disabled}
+      className={FILTER_TRIGGER_WIDTH}
+      listHeader={
+        <>
+          <CommandGroup heading='Show'>
+            {SCOPE_ROWS.map(row => (
+              <ClientScopeRow
+                key={row.type}
+                label={row.label}
+                checked={!hiddenProjectTypes.includes(row.type)}
+                disabled={!isAllClients}
+                onToggle={() => handleToggleType(row.type)}
+              />
+            ))}
+            {!isAllClients ? (
+              <p className='text-muted-foreground px-2 pt-1 pb-1.5 text-xs'>
+                Applies under All clients.
+              </p>
+            ) : null}
+          </CommandGroup>
+          <CommandSeparator />
+        </>
+      }
+    />
   )
 }

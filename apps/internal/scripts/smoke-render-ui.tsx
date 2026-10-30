@@ -11,47 +11,103 @@ import { renderToString } from 'react-dom/server'
 import { Button } from '@pts/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { Skeleton } from '@pts/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@pts/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@pts/ui/table'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import {
-  AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@pts/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '@pts/ui/avatar'
 import {
-  Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
 } from '@pts/ui/breadcrumb'
 import { Checkbox } from '@pts/ui/checkbox'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@pts/ui/collapsible'
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@pts/ui/collapsible'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from '@pts/ui/dialog'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
 import { Label } from '@pts/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { Progress } from '@pts/ui/progress'
 import {
-  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
 } from '@pts/ui/select'
 import { Separator } from '@pts/ui/separator'
 import { Switch } from '@pts/ui/switch'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@pts/ui/tooltip'
 import {
-  Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@pts/ui/tooltip'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from '../components/ui/sheet'
 import { Slot } from '@pts/ui/slot'
 import { Badge } from '@pts/ui/badge'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '../components/ui/hover-card'
 import {
-  Popover as TiptapPopover, PopoverContent as TiptapPopoverContent,
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '../components/ui/hover-card'
+import {
+  Popover as TiptapPopover,
+  PopoverContent as TiptapPopoverContent,
   PopoverTrigger as TiptapPopoverTrigger,
 } from '../components/tiptap-ui-primitive/popover/popover'
 import {
-  DropdownMenu as TiptapDropdownMenu, DropdownMenuContent as TiptapDropdownMenuContent,
-  DropdownMenuItem as TiptapDropdownMenuItem, DropdownMenuTrigger as TiptapDropdownMenuTrigger,
+  DropdownMenu as TiptapDropdownMenu,
+  DropdownMenuContent as TiptapDropdownMenuContent,
+  DropdownMenuItem as TiptapDropdownMenuItem,
+  DropdownMenuTrigger as TiptapDropdownMenuTrigger,
 } from '../components/tiptap-ui-primitive/dropdown-menu/dropdown-menu'
 
 type Case = { name: string; element: React.ReactElement }
@@ -64,7 +120,10 @@ const cases: Case[] = [
     name: 'tabs',
     element: (
       <Tabs value='a'>
-        <TabsList><TabsTrigger value='a'>A</TabsTrigger><TabsTrigger value='b'>B</TabsTrigger></TabsList>
+        <TabsList>
+          <TabsTrigger value='a'>A</TabsTrigger>
+          <TabsTrigger value='b'>B</TabsTrigger>
+        </TabsList>
         <TabsContent value='a'>content</TabsContent>
       </Tabs>
     ),
@@ -74,30 +133,57 @@ const cases: Case[] = [
     name: 'table-compact',
     element: (
       <Table density='compact'>
-        <TableHeader><TableRow><TableHead>H</TableHead></TableRow></TableHeader>
-        <TableBody><TableRow><TableCell>c</TableCell></TableRow></TableBody>
+        <TableHeader>
+          <TableRow>
+            <TableHead>H</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell>c</TableCell>
+          </TableRow>
+        </TableBody>
       </Table>
     ),
   },
-  { name: 'avatar', element: <Avatar><AvatarFallback>AB</AvatarFallback></Avatar> },
+  {
+    name: 'avatar',
+    element: (
+      <Avatar>
+        <AvatarFallback>AB</AvatarFallback>
+      </Avatar>
+    ),
+  },
   {
     name: 'breadcrumb (asChild link)',
     element: (
       <Breadcrumb>
         <BreadcrumbList>
-          <BreadcrumbItem><span>Work</span></BreadcrumbItem>
-          <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink asChild><a href='/x'>Section</a></BreadcrumbLink>
+            <span>Work</span>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          <BreadcrumbItem><BreadcrumbPage>Here</BreadcrumbPage></BreadcrumbItem>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <a href='/x'>Section</a>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Here</BreadcrumbPage>
+          </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
     ),
   },
-  { name: 'checkbox (checked)', element: <Checkbox checked onCheckedChange={noop} /> },
-  { name: 'switch sm (checked)', element: <Switch size='sm' checked onCheckedChange={noop} /> },
+  {
+    name: 'checkbox (checked)',
+    element: <Checkbox checked onCheckedChange={noop} />,
+  },
+  {
+    name: 'switch sm (checked)',
+    element: <Switch size='sm' checked onCheckedChange={noop} />,
+  },
   { name: 'label', element: <Label htmlFor='x'>Field</Label> },
   { name: 'separator', element: <Separator /> },
   { name: 'progress', element: <Progress value={40} /> },
@@ -114,10 +200,17 @@ const cases: Case[] = [
     name: 'dialog (open, showCloseButton)',
     element: (
       <Dialog open onOpenChange={noop}>
-        <DialogTrigger asChild><Button>open</Button></DialogTrigger>
+        <DialogTrigger asChild>
+          <Button>open</Button>
+        </DialogTrigger>
         <DialogContent showCloseButton>
-          <DialogHeader><DialogTitle>T</DialogTitle><DialogDescription>D</DialogDescription></DialogHeader>
-          <DialogFooter><Button>Ok</Button></DialogFooter>
+          <DialogHeader>
+            <DialogTitle>T</DialogTitle>
+            <DialogDescription>D</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button>Ok</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     ),
@@ -126,23 +219,40 @@ const cases: Case[] = [
     name: 'alert-dialog (open, trigger asChild)',
     element: (
       <AlertDialog open onOpenChange={noop}>
-        <AlertDialogTrigger asChild><Button>open</Button></AlertDialogTrigger>
+        <AlertDialogTrigger asChild>
+          <Button>open</Button>
+        </AlertDialogTrigger>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>T</AlertDialogTitle><AlertDialogDescription>D</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><Button>Ok</Button></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>T</AlertDialogTitle>
+            <AlertDialogDescription>D</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button>Ok</Button>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     ),
   },
   {
     name: 'confirm-dialog (open)',
-    element: <ConfirmDialog open title='Sure?' description='really' onConfirm={noop} onCancel={noop} />,
+    element: (
+      <ConfirmDialog
+        open
+        title='Sure?'
+        description='really'
+        onConfirm={noop}
+        onCancel={noop}
+      />
+    ),
   },
   {
     name: 'popover (open, trigger asChild)',
     element: (
       <Popover open onOpenChange={noop}>
-        <PopoverTrigger asChild><Button>t</Button></PopoverTrigger>
+        <PopoverTrigger asChild>
+          <Button>t</Button>
+        </PopoverTrigger>
         <PopoverContent className='w-64'>hello</PopoverContent>
       </Popover>
     ),
@@ -158,7 +268,9 @@ const cases: Case[] = [
           <DropdownMenuLabel>Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem onSelect={e => e.preventDefault()}>Toggle theme</DropdownMenuItem>
+            <DropdownMenuItem onSelect={e => e.preventDefault()}>
+              Toggle theme
+            </DropdownMenuItem>
             <DropdownMenuItem disabled>Sign out</DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
@@ -181,7 +293,9 @@ const cases: Case[] = [
     name: 'select (open, value, groups + bare label)',
     element: (
       <Select value='b' onValueChange={noop} open onOpenChange={noop}>
-        <SelectTrigger size='sm'><SelectValue placeholder='Pick' /></SelectTrigger>
+        <SelectTrigger size='sm'>
+          <SelectValue placeholder='Pick' />
+        </SelectTrigger>
         <SelectContent>
           <SelectLabel>Bare label</SelectLabel>
           <SelectGroup>
@@ -197,7 +311,9 @@ const cases: Case[] = [
     name: 'select (closed, value — trigger label resolution)',
     element: (
       <Select value='a' onValueChange={noop}>
-        <SelectTrigger><SelectValue placeholder='Pick' /></SelectTrigger>
+        <SelectTrigger>
+          <SelectValue placeholder='Pick' />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value='a'>Alpha</SelectItem>
         </SelectContent>
@@ -209,17 +325,19 @@ const cases: Case[] = [
     element: (
       <TooltipProvider delayDuration={0}>
         <Tooltip open>
-          <TooltipTrigger asChild><Button>t</Button></TooltipTrigger>
+          <TooltipTrigger asChild>
+            <Button>t</Button>
+          </TooltipTrigger>
           <TooltipContent side='right'>tip</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     ),
   },
   {
-    name: 'sheet (open, entity-sheet shape: size, hideCloseButton, skipMountAnimation)',
+    name: 'sheet (open, entity-sheet shape: columns, hideCloseButton, skipMountAnimation)',
     element: (
       <Sheet open onOpenChange={noop}>
-        <SheetContent size='narrow' hideCloseButton skipMountAnimation>
+        <SheetContent columns={1} hideCloseButton skipMountAnimation>
           <SheetHeader>
             <SheetTitle>Edit client</SheetTitle>
             <SheetDescription>desc</SheetDescription>
@@ -238,7 +356,7 @@ const cases: Case[] = [
         <SheetTrigger asChild>
           <Button>open</Button>
         </SheetTrigger>
-        <SheetContent size='wide'>
+        <SheetContent columns={2}>
           <SheetHeader>
             <SheetTitle>Details</SheetTitle>
             <SheetDescription>desc</SheetDescription>
@@ -252,23 +370,40 @@ const cases: Case[] = [
     name: 'slot (bare, prop + className merge)',
     element: (
       <Slot className='outer' data-outer=''>
-        <a href='/x' className='inner'>link</a>
+        <a href='/x' className='inner'>
+          link
+        </a>
       </Slot>
     ),
   },
   {
     name: 'button asChild (link)',
-    element: <Button asChild size='sm'><a href='/x'>Go</a></Button>,
+    element: (
+      <Button asChild size='sm'>
+        <a href='/x'>Go</a>
+      </Button>
+    ),
   },
-  { name: 'badge asChild (link)', element: <Badge asChild><a href='/x'>New</a></Badge> },
+  {
+    name: 'badge asChild (link)',
+    element: (
+      <Badge asChild>
+        <a href='/x'>New</a>
+      </Badge>
+    ),
+  },
   // --- Tabs on Base UI, including the board's Link-as-tab shape.
   {
     name: 'tabs (asChild link triggers — project board shape)',
     element: (
       <Tabs value='overview'>
         <TabsList>
-          <TabsTrigger value='overview' asChild><a href='/overview'>Overview</a></TabsTrigger>
-          <TabsTrigger value='tasks' asChild><a href='/tasks'>Tasks</a></TabsTrigger>
+          <TabsTrigger value='overview' asChild>
+            <a href='/overview'>Overview</a>
+          </TabsTrigger>
+          <TabsTrigger value='tasks' asChild>
+            <a href='/tasks'>Tasks</a>
+          </TabsTrigger>
         </TabsList>
         <TabsContent value='overview'>content</TabsContent>
       </Tabs>
@@ -279,7 +414,9 @@ const cases: Case[] = [
     name: 'hover-card (open, trigger asChild)',
     element: (
       <HoverCard open>
-        <HoverCardTrigger asChild><a href='/x'>hover me</a></HoverCardTrigger>
+        <HoverCardTrigger asChild>
+          <a href='/x'>hover me</a>
+        </HoverCardTrigger>
         <HoverCardContent>card body</HoverCardContent>
       </HoverCard>
     ),
@@ -288,7 +425,9 @@ const cases: Case[] = [
     name: 'hover-card (closed — uncontrolled default)',
     element: (
       <HoverCard>
-        <HoverCardTrigger asChild><a href='/x'>hover me</a></HoverCardTrigger>
+        <HoverCardTrigger asChild>
+          <a href='/x'>hover me</a>
+        </HoverCardTrigger>
         <HoverCardContent>card body</HoverCardContent>
       </HoverCard>
     ),
@@ -298,7 +437,9 @@ const cases: Case[] = [
     name: 'tiptap popover (open, trigger asChild)',
     element: (
       <TiptapPopover open>
-        <TiptapPopoverTrigger asChild><button type='button'>link</button></TiptapPopoverTrigger>
+        <TiptapPopoverTrigger asChild>
+          <button type='button'>link</button>
+        </TiptapPopoverTrigger>
         <TiptapPopoverContent aria-label='Link'>body</TiptapPopoverContent>
       </TiptapPopover>
     ),
@@ -307,9 +448,13 @@ const cases: Case[] = [
     name: 'tiptap dropdown (open, asChild trigger + item)',
     element: (
       <TiptapDropdownMenu open>
-        <TiptapDropdownMenuTrigger asChild><button type='button'>H</button></TiptapDropdownMenuTrigger>
+        <TiptapDropdownMenuTrigger asChild>
+          <button type='button'>H</button>
+        </TiptapDropdownMenuTrigger>
         <TiptapDropdownMenuContent>
-          <TiptapDropdownMenuItem asChild><button type='button'>H1</button></TiptapDropdownMenuItem>
+          <TiptapDropdownMenuItem asChild>
+            <button type='button'>H1</button>
+          </TiptapDropdownMenuItem>
         </TiptapDropdownMenuContent>
       </TiptapDropdownMenu>
     ),

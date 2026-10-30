@@ -4,6 +4,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { Users } from 'lucide-react'
 
+import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
@@ -90,40 +91,19 @@ export function PersonSelector({
     [pathname, router, searchParams]
   )
 
+  // The shared filter trigger, at the filter width beside the client scope.
   return (
-    // Grid-stacked invisible sizers pin the trigger width to the widest
-    // option (mimicking the trigger's avatar + padding + chevron chrome),
-    // so switching people never shifts the toolbar.
-    <div className='grid'>
-      <div
-        aria-hidden='true'
-        className='pointer-events-none invisible col-start-1 row-start-1 overflow-hidden'
-      >
-        {items.map(item => (
-          <span
-            key={item.value}
-            className='flex h-0 items-center gap-2 border-x border-x-transparent px-3 text-sm whitespace-nowrap'
-          >
-            <span className='size-5 shrink-0' />
-            {item.label}
-            <span className='size-4 shrink-0' />
-          </span>
-        ))}
-      </div>
-      <div className='col-start-1 row-start-1'>
-        <SearchableCombobox
-          items={items}
-          value={selectedUserId}
-          onChange={handleChange}
-          placeholder='Select person'
-          searchPlaceholder='Search people…'
-          emptyMessage='No people found.'
-          disabled={disabled}
-          className='w-full'
-          triggerClassName='h-8 py-0 text-sm'
-          itemClassName='whitespace-nowrap'
-        />
-      </div>
-    </div>
+    <SearchableCombobox
+      items={items}
+      value={selectedUserId}
+      onChange={handleChange}
+      ariaLabel='Person'
+      placeholder='Select person'
+      searchPlaceholder='Search people…'
+      emptyMessage='No people found.'
+      disabled={disabled}
+      className={FILTER_TRIGGER_WIDTH}
+      itemClassName='whitespace-nowrap'
+    />
   )
 }
