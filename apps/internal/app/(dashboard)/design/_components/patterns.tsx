@@ -120,6 +120,62 @@ export function PatternsHouseRules() {
       />
 
       <DoDont
+        rule='One Save, one transaction'
+        why='Every control in a sheet changes the form; Save writes the record and everything with it (people, billing, sign-in, links) at once, or nothing. Comments, lead updates, logging time, invoice send and void, and planning are their own actions and save on their own click.'
+        doExample={
+          <MiniSheet tabs={['People']}>
+            <div className='space-y-2 p-3'>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
+                Ada Lovelace
+                <Switch defaultChecked aria-label='Portal access' />
+              </div>
+              <div className='flex justify-end'>
+                <Button size='sm'>Save</Button>
+              </div>
+            </div>
+          </MiniSheet>
+        }
+        doCaption='Flip the portal switch, then Save: the company, its people and their access commit together.'
+        dontExample={
+          <MiniSheet tabs={['People']}>
+            <div className='space-y-2 p-3'>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
+                Ada Lovelace
+                <span className='text-muted-foreground text-xs'>
+                  Saved on toggle
+                </span>
+              </div>
+              <p className='text-destructive text-xs'>
+                Company saved, but its people were not.
+              </p>
+            </div>
+          </MiniSheet>
+        }
+        dontCaption='Saving on toggle, or in several steps that can half-fail.'
+      />
+
+      <DoDont
+        rule='Create and edit are the same sheet'
+        why='A new record shows every tab and field it will have. What needs the new record (its people, billing, sign-in) is filled in now and saved with it. Only history, dates, archive and share links wait until it exists.'
+        doExample={
+          <MiniSheet tabs={['Details', 'People', 'Projects', 'Billing']}>
+            <div className='text-muted-foreground p-3'>
+              New company: all four tabs.
+            </div>
+          </MiniSheet>
+        }
+        doCaption='Create a company with its people and billing in one pass.'
+        dontExample={
+          <MiniSheet tabs={['Details']}>
+            <div className='text-muted-foreground p-3'>
+              Save, close and reopen to add people.
+            </div>
+          </MiniSheet>
+        }
+        dontCaption='A create sheet that hides tabs until the record exists.'
+      />
+
+      <DoDont
         rule='One control per job'
         why='Each setting has exactly one control, in one place. Two controls for the same state make people wonder which one wins.'
         doExample={
