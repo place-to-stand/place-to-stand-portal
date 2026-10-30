@@ -1,5 +1,5 @@
 import { clientEndedAtSql } from '@pts/db/client-state'
-import { clientNameSql, personNameSql } from '@pts/db/names'
+import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -183,7 +183,7 @@ export async function fetchTimeLogPage(
         userName: sql<
           string | null
         >`coalesce(${personNameSql}, ${users.email})`,
-        userAvatarUrl: users.avatarUrl,
+        userAvatarUrl: personAvatarSql,
         projectId: projects.id,
         projectName: projects.name,
         projectSlug: projects.slug,

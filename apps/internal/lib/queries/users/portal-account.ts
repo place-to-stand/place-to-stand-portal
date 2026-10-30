@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { eq } from 'drizzle-orm'
@@ -41,7 +41,7 @@ export async function getPortalAccountSummary(
         fullName: personNameSql,
         email: users.email,
         role: users.role,
-        avatarUrl: users.avatarUrl,
+        avatarUrl: personAvatarSql,
         createdAt: users.createdAt,
         disabledAt: users.disabledAt,
         deletedAt: users.deletedAt,

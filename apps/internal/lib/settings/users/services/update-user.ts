@@ -6,9 +6,7 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
-import { getUserById } from '@/lib/queries/users'
 
-import { resolveAvatarUpdate } from '../user-service'
 import type { UpdateUserInput } from '../user-validation'
 import type { UserServiceResult } from '../types'
 
@@ -20,37 +18,6 @@ export async function updatePortalUser(
 
   const adminClient = getSupabaseServiceClient()
 
-  let existingAvatarPath: string | null = null
-
-  try {
-    const existingProfile = await getUserById(actor, input.id)
-    existingAvatarPath = existingProfile.avatarUrl ?? null
-  } catch (error) {
-    console.error('Failed to load user profile for avatar update', error)
-    return {
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to update user profile.',
-    }
-  }
-
-  const currentAvatarPath = existingAvatarPath
-
-  const avatarResolution = await resolveAvatarUpdate({
-    client: adminClient,
-    userId: input.id,
-    currentAvatarPath,
-    incomingAvatarPath: input.avatarPath,
-    removeRequested: input.avatarRemoved,
-  })
-
-  if (avatarResolution.error) {
-    return { error: avatarResolution.error }
-  }
-
-  const nextAvatarPath = avatarResolution.nextAvatarPath
-
   try {
     await db.transaction(async tx => {
       await tx
@@ -58,7 +25,6 @@ export async function updatePortalUser(
         .set({
           role: input.role,
           deletedAt: null,
-          avatarUrl: nextAvatarPath,
         })
         .where(eq(users.id, input.id))
       // The name is the person's (their contact's).
@@ -93,7 +59,6 @@ export async function updatePortalUser(
     full_name: input.fullName,
     role: input.role,
     deleted_at: null,
-    avatar_url: nextAvatarPath,
   }
 
   if (input.password) {

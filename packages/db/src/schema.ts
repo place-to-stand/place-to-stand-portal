@@ -171,7 +171,6 @@ export const users = pgTable(
     // A user is a person's sign-in. Their name is their contact's (0109
     // dropped users.full_name): read it with personNameSql (@pts/db/names).
     role: userRole().default('CLIENT').notNull(),
-    avatarUrl: text('avatar_url'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),

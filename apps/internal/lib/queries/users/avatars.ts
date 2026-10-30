@@ -18,25 +18,18 @@ export async function getPersonAvatarPath(contactId: string): Promise<string> {
   return row.avatarUrl
 }
 
-/**
- * The photo behind a sign-in: the person's (contacts.avatar_url), falling
- * back to the sign-in's own copy for anyone not yet linked to a person.
- */
+/** The photo behind a sign-in: its person's (contacts.avatar_url). */
 export async function getUserAvatarPath(userId: string): Promise<string> {
   const [row] = await db
-    .select({
-      personAvatar: contacts.avatarUrl,
-      userAvatar: users.avatarUrl,
-    })
+    .select({ avatarUrl: contacts.avatarUrl })
     .from(users)
-    .leftJoin(
+    .innerJoin(
       contacts,
       and(eq(contacts.userId, users.id), isNull(contacts.deletedAt))
     )
     .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .limit(1)
 
-  const path = row?.personAvatar ?? row?.userAvatar
-  if (!path) throw new NotFoundError('Avatar not found')
-  return path
+  if (!row?.avatarUrl) throw new NotFoundError('Avatar not found')
+  return row.avatarUrl
 }

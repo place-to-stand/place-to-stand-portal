@@ -7,7 +7,6 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(1),
   role: z.enum(USER_ROLES),
-  avatarPath: z.string().min(1).max(255).optional(),
 })
 
 export const updateUserSchema = z.object({
@@ -15,8 +14,6 @@ export const updateUserSchema = z.object({
   fullName: z.string().min(1),
   role: z.enum(USER_ROLES),
   password: z.string().min(8).optional(),
-  avatarPath: z.string().min(1).max(255).optional(),
-  avatarRemoved: z.boolean().optional(),
   disabled: z.boolean().optional(),
 })
 

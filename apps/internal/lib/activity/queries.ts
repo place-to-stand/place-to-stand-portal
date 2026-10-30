@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -89,7 +89,7 @@ const actorSelection = {
   id: users.id,
   fullName: personNameSql,
   email: users.email,
-  avatarUrl: users.avatarUrl,
+  avatarUrl: personAvatarSql,
 } as const
 
 /**

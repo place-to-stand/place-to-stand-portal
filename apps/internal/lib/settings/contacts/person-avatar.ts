@@ -3,7 +3,7 @@ import 'server-only'
 import { eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { contacts, users } from '@/lib/db/schema'
+import { contacts } from '@/lib/db/schema'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import {
   deleteAvatarObject,
@@ -51,12 +51,6 @@ export async function updatePersonAvatar(input: {
       .update(contacts)
       .set({ avatarUrl: next, updatedAt: now })
       .where(eq(contacts.id, input.contactId))
-    if (person.userId) {
-      await tx
-        .update(users)
-        .set({ avatarUrl: next, updatedAt: now })
-        .where(eq(users.id, person.userId))
-    }
   })
 
   if (current && current !== next) {

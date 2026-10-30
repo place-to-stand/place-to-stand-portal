@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { and, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
@@ -60,7 +60,7 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
       id: users.id,
       contact_id: sql<string | null>`(select ${contacts.id} from ${contacts} where ${contacts.userId} = ${users.id} and ${contacts.deletedAt} is null limit 1)`,
       full_name: personNameSql,
-      avatar_url: users.avatarUrl,
+      avatar_url: personAvatarSql,
     })
     .from(users)
     .where(and(inArray(users.id, ownerIds), isNull(users.deletedAt)))

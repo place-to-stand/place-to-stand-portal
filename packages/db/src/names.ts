@@ -23,3 +23,16 @@ export function personNameOf(table = 'users') {
 
 /** A user's name, correlated on the outer `users`. */
 export const personNameSql = personNameOf('users')
+
+/**
+ * A user's photo: their contact's (migration 0112; a photo belongs to the
+ * person, signed in or not). `table` as for `personNameOf`.
+ */
+export function personAvatarOf(table = 'users') {
+  return sql<string | null>`(select c.avatar_url from contacts c where c.user_id = ${sql.raw(
+    `"${table}"."id"`
+  )} and c.deleted_at is null order by c.created_at limit 1)`
+}
+
+/** A user's photo, correlated on the outer `users`. */
+export const personAvatarSql = personAvatarOf('users')

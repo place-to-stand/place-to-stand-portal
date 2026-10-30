@@ -162,3 +162,10 @@ A client is a company you bill, so the separate billing record is gone:
 - Undo: `docs/migrations/0111-undo.sql`, described in `sales-tools-rollout.md`.
 
 Still named "client" on purpose: the client portal, `client_portal_access`, `client_updates`, and code that means the company in its client role (the billed party on an invoice, hours by client). Renaming those identifiers is a follow-up.
+
+## Migration 0112: the sign-in is only a sign-in (built)
+
+- `users.avatar_url` is gone: a photo is the person's. Read it with `personAvatarSql` / `personAvatarOf()` from `@pts/db/names` (as names use `personNameSql`). Profile and person photo uploads write `contacts.avatar_url` only; deleting a sign-in leaves the photo.
+- The user services lost their photo handling (no caller passed one).
+- `users` keeps id, email, role, `disabled_at`, `deleted_at`, onboarding and timestamps.
+- Not done, for Jason: the 38 foreign keys that point at `users` (created_by, author, actor, assignee, owner, time logs, commission origination and closers). See the overnight report for the options.

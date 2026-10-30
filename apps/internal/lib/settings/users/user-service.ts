@@ -54,21 +54,6 @@ export async function finalizeUserAvatar(options: {
   }
 }
 
-export async function cleanupAvatar(
-  client: ReturnType<typeof getSupabaseServiceClient>,
-  path: string | null | undefined
-) {
-  if (!path) {
-    return
-  }
-
-  try {
-    await deleteAvatarObject({ client, path })
-  } catch (cleanupError) {
-    console.error('Failed to clean up avatar asset', cleanupError)
-  }
-}
-
 /**
  * Client portal invite: generate a one-time sign-in link and mail it.
  *

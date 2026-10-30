@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -245,7 +245,7 @@ async function selectLeadRows({
     assigneeId: leads.assigneeId,
     assigneeName: personNameSql,
     assigneeEmail: users.email,
-    assigneeAvatarUrl: users.avatarUrl,
+    assigneeAvatarUrl: personAvatarSql,
     contactEmail: leadDisplayFields.contactEmail,
     contactPhone: leadDisplayFields.contactPhone,
     companyName: leadDisplayFields.companyName,

@@ -10,10 +10,8 @@ import { serverEnv } from '@/lib/env.server'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 import {
-  cleanupAvatar,
   dispatchAdminInvite,
   dispatchPortalInvite,
-  finalizeUserAvatar,
   generateTemporaryPassword,
 } from '../user-service'
 import type { CreateUserInput } from '../user-validation'
@@ -54,25 +52,12 @@ export async function createPortalUser(
 
   const userId = createResult.data.user.id
 
-  let normalizedAvatarPath: string | null = null
-
-  if (input.avatarPath) {
-    const avatarResult = await finalizeUserAvatar({
-      client: adminClient,
-      avatarPath: input.avatarPath,
-      userId,
-    })
-
-    normalizedAvatarPath = avatarResult.normalizedPath
-  }
-
   try {
     await db.transaction(async tx => {
       await tx.insert(users).values({
         id: userId,
         email: input.email,
         role: input.role,
-        avatarUrl: normalizedAvatarPath,
       })
       if (options.linkPerson !== false) {
         await ensurePersonForUser(tx, {
@@ -86,45 +71,11 @@ export async function createPortalUser(
   } catch (error) {
     console.error('Failed to insert user profile', error)
     await adminClient.auth.admin.deleteUser(userId)
-    await cleanupAvatar(adminClient, normalizedAvatarPath ?? input.avatarPath)
     return {
       error:
         error instanceof Error
           ? error.message
           : 'Unable to create Supabase user.',
-    }
-  }
-
-  if (normalizedAvatarPath) {
-    const existingMetadata = (createResult.data.user.user_metadata ??
-      {}) as Record<string, unknown>
-
-    const metadataResult = await adminClient.auth.admin.updateUserById(userId, {
-      user_metadata: {
-        ...existingMetadata,
-        full_name: input.fullName,
-        role: input.role,
-        must_reset_password: true,
-        avatar_url: normalizedAvatarPath,
-      },
-    })
-
-    if (metadataResult.error) {
-      console.error(
-        'Failed to sync avatar metadata for new user',
-        metadataResult.error
-      )
-      try {
-        await db.delete(users).where(eq(users.id, userId))
-      } catch (dbError) {
-        console.error(
-          'Failed to rollback user profile after metadata error',
-          dbError
-        )
-      }
-      await adminClient.auth.admin.deleteUser(userId)
-      await cleanupAvatar(adminClient, normalizedAvatarPath)
-      return { error: metadataResult.error.message }
     }
   }
 
@@ -165,7 +116,6 @@ export async function createPortalUser(
       )
     }
     await adminClient.auth.admin.deleteUser(userId)
-    await cleanupAvatar(adminClient, normalizedAvatarPath)
     return { error: 'Unable to send invite email. Please try again.' }
   }
 

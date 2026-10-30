@@ -1,5 +1,5 @@
 import { clientEndedAtSql } from '@pts/db/client-state'
-import { clientNameSql, personNameOf, personNameSql } from '@pts/db/names'
+import { clientNameSql, personAvatarOf, personAvatarSql, personNameOf, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -124,7 +124,7 @@ export async function fetchEmployeePayroll(
       userId: users.id,
       fullName: personNameSql,
       email: users.email,
-      avatarUrl: users.avatarUrl,
+      avatarUrl: personAvatarSql,
       updatedAt: users.updatedAt,
       totalHours: sql<string | null>`SUM(${timeLogs.hours})`,
     })
@@ -146,7 +146,7 @@ export async function fetchEmployeePayroll(
       users.id,
       personNameSql,
       users.email,
-      users.avatarUrl,
+      personAvatarSql,
       users.updatedAt
     )
 
@@ -218,7 +218,7 @@ export async function fetchOriginationCommissions(
           originatorId: users.id,
           originatorName: personNameSql,
           originatorEmail: users.email,
-          originatorAvatarUrl: users.avatarUrl,
+          originatorAvatarUrl: personAvatarSql,
           originatorUpdatedAt: users.updatedAt,
           clientId: companies.id,
           clientName: clientNameSql,
@@ -241,7 +241,7 @@ export async function fetchOriginationCommissions(
           users.id,
           personNameSql,
           users.email,
-          users.avatarUrl,
+          personAvatarSql,
           users.updatedAt,
           companies.id,
           clientNameSql
@@ -284,7 +284,7 @@ export async function fetchOriginationCommissions(
           originatorId: users.id,
           originatorName: personNameSql,
           originatorEmail: users.email,
-          originatorAvatarUrl: users.avatarUrl,
+          originatorAvatarUrl: personAvatarSql,
           originatorUpdatedAt: users.updatedAt,
           clientId: companies.id,
           clientName: clientNameSql,
@@ -310,7 +310,7 @@ export async function fetchOriginationCommissions(
           users.id,
           personNameSql,
           users.email,
-          users.avatarUrl,
+          personAvatarSql,
           users.updatedAt,
           companies.id,
           clientNameSql
@@ -439,7 +439,7 @@ export async function fetchCloserCommissions(
     sharePercent: commissionTermClosers.sharePercent,
     userName: personNameOf('closer_users'),
     userEmail: closerUsers.email,
-    userAvatarUrl: closerUsers.avatarUrl,
+    userAvatarUrl: personAvatarOf('closer_users'),
     userUpdatedAt: closerUsers.updatedAt,
     contactName: closerContacts.name,
     contactEmail: closerContacts.email,
@@ -453,7 +453,7 @@ export async function fetchCloserCommissions(
     commissionTermClosers.sharePercent,
     personNameOf('closer_users'),
     closerUsers.email,
-    closerUsers.avatarUrl,
+    personAvatarOf('closer_users'),
     closerUsers.updatedAt,
     closerContacts.name,
     closerContacts.email,

@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -16,7 +16,7 @@ export const fetchAdminUsers = cache(async (): Promise<DbUser[]> => {
       email: usersTable.email,
       fullName: personNameSql,
       role: usersTable.role,
-      avatarUrl: usersTable.avatarUrl,
+      avatarUrl: personAvatarSql,
       createdAt: usersTable.createdAt,
       updatedAt: usersTable.updatedAt,
       deletedAt: usersTable.deletedAt,
@@ -50,7 +50,7 @@ export const fetchCrmUsers = cache(async (): Promise<DbUser[]> => {
       email: usersTable.email,
       fullName: personNameSql,
       role: usersTable.role,
-      avatarUrl: usersTable.avatarUrl,
+      avatarUrl: personAvatarSql,
       createdAt: usersTable.createdAt,
       updatedAt: usersTable.updatedAt,
       deletedAt: usersTable.deletedAt,

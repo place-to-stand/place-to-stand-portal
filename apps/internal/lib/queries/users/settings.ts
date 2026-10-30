@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
@@ -153,7 +153,7 @@ export async function listUsersForSettings(
       id: users.id,
       email: users.email,
       fullName: personNameSql,
-      avatarUrl: users.avatarUrl,
+      avatarUrl: personAvatarSql,
       role: users.role,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,

@@ -14,8 +14,8 @@ import { sendPasswordChangedEmail } from "@/lib/email/auth-emails";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { db } from "@/lib/db";
-import { users as usersTable } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { contacts } from "@/lib/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
 import { resolveAvatarUpdate } from "@/lib/settings/users/user-service";
 
 type UpdateProfileInput = {
@@ -90,10 +90,11 @@ export async function updateProfile(input: UpdateProfileInput): Promise<UpdatePr
 
   try {
     await db.transaction(async (tx) => {
+      // Your photo is your person's.
       await tx
-        .update(usersTable)
-        .set({ avatarUrl: nextAvatarPath })
-        .where(eq(usersTable.id, user.id));
+        .update(contacts)
+        .set({ avatarUrl: nextAvatarPath, updatedAt: new Date().toISOString() })
+        .where(and(eq(contacts.userId, user.id), isNull(contacts.deletedAt)));
       // Your name is your person's (contact's) name.
       await renamePersonForUser(tx, user.id, fullName);
     });

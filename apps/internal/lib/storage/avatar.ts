@@ -119,7 +119,7 @@ export async function deleteAvatarObject({ client, path }: DeleteOptions) {
 }
 
 /**
- * `users.avatar_url` stores an object path inside the avatar bucket, not a URL.
+ * `contacts.avatar_url` stores an object path inside the avatar bucket, not a URL.
  * Use this before trusting a path that came from outside the upload flow — an
  * identity provider's `user_metadata.avatar_url`, for instance, is a CDN URL.
  */

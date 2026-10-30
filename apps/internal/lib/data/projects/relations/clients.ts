@@ -1,5 +1,5 @@
 import { clientEndedAtSql } from '@pts/db/client-state'
-import { clientNameSql, personNameSql } from '@pts/db/names'
+import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -103,7 +103,7 @@ export async function loadMemberRows(
         email: usersTable.email,
         fullName: personNameSql,
         role: usersTable.role,
-        avatarUrl: usersTable.avatarUrl,
+        avatarUrl: personAvatarSql,
         createdAt: usersTable.createdAt,
         updatedAt: usersTable.updatedAt,
         deletedAt: usersTable.deletedAt,

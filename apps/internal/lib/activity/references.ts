@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { inArray } from 'drizzle-orm'
@@ -56,7 +56,7 @@ export async function attachActivityReferences(
             id: users.id,
             fullName: personNameSql,
             email: users.email,
-            avatarUrl: users.avatarUrl,
+            avatarUrl: personAvatarSql,
           })
           .from(users)
           .where(inArray(users.id, Array.from(userIds)))

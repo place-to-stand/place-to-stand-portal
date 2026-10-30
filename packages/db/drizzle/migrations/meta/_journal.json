@@ -785,6 +785,13 @@
       "when": 1793336702142,
       "tag": "0111_clients_into_companies",
       "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1793337866517,
+      "tag": "0112_thin_sign_in",
+      "breakpoints": true
     }
   ]
 }

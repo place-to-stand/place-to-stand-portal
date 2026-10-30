@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 
 import { inArray } from 'drizzle-orm'
@@ -47,7 +47,7 @@ export async function GET(
             id: users.id,
             fullName: personNameSql,
             email: users.email,
-            avatarUrl: users.avatarUrl,
+            avatarUrl: personAvatarSql,
           })
           .from(users)
           .where(inArray(users.id, assigneeIds))

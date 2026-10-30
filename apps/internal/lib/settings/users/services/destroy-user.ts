@@ -8,7 +8,6 @@ import { revokeUserOauthConnections } from '@/lib/oauth/revoke-user-connections'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { getUserById } from '@/lib/queries/users'
 
-import { cleanupAvatar } from '../user-service'
 import type { DestroyUserInput } from '../user-validation'
 import type { UserServiceResult } from '../types'
 
@@ -20,11 +19,9 @@ export async function destroyPortalUser(
 
   const adminClient = getSupabaseServiceClient()
 
-  let avatarPath: string | null = null
-
+  // The photo is the person's: deleting the sign-in leaves it.
   try {
-    const userRecord = await getUserById(actor, input.id)
-    avatarPath = userRecord.avatarUrl ?? null
+    await getUserById(actor, input.id)
   } catch (error) {
     console.error('Failed to load user profile before destroy', error)
     return { error: 'Unable to permanently delete user.' }
@@ -69,7 +66,6 @@ export async function destroyPortalUser(
     }
   }
 
-  await cleanupAvatar(adminClient, avatarPath)
 
   const authDelete = await adminClient.auth.admin.deleteUser(input.id)
 

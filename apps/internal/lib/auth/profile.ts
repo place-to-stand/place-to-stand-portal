@@ -1,4 +1,4 @@
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import type { User } from '@supabase/supabase-js'
@@ -24,7 +24,7 @@ export async function ensureUserProfile(
       id: usersTable.id,
       email: usersTable.email,
       fullName: personNameSql,
-      avatarUrl: usersTable.avatarUrl,
+      avatarUrl: personAvatarSql,
     })
     .from(usersTable)
     .where(eq(usersTable.id, user.id))

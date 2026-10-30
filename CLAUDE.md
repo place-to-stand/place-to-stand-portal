@@ -139,7 +139,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 
 **Core tables** (`packages/db/src/schema.ts`):
 - `contacts` - People (UI: "People"). The person's name lives here; `contacts.user_id` links their sign-in
-- `users` - A person's sign-in: auth id, sign-in email, role (ADMIN, SALES, CLIENT), disabled/archived. No name column: read it with `personNameSql` / `personNameOf()` from `@pts/db/names`. Every live user has exactly one live contact; staff are at the "Place To Stand" company
+- `users` - A person's sign-in: auth id, sign-in email, role (ADMIN, SALES, CLIENT), disabled/archived, onboarding. No name or photo: read them from the person with `personNameSql` / `personAvatarSql` (`@pts/db/names`). Every live user has exactly one live contact; staff are at the "Place To Stand" company
 - `companies` - Every business (UI: "Companies"). A company you bill is a client: `client_since` set, `client_ended_at` null (`isClientCompany()` / `wasClientCompany()` in `@pts/db/client-state`); `slug` and `state` serve its projects and invoices. Everything billed keys on `company_id`
 - `memberships` - Contact-to-company (title, primary contact, portal access); a contact can be at several companies
 - `client_portal_access` - View: who can see which client company in the client portal (`company_id`, `contact_id`, `user_id`)
@@ -274,7 +274,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 ### File Storage
 
 **Supabase Storage setup:**
-- **Bucket: `user-avatars`** - Private bucket with authenticated access (must be created manually)
+- **Bucket: `user-avatars`** - Private bucket with authenticated access (must be created manually); paths are stored on `contacts.avatar_url`
 - **Bucket: `task-attachments`** - Task files
 
 **Storage utilities:**
