@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { and, eq, isNull } from 'drizzle-orm'
+import { z } from 'zod'
 
 import { db } from '@/lib/db'
 import { contacts } from '@pts/db/schema'
@@ -26,6 +27,11 @@ export async function setViewAsContact(contactId: string) {
 
   if (!isAdmin(user)) {
     throw new ForbiddenError('Only admins can preview the client portal')
+  }
+
+  // UUID-guard before the uuid column cast.
+  if (!z.string().uuid().safeParse(contactId).success) {
+    throw new ForbiddenError('Unknown contact')
   }
 
   const [contact] = await db
