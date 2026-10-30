@@ -1,6 +1,8 @@
 'use client'
 
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { useRouter } from 'next/navigation'
+
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -17,7 +19,7 @@ import type { LeadSheetProps } from './types'
 const LEAD_FORM_ID = 'lead-form'
 
 export function LeadSheet(props: LeadSheetProps) {
-  const { open: openSheet } = useSheetParams()
+  const router = useRouter()
   const { open, lead, assignees, canManage = false, onSuccess } = props
   const {
     form,
@@ -108,9 +110,12 @@ export function LeadSheet(props: LeadSheetProps) {
                   canManage={canManage}
                   canConvert={canConvert}
                   onConvertToClient={() => {
-                    // A client is made on its company's Billing tab.
+                    // A client is made on its company's Billing tab: swap the
+                    // lead for the company (no sheet over a sheet).
                     if (lead.companyId) {
-                      openSheet('company', lead.companyId, { tab: 'billing' })
+                      router.push(companySheetHref(lead.companyId, 'billing'), {
+                        scroll: false,
+                      })
                     }
                   }}
                   onSuccess={onSuccess}
