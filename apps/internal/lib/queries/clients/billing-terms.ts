@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, desc, eq, gt, isNull, lte, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies, billingTerms } from '@/lib/db/schema'
+import { billingTerms } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -88,14 +88,15 @@ export async function upsertBillingTerm(
  * SQL fragment resolving a client's billing type as of a report period —
  * newest `effective_from` <= period start wins, mirroring how
  * `getPartnerRatesForPeriod` resolves the partner rate schedule. Correlated
- * against the outer `clients` table, so it is only valid inside a query that
- * joins `clients`.
+ * against the outer `companies` table (written table-qualified, as drizzle
+ * drops the table name from a column inside a selected fragment), so it is
+ * only valid inside a query that reads `companies`.
  */
 export function billingTypeAsOfSql(periodStart: string) {
   return sql<'prepaid' | 'net_30' | null>`(
     SELECT ${billingTerms.billingType}
     FROM ${billingTerms}
-    WHERE ${billingTerms.companyId} = ${companies.id}
+    WHERE ${billingTerms.companyId} = ${sql.raw('"companies"."id"')}
       AND ${billingTerms.effectiveFrom} <= ${periodStart}
       AND ${billingTerms.deletedAt} IS NULL
     ORDER BY ${billingTerms.effectiveFrom} DESC
@@ -175,7 +176,7 @@ export async function resolveHourBlockBillingMonth(
  * billing term (latest effective date, so a change scheduled for next month
  * shows straight away, as it always has). This is the one place billing type
  * is stored; reports resolve by period with `billingTypeAsOfSql`. Correlated
- * against the outer `clients` table, written table-qualified because drizzle
+ * against the outer `companies` table, written table-qualified because drizzle
  * drops the table name from a column inside a selected fragment.
  */
 export function currentBillingTypeSql() {
