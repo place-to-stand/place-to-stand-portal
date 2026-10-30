@@ -47,13 +47,11 @@ export type ContactsTableSectionProps = {
   onEdit: (contact: ContactsTableContact) => void
   onRequestDelete: (contact: ContactsTableContact) => void
   onRestore: (contact: ContactsTableContact) => void
-  onRequestDestroy: (contact: ContactsTableContact) => void
   onRequestPreview: (contact: ContactsTableContact) => void
   isPending: boolean
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
@@ -66,13 +64,11 @@ export function ContactsTableSection({
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   onRequestPreview,
   isPending,
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   emptyMessage,
 }: ContactsTableSectionProps) {
   const { isAdmin, role } = useViewerAccess()
@@ -135,36 +131,23 @@ export function ContactsTableSection({
           {contacts.map(contact => {
             const isDeleting = isPending && pendingDeleteId === contact.id
             const isRestoring = isPending && pendingRestoreId === contact.id
-            const isDestroying = isPending && pendingDestroyId === contact.id
 
             const deleteDisabled =
-              isDeleting ||
-              isRestoring ||
-              isDestroying ||
-              Boolean(contact.deletedAt)
+              isDeleting || isRestoring || Boolean(contact.deletedAt)
             const deleteDisabledReason = deleteDisabled
-              ? isDeleting || isRestoring || isDestroying
+              ? isDeleting || isRestoring
                 ? pendingReason
                 : contact.deletedAt
                   ? 'Person already archived.'
                   : null
               : null
 
-            const restoreDisabled = isRestoring || isDeleting || isDestroying
+            const restoreDisabled = isRestoring || isDeleting
             const restoreDisabledReason = restoreDisabled ? pendingReason : null
-
-            const destroyDisabled =
-              isDestroying || isDeleting || isRestoring || !contact.deletedAt
-            const destroyDisabledReason = destroyDisabled
-              ? !contact.deletedAt
-                ? 'Archive the person before permanently deleting.'
-                : pendingReason
-              : null
 
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
-            // Hard delete, portal preview and portal accounts are admin-only.
-            const showDestroy = isAdmin && mode === 'archive'
+            // Portal preview is admin-only.
             const showPreview = isAdmin && mode === 'active'
 
             return (
@@ -306,15 +289,6 @@ export function ContactsTableSection({
                         onClick={() => onRequestDelete(contact)}
                         disabled={deleteDisabled}
                         disabledReason={deleteDisabledReason}
-                      />
-                    ) : null}
-                    {showDestroy ? (
-                      <RecordRowAction
-                        kind='destroy'
-                        entity='person'
-                        onClick={() => onRequestDestroy(contact)}
-                        disabled={destroyDisabled}
-                        disabledReason={destroyDisabledReason}
                       />
                     ) : null}
                   </RecordRowActions>

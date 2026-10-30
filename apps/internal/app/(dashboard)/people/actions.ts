@@ -19,11 +19,9 @@ import { requireCrmUser, requireUser } from '@/lib/auth/session'
 import {
   type ContactActionResult,
   type DeleteContactInput,
-  type DestroyContactInput,
   type RestoreContactInput,
 } from '@/lib/settings/contacts/contact-service'
 import {
-  destroyContactMutation,
   restoreContactMutation,
   softDeleteContactMutation,
 } from '@/lib/settings/contacts/actions'
@@ -93,12 +91,6 @@ export async function restoreContact(
   return runContactMutation(input, restoreContactMutation)
 }
 
-export async function destroyContact(
-  input: DestroyContactInput
-): Promise<ContactActionResult> {
-  return runContactMutation(input, destroyContactMutation)
-}
-
 async function runContactMutation<TInput>(
   input: TInput,
   mutate: (
@@ -106,8 +98,7 @@ async function runContactMutation<TInput>(
     payload: TInput
   ) => Promise<ContactMutationResult>
 ): Promise<ContactActionResult> {
-  // CRM staff may save, archive and restore; destroy re-checks admin inside
-  // its mutation.
+  // CRM staff may archive and restore.
   const user = await requireCrmUser()
   const mutationResult = await mutate({ user }, input)
   const { didMutate, ...result } = mutationResult

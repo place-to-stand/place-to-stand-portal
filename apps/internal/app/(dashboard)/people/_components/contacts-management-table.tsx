@@ -63,12 +63,10 @@ export function ContactsManagementTable({
     sheetOpen,
     selectedContact,
     deleteTarget,
-    destroyTarget,
     isPending,
     pendingReason,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     openEdit,
     clearSelection,
     handleSheetOpenChange,
@@ -77,9 +75,6 @@ export function ContactsManagementTable({
     handleCancelDelete,
     handleConfirmDelete,
     handleRestore,
-    handleRequestDestroy,
-    handleCancelDestroy,
-    handleConfirmDestroy,
   } = useContactsTableState({ contacts, deepLinkedContact })
 
   // Guard-validated active search (R4): an empty list under a live `?q=`
@@ -129,20 +124,6 @@ export function ContactsManagementTable({
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />
-      <ConfirmDialog
-        open={Boolean(destroyTarget)}
-        title='Permanently delete person?'
-        description={
-          destroyTarget
-            ? `Permanently deleting ${destroyTarget.name || destroyTarget.email} removes this person. This action cannot be undone.`
-            : 'Permanently deleting this person removes them. This action cannot be undone.'
-        }
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={handleCancelDestroy}
-        onConfirm={handleConfirmDestroy}
-      />
       <ContactsTableSection
         contacts={contacts}
         basePath={basePath}
@@ -150,13 +131,11 @@ export function ContactsManagementTable({
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
-        onRequestDestroy={handleRequestDestroy}
         onRequestPreview={handleRequestPreview}
         isPending={isPending}
         pendingReason={pendingReason}
         pendingDeleteId={pendingDeleteId}
         pendingRestoreId={pendingRestoreId}
-        pendingDestroyId={pendingDestroyId}
         emptyMessage={emptyMessage}
       />
       <PaginationControls

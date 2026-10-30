@@ -486,13 +486,6 @@
     "type": "action",
     "name": "restoreContact",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "destroyContact",
-    "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "capability",
     "capability": "leads.manage"
   },
