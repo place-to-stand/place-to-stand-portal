@@ -76,6 +76,15 @@ function inferAvatarExtensionFromPath(path: string) {
   return segments.length > 1 ? segments.pop() ?? null : null;
 }
 
+const STAGED_UPLOAD =
+  /^avatars\/pending\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.[a-z0-9]+$/i;
+
+/** A path the upload route staged for this actor (generateAvatarPath). */
+export function isStagedUploadOf(path: string, actorId: string) {
+  const match = path.match(STAGED_UPLOAD);
+  return Boolean(match && match[1] === actorId);
+}
+
 export function generateAvatarPath({ actorId, targetUserId, extension }: GeneratePathOptions) {
   const folder = targetUserId ? `${USER_PREFIX}/${targetUserId}` : `${PENDING_PREFIX}/${actorId}`;
   return `${folder}/${randomUUID()}.${extension}`;

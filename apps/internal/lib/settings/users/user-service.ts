@@ -4,6 +4,8 @@ import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import {
   deleteAvatarObject,
   ensureAvatarBucket,
+  isStagedUploadOf,
+  isUserAvatarPath,
   moveAvatarToUserFolder,
 } from '@/lib/storage/avatar'
 import {
@@ -156,6 +158,18 @@ export async function resolveAvatarUpdate(options: {
 
   if (!incomingAvatarPath || incomingAvatarPath === currentAvatarPath) {
     return { nextAvatarPath: currentAvatarPath }
+  }
+
+  // Only the user's own staged upload (or a photo already in their own
+  // folder) can become their avatar, never another object in the bucket.
+  if (
+    !isStagedUploadOf(incomingAvatarPath, userId) &&
+    !isUserAvatarPath(incomingAvatarPath, userId)
+  ) {
+    return {
+      nextAvatarPath: currentAvatarPath,
+      error: 'Upload the photo again.',
+    }
   }
 
   try {
