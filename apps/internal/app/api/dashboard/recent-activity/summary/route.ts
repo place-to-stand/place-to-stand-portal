@@ -1,4 +1,4 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -637,13 +637,7 @@ async function buildActivityContext(
           })
           .from(companies)
           .where(
-            and(
-              wasClientCompany(),
-              and(
-                inArray(companies.id, allowedClientIds),
-                isNull(clientEndedAtSql)
-              )
-            )
+            and(isClientCompany(), inArray(companies.id, allowedClientIds))
           )
       : Promise.resolve([]),
   ])

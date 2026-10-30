@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -148,7 +148,7 @@ async function fetchClientDetails(
     .where(
       and(
         inArray(clientPortalAccess.contactId, contactIds),
-        sql`${clientEndedAtSql} IS NULL`
+        isClientCompany()
       )
     )
     .orderBy(asc(clientNameSql))

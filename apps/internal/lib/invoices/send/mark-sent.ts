@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -43,7 +43,7 @@ export async function fetchSendableInvoice(
     .from(invoices)
     .leftJoin(
       companies,
-      and(eq(companies.id, invoices.companyId), isNull(clientEndedAtSql))
+      and(eq(companies.id, invoices.companyId), isClientCompany())
     )
     .where(and(eq(invoices.id, id), isNull(invoices.deletedAt)))
     .limit(1)

@@ -1,11 +1,11 @@
 'use server'
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 
 import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
 
 import type { PostgresError } from 'postgres'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -67,10 +67,7 @@ export async function destroyInvoice(
         .select({ name: clientNameSql })
         .from(companies)
         .where(
-          and(
-            wasClientCompany(),
-            and(eq(companies.id, existing.companyId), isNull(clientEndedAtSql))
-          )
+          and(isClientCompany(), eq(companies.id, existing.companyId))
         )
         .limit(1)
 

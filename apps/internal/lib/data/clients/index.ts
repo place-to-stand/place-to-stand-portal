@@ -2,7 +2,6 @@ import {
   clientEndedAtSql,
   clientSinceSql,
   isClientCompany,
-  wasClientCompany,
 } from '@pts/db/client-state'
 import { clientNameSql, personAvatarOf, personNameOf } from '@pts/db/names'
 import 'server-only'
@@ -106,7 +105,7 @@ export const fetchClientsWithMetrics = cache(
   ): Promise<ClientWithMetrics[]> => {
     assertAdmin(user)
 
-    const baseConditions = [isNull(clientEndedAtSql)]
+    const baseConditions = [isClientCompany()]
 
     // PRD 004 §03: server-side `?q=` search on the clients landing table.
     // Must match name OR slug — the shell header count comes from
@@ -162,7 +161,7 @@ export const fetchClientsWithMetrics = cache(
         originationUsers,
         eq(currentOriginationUserIdSql(), originationUsers.id)
       )
-      .where(and(wasClientCompany(), and(...baseConditions)))
+      .where(and(...baseConditions))
       .orderBy(asc(clientNameSql))
 
     if (rows.length === 0) {

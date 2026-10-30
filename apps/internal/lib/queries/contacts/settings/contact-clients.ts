@@ -1,4 +1,4 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -62,7 +62,7 @@ export async function listAllActiveClients(
       companyId: companies.id,
     })
     .from(companies)
-    .where(and(wasClientCompany(), sql`${clientEndedAtSql} IS NULL`))
+    .where(isClientCompany())
     .orderBy(asc(clientNameSql))
 
   return rows.map(row => ({
@@ -93,7 +93,7 @@ export async function listContactClients(
     .where(
       and(
         eq(clientPortalAccess.contactId, contactId),
-        sql`${clientEndedAtSql} IS NULL`
+        isClientCompany()
       )
     )
     .orderBy(asc(clientNameSql))
