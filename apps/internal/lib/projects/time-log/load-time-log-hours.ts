@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, gte, isNull, lt, sql } from 'drizzle-orm'
 import {
   clientHoursTotalsFor,
   getClientHoursTotals,
@@ -9,10 +9,11 @@ import {
 
 import { getCurrentAdmin } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { companies, projects } from '@/lib/db/schema'
+import { companies, projects, timeLogs } from '@/lib/db/schema'
 import {
-  currentBillingTypeSql,
+  billingTypeAsOfSql,
   currentMonthStartUtc,
+  nextMonthStartUtc,
 } from '@/lib/queries/clients/billing-terms'
 import { getTimeLogSummariesForProjects } from '@/lib/queries/time-logs/aggregates'
 
@@ -44,11 +45,17 @@ export async function loadTimeLogHours(
   const user = await getCurrentAdmin()
   if (!user || !UUID_PATTERN.test(projectId)) return null
 
+  // One month key for every number: the billing month (UTC), as the close
+  // counts it. The billing type is the one in force this month, not a
+  // scheduled change.
+  const thisMonth = currentMonthStartUtc()
   const [project] = await db
     .select({
       companyId: projects.companyId,
       clientName: companies.name,
-      billingType: currentBillingTypeSql(),
+      billingType: sql<
+        'prepaid' | 'net_30'
+      >`coalesce(${billingTypeAsOfSql(thisMonth)}, 'prepaid')`,
     })
     .from(projects)
     .innerJoin(companies, eq(companies.id, projects.companyId))
@@ -64,19 +71,20 @@ export async function loadTimeLogHours(
 
   const { companyId, billingType } = project
   const net30 = billingType === 'net_30'
-  const [projectSummaries, prepaidTotals, net30Months] = await Promise.all([
-    getTimeLogSummariesForProjects([projectId]),
-    net30 ? null : getClientHoursTotals(db, [companyId]),
-    net30 ? getNet30MonthlyHours(db, [companyId]) : null,
-  ])
-  const projectSummary = projectSummaries.get(projectId)
-  const thisMonth = currentMonthStartUtc()
+  const [projectSummaries, projectMonth, prepaidTotals, net30Months] =
+    await Promise.all([
+      net30 ? null : getTimeLogSummariesForProjects([projectId]),
+      net30 ? projectHoursInMonth(projectId, thisMonth) : null,
+      net30 ? null : getClientHoursTotals(db, [companyId]),
+      net30 ? getNet30MonthlyHours(db, [companyId]) : null,
+    ])
+  const projectSummary = projectSummaries?.get(projectId)
 
   return {
     billingType,
     clientName: project.clientName,
     projectHours: net30
-      ? (projectSummary?.monthToDateHours ?? 0)
+      ? (projectMonth ?? 0)
       : (projectSummary?.totalHours ?? 0),
     clientRemaining: prepaidTotals
       ? clientHoursTotalsFor(prepaidTotals, companyId).remaining
@@ -86,4 +94,23 @@ export async function loadTimeLogHours(
           ?.hours ?? 0)
       : null,
   }
+}
+
+/** The project's hours logged in the billing month that starts `month`. */
+async function projectHoursInMonth(
+  projectId: string,
+  month: string
+): Promise<number> {
+  const [row] = await db
+    .select({ hours: sql<string | null>`sum(${timeLogs.hours})` })
+    .from(timeLogs)
+    .where(
+      and(
+        eq(timeLogs.projectId, projectId),
+        isNull(timeLogs.deletedAt),
+        gte(timeLogs.loggedOn, month),
+        lt(timeLogs.loggedOn, nextMonthStartUtc())
+      )
+    )
+  return Number(row?.hours ?? 0)
 }
