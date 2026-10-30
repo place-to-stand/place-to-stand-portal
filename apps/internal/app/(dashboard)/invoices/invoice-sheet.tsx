@@ -34,7 +34,11 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import {
+  SHEET_SIDE_COLUMN_CLASS,
+  Sheet,
+  SheetContent,
+} from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -568,7 +572,6 @@ export function InvoiceSheet({
                           <span>{formatCurrency(totals.total)}</span>
                         </div>
                       </div>
-
                     </div>
                   </div>
 
@@ -611,7 +614,12 @@ export function InvoiceSheet({
                     onVoidInvoice={() => runGuarded(handleRequestVoid)}
                   />
                 ) : (
-                  <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-96'>
+                  <div
+                    className={cn(
+                      'bg-muted/20 flex-shrink-0 max-lg:border-t',
+                      SHEET_SIDE_COLUMN_CLASS
+                    )}
+                  >
                     <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
                       <p className='text-muted-foreground text-sm'>
                         Save the invoice to access sharing, status actions, and

@@ -219,7 +219,7 @@ const cases: Case[] = [
     name: 'sheet (open, entity-sheet shape: size, hideCloseButton, skipMountAnimation)',
     element: (
       <Sheet open onOpenChange={noop}>
-        <SheetContent size='lg' hideCloseButton skipMountAnimation>
+        <SheetContent size='narrow' hideCloseButton skipMountAnimation>
           <SheetHeader>
             <SheetTitle>Edit client</SheetTitle>
             <SheetDescription>desc</SheetDescription>
@@ -238,7 +238,7 @@ const cases: Case[] = [
         <SheetTrigger asChild>
           <Button>open</Button>
         </SheetTrigger>
-        <SheetContent size='xl'>
+        <SheetContent size='wide'>
           <SheetHeader>
             <SheetTitle>Details</SheetTitle>
             <SheetDescription>desc</SheetDescription>

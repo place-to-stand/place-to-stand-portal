@@ -105,23 +105,20 @@ const SheetOverlay = ({
   )
 }
 
-type SheetSize =
-  'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'split' | 'wide' | 'xwide' | 'full'
+/**
+ * Two widths, nothing in between. `narrow` for a simple form (an hour block,
+ * the phone filters); `wide` for a record with lists (company, person, lead,
+ * task, project, invoice, submission, template). Phones get the full screen
+ * either way.
+ */
+type SheetSize = 'narrow' | 'wide'
 
 const sheetSizeClasses: Record<SheetSize, string> = {
-  sm: 'sm:max-w-sm',
-  md: 'sm:max-w-md',
-  lg: 'sm:max-w-lg',
-  xl: 'sm:max-w-xl',
-  '2xl': 'sm:max-w-2xl',
-  // Two columns from lg: a 672px form (the same as the 2xl add sheet, and
-  // just wide enough for the full rich-text toolbar on one line) beside a
-  // SHEET_SPLIT_SIDE_CLASS column (512px). Below lg the side column stacks
-  // and the sheet stays 2xl.
-  split: 'sm:max-w-2xl lg:w-[1184px] lg:max-w-[calc(100vw-4rem)]',
-  wide: 'sm:max-w-4xl lg:max-w-5xl',
-  xwide: 'sm:max-w-4xl lg:max-w-6xl',
-  full: 'w-screen max-w-none',
+  narrow: 'sm:max-w-lg',
+  // 672px below lg; from lg a set 1024px (within the viewport), room for a
+  // SHEET_SIDE_COLUMN_CLASS column beside a 640px form. Below lg a side
+  // column stacks under the form.
+  wide: 'sm:max-w-2xl lg:w-[1024px] lg:max-w-[calc(100vw-4rem)]',
 }
 
 const SheetContent = React.forwardRef<
@@ -145,7 +142,7 @@ const SheetContent = React.forwardRef<
       className,
       children,
       side = 'right',
-      size = 'sm',
+      size = 'narrow',
       showOverlay = true,
       hideCloseButton = false,
       skipMountAnimation = false,
@@ -284,5 +281,8 @@ export {
   SheetDescription,
 }
 
-/** Width of the side column in a `size='split'` sheet (lead tasks/updates). */
-export const SHEET_SPLIT_SIDE_CLASS = 'lg:w-[512px]'
+/**
+ * Width of the side column in a two-column `wide` sheet (the lead's tasks
+ * and updates, the invoice's status and actions).
+ */
+export const SHEET_SIDE_COLUMN_CLASS = 'lg:w-96'

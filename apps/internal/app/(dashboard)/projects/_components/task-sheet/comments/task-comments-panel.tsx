@@ -41,7 +41,7 @@ export function TaskCommentsPanel(props: TaskCommentsPanelProps) {
 
   return (
     <>
-      {/* No heading here — the enclosing tab is already labelled "Comments". */}
+      {/* No heading here — the enclosing section is already titled "Comments". */}
       {state.isLoading ? (
         <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' /> Loading comments…

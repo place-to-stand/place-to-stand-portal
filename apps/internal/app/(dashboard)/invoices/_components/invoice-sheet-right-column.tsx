@@ -9,6 +9,8 @@ import { formatCalendarDate } from '@pts/ui/dates'
 
 import { HourBlockRecordRow } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
+import { SHEET_SIDE_COLUMN_CLASS } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
 import { InvoiceLinkField } from './invoice-link-field'
 import { InvoiceStatusBadge } from './invoice-status-badge'
 
@@ -67,7 +69,12 @@ export function InvoiceSheetRightColumn({
   const hasActions = isDraft || canEmailAgain || canRevert || canVoid
 
   return (
-    <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-96 lg:overflow-y-auto'>
+    <div
+      className={cn(
+        'bg-muted/20 flex-shrink-0 max-lg:border-t lg:overflow-y-auto',
+        SHEET_SIDE_COLUMN_CLASS
+      )}
+    >
       <div className='space-y-6 p-6'>
         {/* A draft reserves the link's space; sending fills it in. */}
         {liveToken || isDraft ? (

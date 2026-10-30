@@ -350,7 +350,7 @@ export function SubmissionDetailSheet({
     <Sheet open={Boolean(submission)} onOpenChange={onOpenChange}>
       <SheetContent
         hideCloseButton
-        size='xl'
+        size='wide'
         className='flex w-full flex-col gap-0 overflow-hidden p-0'
       >
         <SheetFormHeader

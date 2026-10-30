@@ -45,7 +45,6 @@ import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 
@@ -363,21 +362,25 @@ export function TaskSheet(props: TaskSheetProps) {
         <SheetContent
           hideCloseButton
           skipMountAnimation={skipMountAnimation}
-          size='2xl'
+          size='wide'
           className={cn(
             'flex w-full flex-col gap-0 overflow-hidden p-0',
-            // Widen for the planning rail (36px) and, when expanded, the
-            // 560px planning panel.
+            // The one exception to the two widths: the expanded planning
+            // panel (560px) widens the sheet beside the 672px task column
+            // and the 36px rail, and gives it back when it collapses.
             props.task &&
-              (canDeploy && isPlanningOpen
-                ? 'sm:max-w-[1268px]'
-                : 'sm:max-w-[708px]')
+              canDeploy &&
+              isPlanningOpen &&
+              'sm:max-w-[1268px] lg:w-[1268px]'
           )}
           // Inline so it wins over the primitive's transition classes: the
           // sheet edge glides in sync with the panel's width transition.
           style={
             props.task
-              ? { transition: 'max-width 300ms ease-in-out' }
+              ? {
+                  transition:
+                    'max-width 300ms ease-in-out, width 300ms ease-in-out',
+                }
               : undefined
           }
         >
@@ -387,7 +390,15 @@ export function TaskSheet(props: TaskSheetProps) {
           {/* Two-column body */}
           <div className='relative flex flex-1 overflow-hidden'>
             {/* Left column: task content */}
-            <div className='flex h-full w-full min-w-0 flex-col sm:w-[672px] sm:shrink-0'>
+            <div
+              className={cn(
+                'flex h-full w-full min-w-0 flex-col',
+                // Fills the wide sheet; held at 672px beside open planning.
+                isPlanningOpen && canDeploy
+                  ? 'sm:w-[672px] sm:shrink-0'
+                  : 'flex-1'
+              )}
+            >
               {/* Scrollable area */}
               <div
                 // pb-6 matches the px-6 the sections inside use, so the gap
@@ -437,37 +448,29 @@ export function TaskSheet(props: TaskSheetProps) {
                     <EmptyState message='Log time after you save the task.' />
                   </SheetSection>
                 ) : null}
-                {/* pt-6 rides on top of the column's gap-6, setting the tab
-                    group apart from the time-log section above it. */}
+                {/* Sections, no inner tabs: Activity, then Comments, which
+                    always sit at the bottom of a sheet. */}
                 {props.task && taskPanelProjectId ? (
-                  <div className='px-6 pt-6'>
-                    <Tabs defaultValue='comments' className='w-full'>
-                      <TabsList className='grid w-full grid-cols-2'>
-                        <TabsTrigger value='comments'>Comments</TabsTrigger>
-                        <TabsTrigger value='activity'>Activity</TabsTrigger>
-                      </TabsList>
-                      {/* mt-2 lands on 16px in total — the Tabs root is
-                          flex gap-2, and that 8px stacks on this margin. */}
-                      <TabsContent value='comments' className='mt-2'>
-                        <TaskCommentsPanel
-                          taskId={props.task.id}
-                          projectId={taskPanelProjectId}
-                          currentUserId={props.currentUserId}
-                          currentUserName={currentUserName}
-                          canComment
-                          taskTitle={props.task.title}
-                          companyId={taskPanelClientId}
-                        />
-                      </TabsContent>
-                      <TabsContent value='activity' className='mt-2'>
-                        <TaskActivityPanel
-                          taskId={props.task.id}
-                          projectId={taskPanelProjectId}
-                          companyId={taskPanelClientId}
-                        />
-                      </TabsContent>
-                    </Tabs>
-                  </div>
+                  <>
+                    <SheetSection title='Activity' className='px-6'>
+                      <TaskActivityPanel
+                        taskId={props.task.id}
+                        projectId={taskPanelProjectId}
+                        companyId={taskPanelClientId}
+                      />
+                    </SheetSection>
+                    <SheetSection title='Comments' className='px-6'>
+                      <TaskCommentsPanel
+                        taskId={props.task.id}
+                        projectId={taskPanelProjectId}
+                        currentUserId={props.currentUserId}
+                        currentUserName={currentUserName}
+                        canComment
+                        taskTitle={props.task.title}
+                        companyId={taskPanelClientId}
+                      />
+                    </SheetSection>
+                  </>
                 ) : !props.task ? (
                   <SheetSection title='Comments' className='px-6'>
                     <EmptyState message='Add comments after you save the task.' />
