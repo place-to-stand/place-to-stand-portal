@@ -107,7 +107,7 @@ test('sales can’t rename the staff company', async ({ page }) => {
   await expectHealthy(page)
   const row = page.locator('tbody tr').filter({ hasText: staffName }).first()
   test.skip((await row.count()) === 0, 'no staff company to open')
-  await row.click()
+  await row.getByRole('cell', { name: staffName, exact: true }).click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await sheet.getByLabel('Name').fill(`${staffName} (renamed)`)

@@ -95,6 +95,9 @@ test('creating a task with an assignee is one request on Save', async ({
   await page.getByText(title, { exact: true }).first().click()
   const created = page.getByRole('dialog')
   await created.getByRole('button', { name: 'Archive task' }).click()
-  await page.getByRole('button', { name: 'Archive', exact: true }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Archive task', exact: true })
+    .click()
   await expect(created).toBeHidden()
 })

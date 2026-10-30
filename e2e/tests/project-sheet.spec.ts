@@ -84,6 +84,9 @@ test('project: create with a member in one save', async ({ page }) => {
 
   // Put it back: archive the project.
   await edit.getByRole('button', { name: 'Archive project' }).click()
-  await page.getByRole('button', { name: 'Archive', exact: true }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Archive project', exact: true })
+    .click()
   await expect(edit).toBeHidden()
 })

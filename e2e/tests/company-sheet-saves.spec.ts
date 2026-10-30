@@ -73,17 +73,18 @@ async function cleanUp(page: Page, name: string) {
   const toggle = sheet.getByRole('switch', { name: 'Bill this company' })
   if ((await toggle.getAttribute('aria-checked')) === 'true') {
     await toggle.click()
-    await sheet.getByRole('combobox', { name: 'Billing stops' }).click()
-    await page
-      .getByRole('option', { name: 'Stop now (not billed this month)' })
-      .click()
+    await sheet.getByRole('combobox', { name: 'Last month billed' }).click()
+    await page.getByRole('option', { name: /\(last month\)$/ }).click()
     await sheet.getByRole('button', { name: 'Save changes' }).click()
     await expect(sheet).toBeHidden()
     await openCompany(page, name)
   }
   const reopened = page.getByRole('dialog')
   await reopened.getByRole('button', { name: 'Archive company' }).click()
-  await page.getByRole('button', { name: 'Archive', exact: true }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Archive company', exact: true })
+    .click()
   await expect(reopened).toBeHidden()
 }
 
@@ -132,8 +133,8 @@ test('billing through the end of the month, then restarting, keeps a client', as
   await billing.getByRole('tab', { name: 'Billing' }).click()
   await billing.getByRole('switch', { name: 'Bill this company' }).click()
   await expect(
-    billing.getByRole('combobox', { name: 'Billing stops' })
-  ).toContainText('Bill through the end of this month')
+    billing.getByRole('combobox', { name: 'Last month billed' })
+  ).toContainText('(this month)')
   await billing.getByRole('button', { name: 'Save changes' }).click()
   await expect(billing).toBeHidden()
 
