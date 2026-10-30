@@ -13,6 +13,7 @@ import { MembershipTitleInput } from '@/components/sheets/membership-title-input
 import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
@@ -238,9 +239,9 @@ export function ContactCompaniesSection({
         </SheetRecordList>
       )}
       {invited ? (
-        <p className='text-muted-foreground text-xs'>
+        <SaveSideEffect>
           Saving emails a portal invite to {portal!.person.name}.
-        </p>
+        </SaveSideEffect>
       ) : null}
     </SheetSection>
   )

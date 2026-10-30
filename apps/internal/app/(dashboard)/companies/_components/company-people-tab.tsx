@@ -1,6 +1,7 @@
 'use client'
 
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 
 import { PortalAccessControl } from '@/components/clients/portal-access-control'
 import { useCompanyBilling } from './company-billing-section'
@@ -83,13 +84,13 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
       )
     : []
   const inviteNote = invitees.length ? (
-    <p className='text-muted-foreground text-xs'>
+    <SaveSideEffect>
       Saving emails a portal invite to{' '}
       {new Intl.ListFormat('en', { type: 'conjunction' }).format(
         invitees.map(contact => contact.name)
       )}
       .
-    </p>
+    </SaveSideEffect>
   ) : null
 
   const formerNote =

@@ -11,6 +11,7 @@ The right-side panel where every entity is created and edited, on Base UI Dialog
 **Rules**
 - Save is always enabled; disable only while saving or on a real validation failure. Never gate on `isDirty`.
 - Save = done = close: a successful save closes the sheet, for create and edit alike. A create sheet never becomes an edit sheet.
+- **Say what Save does.** A save side effect (an email sent, a sign-in created, billing started or stopped, someone added to a company) shows as one caution alert, `SaveSideEffect` (see `alert.md`), never a muted line.
 - **Only Save writes.** Nothing inside a sheet saves on click, toggle, switch, star, drag or blur: those change the form, and Save applies them. Closing with unsaved changes asks "Discard changes?".
 - **Instant actions are their own records or act outside the app**, so they save on their own click: comments, lead updates, logging time (its dialog), invoice email / mark as sent / revert to draft / void, acknowledging a submission, drafting a client update, planning (start, generate, dispatch, cancel), and sending a password reset. Sending an invoice is blocked while it has unsaved edits. Uploads (photos, attachments) go to a staging path at once and are claimed on Save.
 - Focus lands on the field marked `data-autofocus`, else the popup (not the close button).
