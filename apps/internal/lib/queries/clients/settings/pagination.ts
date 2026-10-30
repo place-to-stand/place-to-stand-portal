@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { sql, type SQL } from 'drizzle-orm'
 
 import { clients } from '@/lib/db/schema'
@@ -34,7 +35,7 @@ export function buildBillingCondition(
     return null
   }
 
-  return sql`${clients.billingType} = ${billing}`
+  return sql`${currentBillingTypeSql()} = ${billing}`
 }
 
 export function buildSearchCondition(search: string | null | undefined): SQL | null {

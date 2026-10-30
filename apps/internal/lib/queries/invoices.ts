@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import {
   and,
   asc,
@@ -92,7 +93,7 @@ const clientSelection = {
   id: clients.id,
   name: clients.name,
   slug: clients.slug,
-  billingType: clients.billingType,
+  billingType: currentBillingTypeSql(),
   state: clients.state,
   deletedAt: clients.deletedAt,
 } as const

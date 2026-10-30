@@ -21,7 +21,9 @@ export function currentMonthStartUtc(): string {
 export function nextMonthStartUtc(): string {
   const now = new Date()
   // Date handles month overflow (December -> January next year).
-  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+  const next = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
+  )
   const year = next.getUTCFullYear()
   const month = String(next.getUTCMonth() + 1).padStart(2, '0')
   return `${year}-${month}-01`
@@ -166,4 +168,23 @@ export async function resolveHourBlockBillingMonth(
     `[resolveHourBlockBillingMonth] Client ${clientId} has no prepaid billing term; attributing block to ${monthStart}`
   )
   return monthStart
+}
+
+/**
+ * The client's billing type as the client sheet last set it: the newest
+ * billing term (latest effective date, so a change scheduled for next month
+ * shows straight away, as it always has). This is the one place billing type
+ * is stored; reports resolve by period with `billingTypeAsOfSql`. Correlated
+ * against the outer `clients` table, written table-qualified because drizzle
+ * drops the table name from a column inside a selected fragment.
+ */
+export function currentBillingTypeSql() {
+  return sql<'prepaid' | 'net_30'>`coalesce((
+    SELECT ${clientBillingTerms.billingType}
+    FROM ${clientBillingTerms}
+    WHERE ${clientBillingTerms.clientId} = ${sql.raw('"clients"."id"')}
+      AND ${clientBillingTerms.deletedAt} IS NULL
+    ORDER BY ${clientBillingTerms.effectiveFrom} DESC
+    LIMIT 1
+  ), 'prepaid')`
 }

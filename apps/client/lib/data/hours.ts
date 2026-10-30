@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { cache } from 'react'
-import { and, inArray, isNull } from 'drizzle-orm'
+import { and, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { clients } from '@pts/db/schema'
@@ -49,7 +49,12 @@ export const fetchClientHoursSummaries = cache(
         .select({
           id: clients.id,
           name: clients.name,
-          billingType: clients.billingType,
+          // The newest billing term (the one place billing type is stored).
+          billingType: sql<'prepaid' | 'net_30'>`coalesce((
+            select bt.billing_type from client_billing_terms bt
+            where bt.client_id = "clients"."id" and bt.deleted_at is null
+            order by bt.effective_from desc limit 1
+          ), 'prepaid')`,
         })
         .from(clients)
         .where(and(inArray(clients.id, clientIds), isNull(clients.deletedAt))),

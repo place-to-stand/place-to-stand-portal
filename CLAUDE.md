@@ -145,6 +145,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 - `memberships` - Contact-to-company (title, primary contact, portal access); a contact can be at several companies
 - `client_portal_access` - View: who can see which client in the client portal
 - `client_commission_terms` + `client_commission_term_closers` - The one place commission (origination, closers) is stored, by effective month
+- `client_billing_terms` - The one place a client's billing type (prepaid / net 30) is stored, by effective month; screens show the newest term (`currentBillingTypeSql`), reports the one in force for the period
 - `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
 - `tasks` - Tasks with workflow: ON_DECK → IN_PROGRESS → BLOCKED → DONE, then archived (soft delete via `deletedAt`, not a status value)
 - `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE_OPPORTUNITIES → PROPOSAL_SENT → ON_ICE → CLOSED_WON/CLOSED_LOST/UNQUALIFIED

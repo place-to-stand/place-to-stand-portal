@@ -1,5 +1,5 @@
 {
-  "id": "0e3008db-2908-4494-bcb7-a07d9426b4dc",
+  "id": "ecd70fd9-9aa8-4e9d-994a-aaeeec426d71",
   "prevId": "d19c7577-ad4e-451e-8e9a-05133bc73453",
   "version": "7",
   "dialect": "postgresql",
@@ -1044,14 +1044,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "billing_type": {
-          "name": "billing_type",
-          "type": "client_billing_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'prepaid'"
         },
         "website": {
           "name": "website",

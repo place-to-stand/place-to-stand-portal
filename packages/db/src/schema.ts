@@ -195,9 +195,8 @@ export const clients = pgTable(
     name: text().notNull(),
     slug: text(),
     notes: text(),
-    billingType: clientBillingType('billing_type')
-      .default('prepaid')
-      .notNull(),
+    // Billing type lives only on `client_billing_terms` (0108 dropped the
+    // copy that used to sit here).
     website: text(),
     state: varchar({ length: 2 }),
     // Commission (origination 10%, closers 20%) lives only on

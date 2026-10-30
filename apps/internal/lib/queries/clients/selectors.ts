@@ -1,4 +1,5 @@
 import { clients } from '@/lib/db/schema'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
@@ -8,6 +9,8 @@ import {
 // origination fields here are the newest term's. `website` is the company's
 // now (the client's copy is legacy; see `clientWebsiteSql`).
 export type SelectClient = Omit<typeof clients.$inferSelect, 'website'> & {
+  /** The newest billing term's type (terms are the source). */
+  billingType: 'prepaid' | 'net_30'
   /** The newest commission term's origination (terms are the source). */
   originationContactId: string | null
   originationUserId: string | null
@@ -18,7 +21,7 @@ export const clientFields = {
   name: clients.name,
   slug: clients.slug,
   notes: clients.notes,
-  billingType: clients.billingType,
+  billingType: currentBillingTypeSql(),
   state: clients.state,
   originationContactId: currentOriginationContactIdSql(),
   originationUserId: currentOriginationUserIdSql(),
@@ -35,7 +38,6 @@ export const clientGroupByColumns = [
   clients.name,
   clients.slug,
   clients.notes,
-  clients.billingType,
   clients.state,
   clients.companyId,
   clients.label,

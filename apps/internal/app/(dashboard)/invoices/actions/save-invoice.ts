@@ -1,15 +1,13 @@
 'use server'
 
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { revalidatePath } from 'next/cache'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { logActivity } from '@/lib/activity/logger'
-import {
-  invoiceCreatedEvent,
-  invoiceUpdatedEvent,
-} from '@/lib/activity/events'
+import { invoiceCreatedEvent, invoiceUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { invoices, invoiceLineItems, clients } from '@/lib/db/schema'
@@ -18,9 +16,7 @@ import { invoiceSchema } from './schemas'
 import type { ActionResult, InvoiceInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
-export async function saveInvoice(
-  input: InvoiceInput,
-): Promise<ActionResult> {
+export async function saveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const mode = input.id ? 'edit' : 'create'
   const targetId = input.id ?? null
 
@@ -33,13 +29,11 @@ export async function saveInvoice(
         clientId: input.clientId,
       },
     },
-    async () => performSaveInvoice(input),
+    async () => performSaveInvoice(input)
   )
 }
 
-async function performSaveInvoice(
-  input: InvoiceInput,
-): Promise<ActionResult> {
+async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
 
@@ -55,7 +49,11 @@ async function performSaveInvoice(
   const { id, clientId, notes, taxRate, lineItems } = parsed.data
 
   const clientRows = await db
-    .select({ id: clients.id, name: clients.name, billingType: clients.billingType })
+    .select({
+      id: clients.id,
+      name: clients.name,
+      billingType: currentBillingTypeSql(),
+    })
     .from(clients)
     .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
     .limit(1)
@@ -77,7 +75,7 @@ async function performSaveInvoice(
     try {
       const [inserted] = await db.transaction(async tx => {
         const seqResult = await tx.execute(
-          sql`SELECT nextval('invoice_number_seq')`,
+          sql`SELECT nextval('invoice_number_seq')`
         )
         const seqValue = (seqResult[0] as { nextval: string } | undefined)
           ?.nextval
@@ -116,7 +114,7 @@ async function performSaveInvoice(
               amount: item.amount.toFixed(2),
               createsHourBlock: item.createsHourBlock,
               sortOrder: item.sortOrder,
-            })),
+            }))
           )
         }
 
@@ -146,9 +144,7 @@ async function performSaveInvoice(
 
       return {
         error:
-          error instanceof Error
-            ? error.message
-            : 'Unable to create invoice.',
+          error instanceof Error ? error.message : 'Unable to create invoice.',
       }
     }
   } else {
@@ -198,10 +194,7 @@ async function performSaveInvoice(
           updateData.stripeCheckoutSessionId = null
         }
 
-        await tx
-          .update(invoices)
-          .set(updateData)
-          .where(eq(invoices.id, id))
+        await tx.update(invoices).set(updateData).where(eq(invoices.id, id))
 
         const existingLineItemRows = await tx
           .select({ id: invoiceLineItems.id })
@@ -209,20 +202,20 @@ async function performSaveInvoice(
           .where(
             and(
               eq(invoiceLineItems.invoiceId, id),
-              isNull(invoiceLineItems.deletedAt),
-            ),
+              isNull(invoiceLineItems.deletedAt)
+            )
           )
 
         const existingLineItemIds = new Set(
-          existingLineItemRows.map(row => row.id),
+          existingLineItemRows.map(row => row.id)
         )
 
         const incomingLineItemIds = new Set(
-          lineItems.filter(item => item.id).map(item => item.id!),
+          lineItems.filter(item => item.id).map(item => item.id!)
         )
 
         const removedIds = [...existingLineItemIds].filter(
-          existingId => !incomingLineItemIds.has(existingId),
+          existingId => !incomingLineItemIds.has(existingId)
         )
 
         if (removedIds.length > 0) {
@@ -266,9 +259,7 @@ async function performSaveInvoice(
 
       return {
         error:
-          error instanceof Error
-            ? error.message
-            : 'Unable to update invoice.',
+          error instanceof Error ? error.message : 'Unable to update invoice.',
       }
     }
 

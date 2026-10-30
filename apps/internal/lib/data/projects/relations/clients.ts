@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
@@ -66,7 +67,7 @@ export async function loadClientRows(
       state: clientsTable.state,
       originationContactId: currentOriginationContactIdSql(),
       originationUserId: currentOriginationUserIdSql(),
-      billingType: clientsTable.billingType,
+      billingType: currentBillingTypeSql(),
       createdBy: clientsTable.createdBy,
       createdAt: clientsTable.createdAt,
       updatedAt: clientsTable.updatedAt,

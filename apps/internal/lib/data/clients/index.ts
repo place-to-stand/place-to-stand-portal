@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
@@ -113,7 +114,7 @@ export const fetchClientsWithMetrics = cache(
 
     // PRD 004 §03: `?billing=` filter shares the landing table's conditions.
     if (billingType) {
-      baseConditions.push(eq(clients.billingType, billingType))
+      baseConditions.push(eq(currentBillingTypeSql(), billingType))
     }
 
     // Aliased user join for the origination user (from the newest commission
@@ -132,7 +133,7 @@ export const fetchClientsWithMetrics = cache(
         slug: clients.slug,
         notes: clients.notes,
         website: clientWebsiteSql,
-        billingType: clients.billingType,
+        billingType: currentBillingTypeSql(),
         state: clients.state,
         originationContactId: currentOriginationContactIdSql(),
         originationContactName: contacts.name,
@@ -288,7 +289,7 @@ export const fetchClientHoursSummaries = cache(
     assertAdmin(user)
 
     const rows = await db
-      .select({ id: clients.id, billingType: clients.billingType })
+      .select({ id: clients.id, billingType: currentBillingTypeSql() })
       .from(clients)
       .where(isNull(clients.deletedAt))
 
@@ -323,7 +324,7 @@ export const fetchClientById = cache(
         state: clients.state,
         originationContactId: currentOriginationContactIdSql(),
         originationUserId: currentOriginationUserIdSql(),
-        billingType: clients.billingType,
+        billingType: currentBillingTypeSql(),
         companyId: clients.companyId,
         label: clients.label,
         companyName: companies.name,

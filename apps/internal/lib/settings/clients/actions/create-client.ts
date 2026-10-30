@@ -131,7 +131,6 @@ export async function createClient(
           .values({
             name,
             slug: slugCandidate,
-            billingType,
             state,
             notes,
             companyId,

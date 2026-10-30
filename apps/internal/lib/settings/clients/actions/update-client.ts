@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
 
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { formatCalendarDate } from '@pts/ui/dates'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -162,7 +163,7 @@ export async function updateClient(
         id: clients.id,
         name: clients.name,
         slug: clients.slug,
-        billingType: clients.billingType,
+        billingType: currentBillingTypeSql(),
         notes: clients.notes,
         originationContactId: currentOriginationContactIdSql(),
         originationUserId: currentOriginationUserIdSql(),
@@ -251,16 +252,14 @@ export async function updateClient(
         })
       }
 
-      // The billingType write below is the current-value cache flip (what
-      // the client list, detail page and sheet show); the terms rows'
-      // effective_from controls report resolution. Commission has no cache:
-      // displays read the newest term.
+      // Billing type and commission are stored only as terms (above):
+      // displays read the newest term, and effective_from controls report
+      // resolution.
       await tx
         .update(clients)
         .set({
           name,
           slug: slugToUpdate,
-          billingType,
           state,
           notes,
           ...(companyId !== undefined ? { companyId } : {}),
