@@ -43,7 +43,7 @@ test('person sheet is one stacked form, sign-in included', async ({ page }) => {
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab')).toHaveCount(0)
   await expect(sheet.getByText('Can sign in')).toBeVisible()
-  await expect(sheet.getByRole('button', { name: /save/i })).toHaveCount(1)
+  await expect(sheet.getByRole('button', { name: /^Save changes/ })).toHaveCount(1)
 })
 
 test('projects list: client rows open the company on its Projects tab', async ({
