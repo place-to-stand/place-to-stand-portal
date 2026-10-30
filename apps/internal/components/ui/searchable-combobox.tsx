@@ -14,6 +14,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  useRevealSelected,
 } from '@/components/ui/command'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import {
@@ -235,13 +236,10 @@ export const SearchableCombobox = React.forwardRef<
     }
 
     const renderItem = (item: SearchableComboboxItem, key: string) => {
-      const searchValue = [item.label, ...(item.keywords ?? [])]
-        .join(' ')
-        .trim()
       return (
         <CommandItem
           key={key}
-          value={searchValue.length > 0 ? searchValue : item.value}
+          value={commandValueOf(item)}
           onSelect={() => handleSelect(item.value)}
           disabled={item.disabled}
           className='pr-3'
@@ -287,6 +285,13 @@ export const SearchableCombobox = React.forwardRef<
     }
 
     const resolvedPlaceholder = placeholder ?? searchPlaceholder
+
+    // Opening shows the selected option in view and highlighted; typing a
+    // search goes back to highlighting the top match.
+    const selectedCommandValue = selectedItem
+      ? commandValueOf(selectedItem)
+      : undefined
+    const revealSelected = useRevealSelected(selectedCommandValue)
 
     const stopScrollPropagation = React.useCallback(
       (event: React.SyntheticEvent) => {
@@ -399,7 +404,10 @@ export const SearchableCombobox = React.forwardRef<
               sideOffset={8}
               style={contentStyle}
             >
-              <Command className='max-h-80'>
+              <Command
+                className='max-h-80'
+                defaultValue={selectedCommandValue}
+              >
                 <CommandInput
                   placeholder={searchPlaceholder ?? resolvedPlaceholder}
                   className='h-9'
@@ -408,6 +416,7 @@ export const SearchableCombobox = React.forwardRef<
                 />
                 {onCreate ? null : <CommandEmpty>{emptyMessage}</CommandEmpty>}
                 <CommandList
+                  ref={revealSelected}
                   className='max-h-[min(60vh,260px)] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain'
                   onWheel={stopScrollPropagation}
                   onTouchMove={stopScrollPropagation}
@@ -458,3 +467,9 @@ export const SearchableCombobox = React.forwardRef<
 )
 
 SearchableCombobox.displayName = 'SearchableCombobox'
+
+/** The cmdk value of an option: what search matches (label + keywords). */
+function commandValueOf(item: SearchableComboboxItem): string {
+  const searchValue = [item.label, ...(item.keywords ?? [])].join(' ').trim()
+  return searchValue.length > 0 ? searchValue : item.value
+}

@@ -28,7 +28,7 @@ export function FoundationsEntities() {
     <DesignSection
       id='entities'
       title='Entities'
-      when='Object identity: each kind of record keeps one icon and one colour everywhere it appears (sidebar, sheet header rule, card border, list icon, badge, activity). Both come from the entity registry, lib/entity-accents.ts; never import an entity icon from lucide-react or write its colour by hand. Colour is a second cue: the icon and the name carry the meaning.'
+      when='Object identity: each kind of record keeps one icon and one colour everywhere it appears (sidebar, sheet header rule, card border, list icon, badge, activity). Both come from the entity registry, lib/entity-accents.ts; never import an entity icon from lucide-react or write its colour by hand. Colours group by job: sales warm, work blue, money green, admin neutral. Colour is a second cue: the icon and the name carry the meaning.'
     >
       <div className='overflow-hidden rounded-xl border'>
         <div className='bg-muted/40 text-muted-foreground hidden grid-cols-[13rem_1fr_1fr] border-b text-xs font-medium md:grid'>

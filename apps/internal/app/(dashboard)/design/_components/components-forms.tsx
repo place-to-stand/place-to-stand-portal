@@ -51,11 +51,31 @@ const STATIC_COMPANIES = [
   { id: 'design-cobalt', label: 'Cobalt & Co', description: 'Client' },
 ]
 
+// Long enough to scroll, with the selection near the end: the picker opens
+// with the selected person in view and highlighted.
 const COMBOBOX_ITEMS: SearchableComboboxItem[] = [
-  { value: 'ada', label: 'Ada Lovelace', description: 'ada@acme.com' },
-  { value: 'grace', label: 'Grace Hopper', description: 'grace@cobalt.co' },
-  { value: 'alan', label: 'Alan Turing', description: 'alan@birchwood.io' },
-]
+  'Ada Lovelace',
+  'Alan Turing',
+  'Annie Easley',
+  'Barbara Liskov',
+  'Charles Babbage',
+  'Dorothy Vaughan',
+  'Edsger Dijkstra',
+  'Frances Allen',
+  'Grace Hopper',
+  'Hedy Lamarr',
+  'Ida Rhodes',
+  'Jean Sammet',
+  'Katherine Johnson',
+  'Margaret Hamilton',
+  'Radia Perlman',
+  'Shafi Goldwasser',
+  'Tim Berners-Lee',
+].map(name => ({
+  value: name.split(' ')[0]!.toLowerCase(),
+  label: name,
+  description: `${name.split(' ')[0]!.toLowerCase()}@example.com`,
+}))
 
 const emailSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -179,7 +199,7 @@ export function ComponentsInputs() {
 
 export function ComponentsPickers() {
   const [status, setStatus] = useState('active')
-  const [person, setPerson] = useState<string | null>('ada')
+  const [person, setPerson] = useState<string | null>('radia')
   const [company, setCompany] = useState<CompanyLink | null>(null)
   const [contact, setContact] = useState<ContactLink | null>(null)
   const [staticCompany, setStaticCompany] = useState<{
