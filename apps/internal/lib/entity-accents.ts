@@ -7,7 +7,7 @@
  * docs/design-system/README.md and components/sheet.md.
  *
  * Colours are theme tokens (`--entity-*` in packages/ui/src/styles/theme.css,
- * light and dark), grouped by job: sales warm, work green, money blue, admin
+ * light and dark), grouped by job: sales warm, work blue, money green, admin
  * neutral. Every icon clears 3:1 on a card in both themes. Class strings are
  * written out literally (never interpolated) so Tailwind's scanner sees them.
  */

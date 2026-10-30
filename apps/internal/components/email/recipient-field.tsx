@@ -13,6 +13,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  useRevealSelected,
 } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 
@@ -72,6 +73,13 @@ export function RecipientField({
     EMAIL_RE.test(typed) &&
     !value.includes(typed) &&
     !byEmail.has(typed)
+
+  // Opens on the first ticked recipient, in view and highlighted.
+  const firstChecked = options.find(option => value.includes(option.email))
+  const firstCheckedValue = firstChecked
+    ? `${firstChecked.name} ${firstChecked.email}`
+    : undefined
+  const revealFirstChecked = useRevealSelected(firstCheckedValue)
 
   const toggle = (email: string) =>
     onChange(
@@ -135,13 +143,13 @@ export function RecipientField({
         </PopoverTrigger>
         {/* Add sits at the row's right edge; open back over the form. */}
         <PopoverContent align='end' className='w-86 p-0'>
-          <Command>
+          <Command defaultValue={firstCheckedValue}>
             <CommandInput
               placeholder={searchPlaceholder}
               value={query}
               onValueChange={setQuery}
             />
-            <CommandList>
+            <CommandList ref={revealFirstChecked}>
               <CommandEmpty>
                 {allowTyped
                   ? 'No matches. Type a full email address to add it.'

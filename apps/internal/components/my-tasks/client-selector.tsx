@@ -14,6 +14,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  useRevealSelected,
 } from '@/components/ui/command'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
@@ -94,6 +95,14 @@ export function ClientSelector({
   )
 
   const isAllClients = selectedClientId === ALL_CLIENTS_VALUE
+  // Opens with the current choice in view and highlighted.
+  const selectedClient = clients.find(client => client.id === selectedClientId)
+  const selectedCommandValue = isAllClients
+    ? ALL_CLIENTS_LABEL
+    : selectedClient
+      ? `${selectedClient.name} ${selectedClient.id}`
+      : undefined
+  const revealSelected = useRevealSelected(selectedCommandValue)
   const selectedLabel = isAllClients
     ? ALL_CLIENTS_LABEL
     : (clients.find(client => client.id === selectedClientId)?.name ??
@@ -212,9 +221,12 @@ export function ClientSelector({
             className='w-(--anchor-width) min-w-64 p-0'
             sideOffset={8}
           >
-            <Command>
+            <Command defaultValue={selectedCommandValue}>
               <CommandInput placeholder='Search clients...' className='h-9' />
-              <CommandList className='max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain'>
+              <CommandList
+                ref={revealSelected}
+                className='max-h-[min(60vh,320px)] overflow-y-auto overscroll-contain'
+              >
                 <CommandEmpty>No clients found.</CommandEmpty>
                 <CommandGroup heading='Show'>
                   {SCOPE_ROWS.map(row => (

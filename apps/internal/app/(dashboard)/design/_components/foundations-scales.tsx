@@ -166,7 +166,7 @@ export function FoundationsRadius() {
       <Specimen
         label='Shadow'
         note={SHADOWS.note}
-        className='bg-muted/40 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-5'
+        className='bg-muted/40 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-6'
       >
         {SHADOWS.tokens.map(token => {
           const isFocus = token.name === 'focus-ring'
@@ -175,7 +175,12 @@ export function FoundationsRadius() {
               <div
                 className='bg-card h-20 rounded-lg border'
                 style={{
-                  boxShadow: isFocus ? undefined : lightValue(token.value),
+                  // The popover elevation follows the theme, so show it live.
+                  boxShadow: isFocus
+                    ? undefined
+                    : token.name === 'shadow-popover'
+                      ? 'var(--popover-shadow)'
+                      : lightValue(token.value),
                 }}
               >
                 {isFocus ? (
