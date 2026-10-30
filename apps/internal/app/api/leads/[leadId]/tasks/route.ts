@@ -8,6 +8,8 @@ import { users } from '@/lib/db/schema'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
 import { listLeadTasksWithRelations } from '@/lib/queries/tasks/relations'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
+import { findSalesProjectId } from '@/lib/leads/sales-project'
+import { listWorkableProjectIds } from '@/lib/projects/access'
 
 /**
  * GET /api/leads/[leadId]/tasks
@@ -34,9 +36,7 @@ export async function GET(
 
     const assigneeIds = [
       ...new Set(
-        tasks.flatMap(task =>
-          task.assignees.map(assignee => assignee.user_id)
-        )
+        tasks.flatMap(task => task.assignees.map(assignee => assignee.user_id))
       ),
     ]
 
@@ -63,7 +63,15 @@ export async function GET(
       ])
     )
 
-    return NextResponse.json({ tasks, assignees })
+    // Lead tasks live in the Sales project; a SALES user only sees them as
+    // a member, so the sheet can explain an empty list.
+    const workable = await listWorkableProjectIds(user)
+    const salesProjectId = await findSalesProjectId()
+    const inSalesProject =
+      workable === null ||
+      (salesProjectId !== null && workable.includes(salesProjectId))
+
+    return NextResponse.json({ tasks, assignees, inSalesProject })
   } catch (error) {
     console.error('Failed to fetch lead tasks:', error)
     return NextResponse.json(
