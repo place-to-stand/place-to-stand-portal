@@ -61,11 +61,18 @@ test('project: create with a member in one save', async ({ page }) => {
     if (isLinkRestCall(request)) linkCalls.push(request)
   })
 
-  const saveResponse = page.waitForResponse(
-    response => isServerAction(response.request()) && response.ok()
-  )
+  // Fetch the save's response in the test before the page gets it: the
+  // refresh after Save can discard a body read from the browser.
+  let body = ''
+  await page.route('**/*', async route => {
+    if (!isServerAction(route.request())) return route.fallback()
+    const response = await route.fetch()
+    body = await response.text()
+    await route.fulfill({ response, body })
+  })
   await sheet.getByRole('button', { name: /^Create project/ }).click()
-  const body = await (await saveResponse).text()
+  await expect.poll(() => body).not.toBe('')
+  await page.unroute('**/*')
   await expect(sheet).toBeHidden()
 
   expect(actions).toHaveLength(1)
