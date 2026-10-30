@@ -41,6 +41,8 @@ type LeadsBoardProps = {
   onEditLead: (lead: LeadRecord) => void
   onCreateLead?: (status: LeadStatusValue) => void
   onLeadClosedWon?: (lead: LeadRecord) => void
+  /** A Won drag refused for want of a company: open the lead to add one. */
+  onWonNeedsCompany?: (lead: LeadRecord) => void
   activeLeadId: string | null
 }
 
@@ -51,6 +53,7 @@ export function LeadsBoard({
   onEditLead,
   onCreateLead,
   onLeadClosedWon,
+  onWonNeedsCompany,
   activeLeadId,
 }: LeadsBoardProps) {
   const { sensors } = useProjectsBoardSensors()
@@ -185,11 +188,15 @@ export function LeadsBoard({
           draggedLead
         )
       ) {
-        toast({
-          variant: 'destructive',
-          title: 'Unable to move lead',
-          description: LEAD_WON_NEEDS_COMPANY_MESSAGE,
-        })
+        if (onWonNeedsCompany) {
+          onWonNeedsCompany(draggedLead)
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Unable to move lead',
+            description: LEAD_WON_NEEDS_COMPANY_MESSAGE,
+          })
+        }
         return
       }
 
@@ -237,6 +244,7 @@ export function LeadsBoard({
       canManage,
       hiddenLeads,
       onLeadClosedWon,
+      onWonNeedsCompany,
       scheduleRecentlyMovedReset,
       setDropPreview,
       setRecentlyMovedLeadId,

@@ -36,6 +36,8 @@ export type LeadSheetProps = {
   onOpenChange: (open: boolean) => void
   lead: LeadRecord | null
   initialStatus?: LeadStatusValue | null
+  /** An error to show on the Company field when the sheet opens. */
+  initialCompanyError?: string | null
   assignees: LeadAssigneeOption[]
   canManage?: boolean
   senderName?: string

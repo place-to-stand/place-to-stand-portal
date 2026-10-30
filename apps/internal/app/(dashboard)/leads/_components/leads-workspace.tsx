@@ -15,6 +15,7 @@ import {
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { LEAD_WON_NEEDS_COMPANY_MESSAGE } from '@/lib/leads/won-rule'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { companySheetHref } from '@/lib/sheets/hrefs'
@@ -50,6 +51,11 @@ export function LeadsWorkspace({
   const { selectedId, isCreating, select, openCreate, clear } =
     useSheetParamSelection('lead')
   const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
+    null
+  )
+  // Set when a Won drag was refused for want of a company: the lead's sheet
+  // opens with the reason on its Company field.
+  const [companyErrorLeadId, setCompanyErrorLeadId] = useState<string | null>(
     null
   )
   const [, startRefresh] = useTransition()
@@ -104,9 +110,19 @@ export function LeadsWorkspace({
       }
 
       setInitialStatus(null)
+      setCompanyErrorLeadId(null)
       select(lead.id)
     },
     [canManage, select]
+  )
+
+  const handleWonNeedsCompany = useCallback(
+    (lead: LeadRecord) => {
+      setInitialStatus(null)
+      setCompanyErrorLeadId(lead.id)
+      select(lead.id)
+    },
+    [select]
   )
 
   const handleSheetOpenChange = useCallback(
@@ -116,6 +132,7 @@ export function LeadsWorkspace({
       }
 
       setInitialStatus(null)
+      setCompanyErrorLeadId(null)
       clear()
       startRefresh(() => {
         router.refresh()
@@ -203,6 +220,11 @@ export function LeadsWorkspace({
           onOpenChange={handleSheetOpenChange}
           lead={sheetLead}
           initialStatus={initialStatus}
+          initialCompanyError={
+            sheetLead && sheetLead.id === companyErrorLeadId
+              ? LEAD_WON_NEEDS_COMPANY_MESSAGE
+              : null
+          }
           assignees={assignees}
           canManage={canManage}
           senderName={senderName}
@@ -216,6 +238,7 @@ export function LeadsWorkspace({
         onEditLead={handleEditLead}
         onCreateLead={handleCreateLead}
         onLeadClosedWon={canManageClients ? handleLeadClosedWon : undefined}
+        onWonNeedsCompany={handleWonNeedsCompany}
         activeLeadId={boardActiveLeadId}
       />
     </PageShell>
