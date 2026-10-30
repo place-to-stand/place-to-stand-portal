@@ -112,7 +112,13 @@ export function HourBlockSheet({
         >
           <SheetFormHeader
             entity='hourBlock'
-            title={isEditing ? 'Edit hour block' : 'Create hour block'}
+            title={
+              !isEditing
+                ? 'Create hour block'
+                : hourBlock?.client?.name
+                  ? `Hour block for ${hourBlock.client.name}`
+                  : 'Hour block'
+            }
           />
           <Form {...form}>
             <div className='flex-1 overflow-y-auto'>

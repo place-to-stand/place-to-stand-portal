@@ -56,7 +56,7 @@ export function LeadSheet(props: LeadSheetProps) {
           {/* Header */}
           <SheetFormHeader
             entity='lead'
-            title={isEditing ? 'Edit lead' : 'Create lead'}
+            title={isEditing ? lead?.contactName || 'Lead' : 'Create lead'}
             className='flex-shrink-0'
           />
 

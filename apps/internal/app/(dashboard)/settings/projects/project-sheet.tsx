@@ -80,7 +80,9 @@ export function ProjectSheet(props: Props) {
         >
           <SheetFormHeader
             entity='project'
-            title={isEditing ? 'Edit project' : 'Create project'}
+            title={
+              isEditing ? props.project?.name || 'Project' : 'Create project'
+            }
           />
           <ProjectSheetForm
             form={form}
