@@ -126,7 +126,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Layout.** The app shell is `muted`. Each page is a `PageShell`:
   - one compact header row (sidebar trigger, a vertical separator, the breadcrumb, then an optional right slot) on `background`, with a bottom border
   - an optional toolbar row (tabs, the count, one primary action). Tabs sit at the left at their own width and scroll sideways once they outgrow the screen; the count sits right, beside the primary action
-  - a list's `FilterBar`: search, then its filters inline. Below `md` the search keeps the row beside a Filters button and the filters open in a sheet (`FilterSheetButton`, `components/table-toolbar/filter-sheet.tsx`); reuse that button for any other page's filters on phones
+  - a list's `FilterBar`: search, then its filters inline. Below `md` the search keeps the row beside a Filters button and the filters open in a sheet (`FilterSheetButton`, `components/table-toolbar/filter-sheet.tsx`); reuse that button for any other page's filters on phones. Every list filter is `FilterSelect` (`components/table-toolbar/filter-select.tsx`): a single-choice filter is a searchable combobox, however short its list (it opens on the selected option, typing narrows it, the first option is "All …"); a multi-choice filter is the checkbox popover. Never a plain `Select` in a filter bar
   - the scrolling content. The body itself never scrolls.
 - **The left sidebar** uses the `sidebar-*` tokens and collapses to icons. When collapsed, the blueprint mark stands in for the logo.
 - **Entities open in sheets, not pages.** Sheets are right-side panels over the list, sized `sm`–`xwide`. They're addressed by a query param (`?task=<uuid>`, `?client=new`).

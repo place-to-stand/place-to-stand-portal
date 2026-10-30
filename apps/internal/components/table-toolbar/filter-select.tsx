@@ -6,13 +6,7 @@ import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
 import { Checkbox } from '@pts/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@pts/ui/select'
+import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { cn } from '@/lib/utils'
 
 const ALL = 'all'
@@ -50,8 +44,8 @@ type MultiProps = {
 export type FilterSelectProps = SingleProps | MultiProps
 
 /**
- * The one filter control (PRD 004 §03): `single` = the users/submissions
- * Select idiom ('all' sentinel ↔ param removed); `multi` = the faceted
+ * The one filter control (PRD 004 §03): `single` = a searchable combobox
+ * ('all' sentinel ↔ param removed); `multi` = the faceted
  * popover lifted from the old ProjectStatusFilter (badges-in-trigger,
  * Clear/Select-all footer). One standard trigger width.
  */
@@ -69,29 +63,25 @@ function SingleFilterSelect({
   options,
   className,
 }: SingleProps) {
+  // Every list filter is a searchable combobox, however short its list: it
+  // opens on the selected option, and typing narrows it.
   return (
-    <Select
+    <SearchableCombobox
+      items={[
+        { value: ALL, label: placeholder },
+        ...options.map(option => ({
+          value: option.value,
+          label: option.label,
+        })),
+      ]}
       value={value ?? ALL}
-      onValueChange={next => onChange(next === ALL ? undefined : next)}
-    >
-      <SelectTrigger className={cn('w-40', className)}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>{placeholder}</SelectItem>
-        {options.map(option => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.badgeClassName ? (
-              <Badge variant='outline' className={cn(option.badgeClassName)}>
-                {option.label}
-              </Badge>
-            ) : (
-              option.label
-            )}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      onChange={next => onChange(next === ALL ? undefined : next)}
+      placeholder={placeholder}
+      searchPlaceholder='Search…'
+      emptyMessage='No matches.'
+      ariaLabel={placeholder}
+      triggerClassName={cn('w-40', className)}
+    />
   )
 }
 
