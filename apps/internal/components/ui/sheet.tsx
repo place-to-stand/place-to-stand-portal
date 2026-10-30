@@ -106,26 +106,29 @@ const SheetOverlay = ({
 }
 
 /**
- * Two widths, nothing in between. `narrow` for a simple form (an hour block,
- * the phone filters); `wide` for a record with lists (company, person, lead,
- * task, project, invoice, submission, template). Phones get the full screen
+ * A sheet's width follows its layout: `columns={1}` (one column: company,
+ * person, task, project, hour block, submission, template, filters) is 600px;
+ * `columns={2}` (a form beside a SHEET_SIDE_COLUMN_CLASS column: lead,
+ * invoice) is 768px below lg and a set 1184px from lg, within the viewport.
+ * Below lg a side column stacks under the form. Phones get the full screen
  * either way.
  */
-type SheetSize = 'narrow' | 'wide'
+export type SheetColumns = 1 | 2
 
-const sheetSizeClasses: Record<SheetSize, string> = {
-  narrow: 'sm:max-w-lg',
-  // 672px below lg; from lg a set 1024px (within the viewport), room for a
-  // SHEET_SIDE_COLUMN_CLASS column beside a 640px form. Below lg a side
-  // column stacks under the form.
-  wide: 'sm:max-w-2xl lg:w-[1024px] lg:max-w-[calc(100vw-4rem)]',
+/** The one-column sheet width, for layouts that add to it (task planning). */
+export const SHEET_ONE_COLUMN_WIDTH = 600
+
+const sheetColumnClasses: Record<SheetColumns, string> = {
+  1: 'sm:max-w-[600px]',
+  2: 'sm:max-w-3xl lg:w-[1184px] lg:max-w-[calc(100vw-4rem)]',
 }
 
 const SheetContent = React.forwardRef<
   HTMLDivElement,
   SheetPrimitive.Popup.Props & {
     side?: 'top' | 'right' | 'bottom' | 'left'
-    size?: SheetSize
+    /** One column or a form beside a side column; sets the width. */
+    columns?: SheetColumns
     showOverlay?: boolean
     hideCloseButton?: boolean
     /**
@@ -142,7 +145,7 @@ const SheetContent = React.forwardRef<
       className,
       children,
       side = 'right',
-      size = 'narrow',
+      columns = 1,
       showOverlay = true,
       hideCloseButton = false,
       skipMountAnimation = false,
@@ -205,7 +208,7 @@ const SheetContent = React.forwardRef<
               'data-closed:slide-out-to-top data-open:slide-in-from-top inset-x-0 top-0 h-auto border-b',
             side === 'bottom' &&
               'data-closed:slide-out-to-bottom data-open:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
-            isHorizontal && sheetSizeClasses[size],
+            isHorizontal && sheetColumnClasses[columns],
             className
           )}
           {...props}
@@ -282,7 +285,7 @@ export {
 }
 
 /**
- * Width of the side column in a two-column `wide` sheet (the lead's tasks
+ * Width of the side column in a two-column sheet (the lead's tasks
  * and updates, the invoice's status and actions).
  */
 export const SHEET_SIDE_COLUMN_CLASS = 'lg:w-96'

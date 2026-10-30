@@ -372,7 +372,7 @@ export function InvoiceSheet({
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='wide'
+          columns={2}
           className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
         >
           <Form {...form}>

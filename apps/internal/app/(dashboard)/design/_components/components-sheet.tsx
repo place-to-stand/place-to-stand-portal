@@ -81,7 +81,7 @@ const VARIANTS: Variant[] = [
   },
 ]
 
-const SIZES = ['narrow', 'wide'] as const
+const SIZES = [1, 2] as const
 
 export function ComponentsSheets() {
   const [variant, setVariant] = useState<Variant | null>(null)
@@ -113,8 +113,8 @@ export function ComponentsSheets() {
       </Specimen>
 
       <Specimen
-        label='Sizes'
-        note="SheetContent size='narrow' (a simple form) or 'wide' (a record with lists); nothing else"
+        label='Widths'
+        note='SheetContent columns={1} (600px) or columns={2} (1184px from lg): the layout sets the width; nothing else'
       >
         {SIZES.map(size => (
           <SizeSheet key={size} size={size} />
@@ -129,16 +129,16 @@ function SizeSheet({ size }: { size: (typeof SIZES)[number] }) {
   return (
     <>
       <Button variant='outline' size='sm' onClick={() => setOpen(true)}>
-        {size}
+        {size === 1 ? 'One column' : 'Two columns'}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent size={size}>
+        <SheetContent columns={size}>
           <SheetHeader>
-            <SheetTitle>Sheet size {size}</SheetTitle>
+            <SheetTitle>{size === 1 ? 'One column' : 'Two columns'}</SheetTitle>
             <SheetDescription>
-              {size === 'narrow'
-                ? 'A simple form: an hour block, the phone filters.'
-                : 'A record with lists: company, person, lead, task, project, invoice.'}
+              {size === 1
+                ? 'Company, person, task, project, hour block, submission, template.'
+                : 'A form beside a side column: lead, invoice.'}
             </SheetDescription>
           </SheetHeader>
         </SheetContent>
@@ -175,7 +175,7 @@ function SampleEntitySheet({
       <Sheet open={Boolean(variant)} onOpenChange={next => !next && onClose()}>
         <SheetContent
           hideCloseButton
-          size='wide'
+          columns={1}
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader

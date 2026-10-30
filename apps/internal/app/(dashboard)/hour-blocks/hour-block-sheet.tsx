@@ -105,7 +105,7 @@ export function HourBlockSheet({
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='narrow'
+          columns={1}
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader

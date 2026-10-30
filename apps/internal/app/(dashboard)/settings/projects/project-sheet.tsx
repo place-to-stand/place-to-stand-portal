@@ -76,7 +76,7 @@ export function ProjectSheet(props: Props) {
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='wide'
+          columns={1}
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader

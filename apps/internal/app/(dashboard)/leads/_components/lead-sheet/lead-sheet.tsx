@@ -48,7 +48,7 @@ export function LeadSheet(props: LeadSheetProps) {
           hideCloseButton
           // Create and edit share one layout: the form plus the tasks and
           // updates column, which waits for the lead to exist on create.
-          size='wide'
+          columns={2}
           className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
         >
           {/* Header */}
