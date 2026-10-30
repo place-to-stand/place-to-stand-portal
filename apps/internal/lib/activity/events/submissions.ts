@@ -41,22 +41,6 @@ export const submissionUnacknowledgedEvent = (
   metadata: toMetadata({ status: args.status }),
 })
 
-/**
- * Deliberately PII-free, unlike the other builders: "Delete forever"
- * promises the prospect's data is gone, so the surviving audit event must
- * not re-embed their name/email in its summary.
- */
-export const submissionDestroyedEvent = (args: {
-  kind: 'audit' | 'contact'
-  status: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.SUBMISSION_DESTROYED,
-  summary: `Permanently deleted ${
-    args.kind === 'contact' ? 'a contact submission' : 'an audit submission'
-  }`,
-  metadata: toMetadata({ status: args.status }),
-})
-
 export const submissionArchivedEvent = (
   args: SubmissionEventArgs
 ): ActivityEvent => ({
@@ -75,8 +59,8 @@ export const submissionRestoredEvent = (
 
 /**
  * Machine-emitted on first insert only (never on a later audit beacon).
- * PII-free like `submissionDestroyedEvent`: the row itself carries the
- * contact details, and the audit trail must not outlive a "Delete forever".
+ * PII-free on purpose: the row itself carries the contact details, so the
+ * audit trail never needs to repeat them.
  */
 export const submissionReceivedEvent = (args: {
   formType: 'audit' | 'contact'

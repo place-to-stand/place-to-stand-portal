@@ -848,13 +848,6 @@
   },
   {
     "type": "action",
-    "name": "destroySubmission",
-    "file": "apps/internal/app/(dashboard)/submissions/actions/destroy-submission.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "restoreSubmission",
     "file": "apps/internal/app/(dashboard)/submissions/actions/restore-submission.ts",
     "kind": "admin",

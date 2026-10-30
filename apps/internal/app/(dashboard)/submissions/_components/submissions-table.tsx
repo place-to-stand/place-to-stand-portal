@@ -12,7 +12,6 @@ import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { Badge } from '@pts/ui/badge'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { PaginationControls } from '@/components/ui/pagination-controls'
@@ -52,7 +51,6 @@ import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
   archiveSubmission,
-  destroySubmission,
   restoreSubmission,
 } from '../actions'
 
@@ -107,14 +105,6 @@ const EMPTY_STATE_COPY: Record<SubmissionsTableMode, string> = {
   archive: 'No archived submissions.',
 }
 
-function describeSubmission(submission: FormSubmissionRecord): string {
-  return (
-    submission.contactName ||
-    submission.contactEmail ||
-    'this anonymous submission'
-  )
-}
-
 type SubmissionsTableProps = {
   submissions: FormSubmissionRecord[]
   totalCount: number
@@ -164,8 +154,6 @@ export function SubmissionsTable({
       ? deepLinkedSubmission
       : null)
   const [archiveTarget, setArchiveTarget] =
-    useState<FormSubmissionRecord | null>(null)
-  const [destroyTarget, setDestroyTarget] =
     useState<FormSubmissionRecord | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [, startTransition] = useTransition()
@@ -336,21 +324,6 @@ export function SubmissionsTable({
       ),
     [runRowAction]
   )
-
-  const handleDestroyConfirm = useCallback(() => {
-    if (!destroyTarget) {
-      return
-    }
-
-    const target = destroyTarget
-    setDestroyTarget(null)
-    runRowAction(
-      target,
-      () => destroySubmission({ id: target.id }),
-      'Unable to permanently delete submission',
-      true
-    )
-  }, [destroyTarget, runRowAction])
 
   return (
     <div className='space-y-4'>
@@ -596,20 +569,12 @@ export function SubmissionsTable({
                             onClick={() => setArchiveTarget(submission)}
                           />
                         ) : (
-                          <>
-                            <RecordRowAction
-                              kind='restore'
-                              entity='submission'
-                              disabled={pendingId === submission.id}
-                              onClick={() => handleRestore(submission)}
-                            />
-                            <RecordRowAction
-                              kind='destroy'
-                              entity='submission'
-                              disabled={pendingId === submission.id}
-                              onClick={() => setDestroyTarget(submission)}
-                            />
-                          </>
+                          <RecordRowAction
+                            kind='restore'
+                            entity='submission'
+                            disabled={pendingId === submission.id}
+                            onClick={() => handleRestore(submission)}
+                          />
                         )}
                       </RecordRowActions>
                     </TableCell>
@@ -637,21 +602,6 @@ export function SubmissionsTable({
         confirmDisabled={pendingId !== null}
         onCancel={() => setArchiveTarget(null)}
         onConfirm={handleArchiveConfirm}
-      />
-
-      <ConfirmDialog
-        open={destroyTarget !== null}
-        title='Permanently delete submission?'
-        description={
-          destroyTarget
-            ? `Permanently deleting the submission from ${describeSubmission(destroyTarget)} removes it and its history. This action cannot be undone.`
-            : 'Permanently deleting this submission removes it and its history. This action cannot be undone.'
-        }
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={pendingId !== null}
-        onCancel={() => setDestroyTarget(null)}
-        onConfirm={handleDestroyConfirm}
       />
 
       <SubmissionDetailSheet
