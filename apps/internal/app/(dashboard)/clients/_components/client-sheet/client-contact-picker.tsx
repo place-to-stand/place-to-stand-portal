@@ -256,3 +256,99 @@ export function ClientPortalAccessList({
     </>
   )
 }
+
+/**
+ * One person's portal access, for a row on the company's People list: a
+ * switch once they have a sign-in, "Create sign-in" before. The switch is
+ * staged and saves with the sheet.
+ */
+export function PortalAccessControl({
+  contact,
+  hasAccess,
+  isPending,
+  pendingReason,
+  onGrant,
+  onRevoke,
+}: {
+  contact: ClientContactOption
+  hasAccess: boolean
+  isPending: boolean
+  pendingReason: string
+  onGrant: (contact: ClientContactOption) => void
+  onRevoke: (contact: ClientContactOption) => void
+}) {
+  const [created, setCreated] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const { createPortalUser, isPending: isCreating } = useCreatePortalUser()
+  const label = contact.name ?? contact.email ?? 'this person'
+  const hasSignIn = contact.hasPortalAccess || created
+
+  if (!hasSignIn && !hasAccess) {
+    const reason = isPending
+      ? pendingReason
+      : !contact.email
+        ? 'Add an email to this person first'
+        : null
+    return (
+      <>
+        <DisabledFieldTooltip
+          disabled={Boolean(reason)}
+          reason={reason}
+          className='w-auto'
+        >
+          <Button
+            type='button'
+            variant='outline'
+            size='xs'
+            disabled={Boolean(reason) || isCreating}
+            onClick={() => setConfirmOpen(true)}
+          >
+            {isCreating ? 'Creating…' : 'Create sign-in'}
+          </Button>
+        </DisabledFieldTooltip>
+        <PromoteToUserDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          contactName={label}
+          contactEmail={contact.email ?? ''}
+          isPending={isCreating}
+          onConfirm={() => {
+            setConfirmOpen(false)
+            createPortalUser(contact, { onSuccess: () => setCreated(true) })
+          }}
+        />
+      </>
+    )
+  }
+
+  return (
+    <DisabledFieldTooltip
+      disabled={isPending}
+      reason={isPending ? pendingReason : null}
+      className='w-auto'
+    >
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className='inline-flex items-center gap-1.5 px-1.5'>
+            <span className='text-muted-foreground text-xs'>Portal</span>
+            <Switch
+              checked={hasAccess}
+              disabled={isPending}
+              aria-label={`Portal access for ${label}`}
+              onCheckedChange={checked =>
+                checked ? onGrant(contact) : onRevoke(contact)
+              }
+            />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          {contact.signInDisabled
+            ? 'Their sign-in is off: no access until it’s back on'
+            : hasAccess
+              ? 'Can see this client in the portal'
+              : 'Can’t see this client in the portal'}
+        </TooltipContent>
+      </Tooltip>
+    </DisabledFieldTooltip>
+  )
+}

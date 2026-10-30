@@ -3,7 +3,16 @@
 import { revalidatePath } from 'next/cache'
 
 import { roleCan } from '@/lib/auth/capabilities'
-import { requireCrmUser } from '@/lib/auth/session'
+import { and, eq, isNull } from 'drizzle-orm'
+import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
+
+import { requireCrmUser, requireUser } from '@/lib/auth/session'
+import { db } from '@/lib/db'
+import { clients } from '@/lib/db/schema'
+import { fetchProjectsForClient, type ClientProject } from '@/lib/data/clients'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { listClientUpdates } from '@/lib/updates'
+import type { ClientUpdateSummary } from '@/app/(dashboard)/clients/[clientSlug]/_components/client-updates-section'
 import type { SaveCompanyInput } from '@/lib/companies/schema'
 import type {
   ClientLinkOption,
@@ -101,4 +110,54 @@ export async function restoreCompany(
   const result = await setCompanyArchived(user, companyId, false)
   if (result.ok) revalidateCompanyRoutes()
   return result
+}
+
+export type CompanyClientWork = {
+  clientSlug: string | null
+  projects: ClientProject[]
+  updates: ClientUpdateSummary[]
+  /** Prepaid hours for the current era; null for net 30. */
+  hours: { purchased: number; used: number; remaining: number } | null
+}
+
+/** A client company's work for its Projects and Billing tabs (admins). */
+export async function loadCompanyClientWork(
+  clientId: string
+): Promise<CompanyClientWork | null> {
+  const user = await requireUser()
+  if (!UUID_PATTERN.test(clientId)) return null
+
+  const [client] = await db
+    .select({ slug: clients.slug, billingType: currentBillingTypeSql() })
+    .from(clients)
+    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+    .limit(1)
+  if (!client) return null
+
+  const [projectRows, updates, totals] = await Promise.all([
+    fetchProjectsForClient(user, clientId),
+    listClientUpdates({ clientId, limit: 5 }),
+    getClientHoursTotals(db, [clientId]),
+  ])
+  const balance = clientHoursTotalsFor(totals, clientId)
+
+  return {
+    clientSlug: client.slug,
+    projects: projectRows,
+    updates: updates.map(update => ({
+      id: update.id,
+      subject: update.subject,
+      status: update.status,
+      sentAt: update.sentAt,
+      createdAt: update.createdAt,
+    })),
+    hours:
+      client.billingType === 'prepaid'
+        ? {
+            purchased: balance.purchased,
+            used: balance.used,
+            remaining: balance.remaining,
+          }
+        : null,
+  }
 }

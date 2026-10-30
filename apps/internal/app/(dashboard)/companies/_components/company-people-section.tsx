@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ExternalLink, Star, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -51,6 +51,8 @@ type CompanyPeopleSectionProps = {
   onAdd: (contact: ContactLink) => void
   onRemove: (contactId: string) => void
   onUndoRemove: (contactId: string) => void
+  /** A client company (admins): each saved person's portal access switch. */
+  portalAccessFor?: ((contactId: string) => ReactNode) | null
 }
 
 /**
@@ -73,6 +75,7 @@ export function CompanyPeopleSection({
   onAdd,
   onRemove,
   onUndoRemove,
+  portalAccessFor = null,
 }: CompanyPeopleSectionProps) {
   const removed = new Set(removedIds)
   const listedIds = [...contacts.map(c => c.id), ...added.map(c => c.id)]
@@ -195,6 +198,7 @@ export function CompanyPeopleSection({
                         }
                       />
                     ) : null}
+                    {portalAccessFor?.(contact.id)}
                     {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}

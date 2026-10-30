@@ -73,13 +73,13 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
     // `?client=new` is Make client: `clientName=` prefills from a picker,
     // `clientCompanyId=` the company. `?client=<id>` opens its company's
     // sheet. Only the archive (stopped billing) hosts its own client sheet.
-    auxParams: ['clientName', 'clientCompanyId'],
+    auxParams: ['clientName', 'clientCompanyId', 'tab'],
     claimsPathname: exactPaths('/clients/archive'),
   },
   contact: {
     // `contactName=` prefills the create sheet's name (create-from-picker);
     // `contactCompanyId=` its company (e.g. the lead's).
-    auxParams: ['contactName', 'contactCompanyId'],
+    auxParams: ['contactName', 'contactCompanyId', 'tab'],
     claimsPathname: exactPaths('/people', '/people/archive'),
   },
   invoice: {
@@ -109,7 +109,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   company: {
     // `companyName=` prefills the create sheet's name (create-from-picker).
-    auxParams: ['companyName'],
+    auxParams: ['companyName', 'tab'],
     // The company sheet loads its own data, so the global host serves it on
     // every route, the Companies page included.
     claimsPathname: () => false,

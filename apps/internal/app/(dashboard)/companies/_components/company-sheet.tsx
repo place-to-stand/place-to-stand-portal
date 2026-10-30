@@ -40,7 +40,6 @@ import {
   restoreCompany,
   saveCompany,
 } from '../actions'
-import { CompanyPeopleSection } from './company-people-section'
 import {
   companyFormSchema,
   companySheetQueryKey,
@@ -48,10 +47,28 @@ import {
   type CompanyFormValues,
 } from './use-company-sheet-form'
 import {
-  CompanyBillingSlot,
+  CompanyBillingTab,
   CompanyLeadsSection,
+  CompanyProjectsTab,
 } from './company-sheet-sections'
-import type { CompanyBillingHandle } from './company-billing-section'
+import {
+  CompanyBillingProvider,
+  useCompanyPortalAccess,
+  type CompanyBillingHandle,
+} from './company-billing-section'
+import { CompanyPeopleSection } from './company-people-section'
+import { ClientBadge } from '@/components/clients/client-badge'
+import { SheetTabs, useSheetTab } from '@/components/sheets/sheet-tabs'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { Building2, MoreHorizontal } from 'lucide-react'
+import { Button } from '@pts/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@pts/ui/dropdown-menu'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
@@ -276,6 +293,26 @@ export function CompanySheet({
     handleUndoRemovePerson,
   } = useCompanySheetForm({ form, company, companyId })
 
+  const clientId = company?.clients[0]?.id ?? null
+  const tabValues = isAdmin
+    ? ['details', 'people', 'projects', 'billing']
+    : ['details', 'people']
+  const [tab, setTab] = useSheetTab(tabValues)
+  const { openNew } = useSheetParams()
+  const dirtyFields = form.formState.dirtyFields
+  const detailsDirty = Boolean(
+    dirtyFields.name ||
+      dirtyFields.website ||
+      dirtyFields.linkedinUrl ||
+      dirtyFields.notes
+  )
+  const peopleDirty = Boolean(
+    dirtyFields.addedContacts ||
+      dirtyFields.removedContactIds ||
+      dirtyFields.titles ||
+      dirtyFields.primaryContactId
+  )
+
   const handleOpenChange = useCallback(
     (next: boolean) => {
       if (next || isPending) return
@@ -296,7 +333,55 @@ export function CompanySheet({
         >
           <SheetFormHeader
             entity='company'
-            title={isEditing ? 'Edit company' : 'Create company'}
+            title={
+              isEditing ? (company?.name ?? 'Company') : 'Create company'
+            }
+            leading={
+              <Building2
+                aria-hidden
+                className={`${ENTITY_ACCENTS.company.icon} size-4 shrink-0`}
+              />
+            }
+            badges={clientId ? <ClientBadge /> : null}
+            menu={
+              isAdmin && company && !isArchived ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='icon-sm'
+                        aria-label='Company actions'
+                      />
+                    }
+                  >
+                    <MoreHorizontal />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end'>
+                    {clientId ? (
+                      <DropdownMenuItem
+                        className='text-destructive'
+                        onClick={() => {
+                          setTab('billing')
+                          billingRef.current?.requestStopBilling()
+                        }}
+                      >
+                        Stop billing
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() =>
+                          openNew('client', { clientCompanyId: company.id })
+                        }
+                      >
+                        Make client
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null
+            }
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>
@@ -317,8 +402,168 @@ export function CompanySheet({
                     event.preventDefault()
                     handleSave()
                   }}
-                  className='flex flex-col gap-6 px-6 pt-6 pb-8'
+                  className='flex flex-col'
                 >
+                  {company ? (
+                    <CompanyBillingProvider
+                      clientId={isAdmin ? clientId : null}
+                      open={open}
+                      handleRef={billingRef}
+                      onDirtyChange={setBillingDirty}
+                      onSaved={async () => {
+                        setBillingDirty(false)
+                        await refresh()
+                        onClose()
+                      }}
+                    >
+                      <SheetTabs
+                        value={tab}
+                        onValueChange={setTab}
+                        tabs={[
+                          {
+                            value: 'details',
+                            label: 'Details',
+                            dirty: detailsDirty,
+                            content: (
+                              <>
+                                <SheetSection title='Details'>
+                                  <FormField
+                                    control={form.control}
+                                    name='name'
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Name</FormLabel>
+                                        <FormControl>
+                                          <Input
+                                            {...field}
+                                            placeholder='Acme Inc.'
+                                            disabled={fieldsDisabled}
+                                            data-autofocus
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name='website'
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel optional>Website</FormLabel>
+                                        <FormControl>
+                                          <UrlInput
+                                            {...field}
+                                            openLabel='Open website'
+                                            placeholder='acme.com'
+                                            disabled={fieldsDisabled}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name='linkedinUrl'
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel optional>LinkedIn</FormLabel>
+                                        <FormControl>
+                                          <UrlInput
+                                            {...field}
+                                            openLabel='Open LinkedIn'
+                                            placeholder='linkedin.com/company/acme'
+                                            disabled={fieldsDisabled}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  <FormField
+                                    control={form.control}
+                                    name='notes'
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel optional>Notes</FormLabel>
+                                        <FormControl>
+                                          <RichTextEditor
+                                            id='company-notes'
+                                            value={field.value ?? ''}
+                                            onChange={field.onChange}
+                                            disabled={fieldsDisabled}
+                                            contentMinHeightClassName='[&_.ProseMirror]:min-h-[140px]'
+                                            undoRedo={false}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </SheetSection>
+
+                                <Separator />
+                                <CompanyLeadsSection leads={company.leads} />
+                              </>
+                            ),
+                          },
+                          {
+                            value: 'people',
+                            label: 'People',
+                            dirty: peopleDirty,
+                            content: (
+                              <CompanyPeopleTab
+                                contacts={company.contacts}
+                                added={addedContacts}
+                                removedIds={removedContactIds}
+                                movesFrom={movesFrom}
+                                primaryContactId={primaryContactId}
+                                clientName={company.clients[0]?.name ?? null}
+                                disabled={fieldsDisabled || peopleLocked}
+                                lockedReason={
+                                  peopleLocked
+                                    ? 'This company is a client, so an admin changes its people and primary contact.'
+                                    : null
+                                }
+                                titles={titles}
+                                titleDisabled={fieldsDisabled}
+                                onTitleChange={handleTitleChange}
+                                onSetPrimary={handleSetPrimary}
+                                onAdd={handleAddPerson}
+                                onRemove={handleRemovePerson}
+                                onUndoRemove={handleUndoRemovePerson}
+                              />
+                            ),
+                          },
+                          ...(isAdmin
+                            ? [
+                                {
+                                  value: 'projects',
+                                  label: 'Projects',
+                                  content: (
+                                    <CompanyProjectsTab clientId={clientId} />
+                                  ),
+                                },
+                                {
+                                  value: 'billing',
+                                  label: 'Billing',
+                                  dirty: billingDirty,
+                                  content: (
+                                    <CompanyBillingTab
+                                      companyId={company.id}
+                                      clientId={clientId}
+                                      disabled={fieldsDisabled}
+                                    />
+                                  ),
+                                },
+                              ]
+                            : []),
+                        ]}
+                      />
+                    </CompanyBillingProvider>
+                  ) : (
+                    <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
                   <SheetSection title='Details'>
                     <FormField
                       control={form.control}
@@ -396,54 +641,11 @@ export function CompanySheet({
                     />
                   </SheetSection>
 
-                  {company ? (
-                    <>
-                      <Separator />
-                      <CompanyPeopleSection
-                        contacts={company.contacts}
-                        added={addedContacts}
-                        removedIds={removedContactIds}
-                        movesFrom={movesFrom}
-                        primaryContactId={primaryContactId}
-                        clientName={company.clients[0]?.name ?? null}
-                        disabled={fieldsDisabled || peopleLocked}
-                        lockedReason={
-                          peopleLocked
-                            ? 'This company is a client, so an admin changes its people and primary contact.'
-                            : null
-                        }
-                        titles={titles}
-                        titleDisabled={fieldsDisabled}
-                        onTitleChange={handleTitleChange}
-                        onSetPrimary={handleSetPrimary}
-                        onAdd={handleAddPerson}
-                        onRemove={handleRemovePerson}
-                        onUndoRemove={handleUndoRemovePerson}
-                      />
-                      <Separator />
-                      <CompanyLeadsSection leads={company.leads} />
-                      {isAdmin ? (
-                        <>
-                          <Separator />
-                          <CompanyBillingSlot
-                            companyId={company.id}
-                            client={company.clients[0] ?? null}
-                            open={open}
-                            disabled={fieldsDisabled}
-                            billingRef={billingRef}
-                            onDirtyChange={setBillingDirty}
-                            onSaved={async () => {
-                              setBillingDirty(false)
-                              await refresh()
-                              onClose()
-                            }}
-                          />
-                        </>
-                      ) : null}
-                    </>
-                  ) : null}
-
-                  <FormFeedback>{feedback}</FormFeedback>
+                    </div>
+                  )}
+                  <div className='px-6 pb-6 empty:hidden'>
+                    <FormFeedback>{feedback}</FormFeedback>
+                  </div>
                 </form>
               </div>
               <SheetFormFooter
@@ -498,4 +700,12 @@ export function CompanySheet({
       {unsavedChangesDialog}
     </>
   )
+}
+
+/** The People tab: the list, plus each person's portal access when billed. */
+function CompanyPeopleTab(
+  props: Omit<Parameters<typeof CompanyPeopleSection>[0], 'portalAccessFor'>
+) {
+  const portalAccessFor = useCompanyPortalAccess()
+  return <CompanyPeopleSection {...props} portalAccessFor={portalAccessFor} />
 }

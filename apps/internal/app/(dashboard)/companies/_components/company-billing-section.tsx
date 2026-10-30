@@ -1,22 +1,37 @@
 'use client'
 
-import { useEffect, useImperativeHandle, type Ref } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  type ReactNode,
+  type Ref,
+} from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Skeleton } from '@pts/ui/skeleton'
 import { FormFeedback } from '@/components/sheets/form-feedback'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import { Form } from '@/components/ui/form'
 import { ClientBillingFields } from '@/app/(dashboard)/clients/_components/client-sheet/client-billing-fields'
+import {
+  ClientPortalAccessList,
+  PortalAccessControl,
+} from '@/app/(dashboard)/clients/_components/client-sheet/client-contact-picker'
 import {
   ARCHIVE_CLIENT_CONFIRM_LABEL,
   ARCHIVE_CLIENT_DIALOG_TITLE,
   getArchiveClientDialogDescription,
 } from '@/lib/settings/clients/client-sheet-constants'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
-import { useClientSheetState } from '@/lib/settings/clients/use-client-sheet-state'
+import {
+  useClientSheetState,
+  type UseClientSheetStateReturn,
+} from '@/lib/settings/clients/use-client-sheet-state'
 
-/** What the company sheet needs from its Billing section. */
+/** What the company sheet needs from its client's billing form. */
 export type CompanyBillingHandle = {
   /** Billing, commission or portal access has unsaved edits. */
   isDirty: () => boolean
@@ -26,17 +41,28 @@ export type CompanyBillingHandle = {
   requestStopBilling: () => void
 }
 
-type CompanyBillingSectionProps = {
-  clientId: string
+type BillingContextValue =
+  | { status: 'none' }
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'ready'; client: ClientRow; state: UseClientSheetStateReturn }
+
+const BillingContext = createContext<BillingContextValue>({ status: 'none' })
+
+/** The company's client billing state, for its Billing tab and People rows. */
+export const useCompanyBilling = () => useContext(BillingContext)
+
+type CompanyBillingProviderProps = {
+  /** The company's live client; null when it isn't one (or not an admin). */
+  clientId: string | null
   open: boolean
   /** Fires after a billing save or after billing stops. */
   onSaved: () => void
   /** Keeps the company sheet's unsaved-changes guard in step. */
   onDirtyChange: (dirty: boolean) => void
   handleRef: Ref<CompanyBillingHandle>
+  children: ReactNode
 }
-
-const clientBillingQueryKey = (clientId: string) => ['clientBilling', clientId]
 
 async function fetchClientBilling(clientId: string): Promise<ClientRow> {
   const response = await fetch(
@@ -52,43 +78,50 @@ async function fetchClientBilling(clientId: string): Promise<ClientRow> {
 }
 
 /**
- * A client company's billing (admins only): billing type, state, commission
- * and portal access. A client is its company's billing record, so it is
- * edited here and saved with the company's Save.
+ * A client is its company's billing record, so its billing form lives inside
+ * the company sheet. One provider holds that form for every tab: the Billing
+ * tab edits it, the People rows switch portal access, and the company's Save
+ * saves it.
  */
-export function CompanyBillingSection(props: CompanyBillingSectionProps) {
+export function CompanyBillingProvider(props: CompanyBillingProviderProps) {
+  const { clientId, children } = props
   const { data: client, isError } = useQuery({
-    queryKey: clientBillingQueryKey(props.clientId),
-    queryFn: () => fetchClientBilling(props.clientId),
+    queryKey: ['clientBilling', clientId],
+    queryFn: () => fetchClientBilling(clientId!),
+    enabled: Boolean(clientId),
     staleTime: 0,
     refetchOnWindowFocus: false,
   })
 
-  if (isError) {
+  if (!clientId) {
     return (
-      <p className='text-muted-foreground text-sm'>
-        Billing could not be loaded. Reload to try again.
-      </p>
+      <BillingContext.Provider value={{ status: 'none' }}>
+        {children}
+      </BillingContext.Provider>
     )
   }
-  if (!client) {
+  if (isError || !client) {
     return (
-      <div className='space-y-3'>
-        <Skeleton className='h-9 w-full' />
-        <Skeleton className='h-24 w-full' />
-      </div>
+      <BillingContext.Provider
+        value={{ status: isError ? 'error' : 'loading' }}
+      >
+        {children}
+      </BillingContext.Provider>
     )
   }
-  return <CompanyBillingForm key={client.updated_at} client={client} {...props} />
+  return (
+    <LoadedBillingProvider key={client.updated_at} client={client} {...props} />
+  )
 }
 
-function CompanyBillingForm({
+function LoadedBillingProvider({
   client,
   open,
   onSaved,
   onDirtyChange,
   handleRef,
-}: CompanyBillingSectionProps & { client: ClientRow }) {
+  children,
+}: CompanyBillingProviderProps & { client: ClientRow }) {
   const state = useClientSheetState({
     open,
     onOpenChange: () => {},
@@ -114,11 +147,59 @@ function CompanyBillingForm({
   )
 
   return (
+    <BillingContext.Provider value={{ status: 'ready', client, state }}>
+      {children}
+      <ConfirmDialog
+        open={state.isDeleteDialogOpen}
+        title={ARCHIVE_CLIENT_DIALOG_TITLE}
+        description={getArchiveClientDialogDescription(state.clientDisplayName)}
+        confirmLabel={ARCHIVE_CLIENT_CONFIRM_LABEL}
+        confirmVariant='destructive'
+        confirmDisabled={state.isPending}
+        onCancel={state.handleCancelDelete}
+        onConfirm={state.handleConfirmDelete}
+      />
+    </BillingContext.Provider>
+  )
+}
+
+/** The Billing tab's form: billing type and state, then commission. */
+export function CompanyBillingFields() {
+  const billing = useCompanyBilling()
+
+  if (billing.status === 'error') {
+    return (
+      <p className='text-muted-foreground text-sm'>
+        Billing could not be loaded. Reload to try again.
+      </p>
+    )
+  }
+  if (billing.status !== 'ready') {
+    return (
+      <div className='space-y-3'>
+        <Skeleton className='h-9 w-full' />
+        <Skeleton className='h-24 w-full' />
+      </div>
+    )
+  }
+
+  const { client, state } = billing
+  const companyIds = new Set(
+    [...state.selectedContacts, ...state.availableContacts]
+      .filter(contact => contact.companyId === client.company_id)
+      .map(contact => contact.id)
+  )
+  const outsiders = state.selectedContacts.filter(
+    contact => !companyIds.has(contact.id)
+  )
+
+  return (
     <Form {...state.form}>
       <ClientBillingFields
         form={state.form}
         isPending={state.isPending}
         isEditing
+        showPortalAccess={false}
         initialBillingType={client.billing_type ?? null}
         pendingReason={state.pendingReason}
         selectedContacts={state.selectedContacts}
@@ -154,17 +235,55 @@ function CompanyBillingForm({
         onRemoveCloser={state.handleRemoveCloser}
         onCloserShareChange={state.handleCloserShareChange}
       />
+      {outsiders.length > 0 ? (
+        <SheetSection
+          title='Access outside this company'
+          description='Older access for people who aren’t at this company. Remove it, or add them on People.'
+        >
+          <ClientPortalAccessList
+            companyId={client.company_id ?? null}
+            companyPeople={[]}
+            selectedContacts={outsiders}
+            isPending={state.contactsAddButtonDisabled}
+            pendingReason={
+              state.contactsAddButtonDisabledReason ?? state.pendingReason
+            }
+            onGrant={state.handleAddContact}
+            onRevoke={state.handleRemoveContact}
+          />
+        </SheetSection>
+      ) : null}
       <FormFeedback>{state.feedback}</FormFeedback>
-      <ConfirmDialog
-        open={state.isDeleteDialogOpen}
-        title={ARCHIVE_CLIENT_DIALOG_TITLE}
-        description={getArchiveClientDialogDescription(state.clientDisplayName)}
-        confirmLabel={ARCHIVE_CLIENT_CONFIRM_LABEL}
-        confirmVariant='destructive'
-        confirmDisabled={state.isPending}
-        onCancel={state.handleCancelDelete}
-        onConfirm={state.handleConfirmDelete}
-      />
     </Form>
   )
+}
+
+/** The portal access switch for one person on the People tab, if billed. */
+export function useCompanyPortalAccess() {
+  const billing = useCompanyBilling()
+  if (billing.status !== 'ready') return null
+  const { state } = billing
+  const selected = new Set(state.selectedContacts.map(contact => contact.id))
+  const options = new Map(
+    [...state.selectedContacts, ...state.availableContacts].map(contact => [
+      contact.id,
+      contact,
+    ])
+  )
+  return function portalAccessFor(contactId: string) {
+    const contact = options.get(contactId)
+    if (!contact) return null
+    return (
+      <PortalAccessControl
+        contact={contact}
+        hasAccess={selected.has(contactId)}
+        isPending={state.contactsAddButtonDisabled}
+        pendingReason={
+          state.contactsAddButtonDisabledReason ?? state.pendingReason
+        }
+        onGrant={state.handleAddContact}
+        onRevoke={state.handleRemoveContact}
+      />
+    )
+  }
 }

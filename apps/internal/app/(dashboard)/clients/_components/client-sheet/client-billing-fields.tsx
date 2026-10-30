@@ -43,6 +43,8 @@ export type ClientBillingFieldsProps = {
   form: UseFormReturn<ClientSheetFormValues>
   isPending: boolean
   isEditing: boolean
+  /** The company sheet shows access on its People rows instead. */
+  showPortalAccess?: boolean
   /** The saved billing type — reveals the boundary select when it differs. */
   initialBillingType: string | null
   pendingReason: string
@@ -93,6 +95,7 @@ export function ClientBillingFields({
   form,
   isPending,
   isEditing,
+  showPortalAccess = true,
   initialBillingType,
   pendingReason,
   selectedContacts,
@@ -343,6 +346,8 @@ export function ClientBillingFields({
         ) : null}
       </SheetSection>
 
+      {showPortalAccess ? (
+        <>
       <Separator />
 
       <SheetSection
@@ -360,6 +365,8 @@ export function ClientBillingFields({
           onRevoke={onRemoveContact}
         />
       </SheetSection>
+        </>
+      ) : null}
     </>
   )
 }
