@@ -18,6 +18,7 @@ import {
 import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
+import { roleCan } from '@/lib/auth/capabilities'
 import { canReadActivity } from '@/lib/auth/roles'
 import { canWorkTask, listWorkableProjectIds } from '@/lib/projects/access'
 import { ForbiddenError } from '@/lib/errors/http'
@@ -37,6 +38,27 @@ import type {
  * the record but never surface in a feed.
  */
 const RETIRED_VERBS = ['PROJECT_VIEWED', 'CLIENT_VIEWED']
+
+/**
+ * Billing and portal-access events. They sit on the company (target COMPANY
+ * since 0113), so a company feed shows them; anyone who can't manage clients
+ * (Sales) never sees them, or the billing behind them.
+ */
+const BILLING_VERBS = [
+  'CLIENT_CREATED',
+  'CLIENT_UPDATED',
+  'CLIENT_ARCHIVED',
+  'CLIENT_RESTORED',
+  'CLIENT_DELETED',
+  'CONTACT_CLIENT_LINKED',
+  'CONTACT_CLIENT_UNLINKED',
+]
+
+function billingScope(user: AppUser) {
+  return roleCan(user.role, 'clients.manage')
+    ? undefined
+    : notInArray(activityLogs.verb, BILLING_VERBS)
+}
 
 const DEFAULT_PAGE_SIZE = 25
 const MAX_PAGE_SIZE = 100
@@ -147,6 +169,7 @@ export async function fetchActivityLogs(
   const whereClause = combineConditions([
     buildFilterConditions(filters),
     projectScope,
+    billingScope(user),
   ])
 
   const baseQuery = db
@@ -220,6 +243,7 @@ export async function fetchActivityLogsSince(
 
   const whereClause = combineConditions([
     notInArray(activityLogs.verb, RETIRED_VERBS),
+    billingScope(user),
     gte(activityLogs.createdAt, since),
     until ? lte(activityLogs.createdAt, until) : undefined,
     ...buildAttributionConditions({ source, actorId }),

@@ -98,10 +98,20 @@ CREATE OR REPLACE VIEW "client_portal_access" AS
     JOIN contacts c ON c.id = m.contact_id AND c.deleted_at IS NULL AND c.user_id IS NOT NULL
     JOIN users u ON u.id = c.user_id AND u.deleted_at IS NULL AND u.disabled_at IS NULL
   WHERE m.ended_at IS NULL AND m.portal_access;--> statement-breakpoint
--- The staff company is marked, not found by name.
+-- The staff company is marked, not found by name (its updated_at untouched).
+ALTER TABLE "companies" DISABLE TRIGGER USER;--> statement-breakpoint
 UPDATE "companies" SET "is_staff" = true
 WHERE id = (SELECT id FROM "companies" WHERE lower(btrim(name)) = 'place to stand' AND deleted_at IS NULL
   ORDER BY created_at LIMIT 1);--> statement-breakpoint
+ALTER TABLE "companies" ENABLE TRIGGER USER;--> statement-breakpoint
 -- Everyone's role in force since Oct 2025 (the first month the close covers).
 INSERT INTO "user_role_terms" ("user_id", "role", "effective_from")
 SELECT id, role, DATE '2025-10-01' FROM "users";
+--> statement-breakpoint
+-- Billing events sit on the company: a client is a company you bill. The ids
+-- are kept so the undo can put them back.
+CREATE TABLE "archive_sales_tools"."client_activity_0113" AS
+  SELECT id FROM "activity_logs" WHERE target_type = 'CLIENT';--> statement-breakpoint
+ALTER TABLE "activity_logs" DISABLE TRIGGER USER;--> statement-breakpoint
+UPDATE "activity_logs" SET target_type = 'COMPANY' WHERE target_type = 'CLIENT';--> statement-breakpoint
+ALTER TABLE "activity_logs" ENABLE TRIGGER USER;
