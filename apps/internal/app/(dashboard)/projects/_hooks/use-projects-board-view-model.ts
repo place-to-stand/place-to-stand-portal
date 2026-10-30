@@ -219,22 +219,7 @@ export function useProjectsBoardViewModel({
   return {
     header,
     tabs,
-    dialogs: {
-      ...dialogs,
-      timeLogHoursSummary: burndown.visible
-        ? {
-            projectLabel: burndown.showProjectMonthToDate
-              ? 'Project hours this month'
-              : 'Project hours logged',
-            projectHours: burndown.showProjectMonthToDate
-              ? burndown.projectMonthToDateLoggedHours
-              : burndown.totalProjectLoggedHours,
-            clientRemaining: burndown.showClientRemainingCard
-              ? burndown.totalClientRemainingHours
-              : null,
-          }
-        : undefined,
-    },
+    dialogs,
     burndown,
     emptyState: { message: NO_PROJECTS_MESSAGE },
     isEmpty: props.projects.length === 0,
