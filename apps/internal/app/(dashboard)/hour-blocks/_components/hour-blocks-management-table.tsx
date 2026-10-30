@@ -4,7 +4,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type {
@@ -66,14 +65,11 @@ export function HourBlocksManagementTable({
     handleSheetOpenChange,
     handleComplete,
     deleteDialog,
-    destroyDialog,
     isPending,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     handleRequestDelete,
     handleRestore,
-    handleRequestDestroy,
     clearSelection,
   } = useHourBlocksTableState({ clients, hourBlocks, deepLinkedHourBlock })
 
@@ -111,28 +107,16 @@ export function HourBlocksManagementTable({
         onCancel={deleteDialog.onCancel}
         onConfirm={deleteDialog.onConfirm}
       />
-      <ConfirmDialog
-        open={destroyDialog.open}
-        title='Permanently delete hour block?'
-        description='This action removes the hour block forever. Make sure no other records depend on it.'
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={destroyDialog.onCancel}
-        onConfirm={destroyDialog.onConfirm}
-      />
       <HourBlocksTableSection
         hourBlocks={hourBlocks}
         mode={mode}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
-        onRequestDestroy={handleRequestDestroy}
         isPending={isPending}
         pendingReason={pendingReason}
         pendingDeleteId={pendingDeleteId}
         pendingRestoreId={pendingRestoreId}
-        pendingDestroyId={pendingDestroyId}
         emptyMessage={emptyMessage}
         basePath={basePath}
       />

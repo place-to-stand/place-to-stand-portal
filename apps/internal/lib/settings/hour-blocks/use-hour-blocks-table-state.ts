@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import {
-  destroyHourBlock,
   restoreHourBlock,
   softDeleteHourBlock,
 } from '@/app/(dashboard)/hour-blocks/actions'
@@ -58,11 +57,8 @@ export function useHourBlocksTableState({
   const [deleteTarget, setDeleteTarget] = useState<HourBlockWithClient | null>(
     null
   )
-  const [destroyTarget, setDestroyTarget] =
-    useState<HourBlockWithClient | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
-  const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
@@ -190,56 +186,6 @@ export function useHourBlocksTableState({
     })
   }
 
-  const handleRequestDestroy = (block: HourBlockWithClient) => {
-    if (!block.deleted_at || isPending) {
-      return
-    }
-
-    setDestroyTarget(block)
-  }
-
-  const handleCancelDestroy = () => {
-    if (isPending) {
-      return
-    }
-
-    setDestroyTarget(null)
-  }
-
-  const handleConfirmDestroy = () => {
-    if (!destroyTarget || !destroyTarget.deleted_at) {
-      setDestroyTarget(null)
-      return
-    }
-
-    const block = destroyTarget
-    setDestroyTarget(null)
-    setPendingDestroyId(block.id)
-
-    startTransition(async () => {
-      try {
-        const result = await destroyHourBlock({ id: block.id })
-
-        if (result.error) {
-          toast({
-            title: 'Unable to permanently delete hour block',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Hour block permanently deleted',
-          description: 'The hour block has been removed.',
-        })
-        router.refresh()
-      } finally {
-        setPendingDestroyId(null)
-      }
-    })
-  }
-
   return {
     sheetOpen,
     // The sheet renders `sheetBlock` (retained through the close animation);
@@ -259,20 +205,12 @@ export function useHourBlocksTableState({
       onCancel: handleCancelDelete,
       onConfirm: handleConfirmDelete,
     },
-    destroyDialog: {
-      open: Boolean(destroyTarget),
-      target: destroyTarget,
-      onCancel: handleCancelDestroy,
-      onConfirm: handleConfirmDestroy,
-    },
     isPending,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     handleRequestDelete,
     handleRestore,
-    handleRequestDestroy,
-    /** Drop `?hour-block=` (e.g. after the open row is destroyed). */
+    /** Drop `?hour-block=` (e.g. a link to a missing hour block). */
     clearSelection: clear,
   }
 }

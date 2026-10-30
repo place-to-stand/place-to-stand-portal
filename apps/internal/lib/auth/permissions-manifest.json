@@ -211,13 +211,6 @@
   },
   {
     "type": "action",
-    "name": "destroyHourBlock",
-    "file": "apps/internal/app/(dashboard)/hour-blocks/actions/destroy-hour-block.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "restoreHourBlock",
     "file": "apps/internal/app/(dashboard)/hour-blocks/actions/restore-hour-block.ts",
     "kind": "admin",
