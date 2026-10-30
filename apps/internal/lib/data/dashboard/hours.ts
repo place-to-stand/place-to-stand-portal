@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { billedInMonth } from '@pts/db/client-state'
 import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -22,6 +22,7 @@ import type { AppUser } from '@/lib/auth/session'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
+import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
 import {
   companies,
   hourBlocks,
@@ -68,11 +69,13 @@ export async function fetchHoursSnapshot(
     isNull(timeLogs.deletedAt),
   ]
 
-  const { startTimestamp, endTimestamp } = buildMonthTimestampRange(year, month)
+  // Counted the way the monthly close counts them: blocks billed in the
+  // month, for a client billed that month and prepaid as of it.
   const prepaidFilters = [
-    gte(hourBlocks.createdAt, startTimestamp),
-    sql`${hourBlocks.createdAt} < ${endTimestamp}`,
+    eq(hourBlocks.billingMonth, startDate),
     isNull(hourBlocks.deletedAt),
+    billedInMonth(startDate),
+    sql`${billingTypeAsOfSql(startDate)} = 'prepaid'`,
   ]
 
   // All five aggregates and the log page derive from the clamped cursor
@@ -367,7 +370,7 @@ async function sumPrepaidHours({
     return 0
   }
 
-  // Join with clients to exclude soft-deleted clients
+  // Joined so the filters can read the block's company.
   const [row] = (await db
     .select({
       totalHours: sql<
@@ -376,7 +379,7 @@ async function sumPrepaidHours({
     })
     .from(hourBlocks)
     .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
-    .where(and(...conditions, isNull(clientEndedAtSql)))) as Array<{
+    .where(and(...conditions))) as Array<{
     totalHours: string | null
   }>
 
@@ -395,16 +398,6 @@ function buildMonthDateRange(year: number, month: number) {
   return {
     startDate: start.toISOString().slice(0, 10),
     endDate: end.toISOString().slice(0, 10),
-  }
-}
-
-function buildMonthTimestampRange(year: number, month: number) {
-  const start = new Date(Date.UTC(year, month - 1, 1))
-  const nextMonth = new Date(Date.UTC(year, month, 1))
-
-  return {
-    startTimestamp: start.toISOString(),
-    endTimestamp: nextMonth.toISOString(),
   }
 }
 
