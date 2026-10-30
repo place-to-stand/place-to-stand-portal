@@ -1,5 +1,9 @@
 import { useMemo } from 'react'
-import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+} from '@tanstack/react-query'
 
 import type {
   ActivityLogWithActor,
@@ -136,6 +140,69 @@ export function useActivityFeed(
     queryEnabled,
     requiresContext: requireContext,
   }
+}
+
+/**
+ * The total a feed holds, without loading it: one `count=1` request on the
+ * same filters and access rules as the feed. Null until it answers, or when
+ * it fails (the header then shows no count).
+ */
+export function useActivityCount(
+  options: Omit<UseActivityFeedOptions, 'pageSize'> & { enabled?: boolean }
+): number | null {
+  const {
+    targetType,
+    targetId = null,
+    projectId = null,
+    companyId = null,
+    requireContext = true,
+    enabled = true,
+  } = options
+
+  const normalizedTargetTypes = useMemo(
+    () => normalizeTargetTypes(targetType),
+    [targetType]
+  )
+  const targetTypeKey = normalizedTargetTypes.join(',')
+  const hasContext = Boolean(targetId || projectId || companyId)
+  const queryEnabled =
+    enabled &&
+    normalizedTargetTypes.length > 0 &&
+    (!requireContext || hasContext)
+
+  const query = useQuery({
+    queryKey: [
+      ACTIVITY_FEED_QUERY_KEY,
+      'count',
+      targetTypeKey,
+      targetId,
+      projectId,
+      companyId,
+    ] as const,
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const params = new URLSearchParams()
+
+      normalizedTargetTypes.forEach(type => {
+        params.append('targetType', type)
+      })
+
+      appendIfDefined(params, 'targetId', targetId)
+      appendIfDefined(params, 'projectId', projectId)
+      appendIfDefined(params, 'companyId', companyId)
+      params.set('count', '1')
+
+      const response = await fetch(`/api/activity?${params.toString()}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to count activity.')
+      }
+
+      return ((await response.json()) as { count: number }).count
+    },
+  })
+
+  return typeof query.data === 'number' ? query.data : null
 }
 
 type ActivityApiResponse = {

@@ -44,7 +44,7 @@ import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
-import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
+import { SheetActivitySection } from '@/components/sheets/sheet-activity-section'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 
@@ -448,17 +448,10 @@ export function TaskSheet(props: TaskSheetProps) {
                     <EmptyState message='Log time after you save the task.' />
                   </SheetSection>
                 ) : null}
-                {/* Sections, no inner tabs: Activity, then Comments, which
-                    always sit at the bottom of a sheet. */}
+                {/* Sections, no inner tabs: Comments, then the collapsed
+                    Activity, always last in a sheet. */}
                 {props.task && taskPanelProjectId ? (
                   <>
-                    <SheetSection title='Activity' className='px-6'>
-                      <TaskActivityPanel
-                        taskId={props.task.id}
-                        projectId={taskPanelProjectId}
-                        companyId={taskPanelClientId}
-                      />
-                    </SheetSection>
                     <SheetSection title='Comments' className='px-6'>
                       <TaskCommentsPanel
                         taskId={props.task.id}
@@ -470,6 +463,15 @@ export function TaskSheet(props: TaskSheetProps) {
                         companyId={taskPanelClientId}
                       />
                     </SheetSection>
+                    <SheetActivitySection
+                      // Remount per task so a newly opened task starts collapsed.
+                      key={props.task.id}
+                      className='px-6'
+                      targetType='TASK'
+                      targetId={props.task.id}
+                      projectId={taskPanelProjectId}
+                      companyId={taskPanelClientId}
+                    />
                   </>
                 ) : !props.task ? (
                   <SheetSection title='Comments' className='px-6'>
