@@ -1,8 +1,9 @@
 import 'server-only'
 
-import { sql, type SQL } from 'drizzle-orm'
+import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
-import { users } from '@/lib/db/schema'
+import { db } from '@/lib/db'
+import { userRoleTerms, users } from '@/lib/db/schema'
 
 /**
  * The sign-in's role in force for the month of `periodStart`: its newest
@@ -22,4 +23,40 @@ export function roleAsOfSql(periodStart: string, userId: SQL | typeof users.id =
  */
 export function liveDuring(deletedAt: SQL | { name: string }, periodStart: string) {
   return sql`(${deletedAt} is null or ${deletedAt} >= ${periodStart}::date)`
+}
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Record a sign-in's role from a month on (a month start). Re-setting the
+ * same month replaces it. Write it in the same transaction as `users.role`
+ * when the month is this one or earlier; every new sign-in gets one from
+ * its first month.
+ */
+export async function setRoleTerm(
+  tx: DbTransaction,
+  input: {
+    userId: string
+    role: (typeof userRoleTerms.$inferInsert)['role']
+    effectiveFrom: string
+    createdBy: string | null
+  }
+) {
+  const now = new Date().toISOString()
+  await tx
+    .update(userRoleTerms)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(userRoleTerms.userId, input.userId),
+        eq(userRoleTerms.effectiveFrom, input.effectiveFrom),
+        isNull(userRoleTerms.deletedAt)
+      )
+    )
+  await tx.insert(userRoleTerms).values({
+    userId: input.userId,
+    role: input.role,
+    effectiveFrom: input.effectiveFrom,
+    createdBy: input.createdBy,
+  })
 }
