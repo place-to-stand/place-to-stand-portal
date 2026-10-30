@@ -180,6 +180,7 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
 3. Check that nobody was stopped as a client earlier in the release month: after the migration, a stop dated this month counts as billed through the month (I8).
 4. In Supabase › SQL editor, run `select has_table_privilege('postgres', 'auth.sessions', 'DELETE'), has_table_privilege('postgres', 'auth.refresh_tokens', 'DELETE');`. Expect both true. The S1 takeover needs them; if they're false, granting a sign-in to a reused email fails safely with an error.
 5. Confirm `CRON_SECRET` is set in Vercel (new daily `/api/cron/apply-role-terms`).
+6. In the Stripe dashboard, the production webhook endpoint (`/api/integrations/stripe`) must also send `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`; a completed Checkout now marks an invoice paid only when Stripe says it's paid.
 
 ## 12. Decisions built on 30 Oct (try these on :3003)
 
