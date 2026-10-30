@@ -1,7 +1,7 @@
 'use client'
 
-import { PendingSection } from '@/components/sheets/pending-section'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { EmptyState } from '@pts/ui/empty-state'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   useCallback,
   useEffect,
@@ -12,7 +12,7 @@ import {
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ClipboardList, HelpCircle, MessageSquare } from 'lucide-react'
+import { ClipboardList, HelpCircle } from 'lucide-react'
 
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -435,13 +435,9 @@ export function TaskSheet(props: TaskSheetProps) {
                 ) : isAdmin && !props.task && taskProject?.type === 'CLIENT' ? (
                   // Create shows the same sheet: time and comments are their
                   // own records, so they open once the task exists.
-                  <PendingSection
-                    icon={ENTITY_ICONS.timeLog}
-                    title='Time logs'
-                    className='px-6'
-                  >
-                    Log time after you save the task.
-                  </PendingSection>
+                  <SheetSection title='Time logs' className='px-6'>
+                    <EmptyState message='Log time after you save the task.' />
+                  </SheetSection>
                 ) : null}
                 {/* pt-6 rides on top of the column's gap-6, setting the tab
                     group apart from the time-log section above it. */}
@@ -475,13 +471,9 @@ export function TaskSheet(props: TaskSheetProps) {
                     </Tabs>
                   </div>
                 ) : !props.task ? (
-                  <PendingSection
-                    icon={MessageSquare}
-                    title='Comments'
-                    className='px-6'
-                  >
-                    Add comments after you save the task.
-                  </PendingSection>
+                  <SheetSection title='Comments' className='px-6'>
+                    <EmptyState message='Add comments after you save the task.' />
+                  </SheetSection>
                 ) : null}
               </div>
 

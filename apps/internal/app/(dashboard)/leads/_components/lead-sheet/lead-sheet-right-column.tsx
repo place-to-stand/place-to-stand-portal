@@ -1,12 +1,11 @@
 'use client'
 
-import { MessageSquareText } from 'lucide-react'
+import { EmptyState } from '@pts/ui/empty-state'
 
-import { PendingSection } from '@/components/sheets/pending-section'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import { SHEET_SPLIT_SIDE_CLASS } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { LeadConversionSection } from './lead-conversion-section'
@@ -69,12 +68,12 @@ export function LeadSheetRightColumn({
         // need the lead to point at. Conversion needs a Won lead, so it
         // stays hidden until then.
         <div className='space-y-10 p-6'>
-          <PendingSection icon={ENTITY_ICONS.task} title='Tasks'>
-            Add tasks after you save the lead.
-          </PendingSection>
-          <PendingSection icon={MessageSquareText} title='Updates'>
-            Add updates after you save the lead.
-          </PendingSection>
+          <SheetSection title='Tasks'>
+            <EmptyState message='Add tasks after you save the lead.' />
+          </SheetSection>
+          <SheetSection title='Updates'>
+            <EmptyState message='Add updates after you save the lead.' />
+          </SheetSection>
         </div>
       )}
     </div>
