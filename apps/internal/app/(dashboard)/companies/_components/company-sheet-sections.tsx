@@ -85,14 +85,17 @@ export function CompanyBillingTab({
       })
     : null
   const stopping = mode === 'live' && !billingOn
+  // Starting next month still makes it a client on save, portal included.
+  const portalNow =
+    effective === 'next_month' ? ' Their people can use the portal now.' : ''
   const line =
     mode === 'new'
       ? billingOn
-        ? 'Saving makes this company a client.'
+        ? `Saving makes this company a client.${portalNow}`
         : 'Not billed. Switch on and save to make this company a client.'
       : mode === 'former'
         ? billingOn
-          ? 'Saving restarts billing with its previous setup.'
+          ? `Saving restarts billing with its previous setup.${portalNow}`
           : 'Billing stopped. Switch on and save to restart it.'
         : mode === 'ending'
           ? billingOn
