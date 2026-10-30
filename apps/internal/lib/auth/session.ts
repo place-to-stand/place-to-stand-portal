@@ -210,9 +210,21 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
  * disabled/deleted filtering without a request-scoped session to read from.
  */
 export async function loadAppUserById(userId: string): Promise<AppUser | null> {
-  const profile = await fetchUserProfileUncached(userId)
+  const profile = await fetchUserProfile(userId)
 
-  return profile ? mapProfileToAppUser(profile) : null
+  if (!profile) {
+    return null
+  }
+
+  // Same as getCurrentUser: a scheduled role change that has come into
+  // force is applied before the role is trusted.
+  if (profile.roleInForce && profile.roleInForce !== profile.role) {
+    await applyDueRoleTerms(userId)
+    const updated = await fetchUserProfileUncached(userId)
+    return updated ? mapProfileToAppUser(updated) : null
+  }
+
+  return mapProfileToAppUser(profile)
 }
 
 function mapProfileToAppUser(profile: UserProfile): AppUser {
