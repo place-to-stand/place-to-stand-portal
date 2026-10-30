@@ -622,13 +622,14 @@ async function updateLead(
       setPayload.resolvedAt = timestamp
     }
 
-    // Reset conversion/resolution fields when moving back to an active stage
+    // Moving back to an active stage reopens the lead. The conversion
+    // record (`convertedAt`, which links the lead to its company as a
+    // client) is kept: a Won lead moved back stays converted.
     if (
       isTerminalLeadStatus(existing.status) &&
       !isTerminalLeadStatus(normalized.status)
     ) {
       setPayload.resolvedAt = null
-      setPayload.convertedAt = null
       setPayload.lossReason = null
       setPayload.lossNotes = null
     }
