@@ -6,7 +6,12 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { allowAuthEmail } from "@/lib/auth/throttle";
+import {
+  allowAuthEmail,
+  allowPasswordSignIn,
+  normaliseEmail,
+  SIGN_IN_THROTTLED_MESSAGE,
+} from "@/lib/auth/throttle";
 import { isSafeRedirectPath } from "@/lib/auth/safe-redirect";
 
 import { ensureUserProfile } from "@/lib/auth/profile";
@@ -19,7 +24,10 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z.preprocess(
+    (value) => (typeof value === "string" ? normaliseEmail(value) : value),
+    z.string().email()
+  ),
   password: z.string().min(8),
   redirectTo: z
     .string()
@@ -52,6 +60,13 @@ export async function signInWithPassword(
   }
 
   const { email, password, redirectTo } = result.data;
+
+  // Counted before Supabase sees the password, for every address alike, so the
+  // refusal can't be used to tell a real account from a made-up one.
+  if (!(await allowPasswordSignIn(email))) {
+    return { error: SIGN_IN_THROTTLED_MESSAGE };
+  }
+
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
