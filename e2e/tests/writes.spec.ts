@@ -44,12 +44,17 @@ test('billing: make a client, stop billing, restart, and back', async ({
   await setBilling(page, false)
 
   // Stopping defaults to billing through the end of this month, so it is
-  // still a client with the stop scheduled; switching on cancels the stop.
+  // still a client with the stop scheduled; Keep billing cancels the stop.
+  await page.goto(url)
+  const ending = page.getByRole('dialog')
+  await expect(ending.getByText(/^Billing stops after /)).toBeVisible()
+  await ending.getByRole('button', { name: 'Keep billing' }).click()
+  await setBilling(page, true)
+
   await page.goto(url)
   await expect(
     page.getByRole('dialog').getByText(/^Billing stops after /)
-  ).toBeVisible()
-  await setBilling(page, true)
+  ).toHaveCount(0)
 
   await page.goto(url)
   await expect(

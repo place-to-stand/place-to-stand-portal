@@ -138,16 +138,24 @@ test('billing through the end of the month, then restarting, keeps a client', as
   await billing.getByRole('button', { name: 'Save changes' }).click()
   await expect(billing).toBeHidden()
 
-  // Still a client this month, with the stop scheduled.
+  // Still a client this month, with the stop scheduled: the switch stays
+  // on, the terms stay editable, and Keep billing cancels the stop.
   billing = await openCompany(page, name)
   await billing.getByRole('tab', { name: 'Billing' }).click()
   await expect(billing.getByText(/^Billing stops after /)).toBeVisible()
   await expect(
+    billing.getByRole('switch', { name: 'Bill this company' })
+  ).toHaveAttribute('aria-checked', 'true')
+  await expect(
     billing.getByText('Client', { exact: true }).first()
   ).toBeVisible()
+  await expect(billing.getByText('Billing type', { exact: true })).toBeVisible()
 
-  // Restart: the scheduled stop is cancelled.
-  await billing.getByRole('switch', { name: 'Bill this company' }).click()
+  // Keep billing: the scheduled stop is cancelled.
+  await billing.getByRole('button', { name: 'Keep billing' }).click()
+  await expect(
+    billing.getByText('Saving cancels the stop and keeps billing this company.')
+  ).toBeVisible()
   await billing.getByRole('button', { name: 'Save changes' }).click()
   await expect(billing).toBeHidden()
 

@@ -83,7 +83,8 @@ export function CompanyBillingTab({
         year: 'numeric',
       })
     : null
-  const stopping = mode === 'live' && !billingOn
+  const isClient = mode === 'live' || mode === 'ending'
+  const stopping = isClient && !billingOn
   // Starting next month still makes it a client on save, portal included.
   const portalNow =
     effective === 'next_month' ? ' Their people can use the portal now.' : ''
@@ -96,14 +97,13 @@ export function CompanyBillingTab({
         ? billingOn
           ? 'Saving restarts billing with its previous setup. Its people with Portal on get portal access back.'
           : 'Billing stopped. Switch on and save to restart it.'
-        : mode === 'ending'
-          ? billingOn
-            ? 'Saving keeps billing this company.'
-            : `Billing stops after ${endsLabel}. Switch on and save to keep billing.`
+        : mode === 'ending' && billingOn
+          ? billing.keepBilling
+            ? 'Saving cancels the stop and keeps billing this company.'
+            : `Billing stops after ${endsLabel}.`
           : billingOn
             ? null
             : 'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
-  const isClient = mode === 'live' || mode === 'ending'
   const choice = stopping
     ? {
         title: 'Last month billed',
@@ -145,6 +145,20 @@ export function CompanyBillingTab({
           >
             {line}
           </p>
+        ) : null}
+        {mode === 'ending' && billingOn ? (
+          <div>
+            <Button
+              type='button'
+              size='sm'
+              variant={billing.keepBilling ? 'secondary' : 'outline'}
+              aria-pressed={billing.keepBilling}
+              disabled={disabled}
+              onClick={() => billing.setKeepBilling(!billing.keepBilling)}
+            >
+              Keep billing
+            </Button>
+          </div>
         ) : null}
         {choice ? (
           <EffectiveMonthSelect
