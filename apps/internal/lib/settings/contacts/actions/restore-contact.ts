@@ -88,6 +88,7 @@ export async function restoreContactMutation(
           .update(contacts)
           .set({
             deletedAt: null,
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(contacts.id, parsed.data.id))
       } catch (error) {

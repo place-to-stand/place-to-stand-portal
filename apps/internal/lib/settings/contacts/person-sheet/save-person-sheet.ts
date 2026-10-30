@@ -21,7 +21,10 @@ import {
   releaseAvatarClaim,
   type AvatarClaim,
 } from '@/lib/settings/contacts/person-avatar'
-import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
+import {
+  PERSON_SAVED_ELSEWHERE,
+  PERSON_WITH_SIGN_IN_ADMIN_ONLY,
+} from '@/lib/settings/contacts/person-sheet-copy'
 
 import { finishSignIn, runSignInAuth, writeSignIn } from './sign-in-apply'
 import { prepareSignIn, type SignInInput } from './sign-in-plan'
@@ -32,7 +35,15 @@ export type PersonSheetInput = ContactInput & {
   avatar?: { path: string | null; removed: boolean }
   /** Their sign-in (admins), when it changed. */
   signIn?: SignInInput
+  /**
+   * Edit: the person's `updated_at` when the sheet loaded them. The save is
+   * refused if it has changed since (someone else saved them).
+   */
+  loadedUpdatedAt?: string
 }
+
+/** Someone else saved the person after the sheet loaded them. */
+class SavedElsewhereError extends Error {}
 
 export type PersonSheetResult = {
   error?: string
@@ -65,7 +76,7 @@ async function save(
   user: AppUser,
   input: PersonSheetInput
 ): Promise<PersonSheetResult> {
-  const { avatar, signIn, ...contactInput } = input
+  const { avatar, signIn, loadedUpdatedAt, ...contactInput } = input
   const isAdmin = isAdminRole(user.role)
 
   const existing = input.id ? await loadExistingContact(input.id) : null
@@ -74,6 +85,13 @@ async function save(
   }
   if (existing?.userId && !isAdmin) {
     return { error: PERSON_WITH_SIGN_IN_ADMIN_ONLY }
+  }
+  // Checked early so a stale sheet changes nothing outside the database
+  // either; checked again, under a row lock, inside the transaction.
+  const isStale = (updatedAt: string) =>
+    typeof loadedUpdatedAt === 'string' && updatedAt !== loadedUpdatedAt
+  if (existing && isStale(existing.updatedAt)) {
+    return { error: PERSON_SAVED_ELSEWHERE }
   }
   if (signIn && !isAdmin) {
     return { error: 'Only an admin can change someone’s sign-in.' }
@@ -121,6 +139,17 @@ async function save(
 
   try {
     await db.transaction(async tx => {
+      if (plan.mode === 'update') {
+        // One save per person at a time; and none over a newer one.
+        const [locked] = await tx
+          .select({ updatedAt: contacts.updatedAt })
+          .from(contacts)
+          .where(eq(contacts.id, contactId))
+          .for('update')
+        if (!locked || isStale(locked.updatedAt)) {
+          throw new SavedElsewhereError()
+        }
+      }
       await writeContactSave(tx, user, plan)
       if (avatarClaim) {
         await tx
@@ -131,8 +160,13 @@ async function save(
       if (signInPlan) await writeSignIn(tx, user, signInPlan, contactId)
     })
   } catch (error) {
-    console.error('Failed to save person', error)
+    if (!(error instanceof SavedElsewhereError)) {
+      console.error('Failed to save person', error)
+    }
     await undo.run()
+    if (error instanceof SavedElsewhereError) {
+      return { error: PERSON_SAVED_ELSEWHERE }
+    }
     if (isEmailConflict(error)) {
       return { error: 'A person with this email already exists.' }
     }

@@ -42,6 +42,12 @@ export async function applyRoleInForce(
       .update(users)
       .set({ role: inForce, updatedAt: new Date().toISOString() })
       .where(eq(users.id, input.userId))
+    // Their role shows on the person sheet: a sheet loaded before this
+    // (e.g. a scheduled role coming into force) must not save over it.
+    await tx
+      .update(contacts)
+      .set({ updatedAt: new Date().toISOString() })
+      .where(eq(contacts.userId, input.userId))
   }
   if (input.contactId && input.previousRole !== inForce) {
     await syncStaffMembership(tx, input.contactId, input.previousRole, inForce)

@@ -127,7 +127,7 @@ export async function getContactSheetData(
 ): Promise<ContactSheetData> {
   const user = await requireCrmUser()
   // Server actions take arbitrary input; guard before the uuid cast.
-  if (!UUID_PATTERN.test(contactId)) return { memberships: [], avatarUrl: null }
+  if (!UUID_PATTERN.test(contactId)) return { memberships: [], avatarUrl: null, person: null }
   return getSheetData(user, contactId)
 }
 

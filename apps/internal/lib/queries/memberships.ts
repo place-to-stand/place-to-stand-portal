@@ -28,6 +28,19 @@ type Executor = typeof db | DbTx
 
 const now = sql`timezone('utc'::text, now())`
 
+/**
+ * Marks people changed: their companies, titles, primary and portal access
+ * show on the person sheet, which refuses to save over a person whose
+ * `updated_at` moved since it loaded them. Called only when a row changed.
+ */
+async function touchContacts(executor: Executor, contactIds: string[]) {
+  if (!contactIds.length) return
+  await executor
+    .update(contacts)
+    .set({ updatedAt: sql`now()` })
+    .where(inArray(contacts.id, contactIds))
+}
+
 /** Current memberships only. */
 export const isCurrentMembership = isNull(memberships.endedAt)
 
@@ -257,6 +270,7 @@ export async function joinCompany(
       where: sql`ended_at IS NULL`,
     })
     .returning({ id: memberships.id })
+  if (inserted.length) await touchContacts(executor, [contactId])
   return inserted.length > 0
 }
 
@@ -286,6 +300,7 @@ export async function leaveCompany(
       )
     )
     .returning({ id: memberships.id })
+  if (ended.length) await touchContacts(executor, [contactId])
   return ended.length > 0
 }
 
@@ -296,16 +311,20 @@ export async function setMembershipTitle(
   companyId: string,
   title: string | null
 ) {
-  await executor
+  const nextTitle = title?.trim() || null
+  const updated = await executor
     .update(memberships)
-    .set({ title: title?.trim() || null, updatedAt: now })
+    .set({ title: nextTitle, updatedAt: now })
     .where(
       and(
         isCurrentMembership,
         eq(memberships.contactId, contactId),
-        eq(memberships.companyId, companyId)
+        eq(memberships.companyId, companyId),
+        sql`${memberships.title} is distinct from ${nextTitle}`
       )
     )
+    .returning({ id: memberships.id })
+  if (updated.length) await touchContacts(executor, [contactId])
 }
 
 /**
@@ -337,7 +356,7 @@ export async function setCompanyPrimary(
       .limit(1)
     if (!member) return false
   }
-  await executor
+  const cleared = await executor
     .update(memberships)
     .set({ isPrimary: false, updatedAt: now })
     .where(
@@ -347,19 +366,30 @@ export async function setCompanyPrimary(
         eq(memberships.isPrimary, true)
       )
     )
-  if (!contactId) return true
-  const updated = await executor
-    .update(memberships)
-    .set({ isPrimary: true, updatedAt: now })
-    .where(
-      and(
-        isCurrentMembership,
-        eq(memberships.companyId, companyId),
-        eq(memberships.contactId, contactId)
+    .returning({ contactId: memberships.contactId })
+  const touched = cleared.map(row => row.contactId)
+  let ok = true
+  if (contactId) {
+    const updated = await executor
+      .update(memberships)
+      .set({ isPrimary: true, updatedAt: now })
+      .where(
+        and(
+          isCurrentMembership,
+          eq(memberships.companyId, companyId),
+          eq(memberships.contactId, contactId)
+        )
       )
-    )
-    .returning({ id: memberships.id })
-  return updated.length > 0
+      .returning({ id: memberships.id })
+    ok = updated.length > 0
+    if (ok) touched.push(contactId)
+  }
+  // Someone who stays primary hasn't changed.
+  const changed = touched.filter(
+    id => !(id === contactId && cleared.some(row => row.contactId === id))
+  )
+  await touchContacts(executor, [...new Set(changed)])
+  return ok
 }
 
 /**
@@ -377,18 +407,25 @@ export async function setPortalAccess(
   if (portalAccess && !(await hasPortalLogin(executor, contactId))) {
     return false
   }
-  const updated = await executor
-    .update(memberships)
-    .set({ portalAccess, updatedAt: now })
-    .where(
-      and(
-        isCurrentMembership,
-        eq(memberships.contactId, contactId),
-        eq(memberships.companyId, companyId)
-      )
-    )
-    .returning({ id: memberships.id })
-  return updated.length > 0
+  const where = and(
+    isCurrentMembership,
+    eq(memberships.contactId, contactId),
+    eq(memberships.companyId, companyId)
+  )
+  const [current] = await executor
+    .select({ portalAccess: memberships.portalAccess })
+    .from(memberships)
+    .where(where)
+    .limit(1)
+  if (!current) return false
+  if (current.portalAccess !== portalAccess) {
+    await executor
+      .update(memberships)
+      .set({ portalAccess, updatedAt: now })
+      .where(where)
+    await touchContacts(executor, [contactId])
+  }
+  return true
 }
 
 /** The contact has a portal login (`contacts.user_id`). */
