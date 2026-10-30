@@ -51,11 +51,9 @@ export type InvoicesTableSectionProps = {
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   onEdit: (invoice: InvoiceWithClient) => void
   onRequestDelete: (invoice: InvoiceWithClient) => void
   onRestore: (invoice: InvoiceWithClient) => void
-  onRequestDestroy: (invoice: InvoiceWithClient) => void
   onRefresh: () => void
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
@@ -170,11 +168,9 @@ export function InvoicesTableSection({
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   onRefresh,
   emptyMessage,
   basePath,
@@ -242,16 +238,13 @@ export function InvoicesTableSection({
             const isArchived = Boolean(invoice.deleted_at)
             const isDeleting = isPending && pendingDeleteId === invoice.id
             const isRestoring = isPending && pendingRestoreId === invoice.id
-            const isDestroying = isPending && pendingDestroyId === invoice.id
-            const isBusy = isDeleting || isRestoring || isDestroying
+            const isBusy = isDeleting || isRestoring
 
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
-            const showDestroy = mode === 'archive'
 
             const archiveDisabled = isBusy || isArchived
             const restoreDisabled = isBusy || !isArchived
-            const destroyDisabled = isBusy || !isArchived
 
             const archiveDisabledReason = archiveDisabled
               ? isArchived
@@ -263,12 +256,6 @@ export function InvoicesTableSection({
               ? isArchived
                 ? pendingReason
                 : 'Invoice is already active.'
-              : null
-
-            const destroyDisabledReason = destroyDisabled
-              ? !isArchived
-                ? 'Archive the invoice before permanently deleting.'
-                : pendingReason
               : null
 
             return (
@@ -365,15 +352,6 @@ export function InvoicesTableSection({
                         onClick={() => onRestore(invoice)}
                         disabled={restoreDisabled}
                         disabledReason={restoreDisabledReason}
-                      />
-                    ) : null}
-                    {showDestroy ? (
-                      <RecordRowAction
-                        kind='destroy'
-                        entity='invoice'
-                        onClick={() => onRequestDestroy(invoice)}
-                        disabled={destroyDisabled}
-                        disabledReason={destroyDisabledReason}
                       />
                     ) : null}
                   </RecordRowActions>

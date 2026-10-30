@@ -260,13 +260,6 @@
   },
   {
     "type": "action",
-    "name": "destroyInvoice",
-    "file": "apps/internal/app/(dashboard)/invoices/actions/destroy-invoice.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "getInvoiceEmailDraft",
     "file": "apps/internal/app/(dashboard)/invoices/actions/email-invoice.ts",
     "kind": "admin",
