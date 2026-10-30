@@ -605,12 +605,9 @@ export function InvoiceSheet({
                   <InvoiceSheetRightColumn
                     invoice={invoice}
                     isPending={combinedPending}
-                    onEmailInvoice={() =>
-                      runGuarded(() => setEmailDialogOpen(true))
-                    }
-                    onSendInvoice={() =>
-                      runGuarded(() => setStatusConfirm('send'))
-                    }
+                    hasUnsavedChanges={form.formState.isDirty}
+                    onEmailInvoice={() => setEmailDialogOpen(true)}
+                    onSendInvoice={() => setStatusConfirm('send')}
                     onUnsendInvoice={() =>
                       runGuarded(() => setStatusConfirm('unsend'))
                     }

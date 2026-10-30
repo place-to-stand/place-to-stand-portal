@@ -1,4 +1,4 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -12,10 +12,11 @@ import { createSearchPattern } from '@/lib/pagination/cursor'
 
 const RESULT_LIMIT = 8
 
-type PaletteClientResult = {
+type PaletteCompanyResult = {
   id: string
   name: string
-  slug: string | null
+  /** Billed now: shown with a Client badge. */
+  isClient: boolean
 }
 
 type PaletteProjectResult = {
@@ -35,7 +36,7 @@ type PaletteContactResult = {
 }
 
 export type PaletteSearchResult = {
-  clients: PaletteClientResult[]
+  companies: PaletteCompanyResult[]
   projects: PaletteProjectResult[]
   contacts: PaletteContactResult[]
 }
@@ -55,9 +56,10 @@ export async function searchCommandPalette(
 
   const pattern = createSearchPattern(query)
 
-  const clientCondition = and(
-    isNull(clientEndedAtSql),
-    sql`${clientNameSql} ILIKE ${pattern}`
+  // Every live company; clients carry a badge (a client is a company you bill).
+  const companyCondition = and(
+    isNull(companies.deletedAt),
+    sql`${companies.name} ILIKE ${pattern}`
   )
 
   // R3: PERSONAL projects visible only to their creator.
@@ -86,12 +88,16 @@ export async function searchCommandPalette(
     )
   )
 
-  const [clientRows, projectRows, contactRows] = await Promise.all([
+  const [companyRows, projectRows, contactRows] = await Promise.all([
     db
-      .select({ id: companies.id, name: clientNameSql, slug: companies.slug })
+      .select({
+        id: companies.id,
+        name: companies.name,
+        isClient: sql<boolean>`${isClientCompany()}`,
+      })
       .from(companies)
-      .where(and(wasClientCompany(), clientCondition))
-      .orderBy(asc(clientNameSql))
+      .where(companyCondition)
+      .orderBy(asc(sql`lower(${companies.name})`))
       .limit(RESULT_LIMIT),
     db
       .select({
@@ -141,7 +147,7 @@ export async function searchCommandPalette(
   }
 
   return {
-    clients: clientRows,
+    companies: companyRows,
     projects: projectResults,
     contacts: contactRows,
   }

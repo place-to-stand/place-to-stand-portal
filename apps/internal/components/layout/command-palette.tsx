@@ -24,6 +24,7 @@ import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
 import type { PaletteSearchResult } from '@/lib/queries/command-palette'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 
@@ -120,7 +121,7 @@ function CommandPalette() {
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
 
   const trimmedQuery = query.trim()
-  // Record search spans clients and projects, so it is admin-only; SALES
+  // Record search spans companies and projects, so it is admin-only; SALES
   // staff get page navigation only.
   const recordSearchEnabled =
     isAdmin && open && debouncedQuery.length >= MIN_QUERY_LENGTH
@@ -163,7 +164,7 @@ function CommandPalette() {
     [setOpen]
   )
 
-  const clients = recordSearchEnabled ? (records?.clients ?? []) : []
+  const companies = recordSearchEnabled ? (records?.companies ?? []) : []
   const projects = recordSearchEnabled ? (records?.projects ?? []) : []
   const contactResults = recordSearchEnabled ? (records?.contacts ?? []) : []
 
@@ -172,12 +173,12 @@ function CommandPalette() {
       open={open}
       onOpenChange={handleOpenChange}
       title='Command palette'
-      description='Search pages, clients, and projects'
+      description='Search pages, companies, projects and people'
     >
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder='Search pages, clients, projects…'
+        placeholder='Search pages, companies, projects, people…'
       />
       <CommandList>
         <CommandEmpty>
@@ -205,22 +206,21 @@ function CommandPalette() {
             })}
           </CommandGroup>
         ))}
-        {clients.length > 0 ? (
-          <CommandGroup heading='Clients'>
-            {clients.map(client => (
+        {companies.length > 0 ? (
+          <CommandGroup heading='Companies'>
+            {companies.map(company => (
               <CommandItem
-                key={client.id}
+                key={company.id}
                 // cmdk filters items by `value` even for server-fetched
                 // results — the visible label must be part of it or typing
                 // the name hides the match. The id suffix keeps values
                 // unique across same-named records.
-                value={`${client.name} ${client.slug ?? ''} client-${client.id}`}
-                onSelect={() =>
-                  navigate(companySheetHref(client.id, 'projects'))
-                }
+                value={`${company.name} company-${company.id}`}
+                onSelect={() => navigate(companySheetHref(company.id))}
               >
-                <ENTITY_ICONS.client className='size-4' />
-                <span>{client.name}</span>
+                <ENTITY_ICONS.company className='size-4' />
+                <span className='truncate'>{company.name}</span>
+                {company.isClient ? <ClientBadge className='ml-auto' /> : null}
               </CommandItem>
             ))}
           </CommandGroup>

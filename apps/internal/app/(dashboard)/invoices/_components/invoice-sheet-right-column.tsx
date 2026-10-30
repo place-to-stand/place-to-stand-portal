@@ -14,6 +14,11 @@ import { InvoiceStatusBadge } from './invoice-status-badge'
 type InvoiceSheetRightColumnProps = {
   invoice: InvoiceWithClient
   isPending: boolean
+  /**
+   * The form has unsaved edits: sending is blocked until Save, so a client
+   * never receives an invoice that differs from what is on screen.
+   */
+  hasUnsavedChanges: boolean
   /** Opens the send dialog: emails the invoice (and marks a draft sent). */
   onEmailInvoice: () => void
   /** "Mark as sent": for an invoice delivered some other way. */
@@ -45,6 +50,7 @@ const ACTION_CLASS = 'w-full justify-start'
 export function InvoiceSheetRightColumn({
   invoice,
   isPending,
+  hasUnsavedChanges,
   onEmailInvoice,
   onSendInvoice,
   onUnsendInvoice,
@@ -74,6 +80,14 @@ export function InvoiceSheetRightColumn({
           <>
             <div className='space-y-4'>
               <span className='mb-2 block text-sm font-medium'>Actions</span>
+              {hasUnsavedChanges && (isDraft || canEmailAgain) ? (
+                <p
+                  className='text-muted-foreground -mt-1 mb-2 text-sm'
+                  data-testid='invoice-send-blocked'
+                >
+                  Save your changes before sending.
+                </p>
+              ) : null}
               <div className='flex flex-col gap-2'>
                 {isDraft || canEmailAgain ? (
                   <Button
@@ -82,7 +96,7 @@ export function InvoiceSheetRightColumn({
                     size='sm'
                     className={ACTION_CLASS}
                     onClick={onEmailInvoice}
-                    disabled={isPending}
+                    disabled={isPending || hasUnsavedChanges}
                   >
                     <Mail className='text-success' />
                     {isDraft ? 'Send to client' : 'Email again'}
@@ -95,7 +109,7 @@ export function InvoiceSheetRightColumn({
                     size='sm'
                     className={ACTION_CLASS}
                     onClick={onSendInvoice}
-                    disabled={isPending}
+                    disabled={isPending || hasUnsavedChanges}
                   >
                     <CheckCheck className='text-success' />
                     Mark as sent
