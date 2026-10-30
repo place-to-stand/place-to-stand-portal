@@ -20,8 +20,7 @@ export function DeepLinkNotFoundNotice({
       className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
     >
       <span>
-        The linked {entity} could not be found. It may have been permanently
-        deleted.
+        The linked {entity} could not be found. The link may be out of date.
       </span>
       <Button variant='ghost' size='sm' onClick={onDismiss}>
         Dismiss

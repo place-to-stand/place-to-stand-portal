@@ -9,7 +9,7 @@ type ViewerAccess = {
   role: UserRole | null
   /** The signed-in user (defaults such as "assign to me"). */
   userId: string | null
-  /** Admin-only controls (conversion, portal accounts, hard deletes…). */
+  /** Admin-only controls (conversion, portal accounts…). */
   isAdmin: boolean
 }
 
