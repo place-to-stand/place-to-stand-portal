@@ -251,12 +251,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           onSubmit={handleSave}
           className='flex flex-col gap-5 px-6 pt-6 pb-8'
         >
-          <div
-            className={cn(
-              'grid items-start gap-4',
-              isEditing && 'sm:grid-cols-2'
-            )}
-          >
+          <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
             <FormField
               control={form.control}
               name='name'
@@ -289,31 +284,33 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 </FormItem>
               )}
             />
-            {isEditing ? (
-              <FormField
-                control={form.control}
-                name='slug'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Slug</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip
+            <FormField
+              control={form.control}
+              name='slug'
+              render={({ field }) => (
+                <FormItem>
+                  {/* Create and edit show the same field; a new project
+                      takes its slug from the name when this is blank. */}
+                  <FormLabel>{isEditing ? 'Slug' : 'Slug (optional)'}</FormLabel>
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={fieldState.slug.disabled}
+                      reason={fieldState.slug.reason}
+                    >
+                      <Input
+                        {...field}
+                        value={field.value ?? ''}
+                        placeholder={
+                          isEditing ? 'website-redesign' : 'Generated from the name'
+                        }
                         disabled={fieldState.slug.disabled}
-                        reason={fieldState.slug.reason}
-                      >
-                        <Input
-                          {...field}
-                          value={field.value ?? ''}
-                          placeholder='website-redesign'
-                          disabled={fieldState.slug.disabled}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : null}
+                      />
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
           <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
             <FormField

@@ -88,63 +88,80 @@ export async function assertValidProjectMemberIds(
   }
 }
 
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
 /**
- * Makes the project's live members exactly `memberIds`. Only non-admin staff
- * can be members (admins already see every project); anything else is
- * rejected before a row changes. Logs one PROJECT_UPDATED row when the set
- * changed.
+ * Makes the project's live members exactly `memberIds`, inside the caller's
+ * transaction. Only non-admin staff can be members (admins already see every
+ * project): check the list with `assertValidProjectMemberIds` before opening
+ * the transaction. Returns what changed so the caller can log it after
+ * commit (`logProjectMembersChanged`).
  */
-export async function syncProjectMembers(args: {
-  actor: AppUser
-  projectId: string
-  memberIds: readonly string[]
-}): Promise<{ added: string[]; removed: string[] }> {
-  const { actor, projectId } = args
+export async function writeProjectMembers(
+  tx: DbTransaction,
+  args: { actorId: string; projectId: string; memberIds: readonly string[] }
+): Promise<{ added: string[]; removed: string[] }> {
+  const { actorId, projectId } = args
   const desired = Array.from(new Set(args.memberIds))
 
-  await assertValidProjectMemberIds(desired)
-
-  const current = await listProjectMemberIds(projectId)
+  const currentRows = await tx
+    .select({ userId: projectMembers.userId })
+    .from(projectMembers)
+    .where(
+      and(
+        eq(projectMembers.projectId, projectId),
+        isNull(projectMembers.deletedAt)
+      )
+    )
+  const current = currentRows.map(row => row.userId)
   const added = desired.filter(id => !current.includes(id))
   const removed = current.filter(id => !desired.includes(id))
 
-  if (!added.length && !removed.length) {
-    return { added, removed }
-  }
-
   const now = new Date().toISOString()
 
-  await db.transaction(async tx => {
-    if (removed.length) {
-      await tx
-        .update(projectMembers)
-        .set({ deletedAt: now })
-        .where(
-          and(
-            eq(projectMembers.projectId, projectId),
-            inArray(projectMembers.userId, removed),
-            isNull(projectMembers.deletedAt)
-          )
+  if (removed.length) {
+    await tx
+      .update(projectMembers)
+      .set({ deletedAt: now })
+      .where(
+        and(
+          eq(projectMembers.projectId, projectId),
+          inArray(projectMembers.userId, removed),
+          isNull(projectMembers.deletedAt)
         )
-    }
+      )
+  }
 
-    if (added.length) {
-      await tx
-        .insert(projectMembers)
-        .values(
-          added.map(userId => ({
-            projectId,
-            userId,
-            createdBy: actor.id,
-            deletedAt: null,
-          }))
-        )
-        .onConflictDoUpdate({
-          target: [projectMembers.projectId, projectMembers.userId],
-          set: { deletedAt: null, createdBy: actor.id, createdAt: now },
-        })
-    }
-  })
+  if (added.length) {
+    await tx
+      .insert(projectMembers)
+      .values(
+        added.map(userId => ({
+          projectId,
+          userId,
+          createdBy: actorId,
+          deletedAt: null,
+        }))
+      )
+      .onConflictDoUpdate({
+        target: [projectMembers.projectId, projectMembers.userId],
+        set: { deletedAt: null, createdBy: actorId, createdAt: now },
+      })
+  }
+
+  return { added, removed }
+}
+
+/** Logs one PROJECT_UPDATED row for a member change; no-op when none. */
+export async function logProjectMembersChanged(args: {
+  actor: Pick<AppUser, 'id' | 'role'>
+  projectId: string
+  added: string[]
+  removed: string[]
+}): Promise<void> {
+  const { actor, projectId, added, removed } = args
+  if (!added.length && !removed.length) return
 
   const [project] = await db
     .select({ name: projects.name, clientId: projects.companyId })
@@ -169,6 +186,4 @@ export async function syncProjectMembers(args: {
     targetCompanyId: project?.clientId ?? null,
     metadata: event.metadata,
   })
-
-  return { added, removed }
 }

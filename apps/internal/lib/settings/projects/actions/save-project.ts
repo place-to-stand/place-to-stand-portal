@@ -3,18 +3,26 @@
 import { eq } from 'drizzle-orm'
 
 import { creatableProjectTypes, roleCan } from '@/lib/auth/capabilities'
-import { requireStaffUser } from '@/lib/auth/session'
+import { requireStaffUser, type AppUser } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectCreatedEvent, projectUpdatedEvent } from '@/lib/activity/events'
-import type { ProjectStatusValue } from '@/lib/constants'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 import {
   assertValidProjectMemberIds,
   InvalidProjectMemberError,
-  syncProjectMembers,
+  logProjectMembersChanged,
+  writeProjectMembers,
 } from '@/lib/projects/members'
+import { diffProjectFields } from '@/lib/settings/projects/project-field-changes'
+import {
+  logProjectLinkChanges,
+  prepareProjectLinkChanges,
+  writeProjectLinkChanges,
+  type PreparedLinkChanges,
+  type WrittenLinkChanges,
+} from '@/lib/settings/projects/project-link-changes'
 import {
   generateUniqueProjectSlug,
   projectSchema,
@@ -30,7 +38,21 @@ import {
 } from './shared'
 
 const INSERT_RETRY_LIMIT = 3
+const PROJECT_SLUG_INDEX = 'idx_projects_slug'
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+type RelatedWrites = {
+  members: { added: string[]; removed: string[] }
+  links: WrittenLinkChanges
+}
+
+/**
+ * Saves the whole project sheet — the project row, its members, GitHub repo
+ * links and Vercel/Supabase links — in one database transaction. Every
+ * outside check (GitHub, Vercel, Supabase) runs before the transaction opens;
+ * activity rows are written after it commits.
+ */
 export async function saveProject(
   input: ProjectInput
 ): Promise<ProjectActionResult> {
@@ -45,35 +67,26 @@ export async function saveProject(
     return { error: message, fieldErrors }
   }
 
-  const {
-    id,
-    name,
-    clientId,
-    projectType,
-    status,
-    startsOn,
-    endsOn,
-    slug,
-    ownerId,
-    memberIds,
-  } = parsed.data
+  const { id, name, clientId, projectType, status, startsOn, endsOn, slug } =
+    parsed.data
 
   // Without `projects.manage` the sheet can only create a project of a type
-  // the role may create, owned by the user: no edits, client or members.
+  // the role may create, owned by the user: no edits, client, members or
+  // links.
   if (!canManage) {
     const allowed = creatableProjectTypes(user.role, [projectType])
     if (id || allowed.length === 0) {
       return { error: 'You can’t create that kind of project.' }
     }
   }
-  const ownerIdToSave = canManage ? ownerId : user.id
-  const memberIdsToSave = canManage ? memberIds : undefined
+  const ownerId = canManage ? parsed.data.ownerId : user.id
+  const memberIds = canManage ? parsed.data.memberIds : undefined
+  const repoLinks = canManage ? parsed.data.repoLinks : undefined
+  const integrationLinks = canManage ? parsed.data.integrationLinks : undefined
 
-  // Check members before writing anything, so a bad list can't leave a new
-  // project behind that a retry would duplicate.
-  if (memberIdsToSave !== undefined) {
+  if (memberIds !== undefined) {
     try {
-      await assertValidProjectMemberIds(memberIdsToSave)
+      await assertValidProjectMemberIds(memberIds)
     } catch (error) {
       if (error instanceof InvalidProjectMemberError) {
         return { error: error.message }
@@ -83,12 +96,9 @@ export async function saveProject(
   }
 
   const trimmedName = name.trim()
-  const providedSlug = slug?.trim() ?? null
-  const normalizedProvidedSlug = providedSlug
-    ? toProjectSlug(providedSlug)
-    : null
+  const providedSlug = slug?.trim() ? toProjectSlug(slug.trim()) : null
 
-  if (normalizedProvidedSlug && normalizedProvidedSlug.length < 3) {
+  if (providedSlug && providedSlug.length < 3) {
     return { error: 'Slug must be at least 3 characters.' }
   }
 
@@ -96,238 +106,106 @@ export async function saveProject(
     return { error: 'Project name is required.' }
   }
 
-  const normalizedClientId =
-    projectType === 'CLIENT' ? clientId : null
-  const mode = id ? 'edit' : 'create'
+  const companyId = projectType === 'CLIENT' ? clientId : null
+  const fields = {
+    name: trimmedName,
+    companyId,
+    status,
+    type: projectType,
+    startsOn: startsOn ?? null,
+    endsOn: endsOn ?? null,
+    ownerId: ownerId ?? null,
+  }
 
-  const result = await trackSettingsServerInteraction(
+  const result = await trackSettingsServerInteraction<ProjectActionResult>(
     {
       entity: 'project',
-      mode,
+      mode: id ? 'edit' : 'create',
       targetId: id ?? null,
-      metadata: {
-        clientId,
-        status,
-      },
+      metadata: { clientId, status },
     },
     async () => {
+      // Reads and outside calls first: nothing is written until the
+      // transaction, so a failed check leaves no half-saved project.
+      const existing = id ? await loadProjectFields(id) : null
+      if (id && !existing) {
+        return { error: 'Project not found.' }
+      }
+      if (id && providedSlug) {
+        if (await projectSlugExists(providedSlug, { excludeId: id })) {
+          return { error: 'Another project already uses this slug.' }
+        }
+      }
+
+      const links = await prepareProjectLinkChanges({
+        user,
+        projectId: id ?? null,
+        companyId,
+        repoLinks,
+        integrationLinks,
+      })
+      if ('error' in links) {
+        return { error: links.error }
+      }
+
+      const writeRelated = (tx: DbTransaction, projectId: string) =>
+        writeRelatedRows(tx, projectId, user.id, memberIds, links.prepared)
+
       if (!id) {
-        const baseSlug = normalizedProvidedSlug ?? toProjectSlug(trimmedName)
-        let slugCandidate = await generateUniqueProjectSlug(baseSlug)
-        let insertedId: string | null = null
-        let attempt = 0
+        const created = await insertProject(
+          { ...fields, createdBy: user.id },
+          providedSlug ?? toProjectSlug(trimmedName),
+          writeRelated
+        )
+        if ('error' in created) return created
 
-        while (attempt < INSERT_RETRY_LIMIT) {
-          try {
-            const inserted = await db
-              .insert(projects)
-              .values({
-                name: trimmedName,
-                companyId: normalizedClientId,
-                status,
-                type: projectType,
-                startsOn: startsOn ?? null,
-                endsOn: endsOn ?? null,
-                createdBy: user.id,
-                slug: slugCandidate,
-                ownerId: ownerIdToSave ?? null,
-              })
-              .returning({ id: projects.id })
-
-            insertedId = inserted[0]?.id ?? null
-
-            if (insertedId) {
-              break
-            }
-          } catch (error) {
-            if (!isUniqueViolation(error)) {
-              console.error('Failed to create project', error)
-              return {
-                error:
-                  error instanceof Error
-                    ? error.message
-                    : 'Unable to create project.',
-              }
-            }
-
-            slugCandidate = await generateUniqueProjectSlug(baseSlug)
-            attempt += 1
-            continue
-          }
-        }
-
-        if (!insertedId) {
-          return {
-            error: 'Could not generate a unique slug. Please try again.',
-          }
-        }
-
-        const event = projectCreatedEvent({
-          name: trimmedName,
-          status,
-        })
-
+        const event = projectCreatedEvent({ name: trimmedName, status })
         await logActivity({
           actorId: user.id,
           actorRole: user.role,
           verb: event.verb,
           summary: event.summary,
           targetType: 'PROJECT',
-          targetId: insertedId,
-          targetProjectId: insertedId,
-          targetCompanyId: normalizedClientId,
+          targetId: created.projectId,
+          targetProjectId: created.projectId,
+          targetCompanyId: companyId,
           metadata: event.metadata,
         })
-
-        return { projectId: insertedId }
+        await logRelatedChanges(user, created.projectId, created.related)
+        return { projectId: created.projectId }
       }
 
-      const slugToUpdate = normalizedProvidedSlug
-
-      if (slugToUpdate) {
-        const exists = await projectSlugExists(slugToUpdate, {
-          excludeId: id,
-        })
-
-        if (exists) {
-          return { error: 'Another project already uses this slug.' }
-        }
-      }
-
-      let existingProject:
-        | {
-            id: string
-            name: string
-            status: ProjectStatusValue
-            type: string
-            startsOn: string | null
-            endsOn: string | null
-            slug: string | null
-            clientId: string | null
-            ownerId: string | null
-          }
-        | undefined
-
-      try {
-        const rows = await db
-          .select({
-            id: projects.id,
-            name: projects.name,
-            status: projects.status,
-            startsOn: projects.startsOn,
-            endsOn: projects.endsOn,
-            slug: projects.slug,
-            clientId: projects.companyId,
-            type: projects.type,
-            ownerId: projects.ownerId,
-          })
-          .from(projects)
-          .where(eq(projects.id, id))
-          .limit(1)
-
-        existingProject = rows[0]
-      } catch (error) {
-        console.error('Failed to load project for update', error)
-        return { error: 'Unable to update project.' }
-      }
-
-      if (!existingProject) {
+      if (!existing) {
         return { error: 'Project not found.' }
       }
 
+      let related: RelatedWrites
       try {
-        await db
-          .update(projects)
-          .set({
-            name: trimmedName,
-            companyId: normalizedClientId,
-            status,
-            type: projectType,
-            startsOn: startsOn ?? null,
-            endsOn: endsOn ?? null,
-            slug: slugToUpdate,
-            ownerId: ownerId ?? null,
-          })
-          .where(eq(projects.id, id))
+        related = await db.transaction(async tx => {
+          await tx
+            .update(projects)
+            .set({ ...fields, slug: providedSlug })
+            .where(eq(projects.id, id))
+          return writeRelated(tx, id)
+        })
       } catch (error) {
-        console.error('Failed to update project', error)
-        return {
-          error:
-            error instanceof Error ? error.message : 'Unable to update project.',
+        if (violatedConstraint(error) === PROJECT_SLUG_INDEX) {
+          return { error: 'Another project already uses this slug.' }
         }
+        console.error('Failed to update project', error)
+        return { error: 'Unable to update project.' }
       }
 
-      const changedFields: string[] = []
-      const previousDetails: Record<string, unknown> = {}
-      const nextDetails: Record<string, unknown> = {}
-
-      if (existingProject.name !== trimmedName) {
-        changedFields.push('name')
-        previousDetails.name = existingProject.name
-        nextDetails.name = trimmedName
-      }
-
-      if (existingProject.status !== status) {
-        changedFields.push('status')
-        previousDetails.status = existingProject.status
-        nextDetails.status = status
-      }
-
-      if (existingProject.type !== projectType) {
-        changedFields.push('type')
-        previousDetails.type = existingProject.type
-        nextDetails.type = projectType
-      }
-
-      const previousStartsOn = existingProject.startsOn ?? null
-      const nextStartsOn = startsOn ?? null
-
-      if (previousStartsOn !== nextStartsOn) {
-        changedFields.push('start date')
-        previousDetails.startsOn = previousStartsOn
-        nextDetails.startsOn = nextStartsOn
-      }
-
-      const previousEndsOn = existingProject.endsOn ?? null
-      const nextEndsOn = endsOn ?? null
-
-      if (previousEndsOn !== nextEndsOn) {
-        changedFields.push('end date')
-        previousDetails.endsOn = previousEndsOn
-        nextDetails.endsOn = nextEndsOn
-      }
-
-      const previousSlug = existingProject.slug ?? null
-      const nextSlug = slugToUpdate ?? null
-
-      if (previousSlug !== nextSlug) {
-        changedFields.push('slug')
-        previousDetails.slug = previousSlug
-        nextDetails.slug = nextSlug
-      }
-
-      const previousOwnerId = existingProject.ownerId ?? null
-      const nextOwnerId = ownerId ?? null
-
-      if (previousOwnerId !== nextOwnerId) {
-        changedFields.push('owner')
-        previousDetails.ownerId = previousOwnerId
-        nextDetails.ownerId = nextOwnerId
-      }
-
+      const { changedFields, details } = diffProjectFields(existing, {
+        ...fields,
+        slug: providedSlug,
+      })
       if (changedFields.length > 0) {
-        const detailsPayload =
-          Object.keys(previousDetails).length > 0 ||
-          Object.keys(nextDetails).length > 0
-            ? { before: previousDetails, after: nextDetails }
-            : undefined
-
         const event = projectUpdatedEvent({
           name: trimmedName,
           changedFields,
-          details: detailsPayload,
+          details,
         })
-
         await logActivity({
           actorId: user.id,
           actorRole: user.role,
@@ -336,33 +214,14 @@ export async function saveProject(
           targetType: 'PROJECT',
           targetId: id,
           targetProjectId: id,
-          targetCompanyId: normalizedClientId,
+          targetCompanyId: companyId,
           metadata: event.metadata,
         })
       }
-
-      return {}
+      await logRelatedChanges(user, id, related)
+      return { projectId: id }
     }
   )
-
-  // Members are synced after the row is written (a new project has no id
-  // before). An omitted list leaves the current members untouched.
-  const savedProjectId = result.projectId ?? id
-  if (!result.error && savedProjectId && memberIdsToSave !== undefined) {
-    try {
-      await syncProjectMembers({
-        actor: user,
-        projectId: savedProjectId,
-        memberIds: memberIdsToSave,
-      })
-    } catch (error) {
-      console.error('Failed to update project members', error)
-      return {
-        ...result,
-        error: 'Project saved but its members could not be updated.',
-      }
-    }
-  }
 
   if (!result.error) {
     await revalidateProjectSettings()
@@ -372,11 +231,92 @@ export async function saveProject(
   return result
 }
 
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === '23505'
-  )
+async function loadProjectFields(id: string) {
+  const [row] = await db
+    .select({
+      name: projects.name,
+      status: projects.status,
+      type: projects.type,
+      startsOn: projects.startsOn,
+      endsOn: projects.endsOn,
+      slug: projects.slug,
+      ownerId: projects.ownerId,
+    })
+    .from(projects)
+    .where(eq(projects.id, id))
+    .limit(1)
+  return row ?? null
+}
+
+/** Members (when the sheet sent them) and link changes, in the save's tx. */
+async function writeRelatedRows(
+  tx: DbTransaction,
+  projectId: string,
+  actorId: string,
+  memberIds: string[] | undefined,
+  prepared: PreparedLinkChanges
+): Promise<RelatedWrites> {
+  // An omitted member list leaves the current members untouched.
+  const members =
+    memberIds === undefined
+      ? { added: [], removed: [] }
+      : await writeProjectMembers(tx, { actorId, projectId, memberIds })
+  const links = await writeProjectLinkChanges(tx, projectId, prepared, actorId)
+  return { members, links }
+}
+
+/**
+ * Inserts the project and its related rows in one transaction. A slug taken
+ * between picking it and inserting rolls the whole transaction back and
+ * retries with a fresh slug.
+ */
+async function insertProject(
+  values: Omit<typeof projects.$inferInsert, 'slug'>,
+  baseSlug: string,
+  writeRelated: (tx: DbTransaction, projectId: string) => Promise<RelatedWrites>
+): Promise<{ projectId: string; related: RelatedWrites } | { error: string }> {
+  for (let attempt = 0; attempt < INSERT_RETRY_LIMIT; attempt += 1) {
+    const slug = await generateUniqueProjectSlug(baseSlug)
+    try {
+      return await db.transaction(async tx => {
+        const [inserted] = await tx
+          .insert(projects)
+          .values({ ...values, slug })
+          .returning({ id: projects.id })
+        const related = await writeRelated(tx, inserted.id)
+        return { projectId: inserted.id, related }
+      })
+    } catch (error) {
+      if (violatedConstraint(error) === PROJECT_SLUG_INDEX) continue
+      console.error('Failed to create project', error)
+      return { error: 'Unable to create project.' }
+    }
+  }
+  return { error: 'Could not generate a unique slug. Please try again.' }
+}
+
+async function logRelatedChanges(
+  actor: Pick<AppUser, 'id' | 'role'>,
+  projectId: string,
+  related: RelatedWrites
+) {
+  await logProjectMembersChanged({ actor, projectId, ...related.members })
+  await logProjectLinkChanges(actor, projectId, related.links)
+}
+
+/**
+ * The unique index a write hit, if any. drizzle-orm wraps the driver error
+ * (DrizzleQueryError) with the PostgresError on `cause`; postgres-js names
+ * the index `constraint_name`.
+ */
+function violatedConstraint(error: unknown): string | null {
+  const read = (value: unknown): string | null => {
+    if (typeof value !== 'object' || value === null) return null
+    const { code, constraint_name } = value as {
+      code?: string
+      constraint_name?: string
+    }
+    return code === '23505' ? (constraint_name ?? 'unknown') : null
+  }
+  return read(error) ?? read((error as { cause?: unknown } | null)?.cause)
 }
