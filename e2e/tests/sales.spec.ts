@@ -1,4 +1,6 @@
-import { expect, test } from '@playwright/test'
+import path from 'node:path'
+
+import { expect, test, type Page } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
@@ -115,4 +117,106 @@ test('sales can’t rename the staff company', async ({ page }) => {
   await expect(
     page.getByText(`Only an admin can change ${staffName}.`)
   ).toBeVisible()
+})
+
+/** The timeline entry holding `marker`, with its actions button. */
+function leadUpdateEntry(target: Page, marker: string) {
+  return target
+    .getByRole('dialog')
+    .locator('div')
+    .filter({ hasText: marker })
+    .filter({ has: target.getByRole('button', { name: /^Actions for / }) })
+    .last()
+}
+
+// R14: only the author or an admin can edit or archive a lead update. An
+// admin logs an update on a lead (and archives it again afterwards); Sales
+// sees its actions turned off, and the edit action itself refuses them.
+test('sales can’t edit or archive someone else’s lead update', async ({
+  page,
+  browser,
+}) => {
+  test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
+  const marker = `e2e update ${Date.now()}`
+  const notAuthor = 'Only the author or an admin can change this update.'
+
+  const adminContext = await browser.newContext({
+    storageState: path.join(__dirname, '../.auth/admin.json'),
+  })
+  const admin = await adminContext.newPage()
+  let leadUrl: string | null = null
+  try {
+    await admin.goto('/leads')
+    const card = admin.locator('[aria-roledescription="sortable"]').first()
+    test.skip((await card.count()) === 0, 'no lead on the board')
+    await card.click()
+    await expect(admin).toHaveURL(/[?&]lead=[0-9a-f-]{36}/)
+    const leadId = new URL(admin.url()).searchParams.get('lead')!
+    leadUrl = `/leads?lead=${leadId}`
+
+    // Admin logs the update.
+    await admin.getByRole('button', { name: 'Add update' }).click()
+    const logDialog = admin.getByRole('dialog').filter({ hasText: 'Log update' })
+    await logDialog.locator('.ProseMirror').click()
+    await admin.keyboard.type(marker)
+    await logDialog.getByRole('button', { name: 'Log', exact: true }).click()
+    await expect(logDialog).toBeHidden()
+
+    // Admin saves it once, unchanged, to capture the edit action's request.
+    const adminEntry = leadUpdateEntry(admin, marker)
+    await expect(adminEntry).toBeVisible()
+    await adminEntry.getByRole('button', { name: /^Actions for / }).click()
+    await admin.getByRole('menuitem', { name: 'Edit' }).click()
+    const editDialog = admin
+      .getByRole('dialog')
+      .filter({ hasText: 'Edit update' })
+    const editRequest = admin.waitForRequest(
+      request =>
+        request.method() === 'POST' &&
+        Boolean(request.headers()['next-action']) &&
+        (request.postData() ?? '').includes(leadId)
+    )
+    await editDialog.getByRole('button', { name: 'Save', exact: true }).click()
+    const captured = await editRequest
+    await expect(editDialog).toBeHidden()
+
+    // Sales: the update's actions are off.
+    await page.goto(leadUrl)
+    const salesEntry = leadUpdateEntry(page, marker)
+    await expect(salesEntry).toBeVisible()
+    await expect(
+      salesEntry.getByRole('button', { name: /^Actions for / })
+    ).toBeDisabled()
+
+    // Calling the edit action directly as Sales is refused.
+    const response = await page.request.post(leadUrl, {
+      headers: {
+        'next-action': captured.headers()['next-action'],
+        'content-type':
+          captured.headers()['content-type'] ?? 'text/plain;charset=UTF-8',
+        accept: 'text/x-component',
+      },
+      data: captured.postData() ?? '',
+    })
+    expect(await response.text()).toContain(notAuthor)
+  } finally {
+    // Admin archives the update again.
+    if (leadUrl) {
+      await admin.goto(leadUrl)
+      const leftover = leadUpdateEntry(admin, marker)
+      // Updates load after the sheet opens; it may never have been logged.
+      await admin
+        .getByText(marker)
+        .first()
+        .waitFor({ timeout: 10_000 })
+        .catch(() => {})
+      if (await leftover.count()) {
+        await leftover.getByRole('button', { name: /^Actions for / }).click()
+        await admin.getByRole('menuitem', { name: 'Archive' }).click()
+        await admin.getByRole('button', { name: 'Archive update' }).click()
+        await expect(leftover).toHaveCount(0)
+      }
+    }
+    await adminContext.close()
+  }
 })

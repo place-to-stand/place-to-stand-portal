@@ -50,8 +50,8 @@ export async function listLeadUpdates(
 }
 
 /**
- * One update row, used by the edit/delete actions to verify ownership before
- * writing. Returns null when the update doesn't exist, is soft-deleted, or
+ * One update row, used by the edit/delete actions to verify which lead it
+ * belongs to and who wrote it before writing. Returns null when the update doesn't exist, is soft-deleted, or
  * belongs to a different lead — the caller must not trust the id alone.
  */
 export async function getLeadUpdateForLead(
@@ -62,6 +62,7 @@ export async function getLeadUpdateForLead(
   type: LeadUpdateTypeValue
   body: string
   occurredAt: string
+  authorId: string | null
 } | null> {
   const [row] = await db
     .select({
@@ -69,6 +70,7 @@ export async function getLeadUpdateForLead(
       type: leadUpdates.type,
       body: leadUpdates.body,
       occurredAt: leadUpdates.occurredAt,
+      authorId: leadUpdates.authorId,
     })
     .from(leadUpdates)
     .where(

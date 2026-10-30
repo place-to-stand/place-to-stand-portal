@@ -197,6 +197,13 @@ export const CAPABILITIES = {
       SALES: { detail: 'Only if they are a member of the Sales project.' },
     },
   },
+  'leads.edit_others_updates': {
+    area: 'Sales',
+    label: 'Edit or delete other users’ lead updates',
+    description: 'Everyone can edit and delete their own.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app'],
+  },
   'leads.convert': {
     area: 'Sales',
     label: 'Make a lead’s company a client',
