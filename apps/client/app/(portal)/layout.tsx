@@ -64,7 +64,11 @@ export default async function PortalLayout({
               Client Portal
             </span>
           </Link>
-          <UserMenu email={user.email} scopedClients={scope.scopedClients} />
+          <UserMenu
+            email={user.email}
+            fullName={user.full_name}
+            scopedClients={scope.scopedClients}
+          />
         </div>
       </header>
       <main className='mx-auto max-w-5xl px-4 py-6 sm:py-8'>{children}</main>

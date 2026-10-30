@@ -242,6 +242,74 @@ export async function getClientHoursTotals(
   return totals
 }
 
+/** Hours logged in one month, `month` as 'yyyy-MM-01'. */
+export type MonthHours = { month: string; hours: number }
+
+/**
+ * Net 30 hours by month for a set of clients, newest month first, months
+ * with hours only. A month counts exactly when the monthly close bills it
+ * (`fetchNet30Billing` in the internal portal): the client is billed that
+ * month (`company_billed_in`), its billing term in force on the first of the
+ * month is net_30, and the hours are live time logs on its live CLIENT
+ * projects, by `logged_on`. So months before the client was first billed,
+ * and prepaid months, are left out.
+ *
+ * Written as raw SQL with explicit aliases: the billing-term subquery is
+ * correlated, and drizzle would write an outer column unqualified there.
+ */
+export async function getNet30MonthlyHours(
+  db: DbClient,
+  companyIds: string[]
+): Promise<Map<string, MonthHours[]>> {
+  const byClient = new Map<string, MonthHours[]>()
+  if (companyIds.length === 0) {
+    return byClient
+  }
+
+  const ids = sql.join(
+    companyIds.map(id => sql`${id}::uuid`),
+    sql`, `
+  )
+  const rows = await db.execute<{
+    company_id: string
+    month: string
+    hours: string
+  }>(sql`
+    with monthly as (
+      select p.company_id,
+             date_trunc('month', t.logged_on)::date as month,
+             sum(t.hours) as hours
+      from time_logs t
+      join projects p on p.id = t.project_id
+      where t.deleted_at is null
+        and p.deleted_at is null
+        and p.type = 'CLIENT'
+        and p.company_id in (${ids})
+      group by p.company_id, date_trunc('month', t.logged_on)::date
+      having sum(t.hours) > 0
+    )
+    select m.company_id, m.month::text as month, m.hours::text as hours
+    from monthly m
+    where company_billed_in(m.company_id, m.month)
+      and (
+        select bt.billing_type from billing_terms bt
+        where bt.company_id = m.company_id
+          and bt.deleted_at is null
+          and bt.effective_from <= m.month
+        order by bt.effective_from desc
+        limit 1
+      ) = 'net_30'
+    order by m.company_id, m.month desc
+  `)
+
+  for (const row of rows) {
+    const months = byClient.get(row.company_id) ?? []
+    months.push({ month: row.month, hours: toHours(row.hours) })
+    byClient.set(row.company_id, months)
+  }
+  return byClient
+}
+
 /** numeric columns come back from postgres.js as strings. */
 function toHours(value: string | number | null): number {
   const parsed = Number(value ?? 0)

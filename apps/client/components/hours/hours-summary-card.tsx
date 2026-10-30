@@ -8,7 +8,7 @@ const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
 })
 
-function formatHours(hours: number): string {
+export function formatHours(hours: number): string {
   return `${HOURS_FORMATTER.format(hours)}h`
 }
 

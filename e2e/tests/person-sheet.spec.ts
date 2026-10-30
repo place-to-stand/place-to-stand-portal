@@ -42,7 +42,10 @@ test('changing a role asks which month it starts', async ({ page }) => {
   await expect(
     page.getByRole('option', { name: /\(next month\)/ })
   ).toBeVisible()
-  await expect(page.getByRole('option', { name: /October 2025/ })).toBeVisible()
+  // Only next month, this month and at most one open earlier month.
+  const options = page.getByRole('option')
+  expect(await options.count()).toBeGreaterThanOrEqual(2)
+  expect(await options.count()).toBeLessThanOrEqual(3)
   await page.keyboard.press('Escape')
 
   // Close without saving: the role change counts as unsaved.
