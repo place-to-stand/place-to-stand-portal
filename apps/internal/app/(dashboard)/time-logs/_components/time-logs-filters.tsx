@@ -6,6 +6,7 @@ import { formatHours } from '@pts/ui/numbers'
 
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
@@ -77,6 +78,9 @@ export function TimeLogsFilters({
       }
     >
       <DateRangePicker
+        className={FILTER_TRIGGER_WIDTH}
+        isDefault={params.isDefaultRange}
+        onClear={() => update({ from: undefined, to: undefined })}
         value={{ from: params.from, to: params.to }}
         onChange={range => {
           const isDefault =
@@ -90,7 +94,7 @@ export function TimeLogsFilters({
         }}
       />
       <SearchableCombobox
-        className='w-52'
+        className={FILTER_TRIGGER_WIDTH}
         ariaLabel='Client'
         items={clients}
         value={params.companyId ?? ''}
@@ -103,7 +107,7 @@ export function TimeLogsFilters({
         emptyMessage='No clients found.'
       />
       <SearchableCombobox
-        className='w-52'
+        className={FILTER_TRIGGER_WIDTH}
         ariaLabel='Project'
         items={projects}
         value={params.projectId ?? ''}
@@ -114,7 +118,7 @@ export function TimeLogsFilters({
         emptyMessage='No projects found.'
       />
       <SearchableCombobox
-        className='w-48'
+        className={FILTER_TRIGGER_WIDTH}
         ariaLabel='Person'
         items={people}
         value={params.personId ?? ''}

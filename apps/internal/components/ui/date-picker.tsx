@@ -11,7 +11,7 @@ import {
   FIELD_CLEAR_LABEL_SPACE,
   FieldClearButton,
 } from '@/components/ui/field-clear-button'
-import { fieldTriggerClasses } from '@/components/ui/searchable-combobox'
+import { fieldTriggerClasses } from '@/components/ui/field-trigger'
 import {
   parseCalendarDate,
   toCalendarDate,
