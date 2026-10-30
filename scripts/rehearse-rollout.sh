@@ -8,7 +8,9 @@
 # 1. Restores the dump (public, drizzle, auth) into prod_rehearsal_before,
 #    prod_rehearsal and prod_rehearsal_undo.
 # 2. Runs the whole batch on prod_rehearsal (one drizzle transaction) and
-#    times it; runs scripts/compare-rollout.mjs (before vs after), and
+#    times it; runs scripts/compare-rollout.mjs and scripts/verify-migration.py
+#    (before vs after: row counts, untouched tables, auth, constraints, client
+#    state, role history, activity), and
 #    recomputes every month's close on the migrated copy: each closed month
 #    must still match its snapshot (apps/internal/scripts/close-totals.mts).
 # 3. Takes prod_rehearsal_undo to 0104, keeps a copy, runs the batch, runs
@@ -44,6 +46,7 @@ t0=$(date +%s)
 DATABASE_URL=$U/prod_rehearsal npx drizzle-kit migrate > "$WORK/migrate.log" 2>&1; rc=$?
 echo "FORWARD exit=$rc in $(( $(date +%s) - t0 ))s, migrations: $(psql -d prod_rehearsal -At -c 'select count(*) from drizzle.__drizzle_migrations')"
 node "$ROOT/scripts/compare-rollout.mjs" --before $U/prod_rehearsal_before --after $U/prod_rehearsal; echo "COMPARE exit=$?"
+python3 "$ROOT/scripts/verify-migration.py" prod_rehearsal_before prod_rehearsal; echo "VERIFY exit=$?"
 (cd "$ROOT/apps/internal" && DATABASE_URL=$U/prod_rehearsal npx tsx --require ./scripts/stub-server-only.cjs scripts/close-totals.mts > "$WORK/close.json")
 python3 - "$WORK/close.json" <<'PY'
 import json,sys
