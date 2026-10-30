@@ -211,9 +211,13 @@ const SheetContent = React.forwardRef<
   ) => {
     const isHorizontal = side === 'left' || side === 'right'
     const popupRef = React.useRef<HTMLDivElement | null>(null)
+    const [popupNode, setPopupNode] = React.useState<HTMLDivElement | null>(
+      null
+    )
     const setPopupRef = React.useCallback(
       (node: HTMLDivElement | null) => {
         popupRef.current = node
+        setPopupNode(node)
         if (typeof ref === 'function') {
           ref(node)
         } else if (ref) {
@@ -233,22 +237,32 @@ const SheetContent = React.forwardRef<
       []
     )
     React.useEffect(() => {
-      const popup = popupRef.current
-      if (!popup || firstSheetField(popup)) return
-      const observer = new MutationObserver(() => {
+      const popup = popupNode
+      if (!popup) return
+      const focusFirst = () => {
         const field = firstSheetField(popup)
-        if (!field) return
-        observer.disconnect()
+        if (!field) return false
         const active = document.activeElement
-        if (active === popup || active === document.body) focusField(field)
+        if (active === popup || active === document.body || !active) {
+          focusField(field)
+        }
+        return true
+      }
+      // After the open's own focus move, then whenever fields appear.
+      const frame = window.requestAnimationFrame(() => {
+        if (focusFirst()) observer.disconnect()
+      })
+      const observer = new MutationObserver(() => {
+        if (focusFirst()) observer.disconnect()
       })
       observer.observe(popup, { childList: true, subtree: true })
       const stop = window.setTimeout(() => observer.disconnect(), 5000)
       return () => {
+        window.cancelAnimationFrame(frame)
         observer.disconnect()
         window.clearTimeout(stop)
       }
-    }, [])
+    }, [popupNode])
 
     return (
       <SheetPortal>
