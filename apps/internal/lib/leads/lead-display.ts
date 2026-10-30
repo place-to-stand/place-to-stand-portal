@@ -38,5 +38,3 @@ export const leadDisplayFields = {
 export const leadContactNameSql = sql<string>`(
   select lc.name from contacts lc where lc.id = "leads"."contact_id"
 )`
-
-

@@ -59,7 +59,7 @@ test('billing: make a client, stop billing, restart, and back', async ({
   await setBilling(page, false)
 })
 
-test('lead: a person who isn’t at the company gets a warning with the fix', async ({
+test('lead: a person not at the company gets one caution saying Save adds them', async ({
   page,
 }) => {
   await page.goto('/leads?lead=new')
@@ -67,25 +67,16 @@ test('lead: a person who isn’t at the company gets a warning with the fix', as
   const records = page.getByRole('option').filter({ hasNotText: /^Create/ })
   await sheet.getByRole('combobox', { name: 'Person' }).click()
   await records.first().click()
+  const caution = sheet.getByRole('alert').filter({ hasText: 'is not yet at' })
   for (let attempt = 1; attempt <= 3; attempt++) {
     await sheet.getByRole('combobox', { name: 'Company' }).click()
     await records.nth(attempt * 3).click()
-    if (
-      await sheet
-        .getByRole('alert')
-        .filter({ hasText: 'isn’t at' })
-        .or(sheet.getByRole('alert').filter({ hasText: "isn't at" }))
-        .count()
-    )
-      break
+    if (await caution.count()) break
   }
-  const alert = sheet.getByRole('alert').filter({ hasText: /isn.t at/ })
-  await expect(alert).toBeVisible()
-  await expect(alert.getByRole('button', { name: /^Add to / })).toBeVisible()
-  await alert.getByRole('button', { name: /^Add to / }).click()
-  await expect(
-    sheet.getByRole('alert').filter({ hasText: 'when you save' })
-  ).toBeVisible()
+  await expect(caution).toBeVisible()
+  await expect(caution).toContainText('Saving adds')
+  // One alert, no button: Save does it.
+  await expect(caution.getByRole('button')).toHaveCount(0)
   // Close without saving.
   await page.keyboard.press('Escape')
 })

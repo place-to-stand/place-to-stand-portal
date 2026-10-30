@@ -9,15 +9,9 @@ import {
   ContactLinkPicker,
   useContactOptions,
 } from '@/components/contacts/contact-link-picker'
-import { TriangleAlert, UserPlus } from 'lucide-react'
+import { TriangleAlert } from 'lucide-react'
 
-import {
-  Alert,
-  AlertAction,
-  AlertContent,
-  AlertDescription,
-} from '@pts/ui/alert'
-import { Button } from '@pts/ui/button'
+import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 import {
   FormControl,
   FormField,
@@ -279,9 +273,8 @@ export function LeadSheetFormFields({
 }
 
 /**
- * A warning when the lead's contact isn't at the chosen company, with an
- * "Add to <company>" that joins them on save. Never blocks saving: a contact
- * from another company (a referral) is fine.
+ * A caution when the lead's person isn't at the chosen company: saving the
+ * lead adds them to it (portal access stays off). Never blocks saving.
  */
 function ContactCompanyMismatchNote({
   control,
@@ -290,62 +283,27 @@ function ContactCompanyMismatchNote({
 }) {
   const contact = useWatch({ control, name: 'contact' })
   const company = useWatch({ control, name: 'company' })
-  const { field: addField } = useController({
-    control,
-    name: 'addContactToCompany',
-  })
   const { data: options = [] } = useContactOptions()
 
   const companyIds = contact
     ? options.find(option => option.id === contact.id)?.companyIds
     : undefined
-  // Only once the contact's companies are known, and only for a mismatch.
+  // Only once the person's companies are known, and only for a mismatch.
   if (!contact || !company || !companyIds || companyIds.includes(company.id)) {
     return null
   }
 
   const contactName = contact.name || 'This person'
   const companyName = company.name || 'this company'
-  if (addField.value) {
-    return (
-      <Alert>
-        <UserPlus />
-        <AlertContent>
-          <AlertDescription>
-            {contactName} will be added to {companyName} when you save.
-          </AlertDescription>
-        </AlertContent>
-        <AlertAction>
-          <Button
-            type='button'
-            variant='ghost'
-            size='xs'
-            onClick={() => addField.onChange(false)}
-          >
-            Undo
-          </Button>
-        </AlertAction>
-      </Alert>
-    )
-  }
   return (
     <Alert variant='warning'>
       <TriangleAlert />
       <AlertContent>
         <AlertDescription>
-          {contactName} isn&apos;t at {companyName}.
+          {contactName} is not yet at {companyName}. Saving adds {contactName}{' '}
+          to {companyName}.
         </AlertDescription>
       </AlertContent>
-      <AlertAction>
-        <Button
-          type='button'
-          variant='outline'
-          size='xs'
-          onClick={() => addField.onChange(true)}
-        >
-          Add to {companyName}
-        </Button>
-      </AlertAction>
     </Alert>
   )
 }

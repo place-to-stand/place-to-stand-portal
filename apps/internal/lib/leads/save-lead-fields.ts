@@ -42,11 +42,6 @@ export const saveLeadSchema = z.object({
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   /** TipTap HTML, as the sheet's editor produces it. */
   notes: z.string().optional().nullable(),
-  /**
-   * The sheet's "Add to <company>": the contact joins the lead's company even
-   * though they're already at another one.
-   */
-  addContactToCompany: z.boolean().optional(),
 })
 
 export type SaveLeadInput = z.infer<typeof saveLeadSchema>
@@ -68,8 +63,6 @@ export type NormalizedLead = {
   /** `undefined` = not sent; keep the lead's copy. */
   companyWebsite?: string | null
   notes: string | null
-  /** Join the contact to the lead's company even if they have one. */
-  addContactToCompany?: boolean
 }
 
 export type ExistingLead = {
@@ -168,7 +161,6 @@ export function normalizeLeadPayload(payload: SaveLeadInput): NormalizedLead {
         ? undefined
         : normalizeOptionalString(payload.companyWebsite, 255),
     notes: (payload.notes ?? '').trim() || null,
-    addContactToCompany: payload.addContactToCompany ?? false,
   }
 }
 

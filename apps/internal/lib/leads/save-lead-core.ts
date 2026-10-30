@@ -1,4 +1,3 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import 'server-only'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
@@ -233,8 +232,10 @@ async function resolveLeadContact(
     (Boolean(contact.userId) && !isAdmin) ||
     (contact.atClient && !canManageClients)
 
-  // A contact with no company joins the lead's. Membership grants no client
-  // access (that's switched on per person on the client).
+  // Saving a lead puts its person at its company, any company, clients
+  // included: building the directory is open to Sales. Membership grants no
+  // client access (portal access starts off and is switched on per person by
+  // an admin). People who can sign in and the staff company stay admin-only.
   const linkCompany = async (contact: {
     id: string
     hasCompany: boolean
@@ -242,22 +243,13 @@ async function resolveLeadContact(
   }) => {
     if (!companyId) return
     if (contact.userId && !isAdmin) return
-    if (contact.hasCompany) {
-      if (!normalized.addContactToCompany) return
-      // A client's contacts are admin-only (same rule as the contact sheet).
-      if (!roleCan(actor.role, 'clients.manage')) {
-        const [client] = await tx
-          .select({ id: companies.id })
-          .from(companies)
-          .where(
-            and(
-              wasClientCompany(),
-              and(eq(companies.id, companyId), isNull(clientEndedAtSql))
-            )
-          )
-          .limit(1)
-        if (client) return
-      }
+    if (!isAdmin) {
+      const [staff] = await tx
+        .select({ id: companies.id })
+        .from(companies)
+        .where(and(eq(companies.id, companyId), eq(companies.isStaff, true)))
+        .limit(1)
+      if (staff) return
     }
     await joinCompany(tx, contact.id, companyId)
   }
