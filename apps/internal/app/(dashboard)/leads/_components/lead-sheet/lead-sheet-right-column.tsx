@@ -3,7 +3,7 @@
 import { EmptyState } from '@pts/ui/empty-state'
 
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { SHEET_SIDE_COLUMN_CLASS } from '@/components/ui/sheet'
+import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { LeadRecord } from '@/lib/leads/types'
@@ -36,7 +36,8 @@ export function LeadSheetRightColumn({
     <div
       className={cn(
         'bg-muted/20 flex-shrink-0 max-lg:border-t lg:overflow-y-auto',
-        SHEET_SIDE_COLUMN_CLASS
+        // The lead's tasks and updates get an even share of the sheet.
+        SHEET_SIDE_COLUMN_CLASSES.even
       )}
     >
       {lead ? (

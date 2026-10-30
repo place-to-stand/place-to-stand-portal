@@ -380,7 +380,20 @@ export {
 }
 
 /**
- * Width of the side column in a two-column sheet (the lead's tasks
- * and updates, the invoice's status and actions).
+ * How a two-column sheet splits its 1184px between the form and the side
+ * column. Named presets only, so sheets stay consistent:
+ * - `default`: a 384px side column (the invoice's status and actions).
+ * - `even`: a 480px side column, for a side column people work in as much as
+ *   the form (the lead's tasks and updates). The form keeps ~700px, enough
+ *   for the full rich text toolbar on one line.
+ * Below lg the side column stacks under the form, full width.
  */
-export const SHEET_SIDE_COLUMN_CLASS = 'lg:w-96'
+export type SheetSplit = 'default' | 'even'
+
+export const SHEET_SIDE_COLUMN_CLASSES: Record<SheetSplit, string> = {
+  default: 'lg:w-96',
+  even: 'lg:w-[30rem]',
+}
+
+/** The default split's side column (see `SHEET_SIDE_COLUMN_CLASSES`). */
+export const SHEET_SIDE_COLUMN_CLASS = SHEET_SIDE_COLUMN_CLASSES.default
