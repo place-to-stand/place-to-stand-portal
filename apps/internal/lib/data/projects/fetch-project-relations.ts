@@ -1,7 +1,11 @@
 import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { and, inArray, isNull, sql } from 'drizzle-orm'
 
-import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
+import type {
+  ClientCompanyView,
+  GitHubRepoLinkSummary,
+  ProjectOwner,
+} from '@/lib/types'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 
@@ -41,7 +45,7 @@ export type ProjectRelationsFetchArgs = {
 }
 
 export type ProjectRelationsFetchResult = {
-  clients: DbClient[]
+  clients: ClientCompanyView[]
   owners: ProjectOwner[]
   members: MemberWithUser[]
   tasks: RawTaskWithRelations[]
@@ -83,10 +87,8 @@ export async function fetchProjectRelations({
   ownerIds,
   includeArchivedTasks = false,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
-  const clientDataPromise: Promise<[ClientRelationRow[], MemberRow[]]> = Promise.all([
-    loadClientRows(companyIds),
-    loadMemberRows(companyIds),
-  ])
+  const clientDataPromise: Promise<[ClientRelationRow[], MemberRow[]]> =
+    Promise.all([loadClientRows(companyIds), loadMemberRows(companyIds)])
 
   const taskDataPromise: Promise<[TaskRow[], TaskRow[]]> = Promise.all([
     loadTaskRows(projectIds, { archived: false }),
@@ -117,7 +119,7 @@ export async function fetchProjectRelations({
   const assigneeRows = await loadTaskAssigneeRows(allTaskIds)
   const assigneesByTask = buildAssigneeMap(assigneeRows)
 
-  const clients: DbClient[] = mapClientRows(clientRows)
+  const clients: ClientCompanyView[] = mapClientRows(clientRows)
   const members: MemberWithUser[] = mapMemberRows(memberRows)
 
   const tasks: RawTaskWithRelations[] = mapTaskRowsToRaw(

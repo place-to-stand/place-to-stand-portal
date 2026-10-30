@@ -9,7 +9,7 @@ import {
   companies as companiesTable,
   users as usersTable,
 } from '@/lib/db/schema'
-import type { DbClient, DbUser } from '@/lib/types'
+import type { ClientCompanyView, DbUser } from '@/lib/types'
 
 import type { MemberWithUser } from '../types'
 
@@ -21,7 +21,7 @@ export type ClientRelationRow = {
   state: string | null
   originationContactId: string | null
   originationUserId: string | null
-  billingType: DbClient['billing_type']
+  billingType: ClientCompanyView['billing_type']
   companyId: string
   createdBy: string | null
   /** When it became a client. */
@@ -61,9 +61,7 @@ export async function loadClientRows(
   return db
     .select(clientFields)
     .from(companiesTable)
-    .where(
-      and(inArray(companiesTable.id, companyIds), isClientCompany())
-    )
+    .where(and(inArray(companiesTable.id, companyIds), isClientCompany()))
 }
 
 export async function loadMemberRows(
@@ -113,7 +111,7 @@ export async function loadMemberRows(
   )
 }
 
-export function mapClientRows(rows: ClientRelationRow[]): DbClient[] {
+export function mapClientRows(rows: ClientRelationRow[]): ClientCompanyView[] {
   return rows.map(row => ({
     id: row.id,
     name: row.name,

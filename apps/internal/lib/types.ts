@@ -21,7 +21,7 @@ export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
  * from the newest terms; `deleted_at` means billing stopped
  * (billing ended, or the company archived).
  */
-export type DbClient = {
+export type ClientCompanyView = {
   id: string
   name: string
   slug: string | null
@@ -41,7 +41,10 @@ export type DbClient = {
  * A client as the project, invoice and hour-block pickers list it (archived
  * ones included, so a record's own archived client still shows).
  */
-export type ClientPickerRow = Pick<DbClient, 'id' | 'name' | 'deleted_at'>
+export type ClientPickerRow = Pick<
+  ClientCompanyView,
+  'id' | 'name' | 'deleted_at'
+>
 
 /** A portal login with access to a client (from `client_portal_access`). */
 export type DbClientMember = {
@@ -226,7 +229,7 @@ export type ProjectOwner = {
 }
 
 export type ProjectWithRelations = DbProject & {
-  client: DbClient | null
+  client: ClientCompanyView | null
   owner: ProjectOwner | null
   members: ProjectMemberWithUser[]
   tasks: TaskWithRelations[]

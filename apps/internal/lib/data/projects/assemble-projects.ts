@@ -1,5 +1,5 @@
 import type {
-  DbClient,
+  ClientCompanyView,
   DbProject,
   ProjectMemberWithUser,
   ProjectOwner,
@@ -74,8 +74,10 @@ export function assembleProjectsWithRelations({
   }))
 }
 
-function buildClientLookup(clients: DbClient[]): Map<string, DbClient> {
-  const clientLookup = new Map<string, DbClient>()
+function buildClientLookup(
+  clients: ClientCompanyView[]
+): Map<string, ClientCompanyView> {
+  const clientLookup = new Map<string, ClientCompanyView>()
   clients.forEach(client => {
     if (!client?.id) {
       return

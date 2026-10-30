@@ -54,13 +54,11 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
   }
 
   // The billing form self-fetches its reference data (contacts/admins) —
-  // it only needs the row (snake_case `DbClient` plus its closer split).
+  // it only needs the row (snake_case `ClientCompanyView` plus its closer split).
   const rows = await db
     .select(clientFields)
     .from(companies)
-    .where(
-      and(isClientCompany(), eq(companies.id, id))
-    )
+    .where(and(isClientCompany(), eq(companies.id, id)))
     .limit(1)
 
   const row = rows[0]
