@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, Info, Receipt } from 'lucide-react'
+import { Building2, Clock3, Info, Receipt } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -24,6 +24,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
@@ -87,9 +88,9 @@ export function HourBlocksTableSection({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
+            <TableHead className='w-[18%]'>Hours purchased</TableHead>
             <TableHead className='w-[34%]'>Client</TableHead>
             <TableHead className='w-[18%]'>Invoice #</TableHead>
-            <TableHead className='w-[18%]'>Hours purchased</TableHead>
             <SortableTableHead
               field='created'
               sort={sort}
@@ -148,6 +149,32 @@ export function HourBlocksTableSection({
                   isArchived && ARCHIVED_ROW_CLASS
                 )}
               >
+                <TableCell label='Hours' className='text-sm'>
+                  <span className='inline-flex items-center gap-2'>
+                    <Clock3
+                      className={cn(
+                        ENTITY_ACCENTS.hourBlock.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
+                    {toHours(block.hours_purchased)}
+                    {block.notes ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            className='cursor-default'
+                            aria-label='Hour block notes'
+                          >
+                            <Info className='text-muted-foreground h-3.5 w-3.5' />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className='max-w-xs whitespace-pre-wrap'>
+                          {block.notes}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
                     <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
@@ -188,26 +215,6 @@ export function HourBlocksTableSection({
                   ) : (
                     <EmptyValue />
                   )}
-                </TableCell>
-                <TableCell label='Hours' className='text-sm'>
-                  <span className='inline-flex items-center gap-1.5'>
-                    {toHours(block.hours_purchased)}
-                    {block.notes ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span
-                            className='cursor-default'
-                            aria-label='Hour block notes'
-                          >
-                            <Info className='text-muted-foreground h-3.5 w-3.5' />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent className='max-w-xs whitespace-pre-wrap'>
-                          {block.notes}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : null}
-                  </span>
                 </TableCell>
                 <TableCell
                   label='Created'
