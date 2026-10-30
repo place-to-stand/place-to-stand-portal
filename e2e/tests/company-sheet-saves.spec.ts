@@ -169,3 +169,106 @@ test('billing through the end of the month, then restarting, keeps a client', as
 
   await cleanUp(page, name)
 })
+
+test('restarting a former client shows its last terms to edit', async ({
+  page,
+}) => {
+  // A former client can't be made from scratch within one month (a stretch
+  // stopped before its first billed month is removed), so this opens one the
+  // database already has and discards the change.
+  await page.goto('/companies?type=former')
+  // Company rows have several cells; the empty state is one wide cell.
+  const rows = page
+    .locator('tbody tr')
+    .filter({ has: page.locator('td:nth-child(2)') })
+  test.skip((await rows.count()) === 0, 'no former client in this database')
+  await rows.first().click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet).toBeVisible()
+  await sheet.getByRole('tab', { name: 'Billing' }).click()
+
+  const toggle = sheet.getByRole('switch', { name: 'Bill this company' })
+  await expect(toggle).toHaveAttribute('aria-checked', 'false')
+  // On: its last terms fill the form, editable in the same Save.
+  await toggle.click()
+  await expect(
+    sheet.getByText(/^Saving restarts billing with these terms/)
+  ).toBeVisible()
+  await expect(sheet.getByText('Billing type', { exact: true })).toBeVisible()
+  await expect(
+    sheet.getByRole('combobox', { name: 'First month billed' })
+  ).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: 'Discard' })
+    .click()
+  await expect(sheet).toBeHidden()
+})
+
+test('a billed company is not archived: stop billing first', async ({
+  page,
+}) => {
+  const name = `E2E archive-billed ${Date.now()}`
+  const { sheet } = await startCompany(page, name)
+  await sheet.getByRole('tab', { name: 'Billing' }).click()
+  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
+  await sheet.getByRole('button', { name: 'Create company' }).click()
+  await expect(sheet).toBeHidden()
+
+  // The sheet's archive button is disabled, with the reason.
+  const saved = await openCompany(page, name)
+  const archive = saved.getByRole('button', { name: 'Archive company' })
+  await expect(archive).toBeDisabled()
+  // The reason shows on hovering its wrapper (the button ignores the pointer).
+  await archive.locator('xpath=../..').hover()
+  await expect(page.getByText('Stop billing first.').first()).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // So is the list's.
+  await page.goto(`/companies?q=${encodeURIComponent(name)}`)
+  const row = page.locator('tbody tr').filter({ hasText: name })
+  await expect(
+    row.getByRole('button', { name: 'Archive company' })
+  ).toBeDisabled()
+
+  // cleanUp stops billing ("last month") first, then archives.
+  await cleanUp(page, name)
+})
+
+test('a save made since the sheet opened refuses the older sheet', async ({
+  page,
+  context,
+}) => {
+  const name = `E2E two-tabs ${Date.now()}`
+  const { sheet } = await startCompany(page, name)
+  await sheet.getByRole('button', { name: 'Create company' }).click()
+  await expect(sheet).toBeHidden()
+
+  // The same company open in two tabs.
+  const first = await openCompany(page, name)
+  const other = await context.newPage()
+  const second = await openCompany(other, name)
+
+  await first.getByLabel('Website').fill('https://first.example.com')
+  await first.getByRole('button', { name: 'Save changes' }).click()
+  await expect(first).toBeHidden()
+
+  await second.getByLabel('Website').fill('https://second.example.com')
+  await second.getByRole('button', { name: 'Save changes' }).click()
+  await expect(
+    second.getByText(
+      'Someone else saved this company. Reload to see their changes.'
+    )
+  ).toBeVisible()
+  await expect(second).toBeVisible()
+  await other.close()
+
+  // The first save stands.
+  const saved = await openCompany(page, name)
+  await expect(saved.getByLabel('Website')).toHaveValue(/first\.example\.com/)
+  await page.keyboard.press('Escape')
+
+  await cleanUp(page, name)
+})
