@@ -17,7 +17,6 @@ export const contactSheetHref = (id: string) => `/people?contact=${id}`
 
 export const companySheetHref = (id: string) => `/companies?company=${id}`
 
-export const userSheetHref = (id: string) => `/settings/users?user=${id}`
 
 export const invoiceHref = (id: string) => `/invoices?invoice=${id}`
 

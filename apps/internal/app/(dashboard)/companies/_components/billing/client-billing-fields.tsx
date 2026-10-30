@@ -1,6 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@pts/ui/badge'
@@ -23,7 +22,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import type {
-  ClientContactOption,
   CloserCandidate,
   CloserDraft,
   OriginationContactOption,
@@ -34,7 +32,6 @@ import { US_STATES } from '@/lib/settings/clients/us-states'
 import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
 import { cn } from '@/lib/utils'
 
-import { ClientPortalAccessList } from './client-contact-picker'
 import { ClientClosersEditor } from './client-closers-editor'
 import { ClientEffectiveCallout } from './client-effective-callout'
 import { ClientOriginationPicker } from './client-origination-picker'
@@ -43,20 +40,11 @@ export type ClientBillingFieldsProps = {
   form: UseFormReturn<ClientSheetFormValues>
   isPending: boolean
   isEditing: boolean
-  /** The company sheet shows access on its People rows instead. */
-  showPortalAccess?: boolean
   /** The saved billing type — reveals the boundary select when it differs. */
   initialBillingType: string | null
   pendingReason: string
-  // Portal access
-  selectedContacts: ClientContactOption[]
-  availableContacts: ClientContactOption[]
-  contactsAddButtonDisabled: boolean
-  contactsAddButtonDisabledReason: string | null
-  onAddContact: (contact: ClientContactOption) => void
   onCreateOriginationContact: (query: string) => void
   onCreateCloserContact: (query: string) => void
-  onRemoveContact: (contact: ClientContactOption) => void
   // Origination
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
@@ -95,17 +83,10 @@ export function ClientBillingFields({
   form,
   isPending,
   isEditing,
-  showPortalAccess = true,
   initialBillingType,
   pendingReason,
-  selectedContacts,
-  availableContacts,
-  contactsAddButtonDisabled,
-  contactsAddButtonDisabledReason,
-  onAddContact,
   onCreateOriginationContact,
   onCreateCloserContact,
-  onRemoveContact,
   selectedOriginationUser,
   selectedOriginationContact,
   availableOriginationUsers,
@@ -137,20 +118,6 @@ export function ClientBillingFields({
     control: form.control,
     name: 'billingType',
   })
-  const selectedCompanyId =
-    useWatch({ control: form.control, name: 'companyId' }) || null
-  // Portal access lists everyone at the company, by name.
-  const companyPeople = useMemo(
-    () =>
-      selectedCompanyId
-        ? [...selectedContacts, ...availableContacts]
-            .filter(contact => contact.companyId === selectedCompanyId)
-            .sort((a, b) =>
-              (a.name ?? a.email ?? '').localeCompare(b.name ?? b.email ?? '')
-            )
-        : [],
-    [availableContacts, selectedCompanyId, selectedContacts]
-  )
   const fieldDisabledReason = isPending ? pendingReason : null
 
   return (
@@ -346,27 +313,6 @@ export function ClientBillingFields({
         ) : null}
       </SheetSection>
 
-      {showPortalAccess ? (
-        <>
-      <Separator />
-
-      <SheetSection
-        title='Portal access'
-        description='Which of the company’s people can see this client in the client portal. People and the primary contact are managed on the company.'
-      >
-        <ClientPortalAccessList
-          companyId={selectedCompanyId}
-          companyPeople={companyPeople}
-          selectedContacts={selectedContacts}
-          // Locked while saving or while the access list loads.
-          isPending={contactsAddButtonDisabled}
-          pendingReason={contactsAddButtonDisabledReason ?? pendingReason}
-          onGrant={onAddContact}
-          onRevoke={onRemoveContact}
-        />
-      </SheetSection>
-        </>
-      ) : null}
     </>
   )
 }

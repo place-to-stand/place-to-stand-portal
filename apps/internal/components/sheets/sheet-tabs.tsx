@@ -67,10 +67,10 @@ export function SheetTabs({
       onValueChange={onValueChange}
       className={cn('gap-0', className)}
     >
-      <div className='bg-background sticky top-0 z-10 border-b px-6 py-2'>
-        <TabsList aria-label='Sections' className='w-full sm:w-fit'>
+      <div className='bg-background sticky top-0 z-10 border-b px-2.5 pt-2'>
+        <TabsList aria-label='Sections' variant='line'>
           {tabs.map(tab => (
-            <TabsTrigger key={tab.value} value={tab.value} className='px-3'>
+            <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}
               {tab.dirty ? (
                 <span

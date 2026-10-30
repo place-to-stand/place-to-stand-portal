@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
+import { Briefcase, Clock, FolderKanban, UserRound, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 import {
@@ -562,7 +562,7 @@ export function ProjectsLanding({
             {readOnly ? (
               // Client pages are admin-only, so members get the name alone.
               <span className='flex w-fit shrink items-center gap-2 opacity-65'>
-                <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
+                <Briefcase className='h-4 w-4 shrink-0 text-blue-500/80' />
                 <span className='text-sm font-semibold'>{client.name}</span>
               </span>
             ) : (
@@ -574,7 +574,7 @@ export function ProjectsLanding({
                 }
                 className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
               >
-                <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
+                <Briefcase className='h-4 w-4 shrink-0 text-blue-500/80' />
                 <span className='text-sm font-semibold'>{client.name}</span>
               </Link>
             )}

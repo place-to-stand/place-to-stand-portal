@@ -4,7 +4,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { clientCreatedEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { clients, leads } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
 import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
@@ -160,6 +160,22 @@ export async function createClient(
           originationContactId,
           createdBy: user.id,
         })
+
+        // Won leads at this company now point at the client they became.
+        await tx
+          .update(leads)
+          .set({
+            convertedToClientId: insertedId,
+            convertedAt: new Date().toISOString(),
+          })
+          .where(
+            and(
+              eq(leads.companyId, companyId),
+              eq(leads.status, 'CLOSED_WON'),
+              isNull(leads.convertedToClientId),
+              isNull(leads.deletedAt)
+            )
+          )
 
         return insertedId
       })

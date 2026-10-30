@@ -118,3 +118,35 @@ Undo SQL goes in `sales-tools-rollout.md` with the rest of the batch.
 - Monthly close for October unchanged: $5,200 billing in, $4,462.50 payouts.
 - Client portal: sign-in, project list, profile rename.
 - Type-check and lint.
+
+## Audit of the company and person screens (step 1)
+
+Each piece was checked for: does it belong to this record, is it in the
+right place, is there a second way to do the same job, is it left over from
+the client/user split, does the wording name the entity.
+
+| Component | Problem | Fix |
+| --- | --- | --- |
+| Company sheet: Make client | A separate sheet popped over the company sheet | "Bill this company" switch on the Billing tab; fields inline; saved with Save |
+| Company sheet: ⋯ menu | Make client / Stop billing duplicated the Billing tab | Removed |
+| Company sheet: stacked Client section | Nested "Billing" inside "Client"; long sheet | Tabs: Details, People, Projects, Billing; outer heading "Client" |
+| Company sheet: Portal access list | Second list of the same people | A Portal switch on each People row; only "access outside this company" rows stay on Billing |
+| Company People rows: Create sign-in | Second way to create a sign-in | Removed: sign-ins are created on the person |
+| Company sheet: Link client / Link company | Leftover from the split | Removed |
+| Client page (`/clients/<slug>`) | Duplicated the company | Removed; redirects to the company on Projects. Projects and updates → Projects tab; hours → Billing tab; notes → company notes (merged in 0111) |
+| Clients list, archive, activity | Duplicated Companies | Redirect to Companies (Clients / Former clients filters) and company activity |
+| Lead: Convert dialog | Second way to make a client; asked for a client name and slug | Removed; "Make client" opens the company's Billing tab; won leads link to the client automatically |
+| Person: avatar on the sign-in | The photo belongs to the person | `contacts.avatar_url` (0110); upload for anyone at the top of the sheet |
+| Person: "photo once they have a sign-in" hint | Pointed somewhere else | Removed |
+| Person sheet tabs | Too little to need tabs | One stacked form: photo, Details, Companies, Sign-in |
+| Person: sign-in email field | A second email | One email: the login follows the person's email (admins only change it) |
+| Person: temporary password | Clumsy | "Send password reset" |
+| Person: Archive sign-in, Create sign-in pop-over, ⋯ item, People row action | Several ways to switch sign-in | One "Can sign in" switch plus a Role picker, saved with Save; archiving the person switches it off |
+| Person Companies rows: portal tooltip | Pointed to another screen | Read-only "Portal access" note |
+| People list: "User" column | Word "user"; photo only for sign-ins | Photo beside every name; "Sign-in" column with the role (admins) |
+| Settings > Users page and sheet ("Linked contact", "Open contact") | Leftover from the split | Removed; redirects to People (sign-ins) and the person |
+| Client badge / filters / Billing state | Same icon as the company | Client is the blue briefcase; company the indigo building; person the rose user |
+
+Kept on purpose: the `clients` table and `client_id` columns until 0111;
+`users` until 0112; Gmail client helpers and generated Supabase types (not
+part of the split).

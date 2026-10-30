@@ -3,40 +3,24 @@
 import type { ReactNode } from 'react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import type { LeadRecord } from '@/lib/leads/types'
-
-import { ConvertLeadDialog } from '../convert-lead-dialog'
 
 type LeadSheetDialogsProps = {
-  lead: LeadRecord | null
   // Archive dialog
   isArchiveDialogOpen: boolean
   isArchiving: boolean
   onArchiveCancel: () => void
   onArchiveConfirm: () => void
-  // Convert dialog
-  isConvertDialogOpen: boolean
-  onConvertOpenChange: (open: boolean) => void
-  // General success callback
-  onSuccess: () => void
   // Unsaved changes dialog
   unsavedChangesDialog: ReactNode
 }
 
 export function LeadSheetDialogs({
-  lead,
   isArchiveDialogOpen,
   isArchiving,
   onArchiveCancel,
   onArchiveConfirm,
-  isConvertDialogOpen,
-  onConvertOpenChange,
-  onSuccess,
   unsavedChangesDialog,
 }: LeadSheetDialogsProps) {
-  const { isAdmin } = useViewerAccess()
-
   return (
     <>
       <ConfirmDialog
@@ -49,14 +33,6 @@ export function LeadSheetDialogs({
         onCancel={onArchiveCancel}
         onConfirm={onArchiveConfirm}
       />
-      {lead && isAdmin && (
-        <ConvertLeadDialog
-          lead={lead}
-          open={isConvertDialogOpen}
-          onOpenChange={onConvertOpenChange}
-          onSuccess={onSuccess}
-        />
-      )}
       {unsavedChangesDialog}
     </>
   )

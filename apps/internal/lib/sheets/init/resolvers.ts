@@ -10,7 +10,7 @@ import { and, eq, getTableColumns, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { clients, contacts } from '@/lib/db/schema'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -39,11 +39,9 @@ import {
   listInvoiceReferenceData,
 } from '@/lib/queries/invoices'
 import { getProjectById } from '@/lib/queries/projects'
-import { buildAssignmentsForUsers, getUserById } from '@/lib/queries/users'
 import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
-import type { DbUser } from '@/lib/types'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from './payloads'
@@ -160,30 +158,15 @@ const resolveInvoiceInit: SheetInitResolver<'invoice'> = async (user, id) => {
   return { invoice, ...reference }
 }
 
-const resolveUserInit: SheetInitResolver<'user'> = async (user, id) => {
-  if (id === NEW_SHEET_VALUE) {
-    return { user: null, currentUserId: user.id, assignments: {} }
-  }
-
-  const [row, assignments] = await Promise.all([
-    getUserById(user, id),
-    buildAssignmentsForUsers([id]),
-  ])
-
-  // Same camelCase → `DbUser` mapping the users settings page applies.
-  const record: DbUser = {
-    id: row.id,
-    email: row.email,
-    full_name: row.fullName,
-    role: row.role,
-    avatar_url: row.avatarUrl,
-    created_at: row.createdAt,
-    updated_at: row.updatedAt,
-    deleted_at: row.deletedAt,
-    disabled_at: row.disabledAt,
-  }
-
-  return { user: record, currentUserId: user.id, assignments }
+/** Old `?user=<id>` links: a sign-in is managed on its person's sheet. */
+const resolveUserInit: SheetInitResolver<'user'> = async (_user, id) => {
+  if (id === NEW_SHEET_VALUE) return { contactId: null }
+  const [person] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.userId, id), isNull(contacts.deletedAt)))
+    .limit(1)
+  return { contactId: person?.id ?? null }
 }
 
 const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {

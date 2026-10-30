@@ -21,6 +21,8 @@ type Props = {
   disabled?: boolean
   targetUserId?: string
   existingUserId?: string | null
+  /** The person whose photo this is (preferred over a user id). */
+  contactId?: string | null
 }
 
 export function AvatarUploadField({
@@ -33,6 +35,7 @@ export function AvatarUploadField({
   disabled,
   targetUserId,
   existingUserId,
+  contactId,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { toast } = useToast()
@@ -189,6 +192,10 @@ export function AvatarUploadField({
       return previewUrl
     }
 
+    if (value && contactId) {
+      return `/api/storage/person-avatar/${contactId}?v=${cacheBuster}`
+    }
+
     const resolvedUserId = existingUserId ?? targetUserId
 
     if (value && resolvedUserId) {
@@ -196,7 +203,7 @@ export function AvatarUploadField({
     }
 
     return null
-  }, [cacheBuster, existingUserId, previewUrl, targetUserId, value])
+  }, [cacheBuster, contactId, existingUserId, previewUrl, targetUserId, value])
 
   const disableButtons = disabled || isUploading
   const disabledReason = disableButtons

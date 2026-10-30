@@ -32,7 +32,6 @@ import type {
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
-import type { UserAssignments } from '@/lib/settings/users/state/types'
 
 export type SheetInitPayloads = {
   /** The company sheet loads its own record; init only confirms access. */
@@ -53,9 +52,8 @@ export type SheetInitPayloads = {
     taxRates: TaxRateData[]
   }
   user: {
-    user: DbUser | null
-    currentUserId: string
-    assignments: UserAssignments
+    /** The person whose sign-in this is. */
+    contactId: string | null
   }
   project: {
     project: ProjectWithClient | null

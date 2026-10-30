@@ -92,7 +92,13 @@ async function listAllActiveContacts(
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))
-    .orderBy(desc(atClientCompany), asc(contacts.name), asc(contacts.email))
+    // Postgres rejects ORDER BY a constant: only lead with the company's
+    // people when there is a company.
+    .orderBy(
+      ...(companyId ? [desc(atClientCompany)] : []),
+      asc(contacts.name),
+      asc(contacts.email)
+    )
 
   return rows.map(row => ({
     id: row.id,

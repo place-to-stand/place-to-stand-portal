@@ -10,7 +10,6 @@ import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PersonSelector } from '@/components/my-tasks/person-selector'
 import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import {
-  useSheetParams,
   useSheetParamSelection,
 } from '@/lib/sheets/use-sheet-params'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
@@ -20,7 +19,6 @@ import type { LeadStatusValue } from '@/lib/leads/constants'
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
-import { ConvertLeadDialog } from './convert-lead-dialog'
 
 type LeadsWorkspaceProps = {
   initialColumns: LeadBoardColumnData[]
@@ -33,7 +31,6 @@ type LeadsWorkspaceProps = {
   assigneeFilter?: string
   viewerId: string
   /** `leads.convert`: dropping into Closed Won offers conversion. */
-  canConvert?: boolean
 }
 
 export function LeadsWorkspace({
@@ -44,10 +41,8 @@ export function LeadsWorkspace({
   leadNotFound = false,
   assigneeFilter = 'all',
   viewerId,
-  canConvert = false,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
-  const { getAux } = useSheetParams()
   // The `?lead=` param drives the sheet: uuid = edit, `new` = create. Local
   // selection state opens the sheet instantly while the URL catches up.
   const { selectedId, isCreating, select, openCreate, clear } =
@@ -55,7 +50,6 @@ export function LeadsWorkspace({
   const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
     null
   )
-  const [convertingLead, setConvertingLead] = useState<LeadRecord | null>(null)
   const [, startRefresh] = useTransition()
   // The sheet opens any lead on the board, filtered out or not.
   const leadLookup = useMemo(
@@ -88,7 +82,6 @@ export function LeadsWorkspace({
     [visibleColumns]
   )
   const activeLead = selectedId ? (leadLookup.get(selectedId) ?? null) : null
-  const initialAction = getAux('leadMode') === 'convert' ? 'convert' : null
 
   const handleCreateLead = useCallback(
     (status?: LeadStatusValue) => {
@@ -135,14 +128,6 @@ export function LeadsWorkspace({
     })
   }, [router, startRefresh])
 
-  // Only someone who may convert gets the dialog; anyone else just moves
-  // the stage.
-  const handleLeadClosedWon = useCallback(
-    (lead: LeadRecord) => {
-      if (canConvert) setConvertingLead(lead)
-    },
-    [canConvert]
-  )
 
   const isSheetOpen = canManage && (isCreating || Boolean(activeLead))
   // Keep the last-opened lead rendered while the close animation plays so
@@ -205,32 +190,15 @@ export function LeadsWorkspace({
           assignees={assignees}
           canManage={canManage}
           senderName={senderName}
-          initialAction={initialAction}
           onSuccess={handleSheetSuccess}
         />
       ) : null}
-      {convertingLead && (
-        <ConvertLeadDialog
-          lead={convertingLead}
-          open={!!convertingLead}
-          onOpenChange={open => {
-            if (!open) setConvertingLead(null)
-          }}
-          onSuccess={() => {
-            setConvertingLead(null)
-            startRefresh(() => {
-              router.refresh()
-            })
-          }}
-        />
-      )}
       <LeadsBoard
         initialColumns={visibleColumns}
         hiddenLeads={hiddenLeads}
         canManage={canManage}
         onEditLead={handleEditLead}
         onCreateLead={handleCreateLead}
-        onLeadClosedWon={handleLeadClosedWon}
         activeLeadId={boardActiveLeadId}
       />
     </PageShell>

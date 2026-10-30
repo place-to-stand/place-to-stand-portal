@@ -80,27 +80,6 @@ export function ContactRecordRow({
   )
 }
 
-export function ClientRecordRow({
-  client,
-  linked = false,
-  note,
-  actions,
-  openable = true,
-  className,
-}: RowExtras & { client: { id: string; name: string } }) {
-  const { open } = useSheetParams()
-  return (
-    <SheetRecordRow
-      icon={Building2}
-      title={client.name}
-      description={note}
-      onOpen={openable ? () => open('client', client.id) : undefined}
-      openLabel={`Open ${client.name}`}
-      actions={withLinkMark(linked, actions)}
-      className={className}
-    />
-  )
-}
 
 export function CompanyRecordRow({
   company,

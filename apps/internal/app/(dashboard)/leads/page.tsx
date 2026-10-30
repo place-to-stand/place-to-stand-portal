@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 
 import { redirect } from 'next/navigation'
 
-import { roleCan } from '@/lib/auth/capabilities'
 import { requireCrmUser } from '@/lib/auth/session'
 import {
   fetchArchivedLeads,
@@ -75,7 +74,6 @@ export default async function LeadsBoardPage({
       leadNotFound={leadNotFound}
       assigneeFilter={assigneeFilter}
       viewerId={user.id}
-      canConvert={roleCan(user.role, 'leads.convert')}
     />
   )
 }

@@ -60,15 +60,7 @@ import { CompanyPeopleSection } from './company-people-section'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { SheetTabs, useSheetTab } from '@/components/sheets/sheet-tabs'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { Building2, MoreHorizontal } from 'lucide-react'
-import { Button } from '@pts/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
+import { Building2 } from 'lucide-react'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
@@ -298,7 +290,6 @@ export function CompanySheet({
     ? ['details', 'people', 'projects', 'billing']
     : ['details', 'people']
   const [tab, setTab] = useSheetTab(tabValues)
-  const { openNew } = useSheetParams()
   const dirtyFields = form.formState.dirtyFields
   const detailsDirty = Boolean(
     dirtyFields.name ||
@@ -343,45 +334,6 @@ export function CompanySheet({
               />
             }
             badges={clientId ? <ClientBadge /> : null}
-            menu={
-              isAdmin && company && !isArchived ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        type='button'
-                        variant='ghost'
-                        size='icon-sm'
-                        aria-label='Company actions'
-                      />
-                    }
-                  >
-                    <MoreHorizontal />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align='end'>
-                    {clientId ? (
-                      <DropdownMenuItem
-                        className='text-destructive'
-                        onClick={() => {
-                          setTab('billing')
-                          billingRef.current?.requestStopBilling()
-                        }}
-                      >
-                        Stop billing
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem
-                        onClick={() =>
-                          openNew('client', { clientCompanyId: company.id })
-                        }
-                      >
-                        Make client
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : null
-            }
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>
@@ -406,7 +358,9 @@ export function CompanySheet({
                 >
                   {company ? (
                     <CompanyBillingProvider
+                      companyId={company.id}
                       clientId={isAdmin ? clientId : null}
+                      formerClientId={isAdmin ? company.formerClientId : null}
                       open={open}
                       handleRef={billingRef}
                       onDirtyChange={setBillingDirty}
@@ -551,7 +505,6 @@ export function CompanySheet({
                                   dirty: billingDirty,
                                   content: (
                                     <CompanyBillingTab
-                                      companyId={company.id}
                                       clientId={clientId}
                                       disabled={fieldsDisabled}
                                     />

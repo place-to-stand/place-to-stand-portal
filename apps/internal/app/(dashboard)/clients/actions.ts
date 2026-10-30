@@ -7,11 +7,9 @@ import {
   type ClientActionResult,
   type ClientInput,
   type DeleteClientInput,
-  type DestroyClientInput,
   type RestoreClientInput,
 } from '@/lib/settings/clients/client-service'
 import {
-  destroyClientMutation,
   restoreClientMutation,
   saveClientMutation,
   softDeleteClientMutation,
@@ -63,11 +61,6 @@ export async function restoreClient(
   return runClientMutation(input, restoreClientMutation)
 }
 
-export async function destroyClient(
-  input: DestroyClientInput
-): Promise<ClientActionResult> {
-  return runClientMutation(input, destroyClientMutation)
-}
 
 async function runClientMutation<TInput>(
   input: TInput,

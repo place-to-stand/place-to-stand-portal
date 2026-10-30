@@ -91,20 +91,6 @@
     "capability": "leads.manage"
   },
   {
-    "type": "action",
-    "name": "updateClientNotes",
-    "file": "apps/internal/app/(dashboard)/clients/[clientSlug]/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "draftUpdateForClient",
-    "file": "apps/internal/app/(dashboard)/clients/[clientSlug]/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
     "type": "page",
     "name": "/clients/[clientSlug]",
     "file": "apps/internal/app/(dashboard)/clients/[clientSlug]/page.tsx",
@@ -128,13 +114,6 @@
   {
     "type": "action",
     "name": "restoreClient",
-    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "destroyClient",
     "file": "apps/internal/app/(dashboard)/clients/actions.ts",
     "kind": "admin",
     "capability": null
@@ -219,6 +198,13 @@
   {
     "type": "action",
     "name": "loadCompanyClientWork",
+    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "draftUpdateForClient",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "admin",
     "capability": null
@@ -435,20 +421,6 @@
   },
   {
     "type": "action",
-    "name": "fetchClientOptions",
-    "file": "apps/internal/app/(dashboard)/leads/_actions/fetch-client-options.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "fetchCompanyClient",
-    "file": "apps/internal/app/(dashboard)/leads/_actions/fetch-client-options.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "moveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/move-lead.ts",
     "kind": "capability",
@@ -549,8 +521,8 @@
     "type": "action",
     "name": "saveContact",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "leads.manage"
   },
   {
     "type": "action",
@@ -589,17 +561,31 @@
   },
   {
     "type": "action",
-    "name": "promoteContactToUser",
+    "name": "fetchContactOptions",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "savePersonAvatar",
+    "file": "apps/internal/app/(dashboard)/people/actions.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "savePersonSignInAction",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "admin",
     "capability": null
   },
   {
     "type": "action",
-    "name": "fetchContactOptions",
+    "name": "sendPersonPasswordResetAction",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
+    "kind": "admin",
+    "capability": null
   },
   {
     "type": "page",
@@ -934,48 +920,6 @@
     "type": "page",
     "name": "/settings/templates/pdfs",
     "file": "apps/internal/app/(dashboard)/settings/templates/pdfs/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "createUser",
-    "file": "apps/internal/app/(dashboard)/settings/users/actions/create-user.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "destroyUser",
-    "file": "apps/internal/app/(dashboard)/settings/users/actions/destroy-user.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "restoreUser",
-    "file": "apps/internal/app/(dashboard)/settings/users/actions/restore-user.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "setUserDisabled",
-    "file": "apps/internal/app/(dashboard)/settings/users/actions/set-user-disabled.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "softDeleteUser",
-    "file": "apps/internal/app/(dashboard)/settings/users/actions/soft-delete-user.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "updateUser",
-    "file": "apps/internal/app/(dashboard)/settings/users/actions/update-user.ts",
     "kind": "admin",
     "capability": null
   },
@@ -1753,6 +1697,13 @@
     "type": "route",
     "name": "GET /api/sheets/init",
     "file": "apps/internal/app/api/sheets/init/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/storage/person-avatar/[contactId]",
+    "file": "apps/internal/app/api/storage/person-avatar/[contactId]/route.ts",
     "kind": "capability",
     "capability": "leads.manage"
   },

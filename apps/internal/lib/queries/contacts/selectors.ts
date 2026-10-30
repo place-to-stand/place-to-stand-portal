@@ -12,6 +12,7 @@ export const contactFields = {
   email: contacts.email,
   name: contacts.name,
   phone: contacts.phone,
+  avatarUrl: contacts.avatarUrl,
   createdBy: contacts.createdBy,
   userId: contacts.userId,
   createdAt: contacts.createdAt,

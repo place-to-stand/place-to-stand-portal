@@ -1,13 +1,10 @@
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { asc, eq } from 'drizzle-orm'
+import { asc } from 'drizzle-orm'
 
-import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients } from '@/lib/db/schema'
-import { clientFields, type SelectClient } from './selectors'
 
 /**
  * Fetches all clients (including archived) for the project sheet dropdown.
@@ -26,22 +23,3 @@ export async function fetchClientDirectory(): Promise<
     .orderBy(asc(clientNameSql))
 }
 
-/**
- * By-id fetch that keeps archived clients — the `?client=` deep-link resolver
- * needs the soft-deleted row so a shared link can cross-redirect to the
- * archive tab instead of reporting a dead link.
- */
-export async function getClientByIdIncludingArchived(
-  user: AppUser,
-  clientId: string,
-): Promise<SelectClient | null> {
-  assertAdmin(user)
-
-  const result = await db
-    .select(clientFields)
-    .from(clients)
-    .where(eq(clients.id, clientId))
-    .limit(1)
-
-  return result[0] ?? null
-}

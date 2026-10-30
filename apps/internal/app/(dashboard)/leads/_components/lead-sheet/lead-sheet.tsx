@@ -1,5 +1,7 @@
 'use client'
 
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
@@ -15,6 +17,7 @@ import type { LeadSheetProps } from './types'
 const LEAD_FORM_ID = 'lead-form'
 
 export function LeadSheet(props: LeadSheetProps) {
+  const { open: openSheet } = useSheetParams()
   const { open, lead, assignees, canManage = false, onSuccess } = props
   const {
     form,
@@ -22,9 +25,6 @@ export function LeadSheet(props: LeadSheetProps) {
     isArchiving,
     isArchiveDialogOpen,
     setArchiveDialogOpen,
-    isConvertDialogOpen,
-    setConvertDialogOpen,
-    setActionParam,
     canConvert,
     selectedSourceType,
     submitDisabled,
@@ -108,8 +108,10 @@ export function LeadSheet(props: LeadSheetProps) {
                   canManage={canManage}
                   canConvert={canConvert}
                   onConvertToClient={() => {
-                    setConvertDialogOpen(true)
-                    setActionParam('convert')
+                    // A client is made on its company's Billing tab.
+                    if (lead.companyId) {
+                      openSheet('company', lead.companyId, { tab: 'billing' })
+                    }
                   }}
                   onSuccess={onSuccess}
                 />
@@ -119,7 +121,6 @@ export function LeadSheet(props: LeadSheetProps) {
         </SheetContent>
       </Sheet>
       <LeadSheetDialogs
-        lead={lead}
         isArchiveDialogOpen={isArchiveDialogOpen}
         isArchiving={isArchiving}
         onArchiveCancel={() => {
@@ -128,12 +129,6 @@ export function LeadSheet(props: LeadSheetProps) {
           }
         }}
         onArchiveConfirm={handleArchive}
-        isConvertDialogOpen={isConvertDialogOpen}
-        onConvertOpenChange={(next: boolean) => {
-          setConvertDialogOpen(next)
-          if (!next) setActionParam(null)
-        }}
-        onSuccess={onSuccess}
         unsavedChangesDialog={unsavedChangesDialog}
       />
     </>

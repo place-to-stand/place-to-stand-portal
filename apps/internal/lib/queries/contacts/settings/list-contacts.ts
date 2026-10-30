@@ -53,6 +53,7 @@ type ContactMetricsResult = SelectContact &
   ContactProfile & {
     totalClients: number | string | null
     userHasPhoto: boolean | null
+    signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
   }
 
 /** People with (or without) a live sign-in, optionally of one role. */
@@ -106,10 +107,12 @@ async function queryContactRows(
       ...contactFields,
       ...contactProfileFields,
       totalClients: linkedClientsCountSql,
-      // Their portal user has a photo (the User column's avatar).
-      userHasPhoto: sql<boolean>`exists (
-        select 1 from users u
-        where u.id = "contacts"."user_id" and u.avatar_url is not null
+      // They have a photo (the list's avatar).
+      userHasPhoto: sql<boolean>`("contacts"."avatar_url" is not null)`,
+      signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
+        select u.role from users u
+        where u.id = "contacts"."user_id"
+          and u.deleted_at is null and u.disabled_at is null
       )`,
     })
     .from(contacts)
@@ -173,9 +176,11 @@ function mapContactMetrics(
     email: row.email,
     name: row.name,
     phone: row.phone,
+    avatarUrl: row.avatarUrl,
     createdBy: row.createdBy,
     userId: row.userId,
     userHasPhoto: Boolean(row.userHasPhoto),
+    signInRole: row.signInRole ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

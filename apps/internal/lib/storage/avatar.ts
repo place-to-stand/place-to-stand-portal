@@ -36,6 +36,8 @@ export const ACCEPTED_AVATAR_MIME_TYPES = [
 
 const PENDING_PREFIX = "avatars/pending";
 const USER_PREFIX = "avatars";
+// A person's photo (contacts.avatar_url): anyone can have one.
+const PERSON_PREFIX = "avatars/people";
 const ACCEPTED_AVATAR_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -160,4 +162,32 @@ export function canManageAvatarPath({
   }
 
   return false;
+}
+
+/** Moves a staged upload into the person's folder (contacts.avatar_url). */
+export async function moveAvatarToPersonFolder({
+  client,
+  path,
+  contactId,
+}: {
+  client: AvatarBucketClient;
+  path: string;
+  contactId: string;
+}) {
+  if (path.startsWith(`${PERSON_PREFIX}/${contactId}/`)) {
+    return path;
+  }
+
+  const extension = inferAvatarExtensionFromPath(path) ?? "jpg";
+  const destination = `${PERSON_PREFIX}/${contactId}/${randomUUID()}.${extension}`;
+
+  await ensureAvatarBucket(client);
+
+  const { error } = await client.storage.from(AVATAR_BUCKET).move(path, destination);
+
+  if (error) {
+    throw error;
+  }
+
+  return destination;
 }

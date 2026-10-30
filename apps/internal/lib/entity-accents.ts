@@ -5,6 +5,7 @@
  */
 
 import {
+  Briefcase,
   Building2,
   Clock3,
   FolderKanban,
@@ -58,25 +59,25 @@ export const ENTITY_ACCENTS: Record<AccentEntity, EntityAccent> = {
     cardStatic: 'border-emerald-500/35',
     icon: 'text-emerald-500',
   },
+  // The Client state of a company (badge, filters, billing): briefcase.
   client: {
     sheetHeader: 'border-b-2 border-b-blue-500/60',
     card: 'border-blue-500/35 hover:border-blue-500/60 hover:bg-blue-500/5 hover:shadow-md',
     cardStatic: 'border-blue-500/35',
     icon: 'text-blue-500',
   },
-  // A person (contact) and their sign-in (user) are one entity: one colour.
   contact: {
     sheetHeader: 'border-b-2 border-b-rose-500/60',
     card: 'border-rose-500/35 hover:border-rose-500/60 hover:bg-rose-500/5 hover:shadow-md',
     cardStatic: 'border-rose-500/35',
     icon: 'text-rose-500',
   },
-  // A client is a company's state, so a company wears the client colour.
+  // A company: the building, in indigo.
   company: {
-    sheetHeader: 'border-b-2 border-b-blue-500/60',
-    card: 'border-blue-500/35 hover:border-blue-500/60 hover:bg-blue-500/5 hover:shadow-md',
-    cardStatic: 'border-blue-500/35',
-    icon: 'text-blue-500',
+    sheetHeader: 'border-b-2 border-b-indigo-500/60',
+    card: 'border-indigo-500/35 hover:border-indigo-500/60 hover:bg-indigo-500/5 hover:shadow-md',
+    cardStatic: 'border-indigo-500/35',
+    icon: 'text-indigo-500',
   },
   suggestion: {
     sheetHeader: 'border-b-2 border-b-fuchsia-500/60',
@@ -129,6 +130,7 @@ const ENTITY_BY_ICON = new Map<unknown, AccentEntity>([
   [Clock3, 'hourBlock'],
   // One icon per entity: a company (client or not) and a person.
   [Building2, 'company'],
+  [Briefcase, 'client'],
   [UserRound, 'contact'],
   [FolderKanban, 'project'],
 ])

@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2 } from 'lucide-react'
+import { Briefcase } from 'lucide-react'
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import type { LinkedClient } from '@/lib/queries/contacts'
@@ -16,7 +16,7 @@ export function LinkedClientsCell({ clients }: LinkedClientsCellProps) {
       <LinkedRecordsHoverCell
         withIcon
         count={clients.length}
-        icon={Building2}
+        icon={Briefcase}
         iconClassName={ENTITY_ACCENTS.client.icon}
         contentClassName='w-56'
         items={clients.map(client => ({

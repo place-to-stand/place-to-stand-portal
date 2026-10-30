@@ -6,7 +6,7 @@ import {
   startSettingsInteraction,
 } from '@/lib/posthog/settings'
 
-import { PENDING_REASON } from '../client-sheet-constants'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 import type { ClientDeletionStateArgs, DeletionState } from './types'
 

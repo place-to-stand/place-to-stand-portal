@@ -12,10 +12,10 @@ import {
   softDeleteContact,
   getContactSheetData,
   getContactPortalAccount,
+  savePersonAvatar,
+  savePersonSignInAction,
 } from '@/app/(dashboard)/people/actions'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
-import { createUser, updateUser } from '@/app/(dashboard)/settings/users/actions'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
@@ -47,18 +47,14 @@ const contactFormSchema = z.object({
       archived: z.boolean().optional(),
     })
   ),
-  /** Their sign-in (admins only), saved with the sheet like the rest. */
+  /** Their photo: a staged upload's path, saved with the sheet. */
+  avatarPath: z.string().trim().max(255).nullable().optional(),
+  avatarRemoved: z.boolean().optional(),
+  /** Their sign-in (admins only): can they sign in, and as what. */
   signIn: z
     .object({
+      enabled: z.boolean(),
       role: z.enum(USER_ROLES),
-      accessEnabled: z.boolean(),
-      password: z
-        .string()
-        .refine(value => value.trim().length === 0 || value.trim().length >= 8, {
-          message: 'Password must be at least 8 characters.',
-        }),
-      avatarPath: z.string().trim().max(255).nullable(),
-      avatarRemoved: z.boolean(),
     })
     .optional(),
 })
@@ -107,16 +103,9 @@ export function useContactSheetState({
   contact,
 }: UseContactSheetStateOptions) {
   const [isTransitionPending, startTransition] = useTransition()
-  const { createPortalUser, isPending: isCreatingUser } = useCreatePortalUser()
-  const isPending = isTransitionPending || isCreatingUser
+  const isPending = isTransitionPending
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
-  // The role a new sign-in gets: Client goes to the client portal; Admin
-  // and Sales sign in here (and join Place To Stand).
-  const [promoteRole, setPromoteRole] = useState<
-    (typeof USER_ROLES)[number]
-  >('CLIENT')
   // An edit's Companies list arrives after the sheet opens. Until it has,
   // a save leaves their companies alone rather than sending an empty list.
   const [companiesLoaded, setCompaniesLoaded] = useState(false)
@@ -155,6 +144,10 @@ export function useContactSheetState({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFeedback(null)
     form.reset({
+      avatarPath: null,
+      avatarRemoved: false,
+      // No sign-in yet: off, and Client if they turn it on.
+      signIn: isAdmin && contact ? { enabled: false, role: 'CLIENT' } : undefined,
       email: contact?.email ?? '',
       name: contact?.name ?? initialName ?? '',
       phone: contact?.phone ?? '',
@@ -188,6 +181,7 @@ export function useContactSheetState({
       .then(data => {
         if (cancelled) return
         setCompaniesLoaded(true)
+        form.resetField('avatarPath', { defaultValue: data.avatarUrl })
         // Loaded after the reset: becomes the saved state, not an edit.
         form.resetField('companies', {
           defaultValue: data.memberships.map(membership => ({
@@ -210,7 +204,7 @@ export function useContactSheetState({
     return () => {
       cancelled = true
     }
-  }, [open, contact, form, initialName, initialCompanyId])
+  }, [open, contact, form, initialName, initialCompanyId, isAdmin])
 
   // Their sign-in, loaded after the reset like the companies: it becomes
   // the saved state of the Sign-in fields, not an edit.
@@ -222,11 +216,8 @@ export function useContactSheetState({
       if (account) {
         form.resetField('signIn', {
           defaultValue: {
+            enabled: !account.disabledAt && !account.deletedAt,
             role: account.role,
-            accessEnabled: !account.disabledAt,
-            password: '',
-            avatarPath: account.avatarUrl,
-            avatarRemoved: false,
           },
         })
       }
@@ -312,27 +303,36 @@ export function useContactSheetState({
           return
         }
 
-        // The sign-in saves with the sheet too (admins only).
-        const signIn = data.signIn
-        const signInDirty = Boolean(form.formState.dirtyFields.signIn)
-        if (signInUserId && signIn && signInDirty) {
-          const password = signIn.password.trim()
-          const signInResult = await updateUser({
-            id: signInUserId,
-            fullName: data.name,
-            role: signIn.role,
-            disabled: !signIn.accessEnabled,
-            ...(password ? { password } : {}),
-            ...(signIn.avatarPath?.trim()
-              ? { avatarPath: signIn.avatarPath.trim() }
-              : {}),
-            avatarRemoved: signIn.avatarRemoved,
+        const savedId = contact?.id ?? result.id
+        // Their photo, then their sign-in (admins), save with the sheet too.
+        const dirty = form.formState.dirtyFields
+        if (savedId && (dirty.avatarPath || dirty.avatarRemoved)) {
+          const photo = await savePersonAvatar({
+            contactId: savedId,
+            avatarPath: data.avatarPath ?? null,
+            avatarRemoved: Boolean(data.avatarRemoved),
           })
-          if (signInResult.error) {
-            setFeedback(signInResult.error)
+          if (photo.error) {
+            setFeedback(photo.error)
+            toast({
+              title: 'Person saved, photo not saved',
+              description: photo.error,
+              variant: 'destructive',
+            })
+            return
+          }
+        }
+        if (savedId && isAdmin && data.signIn && dirty.signIn) {
+          const signIn = await savePersonSignInAction({
+            contactId: savedId,
+            enabled: data.signIn.enabled,
+            role: data.signIn.role,
+          })
+          if (signIn.error) {
+            setFeedback(signIn.error)
             toast({
               title: 'Person saved, sign-in not saved',
-              description: signInResult.error,
+              description: signIn.error,
               variant: 'destructive',
             })
             return
@@ -365,8 +365,8 @@ export function useContactSheetState({
       contact?.id,
       companiesLoaded,
       form,
+      isAdmin,
       isEditing,
-      signInUserId,
       toast,
       onComplete,
       onCreated,
@@ -387,71 +387,8 @@ export function useContactSheetState({
     setIsDeleteDialogOpen(false)
   }, [isPending])
 
-  // The portal user this contact was promoted to (`contacts.user_id`).
+  // Their sign-in, if they have one (`contacts.user_id`).
   const portalUserId = contact?.userId ?? null
-  const hasPortalAccess = Boolean(portalUserId)
-
-  // Portal access signs in by email, so a contact without one can't get it.
-  const hasEmail = Boolean(contact?.email)
-  const promoteDisabled =
-    isPending || !isEditing || hasPortalAccess || !hasEmail
-  const promoteDisabledReason = isPending
-    ? PENDING_REASON
-    : !isEditing
-      ? 'Save the person first.'
-      : hasPortalAccess
-        ? 'This person already has portal access.'
-        : !hasEmail
-          ? 'Add an email and save before giving portal access.'
-          : null
-
-  const handleRequestPromote = useCallback(() => {
-    if (promoteDisabled) return
-    setIsPromoteDialogOpen(true)
-  }, [promoteDisabled])
-
-  const handleConfirmPromote = useCallback(() => {
-    const contactId = contact?.id
-    if (!contactId || isPending) {
-      setIsPromoteDialogOpen(false)
-      return
-    }
-
-    setIsPromoteDialogOpen(false)
-    if (promoteRole === 'CLIENT') {
-      createPortalUser(
-        {
-          id: contactId,
-          name: contact?.name ?? null,
-          email: contact?.email ?? null,
-        },
-        { onSuccess: onComplete, onError: setFeedback }
-      )
-      return
-    }
-    // Staff: the new sign-in links to this person by their email.
-    startTransition(async () => {
-      const result = await createUser({
-        email: contact?.email ?? '',
-        fullName: contact?.name || contact?.email || '',
-        role: promoteRole,
-      })
-      if (result.error) {
-        setFeedback(result.error)
-        toast({
-          title: 'Unable to create sign-in',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-      toast({
-        title: 'Sign-in created',
-        description: `${contact?.name || contact?.email} can sign in as ${promoteRole === 'ADMIN' ? 'Admin' : 'Sales'}; an invite was emailed.`,
-      })
-      onComplete()
-    })
-  }, [contact, isPending, createPortalUser, onComplete, promoteRole, toast])
 
   const handleConfirmDelete = useCallback(() => {
     const contactId = contact?.id
@@ -499,23 +436,14 @@ export function useContactSheetState({
     deleteDisabled,
     deleteDisabledReason,
     isDeleteDialogOpen,
-    isPromoteDialogOpen,
-    setIsPromoteDialogOpen,
     portalUserId,
-    promoteDisabled,
-    promoteDisabledReason,
     unsavedChangesDialog,
     handleSheetOpenChange,
     handleFormSubmit,
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
-    handleRequestPromote,
-    handleConfirmPromote,
     signInAccount,
-    promoteRole,
-    setPromoteRole,
-    reloadSignIn: loadSignIn,
     setIsAvatarUploading,
   }
 }

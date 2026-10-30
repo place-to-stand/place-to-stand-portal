@@ -314,7 +314,7 @@ export function InvoicesTableSection({
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
                     <Building2
                       className={cn(
-                        ENTITY_ACCENTS.client.icon,
+                        ENTITY_ACCENTS.company.icon,
                         'h-4 w-4 shrink-0'
                       )}
                     />

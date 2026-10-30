@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
@@ -14,10 +14,8 @@ import {
 import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
 import { openPortalPreview } from '@/lib/settings/contacts/portal-preview'
 
-import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
-import { PromoteToUserDialog } from './contact-sheet/promote-to-user-dialog'
 
 type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
@@ -60,10 +58,6 @@ export function ContactsManagementTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const [promoteTarget, setPromoteTarget] =
-    useState<ContactsTableContact | null>(null)
-  const { createPortalUser, isPending: isPromotePending } =
-    useCreatePortalUser()
 
   const {
     sheetOpen,
@@ -101,22 +95,6 @@ export function ContactsManagementTable({
     [clientPortalUrl]
   )
 
-  const handleRequestPromote = useCallback(
-    (contact: ContactsTableContact) => {
-      if (isPending || isPromotePending) return
-      setPromoteTarget(contact)
-    },
-    [isPending, isPromotePending]
-  )
-
-  const handleConfirmPromote = useCallback(() => {
-    if (!promoteTarget) return
-
-    const contact = promoteTarget
-    setPromoteTarget(null)
-
-    createPortalUser(contact, { onSuccess: () => router.refresh() })
-  }, [promoteTarget, createPortalUser, router])
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -173,9 +151,8 @@ export function ContactsManagementTable({
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
         onRequestDestroy={handleRequestDestroy}
-        onRequestPromote={handleRequestPromote}
         onRequestPreview={handleRequestPreview}
-        isPending={isPending || isPromotePending}
+        isPending={isPending}
         pendingReason={pendingReason}
         pendingDeleteId={pendingDeleteId}
         pendingRestoreId={pendingRestoreId}
@@ -189,16 +166,6 @@ export function ContactsManagementTable({
         totalItems={totalCount}
         pageSize={pageSize}
         onPageChange={handlePageChange}
-      />
-      <PromoteToUserDialog
-        open={Boolean(promoteTarget)}
-        onOpenChange={open => {
-          if (!open) setPromoteTarget(null)
-        }}
-        contactName={promoteTarget?.name || promoteTarget?.email || ''}
-        contactEmail={promoteTarget?.email || ''}
-        isPending={isPromotePending}
-        onConfirm={handleConfirmPromote}
       />
       <ContactsSheet
         open={sheetOpen}

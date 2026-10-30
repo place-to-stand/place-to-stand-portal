@@ -124,35 +124,6 @@ async function resolveCount(conditions: SQL[]) {
   return Number(result[0]?.count ?? 0)
 }
 
-/**
- * Just the header-count pair for a clients list page. The landing page renders
- * its rows from `fetchClientsWithMetrics` and only needs these two numbers —
- * running the full `listClientsForSettings` pipeline (paginated rows, member
- * map, client-user directory) for them wasted four queries per render.
- */
-export async function countClientsForSettings(
-  user: AppUser,
-  input: Pick<ListClientsForSettingsInput, 'status' | 'billing' | 'search'> = {},
-): Promise<{ totalCount: number; unfilteredTotalCount: number }> {
-  assertAdmin(user)
-
-  const normalizedStatus = normalizeStatus(input.status)
-  const searchQuery = input.search?.trim() ?? ''
-
-  const statusCondition = buildStatusCondition(normalizedStatus)
-  const baseConditions = buildBaseConditions(
-    normalizedStatus,
-    searchQuery,
-    input.billing,
-  )
-
-  const [totalCount, unfilteredTotalCount] = await Promise.all([
-    resolveCount(baseConditions),
-    resolveCount([statusCondition]),
-  ])
-
-  return { totalCount, unfilteredTotalCount }
-}
 
 export async function listClientsForSettings(
   user: AppUser,

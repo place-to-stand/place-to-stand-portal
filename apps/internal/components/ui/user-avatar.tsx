@@ -5,7 +5,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { getInitials } from '@/lib/users/initials'
 
 type UserAvatarProps = {
-  /** Portal user id; omit for people with no account (contacts). */
+  /** The person (contact) id: their photo. Preferred over `userId`. */
+  contactId?: string | null
+  /** A sign-in id, where only that is known; shows the person's photo. */
   userId?: string | null
   /** Display name for the initials fallback and alt text. */
   name: string | null | undefined
@@ -21,6 +23,7 @@ type UserAvatarProps = {
 
 /** A person's avatar: their uploaded photo, falling back to initials. */
 export function UserAvatar({
+  contactId,
   userId,
   name,
   hasPhoto = true,
@@ -29,10 +32,14 @@ export function UserAvatar({
   className,
   alt,
 }: UserAvatarProps) {
-  const src =
-    userId && hasPhoto
-      ? `/api/storage/user-avatar/${userId}${version ? `?v=${encodeURIComponent(version)}` : ''}`
-      : null
+  const query = version ? `?v=${encodeURIComponent(version)}` : ''
+  const src = !hasPhoto
+    ? null
+    : contactId
+      ? `/api/storage/person-avatar/${contactId}${query}`
+      : userId
+        ? `/api/storage/user-avatar/${userId}${query}`
+        : null
 
   return (
     <Avatar size={size} className={className}>

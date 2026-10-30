@@ -11,8 +11,8 @@ import { db } from '@/lib/db'
 import { clients } from '@/lib/db/schema'
 import { fetchProjectsForClient, type ClientProject } from '@/lib/data/clients'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
-import { listClientUpdates } from '@/lib/updates'
-import type { ClientUpdateSummary } from '@/app/(dashboard)/clients/[clientSlug]/_components/client-updates-section'
+import { createUpdateDraft, listClientUpdates } from '@/lib/updates'
+import type { ClientUpdateSummary } from './_components/company-updates-section'
 import type { SaveCompanyInput } from '@/lib/companies/schema'
 import type {
   ClientLinkOption,
@@ -159,5 +159,32 @@ export async function loadCompanyClientWork(
             remaining: balance.remaining,
           }
         : null,
+  }
+}
+
+export type DraftUpdateResult =
+  { success: true; id: string } | { success: false; error: string }
+
+/**
+ * Starts a draft update for a client company, generated the same way as
+ * `pts updates draft` (see `lib/updates`); the caller navigates to it.
+ */
+export async function draftUpdateForClient(
+  clientId: string
+): Promise<DraftUpdateResult> {
+  const user = await requireUser()
+  if (!UUID_PATTERN.test(clientId)) {
+    return { success: false, error: 'Invalid client id' }
+  }
+  try {
+    const update = await createUpdateDraft(user, { clientRef: clientId })
+    revalidatePath('/companies')
+    return { success: true, id: update.id }
+  } catch (error) {
+    console.error('Failed to draft client update:', error)
+    return {
+      success: false,
+      error: 'Unable to generate the draft. Please try again.',
+    }
   }
 }

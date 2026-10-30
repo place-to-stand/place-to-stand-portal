@@ -253,25 +253,6 @@ export const fetchClientsWithMetrics = cache(
   }
 )
 
-/**
- * Name-ordered `{ id, slug }` directory of live clients — the prev/next
- * `ClientRecordCycle` needs exactly this and nothing more. It previously rode
- * on `fetchClientsWithMetrics`, which dragged the full hours/projects metrics
- * pipeline onto every client detail render.
- */
-export const fetchClientCycleDirectory = cache(
-  async (
-    user: AppUser
-  ): Promise<Array<{ id: string; slug: string | null }>> => {
-    assertAdmin(user)
-
-    return db
-      .select({ id: clients.id, slug: clients.slug })
-      .from(clients)
-      .where(isNull(clients.deletedAt))
-      .orderBy(asc(clientNameSql))
-  }
-)
 
 export type ClientHoursSummary = {
   id: string

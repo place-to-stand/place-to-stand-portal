@@ -39,6 +39,8 @@ export type ContactDeepLinkRow = ContactSheetInputRow & {
 export type ContactSheetData = {
   /** Their current companies, main company first. */
   memberships: ContactMembership[]
+  /** Their photo's path (contacts.avatar_url). */
+  avatarUrl: string | null
 }
 
 /** Fetches all active clients (contacts client filter, MCP directory). */
@@ -103,10 +105,18 @@ export async function getContactSheetData(
 ): Promise<ContactSheetData> {
   assertCrmAccess(user)
 
-  const byContact = await listContactMemberships([contactId], undefined, {
-    includeArchived: true,
-  })
-  return { memberships: byContact.get(contactId) ?? [] }
+  const [byContact, [person]] = await Promise.all([
+    listContactMemberships([contactId], undefined, { includeArchived: true }),
+    db
+      .select({ avatarUrl: contacts.avatarUrl })
+      .from(contacts)
+      .where(eq(contacts.id, contactId))
+      .limit(1),
+  ])
+  return {
+    memberships: byContact.get(contactId) ?? [],
+    avatarUrl: person?.avatarUrl ?? null,
+  }
 }
 
 /**

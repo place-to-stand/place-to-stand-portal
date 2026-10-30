@@ -28,8 +28,10 @@ export type ContactsSettingsListItem = SelectContact &
   ContactProfile & {
     companies: ContactCompanyItem[]
     metrics: ContactListMetrics
-    /** Their portal user (`userId`) has a photo. */
+    /** They have a photo (contacts.avatar_url). */
     userHasPhoto?: boolean
+    /** Their sign-in's role while they can sign in; null otherwise. */
+    signInRole?: 'ADMIN' | 'SALES' | 'CLIENT' | null
   }
 
 export type ContactsSettingsResult = {

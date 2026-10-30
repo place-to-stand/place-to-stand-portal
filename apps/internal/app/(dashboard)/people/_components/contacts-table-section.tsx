@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import {
   Building2,
-  UserRound,
   Mail,
   Phone,
 } from 'lucide-react'
@@ -41,7 +40,9 @@ import {
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
-import { PersonAvatar } from '@/components/ui/user-avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
+import { Badge } from '@pts/ui/badge'
+import { ROLE_LABELS } from '@/lib/auth/roles'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -50,7 +51,6 @@ export type ContactsTableSectionProps = {
   onRequestDelete: (contact: ContactsTableContact) => void
   onRestore: (contact: ContactsTableContact) => void
   onRequestDestroy: (contact: ContactsTableContact) => void
-  onRequestPromote: (contact: ContactsTableContact) => void
   onRequestPreview: (contact: ContactsTableContact) => void
   isPending: boolean
   pendingReason: string
@@ -70,7 +70,6 @@ export function ContactsTableSection({
   onRequestDelete,
   onRestore,
   onRequestDestroy,
-  onRequestPromote,
   onRequestPreview,
   isPending,
   pendingReason,
@@ -127,7 +126,9 @@ export function ContactsTableSection({
             >
               Phone
             </SortableTableHead>
-            <TableHead className='w-20 text-center'>User</TableHead>
+            {isAdmin ? (
+              <TableHead className='w-24 text-center'>Sign-in</TableHead>
+            ) : null}
             <SortableTableHead
               field='clients'
               sort={sort}
@@ -176,10 +177,7 @@ export function ContactsTableSection({
             // Hard delete, portal preview and portal accounts are admin-only.
             const showDestroy = isAdmin && mode === 'archive'
             const showPreview = isAdmin && mode === 'active'
-            const showPromote = isAdmin && mode === 'active' && !contact.userId
 
-            const promoteDisabled = isDeleting || isRestoring || isDestroying
-            const promoteDisabledReason = promoteDisabled ? pendingReason : null
 
             return (
               <TableRow
@@ -192,11 +190,12 @@ export function ContactsTableSection({
               >
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
-                    <UserRound
-                      className={cn(
-                        ENTITY_ACCENTS.contact.icon,
-                        'h-4 w-4 shrink-0'
-                      )}
+                    <UserAvatar
+                      contactId={contact.id}
+                      name={contact.name}
+                      hasPhoto={Boolean(contact.userHasPhoto)}
+                      size='xs'
+                      alt=''
                     />
                     <span className='truncate font-medium' title={contact.name}>
                       {contact.name}
@@ -276,19 +275,20 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
-                <TableCell label='User' className='text-sm md:text-center'>
-                  {contact.userId ? (
-                    // Named in a tooltip, like the other avatar-only cells.
-                    <PersonAvatar
-                      userId={contact.userId}
-                      name={contact.name}
-                      ariaLabel={`${contact.name}, portal user`}
-                      hasPhoto={Boolean(contact.userHasPhoto)}
-                    />
-                  ) : (
-                    <EmptyValue />
-                  )}
-                </TableCell>
+                {isAdmin ? (
+                  <TableCell
+                    label='Sign-in'
+                    className='text-sm md:text-center'
+                  >
+                    {contact.signInRole ? (
+                      <Badge variant='outline' className='text-xs font-normal'>
+                        {ROLE_LABELS[contact.signInRole]}
+                      </Badge>
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </TableCell>
+                ) : null}
                 <TableCell
                   label='Portal access'
                   className='text-sm md:text-center'
@@ -297,17 +297,6 @@ export function ContactsTableSection({
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
-                    {/* Promote renders first: it's conditional, so keeping
-                        Preview adjacent to Archive holds the eye icon to one
-                        column across rows. */}
-                    {showPromote ? (
-                      <RecordRowAction
-                        kind='promote'
-                        onClick={() => onRequestPromote(contact)}
-                        disabled={promoteDisabled}
-                        disabledReason={promoteDisabledReason}
-                      />
-                    ) : null}
                     {showPreview ? (
                       <RecordRowAction
                         kind='preview'

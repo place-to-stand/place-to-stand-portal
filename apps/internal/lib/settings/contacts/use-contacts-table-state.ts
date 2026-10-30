@@ -22,8 +22,10 @@ export type ContactsTableContact = ContactProfile & {
   name: string
   phone: string | null
   userId: string | null
-  /** Their portal user has a photo (the User column's avatar). */
+  /** They have a photo (shown beside their name). */
   userHasPhoto?: boolean
+  /** Their sign-in's role while they can sign in. */
+  signInRole?: 'ADMIN' | 'SALES' | 'CLIENT' | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null

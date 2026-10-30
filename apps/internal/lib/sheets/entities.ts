@@ -79,7 +79,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   contact: {
     // `contactName=` prefills the create sheet's name (create-from-picker);
     // `contactCompanyId=` its company (e.g. the lead's).
-    auxParams: ['contactName', 'contactCompanyId', 'tab'],
+    auxParams: ['contactName', 'contactCompanyId'],
     claimsPathname: exactPaths('/people', '/people/archive'),
   },
   invoice: {
@@ -96,8 +96,8 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   user: {
     auxParams: [],
-    // Users is People filtered to sign-ins; only the archive hosts its own.
-    claimsPathname: exactPaths('/settings/users/archive'),
+    // Sign-ins are managed on the person; ?user= links open nothing here.
+    claimsPathname: () => false,
   },
   project: {
     auxParams: [],

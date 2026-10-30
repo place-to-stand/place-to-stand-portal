@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { useToast } from '@/components/ui/use-toast'
 
-import { PENDING_REASON } from '../client-sheet-constants'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 import { useClientDeletionState } from './delete-state'
 import { useClientSheetFormState } from './form-state'

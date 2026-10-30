@@ -11,6 +11,7 @@ export function mapContactToTableRow(
     phone: item.phone,
     userId: item.userId,
     userHasPhoto: item.userHasPhoto ?? false,
+    signInRole: item.signInRole ?? null,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
     deletedAt: item.deletedAt,

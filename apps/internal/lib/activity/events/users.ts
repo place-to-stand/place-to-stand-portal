@@ -35,18 +35,6 @@ export const userUpdatedEvent = (args: {
   }),
 })
 
-export const userArchivedEvent = (args: {
-  fullName: string
-  email?: string
-  role?: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.USER_ARCHIVED,
-  summary: `Archived user ${args.fullName}`,
-  metadata: toMetadata({
-    email: args.email,
-    role: args.role,
-  }),
-})
 
 export const userRestoredEvent = (args: {
   fullName: string
@@ -61,18 +49,6 @@ export const userRestoredEvent = (args: {
   }),
 })
 
-export const userDeletedEvent = (args: {
-  fullName: string
-  email?: string
-  role?: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.USER_DELETED,
-  summary: `Permanently deleted user ${args.fullName}`,
-  metadata: toMetadata({
-    email: args.email,
-    role: args.role,
-  }),
-})
 
 export const userPasswordChangedEvent = (args: {
   fullName: string

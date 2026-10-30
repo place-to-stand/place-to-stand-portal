@@ -15,7 +15,6 @@ import { useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
@@ -30,7 +29,6 @@ export function useLeadSheetState({
   onOpenChange,
   lead,
   initialStatus,
-  initialAction = null,
   onSuccess,
   onCreated,
   initialValues,
@@ -38,31 +36,18 @@ export function useLeadSheetState({
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
-  const hasInitialAction = Boolean(lead && initialAction)
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  // Converting creates a client, so it's admin-only (`leads.convert`).
+  // Making a client is billing, so it's admin-only (`leads.convert`); it
+  // happens on the lead's company (Billing tab).
   const { role, userId } = useViewerAccess()
   const canConvert =
     roleCan(role, 'leads.convert') &&
     lead?.status === 'CLOSED_WON' &&
-    !lead?.convertedToClientId
-  const [isConvertDialogOpen, setConvertDialogOpen] = useState(
-    () => hasInitialAction && initialAction === 'convert' && canConvert
-  )
+    !lead?.convertedToClientId &&
+    Boolean(lead?.companyId)
   const { toast } = useToast()
 
-  const { setAux } = useSheetParams()
 
-  // Mirrors the convert dialog's open state into `?leadMode=convert` so the
-  // sub-state is shareable, via the router (replace) rather than raw history
-  // mutation — the Next router cache stays in sync with the URL.
-  const setActionParam = useCallback(
-    (action: string | null) => {
-      if (!lead) return
-      setAux('leadMode', action)
-    },
-    [lead, setAux]
-  )
 
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
@@ -277,9 +262,6 @@ export function useLeadSheetState({
     isArchiving,
     isArchiveDialogOpen,
     setArchiveDialogOpen,
-    isConvertDialogOpen,
-    setConvertDialogOpen,
-    setActionParam,
     canConvert,
     selectedSourceType,
     submitDisabled,

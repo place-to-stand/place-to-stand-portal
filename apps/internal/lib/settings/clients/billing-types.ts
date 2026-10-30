@@ -27,19 +27,4 @@ export const CLIENT_BILLING_TYPE_SELECT_OPTIONS: BillingTypeOption[] = [
   },
 ]
 
-export function getBillingTypeLabel(
-  billingType: ClientBillingTypeValue
-): string {
-  const option = CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
-    opt => opt.value === billingType
-  )
-  return option?.label ?? billingType
-}
 
-export function getBillingTypeOption(
-  billingType: ClientBillingTypeValue
-): BillingTypeOption | undefined {
-  return CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
-    opt => opt.value === billingType
-  )
-}

@@ -10,15 +10,20 @@ import { Skeleton } from '@pts/ui/skeleton'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { LeadRecordRow } from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
-import { ClientUpdatesSection } from '@/app/(dashboard)/clients/[clientSlug]/_components/client-updates-section'
+import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
 import { getProjectStatusLabel } from '@/lib/constants'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 
 import { loadCompanyClientWork } from '../actions'
-import { CompanyBillingFields } from './company-billing-section'
+import {
+  CompanyBillingFields,
+  useCompanyBilling,
+} from './company-billing-section'
+import { Label } from '@pts/ui/label'
+import { ClientBadge } from '@/components/clients/client-badge'
+import { Switch } from '@pts/ui/switch'
 
 
 export function CompanyLeadsSection({
@@ -46,43 +51,68 @@ export function CompanyLeadsSection({
   )
 }
 
-/** The Billing tab (admins): Make client, or the client's billing. */
+/**
+ * The Billing tab (admins). "Bill this company" makes it a client when
+ * switched on and saved, and stops billing when switched off; the billing
+ * fields sit right under it.
+ */
 export function CompanyBillingTab({
-  companyId,
   clientId,
   disabled,
 }: {
-  companyId: string
   clientId: string | null
   disabled: boolean
 }) {
-  const { openNew } = useSheetParams()
+  const billing = useCompanyBilling()
   const { data: work } = useQuery({
     queryKey: ['companyClientWork', clientId],
     queryFn: () => loadCompanyClientWork(clientId!),
     enabled: Boolean(clientId),
     staleTime: 0,
   })
-
-  if (!clientId) {
-    return (
-      <SheetSection title='Billing'>
-        <EmptyState
-          message='Not a client yet. Make client sets up billing type, commission and portal access for this company.'
-          label={disabled ? undefined : 'Make client'}
-          onClick={
-            disabled
-              ? undefined
-              : () => openNew('client', { clientCompanyId: companyId })
-          }
-        />
-      </SheetSection>
-    )
-  }
+  const { mode, billingOn } = billing
+  const line =
+    mode === 'new'
+      ? billingOn
+        ? 'Saving makes this company a client.'
+        : 'Not billed. Switch on and save to make this company a client.'
+      : mode === 'former'
+        ? billingOn
+          ? 'Saving restarts billing with its previous setup.'
+          : 'Billing stopped. Switch on and save to restart it.'
+        : billingOn
+          ? null
+          : 'Saving stops billing: its people lose portal access. Its projects, invoices and history stay.'
 
   return (
     <>
-      {work?.hours ? (
+      <SheetSection
+        title='Client'
+        action={mode === 'live' && billingOn ? <ClientBadge /> : null}
+      >
+        <div className='flex items-center gap-2'>
+          <Switch
+            id='company-bill-switch'
+            checked={billingOn}
+            disabled={disabled}
+            onCheckedChange={billing.setBillingOn}
+          />
+          <Label htmlFor='company-bill-switch'>Bill this company</Label>
+        </div>
+        {line ? (
+          <p
+            className={cn(
+              'text-sm',
+              mode === 'live' && !billingOn
+                ? 'text-destructive'
+                : 'text-muted-foreground'
+            )}
+          >
+            {line}
+          </p>
+        ) : null}
+      </SheetSection>
+      {mode === 'live' && billingOn && work?.hours ? (
         <SheetSection title='Hours'>
           <dl className='grid grid-cols-3 gap-4 text-sm'>
             {(
@@ -107,7 +137,7 @@ export function CompanyBillingTab({
           </dl>
         </SheetSection>
       ) : null}
-      <CompanyBillingFields />
+      {billingOn && mode !== 'former' ? <CompanyBillingFields /> : null}
     </>
   )
 }

@@ -62,7 +62,6 @@ import {
   companies,
   contacts,
   leads,
-  memberships,
   users,
 } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -244,7 +243,7 @@ export async function getCompanyDetail(
     throw new NotFoundError('Company not found')
   }
 
-  const [memberRows, leadRows, clientRows] = await Promise.all([
+  const [memberRows, leadRows, clientRows, formerRows] = await Promise.all([
     listCompanyMembers(companyId),
     db
       .select({
@@ -265,6 +264,15 @@ export async function getCompanyDetail(
       .from(clients)
       .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
       .orderBy(asc(clientNameSql)),
+    // Its newest stopped client, so billing can restart where it left off.
+    db
+      .select({ id: clients.id })
+      .from(clients)
+      .where(
+        and(eq(clients.companyId, companyId), isNotNull(clients.deletedAt))
+      )
+      .orderBy(desc(clients.deletedAt))
+      .limit(1),
   ])
 
   const people = memberRows
@@ -287,6 +295,7 @@ export async function getCompanyDetail(
     primaryContactId: primary?.id ?? null,
     primaryContactName: primary?.name ?? null,
     clients: clientRows,
+    formerClientId: clientRows.length ? null : (formerRows[0]?.id ?? null),
     contacts: people,
     leads: leadRows.map(lead => ({
       id: lead.id,
@@ -879,111 +888,6 @@ export async function setCompanyArchived(
   return { ok: true, id: existing.id }
 }
 
-/**
- * Makes one contact the company's primary contact (or clears it with
- * `null`). Clients use their company's primary contact. The contact must be
- * at this company; one with no company on record joins it.
- */
-export async function setCompanyPrimaryContact(
-  actor: AppUser,
-  companyId: string,
-  contactId: string | null
-): Promise<CompanyActionResult> {
-  assertCrmAccess(actor)
-
-  const [company] = await db
-    .select({
-      id: companies.id,
-      name: companies.name,
-      primaryContactId: primaryContactIdSql(companies.id),
-    })
-    .from(companies)
-    .where(and(eq(companies.id, companyId), isNull(companies.deletedAt)))
-    .limit(1)
-
-  if (!company) {
-    return { ok: false, error: 'Company not found.' }
-  }
-  if (company.primaryContactId === contactId) {
-    return { ok: true, id: company.id }
-  }
-
-  // A client's company primary contact is its default invoice and update
-  // recipient, and client records are admin-only.
-  if (
-    !roleCan(actor.role, 'clients.manage') &&
-    (await companyHasClient(companyId))
-  ) {
-    return {
-      ok: false,
-      error:
-        'This company is a client, so only an admin can change its primary contact.',
-    }
-  }
-
-  let contactName: string | null = null
-  if (contactId) {
-    const [contact] = await db
-      .select({ id: contacts.id, name: contacts.name })
-      .from(contacts)
-      .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
-      .limit(1)
-    if (!contact) {
-      return { ok: false, error: 'That person is not at this company.' }
-    }
-    contactName = contact.name
-  }
-
-  const set = await db
-    .transaction(async tx => {
-      // Only a member can be primary; one with no companies joins this one.
-      // A refusal throws so nothing in the transaction commits.
-      if (contactId) {
-        const [anyMembership] = await tx
-          .select({ id: memberships.id })
-          .from(memberships)
-          .where(
-            and(
-              isNull(memberships.endedAt),
-              eq(memberships.contactId, contactId)
-            )
-          )
-          .limit(1)
-        if (!anyMembership) await joinCompany(tx, contactId, companyId)
-      }
-      const ok = await setCompanyPrimary(tx, companyId, contactId)
-      if (!ok) tx.rollback()
-      return ok
-    })
-    .catch(error => {
-      if (error instanceof TransactionRollbackError) return false
-      // Someone else changed the primary at the same moment.
-      if (isUniqueViolation(error)) return 'conflict' as const
-      throw error
-    })
-  if (set === 'conflict') {
-    return {
-      ok: false,
-      error: 'The primary contact just changed. Reload and try again.',
-    }
-  }
-  if (!set) {
-    return { ok: false, error: 'That person is not at this company.' }
-  }
-
-  await logActivity({
-    actorId: actor.id,
-    actorRole: actor.role,
-    targetType: 'COMPANY',
-    targetId: company.id,
-    ...companyPrimaryContactSetEvent({
-      companyName: company.name,
-      contactName,
-    }),
-  })
-
-  return { ok: true, id: company.id }
-}
 
 /**
  * The live company with this name (case-insensitive), created when there is
@@ -1107,12 +1011,3 @@ export async function getClientCompanyId(
   return row?.companyId ?? null
 }
 
-/** Live company by id, or null. */
-export async function getLiveCompany(companyId: string) {
-  const [row] = await db
-    .select({ id: companies.id, name: companies.name })
-    .from(companies)
-    .where(and(eq(companies.id, companyId), isNull(companies.deletedAt)))
-    .limit(1)
-  return row ?? null
-}

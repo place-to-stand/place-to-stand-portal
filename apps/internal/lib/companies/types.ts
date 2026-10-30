@@ -62,6 +62,8 @@ export type CompanyDetail = {
   primaryContactName: string | null
   /** Clients that are this company (usually one). */
   clients: { id: string; name: string; slug: string | null }[]
+  /** Its stopped client when it has no live one (billing can restart). */
+  formerClientId: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
