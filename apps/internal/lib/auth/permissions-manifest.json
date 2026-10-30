@@ -190,35 +190,7 @@
   },
   {
     "type": "action",
-    "name": "saveClient",
-    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "softDeleteClient",
-    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "restoreClient",
-    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "getClientSheetContactData",
-    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "syncClientContacts",
     "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
     "kind": "admin",
     "capability": null
