@@ -925,8 +925,6 @@ export const clientCommissionTerms = pgTable(
     // Closers (20%, split by percentage) are child rows in
     // `client_commission_term_closers`. No rows means no closer for the
     // period: the share is not paid and is reported under House (estimated).
-    /** DEPRECATED — superseded by the closer rows (0086); drop in a follow-up. */
-    closerUserId: uuid('closer_user_id'),
     /** Origination (10%): at most ONE of user / contact per the mutex CHECK. */
     originationUserId: uuid('origination_user_id'),
     originationContactId: uuid('origination_contact_id'),
@@ -952,11 +950,6 @@ export const clientCommissionTerms = pgTable(
       columns: [table.clientId],
       foreignColumns: [clients.id],
       name: 'client_commission_terms_client_id_fkey',
-    }).onDelete('restrict'),
-    foreignKey({
-      columns: [table.closerUserId],
-      foreignColumns: [users.id],
-      name: 'client_commission_terms_closer_user_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.originationUserId],

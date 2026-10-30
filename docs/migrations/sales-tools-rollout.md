@@ -17,7 +17,7 @@ Covers PR #279's database chain, migrations **0089 → 0108**, and the matching 
    - 0104: a company would end up with two live clients;
    - 0106: a lead with no contact;
    - 0107: a live portal grant would be lost, or someone would gain portal access they didn't have;
-   - 0108: a client's origination or billing type differs from its newest term, a live client has no billing term in force this month, a `contact_leads` row isn't its lead's contact, or an hour block's `invoice_id` isn't its line's invoice.
+   - 0108: a client's origination or billing type differs from its newest term, an old term closer has no closer row, a live client has no billing term in force this month, a `contact_leads` row isn't its lead's contact, or an hour block's `invoice_id` isn't its line's invoice.
 7. **Rollout shape:** one short maintenance window. Run 0089–0108, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
 8. **Rehearse first** on a Supabase branch or restored snapshot, using the same commands and checks.
 9. **Rollback:**
@@ -54,7 +54,7 @@ Run the read-only pre-flight queries (P0–P12) and compare with the values shar
 | 0105 `memberships_and_portal_access` | Creates `memberships`. Step 1: everyone at a company (`contacts.company_id`) gets a membership with their title and primary flag. **Portal access carries over only where it was real:** a portal login (`client_members`) for that company's **live** client. `contact_clients` was a CRM link (who belongs to a client), not access, so it only creates the membership, with access off. Step 2: every other tie (a client link or a login at another company, or being primary without working there) becomes an extra membership, so no link is lost. Ties to archived clients become memberships with access off: 0096 can put an archived and a live client of the same name on one company, and carrying the archived grant would open the live client. Creates the `client_portal_access` view, which also requires the contact to have a portal login. | Yes | Unique: one current membership per person per company; one primary per company. |
 | 0106 `lead_contact_required` | Leads that still only have a typed company name (archived leads and long names, which 0090 skipped) get a company: an existing one with that name, else a new archived one. Then `leads.contact_id` becomes NOT NULL with `ON DELETE RESTRICT`, so a contact with leads can't be hard-deleted. | Yes (finds nothing the second time) | **Stops** and lists any lead with no contact. |
 | 0107 `archive_and_drop_copied_fields` | Copies everything it drops into `archive_sales_tools` (below) and records any client link that didn't become a membership and any real login grant missing from the view, including a grant whose contact is archived. **Stops before dropping anything** if that list isn't empty, or if the view grants any (login, client) pair that wasn't a live `client_members` grant (drizzle rolls the whole batch back and the old tables stay). Then drops `contact_clients`, `client_members`, `contacts.company_id`, `contacts.job_title`, `companies.primary_contact_id`, and the lead copies (`contact_name`, `contact_email`, `contact_phone`, `company_name`, `company_website`). | No | **Stops** on any lost live grant (P3, P11) or any gained access; stops if an archive table already exists. |
-| 0108 `drop_duplicated_data` | Drops four copies of data stored elsewhere: `clients.billing_type` (billing type lives on `client_billing_terms`; the column was a cache of the newest term, so a change scheduled for next month showed at once, and readers keep that meaning; `invoices.billing_type` stays as a snapshot), `clients.origination_contact_id`, `origination_user_id`, `closer_user_id` (commission lives on `client_commission_terms` and its closer rows; the client columns were a cache of the newest term), the `contact_leads` table (`leads.contact_id` is the lead's contact), and `hour_blocks.invoice_id` (the invoice is read through `invoice_line_item_id`). Archives each first, gives a client with origination but no term one from its creation month, then **stops before dropping anything** if any value would be lost. | No | **Stops** on any client whose origination or billing type differs from its newest term, any live client with no billing term in force this month, any `contact_leads` row that isn't its lead's contact, or any hour block whose `invoice_id` isn't its line's invoice; stops if an archive table already exists. |
+| 0108 `drop_duplicated_data` | Drops five copies of data stored elsewhere: `client_commission_terms.closer_user_id` (superseded by the closer rows in 0086, never read since), `clients.billing_type` (billing type lives on `client_billing_terms`; the column was a cache of the newest term, so a change scheduled for next month showed at once, and readers keep that meaning; `invoices.billing_type` stays as a snapshot), `clients.origination_contact_id`, `origination_user_id`, `closer_user_id` (commission lives on `client_commission_terms` and its closer rows; the client columns were a cache of the newest term), the `contact_leads` table (`leads.contact_id` is the lead's contact), and `hour_blocks.invoice_id` (the invoice is read through `invoice_line_item_id`). Archives each first, gives a client with origination but no term one from its creation month, then **stops before dropping anything** if any value would be lost. | No | **Stops** on any client whose origination or billing type differs from its newest term, any live client with no billing term in force this month, any old term closer with no closer row on that term, any `contact_leads` row that isn't its lead's contact, or any hour block whose `invoice_id` isn't its line's invoice; stops if an archive table already exists. |
 
 ### Archives made before 0107
 
@@ -111,7 +111,7 @@ Steps:
   - `lead_contact_copies` (lead → old name, email, phone, company name, website)
   - `unmapped_portal_access` (grants with no matching membership; **expected empty**)
   - plus `lead_company_names` (0090) and the three 0097 tables;
-  - and from 0108: `client_billing_types` (client → old `billing_type`), `client_commission_columns` (client → old origination and closer columns), `contact_leads` (full copy) and `hour_block_invoices` (block → old `invoice_id`, `invoice_line_item_id`).
+  - and from 0108: `commission_term_closer_users` (term → old `closer_user_id`), `client_billing_types` (client → old `billing_type`), `client_commission_columns` (client → old origination and closer columns), `contact_leads` (full copy) and `hour_block_invoices` (block → old `invoice_id`, `invoice_line_item_id`).
 - **Checks before and after.** If any check differs from expected, stop and roll back.
 
 ### 2a. Before (current production schema, read-only)
@@ -423,7 +423,7 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
 
 Option B SQL. Run it inside one transaction. Re-add constraints as they were in the pre-PR schema (`0000_supabase_baseline` and later).
 
-Undo 0108 first (it puts back the four copies; the old code reads them):
+Undo 0108 first (it puts back the five copies; the old code reads them):
 
 ```sql
 BEGIN;
@@ -444,6 +444,9 @@ ALTER TABLE contact_leads ADD PRIMARY KEY (id);
 INSERT INTO contact_leads (contact_id, lead_id)
 SELECT l.contact_id, l.id FROM leads l
 WHERE NOT EXISTS (SELECT 1 FROM contact_leads cl WHERE cl.lead_id = l.id AND cl.contact_id = l.contact_id);
+ALTER TABLE client_commission_terms ADD COLUMN closer_user_id uuid REFERENCES users(id) ON DELETE RESTRICT;
+UPDATE client_commission_terms t SET closer_user_id = a.closer_user_id
+FROM archive_sales_tools.commission_term_closer_users a WHERE a.term_id = t.id;
 ALTER TABLE clients ADD COLUMN billing_type client_billing_type NOT NULL DEFAULT 'prepaid';
 UPDATE clients c SET billing_type = (SELECT t.billing_type FROM client_billing_terms t
   WHERE t.client_id = c.id AND t.deleted_at IS NULL ORDER BY t.effective_from DESC LIMIT 1)

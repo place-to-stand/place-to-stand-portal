@@ -1,4 +1,4 @@
--- Drop four copies of data stored elsewhere (no dropped value is lost):
+-- Drop five copies of data stored elsewhere (no dropped value is lost):
 --  1. clients.origination_contact_id / origination_user_id / closer_user_id:
 --     commission lives on client_commission_terms (origination) and its
 --     closer rows. The client columns were a cache of the newest term, and
@@ -10,6 +10,8 @@
 --     column was a cache of the newest term (a change scheduled for next
 --     month showed straight away); readers now take the newest term.
 --     invoices.billing_type stays: it is a snapshot taken when invoicing.
+--  5. client_commission_terms.closer_user_id: superseded by the closer rows
+--     (client_commission_term_closers) in 0086 and never read since.
 -- Everything dropped is copied into "archive_sales_tools" first. A client
 -- with origination but no term gets one (effective from its creation month)
 -- before the check. The guard below stops the whole batch, before anything
@@ -25,6 +27,11 @@ FROM "clients"
 WHERE "origination_contact_id" IS NOT NULL
    OR "origination_user_id" IS NOT NULL
    OR "closer_user_id" IS NOT NULL;
+--> statement-breakpoint
+CREATE TABLE "archive_sales_tools"."commission_term_closer_users" AS
+SELECT "id" AS "term_id", "closer_user_id"
+FROM "client_commission_terms"
+WHERE "closer_user_id" IS NOT NULL;
 --> statement-breakpoint
 CREATE TABLE "archive_sales_tools"."contact_leads" AS
 SELECT * FROM "contact_leads";
@@ -57,7 +64,8 @@ WHERE (c."origination_user_id" IS NOT NULL OR c."origination_contact_id" IS NOT 
 --  - a contact_leads row isn't its lead's contact;
 --  - a block's invoice_id isn't the invoice of its line (or it has no line);
 --  - a client has no billing term, a live client has none in force this
---    month, or the newest term's type isn't the client's billing_type.
+--    month, or the newest term's type isn't the client's billing_type;
+--  - a commission term's old closer_user_id has no closer row on that term.
 DO $$
 DECLARE
   problems text;
@@ -106,6 +114,14 @@ BEGIN
         WHERE t."client_id" = c."id" AND t."deleted_at" IS NULL
           AND t."effective_from" <= date_trunc('month', timezone('utc'::text, now()))::date
       )
+    UNION ALL
+    SELECT format('commission term %s: closer %s has no closer row', t."id", t."closer_user_id")
+    FROM "client_commission_terms" t
+    WHERE t."closer_user_id" IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM "client_commission_term_closers" c
+        WHERE c."term_id" = t."id" AND c."closer_user_id" = t."closer_user_id"
+      )
   ) p;
 
   IF problems IS NOT NULL THEN
@@ -116,6 +132,8 @@ END $$;--> statement-breakpoint
 ALTER TABLE "contact_leads" DISABLE ROW LEVEL SECURITY;--> statement-breakpoint
 DROP TABLE "contact_leads" CASCADE;--> statement-breakpoint
 ALTER TABLE "clients" DROP CONSTRAINT "clients_origination_mutex";--> statement-breakpoint
+ALTER TABLE "client_commission_terms" DROP CONSTRAINT "client_commission_terms_closer_user_id_fkey";
+--> statement-breakpoint
 ALTER TABLE "clients" DROP CONSTRAINT "clients_origination_user_id_fkey";
 --> statement-breakpoint
 ALTER TABLE "clients" DROP CONSTRAINT "clients_closer_user_id_fkey";
@@ -124,6 +142,7 @@ DROP INDEX "idx_clients_origination_contact_id";--> statement-breakpoint
 DROP INDEX "idx_clients_origination_user_id";--> statement-breakpoint
 DROP INDEX "idx_clients_closer_user_id";--> statement-breakpoint
 DROP INDEX "idx_hour_blocks_invoice_id";--> statement-breakpoint
+ALTER TABLE "client_commission_terms" DROP COLUMN "closer_user_id";--> statement-breakpoint
 ALTER TABLE "clients" DROP COLUMN "billing_type";--> statement-breakpoint
 ALTER TABLE "clients" DROP COLUMN "origination_contact_id";--> statement-breakpoint
 ALTER TABLE "clients" DROP COLUMN "origination_user_id";--> statement-breakpoint
