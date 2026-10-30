@@ -133,8 +133,6 @@ export async function createClient(
             slug: slugCandidate,
             billingType,
             state,
-            originationContactId,
-            originationUserId,
             notes,
             companyId,
             createdBy: user.id,

@@ -200,17 +200,9 @@ export const clients = pgTable(
       .notNull(),
     website: text(),
     state: varchar({ length: 2 }),
-    // Origination (finder / 10% commission): at most ONE of these may be set
-    // per the clients_origination_mutex CHECK constraint below. Internal
-    // sourcing partners use originationUserId; external referrers with IC
-    // agreements use originationContactId. Both NULL means no origination.
-    originationContactId: uuid('origination_contact_id'),
-    originationUserId: uuid('origination_user_id'),
-    // DEPRECATED — never read or written since closer splits (0086). Closers
-    // (20%, split by percentage) live on `client_commission_term_closers`.
-    // Kept only so the deploy that stopped using it needed no column drop;
-    // remove in a follow-up migration once that deploy is live.
-    closerUserId: uuid('closer_user_id'),
+    // Commission (origination 10%, closers 20%) lives only on
+    // `client_commission_terms` and its closer rows (0108 dropped the copies
+    // that used to sit here).
     /**
      * The organization this client is (every client has one). FK
      * `clients_company_id_fkey` (added in 0096) is declared below.
@@ -256,29 +248,10 @@ export const clients = pgTable(
       'gin',
       table.slug.op('gin_trgm_ops')
     ),
-    index('idx_clients_origination_contact_id')
-      .using('btree', table.originationContactId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND origination_contact_id IS NOT NULL)`),
-    index('idx_clients_origination_user_id')
-      .using('btree', table.originationUserId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND origination_user_id IS NOT NULL)`),
-    index('idx_clients_closer_user_id')
-      .using('btree', table.closerUserId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND closer_user_id IS NOT NULL)`),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'clients_created_by_fkey',
-    }),
-    foreignKey({
-      columns: [table.originationUserId],
-      foreignColumns: [users.id],
-      name: 'clients_origination_user_id_fkey',
-    }),
-    foreignKey({
-      columns: [table.closerUserId],
-      foreignColumns: [users.id],
-      name: 'clients_closer_user_id_fkey',
     }),
     // companies is defined below; the callback runs lazily, so this is safe.
     foreignKey({
@@ -286,12 +259,6 @@ export const clients = pgTable(
       foreignColumns: [companies.id],
       name: 'clients_company_id_fkey',
     }).onDelete('set null'),
-    // Note: FK constraint for originationContactId -> contacts.id added in
-    // migration to avoid forward reference (contacts table defined later).
-    check(
-      'clients_origination_mutex',
-      sql`NOT (origination_user_id IS NOT NULL AND origination_contact_id IS NOT NULL)`
-    ),
     unique('clients_slug_key').on(table.slug),
   ]
 )
@@ -441,35 +408,6 @@ export const memberships = pgTable(
       columns: [table.companyId],
       foreignColumns: [companies.id],
       name: 'memberships_company_id_fkey',
-    }).onDelete('cascade'),
-  ]
-)
-
-export const contactLeads = pgTable(
-  'contact_leads',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    contactId: uuid('contact_id').notNull(),
-    leadId: uuid('lead_id').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    unique('contact_leads_contact_lead_key').on(table.contactId, table.leadId),
-    index('idx_contact_leads_contact')
-      .using('btree', table.contactId.asc().nullsLast().op('uuid_ops')),
-    index('idx_contact_leads_lead')
-      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops')),
-    foreignKey({
-      columns: [table.contactId],
-      foreignColumns: [contacts.id],
-      name: 'contact_leads_contact_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.leadId],
-      foreignColumns: [leads.id],
-      name: 'contact_leads_lead_id_fkey',
     }).onDelete('cascade'),
   ]
 )
@@ -846,7 +784,11 @@ export const hourBlocks = pgTable(
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     clientId: uuid('client_id').notNull(),
-    invoiceId: uuid('invoice_id'),
+    /**
+     * The invoice line that created this block (blocks made by hand have
+     * none). Its invoice is read through the line (0108 dropped the copied
+     * invoice_id).
+     */
     invoiceLineItemId: uuid('invoice_line_item_id'),
     notes: text('notes'),
     /**
@@ -867,9 +809,6 @@ export const hourBlocks = pgTable(
     index('idx_hour_blocks_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_hour_blocks_invoice_id')
-      .using('btree', table.invoiceId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND invoice_id IS NOT NULL)`),
     uniqueIndex('idx_hour_blocks_invoice_line_item_unique')
       .on(table.invoiceLineItemId)
       .where(sql`(deleted_at IS NULL AND invoice_line_item_id IS NOT NULL)`),
@@ -887,7 +826,7 @@ export const hourBlocks = pgTable(
       'chk_hour_blocks_billing_month_month_start',
       sql`billing_month = date_trunc('month', billing_month)::date`
     ),
-    // Note: FK constraints for invoiceId -> invoices.id and
+    // Note: FK constraint for
     // invoiceLineItemId -> invoice_line_items.id added in migration
     // to avoid forward reference (invoices table defined later in this file)
   ]

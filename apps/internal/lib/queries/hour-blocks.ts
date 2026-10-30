@@ -5,7 +5,12 @@ import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, hourBlocks, invoices } from '@/lib/db/schema'
+import {
+  clients,
+  hourBlocks,
+  invoiceLineItems,
+  invoices,
+} from '@/lib/db/schema'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 
 import type {
@@ -65,13 +70,14 @@ type ClientSelection = {
   deletedAt: string | null
 }
 
-// The invoice* fields are derived from the linked invoice — every query using
-// this selection must leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id)).
+// The invoice* fields are derived from the invoice line that created the
+// block: every query using this selection must leftJoin invoiceLineItems on
+// hourBlocks.invoiceLineItemId, then invoices on invoiceLineItems.invoiceId.
 const hourBlockSelection = {
   id: hourBlocks.id,
   clientId: hourBlocks.clientId,
   hoursPurchased: hourBlocks.hoursPurchased,
-  invoiceId: hourBlocks.invoiceId,
+  invoiceId: invoiceLineItems.invoiceId,
   invoiceNumber: invoices.invoiceNumber,
   invoiceStatus: invoices.status,
   invoiceTotal: invoices.total,
@@ -195,7 +201,11 @@ export async function listHourBlocksForSettings(
       })
       .from(hourBlocks)
       .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-      .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+      .leftJoin(
+        invoiceLineItems,
+        eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+      )
+      .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
       .where(baseWhere)
       .orderBy(...ordering)
       .limit(limit)
@@ -237,7 +247,11 @@ export async function listHourBlocksForSettings(
       })
       .from(hourBlocks)
       .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-      .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+      .leftJoin(
+        invoiceLineItems,
+        eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+      )
+      .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
       .where(whereClause)
       .orderBy(...ordering)
       .limit(limit + 1)) as HourBlockSelection[]
@@ -258,7 +272,11 @@ export async function listHourBlocksForSettings(
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
         .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-        .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+        .leftJoin(
+          invoiceLineItems,
+          eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+        )
+        .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
         .where(and(...baseConditions)),
       db
         .select({ count: sql<number>`count(*)` })
@@ -362,7 +380,11 @@ export async function getHourBlockWithClientById(
     })
     .from(hourBlocks)
     .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-    .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+    .leftJoin(
+      invoiceLineItems,
+      eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+    )
+    .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
     .where(eq(hourBlocks.id, hourBlockId))
     .limit(1)) as HourBlockSelection[]
 

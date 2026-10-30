@@ -133,7 +133,7 @@ The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,ov
 └── unauthorized/     # Access denied page
 ```
 
-Portal access is controlled via `client_members` table. Contacts promoted to portal users automatically get access to their linked clients.
+Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. It is switched on only in Edit client > Portal access.
 
 ### Database Schema
 
@@ -141,9 +141,10 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - `users` - User accounts with roles (ADMIN, SALES, CLIENT)
 - `clients` - Client records with billing types (prepaid, net_30)
 - `contacts` - Contact records (may have a `userId` for portal access)
-- `contact_clients` - Contact-to-client links
-- `contact_leads` - Contact-to-lead links
-- `client_members` - Client-to-user portal memberships (auto-synced when contacts are linked/promoted)
+- `companies` - Organizations; a client is linked to one company (`clients.company_id`)
+- `memberships` - Contact-to-company (title, primary contact, portal access); a contact can be at several companies
+- `client_portal_access` - View: who can see which client in the client portal
+- `client_commission_terms` + `client_commission_term_closers` - The one place commission (origination, closers) is stored, by effective month
 - `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
 - `tasks` - Tasks with workflow: ON_DECK → IN_PROGRESS → BLOCKED → DONE, then archived (soft delete via `deletedAt`, not a status value)
 - `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE_OPPORTUNITIES → PROPOSAL_SENT → ON_ICE → CLOSED_WON/CLOSED_LOST/UNQUALIFIED
@@ -192,7 +193,7 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - The internal portal is **admin-only by default**: `requireUser()` / `assertAdmin()` admit ADMIN only. SALES users reach just the CRM (leads, contacts), which opts in with `requireCrmUser()` / `assertCrmAccess()`; anywhere else `requireUser()` sends them to `/leads`. CLIENT-role users are rejected at sign-in and redirected to the client portal (`CLIENT_PORTAL_URL`). Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
 - Mutations and API routes still guard with `assertAdmin()`/`requireRole('ADMIN')` as defense-in-depth
 - `ensure*Access` helpers verify the target entity exists (NotFound) before mutations
-- Client-scoped access lives exclusively in `apps/client/` (via `client_members`)
+- Client-scoped access lives exclusively in `apps/client/` (via the `client_portal_access` view)
 
 **CRITICAL: No Row Level Security (RLS)**
 

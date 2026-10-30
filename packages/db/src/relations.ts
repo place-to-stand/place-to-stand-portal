@@ -26,7 +26,6 @@ import {
   companies,
   projectMembers,
   memberships,
-  contactLeads,
   githubRepoLinks,
   projectIntegrationLinks,
   leadStageHistory,
@@ -54,15 +53,6 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
     references: [users.id],
     relationName: 'clients_createdBy_users_id',
   }),
-  originationContact: one(contacts, {
-    fields: [clients.originationContactId],
-    references: [contacts.id],
-  }),
-  originationUser: one(users, {
-    fields: [clients.originationUserId],
-    references: [users.id],
-    relationName: 'clients_originationUser_users_id',
-  }),
   hourBlocks: many(hourBlocks),
   billingTerms: many(clientBillingTerms),
   commissionTerms: many(clientCommissionTerms),
@@ -81,9 +71,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   clients: many(clients, {
     relationName: 'clients_createdBy_users_id',
-  }),
-  clientsOriginated: many(clients, {
-    relationName: 'clients_originationUser_users_id',
   }),
   taskAssignees: many(taskAssignees),
   taskAssigneeMetadata: many(taskAssigneeMetadata),
@@ -184,7 +171,6 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
     fields: [leads.convertedToClientId],
     references: [clients.id],
   }),
-  contactLeads: many(contactLeads),
   company: one(companies, {
     fields: [leads.companyId],
     references: [companies.id],
@@ -245,9 +231,9 @@ export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
     fields: [hourBlocks.clientId],
     references: [clients.id],
   }),
-  invoice: one(invoices, {
-    fields: [hourBlocks.invoiceId],
-    references: [invoices.id],
+  invoiceLineItem: one(invoiceLineItems, {
+    fields: [hourBlocks.invoiceLineItemId],
+    references: [invoiceLineItems.id],
   }),
 }))
 
@@ -424,8 +410,6 @@ export const contactsRelations = relations(contacts, ({ one, many }) => ({
     relationName: 'contacts_userId_users_id',
   }),
   memberships: many(memberships),
-  contactLeads: many(contactLeads),
-  clientsOriginated: many(clients),
 }))
 
 export const companiesRelations = relations(companies, ({ one, many }) => ({
@@ -459,17 +443,6 @@ export const membershipsRelations = relations(memberships, ({ one }) => ({
   company: one(companies, {
     fields: [memberships.companyId],
     references: [companies.id],
-  }),
-}))
-
-export const contactLeadsRelations = relations(contactLeads, ({ one }) => ({
-  contact: one(contacts, {
-    fields: [contactLeads.contactId],
-    references: [contacts.id],
-  }),
-  lead: one(leads, {
-    fields: [contactLeads.leadId],
-    references: [leads.id],
   }),
 }))
 

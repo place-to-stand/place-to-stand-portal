@@ -1,6 +1,10 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import {
+  currentOriginationContactIdSql,
+  currentOriginationUserIdSql,
+} from '@/lib/queries/clients/commission-terms'
+import { and, eq, getTableColumns, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -56,7 +60,12 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
   // The client sheet self-fetches its reference data (contacts/admins) —
   // it only needs the row (snake_case `DbClient` plus its closer split).
   const rows = await db
-    .select()
+    .select({
+      ...getTableColumns(clients),
+      // Commission lives on the terms; this is the newest term's.
+      originationContactId: currentOriginationContactIdSql(),
+      originationUserId: currentOriginationUserIdSql(),
+    })
     .from(clients)
     .where(and(eq(clients.id, id), isNull(clients.deletedAt)))
     .limit(1)

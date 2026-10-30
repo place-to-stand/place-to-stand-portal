@@ -1,5 +1,9 @@
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
+import {
+  currentOriginationContactIdSql,
+  currentOriginationUserIdSql,
+} from '@/lib/queries/clients/commission-terms'
 import { db } from '@/lib/db'
 import {
   clientPortalAccess,
@@ -60,8 +64,8 @@ export async function loadClientRows(
       slug: clientsTable.slug,
       notes: clientsTable.notes,
       state: clientsTable.state,
-      originationContactId: clientsTable.originationContactId,
-      originationUserId: clientsTable.originationUserId,
+      originationContactId: currentOriginationContactIdSql(),
+      originationUserId: currentOriginationUserIdSql(),
       billingType: clientsTable.billingType,
       createdBy: clientsTable.createdBy,
       createdAt: clientsTable.createdAt,

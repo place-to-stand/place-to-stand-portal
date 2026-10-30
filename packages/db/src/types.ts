@@ -24,7 +24,6 @@ import type {
   planMessages,
   contacts,
   memberships,
-  contactLeads,
   invoices,
   invoiceLineItems,
   productCatalogItems,
@@ -60,7 +59,6 @@ export type PlanRevision = InferSelectModel<typeof planRevisions>
 export type PlanMessage = InferSelectModel<typeof planMessages>
 export type Contact = InferSelectModel<typeof contacts>
 export type Membership = InferSelectModel<typeof memberships>
-export type ContactLead = InferSelectModel<typeof contactLeads>
 export type Invoice = InferSelectModel<typeof invoices>
 export type InvoiceLineItem = InferSelectModel<typeof invoiceLineItems>
 export type ProductCatalogItem = InferSelectModel<typeof productCatalogItems>

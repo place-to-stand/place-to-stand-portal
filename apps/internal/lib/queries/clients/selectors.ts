@@ -1,12 +1,17 @@
-import { clients } from "@/lib/db/schema"
+import { clients } from '@/lib/db/schema'
+import {
+  currentOriginationContactIdSql,
+  currentOriginationUserIdSql,
+} from '@/lib/queries/clients/commission-terms'
 
-// `closer_user_id` is deprecated (closer splits live on the commission term)
-// and is never selected. `website` is the company's now (the client's copy
-// is legacy; see `clientWebsiteSql`).
-export type SelectClient = Omit<
-  typeof clients.$inferSelect,
-  'closerUserId' | 'website'
->
+// Commission (origination, closers) lives only on the commission terms; the
+// origination fields here are the newest term's. `website` is the company's
+// now (the client's copy is legacy; see `clientWebsiteSql`).
+export type SelectClient = Omit<typeof clients.$inferSelect, 'website'> & {
+  /** The newest commission term's origination (terms are the source). */
+  originationContactId: string | null
+  originationUserId: string | null
+}
 
 export const clientFields = {
   id: clients.id,
@@ -15,8 +20,8 @@ export const clientFields = {
   notes: clients.notes,
   billingType: clients.billingType,
   state: clients.state,
-  originationContactId: clients.originationContactId,
-  originationUserId: clients.originationUserId,
+  originationContactId: currentOriginationContactIdSql(),
+  originationUserId: currentOriginationUserIdSql(),
   companyId: clients.companyId,
   label: clients.label,
   createdBy: clients.createdBy,
@@ -32,8 +37,6 @@ export const clientGroupByColumns = [
   clients.notes,
   clients.billingType,
   clients.state,
-  clients.originationContactId,
-  clients.originationUserId,
   clients.companyId,
   clients.label,
   clients.createdBy,
@@ -41,4 +44,4 @@ export const clientGroupByColumns = [
   clients.updatedAt,
   clients.deletedAt,
 ] as const
-export const ACTIVE_STATUS = "ACTIVE"
+export const ACTIVE_STATUS = 'ACTIVE'

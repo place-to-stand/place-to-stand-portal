@@ -14,13 +14,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import {
-  clients,
-  contactLeads,
-  contacts,
-  leads,
-  leadStageHistory,
-} from '@/lib/db/schema'
+import { clients, contacts, leads, leadStageHistory } from '@/lib/db/schema'
 import { isTerminalLeadStatus } from '@/lib/leads/constants'
 import {
   leadCompany,
@@ -330,16 +324,6 @@ async function resolveLeadContact(
   return { contact: created }
 }
 
-/** Keeps the many-to-many link table in step with `leads.contact_id`. */
-async function linkContactToLead(contactId: string, leadId: string) {
-  await db
-    .insert(contactLeads)
-    .values({ contactId, leadId })
-    .onConflictDoNothing({
-      target: [contactLeads.contactId, contactLeads.leadId],
-    })
-}
-
 async function createLead(
   actor: AppUser,
   normalized: NormalizedLead,
@@ -386,7 +370,6 @@ async function createLead(
   if (!inserted) {
     return { success: false, error: 'Unable to save lead. Please try again.' }
   }
-  await linkContactToLead(contact.id, inserted.id)
 
   await db.insert(leadStageHistory).values({
     leadId: inserted.id,
@@ -572,19 +555,6 @@ async function updateLead(
         details: { before: diff.before, after: diff.after },
       }),
     })
-  }
-
-  await linkContactToLead(contact.id, leadId)
-  if (existing.contactId && existing.contactId !== contact.id) {
-    // The lead moved to another contact: drop the old link.
-    await db
-      .delete(contactLeads)
-      .where(
-        and(
-          eq(contactLeads.contactId, existing.contactId),
-          eq(contactLeads.leadId, leadId)
-        )
-      )
   }
 
   if (normalized.assigneeId && normalized.assigneeId !== existing.assigneeId) {

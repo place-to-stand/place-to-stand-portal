@@ -112,7 +112,10 @@ export async function upsertCommissionTerm(
       createdBy: params.createdBy,
     })
     .onConflictDoUpdate({
-      target: [clientCommissionTerms.clientId, clientCommissionTerms.effectiveFrom],
+      target: [
+        clientCommissionTerms.clientId,
+        clientCommissionTerms.effectiveFrom,
+      ],
       targetWhere: sql`deleted_at IS NULL`,
       set: {
         originationUserId: params.originationUserId,
@@ -209,7 +212,8 @@ export async function fetchLatestClosersByClient(
           kind: 'contact',
           id: row.closerContactId as string,
           sharePercent: Number(row.sharePercent),
-          name: row.contactName?.trim() || row.contactEmail || 'Unknown contact',
+          name:
+            row.contactName?.trim() || row.contactEmail || 'Unknown contact',
           email: row.contactEmail,
           avatarUrl: null,
           avatarUpdatedAt: null,
@@ -244,7 +248,11 @@ export async function resolveClosers(
       : Promise.resolve([]),
     contactIds.length
       ? db
-          .select({ id: contacts.id, name: contacts.name, email: contacts.email })
+          .select({
+            id: contacts.id,
+            name: contacts.name,
+            email: contacts.email,
+          })
           .from(contacts)
           .where(inArray(contacts.id, contactIds))
       : Promise.resolve([]),
@@ -283,7 +291,10 @@ type CommissionColumn = 'id' | 'originationUserId' | 'originationContactId'
  * is only valid inside a query that joins `clients`. NULL when the resolved
  * term has no assignment (or no term exists at or before the period).
  */
-function commissionColumnAsOfSql(column: CommissionColumn, periodStart: string) {
+function commissionColumnAsOfSql(
+  column: CommissionColumn,
+  periodStart: string
+) {
   return sql<string | null>`(
     SELECT ${clientCommissionTerms[column]}
     FROM ${clientCommissionTerms}
@@ -306,4 +317,33 @@ export function originationUserIdAsOfSql(periodStart: string) {
 
 export function originationContactIdAsOfSql(periodStart: string) {
   return commissionColumnAsOfSql('originationContactId', periodStart)
+}
+
+/**
+ * The client's current origination: the newest term's (latest effective
+ * date, even a future one, which is what the client sheet last saved).
+ * Correlated against the outer `clients` table. The terms table is the one
+ * place commission is stored; reports resolve by period with the `AsOf`
+ * helpers above.
+ */
+function latestCommissionColumnSql(column: CommissionColumn) {
+  // The outer column is written out table-qualified: drizzle drops the table
+  // name from an interpolated column inside a selected fragment, which would
+  // bind it to the terms table's own id.
+  return sql<string | null>`(
+    SELECT ${clientCommissionTerms[column]}
+    FROM ${clientCommissionTerms}
+    WHERE ${clientCommissionTerms.clientId} = ${sql.raw('"clients"."id"')}
+      AND ${clientCommissionTerms.deletedAt} IS NULL
+    ORDER BY ${clientCommissionTerms.effectiveFrom} DESC
+    LIMIT 1
+  )`
+}
+
+export function currentOriginationUserIdSql() {
+  return latestCommissionColumnSql('originationUserId')
+}
+
+export function currentOriginationContactIdSql() {
+  return latestCommissionColumnSql('originationContactId')
 }

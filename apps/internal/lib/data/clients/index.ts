@@ -1,5 +1,9 @@
 import 'server-only'
 
+import {
+  currentOriginationContactIdSql,
+  currentOriginationUserIdSql,
+} from '@/lib/queries/clients/commission-terms'
 import { cache } from 'react'
 import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
@@ -7,10 +11,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { clients, companies, contacts, projects, users } from '@/lib/db/schema'
-import {
-  clientHoursTotalsFor,
-  getClientHoursTotals,
-} from '@pts/db/hours'
+import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 import { NotFoundError } from '@/lib/errors/http'
 import { clientWebsiteSql } from '@/lib/queries/clients/website'
 import { createSearchPattern } from '@/lib/pagination/cursor'
@@ -115,8 +116,8 @@ export const fetchClientsWithMetrics = cache(
       baseConditions.push(eq(clients.billingType, billingType))
     }
 
-    // Aliased user join: the clients table references users twice
-    // (createdBy, origination). Closers live on the commission term.
+    // Aliased user join for the origination user (from the newest commission
+    // term, the one place commission is stored).
     const originationUsers = aliasedTable(users, 'origination_users')
 
     // Base client data. Project counts are derived below from the per-client
@@ -133,9 +134,9 @@ export const fetchClientsWithMetrics = cache(
         website: clientWebsiteSql,
         billingType: clients.billingType,
         state: clients.state,
-        originationContactId: clients.originationContactId,
+        originationContactId: currentOriginationContactIdSql(),
         originationContactName: contacts.name,
-        originationUserId: clients.originationUserId,
+        originationUserId: currentOriginationUserIdSql(),
         originationUserName: originationUsers.fullName,
         originationUserEmail: originationUsers.email,
         originationUserAvatarUrl: originationUsers.avatarUrl,
@@ -149,10 +150,10 @@ export const fetchClientsWithMetrics = cache(
       })
       .from(clients)
       .leftJoin(companies, eq(companies.id, clients.companyId))
-      .leftJoin(contacts, eq(clients.originationContactId, contacts.id))
+      .leftJoin(contacts, eq(currentOriginationContactIdSql(), contacts.id))
       .leftJoin(
         originationUsers,
-        eq(clients.originationUserId, originationUsers.id)
+        eq(currentOriginationUserIdSql(), originationUsers.id)
       )
       .where(and(...baseConditions))
       .orderBy(asc(clients.name))
@@ -168,23 +169,26 @@ export const fetchClientsWithMetrics = cache(
     // is unchanged; "total" is any status, deletedAt IS NULL.
     const [clientHours, projectsData, contactsByClient, closersByClient] =
       await Promise.all([
-      getClientHoursTotals(db, clientIds),
-      db
-        .select({
-          id: projects.id,
-          name: projects.name,
-          slug: projects.slug,
-          status: projects.status,
-          clientId: projects.clientId,
-        })
-        .from(projects)
-        .where(
-          and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
-        )
-        .orderBy(asc(projects.name)),
-      fetchContactSummariesByClient(clientIds),
-      fetchLatestClosersByClient(clientIds),
-    ])
+        getClientHoursTotals(db, clientIds),
+        db
+          .select({
+            id: projects.id,
+            name: projects.name,
+            slug: projects.slug,
+            status: projects.status,
+            clientId: projects.clientId,
+          })
+          .from(projects)
+          .where(
+            and(
+              inArray(projects.clientId, clientIds),
+              isNull(projects.deletedAt)
+            )
+          )
+          .orderBy(asc(projects.name)),
+        fetchContactSummariesByClient(clientIds),
+        fetchLatestClosersByClient(clientIds),
+      ])
 
     // Group projects by client ID
     const projectsMap = new Map<string, ClientProjectSummary[]>()
@@ -208,7 +212,8 @@ export const fetchClientsWithMetrics = cache(
       } = clientHoursTotalsFor(clientHours, row.id)
       const allProjects = projectsMap.get(row.id) ?? []
       const activeProjects = allProjects.filter(
-        project => project.status === 'ACTIVE' || project.status === 'ONBOARDING'
+        project =>
+          project.status === 'ACTIVE' || project.status === 'ONBOARDING'
       )
 
       return {
@@ -253,7 +258,9 @@ export const fetchClientsWithMetrics = cache(
  * pipeline onto every client detail render.
  */
 export const fetchClientCycleDirectory = cache(
-  async (user: AppUser): Promise<Array<{ id: string; slug: string | null }>> => {
+  async (
+    user: AppUser
+  ): Promise<Array<{ id: string; slug: string | null }>> => {
     assertAdmin(user)
 
     return db
@@ -314,8 +321,8 @@ export const fetchClientById = cache(
         notes: clients.notes,
         website: clientWebsiteSql,
         state: clients.state,
-        originationContactId: clients.originationContactId,
-        originationUserId: clients.originationUserId,
+        originationContactId: currentOriginationContactIdSql(),
+        originationUserId: currentOriginationUserIdSql(),
         billingType: clients.billingType,
         companyId: clients.companyId,
         label: clients.label,

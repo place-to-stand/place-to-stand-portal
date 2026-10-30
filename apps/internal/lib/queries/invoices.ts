@@ -41,10 +41,7 @@ import {
   listProductCatalogItems,
   type ProductCatalogItemRow,
 } from '@/lib/queries/product-catalog'
-import {
-  listTaxRates,
-  type TaxRateRow,
-} from '@/lib/queries/tax-rates'
+import { listTaxRates, type TaxRateRow } from '@/lib/queries/tax-rates'
 
 // ---------------------------------------------------------------------------
 // Selection objects
@@ -327,12 +324,20 @@ async function fetchHourBlocksByInvoice(
   const rows = await db
     .select({
       id: hourBlocks.id,
-      invoiceId: hourBlocks.invoiceId,
+      invoiceId: invoiceLineItems.invoiceId,
       hoursPurchased: hourBlocks.hoursPurchased,
     })
     .from(hourBlocks)
+    // A block's invoice is the one its creating line belongs to.
+    .innerJoin(
+      invoiceLineItems,
+      eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+    )
     .where(
-      and(inArray(hourBlocks.invoiceId, invoiceIds), isNull(hourBlocks.deletedAt))
+      and(
+        inArray(invoiceLineItems.invoiceId, invoiceIds),
+        isNull(hourBlocks.deletedAt)
+      )
     )
     .orderBy(asc(hourBlocks.createdAt), asc(hourBlocks.id))
 
@@ -564,9 +569,7 @@ export async function getInvoiceByPaymentIntent(
 // Record invoice view (atomic)
 // ---------------------------------------------------------------------------
 
-export async function recordInvoiceView(
-  invoiceId: string
-): Promise<number> {
+export async function recordInvoiceView(invoiceId: string): Promise<number> {
   const result = await db
     .update(invoices)
     .set({

@@ -24,6 +24,8 @@ import {
   commissionAssignmentsEqual,
   fetchLatestClosersByClient,
   resolveClosers,
+  currentOriginationContactIdSql,
+  currentOriginationUserIdSql,
   upsertCommissionTerm,
 } from '@/lib/queries/clients/commission-terms'
 import {
@@ -162,8 +164,8 @@ export async function updateClient(
         slug: clients.slug,
         billingType: clients.billingType,
         notes: clients.notes,
-        originationContactId: clients.originationContactId,
-        originationUserId: clients.originationUserId,
+        originationContactId: currentOriginationContactIdSql(),
+        originationUserId: currentOriginationUserIdSql(),
         companyId: clients.companyId,
       })
       .from(clients)
@@ -249,10 +251,10 @@ export async function updateClient(
         })
       }
 
-      // The billingType / origination writes below are the current-value
-      // cache flip (what the client list, detail page and sheet show); the
-      // terms rows' effective_from controls report resolution. Closers have
-      // no cache: displays read the newest term's closer rows.
+      // The billingType write below is the current-value cache flip (what
+      // the client list, detail page and sheet show); the terms rows'
+      // effective_from controls report resolution. Commission has no cache:
+      // displays read the newest term.
       await tx
         .update(clients)
         .set({
@@ -260,8 +262,6 @@ export async function updateClient(
           slug: slugToUpdate,
           billingType,
           state,
-          originationContactId,
-          originationUserId,
           notes,
           ...(companyId !== undefined ? { companyId } : {}),
         })

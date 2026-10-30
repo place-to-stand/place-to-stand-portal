@@ -91,7 +91,7 @@ export async function createHourBlocksFromInvoice(
       .values({
         clientId: invoice.clientId,
         hoursPurchased,
-        invoiceId: invoice.id,
+        // The invoice is read through the line.
         invoiceLineItemId: item.id,
         createdBy: invoice.createdBy,
         billingMonth,
