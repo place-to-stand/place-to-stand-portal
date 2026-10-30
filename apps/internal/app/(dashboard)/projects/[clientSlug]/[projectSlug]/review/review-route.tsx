@@ -11,7 +11,7 @@ import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { fetchClientDirectory } from '@/lib/queries/clients'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 type ReviewRouteArgs = {
@@ -61,7 +61,7 @@ export const renderReviewRoute = async ({
     fetchClientDirectory(),
   ])
 
-  const allClients: ClientRow[] = clientDirectory.map(c => ({
+  const allClients: ClientPickerRow[] = clientDirectory.map(c => ({
     id: c.id,
     name: c.name,
     deleted_at: c.deletedAt,

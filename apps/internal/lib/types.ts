@@ -37,6 +37,12 @@ export type DbClient = {
   deleted_at: string | null
 }
 
+/**
+ * A client as the project, invoice and hour-block pickers list it (archived
+ * ones included, so a record's own archived client still shows).
+ */
+export type ClientPickerRow = Pick<DbClient, 'id' | 'name' | 'deleted_at'>
+
 /** A portal login with access to a client (from `client_portal_access`). */
 export type DbClientMember = {
   /** The contact behind the login. */

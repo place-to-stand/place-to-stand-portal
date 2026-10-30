@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { useHourBlocksTableState } from '@/lib/settings/hour-blocks/use-hour-blocks-table-state'
@@ -19,7 +19,7 @@ import { HourBlockSheet } from '../hour-block-sheet'
 
 type HourBlocksManagementTableProps = {
   hourBlocks: HourBlockWithClient[]
-  clients: ClientRow[]
+  clients: HourBlockClient[]
   totalCount: number
   currentPage: number
   totalPages: number

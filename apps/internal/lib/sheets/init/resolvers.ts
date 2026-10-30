@@ -46,7 +46,7 @@ import {
 import { getProjectById } from '@/lib/queries/projects'
 import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
-import type { ClientRow } from '@/lib/companies/billing/client-sheet-utils'
+import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from './payloads'
@@ -94,7 +94,7 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
   }
 
   const closersByClient = await fetchLatestClosersByClient([row.id])
-  const client: ClientRow = {
+  const client: ClientWithClosers = {
     id: row.id,
     name: row.name,
     slug: row.slug,

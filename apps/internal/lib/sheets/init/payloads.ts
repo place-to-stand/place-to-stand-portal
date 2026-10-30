@@ -8,7 +8,7 @@
  * wrapper + resolver.
  */
 
-import type { ClientRow } from '@/lib/companies/billing/client-sheet-utils'
+import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 import type {
   DbUser,
   ProjectWithRelations,
@@ -16,7 +16,7 @@ import type {
 } from '@/lib/types'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import type {
-  ClientRow as InvoiceClientRow,
+  InvoiceClient,
   InvoiceWithLineItems,
   ProductCatalogItemRow,
 } from '@/lib/invoices/invoice-form'
@@ -24,11 +24,11 @@ import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
 import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
 import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
 import type {
-  ClientRow as HourBlockClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import type {
-  ClientRow as ProjectClientRow,
+  ClientPickerRow,
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
@@ -37,17 +37,17 @@ export type SheetInitPayloads = {
   /** The company sheet loads its own record; init only confirms access. */
   company: { companyId: string | null }
   /** `null` client = create mode (`?client=new`). */
-  client: { client: ClientRow | null }
+  client: { client: ClientWithClosers | null }
   submission: { submission: FormSubmissionRecord }
   /** The contact sheet self-fetches its client links; it only needs the row. */
   contact: { contact: ContactSheetInput | null }
   'hour-block': {
     hourBlock: HourBlockWithClient | null
-    clients: HourBlockClientRow[]
+    clients: HourBlockClient[]
   }
   invoice: {
     invoice: InvoiceWithLineItems | null
-    clients: InvoiceClientRow[]
+    clients: InvoiceClient[]
     productCatalog: ProductCatalogItemRow[]
     taxRates: TaxRateData[]
   }
@@ -57,7 +57,7 @@ export type SheetInitPayloads = {
   }
   project: {
     project: ProjectWithClient | null
-    clients: ProjectClientRow[]
+    clients: ClientPickerRow[]
     adminUsers: AdminUserForOwner[]
   }
   lead: {

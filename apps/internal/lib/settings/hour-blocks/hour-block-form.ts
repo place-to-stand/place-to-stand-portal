@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import type { ClientPickerRow } from '@/lib/types'
+
 const DEFAULT_HOURS_PURCHASED = 5
 
 export const HOUR_BLOCK_NOTES_MAX_LENGTH = 2000
@@ -44,15 +46,12 @@ type HourBlockRow = {
   billing_month: string
 }
 
-type ClientRow = {
-  id: string
-  name: string
+type HourBlockClient = ClientPickerRow & {
   /** The client's company: the list links open its sheet. */
   company_id: string
-  deleted_at: string | null
 }
 
-export type HourBlockWithClient = HourBlockRow & { client: ClientRow | null }
+export type HourBlockWithClient = HourBlockRow & { client: HourBlockClient | null }
 
 export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
   'companyId',
@@ -85,9 +84,9 @@ export const createHourBlockSavePayload = (
   notes: values.notes.trim().length > 0 ? values.notes.trim() : null,
 })
 
-export const sortClientsByName = (clients: ClientRow[]): ClientRow[] =>
+export const sortClientsByName = (clients: HourBlockClient[]): HourBlockClient[] =>
   [...clients].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   )
 
-export type { ClientRow }
+export type { HourBlockClient }

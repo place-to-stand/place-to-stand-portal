@@ -26,7 +26,7 @@ import {
 } from '@/lib/db/schema'
 
 import type {
-  ClientRow,
+  InvoiceClient,
   InvoiceHourBlockSummary,
   InvoiceLineItemRow,
   InvoiceWithClient,
@@ -185,7 +185,7 @@ export type ListInvoicesInput = {
 
 export type ListInvoicesResult = {
   items: InvoiceWithClient[]
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateRow[]
   /** Rows matching the active filters/search (drives `Showing N of M`). */
@@ -365,7 +365,7 @@ async function fetchHourBlocksByInvoice(
 // ---------------------------------------------------------------------------
 
 export type InvoiceReferenceData = {
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateRow[]
 }
@@ -655,7 +655,7 @@ function mapLineItemRow(row: LineItemSelectionRow): InvoiceLineItemRow {
   }
 }
 
-function mapClientRow(row: ClientSelectionRow): ClientRow {
+function mapClientRow(row: ClientSelectionRow): InvoiceClient {
   return {
     id: row.id,
     name: row.name,

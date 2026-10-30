@@ -9,7 +9,7 @@ import {
   type ContractorUserSummary,
   type ProjectWithClient,
 } from '@/lib/settings/projects/use-project-sheet-state'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import {
   buildOwnerOptions,
   type AdminUserForOwner,
@@ -24,7 +24,7 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
-  clients: ClientRow[]
+  clients: ClientPickerRow[]
   adminUsers?: AdminUserForOwner[]
   contractorDirectory?: ContractorUserSummary[]
   projectContractors?: Record<string, ContractorUserSummary[]>

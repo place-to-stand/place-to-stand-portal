@@ -3,4 +3,4 @@ import type { DbClient } from '@/lib/types'
 import type { ClientCloser } from './closers'
 
 /** The billing form's row: the snake_case client plus its saved closer split. */
-export type ClientRow = DbClient & { closers: ClientCloser[] }
+export type ClientWithClosers = DbClient & { closers: ClientCloser[] }

@@ -2,10 +2,10 @@
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { HOUR_BLOCK_MISSING_CLIENT_REASON } from '@/lib/settings/hour-blocks/hour-block-ui-state'
-import type { ClientRow } from '@/lib/settings/hour-blocks/hour-block-form'
+import type { HourBlockClient } from '@/lib/settings/hour-blocks/hour-block-form'
 
 type HourBlocksAddButtonProps = {
-  clients: ClientRow[]
+  clients: HourBlockClient[]
   className?: string
 }
 

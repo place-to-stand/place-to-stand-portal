@@ -32,7 +32,7 @@ import {
   projectSheetFormSchema,
   PROJECT_FORM_FIELDS,
   sortClientsByName,
-  type ClientRow,
+  type ClientPickerRow,
   type ContractorUserSummary,
   type ProjectSavePayload,
   type ProjectSheetFormValues,
@@ -58,7 +58,7 @@ export type UseProjectSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
-  clients: ClientRow[]
+  clients: ClientPickerRow[]
   contractorDirectory?: ContractorUserSummary[]
   projectContractors?: Record<string, ContractorUserSummary[]>
 }

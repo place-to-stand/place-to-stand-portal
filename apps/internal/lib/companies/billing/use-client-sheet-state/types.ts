@@ -2,7 +2,7 @@ import type { UseFormReturn } from 'react-hook-form'
 
 import type { CompanyBillingFields } from '@/lib/companies/sheet-save-schema'
 
-import type { ClientRow } from '../client-sheet-utils'
+import type { ClientWithClosers } from '../client-sheet-utils'
 import type { CloserKind } from '../closers'
 import type { ClientSheetFormValues } from '../client-sheet-schema'
 
@@ -53,7 +53,7 @@ export type UseClientBillingFormArgs = {
   /** The sheet is open: loads the pickers' people and resets on reopen. */
   open: boolean
   /** The company's live client; null for a blank form (start billing). */
-  client: ClientRow | null
+  client: ClientWithClosers | null
   /** The company sheet is saving: pickers and fields lock. */
   isPending: boolean
 }

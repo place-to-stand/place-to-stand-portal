@@ -25,7 +25,7 @@ import {
 } from '@/lib/settings/hour-blocks/use-hour-block-sheet-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { HourBlockArchiveDialog } from './_components/hour-block-archive-dialog'
@@ -38,7 +38,7 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   hourBlock: HourBlockWithClient | null
-  clients: ClientRow[]
+  clients: HourBlockClient[]
 }
 
 export function HourBlockSheet({

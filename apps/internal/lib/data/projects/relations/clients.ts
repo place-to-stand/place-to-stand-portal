@@ -21,7 +21,7 @@ import type { DbClient, DbUser } from '@/lib/types'
 
 import type { MemberWithUser } from '../types'
 
-export type ClientRow = {
+export type ClientRelationRow = {
   id: string
   name: string
   slug: string | null
@@ -61,7 +61,7 @@ export type MemberRow = {
 
 export async function loadClientRows(
   companyIds: string[]
-): Promise<ClientRow[]> {
+): Promise<ClientRelationRow[]> {
   if (!companyIds.length) {
     return []
   }
@@ -135,7 +135,7 @@ export async function loadMemberRows(
   )
 }
 
-export function mapClientRows(rows: ClientRow[]): DbClient[] {
+export function mapClientRows(rows: ClientRelationRow[]): DbClient[] {
   return rows.map(row => ({
     id: row.id,
     name: row.name,

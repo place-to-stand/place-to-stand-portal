@@ -11,14 +11,14 @@ import {
   softDeleteHourBlock,
 } from '@/app/(dashboard)/hour-blocks/actions'
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { HOUR_BLOCK_MISSING_CLIENT_REASON } from './hour-block-ui-state'
 
 type UseHourBlocksTableStateArgs = {
-  clients: ClientRow[]
+  clients: HourBlockClient[]
   /** The page's fresh rows — the open sheet re-resolves from them by id. */
   hourBlocks?: HourBlockWithClient[]
   /**

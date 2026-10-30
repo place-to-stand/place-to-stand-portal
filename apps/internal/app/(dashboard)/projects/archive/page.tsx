@@ -12,7 +12,7 @@ import { fetchAdminUsers } from '@/lib/data/users'
 import { requireRole } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
 import type {
-  ClientRow,
+  ClientPickerRow,
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
@@ -54,7 +54,7 @@ export default async function ProjectsArchivePage({
     disabled_at: admin.disabled_at ?? null,
   }))
 
-  const clientRows: ClientRow[] = archiveResult.clients.map(client => ({
+  const clientRows: ClientPickerRow[] = archiveResult.clients.map(client => ({
     id: client.id,
     name: client.name,
     deleted_at: client.deletedAt,

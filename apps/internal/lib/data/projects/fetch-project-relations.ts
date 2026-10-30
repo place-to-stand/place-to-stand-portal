@@ -12,7 +12,7 @@ import {
   loadMemberRows,
   mapClientRows,
   mapMemberRows,
-  type ClientRow,
+  type ClientRelationRow,
   type MemberRow,
 } from './relations/clients'
 import {
@@ -83,7 +83,7 @@ export async function fetchProjectRelations({
   ownerIds,
   includeArchivedTasks = false,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
-  const clientDataPromise: Promise<[ClientRow[], MemberRow[]]> = Promise.all([
+  const clientDataPromise: Promise<[ClientRelationRow[], MemberRow[]]> = Promise.all([
     loadClientRows(companyIds),
     loadMemberRows(companyIds),
   ])

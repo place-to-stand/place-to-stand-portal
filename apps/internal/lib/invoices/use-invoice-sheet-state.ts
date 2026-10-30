@@ -40,7 +40,7 @@ import {
   createInvoiceSavePayload,
   invoiceFormSchema,
   INVOICE_FORM_FIELDS,
-  type ClientRow,
+  type InvoiceClient,
   type InvoiceFormValues,
   type InvoiceLineItemFormValues,
   type InvoiceWithClient,
@@ -79,7 +79,7 @@ export type UseInvoiceSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { LandingProject } from '@/lib/data/projects'
 
@@ -21,7 +21,7 @@ import { PROJECTS_TABS } from '../_lib/tabs'
 export type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
-  clients: ClientRow[]
+  clients: ClientPickerRow[]
   /** Owner picker options for the table's avatar cell. */
   admins: AdminUserForOwner[]
   currentUserId: string
