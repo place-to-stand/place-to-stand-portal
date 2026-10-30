@@ -232,10 +232,15 @@ export function RichTextEditor({
     }
   }
 
+  // `contain-inline-size` keeps the editor's width from depending on its
+  // content. Without it, a parent that sizes to min-content (a grid row such
+  // as FormItem, once DisabledFieldTooltip wraps the editor while a form
+  // saves) widens to the longest unbroken word or URL and the text runs past
+  // the field's right edge. `min-w-0` does the same for flex parents.
   const wrapperClasses = useMemo(
     () =>
       cn(
-        'rich-text-editor group flex w-full flex-shrink-0 flex-col overflow-hidden rounded-md border bg-background shadow-xs transition select-text',
+        'rich-text-editor group flex w-full min-w-0 flex-shrink-0 flex-col overflow-hidden contain-inline-size rounded-md border bg-background shadow-xs transition select-text',
         !disabled &&
           'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
         disabled && 'opacity-60',

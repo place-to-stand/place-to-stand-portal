@@ -15,6 +15,7 @@ import {
 } from '@pts/ui/dropdown-menu'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import {
   isContentEmpty,
   sanitizeEditorHtml,
@@ -219,7 +220,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
       ) : null}
       <div
         className={cn(
-          'text-foreground [&_a]:text-primary [&_code]:bg-muted [&_pre]:bg-muted space-y-2 text-sm leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5',
+          RICH_TEXT_HTML_CLASSES,
           // Keep the first line clear of the absolutely-positioned menu button.
           isAuthor && 'pr-8'
         )}

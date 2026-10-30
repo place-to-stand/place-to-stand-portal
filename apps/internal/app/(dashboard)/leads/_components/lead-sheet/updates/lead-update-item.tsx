@@ -13,6 +13,7 @@ import {
 } from '@pts/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
+import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -142,7 +143,10 @@ export function LeadUpdateItem({
         ) : null}
       </div>
       <div
-        className='text-foreground [&_a]:text-primary [&_code]:bg-muted [&_pre]:bg-muted mt-2 space-y-2 text-sm leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5'
+        className={cn(
+          RICH_TEXT_HTML_CLASSES,
+          'mt-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0'
+        )}
         dangerouslySetInnerHTML={{ __html: sanitizedBody }}
       />
       <div className='text-muted-foreground mt-2 flex items-center gap-1.5 text-xs'>
