@@ -30,6 +30,7 @@ import { Label } from '@pts/ui/label'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 import { monthLabelFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
@@ -186,7 +187,7 @@ export function CompanyBillingTab({
             <TriangleAlert />
             <AlertContent>
               <AlertDescription>
-                {formatHourCount(unbilledHours)} hrs logged this month won’t be
+                {formatHours(unbilledHours)} logged this month won’t be
                 billed.
               </AlertDescription>
             </AlertContent>
@@ -222,11 +223,6 @@ export function CompanyBillingTab({
     </>
   )
 }
-
-const formatHourCount = (value: number) =>
-  Number.isInteger(value) ? String(value) : value.toFixed(1)
-
-const formatHours = (value: number) => `${formatHourCount(value)}h`
 
 /**
  * The Projects tab (clients, and former clients with projects): the

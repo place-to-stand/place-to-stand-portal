@@ -190,11 +190,6 @@ export function ProjectRecordRow({
   )
 }
 
-const USD = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
-
 export function InvoiceRecordRow({
   invoice,
   note,
@@ -213,7 +208,7 @@ export function InvoiceRecordRow({
   const { open } = useSheetParams()
   const title = invoice.number ?? 'Invoice'
   const details = [
-    invoice.total == null ? null : USD.format(invoice.total),
+    invoice.total == null ? null : formatCurrency(invoice.total),
     invoice.issuedDate
       ? `Issued ${formatCalendarDate(invoice.issuedDate)}`
       : null,

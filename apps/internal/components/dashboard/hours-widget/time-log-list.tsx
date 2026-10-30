@@ -6,10 +6,10 @@ import { Loader2, User, Users } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 
-import { formatHours } from './month-cursor'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TimeLogListProps = {
@@ -203,7 +203,6 @@ function TimeLogRow({
             <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
           ) : null}
           {formatHours(entry.hours)}
-          <span className='text-muted-foreground text-xs font-normal'>h</span>
         </span>
       </div>
     </li>

@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Progress } from '@pts/ui/progress'
+import { formatHours } from '@pts/ui/numbers'
 import {
   Table,
   TableBody,
@@ -65,15 +66,6 @@ function isProjectSortValue(value: string): boolean {
     (PROJECT_SORT_FIELDS as readonly string[]).includes(field) &&
     (direction === 'asc' || direction === 'desc')
   )
-}
-
-const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 0,
-})
-
-function formatHours(hours: number): string {
-  return HOURS_FORMATTER.format(hours)
 }
 
 function SimpleIcon({
@@ -621,7 +613,7 @@ export function ProjectsLanding({
                         : 'text-destructive font-medium'
                   )}
                 >
-                  {formatHours(hours.hoursRemaining)}h remaining
+                  {formatHours(hours.hoursRemaining)} remaining
                 </span>
               </div>
             )}

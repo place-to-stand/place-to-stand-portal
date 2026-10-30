@@ -3,6 +3,7 @@ import { Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
+import { formatHours } from '@pts/ui/numbers'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -20,11 +21,6 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectTimeLogHistoryState } from '@/lib/projects/time-log/use-project-time-log-history'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-
-const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 0,
-})
 
 type ProjectTimeLogHistoryContentProps = {
   state: ProjectTimeLogHistoryState
@@ -172,7 +168,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
         </div>
       </TableCell>
       <TableCell className='font-semibold'>
-        {HOURS_FORMATTER.format(Number(log.hours ?? 0))} hrs
+        {formatHours(log.hours ?? 0)}
       </TableCell>
       <TableCell label='Tasks' className='text-sm tabular-nums md:text-center'>
         <LinkedRecordsHoverCell

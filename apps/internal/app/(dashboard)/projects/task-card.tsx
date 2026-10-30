@@ -21,6 +21,7 @@ import {
 
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { formatHours } from '@pts/ui/numbers'
 
 import {
   CardAssigneeAvatars,
@@ -58,16 +59,6 @@ type TaskCardProps = {
   disableDropTransition?: boolean
   context?: TaskContextDetails
 }
-
-/**
- * Hours read as a compact chip, so `3` not `3.00` and `3.5` not `3.50` —
- * the card has room for a glance, not a ledger.
- */
-const formatLoggedHours = (value: number) =>
-  `${value.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}h`
 
 function CardContent({
   task,
@@ -198,7 +189,7 @@ function CardContent({
               {loggedHours > 0 ? (
                 <span className='inline-flex items-center gap-1'>
                   <ENTITY_ICONS.timeLog className='h-3.5 w-3.5' aria-hidden />
-                  {formatLoggedHours(loggedHours)}
+                  {formatHours(loggedHours)}
                   <span className='sr-only'> logged</span>
                 </span>
               ) : null}

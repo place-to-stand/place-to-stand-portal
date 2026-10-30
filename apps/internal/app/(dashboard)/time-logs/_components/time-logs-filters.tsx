@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 
+import { formatHours } from '@pts/ui/numbers'
+
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import {
@@ -13,8 +15,6 @@ import {
   currentMonthRange,
   type TimeLogsListParams,
 } from '@/lib/time-logs/filters'
-
-const HOURS = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
 
 type TimeLogsFiltersProps = {
   /** The list these filters drive: `/time-logs` or `/time-logs/archive`. */
@@ -71,7 +71,7 @@ export function TimeLogsFilters({
         <p className='max-md:text-right'>
           <span className='text-muted-foreground'>Total: </span>
           <span className='font-semibold tabular-nums'>
-            {HOURS.format(totalHours)} hrs
+            {formatHours(totalHours)}
           </span>
         </p>
       }
