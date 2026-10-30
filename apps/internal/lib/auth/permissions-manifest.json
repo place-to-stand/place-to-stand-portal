@@ -365,13 +365,6 @@
   },
   {
     "type": "action",
-    "name": "destroyLead",
-    "file": "apps/internal/app/(dashboard)/leads/_actions/destroy-lead.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "moveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/move-lead.ts",
     "kind": "capability",

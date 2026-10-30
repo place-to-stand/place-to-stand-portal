@@ -3,7 +3,6 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { formatRelativeTime } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
@@ -32,7 +31,7 @@ import type { ArchivedLead } from '@/lib/data/leads'
 import type { LeadAssigneeOption } from '@/lib/leads/types'
 import { LEAD_STATUS_LABELS, LEAD_STATUS_VALUES } from '@/lib/leads/constants'
 import { parseSortParam } from '@/lib/pagination/sort'
-import { restoreLead, destroyLead } from '../_actions'
+import { restoreLead } from '../_actions'
 import { filterArchivedLeads, isLeadStatus } from '../_lib/archive-filters'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
@@ -40,7 +39,6 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
-import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { LeadSheet } from './lead-sheet'
 
 type LeadsArchiveSectionProps = {
@@ -76,8 +74,6 @@ export function LeadsArchiveSection({
 }: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
-  // Permanent delete is admin-only; SALES staff can archive and restore.
-  const { isAdmin } = useViewerAccess()
   const { update, getParam, hasActiveFilters, reset } = useListParams({
     basePath: '/leads/archive',
     resetKeys: [],
@@ -88,8 +84,6 @@ export function LeadsArchiveSection({
   })
   const [isPending, startTransition] = useTransition()
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
-  const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
-  const [destroyTarget, setDestroyTarget] = useState<ArchivedLead | null>(null)
   // `?lead=` drives selection so archived leads are deep-linkable too.
   const { selectedId, select, clear } = useSheetParamSelection('lead')
 
@@ -139,47 +133,6 @@ export function LeadsArchiveSection({
         title: 'Lead restored',
         description: `${lead.contactName} has been restored to the board.`,
       })
-      router.refresh()
-    })
-  }
-
-  const handleRequestDestroy = (lead: ArchivedLead) => {
-    setDestroyTarget(lead)
-  }
-
-  const handleCancelDestroy = () => {
-    setDestroyTarget(null)
-  }
-
-  const handleConfirmDestroy = () => {
-    if (!destroyTarget) return
-
-    const lead = destroyTarget
-    setPendingDestroyId(lead.id)
-    setDestroyTarget(null)
-
-    startTransition(async () => {
-      const result = await destroyLead({ leadId: lead.id })
-      setPendingDestroyId(null)
-
-      if (!result.success) {
-        toast({
-          title: 'Unable to permanently delete lead',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Lead permanently deleted',
-        description: `${lead.contactName} has been permanently removed.`,
-      })
-      // Drop a `?lead=` pointing at the destroyed row so the refresh doesn't
-      // resolve it into a not-found notice.
-      if (selectedId === lead.id) {
-        clear()
-      }
       router.refresh()
     })
   }
@@ -245,20 +198,6 @@ export function LeadsArchiveSection({
           onSuccess={handleSheetSuccess}
         />
       ) : null}
-      <ConfirmDialog
-        open={Boolean(destroyTarget)}
-        title='Permanently delete lead?'
-        description={
-          destroyTarget
-            ? `Permanently deleting ${destroyTarget.contactName} removes this lead and all associated data. This action cannot be undone.`
-            : 'Permanently deleting this lead removes it. This action cannot be undone.'
-        }
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={handleCancelDestroy}
-        onConfirm={handleConfirmDestroy}
-      />
       <FilterBar
         search={
           <SearchInput
@@ -314,8 +253,6 @@ export function LeadsArchiveSection({
           <TableBody>
             {visibleLeads.map(lead => {
               const isRestoring = isPending && pendingRestoreId === lead.id
-              const isDestroying = isPending && pendingDestroyId === lead.id
-              const rowDisabled = isRestoring || isDestroying
 
               return (
                 <TableRow
@@ -369,16 +306,8 @@ export function LeadsArchiveSection({
                         kind='restore'
                         entity='lead'
                         onClick={() => handleRestore(lead)}
-                        disabled={rowDisabled}
+                        disabled={isRestoring}
                       />
-                      {isAdmin ? (
-                        <RecordRowAction
-                          kind='destroy'
-                          entity='lead'
-                          onClick={() => handleRequestDestroy(lead)}
-                          disabled={rowDisabled}
-                        />
-                      ) : null}
                     </RecordRowActions>
                   </TableCell>
                 </TableRow>
