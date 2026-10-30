@@ -18,16 +18,11 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, contacts, memberships, users } from '@/lib/db/schema'
 import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import {
   isMemberSql,
   mainCompanyIdSql,
   primaryContactIdSql,
   setPortalAccess,
 } from '@/lib/queries/memberships'
-import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 const signInDisabledSql = sql<boolean>`exists (
   select 1 from users u
@@ -243,119 +238,4 @@ export async function applyPortalAccessInTx(
   for (const contactId of changes.revoke) {
     await setPortalAccess(tx, contactId, companyId, false)
   }
-}
-
-/**
- * Saves the People tab's Portal switches: which of the company's
- * people can see this client in the client portal (those with a portal
- * login see it right away). Being at the company grants nothing by itself.
- * Access is a flag on each person's membership, so only members can have
- * it. The primary contact is the company's, set on the company sheet.
- */
-export async function syncClientContacts(
-  user: AppUser,
-  clientCompanyId: string,
-  contactIds: string[]
-): Promise<{ ok: boolean; error?: string }> {
-  assertAdmin(user)
-
-  // Ids reach a uuid column cast; a malformed one would surface as a 500.
-  if (
-    !UUID_PATTERN.test(clientCompanyId) ||
-    !contactIds.every(id => UUID_PATTERN.test(id))
-  ) {
-    return { ok: false, error: 'Invalid client or person.' }
-  }
-
-  const [client] = await db
-    .select({ companyId: companies.id })
-    .from(companies)
-    .where(and(wasClientCompany(), eq(companies.id, clientCompanyId)))
-    .limit(1)
-  const companyId = client?.companyId ?? null
-  if (!companyId) {
-    return contactIds.length
-      ? {
-          ok: false,
-          error:
-            'Link this client to a company before giving its people portal access.',
-        }
-      : { ok: true }
-  }
-
-  const members = await db
-    .select({
-      contactId: memberships.contactId,
-      name: contacts.name,
-      userId: contacts.userId,
-      portalAccess: memberships.portalAccess,
-    })
-    .from(memberships)
-    .innerJoin(contacts, eq(contacts.id, memberships.contactId))
-    .where(
-      and(eq(memberships.companyId, companyId), isNull(memberships.endedAt))
-    )
-  const memberIds = new Set(members.map(member => member.contactId))
-  const wanted = new Set(contactIds)
-
-  const outsiderIds = contactIds.filter(id => !memberIds.has(id))
-  if (outsiderIds.length) {
-    const outsiders = await db
-      .select({ name: contacts.name })
-      .from(contacts)
-      .where(inArray(contacts.id, outsiderIds))
-    return {
-      ok: false,
-      error: `${outsiders.map(c => c.name).join(', ')} ${
-        outsiders.length === 1 ? 'isn’t' : 'aren’t'
-      } at this client’s company. Add them to the company first.`,
-    }
-  }
-
-  const toGrant = members.filter(
-    m => wanted.has(m.contactId) && !m.portalAccess
-  )
-  // Access needs a portal login; give one from the contact first.
-  const withoutLogin = toGrant.filter(m => !m.userId)
-  if (withoutLogin.length) {
-    return {
-      ok: false,
-      error: `${withoutLogin.map(m => m.name).join(', ')} ${
-        withoutLogin.length === 1 ? 'has' : 'have'
-      } no portal user yet. Create one from their contact first.`,
-    }
-  }
-  const toRevoke = members.filter(
-    m => !wanted.has(m.contactId) && m.portalAccess
-  )
-  const changes: ContactClientLinkChange[] = [
-    ...toGrant.map(m => ({
-      contactId: m.contactId,
-      clientCompanyId,
-      action: 'linked' as const,
-    })),
-    ...toRevoke.map(m => ({
-      contactId: m.contactId,
-      clientCompanyId,
-      action: 'unlinked' as const,
-    })),
-  ]
-  if (!changes.length) return { ok: true }
-
-  try {
-    await db.transaction(tx =>
-      applyPortalAccessInTx(tx, companyId, {
-        grant: toGrant.map(m => m.contactId),
-        revoke: toRevoke.map(m => m.contactId),
-      })
-    )
-  } catch (error) {
-    console.error('Failed to update portal access', error)
-    return { ok: false, error: 'Failed to update portal access.' }
-  }
-
-  // Committed; a logging failure must not report the save as failed.
-  await logContactClientLinkChanges(user, changes)
-
-  return { ok: true }
 }

@@ -1,5 +1,4 @@
 import { inArray } from 'drizzle-orm'
-import { z } from 'zod'
 
 import { db } from '@/lib/db'
 import { contacts, users } from '@/lib/db/schema'
@@ -7,107 +6,7 @@ import {
   clientSlugExistsDrizzle,
   generateUniqueClientSlugDrizzle,
 } from '@/lib/queries/clients'
-import { CLIENT_BILLING_TYPE_VALUES } from '@/lib/companies/billing/billing-types'
-import {
-  closerSplitError,
-  type CloserShare,
-} from '@/lib/companies/billing/closers'
-
-export const clientSchema = z
-  .object({
-    id: z.string().uuid().optional(),
-    /**
-     * Ignored when a company is given: the name is the company's name. Used
-     * as the company name when a new client has no company.
-     */
-    name: z.string().default(''),
-    /**
-     * Deprecated and ignored: a company has one client, so clients no longer
-     * need a label to tell them apart. Still accepted for old callers.
-     */
-    label: z.unknown().optional(),
-    slug: z
-      .string()
-      .regex(
-        /^[a-z0-9-]+$/,
-        'Slugs can only contain lowercase letters, numbers, and dashes'
-      )
-      .or(z.literal(''))
-      .nullish()
-      .transform(value => (value ? value : null)),
-    billingType: z.enum(CLIENT_BILLING_TYPE_VALUES).default('prepaid'),
-    // Month boundary the report basis switches at when billingType changes on
-    // an existing client. Ignored on create and when the type is unchanged.
-    billingEffective: z
-      .enum(['current_month', 'next_month'])
-      .default('next_month'),
-    // Month boundary the Monthly Close switches closer/origination at when
-    // either changes on an existing client. Ignored on create and when the
-    // assignment is unchanged.
-    commissionEffective: z
-      .enum(['current_month', 'next_month'])
-      .default('next_month'),
-    state: z
-      .string()
-      .max(2)
-      .nullish()
-      .transform(value => (value ? value : null)),
-    // Deprecated: the company owns the website. A website sent here only
-    // fills the client's company website when it has none.
-    website: z
-      .string()
-      .url('Please enter a valid URL')
-      .or(z.literal(''))
-      .nullish()
-      .transform(value => (value ? value : null))
-      .optional(),
-    notes: z
-      .string()
-      .nullish()
-      .transform(value => (value ? value : null)),
-    /**
-     * The company this client is. On edit, omitted keeps the current one and
-     * null unlinks it; a new client without one gets a company found or
-     * created by its name.
-     */
-    companyId: z.string().uuid().nullable().optional(),
-    originationContactId: z
-      .string()
-      .uuid()
-      .nullish()
-      .transform(value => value ?? null),
-    originationUserId: z
-      .string()
-      .uuid()
-      .nullish()
-      .transform(value => value ?? null),
-    closers: z
-      .array(
-        z.object({
-          kind: z.enum(['user', 'contact']),
-          id: z.string().uuid(),
-          sharePercent: z.number(),
-        })
-      )
-      .default([]),
-  })
-  .refine(
-    data =>
-      !(data.originationUserId !== null && data.originationContactId !== null),
-    {
-      message: 'Origination is one admin or one person, not both.',
-      path: ['originationUserId'],
-    }
-  )
-  // Closers are deliberately optional (PRD 007): with none the 20% share is
-  // not paid out and the Monthly Close reports it under House (estimated).
-  // With any, their shares must total exactly 100%.
-  .superRefine((data, ctx) => {
-    const error = closerSplitError(data.closers)
-    if (error) {
-      ctx.addIssue({ code: 'custom', message: error, path: ['closers'] })
-    }
-  })
+import type { CloserShare } from '@/lib/companies/billing/closers'
 
 /**
  * Verifies that any user IDs referenced by origination / closer fields
@@ -194,36 +93,7 @@ async function assertCloserContacts(
   return null
 }
 
-const clientIdentifierSchema = {
-  id: z.string().uuid(),
-}
-
-/** Stop or restart billing: this month (default) or next. */
-const billingEffectiveSchema = {
-  effective: z.enum(['current_month', 'next_month']).optional(),
-}
-export const deleteClientSchema = z.object({
-  ...clientIdentifierSchema,
-  ...billingEffectiveSchema,
-})
-export const restoreClientSchema = z.object({
-  ...clientIdentifierSchema,
-  ...billingEffectiveSchema,
-})
-export const destroyClientSchema = z.object(clientIdentifierSchema)
-
-export type ClientInput = z.infer<typeof clientSchema>
-export type DeleteClientInput = z.infer<typeof deleteClientSchema>
-export type RestoreClientInput = z.infer<typeof restoreClientSchema>
-export type DestroyClientInput = z.infer<typeof destroyClientSchema>
-
-export type ClientActionResult = {
-  error?: string
-  companyId?: string // Returned on successful create
-  slug?: string // Returned on successful create (create-from-picker needs it)
-}
-
-export type ClientSlugOptions = {
+type ClientSlugOptions = {
   excludeId?: string
 }
 
