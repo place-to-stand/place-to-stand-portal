@@ -1,33 +1,17 @@
-# PR #279 resume note (30 Oct 2026, 16:28 UTC)
+# PR #279 resume note (30 Oct 2026, ~19:55 UTC, before the macOS update restart)
 
-## Done
+## Done (pushed to claude/project-thread-ee2vhs, head a7d36244)
 
-- Swarm audit: every obvious fix merged and pushed to `claude/project-thread-ee2vhs` (head e1380e44 plus this note).
-- Checks on the final code:
-  - lint, type-check and build pass;
-  - e2e: 76 pass read-only, 85 pass with writes, 0 fail;
-  - fresh-dump rehearsal: 41/41 compare checks, ALL CHECKS PASS, no close drift, 0 undo differences.
-- Report: `docs/reviews/pr-279-swarm-audit.md` (fixes, security by severity, decisions with recommendations, 99% migration confidence).
-- Test plan: `docs/reviews/pr-279-test-plan.md`.
-- :3003 and :3011 switched to e1380e44. The local DB was backed up first (`~/Backups/pts-portal/local-3003-pre0115-20261030-1127.dump`) and is migrated to 0115.
+- All 46 decisions, every UI ask from today, and the review fixes (Stripe Checkout paid only when Stripe says paid; hours summary month key; four small review items).
+- Re-verified at baaf9e45: rehearsal on the fresh prod dump passes (41/41, ALL CHECKS PASS, no drift, undo 0), close amounts identical for 13 months, lint/type-check/build pass, Codex review approve, Claude review fixed.
+- Lint PR #281 (claude/lint-guardrails) open as a draft, merged with #279 at baaf9e45.
 
-## In flight
+## After the restart
 
-Nothing. No helpers are running, and every branch is merged into the integration worktree `~/Sites/place-to-stand-portal-0111`.
-
-## Next steps
-
-1. Run the read-only e2e on :3003. Use the same command as for :3013, with `E2E_BASE_URL=http://localhost:3003 E2E_PORTAL_URL=http://localhost:3011`.
-2. Send Jason the final report: hash, what's fixed, the top decisions, and links to the audit and the test plan.
-3. Stop the rehearsal apps on :3013 and :3014.
-4. Start the queued lint PR. Its own branch goes on top of this PR. Scope:
-   - CI and pre-commit;
-   - the drizzle subquery rule;
-   - house rules as lint rules;
-   - layering and server-boundary rules;
-   - the copy and vocabulary check;
-   - hygiene and type-aware rules;
-   - a shared config for both apps;
-   - files over 300 lines as a warning;
-   - a check that every design-system rule names its guard;
-   - docs/CLAUDE.md mapping each rule to the check that guards it.
+1. Start Docker Desktop (`open -a Docker`); the place-to-stand-portal Supabase containers should come back; check `psql -h 127.0.0.1 -p 54322 -U postgres -c 'select 1'` (password postgres).
+2. Restart :3003/:3011 from ~/Sites/place-to-stand-portal-local (fast-forward it to the PR head first), with the egress guard (NODE_OPTIONS="--require /Users/jasondesiderio/Backups/pts-portal/local-prod-guard/block-egress.cjs").
+3. Restart the rehearsal apps :3013/:3014 from ~/Sites/place-to-stand-portal-0111 on DATABASE_URL=.../prod_rehearsal_app2.
+4. Re-run the full e2e suite with E2E_WRITES=1 on :3013 (it was cut short by the full disk).
+5. Email checks: app mail goes to local Mailpit (http://127.0.0.1:54324) outside production. Trigger portal invite, sign-in link / reset, invoice send and form-submission emails on :3013-style server; check recipient, from, subject, links.
+6. Stripe: restart a dev server with STRIPE_WEBHOOK_SECRET=whsec_local_test_secret and post signed events (paid, unpaid then async succeeded, async failed, under/over/wrong currency, replay) to /api/integrations/stripe for an invoice on prod_rehearsal_app2; check status and hour_blocks.
+7. Report all results to the coordinator together.
