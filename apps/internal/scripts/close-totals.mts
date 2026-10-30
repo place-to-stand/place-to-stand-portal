@@ -21,9 +21,12 @@ if (!/@(127\.0\.0\.1|localhost)[:/]/.test(url)) {
 }
 
 type Totals = Record<string, number | string>
+// A report or a snapshot's report: read loosely, it only feeds a comparison.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LooseReport = any
 
 // Section totals plus a per-client line, so a moved client shows by name.
-function totalsOf(report: any): Totals {
+function totalsOf(report: LooseReport): Totals {
   const round = (n: number) => Math.round(n * 100) / 100
   const out: Totals = {
     billingIn: round(report.combinedBillingTotal),
@@ -45,7 +48,7 @@ function totalsOf(report: any): Totals {
 
 void (async () => {
   const sql = postgres(url, { max: 1 })
-  const snapshots = await sql<{ year: number; month: number; report: any }[]>`
+  const snapshots = await sql<{ year: number; month: number; report: LooseReport }[]>`
     select year, month, report from monthly_close_snapshots
     where deleted_at is null order by year, month`
   const bounds = await fetchMonthlyCloseReport('2026-09-01', '2026-09-30')

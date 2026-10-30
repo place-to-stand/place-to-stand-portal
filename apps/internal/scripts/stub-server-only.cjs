@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /** Lets server modules run under tsx: `server-only` is a bundler marker. */
 const Module = require('module')
 const resolve = Module._resolveFilename
