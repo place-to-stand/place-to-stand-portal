@@ -9,8 +9,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { cn } from '@/lib/utils'
 
-const ALL = 'all'
-
 type FilterOption = {
   value: string
   label: string
@@ -63,25 +61,24 @@ function SingleFilterSelect({
   options,
   className,
 }: SingleProps) {
-  // Every list filter is a searchable combobox, however short its list: it
-  // opens on the selected option, and typing narrows it.
+  // Every list filter is a clearable searchable combobox: the placeholder
+  // ("All …") when nothing is picked, the choice and an X to clear it back.
   return (
     <SearchableCombobox
-      items={[
-        { value: ALL, label: placeholder },
-        ...options.map(option => ({
-          value: option.value,
-          label: option.label,
-        })),
-      ]}
-      value={value ?? ALL}
-      onChange={next => onChange(next === ALL ? undefined : next)}
+      items={options.map(option => ({
+        value: option.value,
+        label: option.label,
+      }))}
+      value={value ?? null}
+      onChange={next => onChange(next || undefined)}
+      onClear={() => onChange(undefined)}
+      clearLabel={placeholder}
       placeholder={placeholder}
       searchPlaceholder='Search…'
       emptyMessage='No matches.'
       ariaLabel={placeholder}
       // The wrapper is full width by default: filters sit in one row.
-      className={cn('w-40 shrink-0', className)}
+      className={cn('w-52 shrink-0', className)}
     />
   )
 }
