@@ -32,7 +32,7 @@ export function useGitHubCallbackNotice(redirectPath: string): {
       const reason = searchParams.get('reason')
       setError(
         reason === 'already_linked'
-          ? 'That GitHub organization is already connected to a different client.'
+          ? 'That GitHub organization is already connected to a different company.'
           : 'Unable to connect GitHub. Please try again.'
       )
     }

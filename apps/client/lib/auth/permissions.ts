@@ -33,7 +33,7 @@ export async function ensureClientAccess(user: AppUser, companyId: string) {
     .limit(1)
 
   if (!access) {
-    throw new ForbiddenError('You do not have access to this client')
+    throw new ForbiddenError('You do not have access to this company')
   }
 }
 

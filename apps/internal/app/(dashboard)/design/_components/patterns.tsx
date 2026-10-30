@@ -245,6 +245,7 @@ export function PatternsCopy() {
 
       <DoDont
         rule='Name the entity'
+        // copy-check: allow — names the retired words in order to ban them
         why='Copy uses the entity names: company, person, client, sign-in, lead, project, task, invoice, hour block. Never a stand-in such as user, account, login, contact or record.'
         doExample={
           <div className='w-full space-y-3'>

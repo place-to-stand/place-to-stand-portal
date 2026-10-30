@@ -8,12 +8,12 @@ import { expectHealthy } from './helpers'
 
 const portal = process.env.E2E_PORTAL_URL ?? 'http://localhost:3011'
 
-test('client portal: the account menu is labelled with a first name', async ({
+test('client portal: the menu is labelled with a first name', async ({
   page,
 }) => {
   await page.goto(`${portal}/`)
   await expectHealthy(page)
-  const trigger = page.getByRole('button', { name: /, account menu$/ })
+  const trigger = page.getByRole('button', { name: /, your menu$/ })
   await expect(trigger).toBeVisible()
   const label = (await trigger.innerText()).trim()
   expect(label).not.toBe('')

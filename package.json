@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint && node scripts/design-tokens.mjs --check && node scripts/permissions-manifest.mjs --check && node scripts/check-entities.mjs && node scripts/check-badges.mjs && node scripts/check-formatters.mjs",
+    "lint": "turbo lint && node scripts/design-tokens.mjs --check && node scripts/permissions-manifest.mjs --check && node scripts/check-entities.mjs && node scripts/check-badges.mjs && node scripts/check-formatters.mjs && node scripts/check-copy.mjs",
     "design-tokens": "node scripts/design-tokens.mjs",
     "permissions-manifest": "node scripts/permissions-manifest.mjs",
     "type-check": "turbo type-check",

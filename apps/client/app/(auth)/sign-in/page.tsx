@@ -106,7 +106,7 @@ export default function SignInPage() {
       await requestMagicLink(trimmed)
 
       setNotice(
-        "If an account exists for that email, we've sent a sign-in link. Check your inbox."
+        "If that email can sign in, we've sent it a link to sign in with. Check your inbox."
       )
       setCooldown(MAGIC_LINK_COOLDOWN_SECONDS)
     } catch {
@@ -148,7 +148,7 @@ export default function SignInPage() {
             ? 'Sending...'
             : cooldown > 0
               ? `Resend in ${cooldown}s`
-              : 'Email me a sign-in link'}
+              : 'Email me a link to sign in'}
         </button>
       </div>
 

@@ -259,8 +259,7 @@ export function IntegrationsPanel() {
                 Google Workspace
               </CardTitle>
               <CardDescription>
-                Connect your Google Workspace accounts to sync emails and
-                contacts.
+                Connect your Google Workspace accounts to sync email.
               </CardDescription>
             </div>
           </CardHeader>

@@ -34,7 +34,7 @@ const ACK_PARAM: Record<AcknowledgementFilter, string> = {
 
 // Same one-param-two-states shape as the acknowledgement filter.
 const CONTACT_OPTIONS = [
-  { value: '1', label: 'With contact only' },
+  { value: '1', label: 'With contact details only' },
   { value: '0', label: 'Anonymous only' },
 ]
 

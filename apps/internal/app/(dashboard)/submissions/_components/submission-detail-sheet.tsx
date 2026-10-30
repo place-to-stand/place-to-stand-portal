@@ -435,7 +435,7 @@ export function SubmissionDetailSheet({
             </div>
 
             <Separator />
-            <SheetSection title='Contact'>
+            <SheetSection title='Contact details'>
               <dl className={KV_GRID}>
                 <Kv label='Name' value={value(displaySubmission.contactName)} />
                 <Kv

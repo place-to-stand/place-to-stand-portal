@@ -133,6 +133,7 @@ export function buildStuckEmailCard(
             {
               widgets: notice.items.map(item => ({
                 decoratedText: {
+                  // copy-check: allow — the website's contact form
                   topLabel: item.kind === 'audit' ? 'Audit' : 'Contact',
                   text: item.label,
                   ...(item.url

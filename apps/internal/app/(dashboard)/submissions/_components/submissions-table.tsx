@@ -366,6 +366,7 @@ export function SubmissionsTable({
                 Received
               </SortableTableHead>
               <TableHead className='w-24'>Form</TableHead>
+              {/* copy-check: allow — the visitor's contact details, not a person record */}
               <TableHead>Contact</TableHead>
               <TableHead className={columnClasses.company}>Company</TableHead>
               <TableHead className={columnClasses.outcome}>Outcome</TableHead>
