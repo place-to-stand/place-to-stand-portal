@@ -13,13 +13,14 @@ export const clientNameSql = sql<string>`"companies"."name"`
 
 /**
  * A user's name: their contact's. `table` is the outer users table's name
- * or alias (`users` unless the query aliases it). An archived person keeps
- * their name in history (time logs, the close, comments).
+ * or alias (`users` unless the query aliases it). A sign-in has at most one
+ * contact (`contacts_user_id_key`), archived or not, so an archived person
+ * keeps their name in history (time logs, the close, comments).
  */
 export function personNameOf(table = 'users') {
   return sql<string | null>`(select c.name from contacts c where c.user_id = ${sql.raw(
     `"${table}"."id"`
-  )} order by (c.deleted_at is null) desc, c.created_at limit 1)`
+  )})`
 }
 
 /** A user's name, correlated on the outer `users`. */
@@ -32,7 +33,7 @@ export const personNameSql = personNameOf('users')
 export function personAvatarOf(table = 'users') {
   return sql<string | null>`(select c.avatar_url from contacts c where c.user_id = ${sql.raw(
     `"${table}"."id"`
-  )} order by (c.deleted_at is null) desc, c.created_at limit 1)`
+  )})`
 }
 
 /** A user's photo, correlated on the outer `users`. */
