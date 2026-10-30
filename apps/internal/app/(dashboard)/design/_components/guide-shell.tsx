@@ -24,9 +24,6 @@ export function GuideShell({ children }: { children: ReactNode }) {
     <div className='mx-auto w-full max-w-[1400px] px-1 pb-24 sm:px-2'>
       <header className='flex flex-col gap-5 pt-4 pb-10 sm:flex-row sm:items-end sm:justify-between sm:pt-8'>
         <div className='max-w-2xl space-y-3'>
-          <p className='text-muted-foreground text-[11px] font-semibold tracking-wider uppercase'>
-            Place To Stand · internal portal
-          </p>
           <h1 className='text-3xl font-semibold tracking-tight sm:text-4xl'>
             Design system
           </h1>
