@@ -63,6 +63,17 @@ export const mainCompanyIdSql = (contactId: AnyPgColumn | SQL) =>
     order by m.started_at, m.created_at, m.company_id limit 1
   )`
 
+/**
+ * True when the contact is a current member of a client (a company billed
+ * now and not archived). A client's people are admin-only to edit.
+ */
+export const atClientCompanySql = (contactId: AnyPgColumn | SQL) =>
+  sql<boolean>`exists (
+    select 1 from memberships m
+    where m.contact_id = ${ref(contactId)} and m.ended_at is null
+      and company_is_client(m.company_id)
+  )`
+
 /** The contact's main company name. */
 export const mainCompanyNameSql = (contactId: AnyPgColumn | SQL) =>
   sql<string | null>`(

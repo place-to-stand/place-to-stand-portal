@@ -52,6 +52,8 @@ const BILLING_VERBS = [
   'CLIENT_DELETED',
   'CONTACT_CLIENT_LINKED',
   'CONTACT_CLIENT_UNLINKED',
+  // Says a person got a portal sign-in, which Sales can't see either.
+  'CONTACT_INVITED_TO_PORTAL',
 ]
 
 function billingScope(user: AppUser) {

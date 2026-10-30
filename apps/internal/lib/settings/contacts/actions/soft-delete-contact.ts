@@ -8,6 +8,7 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { companies, contacts, memberships, users } from '@/lib/db/schema'
+import { atClientCompanySql } from '@/lib/queries/memberships'
 import { setPortalUserDisabled } from '@/lib/settings/users/services'
 import {
   logContactClientLinkChanges,
@@ -57,6 +58,7 @@ export async function softDeleteContactMutation(
             email: string | null
             name: string | null
             userId: string | null
+            atClient: boolean
           }
         | undefined
       let accessRows: {
@@ -72,6 +74,7 @@ export async function softDeleteContactMutation(
             email: contacts.email,
             name: contacts.name,
             userId: contacts.userId,
+            atClient: atClientCompanySql(contacts.id),
           })
           .from(contacts)
           .where(eq(contacts.id, parsed.data.id))
@@ -117,6 +120,13 @@ export async function softDeleteContactMutation(
       ) {
         return buildMutationResult({
           error: 'This person is a portal user. Ask an admin to archive them.',
+        })
+      }
+      // A client's people are who it bills, so they're admin-only too.
+      if (!roleCan(user.role, 'clients.manage') && existingContact.atClient) {
+        return buildMutationResult({
+          error:
+            'This person is at a client, so only an admin can archive them.',
         })
       }
 

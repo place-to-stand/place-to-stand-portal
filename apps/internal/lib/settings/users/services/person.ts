@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { companies, contacts } from '@/lib/db/schema'
@@ -16,20 +16,40 @@ const STAFF_COMPANY_NAME = 'Place To Stand'
 const isStaffRole = (role: Role | null | undefined) =>
   role === 'ADMIN' || role === 'SALES'
 
-/** The agency's own company (`companies.is_staff`), if there is one. */
-async function findStaffCompany(executor: Executor): Promise<string | null> {
+/**
+ * The agency's own company (`companies.is_staff`), if there is one, archived
+ * or not: an archived staff company is still the staff company, so a role
+ * change never inserts a second one.
+ */
+async function findStaffCompany(
+  executor: Executor
+): Promise<{ id: string; archived: boolean } | null> {
   const [existing] = await executor
-    .select({ id: companies.id })
+    .select({ id: companies.id, deletedAt: companies.deletedAt })
     .from(companies)
-    .where(and(eq(companies.isStaff, true), isNull(companies.deletedAt)))
+    .where(eq(companies.isStaff, true))
+    .orderBy(sql`${companies.deletedAt} is not null`)
     .limit(1)
-  return existing?.id ?? null
+  return existing
+    ? { id: existing.id, archived: existing.deletedAt !== null }
+    : null
 }
 
-/** The staff company, created (marked `is_staff`) only when none exists. */
+/**
+ * The staff company, restored if archived, and created (marked `is_staff`)
+ * only when none exists.
+ */
 async function findOrCreateStaffCompany(executor: Executor): Promise<string> {
   const existing = await findStaffCompany(executor)
-  if (existing) return existing
+  if (existing) {
+    if (existing.archived) {
+      await executor
+        .update(companies)
+        .set({ deletedAt: null, updatedAt: new Date().toISOString() })
+        .where(eq(companies.id, existing.id))
+    }
+    return existing.id
+  }
   const [created] = await executor
     .insert(companies)
     .values({ name: STAFF_COMPANY_NAME, isStaff: true })
@@ -56,8 +76,8 @@ export async function syncStaffMembership(
     return
   }
   if (!isStaffRole(to) && isStaffRole(from)) {
-    const staffCompanyId = await findStaffCompany(executor)
-    if (staffCompanyId) await leaveCompany(executor, contactId, staffCompanyId)
+    const staffCompany = await findStaffCompany(executor)
+    if (staffCompany) await leaveCompany(executor, contactId, staffCompany.id)
   }
 }
 

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
+import { roleCan } from '@/lib/auth/capabilities'
 import { contactRestoredEvent } from '@/lib/activity/events/contacts'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
@@ -45,7 +46,13 @@ export async function restoreContactMutation(
       }
 
       let existingContact:
-        { id: string; email: string | null; name: string | null } | undefined
+        | {
+            id: string
+            email: string | null
+            name: string | null
+            userId: string | null
+          }
+        | undefined
 
       try {
         const rows = await db
@@ -53,6 +60,7 @@ export async function restoreContactMutation(
             id: contacts.id,
             email: contacts.email,
             name: contacts.name,
+            userId: contacts.userId,
           })
           .from(contacts)
           .where(eq(contacts.id, parsed.data.id))
@@ -66,6 +74,13 @@ export async function restoreContactMutation(
 
       if (!existingContact) {
         return buildMutationResult({ error: 'Person not found.' })
+      }
+
+      // Someone who can sign in is admin-only, as when archiving them.
+      if (existingContact.userId && !roleCan(user.role, 'clients.manage')) {
+        return buildMutationResult({
+          error: 'This person can sign in. Ask an admin to restore them.',
+        })
       }
 
       try {
