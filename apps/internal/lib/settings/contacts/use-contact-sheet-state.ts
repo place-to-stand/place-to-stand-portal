@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
 import { useToast } from '@/components/ui/use-toast'
+import { currentMonthStartUtc } from '@/lib/billing/months'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import {
   savePersonSheetAction,
@@ -83,12 +84,6 @@ export type ContactSheetInput = {
   companyName?: string | null
 }
 
-/** This month's start in UTC ('yyyy-MM-01'), as the server counts it. */
-function currentMonthStart() {
-  const now = new Date()
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
-}
-
 export type UseContactSheetStateOptions = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -163,7 +158,7 @@ export function useContactSheetState({
       // No sign-in yet: off, and Client if they turn it on. Shown on create
       // too, so a new person can get a sign-in in the same Save.
       signIn: canManageSignIn
-        ? { enabled: false, role: 'CLIENT', effectiveFrom: currentMonthStart() }
+        ? { enabled: false, role: 'CLIENT', effectiveFrom: currentMonthStartUtc() }
         : undefined,
       email: contact?.email ?? '',
       name: contact?.name ?? initialName ?? '',
@@ -242,7 +237,7 @@ export function useContactSheetState({
             signIn: {
               enabled: !account.disabledAt && !account.deletedAt,
               role: account.role,
-              effectiveFrom: currentMonthStart(),
+              effectiveFrom: currentMonthStartUtc(),
             },
           },
           { keepDirtyValues: true }

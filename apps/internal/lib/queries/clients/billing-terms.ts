@@ -9,25 +9,9 @@ import type { ClientBillingTypeValue } from '@/lib/types'
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type DbOrTransaction = typeof db | DbTransaction
 
-/** First day of the current month in UTC, as 'yyyy-MM-dd'. */
-export function currentMonthStartUtc(): string {
-  const now = new Date()
-  const year = now.getUTCFullYear()
-  const month = String(now.getUTCMonth() + 1).padStart(2, '0')
-  return `${year}-${month}-01`
-}
+import { currentMonthStartUtc } from '@/lib/billing/months'
 
-/** First day of next month in UTC, as 'yyyy-MM-dd'. */
-export function nextMonthStartUtc(): string {
-  const now = new Date()
-  // Date handles month overflow (December -> January next year).
-  const next = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)
-  )
-  const year = next.getUTCFullYear()
-  const month = String(next.getUTCMonth() + 1).padStart(2, '0')
-  return `${year}-${month}-01`
-}
+export { currentMonthStartUtc, nextMonthStartUtc } from '@/lib/billing/months'
 
 /**
  * Inserts a client's first billing term, effective the first of the creation

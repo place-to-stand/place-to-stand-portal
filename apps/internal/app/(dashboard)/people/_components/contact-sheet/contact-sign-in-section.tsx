@@ -14,6 +14,7 @@ import {
 } from '@pts/ui/select'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Switch } from '@pts/ui/switch'
+import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   FormControl,
@@ -220,38 +221,16 @@ export function ContactSignInFields({
           name='signIn.effectiveFrom'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Role starts</FormLabel>
-              <FormControl>
-                <DisabledFieldTooltip
-                  disabled={Boolean(lockedReason)}
-                  reason={lockedReason}
-                >
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={Boolean(lockedReason)}
-                  >
-                    <SelectTrigger aria-label='Role starts'>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roleMonths.map(option => (
-                        <SelectItem
-                          key={option.value}
-                          value={option.value}
-                          disabled={Boolean(option.disabledReason)}
-                        >
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </DisabledFieldTooltip>
-              </FormControl>
-              <FormDescription>
-                The monthly close counts them in this role from this month.
-                Closed months can’t be changed.
-              </FormDescription>
+              <EffectiveMonthSelect
+                id='contact-role-starts'
+                title='Role starts'
+                value={field.value}
+                onChange={field.onChange}
+                options={roleMonths}
+                note='The monthly close counts them in this role from this month. Closed months can’t be changed.'
+                disabled={Boolean(lockedReason)}
+                disabledReason={lockedReason}
+              />
               <FormMessage />
             </FormItem>
           )}

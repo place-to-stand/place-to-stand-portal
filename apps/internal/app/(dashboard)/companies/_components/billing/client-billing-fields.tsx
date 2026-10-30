@@ -31,10 +31,21 @@ import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/companies/billing/bill
 import { US_STATES } from '@/lib/companies/billing/us-states'
 import type { ClientSheetFormValues } from '@/lib/companies/billing/client-sheet-schema'
 import { cn } from '@/lib/utils'
+import { monthLabelFromNow } from '@/lib/billing/months'
+import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 
 import { ClientClosersEditor } from './client-closers-editor'
-import { ClientEffectiveCallout } from './client-effective-callout'
 import { ClientOriginationPicker } from './client-origination-picker'
+
+type EffectiveValue = ClientSheetFormValues['billingEffective']
+
+/** When a billing type or commission change takes effect. */
+function effectiveOptions(): { value: EffectiveValue; label: string }[] {
+  return [
+    { value: 'next_month', label: `Next month (${monthLabelFromNow(1)})` },
+    { value: 'current_month', label: `This month (${monthLabelFromNow(0)})` },
+  ]
+}
 
 export type ClientBillingFieldsProps = {
   form: UseFormReturn<ClientSheetFormValues>
@@ -119,6 +130,7 @@ export function ClientBillingFields({
     name: 'billingType',
   })
   const fieldDisabledReason = isPending ? pendingReason : null
+  const monthOptions = effectiveOptions()
 
   return (
     <>
@@ -223,18 +235,30 @@ export function ClientBillingFields({
         {isEditing &&
         initialBillingType !== null &&
         watchedBillingType !== initialBillingType ? (
-          <ClientEffectiveCallout
-            form={form}
+          <FormField
+            control={form.control}
             name='billingEffective'
-            title='New billing type starts'
-            notes={{
-              current_month:
-                "This month's close re-derives under the new billing type.",
-              next_month:
-                'Invoices use the new type right away; the Monthly Close switches this client at the boundary.',
-            }}
-            isPending={isPending}
-            pendingReason={pendingReason}
+            render={({ field }) => (
+              <FormItem>
+                <EffectiveMonthSelect
+                  title='New billing type starts'
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={monthOptions}
+                  note={
+                    {
+                      current_month:
+                        "This month's close re-derives under the new billing type.",
+                      next_month:
+                        'Invoices use the new type right away; the Monthly Close switches this client at the boundary.',
+                    }[field.value]
+                  }
+                  disabled={isPending}
+                  disabledReason={fieldDisabledReason}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
           />
         ) : null}
       </SheetSection>
@@ -294,18 +318,30 @@ export function ClientBillingFields({
           ) : null}
         </div>
         {isEditing && commissionDirty ? (
-          <ClientEffectiveCallout
-            form={form}
+          <FormField
+            control={form.control}
             name='commissionEffective'
-            title='New assignment starts'
-            notes={{
-              current_month:
-                "This month's close pays commissions under the new assignment.",
-              next_month:
-                'Earlier months keep paying the previous closers and originator.',
-            }}
-            isPending={isPending}
-            pendingReason={pendingReason}
+            render={({ field }) => (
+              <FormItem>
+                <EffectiveMonthSelect
+                  title='New assignment starts'
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={monthOptions}
+                  note={
+                    {
+                      current_month:
+                        "This month's close pays commissions under the new assignment.",
+                      next_month:
+                        'Earlier months keep paying the previous closers and originator.',
+                    }[field.value]
+                  }
+                  disabled={isPending}
+                  disabledReason={fieldDisabledReason}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
           />
         ) : null}
       </SheetSection>

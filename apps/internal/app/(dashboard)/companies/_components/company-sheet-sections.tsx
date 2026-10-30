@@ -25,10 +25,8 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
-import {
-  BillingEffectiveChoice,
-  monthLabel,
-} from './billing/billing-effective-choice'
+import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
+import { monthLabelFromNow } from '@/lib/billing/months'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 export function CompanyLeadsSection({
@@ -121,11 +119,11 @@ export function CompanyBillingTab({
           options: [
             {
               value: 'current_month' as const,
-              label: `This month (${monthLabel(0)})`,
+              label: `This month (${monthLabelFromNow(0)})`,
             },
             {
               value: 'next_month' as const,
-              label: `Next month (${monthLabel(1)})`,
+              label: `Next month (${monthLabelFromNow(1)})`,
             },
           ],
         }
@@ -154,7 +152,7 @@ export function CompanyBillingTab({
           </p>
         ) : null}
         {choice ? (
-          <BillingEffectiveChoice
+          <EffectiveMonthSelect
             id='company-billing-effective'
             title={choice.title}
             value={effective}
