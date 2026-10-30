@@ -2,7 +2,7 @@ import { EmptyState } from '@pts/ui/empty-state'
 import type { Net30Data, PrepaidBillingData } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
-import { formatHours, formatMoney } from './format'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
 import { TreeBranch } from './tree-branch'
 
 type BillingInCardProps = {
@@ -45,10 +45,10 @@ function Group({
           <span className='text-muted-foreground'> · {basis}</span>
         </span>
         <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
-          {formatHours(hours)} hrs
+          {formatHours(hours)}
         </span>
         <span className='w-24 text-right font-semibold tabular-nums'>
-          {formatMoney(amount)}
+          {formatCurrency(amount)}
         </span>
       </div>
       {rows.map((row, index) => (
@@ -64,7 +64,7 @@ function Group({
             {formatHours(row.totalHours)}
           </span>
           <span className='w-24 text-right tabular-nums'>
-            {formatMoney(row.amount)}
+            {formatCurrency(row.amount)}
           </span>
         </div>
       ))}
@@ -85,7 +85,7 @@ export function BillingInCard({ prepaid, net30, total }: BillingInCardProps) {
           Billing in
         </h2>
         <span className='text-base font-semibold tabular-nums'>
-          {formatMoney(total)}
+          {formatCurrency(total)}
         </span>
       </div>
       {empty ? (

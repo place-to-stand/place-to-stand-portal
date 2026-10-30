@@ -12,6 +12,7 @@
 
 import { escapeHtml, markdownToText, renderMarkdown } from './markdown'
 import type { ClientUpdateItem } from './types'
+import { formatHours } from '@pts/ui/numbers'
 
 export type UpdateBody = {
   /** Primary contact's first name; null renders "Hi there,". */
@@ -25,11 +26,6 @@ export type UpdateBody = {
 
 export const DEFAULT_INTRO = "Here's an update on what we've been working on."
 export const DEFAULT_CLOSING = 'Let me know if you have any questions.'
-
-export function formatHours(value: number): string {
-  const rounded = Math.round(value * 100) / 100
-  return `${rounded} ${rounded === 1 ? 'hour' : 'hours'}`
-}
 
 /** "Site speed" → "Site speed." — the run-in always ends the sentence. */
 function runInLabel(label: string): string {

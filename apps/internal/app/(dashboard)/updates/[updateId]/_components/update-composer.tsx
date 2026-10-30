@@ -6,6 +6,7 @@ import type { ClientHoursTotals } from '@pts/db/hours'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import { Input } from '@pts/ui/input'
+import { formatHours } from '@pts/ui/numbers'
 import { Textarea } from '@pts/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import type { ClientUpdateRow } from '@/lib/updates'
@@ -243,7 +244,7 @@ export function UpdateComposer({
                   The hours line is added at send from the live balance —
                   currently{' '}
                   <span className='text-foreground'>
-                    {Math.round(hours.remaining * 100) / 100} hours
+                    {formatHours(hours.remaining)}
                   </span>{' '}
                   remaining.
                 </p>

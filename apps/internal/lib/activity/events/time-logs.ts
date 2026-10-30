@@ -1,6 +1,7 @@
 import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
+import { formatHours } from '@pts/ui/numbers'
 
-import { formatHours, joinWithCommas, toMetadata } from './shared'
+import { joinWithCommas, toMetadata } from './shared'
 
 export const timeLogCreatedEvent = (args: {
   hours: number
@@ -13,8 +14,8 @@ export const timeLogCreatedEvent = (args: {
 }): ActivityEvent => {
   const formattedHours = formatHours(args.hours)
   const summary = args.projectName
-    ? `Logged ${formattedHours} ${args.hours === 1 ? 'hour' : 'hours'} to ${args.projectName}`
-    : `Logged ${formattedHours} ${args.hours === 1 ? 'hour' : 'hours'}`
+    ? `Logged ${formattedHours} to ${args.projectName}`
+    : `Logged ${formattedHours}`
 
   return {
     verb: ActivityVerbs.TIME_LOG_CREATED,
@@ -41,8 +42,8 @@ export const timeLogUpdatedEvent = (args: {
     ? ` (${joinWithCommas(args.changedFields)})`
     : ''
   const summary = args.projectName
-    ? `Updated a ${formattedHours} hour time log on ${args.projectName}${fieldSummary}`
-    : `Updated a ${formattedHours} hour time log${fieldSummary}`
+    ? `Updated a ${formattedHours} time log on ${args.projectName}${fieldSummary}`
+    : `Updated a ${formattedHours} time log${fieldSummary}`
 
   return {
     verb: ActivityVerbs.TIME_LOG_UPDATED,
@@ -61,8 +62,8 @@ export const timeLogDeletedEvent = (args: {
 }): ActivityEvent => {
   const formattedHours = formatHours(args.hours)
   const summary = args.projectName
-    ? `Archived a ${formattedHours} hour time log from ${args.projectName}`
-    : `Archived a ${formattedHours} hour time log`
+    ? `Archived a ${formattedHours} time log from ${args.projectName}`
+    : `Archived a ${formattedHours} time log`
 
   return {
     verb: ActivityVerbs.TIME_LOG_DELETED,
@@ -81,8 +82,8 @@ export const timeLogRestoredEvent = (args: {
 }): ActivityEvent => {
   const formattedHours = formatHours(args.hours)
   const summary = args.projectName
-    ? `Restored a ${formattedHours} hour time log to ${args.projectName}`
-    : `Restored a ${formattedHours} hour time log`
+    ? `Restored a ${formattedHours} time log to ${args.projectName}`
+    : `Restored a ${formattedHours} time log`
 
   return {
     verb: ActivityVerbs.TIME_LOG_RESTORED,

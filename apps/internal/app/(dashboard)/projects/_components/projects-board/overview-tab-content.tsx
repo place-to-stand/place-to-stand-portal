@@ -9,6 +9,7 @@ import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { TabsContent } from '@pts/ui/tabs'
+import { formatHours } from '@pts/ui/numbers'
 import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
@@ -179,12 +180,12 @@ function ProjectDetailsWidget({
           <>
             <DetailRow
               label='Hours logged'
-              value={`${project.burndown.totalProjectLoggedHours.toFixed(2)}h`}
+              value={formatHours(project.burndown.totalProjectLoggedHours)}
             />
             {project.burndown.totalClientRemainingHours > 0 && (
               <DetailRow
                 label='Client hours remaining'
-                value={`${project.burndown.totalClientRemainingHours.toFixed(2)}h`}
+                value={formatHours(project.burndown.totalClientRemainingHours)}
               />
             )}
           </>

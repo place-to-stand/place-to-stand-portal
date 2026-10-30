@@ -1,6 +1,7 @@
 import { ArrowRight, Minus, Plus } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
 import { ActivityRichTextDiff } from '@/components/activity/activity-rich-text-diff'
 import {
   humanizeEnum,
@@ -9,7 +10,6 @@ import {
   type MembershipChange,
 } from '@/lib/activity/changes'
 import { formatFact } from '@/lib/activity/format-fact'
-import { formatHours } from '@/lib/activity/events/shared'
 import type { ActivityReferences } from '@/lib/activity/types'
 import { formatCalendarDate } from '@pts/ui/dates'
 import {
@@ -25,11 +25,6 @@ type ActivityChangeListProps = {
   targetType: string
   references?: ActivityReferences
 }
-
-const MONEY = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
 
 const LONG_FORM_KINDS = new Set(['richText', 'longText'])
 
@@ -250,11 +245,11 @@ function formatValue(
         : String(value)
     case 'money': {
       const amount = Number(value)
-      return Number.isFinite(amount) ? MONEY.format(amount) : String(value)
+      return Number.isFinite(amount) ? formatCurrency(amount) : String(value)
     }
     case 'hours': {
       const hours = Number(value)
-      return Number.isFinite(hours) ? `${formatHours(hours)}h` : String(value)
+      return Number.isFinite(hours) ? formatHours(hours) : String(value)
     }
     case 'boolean':
       return value ? 'Yes' : 'No'

@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Skeleton } from '@pts/ui/skeleton'
 import { getInitials } from '@/lib/users/initials'
@@ -51,7 +52,7 @@ export function TimeLogSection({
           />
           <h3 className='text-sm font-medium'>Time logs</h3>
           <span className='text-muted-foreground text-sm'>
-            {totalHours}h logged
+            {formatHours(totalHours)} logged
           </span>
         </div>
         <DisabledFieldTooltip
@@ -124,7 +125,7 @@ export function TimeLogSection({
                 {/* Right-aligned so `0.5h` and `12.5h` line up down the column
                     and the number sits flush against the note. */}
                 <span className='w-12 shrink-0 text-right font-medium tabular-nums'>
-                  {entry.hours}h
+                  {formatHours(entry.hours)}
                 </span>
                 {entry.note ? (
                   <span className='text-muted-foreground min-w-0 flex-1 truncate'>

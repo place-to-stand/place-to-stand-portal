@@ -6,7 +6,9 @@ import type {
   ProfitShareState,
 } from '@/lib/data/reports/types'
 
-import { formatHours, formatMoney, formatShortDay } from './format'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
+
+import { formatShortDay } from './format'
 
 type SummaryStripProps = {
   report: MonthlyCloseReport
@@ -54,21 +56,21 @@ function profitShareStat(
       const { data } = state
       if (state.source === 'snapshot') {
         return {
-          value: formatMoney(data.totalAmount),
-          caption: `From the ${formatMoney(data.balance)} ${formatShortDay(data.asOfDate)} balance`,
+          value: formatCurrency(data.totalAmount),
+          caption: `From the ${formatCurrency(data.balance)} ${formatShortDay(data.asOfDate)} balance`,
         }
       }
       if (inProgress) {
         return {
-          value: formatMoney(data.totalAmount),
-          caption: `From today's ${formatMoney(data.balance)} balance`,
+          value: formatCurrency(data.totalAmount),
+          caption: `From today's ${formatCurrency(data.balance)} balance`,
         }
       }
       return {
-        value: formatMoney(data.totalAmount),
+        value: formatCurrency(data.totalAmount),
         caption:
           data.totalAmount > 0
-            ? `${formatMoney(data.partners[0]?.amount ?? 0)} each to ${data.partners.length} partners`
+            ? `${formatCurrency(data.partners[0]?.amount ?? 0)} each to ${data.partners.length} partners`
             : 'Balance is under the minimum',
       }
     }
@@ -114,17 +116,17 @@ export function SummaryStrip({
     >
       <Stat
         label={`Billing in${soFar}`}
-        value={formatMoney(report.combinedBillingTotal)}
-        caption={`Prepaid ${formatMoney(report.prepaidBilling.totalAmount)} · Net 30 ${formatMoney(report.net30Billing.totalAmount)}`}
+        value={formatCurrency(report.combinedBillingTotal)}
+        caption={`Prepaid ${formatCurrency(report.prepaidBilling.totalAmount)} · Net 30 ${formatCurrency(report.net30Billing.totalAmount)}`}
       />
       <Stat
         label={`Hours worked${soFar}`}
         value={formatHours(report.workBillableHours)}
-        caption={`${formatHours(billedHours)} hrs billed`}
+        caption={`${formatHours(billedHours)} billed`}
       />
       <Stat
         label={`Partner payouts${soFar}`}
-        value={formatMoney(report.partnerPayouts.totalAmount)}
+        value={formatCurrency(report.partnerPayouts.totalAmount)}
         caption={payoutCaption}
       />
       <Stat

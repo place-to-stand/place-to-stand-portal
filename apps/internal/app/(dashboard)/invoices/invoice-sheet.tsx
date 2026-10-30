@@ -34,6 +34,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
+import { formatCurrency } from '@pts/ui/numbers'
 import {
   SHEET_SIDE_COLUMN_CLASS,
   Sheet,
@@ -82,13 +83,6 @@ type Props = {
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
 }
-
-const formatCurrency = (amount: number): string =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(amount)
 
 export function InvoiceSheet({
   open,

@@ -1,11 +1,5 @@
 import { formatCalendarDate } from '@pts/ui/dates'
 
-export const formatCurrency = (value: string | number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(typeof value === 'string' ? Number(value) : value)
-
 /** `long` → "September 3, 2026"; `short` → "Sep 3, 2026" (the paid stamp). */
 export const formatDate = (
   dateStr: string | null,

@@ -1,7 +1,7 @@
 import type { InvoiceWithLineItems } from '@/lib/invoices/invoice-form'
 import { cn } from '@/lib/utils'
 
-import { formatCurrency } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
 import { PAPER_LABEL } from './styles'
 
 type LineItem = InvoiceWithLineItems['line_items'][number]

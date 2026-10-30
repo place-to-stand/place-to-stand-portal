@@ -15,7 +15,7 @@ import { BRAND } from '@pts/ui/brand'
 
 import { cn } from '@/lib/utils'
 
-import { formatCurrency } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
 import { DARK_LABEL, HEADLINE_FONT, PANEL_TITLE } from './styles'
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY

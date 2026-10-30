@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
+import { formatHours } from '@pts/ui/numbers'
 import { EmptyValue } from '@/components/table/empty-value'
 import {
   Table,
@@ -38,8 +39,6 @@ import {
 } from '@/lib/table/clickable-row'
 
 import { useTimeLogRowActions } from '../_lib/use-time-log-row-actions'
-
-const HOURS = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
 
 type TimeLogsTableProps = {
   items: DashboardTimeLogEntry[]
@@ -251,7 +250,7 @@ export function TimeLogsTable({
                           'h-4 w-4 shrink-0'
                         )}
                       />
-                      {HOURS.format(item.hours)}
+                      {formatHours(item.hours)}
                     </span>
                   </TableCell>
                   <TableCell className='text-right max-md:ml-auto'>

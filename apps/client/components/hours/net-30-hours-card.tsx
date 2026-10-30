@@ -1,7 +1,7 @@
 import { Card } from '@pts/ui/card'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
 
-import { formatHours } from '@/components/hours/hours-summary-card'
 import { SummaryHeader } from '@/components/ui/summary-header'
 import type { Net30MonthlyHours } from '@/lib/data/hours'
 

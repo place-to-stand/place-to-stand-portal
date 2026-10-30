@@ -3,7 +3,9 @@ import { Info } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 
-import { formatHours, formatMoney, formatPercent } from './format'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
+
+import { formatPercent } from './format'
 
 type RateSplitCardProps = {
   report: MonthlyCloseReport
@@ -60,7 +62,7 @@ function Row({
             : 'w-24 shrink-0 text-right tabular-nums'
         }
       >
-        {formatMoney(amount)}
+        {formatCurrency(amount)}
       </span>
     </div>
   )
@@ -76,12 +78,12 @@ function houseNote(house: MonthlyCloseReport['house']): string | undefined {
   const parts: string[] = []
   if (house.unassignedOriginationAmount > 0) {
     parts.push(
-      `${formatMoney(house.unassignedOriginationAmount)} origination share from ${formatHours(house.unassignedOriginationHours)} hrs with no originator`
+      `${formatCurrency(house.unassignedOriginationAmount)} origination share from ${formatHours(house.unassignedOriginationHours)} with no originator`
     )
   }
   if (house.unassignedCloserAmount > 0) {
     parts.push(
-      `${formatMoney(house.unassignedCloserAmount)} closer share from ${formatHours(house.unassignedCloserHours)} hrs with no closer`
+      `${formatCurrency(house.unassignedCloserAmount)} closer share from ${formatHours(house.unassignedCloserHours)} with no closer`
     )
   }
   return parts.length > 0 ? `Includes ${parts.join(' and ')}` : undefined
@@ -101,14 +103,14 @@ export function RateSplitCard({ report }: RateSplitCardProps) {
           Rate split
         </h2>
         <span className='text-muted-foreground text-xs tabular-nums'>
-          ${rates.billablePerHour}/hr
+          {formatCurrency(rates.billablePerHour)}/hr
         </span>
       </div>
       <div className='flex flex-col py-2'>
         <Row
           label='Payroll'
           percent={pct(rates.payrollPerHour)}
-          basis={`${formatHours(payroll.totalHours)} hrs worked`}
+          basis={`${formatHours(payroll.totalHours)} worked`}
           amount={payroll.totalAmount}
         />
         <Row
@@ -119,14 +121,14 @@ export function RateSplitCard({ report }: RateSplitCardProps) {
               : 'External referrers only this period'
           }
           percent={pct(rates.originationPerHour)}
-          basis={`${formatHours(origination.totalHours)} hrs billed`}
+          basis={`${formatHours(origination.totalHours)} billed`}
           amount={origination.totalAmount}
         />
         {rates.closerPerHour > 0 ? (
           <Row
             label='Closer'
             percent={pct(rates.closerPerHour)}
-            basis={`${formatHours(closer.totalHours)} hrs billed`}
+            basis={`${formatHours(closer.totalHours)} billed`}
             amount={closer.totalAmount}
           />
         ) : null}
@@ -134,7 +136,7 @@ export function RateSplitCard({ report }: RateSplitCardProps) {
           label='House (est.)'
           note={houseNote(house)}
           percent={pct(rates.housePerHour)}
-          basis={`${formatHours(house.billableHours)} hrs billed`}
+          basis={`${formatHours(house.billableHours)} billed`}
           amount={house.totalAmount}
           muted
         />

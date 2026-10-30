@@ -13,10 +13,10 @@ import {
   type HoursSnapshot,
 } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
+import { formatHours } from '@pts/ui/numbers'
 
 import {
   compareMonthCursor,
-  formatHours,
   formatMonthLabel,
   shiftMonth,
 } from './month-cursor'
