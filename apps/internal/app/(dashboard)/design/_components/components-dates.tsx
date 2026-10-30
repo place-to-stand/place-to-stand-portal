@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { Calendar } from '@pts/ui/calendar'
 import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
 import { DatePicker } from '@/components/ui/date-picker'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
@@ -30,8 +31,8 @@ export function ComponentsDates() {
   return (
     <DesignSection
       id='dates'
-      title='Dates'
-      when='DatePicker for one calendar date, DateRangePicker for list filters. Format every date with formatCalendarDate ("Sep 23, 2026") and relative time with formatRelativeTime; never toLocaleDateString.'
+      title='Dates and numbers'
+      when='DatePicker for one calendar date, DateRangePicker for list filters. Format every date with formatCalendarDate ("Sep 23, 2026") and relative time with formatRelativeTime; never toLocaleDateString. Hours and money go through formatHours and formatCurrency (@pts/ui/numbers) in pages, emails, PDFs and notifications alike; the lint fails on a hand-rolled copy.'
     >
       <Specimen
         label='Pickers'
@@ -85,6 +86,35 @@ export function ComponentsDates() {
           <Format
             call='formatRelativeTime(timestamp)'
             result={formatRelativeTime(SAMPLE_TIMESTAMP, now)}
+          />
+        </dl>
+      </Specimen>
+
+      <Specimen
+        label='Hours and money'
+        note='@pts/ui/numbers'
+        className='block'
+      >
+        <dl className='grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4'>
+          <Format call='formatHours(1.5)' result={formatHours(1.5)} />
+          <Format call='formatHours(1250.256)' result={formatHours(1250.256)} />
+          <Format
+            call='formatHours(-2, { signed: true })'
+            result={formatHours(-2, { signed: true })}
+          />
+          <Format call="formatHours('0')" result={formatHours('0')} />
+          <Format call='formatCurrency(1234)' result={formatCurrency(1234)} />
+          <Format
+            call="formatCurrency('-12.5')"
+            result={formatCurrency('-12.5')}
+          />
+          <Format
+            call='formatCurrency(40, { signed: true })'
+            result={formatCurrency(40, { signed: true })}
+          />
+          <Format
+            call='formatCurrency(1234.5, { cents: false })'
+            result={formatCurrency(1234.5, { cents: false })}
           />
         </dl>
       </Specimen>

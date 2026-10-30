@@ -23,7 +23,7 @@ export const DESIGN_SECTION_GROUPS = [
       { id: 'inputs', label: 'Inputs' },
       { id: 'pickers', label: 'Select and pickers' },
       { id: 'toggles', label: 'Switch and checkbox' },
-      { id: 'dates', label: 'Dates' },
+      { id: 'dates', label: 'Dates and numbers' },
       { id: 'rich-text', label: 'Rich text' },
       { id: 'avatars', label: 'Avatars' },
       { id: 'record-rows', label: 'Record rows' },
