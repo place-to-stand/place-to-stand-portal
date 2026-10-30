@@ -27,7 +27,7 @@ export function MembershipTitleInput({
       aria-label={ariaLabel}
       disabled={disabled}
       maxLength={160}
-      className='h-8 w-36'
+      className='h-8 w-full min-w-0'
     />
   )
 }

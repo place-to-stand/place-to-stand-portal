@@ -130,7 +130,7 @@ export function CompanyPeopleSection({
     const portal = portalAccessFor?.(contact.id) ?? null
     return (
       <>
-        <RecordRowField label='Title'>
+        <RecordRowField label='Title' grow>
           <MembershipTitleInput
             value={titles[contact.id] ?? ''}
             onChange={title => onTitleChange(contact.id, title)}

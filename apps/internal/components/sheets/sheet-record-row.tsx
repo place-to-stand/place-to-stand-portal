@@ -2,15 +2,18 @@ import type { ReactNode } from 'react'
 import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 
+import { entityIconAccent } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
 /**
  * One record in a sheet's list (a client's people, a company's clients,
  * people and leads, a contact's clients): a boxed row with an optional
  * icon, the name, one muted detail line and trailing actions. Every list
- * in a sheet uses it so they read the same. A row that holds form fields
- * (a title, a portal switch, a share) puts them on a second line inside the
- * card, one per line, each a `RecordRowField` with its label on the left.
+ * in a sheet uses it so they read the same. An entity icon from the
+ * registry shows in that entity's colour. A row that holds form fields (a
+ * title, a portal switch, a share) puts them under a hairline in one row
+ * aligned with the name, each a `RecordRowField` with its label beside it;
+ * the row wraps on narrow sheets.
  */
 export function SheetRecordRow({
   icon: Icon,
@@ -33,8 +36,8 @@ export function SheetRecordRow({
   /** Trailing controls (star, remove), right-aligned. */
   actions?: ReactNode
   /**
-   * Form fields on the record (`RecordRowField`s), on a second line inside
-   * the card, under the name.
+   * Form fields on the record (`RecordRowField`s), under a hairline in one
+   * row aligned with the name.
    */
   fields?: ReactNode
   /** Makes the row's body a button that opens the record. */
@@ -50,7 +53,13 @@ export function SheetRecordRow({
       {leading ? (
         <span className='shrink-0'>{leading}</span>
       ) : Icon ? (
-        <Icon className='text-muted-foreground size-4 shrink-0' aria-hidden />
+        <Icon
+          className={cn(
+            'size-4 shrink-0',
+            entityIconAccent(Icon) ?? 'text-muted-foreground'
+          )}
+          aria-hidden
+        />
       ) : null}
       <span className='flex min-w-0 flex-1 flex-col text-left text-sm leading-tight'>
         <span className='truncate font-medium'>{title}</span>
@@ -104,9 +113,9 @@ export function SheetRecordRow({
   return (
     <div className={cn('flex flex-col', cardClassName)}>
       <div className={lineClassName}>{line}</div>
-      {/* Under the name (past the icon), one field per line, labels aligned
-          the same on every card. */}
-      <div className='flex flex-col gap-2 pr-3 pb-2.5 pl-10'>
+      {/* Under a hairline, one row aligned with the name (past the icon);
+          wraps on narrow sheets. */}
+      <div className='border-border/70 flex flex-wrap items-center gap-x-6 gap-y-2 border-t py-2 pr-3 pl-10'>
         {fields}
       </div>
     </div>
@@ -114,22 +123,28 @@ export function SheetRecordRow({
 }
 
 /**
- * One form field under a record row's first line, one per line: a visible
- * label on the left ("Title", "Portal access", "Share"), the control after
- * it. Labels share one width so fields line up from card to card.
+ * One form field on a record row's fields line: its label right beside the
+ * control ("Title", "Portal access", "Share"). A `grow` field (a text input)
+ * takes the free width; the others keep their own.
  */
 export function RecordRowField({
   label,
+  grow = false,
   children,
 }: {
   label: string
+  /** Stretch to fill the row (text inputs). */
+  grow?: boolean
   children: ReactNode
 }) {
   return (
-    <label className='flex items-center gap-2'>
-      <span className='text-muted-foreground w-24 shrink-0 text-xs'>
-        {label}
-      </span>
+    <label
+      className={cn(
+        'flex min-w-0 items-center gap-2',
+        grow && 'min-w-48 flex-1 [&>*:last-child]:flex-1'
+      )}
+    >
+      <span className='text-muted-foreground shrink-0 text-sm'>{label}</span>
       {children}
     </label>
   )

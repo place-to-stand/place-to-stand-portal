@@ -184,7 +184,7 @@ export function ContactCompaniesSection({
                 }
                 fields={
                   <>
-                    <RecordRowField label='Title'>
+                    <RecordRowField label='Title' grow>
                       <MembershipTitleInput
                         value={entry.title}
                         onChange={title => update(entry.companyId, { title })}

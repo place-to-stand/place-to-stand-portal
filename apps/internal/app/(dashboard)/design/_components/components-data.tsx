@@ -141,7 +141,7 @@ export function ComponentsRecordRows() {
             openable={false}
             fields={
               <>
-                <RecordRowField label='Title'>
+                <RecordRowField label='Title' grow>
                   <MembershipTitleInput
                     value={title}
                     onChange={setTitle}
