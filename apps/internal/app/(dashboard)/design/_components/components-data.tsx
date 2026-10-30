@@ -16,7 +16,9 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import {
   CompanyRecordRow,
   ContactRecordRow,
+  InvoiceRecordRow,
   LeadRecordRow,
+  ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
 import {
   SheetRecordList,
@@ -130,6 +132,25 @@ export function ComponentsRecordRows() {
               contactName: 'Northwind redesign',
               status: 'PROPOSAL_SENT',
               assigneeName: 'Jason D.',
+            }}
+            openable={false}
+          />
+          <ProjectRecordRow
+            project={{
+              id: 'design-project',
+              name: 'Website rebuild',
+              status: 'ACTIVE',
+              doneTasks: 12,
+              totalTasks: 30,
+            }}
+          />
+          <InvoiceRecordRow
+            invoice={{
+              id: 'design-invoice',
+              number: 'INV-0042',
+              status: 'PAID',
+              total: 4800,
+              issuedDate: '2026-09-23',
             }}
             openable={false}
           />

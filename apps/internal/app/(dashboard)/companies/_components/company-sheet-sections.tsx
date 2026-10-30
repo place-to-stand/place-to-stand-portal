@@ -1,15 +1,16 @@
 'use client'
 
-import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { LeadRecordRow } from '@/components/sheets/entity-record-rows'
+import {
+  LeadRecordRow,
+  ProjectRecordRow,
+} from '@/components/sheets/entity-record-rows'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
-import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { cn } from '@/lib/utils'
@@ -29,7 +30,6 @@ import {
   monthLabelFromNow,
   thisOrNextMonthOptions,
 } from '@/lib/billing/months'
-import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 export function CompanyLeadsSection({
   leads,
@@ -240,26 +240,15 @@ export function CompanyProjectsTab({
         ) : (
           <SheetRecordList>
             {work.projects.map(project => (
-              <Link
+              <ProjectRecordRow
                 key={project.id}
+                project={project}
                 href={
                   work.clientSlug && project.slug
                     ? projectBoardHref(work.clientSlug, project.slug)
-                    : '#'
+                    : null
                 }
-                className='hover:bg-muted/50 flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors'
-              >
-                <ENTITY_ICONS.project
-                  className={cn(ENTITY_ACCENTS.project.icon, 'size-4 shrink-0')}
-                />
-                <span className='min-w-0 flex-1 truncate font-medium'>
-                  {project.name}
-                </span>
-                <span className='text-muted-foreground text-xs tabular-nums'>
-                  {project.doneTasks}/{project.totalTasks} tasks
-                </span>
-                <ProjectStatusBadge status={project.status} />
-              </Link>
+              />
             ))}
           </SheetRecordList>
         )}
