@@ -22,9 +22,7 @@ import {
 import {
   joinCompany,
   leaveCompany,
-  hasPortalLogin,
   setMembershipTitle,
-  setPortalAccess,
 } from '@/lib/queries/memberships'
 import {
   contactSchema,
@@ -40,7 +38,6 @@ import {
 type DesiredMembership = {
   companyId: string
   title: string | null | undefined
-  portalAccess: boolean | undefined
 }
 
 type CurrentMembership = {
@@ -156,7 +153,6 @@ export async function saveContactMutation(
         ? parsed.data.companies.map(entry => ({
             companyId: entry.companyId,
             title: entry.title,
-            portalAccess: entry.portalAccess,
           }))
         : null
 
@@ -240,34 +236,16 @@ export async function saveContactMutation(
               : 'This contact is at a client, so only an admin can change their email.',
           })
         }
-        // Access needs a portal login (Create account on the contact).
+        // Portal access is set only in Edit client > Portal access. Leaving
+        // a company whose client they can see ends it, so that's admin-only.
         if (
-          plan.access.some(change => change.portalAccess) &&
-          !(await hasPortalLogin(db, id))
+          !canManageAccess &&
+          plan.leave.some(companyId => currentById.get(companyId)?.portalAccess)
         ) {
           return buildMutationResult({
             error:
-              'They have no portal user yet. Create one (Portal user, below) before switching portal access on.',
+              'Only an admin can remove someone with portal access from a company.',
           })
-        }
-        // Portal access is admin-only: switching it, or leaving a company
-        // whose client they can see.
-        if (!canManageAccess) {
-          const touchesAccess =
-            plan.leave.some(
-              companyId => currentById.get(companyId)?.portalAccess
-            ) ||
-            plan.access.some(
-              change =>
-                (currentById.get(change.companyId)?.portalAccess ?? false) !==
-                change.portalAccess
-            )
-          if (touchesAccess) {
-            return buildMutationResult({
-              error:
-                'Only an admin can change portal access, or remove someone with portal access from a company.',
-            })
-          }
         }
 
         if (plan.join.length || plan.leave.length)
@@ -293,14 +271,6 @@ export async function saveContactMutation(
             for (const change of plan.titles) {
               await setMembershipTitle(tx, id, change.companyId, change.title)
             }
-            for (const change of plan.access) {
-              await setPortalAccess(
-                tx,
-                id,
-                change.companyId,
-                change.portalAccess
-              )
-            }
           })
         } catch (error) {
           console.error('Failed to update contact', error)
@@ -320,21 +290,6 @@ export async function saveContactMutation(
               contactId: id,
               clientId: left.clientId,
               action: 'unlinked',
-            })
-          }
-        }
-        const clientIds = await clientIdsByCompany(
-          plan.access.map(change => change.companyId)
-        )
-        for (const change of plan.access) {
-          const clientId = clientIds.get(change.companyId)
-          if (!clientId) continue
-          const was = currentById.get(change.companyId)?.portalAccess ?? false
-          if (was !== change.portalAccess) {
-            accessChanges.push({
-              contactId: id,
-              clientId,
-              action: change.portalAccess ? 'linked' : 'unlinked',
             })
           }
         }
@@ -385,14 +340,8 @@ export async function saveContactMutation(
         shorthandTitle: parsed.data.jobTitle,
       })
       const createJoinError = await clientJoinError(canManageAccess, plan.join)
-      if (createJoinError) return buildMutationResult({ error: createJoinError })
-      // A new contact has no portal login, so no access yet.
-      if (plan.access.some(change => change.portalAccess)) {
-        return buildMutationResult({
-          error:
-            'A new contact has no portal user yet. Save them, create a portal user, then switch portal access on.',
-        })
-      }
+      if (createJoinError)
+        return buildMutationResult({ error: createJoinError })
 
       let newContactId: string
       try {
@@ -414,14 +363,6 @@ export async function saveContactMutation(
             await joinCompany(tx, contactId, join.companyId, {
               title: join.title,
             })
-          }
-          for (const change of plan.access) {
-            await setPortalAccess(
-              tx,
-              contactId,
-              change.companyId,
-              change.portalAccess
-            )
           }
           return contactId
         })
@@ -454,7 +395,7 @@ export async function saveContactMutation(
 /**
  * What a save changes about the person's companies. With `desired` (the
  * sheet's full list) companies missing from it are left and new ones
- * joined; titles and access follow it. Without it, only the one-company
+ * joined; titles follow it. Without it, only the one-company
  * shorthand applies: join that company (title there if given).
  */
 function planMembershipChanges(
@@ -469,7 +410,6 @@ function planMembershipChanges(
   const join: { companyId: string; title: string | null }[] = []
   const leave: string[] = []
   const titles: { companyId: string; title: string | null }[] = []
-  const access: { companyId: string; portalAccess: boolean }[] = []
 
   const wanted: DesiredMembership[] = desired ? [...desired] : []
   if (
@@ -479,7 +419,6 @@ function planMembershipChanges(
     wanted.push({
       companyId: shorthand.shorthandCompanyId,
       title: shorthand.shorthandTitle,
-      portalAccess: undefined,
     })
   }
 
@@ -493,22 +432,13 @@ function planMembershipChanges(
     } else if (entry.title !== undefined && entry.title !== existing.title) {
       titles.push({ companyId: entry.companyId, title: entry.title })
     }
-    if (
-      entry.portalAccess !== undefined &&
-      entry.portalAccess !== (existing?.portalAccess ?? false)
-    ) {
-      access.push({
-        companyId: entry.companyId,
-        portalAccess: entry.portalAccess,
-      })
-    }
   }
   if (desired) {
     for (const membership of current) {
       if (!seen.has(membership.companyId)) leave.push(membership.companyId)
     }
   }
-  return { join, leave, titles, access }
+  return { join, leave, titles }
 }
 
 /** Refusal for a non-admin adding someone to a company that is a client. */

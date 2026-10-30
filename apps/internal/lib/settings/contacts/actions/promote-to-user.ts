@@ -72,8 +72,7 @@ export async function promoteContactToUserMutation(
   // row so a second click (or a second admin) waits, then sees the link and
   // stops, instead of creating or inviting the same person twice.
   type Outcome =
-    | { error: string }
-    | { userId: string; created: boolean | undefined }
+    { error: string } | { userId: string; created: boolean | undefined }
   let outcome: Outcome
   try {
     outcome = await db.transaction(async (tx): Promise<Outcome> => {

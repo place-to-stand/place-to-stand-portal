@@ -230,9 +230,6 @@ export function useContactSheetState({
             ? data.companies.map(entry => ({
                 companyId: entry.companyId,
                 title: entry.title.trim() || null,
-                // Portal access is set only in Edit client > Portal access,
-                // so this sheet never sends it (undefined = leave it alone).
-                portalAccess: undefined,
               }))
             : undefined,
         })
