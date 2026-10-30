@@ -15,6 +15,7 @@ This folder describes; the code decides. When they disagree, the code wins and t
 | Components | `packages/ui/src/*` (`@pts/ui/*`), app-only ones in `apps/internal/components/ui/*` | `components/*.md` |
 | Status badge tints | `packages/ui/src/badge-tints.ts` (`BADGE_TINTS`) | this README |
 | Date formatting | `packages/ui/src/dates.ts` (`@pts/ui/dates`) | this README |
+| Hours and money formatting | `packages/ui/src/numbers.ts` (`@pts/ui/numbers`) | this README |
 | Entities: name, icon, colour (sidebar, sheets, badges, list cells, activity) | `apps/internal/lib/entity-accents.ts` (the registry) + `--entity-*` in `theme.css` | `## Entities` below, `/design#entities` |
 
 `tokens.json` color values and the radius scale are written by `npm run design-tokens` (from the repo root), which reads the sources above and keeps the hand-written usage notes. `npm run lint` fails when the file is stale. Type, spacing, size, shadow and opacity entries are hand-written.
@@ -69,7 +70,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Toasts are short and past tense on success** ("Time entry removed", "Closed month"). On failure they read **"Unable to <verb> <noun>"** ("Unable to save invoice"), with the reason in the description.
 - **Empty states are one plain sentence.** "No leads yet", "No matching tasks." There's no illustration and no pep. Render them with `EmptyState` (`@pts/ui/empty-state`).
 - **Minimal helper copy.** Don't add a hint under a field unless it changes the decision someone is about to make. A section gets at most one line of context. Mark optional fields with `<FormLabel optional>`, which appends a muted "(optional)", instead of explaining them.
-- **Counts and dates are data.** Write "Showing 24 of 118 clients". Format every date with `formatCalendarDate` (`@pts/ui/dates`, both apps), which gives "Sep 23, 2026". It reads date-only values in UTC and timestamps in `America/Los_Angeles`, so server and client always agree. Never call an ambient-timezone `format()` directly: that caused hydration errors and off-by-one dates.
+- **Counts and dates are data.** Write "Showing 24 of 118 clients". Format every date with `formatCalendarDate` (`@pts/ui/dates`, both apps), which gives "Sep 23, 2026". It reads date-only values in UTC and timestamps in `America/Los_Angeles`, so server and client always agree. Never call an ambient-timezone `format()` directly: that caused hydration errors and off-by-one dates. Hours and money go through `@pts/ui/numbers`: `formatHours` gives "1.5h", `formatCurrency` gives "$1,234.00".
 - No emoji, no exclamation marks, no marketing adjectives inside the app.
 
 ## Visual foundations
