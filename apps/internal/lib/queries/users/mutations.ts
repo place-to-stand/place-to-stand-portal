@@ -1,11 +1,11 @@
 import 'server-only'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { contacts, users } from '@/lib/db/schema'
 
 export async function softDeleteUser(
   user: AppUser,
@@ -15,10 +15,15 @@ export async function softDeleteUser(
 
   const deletedAt = new Date().toISOString()
 
-  await db
-    .update(users)
-    .set({ deletedAt })
-    .where(eq(users.id, userId))
+  await db.transaction(async tx => {
+    await tx.update(users).set({ deletedAt }).where(eq(users.id, userId))
+    // Their sign-in shows on the person sheet: one loaded before this must
+    // not save over it.
+    await tx
+      .update(contacts)
+      .set({ updatedAt: deletedAt })
+      .where(and(eq(contacts.userId, userId), isNull(contacts.deletedAt)))
+  })
 
   return deletedAt
 }

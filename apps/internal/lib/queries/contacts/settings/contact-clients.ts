@@ -46,6 +46,18 @@ export type ContactSheetData = {
   memberships: ContactMembership[]
   /** Their photo's path (contacts.avatar_url). */
   avatarUrl: string | null
+  /**
+   * Their saved details as of this read, with the row's `updated_at`: the
+   * version the sheet sends back on Save, so a save made meanwhile by
+   * someone else is refused instead of overwritten. Null if not found.
+   */
+  person: {
+    name: string
+    email: string | null
+    phone: string | null
+    linkedinUrl: string | null
+    updatedAt: string
+  } | null
 }
 
 /** Fetches all active clients (contacts client filter, MCP directory). */
@@ -141,7 +153,14 @@ export async function getContactSheetData(
   const [byContact, [person]] = await Promise.all([
     listContactMemberships([contactId], undefined, { includeArchived: true }),
     db
-      .select({ avatarUrl: contacts.avatarUrl })
+      .select({
+        avatarUrl: contacts.avatarUrl,
+        name: contacts.name,
+        email: contacts.email,
+        phone: contacts.phone,
+        linkedinUrl: contacts.linkedinUrl,
+        updatedAt: contacts.updatedAt,
+      })
       .from(contacts)
       .where(eq(contacts.id, contactId))
       .limit(1),
@@ -153,6 +172,15 @@ export async function getContactSheetData(
       ? memberships
       : memberships.map(withoutPortalAccess),
     avatarUrl: person?.avatarUrl ?? null,
+    person: person
+      ? {
+          name: person.name,
+          email: person.email,
+          phone: person.phone,
+          linkedinUrl: person.linkedinUrl,
+          updatedAt: person.updatedAt,
+        }
+      : null,
   }
 }
 

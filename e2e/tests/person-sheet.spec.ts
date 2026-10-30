@@ -50,6 +50,40 @@ test('changing a role asks which month it starts', async ({ page }) => {
   await expect(page.getByText('Discard changes?')).toBeVisible()
 })
 
+test('stopping being Admin starts next month, and warns about this month', async ({
+  page,
+}) => {
+  // Another admin: you can't change your own sign-in.
+  const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
+  await page.goto('/people?signIn=ADMIN')
+  await expectHealthy(page)
+  const rows = page.locator('tbody tr').filter({ hasNotText: adminEmail })
+  test.skip((await rows.count()) === 0, 'needs a second person with an Admin sign-in')
+  await rows.first().click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet.getByText('Can sign in')).toBeVisible()
+  const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+  await expect(role).toContainText('Admin')
+
+  await role.click()
+  await page.getByRole('option', { name: 'Sales' }).click()
+  const roleStarts = sheet.getByRole('combobox', { name: 'Role starts' })
+  await expect(roleStarts).toContainText('(next month)')
+  const warning = sheet.getByText('Their hours this month won’t count as payroll.')
+  await expect(warning).toHaveCount(0)
+
+  await roleStarts.click()
+  await page.getByRole('option', { name: /\(this month\)/ }).click()
+  await expect(roleStarts).toContainText('(this month)')
+  await expect(warning).toBeVisible()
+
+  // Back to Admin: no month to pick. Leave without saving.
+  await role.click()
+  await page.getByRole('option', { name: 'Admin' }).click()
+  await expect(roleStarts).toHaveCount(0)
+  await page.keyboard.press('Escape')
+})
+
 test.describe('writes', () => {
   test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 
@@ -106,6 +140,69 @@ test.describe('writes', () => {
       .getByRole('dialog')
       .getByRole('button', { name: 'Archive person' })
       .click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Archive' })
+      .click()
+    await expect(page.getByRole('dialog')).toBeHidden()
+  })
+
+  test('a save over someone else’s newer save is refused', async ({
+    page,
+    context,
+  }) => {
+    const stamp = Date.now()
+    const name = `E2E concurrent ${stamp}`
+    const email = `e2e-concurrent-${stamp}@local.test`
+
+    // A throwaway person, archived at the end.
+    await page.goto('/people?contact=new')
+    const created = page.getByRole('dialog')
+    await created.getByPlaceholder('John Doe').fill(name)
+    await created.getByPlaceholder('contact@example.com').fill(email)
+    await created.getByRole('button', { name: 'Create person' }).click()
+    await expect(created).toBeHidden()
+
+    // Two tabs open the same person (each waits for the sheet's load,
+    // which carries the version Save sends back).
+    const openPerson = async (tab: Page) => {
+      await tab.goto(`/people?q=${encodeURIComponent(email)}`)
+      await tab.locator('tbody tr').filter({ hasText: name }).first().click()
+      const sheet = tab.getByRole('dialog')
+      await expect(sheet.getByPlaceholder('John Doe')).toHaveValue(name)
+      await tab.waitForLoadState('networkidle')
+      return sheet
+    }
+    const other = await context.newPage()
+    const first = await openPerson(page)
+    const second = await openPerson(other)
+
+    // The first tab saves.
+    await first
+      .getByPlaceholder('linkedin.com/in/jane-doe')
+      .fill(`linkedin.com/in/first-${stamp}`)
+    await first.getByRole('button', { name: 'Save changes' }).click()
+    await expect(first).toBeHidden()
+
+    // The second, loaded before that save, is refused inline and stays open.
+    await second
+      .getByPlaceholder('linkedin.com/in/jane-doe')
+      .fill(`linkedin.com/in/second-${stamp}`)
+    await second.getByRole('button', { name: 'Save changes' }).click()
+    await expect(
+      second.getByText(
+        'Someone else saved this person. Reload to see their changes.'
+      )
+    ).toBeVisible()
+    await expect(second).toBeVisible()
+    await other.close()
+
+    // The first save stands; then put it back (archive the person).
+    const reopened = await openPerson(page)
+    await expect(
+      reopened.getByPlaceholder('linkedin.com/in/jane-doe')
+    ).toHaveValue(new RegExp(`linkedin\\.com/in/first-${stamp}$`))
+    await reopened.getByRole('button', { name: 'Archive person' }).click()
     await page
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Archive' })

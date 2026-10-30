@@ -114,6 +114,9 @@ export function useContactSheetState({
   // a save leaves their companies alone rather than sending an empty list.
   const [companiesLoaded, setCompaniesLoaded] = useState(false)
   const [companiesLoadFailed, setCompaniesLoadFailed] = useState(false)
+  // The person's `updated_at` as loaded: Save sends it back, and the server
+  // refuses if someone else saved them since.
+  const [loadedUpdatedAt, setLoadedUpdatedAt] = useState<string | null>(null)
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
@@ -184,6 +187,7 @@ export function useContactSheetState({
 
     setCompaniesLoaded(!contactId)
     setCompaniesLoadFailed(false)
+    setLoadedUpdatedAt(null)
     if (!contactId) {
       return
     }
@@ -193,6 +197,24 @@ export function useContactSheetState({
       .then(data => {
         if (cancelled) return
         setCompaniesLoaded(true)
+        if (data.person) {
+          setLoadedUpdatedAt(data.person.updatedAt)
+          // The sheet opened with the list's copy of their details, which
+          // can be older than this read: show the saved ones (the version
+          // Save checks against), unless already edited.
+          const saved = {
+            name: data.person.name,
+            email: data.person.email ?? '',
+            phone: data.person.phone ?? '',
+            linkedinUrl: data.person.linkedinUrl ?? '',
+          }
+          for (const key of Object.keys(saved) as (keyof typeof saved)[]) {
+            const untouched =
+              (form.getValues(key) ?? '') ===
+              (form.formState.defaultValues?.[key] ?? '')
+            if (untouched) form.resetField(key, { defaultValue: saved[key] })
+          }
+        }
         form.resetField('avatarPath', { defaultValue: data.avatarUrl })
         // Loaded after the reset: becomes the saved state, not an edit.
         form.resetField('companies', {
@@ -305,6 +327,7 @@ export function useContactSheetState({
         const dirty = form.formState.dirtyFields
         const result = await savePersonSheetAction({
           id: contact?.id || undefined,
+          loadedUpdatedAt: contact?.id ? (loadedUpdatedAt ?? undefined) : undefined,
           email: data.email,
           name: data.name,
           phone: data.phone || null,
@@ -371,6 +394,7 @@ export function useContactSheetState({
     [
       contact?.id,
       companiesLoaded,
+      loadedUpdatedAt,
       form,
       canManageSignIn,
       isEditing,

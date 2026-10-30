@@ -140,7 +140,10 @@ export async function softDeleteContactMutation(
         await db.transaction(async tx => {
           await tx
             .update(contacts)
-            .set({ deletedAt: new Date().toISOString() })
+            .set({
+              deletedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })
             .where(eq(contacts.id, parsed.data.id))
           await tx
             .update(memberships)

@@ -65,6 +65,7 @@ export type ExistingContact = {
   userId: string | null
   avatarUrl: string | null
   deletedAt: string | null
+  updatedAt: string
 }
 
 /**
@@ -144,6 +145,7 @@ export async function loadExistingContact(
       userId: contacts.userId,
       avatarUrl: contacts.avatarUrl,
       deletedAt: contacts.deletedAt,
+      updatedAt: contacts.updatedAt,
     })
     .from(contacts)
     .where(eq(contacts.id, contactId))
@@ -335,6 +337,9 @@ export async function writeContactSave(
       createdBy: user.id,
     })
   } else {
+    // Always, even when only their companies, photo or sign-in change: the
+    // new `updated_at` is what makes a sheet loaded before this save refuse
+    // to overwrite it (savePersonSheet).
     await tx
       .update(contacts)
       .set({ ...plan.values, updatedAt: new Date().toISOString() })
