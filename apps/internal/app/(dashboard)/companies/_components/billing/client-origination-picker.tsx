@@ -1,26 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import { LinkIcon, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { CommandCreateRows } from '@/components/ui/command-create-rows'
-import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
 
 import type {
   OriginationContactOption,
   PartnerUserOption,
 } from '@/lib/companies/billing/use-client-sheet-state'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+
+import {
+  StaffOrPersonPicker,
+  type StaffOrPersonCandidate,
+} from './staff-or-person-picker'
 
 export type ClientOriginationPickerProps = {
   selectedUser: PartnerUserOption | null
@@ -40,25 +36,31 @@ export type ClientOriginationPickerProps = {
   onCreateContact: (query: string) => void
 }
 
-type OriginatorDisplay = {
-  kind: 'user' | 'contact'
-  name: string
-  email: string | null
-}
+type OriginatorCandidate = StaffOrPersonCandidate & { pick: () => void }
 
-function userDisplay(user: PartnerUserOption): OriginatorDisplay {
+function userCandidate(
+  user: PartnerUserOption,
+  onSelect: (user: PartnerUserOption) => void
+): OriginatorCandidate {
   return {
     kind: 'user',
+    id: user.id,
     name: user.fullName?.trim() || user.email,
     email: user.email,
+    pick: () => onSelect(user),
   }
 }
 
-function contactDisplay(contact: OriginationContactOption): OriginatorDisplay {
+function contactCandidate(
+  contact: OriginationContactOption,
+  onSelect: (contact: OriginationContactOption) => void
+): OriginatorCandidate {
   return {
     kind: 'contact',
+    id: contact.id,
     name: contact.name?.trim() || contact.email || 'Unnamed person',
     email: contact.email,
+    pick: () => onSelect(contact),
   }
 }
 
@@ -82,18 +84,17 @@ export function ClientOriginationPicker({
   onClear,
   onCreateContact,
 }: ClientOriginationPickerProps) {
-  const [query, setQuery] = useState('')
   const selected = selectedUser
-    ? userDisplay(selectedUser)
+    ? userCandidate(selectedUser, onSelectUser)
     : selectedContact
-      ? contactDisplay(selectedContact)
+      ? contactCandidate(selectedContact, onSelectContact)
       : null
 
   if (selected) {
     const locked = isPending || disabled
     return (
       <SheetRecordRow
-        icon={selected.kind === 'user' ? ENTITY_ICONS.contact : LinkIcon}
+        icon={ENTITY_ICONS.contact}
         title={selected.name}
         description={
           selected.email && selected.email !== selected.name
@@ -105,17 +106,14 @@ export function ClientOriginationPicker({
             disabled={locked}
             reason={isPending ? pendingReason : disabledReason}
           >
-            <Button
+            <RowActionButton
               type='button'
-              variant='ghost'
-              size='icon-sm'
+              label={`Remove originator ${selected.name}`}
+              icon={<X />}
               className='text-muted-foreground hover:text-destructive shrink-0'
               onClick={onClear}
               disabled={locked}
-              aria-label={`Remove originator ${selected.name}`}
-            >
-              <X className='h-4 w-4' />
-            </Button>
+            />
           </DisabledFieldTooltip>
         }
       />
@@ -123,92 +121,30 @@ export function ClientOriginationPicker({
   }
 
   return (
-    <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
-      {/* Never disabled for an empty list: the create row is the escape hatch. */}
-      <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
-        <div className='w-full'>
-          <PopoverTrigger asChild>
-            <Button
-              type='button'
-              variant='outline'
-              className='w-full justify-start'
-              disabled={disabled}
-            >
-              <ENTITY_ICONS.contact className='h-4 w-4' />
-              No originator
-            </Button>
-          </PopoverTrigger>
-        </div>
-      </DisabledFieldTooltip>
-      <PopoverContent className='w-80 p-0'>
-        <Command>
-          <CommandInput
-            placeholder='Search people…'
-            value={query}
-            onValueChange={setQuery}
-          />
-          <CommandList>
-            {availableUsers.length > 0 ? (
-              <CommandGroup heading='Staff'>
-                {availableUsers.map(user => (
-                  <CandidateItem
-                    key={`user:${user.id}`}
-                    display={userDisplay(user)}
-                    onSelect={() => {
-                      if (isPending) return
-                      onSelectUser(user)
-                    }}
-                  />
-                ))}
-              </CommandGroup>
-            ) : null}
-            {availableContacts.length > 0 ? (
-              <CommandGroup heading='People'>
-                {availableContacts.map(contact => (
-                  <CandidateItem
-                    key={`contact:${contact.id}`}
-                    display={contactDisplay(contact)}
-                    onSelect={() => {
-                      if (isPending) return
-                      onSelectContact(contact)
-                    }}
-                  />
-                ))}
-              </CommandGroup>
-            ) : null}
-            <CommandCreateRows
-              query={query}
-              entityLabel='person'
-              onCreate={onCreateContact}
-            />
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-function CandidateItem({
-  display,
-  onSelect,
-}: {
-  display: OriginatorDisplay
-  onSelect: () => void
-}) {
-  return (
-    <CommandItem
-      value={`${display.kind} ${display.name} ${display.email ?? ''}`}
-      onSelect={onSelect}
-    >
-      <ENTITY_ICONS.contact className='text-muted-foreground h-4 w-4' />
-      <div className='flex min-w-0 flex-col'>
-        <span className='truncate font-medium'>{display.name}</span>
-        {display.email && display.email !== display.name ? (
-          <span className='text-muted-foreground truncate text-xs'>
-            {display.email}
-          </span>
-        ) : null}
-      </div>
-    </CommandItem>
+    <StaffOrPersonPicker
+      staff={availableUsers.map(user => userCandidate(user, onSelectUser))}
+      people={availableContacts.map(contact =>
+        contactCandidate(contact, onSelectContact)
+      )}
+      onSelect={candidate => candidate.pick()}
+      trigger={
+        <Button
+          type='button'
+          variant='outline'
+          className='w-full justify-start'
+          disabled={disabled}
+        >
+          <ENTITY_ICONS.contact className='h-4 w-4' />
+          No originator
+        </Button>
+      }
+      triggerClassName='w-full'
+      open={isPickerOpen}
+      onOpenChange={onPickerOpenChange}
+      disabled={disabled}
+      disabledReason={disabledReason}
+      isPending={isPending}
+      onCreatePerson={onCreateContact}
+    />
   )
 }

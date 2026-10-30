@@ -1,21 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { LinkIcon, Plus, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { CommandCreateRows } from '@/components/ui/command-create-rows'
-import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 
 import { closerKey } from '@/lib/companies/billing/closers'
@@ -24,6 +15,8 @@ import type {
   CloserDraft,
 } from '@/lib/companies/billing/use-client-sheet-state'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+
+import { StaffOrPersonPicker } from './staff-or-person-picker'
 
 export type ClientClosersEditorProps = {
   closers: CloserDraft[]
@@ -80,7 +73,7 @@ export function ClientClosersEditor({
             return (
               <li key={key}>
                 <SheetRecordRow
-                  icon={closer.kind === 'user' ? ENTITY_ICONS.lead : LinkIcon}
+                  icon={closer.kind === 'user' ? ENTITY_ICONS.lead : ENTITY_ICONS.contact}
                   title={closer.name}
                   description={
                     closer.email && closer.email !== closer.name
@@ -111,17 +104,14 @@ export function ClientClosersEditor({
                         disabled={locked}
                         reason={lockedReason}
                       >
-                        <Button
+                        <RowActionButton
                           type='button'
-                          variant='ghost'
-                          size='icon-sm'
+                          label={`Remove closer ${closer.name}`}
+                          icon={<X />}
                           className='text-muted-foreground hover:text-destructive shrink-0'
                           onClick={() => onRemove(key)}
                           disabled={locked}
-                          aria-label={`Remove closer ${closer.name}`}
-                        >
-                          <X className='h-4 w-4' />
-                        </Button>
+                        />
                       </DisabledFieldTooltip>
                     </span>
                   }
@@ -185,101 +175,34 @@ function CloserAddButton({
   onAdd,
   onCreateContact,
 }: CloserAddButtonProps) {
-  const [query, setQuery] = useState('')
-
   return (
-    <Popover open={isPickerOpen} onOpenChange={onPickerOpenChange} modal>
-      {/* Never disabled for an empty list: the create row is the escape hatch. */}
-      <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
-        <div className={hasClosers ? undefined : 'w-full'}>
-          <PopoverTrigger asChild>
-            <Button
-              type='button'
-              variant={hasClosers ? 'ghost' : 'outline'}
-              size={hasClosers ? 'sm' : 'default'}
-              className={hasClosers ? undefined : 'w-full justify-start'}
-              disabled={disabled}
-            >
-              {hasClosers ? (
-                <Plus className='h-4 w-4' />
-              ) : (
-                <ENTITY_ICONS.lead className='h-4 w-4' />
-              )}
-              {hasClosers ? 'Add closer' : 'No closer'}
-            </Button>
-          </PopoverTrigger>
-        </div>
-      </DisabledFieldTooltip>
-      <PopoverContent className='w-80 p-0'>
-        <Command>
-          <CommandInput
-            placeholder='Search people…'
-            value={query}
-            onValueChange={setQuery}
-          />
-          <CommandList>
-            {availableUsers.length > 0 ? (
-              <CommandGroup heading='Staff'>
-                {availableUsers.map(candidate => (
-                  <CandidateItem
-                    key={closerKey(candidate)}
-                    candidate={candidate}
-                    isPending={isPending}
-                    onAdd={onAdd}
-                  />
-                ))}
-              </CommandGroup>
-            ) : null}
-            {availableContacts.length > 0 ? (
-              <CommandGroup heading='People'>
-                {availableContacts.map(candidate => (
-                  <CandidateItem
-                    key={closerKey(candidate)}
-                    candidate={candidate}
-                    isPending={isPending}
-                    onAdd={onAdd}
-                  />
-                ))}
-              </CommandGroup>
-            ) : null}
-            <CommandCreateRows
-              query={query}
-              entityLabel='person'
-              onCreate={onCreateContact}
-            />
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-function CandidateItem({
-  candidate,
-  isPending,
-  onAdd,
-}: {
-  candidate: CloserCandidate
-  isPending: boolean
-  onAdd: (candidate: CloserCandidate) => void
-}) {
-  return (
-    <CommandItem
-      value={`${candidate.kind} ${candidate.name} ${candidate.email ?? ''}`}
-      onSelect={() => {
-        if (isPending) return
-        onAdd(candidate)
-      }}
-    >
-      <ENTITY_ICONS.contact className='text-muted-foreground h-4 w-4' />
-      <div className='flex min-w-0 flex-col'>
-        <span className='truncate font-medium'>{candidate.name}</span>
-        {candidate.email && candidate.email !== candidate.name ? (
-          <span className='text-muted-foreground truncate text-xs'>
-            {candidate.email}
-          </span>
-        ) : null}
-      </div>
-    </CommandItem>
+    <StaffOrPersonPicker
+      staff={availableUsers}
+      people={availableContacts}
+      onSelect={onAdd}
+      trigger={
+        <Button
+          type='button'
+          variant={hasClosers ? 'ghost' : 'outline'}
+          size={hasClosers ? 'sm' : 'default'}
+          className={hasClosers ? undefined : 'w-full justify-start'}
+          disabled={disabled}
+        >
+          {hasClosers ? (
+            <Plus className='h-4 w-4' />
+          ) : (
+            <ENTITY_ICONS.lead className='h-4 w-4' />
+          )}
+          {hasClosers ? 'Add closer' : 'No closer'}
+        </Button>
+      }
+      triggerClassName={hasClosers ? undefined : 'w-full'}
+      open={isPickerOpen}
+      onOpenChange={onPickerOpenChange}
+      disabled={disabled}
+      disabledReason={disabledReason}
+      isPending={isPending}
+      onCreatePerson={onCreateContact}
+    />
   )
 }
