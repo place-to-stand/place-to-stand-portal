@@ -55,10 +55,10 @@ export default async function DashboardPage() {
         <EmptyState
           message={
             needsClientSelection
-              ? 'Select a contact above to preview the portal.'
+              ? 'Choose a person above to see the portal as they do.'
               : // Signed in but not added to a client yet (access is
                 // granted per client by Place To Stand).
-                "You haven't been added to a client yet. Contact Place To Stand and we'll add you."
+                "Your portal isn't set up yet. Your Place To Stand team will let you know when it's ready."
           }
         />
       ) : (
