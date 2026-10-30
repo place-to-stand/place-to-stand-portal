@@ -10,7 +10,15 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads, leadStageHistory } from '@/lib/db/schema'
 import { leadContactNameSql } from '@/lib/leads/lead-display'
-import { LEAD_STATUS_VALUES, isTerminalLeadStatus } from '@/lib/leads/constants'
+import {
+  LEAD_STATUS_VALUES,
+  isTerminalLeadStatus,
+  type LeadStatusValue,
+} from '@/lib/leads/constants'
+import {
+  LEAD_WON_NEEDS_COMPANY_MESSAGE,
+  breaksWonNeedsCompany,
+} from '@/lib/leads/won-rule'
 import { normalizeRank } from '@/lib/rank'
 
 import { revalidateLeadsPath } from './utils'
@@ -23,6 +31,13 @@ const moveLeadSchema = z.object({
 })
 
 export type MoveLeadInput = z.infer<typeof moveLeadSchema>
+
+type MoveOutcome =
+  | { refused: string }
+  | {
+      refused: null
+      statusChange: { contactName: string; fromStatus: LeadStatusValue } | null
+    }
 
 export async function moveLead(
   input: MoveLeadInput
@@ -51,93 +66,125 @@ export async function moveLead(
     }
   }
 
+  const { leadId, targetStatus } = parsed.data
+  let outcome: MoveOutcome
+
   try {
-    // Fetch current status before update
-    const currentRows = await db
-      .select({ status: leads.status, contactName: leadContactNameSql })
-      .from(leads)
-      .where(and(eq(leads.id, parsed.data.leadId), isNull(leads.deletedAt)))
-      .limit(1)
+    // The read, the move and its stage history are one transaction; the
+    // activity row waits for the commit.
+    outcome = await db.transaction(async (tx): Promise<MoveOutcome> => {
+      const [current] = await tx
+        .select({
+          status: leads.status,
+          companyId: leads.companyId,
+          convertedAt: leads.convertedAt,
+          contactName: leadContactNameSql,
+        })
+        .from(leads)
+        .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
+        .limit(1)
+        .for('update', { of: leads })
 
-    const current = currentRows[0]
-    if (!current) {
-      return { success: false, error: 'Lead not found.' }
-    }
-
-    const now = new Date().toISOString()
-    const statusChanged = current.status !== parsed.data.targetStatus
-
-    const setPayload: Record<string, unknown> = {
-      status: parsed.data.targetStatus,
-      rank: normalizedRank,
-      updatedAt: now,
-    }
-
-    if (statusChanged) {
-      setPayload.currentStageEnteredAt = now
-
-      if (isTerminalLeadStatus(parsed.data.targetStatus)) {
-        setPayload.resolvedAt = now
+      if (!current) {
+        return { refused: 'Lead not found.' }
       }
 
-      if (parsed.data.targetStatus === 'CLOSED_WON') {
-        // Only set convertedAt if not already set
-        const fullLead = await db
-          .select({ convertedAt: leads.convertedAt })
-          .from(leads)
-          .where(eq(leads.id, parsed.data.leadId))
-          .limit(1)
+      // Decision 7: Won needs a company. The board reverts the card.
+      if (
+        breaksWonNeedsCompany(
+          { status: targetStatus, companyId: current.companyId },
+          current
+        )
+      ) {
+        return { refused: LEAD_WON_NEEDS_COMPANY_MESSAGE }
+      }
 
-        if (fullLead[0] && !fullLead[0].convertedAt) {
+      const now = new Date().toISOString()
+      const statusChanged = current.status !== targetStatus
+
+      const setPayload: Record<string, unknown> = {
+        status: targetStatus,
+        rank: normalizedRank,
+        updatedAt: now,
+      }
+
+      if (statusChanged) {
+        setPayload.currentStageEnteredAt = now
+
+        if (isTerminalLeadStatus(targetStatus)) {
+          setPayload.resolvedAt = now
+        }
+
+        // Only set convertedAt if not already set
+        if (targetStatus === 'CLOSED_WON' && !current.convertedAt) {
           setPayload.convertedAt = now
+        }
+
+        // Reset conversion/resolution fields when moving back to an active stage
+        if (
+          isTerminalLeadStatus(current.status) &&
+          !isTerminalLeadStatus(targetStatus)
+        ) {
+          setPayload.resolvedAt = null
+          setPayload.convertedAt = null
+          setPayload.convertedToClientId = null
+          setPayload.lossReason = null
+          setPayload.lossNotes = null
         }
       }
 
-      // Reset conversion/resolution fields when moving back to an active stage
-      if (
-        isTerminalLeadStatus(current.status) &&
-        !isTerminalLeadStatus(parsed.data.targetStatus)
-      ) {
-        setPayload.resolvedAt = null
-        setPayload.convertedAt = null
-        setPayload.convertedToClientId = null
-        setPayload.lossReason = null
-        setPayload.lossNotes = null
+      await tx
+        .update(leads)
+        .set(setPayload)
+        .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
+
+      if (!statusChanged) {
+        return { refused: null, statusChange: null }
       }
-    }
 
-    await db
-      .update(leads)
-      .set(setPayload)
-      .where(and(eq(leads.id, parsed.data.leadId), isNull(leads.deletedAt)))
-
-    // Record stage history if status changed
-    if (statusChanged) {
-      await db.insert(leadStageHistory).values({
-        leadId: parsed.data.leadId,
+      await tx.insert(leadStageHistory).values({
+        leadId,
         fromStatus: current.status,
-        toStatus: parsed.data.targetStatus,
+        toStatus: targetStatus,
         changedAt: now,
         changedBy: user.id,
       })
 
-      await logActivity({
-        actorId: user.id,
-        actorRole: user.role,
-        targetType: 'LEAD',
-        targetId: parsed.data.leadId,
-        ...leadStatusChangedEvent({
-          name: current.contactName,
+      return {
+        refused: null,
+        statusChange: {
+          contactName: current.contactName,
           fromStatus: current.status,
-          toStatus: parsed.data.targetStatus,
-        }),
-      })
-    }
+        },
+      }
+    })
   } catch (error) {
     console.error('Failed to reorder lead', error)
     return {
       success: false,
       error: 'Unable to update lead ordering.',
+    }
+  }
+
+  if (outcome.refused !== null) {
+    return { success: false, error: outcome.refused }
+  }
+
+  if (outcome.statusChange) {
+    try {
+      await logActivity({
+        actorId: user.id,
+        actorRole: user.role,
+        targetType: 'LEAD',
+        targetId: leadId,
+        ...leadStatusChangedEvent({
+          name: outcome.statusChange.contactName,
+          fromStatus: outcome.statusChange.fromStatus,
+          toStatus: targetStatus,
+        }),
+      })
+    } catch (error) {
+      console.error('Lead moved, but its activity row failed', error)
     }
   }
 

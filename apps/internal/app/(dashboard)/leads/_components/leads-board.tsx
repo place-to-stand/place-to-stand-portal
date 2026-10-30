@@ -25,6 +25,10 @@ import { useToast } from '@/components/ui/use-toast'
 import { moveLead } from '../actions'
 import { getRankAfter, getRankBefore, getRankBetween } from '@/lib/rank'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
+import {
+  LEAD_WON_NEEDS_COMPANY_MESSAGE,
+  breaksWonNeedsCompany,
+} from '@/lib/leads/won-rule'
 
 import { LeadColumn } from './lead-column'
 import { LeadCardPreview } from './lead-card'
@@ -170,6 +174,25 @@ export function LeadsBoard({
         return
       }
 
+      // Decision 7: Won needs a company. Leave the card where it was rather
+      // than flash it into Won and back; the server enforces it too.
+      const draggedLead = findLeadById(result.previousColumns, leadId)
+      if (
+        canManage &&
+        draggedLead &&
+        breaksWonNeedsCompany(
+          { status: result.targetColumnId, companyId: draggedLead.companyId },
+          draggedLead
+        )
+      ) {
+        toast({
+          variant: 'destructive',
+          title: 'Unable to move lead',
+          description: LEAD_WON_NEEDS_COMPANY_MESSAGE,
+        })
+        return
+      }
+
       setColumns(result.nextColumns)
       setRecentlyMovedLeadId(leadId)
       scheduleRecentlyMovedReset()
@@ -178,8 +201,6 @@ export function LeadsBoard({
         columnsRef.current = result.nextColumns
         return
       }
-
-      const movedLead = findLeadById(result.previousColumns, leadId)
 
       startTransition(async () => {
         const response = await moveLead({
@@ -201,11 +222,11 @@ export function LeadsBoard({
 
           if (
             result.targetColumnId === 'CLOSED_WON' &&
-            movedLead &&
-            !movedLead.convertedToClientId &&
+            draggedLead &&
+            !draggedLead.convertedToClientId &&
             onLeadClosedWon
           ) {
-            onLeadClosedWon(movedLead)
+            onLeadClosedWon(draggedLead)
           }
         }
       })
