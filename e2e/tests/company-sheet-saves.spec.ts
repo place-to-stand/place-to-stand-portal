@@ -182,7 +182,8 @@ test('restarting a former client shows its last terms to edit', async ({
     .locator('tbody tr')
     .filter({ has: page.locator('td:nth-child(2)') })
   test.skip((await rows.count()) === 0, 'no former client in this database')
-  await rows.first().click()
+  // The name cell: other cells hold links and hover buttons.
+  await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await sheet.getByRole('tab', { name: 'Billing' }).click()
@@ -251,11 +252,15 @@ test('a save made since the sheet opened refuses the older sheet', async ({
   const other = await context.newPage()
   const second = await openCompany(other, name)
 
-  await first.getByLabel('Website').fill('https://first.example.com')
+  await first
+    .getByRole('textbox', { name: 'Website' })
+    .fill('https://first.example.com')
   await first.getByRole('button', { name: 'Save changes' }).click()
   await expect(first).toBeHidden()
 
-  await second.getByLabel('Website').fill('https://second.example.com')
+  await second
+    .getByRole('textbox', { name: 'Website' })
+    .fill('https://second.example.com')
   await second.getByRole('button', { name: 'Save changes' }).click()
   await expect(
     second.getByText(
@@ -267,7 +272,9 @@ test('a save made since the sheet opened refuses the older sheet', async ({
 
   // The first save stands.
   const saved = await openCompany(page, name)
-  await expect(saved.getByLabel('Website')).toHaveValue(/first\.example\.com/)
+  await expect(saved.getByRole('textbox', { name: 'Website' })).toHaveValue(
+    /first\.example\.com/
+  )
   await page.keyboard.press('Escape')
 
   await cleanUp(page, name)

@@ -43,7 +43,8 @@ test('changing a role asks which month it starts', async ({ page }) => {
     page.getByRole('option', { name: /\(next month\)/ })
   ).toBeVisible()
   // Only next month, this month and at most one open earlier month.
-  const options = page.getByRole('option')
+  // Month options only (the Role list may still be closing).
+  const options = page.getByRole('option', { name: /\d{4}/ })
   expect(await options.count()).toBeGreaterThanOrEqual(2)
   expect(await options.count()).toBeLessThanOrEqual(3)
   await page.keyboard.press('Escape')
