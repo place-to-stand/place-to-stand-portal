@@ -94,7 +94,11 @@ Sign in as yourself (Admin). For Sales checks, sign in as the Sales test user (`
 
 ## 10. Release-day checks (before promoting)
 
-1. Take the release backup and a fresh read-only dump with the **direct** connection (not the pooler: port 5432, no `?pgbouncer`).
+1. Take the release backup and a fresh read-only dump with the **direct** connection (not the pooler: port 5432, no `?pgbouncer`). From your terminal (prints nothing secret):
+
+   ```
+   (set -a; . ~/Sites/place-to-stand-portal/apps/internal/.env.prod; set +a; U="${DATABASE_URL%%\?*}"; U="${U/:6543\//:5432/}"; pg_dump "$U" -Fc -n public -n drizzle -n auth -f ~/Backups/pts-portal/prod-$(date +%Y%m%d-%H%M).dump) && ls -la ~/Backups/pts-portal/prod-*.dump
+   ```
 2. Run `scripts/rehearse-rollout.sh <dump>`. Expect: 41/41 compare checks, ALL CHECKS PASS (verify), close drift none, undo differences 0.
 3. Check nobody was stopped as a client earlier in the release month (a stop dated this month counts as billed through the month after the migration).
 4. Confirm `CRON_SECRET` is set in Vercel (new daily `/api/cron/apply-role-terms`).
