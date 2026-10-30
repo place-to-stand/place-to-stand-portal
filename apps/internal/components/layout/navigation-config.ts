@@ -5,7 +5,6 @@ import {
   Clock,
   Clock3,
   FolderKanban,
-  Users,
   Home as HomeIcon,
   ListTodo,
   Handshake,
@@ -132,12 +131,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Settings',
     items: [
-      {
-        href: '/settings/users',
-        capability: 'settings.users',
-        label: 'Users',
-        icon: Users,
-      },
       {
         href: '/settings/permissions',
         capability: 'settings.permissions',

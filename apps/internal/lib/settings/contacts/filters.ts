@@ -25,6 +25,25 @@ export function isContactSortValue(value: string): boolean {
   )
 }
 
+/** People list sign-in filter (`?signIn=`), admins only. */
+export const SIGN_IN_FILTER_VALUES = [
+  'any',
+  'ADMIN',
+  'SALES',
+  'CLIENT',
+  'none',
+] as const
+export type SignInFilter = (typeof SIGN_IN_FILTER_VALUES)[number]
+export const SIGN_IN_FILTER_LABELS: Record<SignInFilter, string> = {
+  any: 'With sign-in',
+  ADMIN: 'Admin sign-in',
+  SALES: 'Sales sign-in',
+  CLIENT: 'Client sign-in',
+  none: 'No sign-in',
+}
+export const isSignInFilter = (value: string): value is SignInFilter =>
+  (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
+
 type RawSearchParams = Record<string, string | string[] | undefined>
 
 export type ContactsSearchParams = {
@@ -36,6 +55,8 @@ export type ContactsSearchParams = {
    * `?client=` is the client sheet's deep-link param.
    */
   clientId: string | undefined
+  /** Who can sign in (admins only; ignored for others). */
+  signIn: SignInFilter | undefined
   sort: ParsedSort<ContactSortField>
 }
 
@@ -60,6 +81,7 @@ export function parseContactsSearchParams(
   const pageParam = Number.parseInt(firstParam(params.page) ?? '1', 10)
   const searchParam = firstParam(params.q)?.trim()
   const clientIdParam = firstParam(params.clientId)?.trim()
+  const signInParam = firstParam(params.signIn)?.trim() ?? ''
   const sort = parseSortParam(
     firstParam(params.sort),
     CONTACT_SORT_FIELDS,
@@ -73,6 +95,7 @@ export function parseContactsSearchParams(
       clientIdParam && UUID_PATTERN.test(clientIdParam)
         ? clientIdParam
         : undefined,
+    signIn: isSignInFilter(signInParam) ? signInParam : undefined,
     sort,
   }
 }

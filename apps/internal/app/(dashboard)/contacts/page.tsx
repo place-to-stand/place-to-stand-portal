@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireCrmUser } from '@/lib/auth/session'
+import { isAdminRole } from '@/lib/auth/roles'
 import {
   listContactsForSettings,
   listAllActiveClients,
@@ -32,8 +33,10 @@ export default async function ContactsPage({
     page: currentPage,
     search,
     clientId,
+    signIn,
     sort,
   } = parseContactsSearchParams(params)
+  const isAdmin = isAdminRole(user.role)
   const offset = (currentPage - 1) * pageSize
 
   // Share links: `?contact=<id>` opens the edit sheet even when the row sits
@@ -51,6 +54,7 @@ export default async function ContactsPage({
         status: 'active',
         search,
         clientId,
+        signIn,
         offset,
         limit: pageSize,
         sort,
@@ -95,6 +99,8 @@ export default async function ContactsPage({
           search={search}
           clientId={clientId}
           clients={allClients}
+          signIn={isAdmin ? signIn : undefined}
+          showSignInFilter={isAdmin}
         />
         <ContactsManagementTable
           contacts={contactsForTable}

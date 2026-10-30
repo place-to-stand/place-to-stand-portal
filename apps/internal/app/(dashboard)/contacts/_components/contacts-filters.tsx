@@ -6,6 +6,12 @@ import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import type { ClientOption } from '@/lib/queries/contacts'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
+import {
+  SIGN_IN_FILTER_LABELS,
+  SIGN_IN_FILTER_VALUES,
+  isSignInFilter,
+  type SignInFilter,
+} from '@/lib/settings/contacts/filters'
 
 type ContactsFiltersProps = {
   search?: string
@@ -15,6 +21,9 @@ type ContactsFiltersProps = {
   clients: ClientOption[]
   /** Base path to push filter changes to — '/contacts' or '/contacts/archive'. */
   basePath: string
+  /** Who can sign in (`?signIn=`); admins only. */
+  signIn?: SignInFilter
+  showSignInFilter?: boolean
 }
 
 export function ContactsFilters({
@@ -22,6 +31,8 @@ export function ContactsFilters({
   clientId,
   clients,
   basePath,
+  signIn,
+  showSignInFilter = false,
 }: ContactsFiltersProps) {
   // Contacts tables paginate by offset, so `page` is the pagination key
   // cleared on every filter change (not cursor/dir).
@@ -31,6 +42,7 @@ export function ContactsFilters({
     filters: {
       q: {},
       clientId: { isValid: value => UUID_PATTERN.test(value) },
+      signIn: { isValid: isSignInFilter },
     },
   })
 
@@ -43,7 +55,7 @@ export function ContactsFilters({
           placeholder='Search contacts…'
         />
       }
-      activeFilterCount={clientId ? 1 : 0}
+      activeFilterCount={(clientId ? 1 : 0) + (signIn ? 1 : 0)}
       showReset={hasActiveFilters}
       onReset={reset}
     >
@@ -56,6 +68,17 @@ export function ContactsFilters({
           label: client.name,
         }))}
       />
+      {showSignInFilter ? (
+        <FilterSelect
+          value={signIn}
+          onChange={value => update({ signIn: value })}
+          placeholder='Any sign-in'
+          options={SIGN_IN_FILTER_VALUES.map(value => ({
+            value,
+            label: SIGN_IN_FILTER_LABELS[value],
+          }))}
+        />
+      ) : null}
     </FilterBar>
   )
 }

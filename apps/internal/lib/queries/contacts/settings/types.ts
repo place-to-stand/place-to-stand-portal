@@ -1,3 +1,4 @@
+import type { SignInFilter } from '@/lib/settings/contacts/filters'
 import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { ContactSortField } from '@/lib/settings/contacts/filters'
@@ -45,6 +46,8 @@ export type ListContactsForSettingsInput = {
   search?: string | null
   /** Only contacts with a live link to this client (validated UUID). */
   clientId?: string | null
+  /** Who can sign in; only honoured for admins. */
+  signIn?: SignInFilter | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null

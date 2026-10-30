@@ -96,7 +96,8 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   user: {
     auxParams: [],
-    claimsPathname: exactPaths('/settings/users', '/settings/users/archive'),
+    // Users is People filtered to sign-ins; only the archive hosts its own.
+    claimsPathname: exactPaths('/settings/users/archive'),
   },
   project: {
     auxParams: [],

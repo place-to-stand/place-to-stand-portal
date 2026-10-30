@@ -15,6 +15,7 @@ export type PortalAccountSummary = {
   id: string
   fullName: string | null
   email: string
+  role: 'ADMIN' | 'SALES' | 'CLIENT'
   createdAt: string
   disabledAt: string | null
   deletedAt: string | null
@@ -38,6 +39,7 @@ export async function getPortalAccountSummary(
         id: users.id,
         fullName: personNameSql,
         email: users.email,
+        role: users.role,
         createdAt: users.createdAt,
         disabledAt: users.disabledAt,
         deletedAt: users.deletedAt,

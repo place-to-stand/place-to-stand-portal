@@ -6,7 +6,8 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { clients, contacts, memberships } from '@/lib/db/schema'
+import { clients, contacts, memberships, users } from '@/lib/db/schema'
+import { setPortalUserDisabled } from '@/lib/settings/users/services'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -118,6 +119,10 @@ export async function softDeleteContactMutation(
         })
       }
 
+      if (existingContact.userId && existingContact.userId === user.id) {
+        return buildMutationResult({ error: 'You can’t archive yourself.' })
+      }
+
       try {
         // Archiving ends their portal access for good: restoring the contact
         // later does not bring it back (only an admin switches access on).
@@ -135,6 +140,19 @@ export async function softDeleteContactMutation(
                 eq(memberships.portalAccess, true)
               )
             )
+          // An archived person can't sign in: their sign-in is switched off
+          // with the archive (restoring the person doesn't switch it back).
+          if (existingContact?.userId) {
+            await tx
+              .update(users)
+              .set({ disabledAt: new Date().toISOString() })
+              .where(
+                and(
+                  eq(users.id, existingContact.userId),
+                  isNull(users.disabledAt)
+                )
+              )
+          }
         })
       } catch (error) {
         console.error('Failed to archive contact', error)
@@ -144,6 +162,21 @@ export async function softDeleteContactMutation(
               ? error.message
               : 'Unable to archive contact.',
         })
+      }
+
+      // The rest of the off switch: ban the auth account and revoke
+      // provider connections (the flag above already blocks sign-in).
+      if (existingContact.userId) {
+        const offResult = await setPortalUserDisabled(user, {
+          id: existingContact.userId,
+          disabled: true,
+        })
+        if (offResult.error) {
+          console.error('Archived contact, but sign-in off failed', offResult.error)
+          return buildMutationResult({
+            error: `Archived, but their sign-in could not be fully switched off: ${offResult.error}. Turn it off on their sign-in.`,
+          })
+        }
       }
 
       // Access trail on each client they lose, as on the client sheet.

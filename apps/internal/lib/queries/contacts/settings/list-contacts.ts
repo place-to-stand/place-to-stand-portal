@@ -14,7 +14,11 @@ import {
   type SortCursorPayload,
   type SortDirection,
 } from '@/lib/pagination/sort'
-import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
+import {
+  DEFAULT_CONTACTS_SORT,
+  type SignInFilter,
+} from '@/lib/settings/contacts/filters'
+import { isAdminRole } from '@/lib/auth/roles'
 import {
   listContactMemberships,
   type ContactMembership,
@@ -51,10 +55,22 @@ type ContactMetricsResult = SelectContact &
     userHasPhoto: boolean | null
   }
 
+/** People with (or without) a live sign-in, optionally of one role. */
+function buildSignInCondition(signIn: SignInFilter | null | undefined) {
+  if (!signIn) return null
+  const live = sql`exists (select 1 from users u where u.id = ${contacts.userId} and u.deleted_at is null${
+    signIn === 'any' || signIn === 'none'
+      ? sql``
+      : sql` and u.role = ${signIn}`
+  })`
+  return signIn === 'none' ? sql`not ${live}` : live
+}
+
 function buildBaseConditions(
   status: StatusFilter,
   searchQuery: string,
-  clientId: string | null | undefined
+  clientId: string | null | undefined,
+  signIn?: SignInFilter | null
 ): SQL[] {
   const conditions: SQL[] = [buildStatusCondition(status)]
 
@@ -66,6 +82,11 @@ function buildBaseConditions(
   const clientCondition = buildClientCondition(clientId)
   if (clientCondition) {
     conditions.push(clientCondition)
+  }
+
+  const signInCondition = buildSignInCondition(signIn)
+  if (signInCondition) {
+    conditions.push(signInCondition)
   }
 
   return conditions
@@ -239,7 +260,9 @@ export async function listContactsForSettings(
   const baseConditions = buildBaseConditions(
     normalizedStatus,
     searchQuery,
-    input.clientId
+    input.clientId,
+    // Sign-ins are admin-only information.
+    isAdminRole(user.role) ? input.signIn : null
   )
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
 

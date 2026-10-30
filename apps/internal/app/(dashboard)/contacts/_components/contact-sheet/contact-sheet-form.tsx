@@ -31,7 +31,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
 
 import { ContactCompaniesSection } from './contact-companies-section'
-import { ContactPortalAccountCard } from './contact-portal-account-card'
+import { ContactSignInSection } from './contact-sign-in-section'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -83,6 +83,9 @@ export function ContactSheetForm({
 }: ContactSheetFormProps) {
   // Portal accounts grant client access, so they stay admin-only.
   const { isAdmin } = useViewerAccess()
+  // The sign-in shows and saves under the person's saved name.
+  const personName =
+    (form.formState.defaultValues?.name as string | undefined)?.trim() ?? ''
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -252,18 +255,23 @@ export function ContactSheetForm({
 
           {isEditing && isAdmin ? (
             <SheetSection
-              title='Portal user'
-              description='Lets them sign in to the client portal. Which clients they can see is set on each client (Edit client > Portal access).'
+              title='Sign-in'
+              description={
+                portalUserId
+                  ? undefined
+                  : 'Lets them sign in. Which clients a client sign-in can see is set on each company (Client > Portal access).'
+              }
             >
               {portalUserId ? (
-                <ContactPortalAccountCard
+                <ContactSignInSection
                   key={portalUserId}
                   userId={portalUserId}
+                  personName={personName}
                 />
               ) : (
                 <LinkedRecordCard
                   icon={User2}
-                  title='No portal user'
+                  title='No sign-in'
                   action={
                     <DisabledFieldTooltip
                       disabled={promoteDisabled}
@@ -278,7 +286,7 @@ export function ContactSheetForm({
                         onClick={onRequestPromote}
                       >
                         <UserPlus />
-                        Create user
+                        Create sign-in
                       </Button>
                     </DisabledFieldTooltip>
                   }
