@@ -366,12 +366,12 @@ export function TaskSheet(props: TaskSheetProps) {
           className={cn(
             'flex w-full flex-col gap-0 overflow-hidden p-0',
             // The one exception to the two widths: the expanded planning
-            // panel (560px) widens the sheet beside the 672px task column
+            // panel (560px) widens the sheet beside the 720px task column
             // and the 36px rail, and gives it back when it collapses.
             props.task &&
               canDeploy &&
               isPlanningOpen &&
-              'sm:max-w-[1268px] lg:w-[1268px]'
+              'sm:max-w-[1316px] lg:w-[1316px] lg:max-w-[calc(100vw-2rem)]'
           )}
           // Inline so it wins over the primitive's transition classes: the
           // sheet edge glides in sync with the panel's width transition.
@@ -393,9 +393,9 @@ export function TaskSheet(props: TaskSheetProps) {
             <div
               className={cn(
                 'flex h-full w-full min-w-0 flex-col',
-                // Fills the sheet; held at 672px beside open planning.
+                // Fills the sheet; held at 720px beside open planning.
                 isPlanningOpen && canDeploy
-                  ? 'sm:w-[672px] sm:shrink-0'
+                  ? 'sm:w-[720px] sm:shrink-0'
                   : 'flex-1'
               )}
             >

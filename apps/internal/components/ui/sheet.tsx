@@ -107,8 +107,8 @@ const SheetOverlay = ({
 
 /**
  * A sheet's width follows its layout: `columns={1}` (one column: company,
- * person, task, project, hour block, submission, template, filters) is 672px,
- * the narrowest that fits the full rich text toolbar on one line;
+ * person, task, project, hour block, submission, template, filters) is 720px,
+ * which fits the full rich text toolbar on one line with room to spare;
  * `columns={2}` (a form beside a SHEET_SIDE_COLUMN_CLASS column: lead,
  * invoice) is 768px below lg and a set 1184px from lg, within the viewport.
  * Below lg a side column stacks under the form. Phones get the full screen
@@ -117,10 +117,10 @@ const SheetOverlay = ({
 export type SheetColumns = 1 | 2
 
 /** The one-column sheet width, for layouts that add to it (task planning). */
-export const SHEET_ONE_COLUMN_WIDTH = 672
+export const SHEET_ONE_COLUMN_WIDTH = 720
 
 const sheetColumnClasses: Record<SheetColumns, string> = {
-  1: 'sm:max-w-[672px]',
+  1: 'sm:max-w-[720px]',
   2: 'sm:max-w-3xl lg:w-[1184px] lg:max-w-[calc(100vw-4rem)]',
 }
 
