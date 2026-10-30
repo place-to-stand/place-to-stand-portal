@@ -8,7 +8,7 @@ import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import {
   clientSchema,
   type ClientInput,
-} from '@/lib/settings/clients/client-service'
+} from '@/lib/companies/billing/client-service'
 
 import {
   buildMutationResult,

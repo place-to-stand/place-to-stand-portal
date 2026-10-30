@@ -6,7 +6,7 @@ import {
   saveClient,
   getClientSheetContactData,
   syncClientContacts,
-} from '@/app/(dashboard)/clients/actions'
+} from '@/app/(dashboard)/companies/billing-actions'
 import { subscribeSheetCreated } from '@/lib/sheets/created'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'

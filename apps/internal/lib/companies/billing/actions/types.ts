@@ -1,5 +1,5 @@
 import type { AppUser } from '@/lib/auth/session'
-import type { ClientActionResult } from '@/lib/settings/clients/client-service'
+import type { ClientActionResult } from '@/lib/companies/billing/client-service'
 
 export type ClientMutationContext = {
   user: AppUser

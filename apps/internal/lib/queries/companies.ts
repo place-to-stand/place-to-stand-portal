@@ -55,7 +55,7 @@ import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { revokeCompanyPortalAccess } from '@/lib/settings/clients/revoke-company-portal-access'
+import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
 import {
   companies,
   contacts,

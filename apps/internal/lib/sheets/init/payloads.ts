@@ -8,7 +8,7 @@
  * wrapper + resolver.
  */
 
-import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
+import type { ClientRow } from '@/lib/companies/billing/client-sheet-utils'
 import type {
   DbUser,
   ProjectWithRelations,

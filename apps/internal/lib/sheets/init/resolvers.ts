@@ -42,7 +42,7 @@ import {
 import { getProjectById } from '@/lib/queries/projects'
 import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
-import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
+import type { ClientRow } from '@/lib/companies/billing/client-sheet-utils'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from './payloads'

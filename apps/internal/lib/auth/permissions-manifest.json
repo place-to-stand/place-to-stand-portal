@@ -98,41 +98,6 @@
     "capability": null
   },
   {
-    "type": "action",
-    "name": "saveClient",
-    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "softDeleteClient",
-    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "restoreClient",
-    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "getClientSheetContactData",
-    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "syncClientContacts",
-    "file": "apps/internal/app/(dashboard)/clients/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
     "type": "page",
     "name": "/clients/activity",
     "file": "apps/internal/app/(dashboard)/clients/activity/page.tsx",
@@ -215,6 +180,41 @@
     "file": "apps/internal/app/(dashboard)/companies/archive/page.tsx",
     "kind": "capability",
     "capability": "leads.manage"
+  },
+  {
+    "type": "action",
+    "name": "saveClient",
+    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "softDeleteClient",
+    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreClient",
+    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "getClientSheetContactData",
+    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "syncClientContacts",
+    "file": "apps/internal/app/(dashboard)/companies/billing-actions.ts",
+    "kind": "admin",
+    "capability": null
   },
   {
     "type": "page",

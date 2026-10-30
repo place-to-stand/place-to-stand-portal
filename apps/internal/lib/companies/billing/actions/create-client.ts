@@ -8,12 +8,12 @@ import { companies, leads } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
 import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
-import type { CloserShare } from '@/lib/settings/clients/closers'
+import type { CloserShare } from '@/lib/companies/billing/closers'
 import {
   assertClientPartnerUserRoles,
   generateUniqueClientSlug,
   toClientSlug,
-} from '@/lib/settings/clients/client-service'
+} from '@/lib/companies/billing/client-service'
 
 import {
   buildMutationResult,

@@ -11,7 +11,7 @@ import { companies, } from '@/lib/db/schema'
 import {
   restoreClientSchema,
   type RestoreClientInput,
-} from '@/lib/settings/clients/client-service'
+} from '@/lib/companies/billing/client-service'
 
 import {
   buildMutationResult,

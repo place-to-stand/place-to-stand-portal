@@ -18,11 +18,11 @@ import {
 } from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 
-import { closerKey } from '@/lib/settings/clients/closers'
+import { closerKey } from '@/lib/companies/billing/closers'
 import type {
   CloserCandidate,
   CloserDraft,
-} from '@/lib/settings/clients/use-client-sheet-state'
+} from '@/lib/companies/billing/use-client-sheet-state'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 export type ClientClosersEditorProps = {

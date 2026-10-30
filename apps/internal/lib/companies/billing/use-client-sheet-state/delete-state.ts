@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-import { softDeleteClient } from '@/app/(dashboard)/clients/actions'
+import { softDeleteClient } from '@/app/(dashboard)/companies/billing-actions'
 import {
   finishSettingsInteraction,
   startSettingsInteraction,

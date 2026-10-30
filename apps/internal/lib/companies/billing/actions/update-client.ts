@@ -16,7 +16,7 @@ import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { revokeCompanyPortalAccess } from '@/lib/settings/clients/revoke-company-portal-access'
+import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import {
   currentMonthStartUtc,
@@ -36,12 +36,12 @@ import {
   describeClosers,
   type ClientCloser,
   type CloserShare,
-} from '@/lib/settings/clients/closers'
+} from '@/lib/companies/billing/closers'
 import {
   assertClientPartnerUserRoles,
   clientSlugExists,
   toClientSlug,
-} from '@/lib/settings/clients/client-service'
+} from '@/lib/companies/billing/client-service'
 
 import {
   buildMutationResult,

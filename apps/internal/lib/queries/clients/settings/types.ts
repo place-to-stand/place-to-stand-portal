@@ -1,9 +1,9 @@
-import type { ClientCloser } from '@/lib/settings/clients/closers'
+import type { ClientCloser } from '@/lib/companies/billing/closers'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type {
   ClientBillingFilter,
   ClientSortField,
-} from '@/lib/settings/clients/filters'
+} from '@/lib/companies/billing/filters'
 
 import type { SelectClient } from '../selectors'
 

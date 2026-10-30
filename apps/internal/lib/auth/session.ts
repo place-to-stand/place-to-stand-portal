@@ -15,7 +15,14 @@ import { serverEnv } from '@/lib/env.server'
 import { roleCan } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
 
-export type AppUser = Database['public']['Tables']['users']['Row']
+/**
+ * The signed-in person: their sign-in row plus their name and photo, which
+ * live on the person (contacts) since 0109 and 0112.
+ */
+export type AppUser = Database['public']['Tables']['users']['Row'] & {
+  full_name: string | null
+  avatar_url: string | null
+}
 export type UserRole = Database['public']['Enums']['user_role']
 
 export const getSession = cache(async (): Promise<Session | null> => {
@@ -117,6 +124,8 @@ type UserProfile = {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  disabledAt: string | null
+  onboardingCompletedAt: string | null
 }
 
 async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
@@ -130,6 +139,8 @@ async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
+      disabledAt: users.disabledAt,
+      onboardingCompletedAt: users.onboardingCompletedAt,
     })
     .from(users)
     .where(
@@ -158,6 +169,8 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
+      disabledAt: users.disabledAt,
+      onboardingCompletedAt: users.onboardingCompletedAt,
     })
     .from(users)
     .where(
@@ -196,6 +209,8 @@ function mapProfileToAppUser(profile: UserProfile): AppUser {
     created_at: profile.createdAt,
     updated_at: profile.updatedAt,
     deleted_at: profile.deletedAt ?? null,
+    disabled_at: profile.disabledAt ?? null,
+    onboarding_completed_at: profile.onboardingCompletedAt ?? null,
   }
 }
 

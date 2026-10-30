@@ -26,10 +26,10 @@ import type {
   CloserDraft,
   OriginationContactOption,
   PartnerUserOption,
-} from '@/lib/settings/clients/use-client-sheet-state'
-import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/settings/clients/billing-types'
-import { US_STATES } from '@/lib/settings/clients/us-states'
-import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
+} from '@/lib/companies/billing/use-client-sheet-state'
+import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/companies/billing/billing-types'
+import { US_STATES } from '@/lib/companies/billing/us-states'
+import type { ClientSheetFormValues } from '@/lib/companies/billing/client-sheet-schema'
 import { cn } from '@/lib/utils'
 
 import { ClientClosersEditor } from './client-closers-editor'

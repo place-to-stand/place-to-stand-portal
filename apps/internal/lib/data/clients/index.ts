@@ -20,7 +20,7 @@ import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 import { clientWebsiteSql } from '@/lib/queries/clients/website'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
-import type { ClientCloser } from '@/lib/settings/clients/closers'
+import type { ClientCloser } from '@/lib/companies/billing/closers'
 import {
   fetchContactSummariesByClient,
   type ClientContactSummary,

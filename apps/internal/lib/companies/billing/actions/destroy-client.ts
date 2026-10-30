@@ -22,7 +22,7 @@ import {
 import {
   destroyClientSchema,
   type DestroyClientInput,
-} from '@/lib/settings/clients/client-service'
+} from '@/lib/companies/billing/client-service'
 
 import {
   buildMutationResult,

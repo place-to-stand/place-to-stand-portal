@@ -7,11 +7,11 @@ import {
   clientSlugExistsDrizzle,
   generateUniqueClientSlugDrizzle,
 } from '@/lib/queries/clients'
-import { CLIENT_BILLING_TYPE_VALUES } from '@/lib/settings/clients/billing-types'
+import { CLIENT_BILLING_TYPE_VALUES } from '@/lib/companies/billing/billing-types'
 import {
   closerSplitError,
   type CloserShare,
-} from '@/lib/settings/clients/closers'
+} from '@/lib/companies/billing/closers'
 
 export const clientSchema = z
   .object({

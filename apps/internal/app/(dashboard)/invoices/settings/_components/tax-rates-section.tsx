@@ -41,7 +41,7 @@ import {
 import { RecordRowAction } from '@/components/table/record-row-action'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { TaxRateRow } from '@/lib/queries/tax-rates'
-import { US_STATES } from '@/lib/settings/clients/us-states'
+import { US_STATES } from '@/lib/companies/billing/us-states'
 
 import { saveTaxRate, toggleTaxRateActiveAction } from '../actions'
 

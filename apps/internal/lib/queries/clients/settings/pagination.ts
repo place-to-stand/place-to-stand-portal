@@ -14,7 +14,7 @@ import {
 import type {
   ClientBillingFilter,
   ClientSortField,
-} from '@/lib/settings/clients/filters'
+} from '@/lib/companies/billing/filters'
 
 export function normalizeStatus(status?: string | null) {
   return status === 'archived' ? 'archived' : 'active'

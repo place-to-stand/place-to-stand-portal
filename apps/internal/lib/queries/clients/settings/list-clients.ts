@@ -8,8 +8,8 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, projects } from '@/lib/db/schema'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
-import type { ClientCloser } from '@/lib/settings/clients/closers'
-import { DEFAULT_CLIENTS_SORT } from '@/lib/settings/clients/filters'
+import type { ClientCloser } from '@/lib/companies/billing/closers'
+import { DEFAULT_CLIENTS_SORT } from '@/lib/companies/billing/filters'
 
 import {
   ACTIVE_STATUS,

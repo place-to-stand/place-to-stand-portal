@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 
-import type { ClientSheetFormValues } from '@/lib/settings/clients/client-sheet-schema'
+import type { ClientSheetFormValues } from '@/lib/companies/billing/client-sheet-schema'
 
 /** "Sep 1, 2026"-style label for the first of the month `offset` months out. */
 function formatMonthStart(offset: number): string {

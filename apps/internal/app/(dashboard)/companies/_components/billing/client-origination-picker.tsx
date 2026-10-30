@@ -19,7 +19,7 @@ import {
 import type {
   OriginationContactOption,
   PartnerUserOption,
-} from '@/lib/settings/clients/use-client-sheet-state'
+} from '@/lib/companies/billing/use-client-sheet-state'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 export type ClientOriginationPickerProps = {

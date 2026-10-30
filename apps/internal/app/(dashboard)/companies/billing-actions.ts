@@ -8,16 +8,16 @@ import {
   type ClientInput,
   type DeleteClientInput,
   type RestoreClientInput,
-} from '@/lib/settings/clients/client-service'
+} from '@/lib/companies/billing/client-service'
 import {
   restoreClientMutation,
   saveClientMutation,
   softDeleteClientMutation,
-} from '@/lib/settings/clients/actions'
+} from '@/lib/companies/billing/actions'
 import type {
   ClientMutationContext,
   ClientMutationResult,
-} from '@/lib/settings/clients/actions'
+} from '@/lib/companies/billing/actions'
 import {
   getClientSheetContactData as getContactData,
   syncClientContacts as syncContacts,

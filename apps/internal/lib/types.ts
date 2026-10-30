@@ -15,6 +15,12 @@ export type ClientBillingTypeValue =
 export type ProjectTypeValue = (typeof projectType.enumValues)[number]
 export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
 
+/**
+ * A client: a company you bill (0111), read from `companies`. `id` and
+ * `company_id` are the same id. `billing_type` and `origination_*` come
+ * from the newest terms; `deleted_at` means billing stopped
+ * (`client_ended_at`, or the company archived).
+ */
 export type DbClient = {
   id: string
   name: string
@@ -24,10 +30,7 @@ export type DbClient = {
   origination_contact_id: string | null
   origination_user_id: string | null
   billing_type: ClientBillingTypeValue
-  /** The client's company. Optional: only the client sheet's loaders set it. */
   company_id?: string | null
-  /** Optional label after the company name ("Retainer"). */
-  label?: string | null
   created_by: string | null
   created_at: string
   updated_at: string

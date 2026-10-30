@@ -14,7 +14,7 @@ import {
   closerSplitsEqual,
   type ClientCloser,
   type CloserShare,
-} from '@/lib/settings/clients/closers'
+} from '@/lib/companies/billing/closers'
 
 import { currentMonthStartUtc } from './billing-terms'
 

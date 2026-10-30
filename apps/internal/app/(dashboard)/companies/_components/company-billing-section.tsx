@@ -25,12 +25,12 @@ import { useToast } from '@/components/ui/use-toast'
 import {
   restoreClient,
   softDeleteClient,
-} from '@/app/(dashboard)/clients/actions'
-import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
+} from '@/app/(dashboard)/companies/billing-actions'
+import type { ClientRow } from '@/lib/companies/billing/client-sheet-utils'
 import {
   useClientSheetState,
   type UseClientSheetStateReturn,
-} from '@/lib/settings/clients/use-client-sheet-state'
+} from '@/lib/companies/billing/use-client-sheet-state'
 
 /** What the company sheet needs from its client's billing form. */
 export type CompanyBillingHandle = {
