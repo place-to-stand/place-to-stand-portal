@@ -13,6 +13,8 @@ import { MembershipTitleInput } from '@/components/sheets/membership-title-input
 import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sheet-state'
 
@@ -99,6 +101,13 @@ export function ContactCompaniesSection({
             ...companies.filter(entry => entry.archived),
           ].map(entry => {
             const name = entry.companyName || 'this company'
+            // A client's primary contact is its invoice recipient: leaving
+            // it is for people who manage clients (the server agrees).
+            const primaryLocked =
+              !canManageAccess &&
+              entry.isPrimary &&
+              Boolean(entry.clientCompanyId) &&
+              !entry.archived
             return (
               <CompanyRecordRow
                 key={entry.companyId}
@@ -139,23 +148,26 @@ export function ContactCompaniesSection({
                       ariaLabel={`Title at ${name}`}
                       disabled={disabled}
                     />
-                    <RowActionButton
-                      type='button'
-                      label={`Remove from ${name}`}
-                      icon={<X />}
-                      className='text-muted-foreground hover:text-destructive'
-                      disabled={
-                        disabled ||
-                        (Boolean(entry.clientCompanyId) && !canManageAccess)
-                      }
-                      onClick={() =>
-                        onChange(
-                          companies.filter(
-                            other => other.companyId !== entry.companyId
+                    <DisabledFieldTooltip
+                      disabled={!disabled && primaryLocked}
+                      reason={primaryLocked ? CLIENT_PRIMARY_ADMIN_ONLY : null}
+                      className='w-auto'
+                    >
+                      <RowActionButton
+                        type='button'
+                        label={`Remove from ${name}`}
+                        icon={<X />}
+                        className='text-muted-foreground hover:text-destructive'
+                        disabled={disabled || primaryLocked}
+                        onClick={() =>
+                          onChange(
+                            companies.filter(
+                              other => other.companyId !== entry.companyId
+                            )
                           )
-                        )
-                      }
-                    />
+                        }
+                      />
+                    </DisabledFieldTooltip>
                   </>
                 }
               />

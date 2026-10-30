@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { archiveCompanyDescription } from '../_lib/archive-copy'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
+import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
 import { FormFeedback } from '@/components/sheets/form-feedback'
@@ -337,8 +338,12 @@ export function CompanySheet({
     })
   }, [company?.name, companyId, isArchived, onClose, refresh, toast])
 
-  // A client's people and primary contact are admin-only (the server agrees).
-  const peopleLocked = !isAdmin && Boolean(company?.clients.length)
+  // Sales builds the directory, client companies included; the staff
+  // company's people and a client's primary contact stay admin-only (the
+  // server agrees).
+  const peopleLocked = !isAdmin && Boolean(company?.isStaff)
+  const primaryLockedReason =
+    !canManageClients && clientCompanyId ? CLIENT_PRIMARY_ADMIN_ONLY : null
   const {
     titles,
     primaryContactId,
@@ -471,11 +476,12 @@ export function CompanySheet({
                               disabled={fieldsDisabled || peopleLocked}
                               lockedReason={
                                 peopleLocked
-                                  ? 'This company is a client, so an admin changes its people and primary contact.'
+                                  ? `Only an admin can change the people at ${company?.name ?? 'this company'}.`
                                   : null
                               }
+                              primaryLockedReason={primaryLockedReason}
                               titles={titles}
-                              titleDisabled={fieldsDisabled}
+                              titleDisabled={fieldsDisabled || peopleLocked}
                               onTitleChange={handleTitleChange}
                               onSetPrimary={handleSetPrimary}
                               onAdd={handleAddPerson}

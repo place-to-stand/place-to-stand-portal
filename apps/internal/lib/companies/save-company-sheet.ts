@@ -69,7 +69,10 @@ import {
   type CompanyWritePlan,
 } from '@/lib/queries/companies'
 import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { listCompanyMembers } from '@/lib/queries/memberships'
+import {
+  listCompanyMembers,
+  PortalAccessForbiddenError,
+} from '@/lib/queries/memberships'
 
 type BillingFields = ReturnType<typeof companyBillingFieldsSchema.parse>
 
@@ -238,7 +241,7 @@ export async function saveCompanySheet(
         // Sign-ins first: portal access needs one.
         await writeClientSignIns(tx, actor, signIns)
         if (portal.changes) {
-          await applyPortalAccessInTx(tx, companyId, portal.changes)
+          await applyPortalAccessInTx(tx, actor, companyId, portal.changes)
         }
         // Any change to the company, its billing, people or portal access
         // moves its updated_at, so a sheet still open on the old version
@@ -603,6 +606,7 @@ function saveErrorMessage(error: unknown): string | null {
     error instanceof BillingPeriodError ||
     error instanceof ClosedMonthError ||
     error instanceof PortalAccessRefusal ||
+    error instanceof PortalAccessForbiddenError ||
     error instanceof SignInConflictError
   ) {
     return error.message

@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
+import { roleCan, type Role } from '@/lib/auth/capabilities'
 import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, memberships } from '@/lib/db/schema'
 import { activeCompanySql, isClientCompany } from '@pts/db/client-state'
@@ -63,14 +64,15 @@ export const mainCompanyIdSql = (contactId: AnyPgColumn | SQL) =>
   )`
 
 /**
- * True when the contact is a current member of a client (a company billed
- * now and not archived). A client's people are admin-only to edit.
+ * True when the contact is the primary contact (the invoice recipient) of a
+ * client (a company billed now and not archived): admin-only to archive,
+ * restore or re-address.
  */
-export const atClientCompanySql = (contactId: AnyPgColumn | SQL) =>
+export const primaryAtClientSql = (contactId: AnyPgColumn | SQL) =>
   sql<boolean>`exists (
     select 1 from memberships m
     where m.contact_id = ${ref(contactId)} and m.ended_at is null
-      and company_is_client(m.company_id)
+      and m.is_primary and company_is_client(m.company_id)
   )`
 
 /** The contact's main company name. */
@@ -249,13 +251,15 @@ export async function listCompanyMembers(
 
 /**
  * Adds the contact to the company (no-op if they're already a current
- * member). Returns true when a membership was created.
+ * member). Returns true when a membership was created. A membership always
+ * starts without portal access: only `setPortalAccess` switches it on, and
+ * only for someone who can manage clients.
  */
 export async function joinCompany(
   executor: Executor,
   contactId: string,
   companyId: string,
-  options: { title?: string | null; portalAccess?: boolean } = {}
+  options: { title?: string | null } = {}
 ): Promise<boolean> {
   const inserted = await executor
     .insert(memberships)
@@ -263,7 +267,7 @@ export async function joinCompany(
       contactId,
       companyId,
       title: options.title?.trim() || null,
-      portalAccess: options.portalAccess ?? false,
+      portalAccess: false,
     })
     .onConflictDoNothing({
       target: [memberships.contactId, memberships.companyId],
@@ -392,18 +396,33 @@ export async function setCompanyPrimary(
   return ok
 }
 
+/** Someone who can't manage clients tried to switch portal access on. */
+export class PortalAccessForbiddenError extends Error {
+  constructor() {
+    super('Only an admin can give someone portal access.')
+  }
+}
+
 /**
  * Switches a member's portal access to the company's client. Access needs a
  * portal login, so switching it on for a contact without one (or who isn't
  * a current member) does nothing and returns false. Give them a login first
  * (the contact sheet's Create account).
+ *
+ * The one place portal access is switched on: an actor who can't manage
+ * clients (`clients.manage`) throws `PortalAccessForbiddenError`, whatever
+ * path called it (company sheet, person sheet, CLI, MCP).
  */
 export async function setPortalAccess(
   executor: Executor,
+  actor: { role: Role },
   contactId: string,
   companyId: string,
   portalAccess: boolean
 ): Promise<boolean> {
+  if (portalAccess && !roleCan(actor.role, 'clients.manage')) {
+    throw new PortalAccessForbiddenError()
+  }
   if (portalAccess && !(await hasPortalLogin(executor, contactId))) {
     return false
   }

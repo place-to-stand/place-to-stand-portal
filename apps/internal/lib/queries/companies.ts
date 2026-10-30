@@ -63,6 +63,10 @@ import {
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
+import {
+  CLIENT_PRIMARY_ADMIN_ONLY,
+  SIGN_IN_COMPANIES_ADMIN_ONLY,
+} from '@/lib/companies/people-copy'
 import { companies, contacts, leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { LeadStatusValue } from '@/lib/leads/constants'
@@ -292,6 +296,7 @@ export async function getCompanyDetail(
       isPrimary: member.isPrimary,
       portalAccess: seesSignIns && member.portalAccess,
       hasPortalLogin: seesSignIns && Boolean(member.userId),
+      signInLocked: !isAdminRole(user.role) && Boolean(member.userId),
       signInDisabled: Boolean(
         member.userId && disabledSignIns.has(member.userId)
       ),
@@ -366,8 +371,9 @@ export type CompanyWritePlan = {
 /**
  * Checks a company save and resolves what it changes, before any write: the
  * fields, the people who join or leave, titles and the primary contact, and
- * the role rules (a client company's name, people and primary are admin-only;
- * so is removing someone from the staff company).
+ * the role rules: a client's primary contact, the staff company and moving
+ * someone who can sign in are admin-only. Billing and portal access are
+ * checked by the sheet's save (`saveCompanySheet`).
  */
 export async function planCompanyWrite(
   actor: AppUser,
@@ -464,39 +470,37 @@ export async function planCompanyWrite(
 
   if (existing) {
     const renamed = next.name !== existing.name
-    // A client's name is its company's name, its people are who it bills and
-    // gives portal access, and client records are admin-only.
-    if (!roleCan(actor.role, 'clients.manage')) {
-      const touchesClient =
-        renamed ||
-        people.moves.length > 0 ||
-        titles.length > 0 ||
-        primaryChange !== null
-      if (touchesClient && (await companyHasClient(existing.id))) {
+    // Staff sign in as members of the agency's own company, so only an
+    // admin renames it or changes its people.
+    if (existing.isStaff && !isAdminRole(actor.role)) {
+      if (renamed) {
         return {
           ok: false,
-          error: renamed
-            ? 'This company is a client, so only an admin can rename it.'
-            : people.moves.length || titles.length
-              ? 'This company is a client, so only an admin can change its people.'
-              : 'This company is a client, so only an admin can change its primary contact.',
+          error: `Only an admin can change ${existing.name}.`,
+        }
+      }
+      if (people.moves.length || titles.length || primaryChange) {
+        return {
+          ok: false,
+          error: `Only an admin can change the people at ${existing.name}.`,
         }
       }
     }
-    // Staff sign in as members of the agency's own company, so only an admin
-    // renames it.
-    if (existing.isStaff && renamed && !isAdminRole(actor.role)) {
-      return { ok: false, error: `Only an admin can change ${existing.name}.` }
-    }
-    // Staff sign in as members of the agency's own company.
-    if (
-      existing.isStaff &&
-      !isAdminRole(actor.role) &&
-      people.moves.some(move => !move.joins)
-    ) {
-      return {
-        ok: false,
-        error: `Only an admin can remove people from ${existing.name}.`,
+    // Sales builds the directory, client companies included: their name,
+    // people and titles. A client's primary contact is who its invoices go
+    // to, so changing it (or removing them) is for people who manage
+    // clients.
+    if (!roleCan(actor.role, 'clients.manage')) {
+      const removesPrimary =
+        currentPrimary !== null &&
+        people.moves.some(
+          move => !move.joins && move.contactId === currentPrimary
+        )
+      if (
+        (primaryChange !== null || removesPrimary) &&
+        (await companyHasClient(existing.id))
+      ) {
+        return { ok: false, error: CLIENT_PRIMARY_ADMIN_ONLY }
       }
     }
   }
@@ -504,11 +508,7 @@ export async function planCompanyWrite(
   // Someone who can sign in sees what their companies give them, so only an
   // admin moves them between companies (as on the person sheet).
   if (!isAdminRole(actor.role) && people.moves.some(move => move.hasSignIn)) {
-    return {
-      ok: false,
-      error:
-        'Only an admin can change the companies of someone who can sign in.',
-    }
+    return { ok: false, error: SIGN_IN_COMPANIES_ADMIN_ONLY }
   }
 
   if (people.moves.length) changedFields.push('people')

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireUser, type AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, contacts, projects } from '@/lib/db/schema'
@@ -42,18 +42,21 @@ export async function POST() {
     email: 'ceo@acme.com',
     name: 'Acme CEO',
     createdBy: user.id,
+    actor: user,
   })
   await upsertContact({
     companyIds: [acme.companyId],
     email: 'dev@acme.com',
     name: 'Acme Dev',
     createdBy: user.id,
+    actor: user,
   })
   await upsertContact({
     companyIds: [beta.companyId],
     email: 'team@beta.io',
     name: 'Beta Team',
     createdBy: user.id,
+    actor: user,
   })
   // Someone at two companies (like a consultant who works for both), with
   // portal access to each one's client.
@@ -62,6 +65,7 @@ export async function POST() {
     email: 'consultant@example.com',
     name: 'Two-Company Consultant',
     createdBy: user.id,
+    actor: user,
   })
 
   return NextResponse.json({
@@ -139,6 +143,7 @@ async function upsertContact(input: {
   email: string
   name?: string | null
   createdBy: string
+  actor: AppUser
 }) {
   // Find or create contact by email
   let [existingContact] = await db
@@ -161,7 +166,7 @@ async function upsertContact(input: {
 
   for (const companyId of input.companyIds) {
     await joinCompany(db, existingContact.id, companyId)
-    await setPortalAccess(db, existingContact.id, companyId, true)
+    await setPortalAccess(db, input.actor, existingContact.id, companyId, true)
   }
 
   return existingContact

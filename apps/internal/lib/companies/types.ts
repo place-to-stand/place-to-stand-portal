@@ -45,6 +45,11 @@ export type CompanyContactSummary = {
   portalAccess: boolean
   /** Has a sign-in (false for a viewer who can't manage clients). */
   hasPortalLogin: boolean
+  /**
+   * Has a sign-in and the viewer isn't an admin: only an admin moves them
+   * between companies (the person sheet shows them read-only too).
+   */
+  signInLocked: boolean
   /** Their sign-in is switched off or archived: no access until it's back. */
   signInDisabled: boolean
 }
