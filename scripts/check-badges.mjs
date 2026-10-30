@@ -44,4 +44,4 @@ if (errors.length) {
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
 }
-console.log('Badges: one size, weight and case everywhere')
+console.log('Badges: one size, weight and case everywhere (set by @pts/ui/badge)')

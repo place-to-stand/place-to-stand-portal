@@ -196,7 +196,7 @@ export function ComponentsBadges() {
     <DesignSection
       id='badges'
       title='Badges'
-      when='One badge, two looks. Status (a state that changes) is a soft tinted fill: an outline Badge with a BADGE_TINTS hue, mapped once per domain. Label (what something is: Client, a role) is an outline with no fill; an entity state carries its icon. Every badge is the same size and weight, in sentence case; lint fails on uppercase, tracking, weight or size overrides.'
+      when='One badge, two looks. Status (a state that changes) is a soft tinted fill: an outline Badge with a BADGE_TINTS hue, mapped once per domain. Label (what something is: Client, a role) is an outline with no fill; an entity state carries its icon. Every badge is the same size and weight, in caps with a little letter-spacing (set by the component); lint fails on case, tracking, weight or size overrides.'
     >
       <Specimen label='Variants' note='@pts/ui/badge'>
         <Badge>Default</Badge>
