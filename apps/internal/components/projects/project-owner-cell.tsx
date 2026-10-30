@@ -119,8 +119,8 @@ export function ProjectOwnerCell({
       items={ownerOptions}
       value={optimisticOwnerId ?? ''}
       onChange={handleChange}
-      searchPlaceholder='Search team members...'
-      emptyMessage='No team members found.'
+      searchPlaceholder='Search users...'
+      emptyMessage='No users found.'
       className='w-fit'
       trigger={
         <button

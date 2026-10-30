@@ -23,8 +23,7 @@ const fetchSheetInit = async (entity: string, value: string) => {
     `/api/sheets/init?entity=${entity}&id=${encodeURIComponent(value)}`
   )
   const result = (await response.json()) as
-    | { ok: true; data: unknown }
-    | { ok: false; error?: string }
+    { ok: true; data: unknown } | { ok: false; error?: string }
 
   if (!result.ok) {
     throw new Error(result.error ?? 'Unable to load sheet data')
@@ -61,7 +60,8 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
   const { toast } = useToast()
   // Seed from the cache so a warmed sheet renders on its first frame.
   const [data, setData] = useState<SheetInitPayloads[E] | null>(
-    () => (initCache.get(cacheKey(entity, value)) as SheetInitPayloads[E]) ?? null
+    () =>
+      (initCache.get(cacheKey(entity, value)) as SheetInitPayloads[E]) ?? null
   )
   // The latest requested value — guards against out-of-order responses when
   // the param changes while a fetch is in flight.
@@ -118,7 +118,10 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
         console.error(`[sheets] failed to load ${entity} sheet`, error)
         handlersRef.current.toast({
           variant: 'destructive',
-          title: 'Unable to open the linked item',
+          // Name the entity: "hourBlock" -> "hour block".
+          title: `Unable to open the linked ${entity
+            .replace(/([A-Z])/g, ' $1')
+            .toLowerCase()}`,
           description:
             'It may have been deleted, or something went wrong loading it.',
         })

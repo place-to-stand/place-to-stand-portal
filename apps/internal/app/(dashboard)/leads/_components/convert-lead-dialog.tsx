@@ -284,7 +284,7 @@ export function ConvertLeadDialog({
                       <div className='space-y-1 leading-none'>
                         <FormLabel>Copy notes to client</FormLabel>
                         <FormDescription>
-                          Transfer lead notes to the new client record.
+                          Transfer lead notes to the new client.
                         </FormDescription>
                       </div>
                     </FormItem>

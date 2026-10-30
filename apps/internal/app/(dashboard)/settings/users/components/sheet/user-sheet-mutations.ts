@@ -133,7 +133,7 @@ export function createSubmitHandler({
           toast({
             title: 'Invite sent',
             description:
-              'The new teammate received their login details via email.',
+              'The new user received their sign-in details by email.',
           })
         } catch (error) {
           finishSettingsInteraction(baseInteraction, {

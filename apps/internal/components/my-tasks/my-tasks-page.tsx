@@ -621,9 +621,7 @@ function buildMemberDirectory(
     project.members.forEach(member => {
       const user = member.user
       const name =
-        user.full_name?.trim() ||
-        user.email?.split('@')[0] ||
-        'Unassigned member'
+        user.full_name?.trim() || user.email?.split('@')[0] || 'Unnamed user'
       directory.set(user.id, { name, avatarUrl: user.avatar_url })
     })
   })

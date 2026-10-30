@@ -135,7 +135,7 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
       <ConfirmDialog
         open={Boolean(state.taskRemovalCandidate)}
         title='Remove linked task?'
-        description='The task will no longer be associated with this log entry.'
+        description='The task will no longer be linked to this time log.'
         confirmLabel='Remove'
         confirmVariant='destructive'
         confirmDisabled={state.isMutating}

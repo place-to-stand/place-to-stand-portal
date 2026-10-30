@@ -97,7 +97,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
         'A one-time sign-in link. The link itself comes from Supabase; only the wrapper email is ours.',
       triggers: ['"Email me a sign-in link" on either sign-in page'],
       recipient:
-        'The address entered on the sign-in form, only if an account exists',
+        'The address entered on the sign-in form, only if a user exists',
       from,
       replyTo,
       delivery: `Admin: ${INTERNAL_SDK_DELIVERY}. Client: ${CLIENT_HTTP_DELIVERY}.`,
@@ -121,7 +121,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       description:
         'Recovery link for the forgot-password flow. Replaces the stock Supabase reset email, which was getting flagged as phishing.',
       triggers: ['Forgot-password form on either portal'],
-      recipient: 'The address entered on the form, only if an account exists',
+      recipient: 'The address entered on the form, only if a user exists',
       from,
       replyTo,
       delivery: `Admin: ${INTERNAL_SDK_DELIVERY}. Client: ${CLIENT_HTTP_DELIVERY}.`,

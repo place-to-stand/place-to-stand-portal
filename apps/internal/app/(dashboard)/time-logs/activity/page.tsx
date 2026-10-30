@@ -28,7 +28,7 @@ export default async function TimeLogsActivityPage() {
         <ActivitySection
           targetType='TIME_LOG'
           emptyState='No recent time log activity.'
-          description='Audit time log entries, edits, archives, and restores in one place.'
+          description='Audit time logs, edits, archives, and restores in one place.'
         />
       </section>
     </PageShell>

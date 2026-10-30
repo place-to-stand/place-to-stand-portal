@@ -142,8 +142,8 @@ export function ContactsManagementTable({
         title='Archive contact?'
         description={
           deleteTarget
-            ? `Archiving ${deleteTarget.name || deleteTarget.email} hides it from active views but preserves the record.`
-            : 'Archiving this contact hides it from active views but keeps its history.'
+            ? `Archiving ${deleteTarget.name || deleteTarget.email} hides it from active views but keeps the contact.`
+            : 'Archiving this contact hides it from active views but keeps the contact.'
         }
         confirmLabel='Archive'
         confirmVariant='destructive'

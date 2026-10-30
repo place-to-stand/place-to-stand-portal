@@ -115,7 +115,7 @@ function TimeLogRow({
   // A log can span several tasks; the first names the row and the rest
   // collapse into a count so the primary line stays one line.
   const [firstTask, ...otherTasks] = entry.taskTitles
-  const label = firstTask ?? entry.note ?? 'Untitled entry'
+  const label = firstTask ?? entry.note ?? 'Untitled time log'
   const dateLabel = formatCalendarDate(entry.loggedOn, {
     month: 'short',
     day: 'numeric',

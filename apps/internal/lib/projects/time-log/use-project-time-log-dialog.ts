@@ -222,7 +222,7 @@ export function useProjectTimeLogDialog(
   const successToast = isEditMode
     ? {
         title: 'Time log updated',
-        description: 'The entry now reflects your changes.',
+        description: 'The time log now reflects your changes.',
       }
     : undefined
 

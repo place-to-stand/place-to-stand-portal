@@ -77,7 +77,7 @@ export default async function OAuthConsentPage({
       <AuthShell
         label='Internal Portal'
         title='Staff only'
-        description='Connecting apps to the portal is limited to admin and sales accounts.'
+        description='Connecting apps to the portal is limited to admin and sales users.'
         footer={
           <Link className={authLinkClass} href='/'>
             Back to the portal

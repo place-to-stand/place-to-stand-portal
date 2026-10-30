@@ -24,7 +24,7 @@ export type FindOrCreatePortalUserResult = UserServiceResult & {
 
 const STAFF_EMAIL_ERROR = {
   error:
-    'That email belongs to a staff account, so it can’t be a portal user. Use a different email for the contact.',
+    'That email belongs to a staff user, so it can’t be a portal user. Use a different email for the contact.',
 }
 
 /**
@@ -82,7 +82,7 @@ export async function findOrCreatePortalUser(
 
   const authUserId = authRow?.id
   if (!authUserId) {
-    return { error: 'Unable to find existing auth account.' }
+    return { error: 'Unable to find the existing user.' }
   }
 
   // 5. Check if there's a soft-deleted users row we can restore
@@ -149,7 +149,7 @@ export async function findOrCreatePortalUser(
 
   if (updateResult.error) {
     console.error('Failed to update existing auth user', updateResult.error)
-    return { error: 'Unable to update the existing account.' }
+    return { error: 'Unable to update the existing user.' }
   }
 
   try {

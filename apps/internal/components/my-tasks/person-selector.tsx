@@ -115,8 +115,8 @@ export function PersonSelector({
           value={selectedUserId}
           onChange={handleChange}
           placeholder="Select person"
-          searchPlaceholder="Search team members..."
-          emptyMessage="No team members found."
+          searchPlaceholder="Search people..."
+          emptyMessage="No people found."
           disabled={disabled}
           className="w-full"
           triggerClassName="h-8 py-0 text-sm"

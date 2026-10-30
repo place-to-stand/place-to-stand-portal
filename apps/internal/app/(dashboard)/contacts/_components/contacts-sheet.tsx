@@ -18,7 +18,7 @@ const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive contact?'
 const ARCHIVE_CONTACT_CONFIRM_LABEL = 'Archive'
 
 function getArchiveContactDialogDescription(displayName: string) {
-  return `Archiving ${displayName} hides it from active views but preserves the record.`
+  return `Archiving ${displayName} hides it from active views but keeps the contact.`
 }
 
 type ContactsSheetProps = UseContactSheetStateOptions

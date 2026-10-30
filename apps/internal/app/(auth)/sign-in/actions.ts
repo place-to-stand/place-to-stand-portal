@@ -86,7 +86,7 @@ export async function signInWithPassword(
   if (profile?.disabledAt) {
     await supabase.auth.signOut();
     return {
-      error: "This account has been disabled. Contact an administrator.",
+      error: "This user has been disabled. Contact an administrator.",
     };
   }
 

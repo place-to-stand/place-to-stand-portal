@@ -58,7 +58,7 @@ export const CAPABILITIES = {
   'portal.command_palette': {
     area: 'Portal',
     label: 'Search everything (command palette)',
-    description: 'Results are limited to records the role can open.',
+    description: 'Results are limited to what the role can open.',
     roles: STAFF,
     surfaces: ['app'],
   },
@@ -153,7 +153,7 @@ export const CAPABILITIES = {
     area: 'Projects & tasks',
     label: 'See project hours and billing',
     description:
-      'Logged hours, billing terms, client notes, portal members, GitHub and integration links. Hidden from members.',
+      'Logged hours, billing terms, client notes, portal users, GitHub and integration links. Hidden from members.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },
@@ -173,7 +173,7 @@ export const CAPABILITIES = {
   },
   'tasks.edit_others_comments': {
     area: 'Projects & tasks',
-    label: 'Edit or delete other people’s comments and files',
+    label: 'Edit or delete other users’ comments and files',
     description: 'Everyone can edit and delete their own.',
     roles: ADMIN_ONLY,
     surfaces: ['app'],
@@ -216,7 +216,7 @@ export const CAPABILITIES = {
   'companies.manage': {
     area: 'Directory',
     label: 'Manage companies',
-    description: 'Company records, their contacts and leads.',
+    description: 'Companies, their contacts and leads.',
     roles: STAFF,
     surfaces: ['app'],
   },
@@ -230,7 +230,7 @@ export const CAPABILITIES = {
   'clients.manage': {
     area: 'Directory',
     label: 'Manage clients',
-    description: 'Client records, billing terms and portal members.',
+    description: 'Clients, billing terms and portal users.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },

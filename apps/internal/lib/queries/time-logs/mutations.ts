@@ -162,7 +162,7 @@ export async function createTimeLog(
       .returning({ id: timeLogs.id })
 
     if (!inserted) {
-      throw new Error('Unable to create time log entry.')
+      throw new Error('Unable to create time log.')
     }
 
     if (taskIds.length) {

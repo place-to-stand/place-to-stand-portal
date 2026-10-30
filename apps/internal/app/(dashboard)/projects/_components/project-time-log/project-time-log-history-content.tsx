@@ -90,7 +90,7 @@ export function ProjectTimeLogHistoryContent(
                 <TableHead className='min-w-28'>Logged on</TableHead>
                 <TableHead className='min-w-20'>Hours</TableHead>
                 <TableHead className='min-w-20 text-center'>Tasks</TableHead>
-                <TableHead className='min-w-36'>Member</TableHead>
+                <TableHead className='min-w-36'>Person</TableHead>
                 <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -143,7 +143,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
   const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown user'
   const loggedDate = formatCalendarDate(log.logged_on) ?? 'Unknown date'
   const deleteDisabled = isDeleting
-  const deleteReason = deleteDisabled ? 'Removing entry...' : null
+  const deleteReason = deleteDisabled ? 'Removing time log...' : null
 
   const visibleTaskLinks = (log.linked_tasks ?? []).filter(
     (
