@@ -1,9 +1,6 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Link2 } from 'lucide-react'
-
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
@@ -20,11 +17,6 @@ import { ENTITY_ICONS } from '@/lib/entity-accents'
  */
 
 type RowExtras = {
-  /**
-   * Shows the link mark: this record is linked one-to-one to the sheet's
-   * own record (a company's client, a client's company).
-   */
-  linked?: boolean
   /** Replaces the default detail line (e.g. "Pending save"). */
   note?: ReactNode
   actions?: ReactNode
@@ -79,7 +71,6 @@ export function ContactRecordRow({
 export function CompanyRecordRow({
   company,
   titleAddon,
-  linked = false,
   note,
   actions,
   openable = true,
@@ -106,7 +97,7 @@ export function CompanyRecordRow({
       description={note}
       onOpen={openable ? () => open('company', company.id) : undefined}
       openLabel={`Open ${company.name}`}
-      actions={withLinkMark(linked, actions)}
+      actions={actions}
       className={className}
     />
   )
@@ -144,25 +135,5 @@ export function LeadRecordRow({
       }
       className={className}
     />
-  )
-}
-
-function withLinkMark(linked: boolean, actions: ReactNode) {
-  if (!linked) return actions
-  return (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            className='text-muted-foreground inline-flex size-7 items-center justify-center'
-            aria-label='Linked'
-          >
-            <Link2 className='size-3.5' aria-hidden />
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>Linked</TooltipContent>
-      </Tooltip>
-      {actions}
-    </>
   )
 }

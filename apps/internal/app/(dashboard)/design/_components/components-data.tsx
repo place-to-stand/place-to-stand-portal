@@ -125,7 +125,6 @@ export function ComponentsRecordRows() {
           <CompanyRecordRow
             company={{ id: 'design-acme', name: 'Acme Industries' }}
             titleAddon={<ClientBadge />}
-            linked
             openable={false}
           />
           <LeadRecordRow
