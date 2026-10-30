@@ -806,6 +806,13 @@
       "when": 1793366599851,
       "tag": "0114_drop_client_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1793374799265,
+      "tag": "0115_harden_functions",
+      "breakpoints": true
     }
   ]
 }
