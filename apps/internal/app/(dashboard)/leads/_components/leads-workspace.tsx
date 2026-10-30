@@ -15,6 +15,9 @@ import {
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
@@ -30,7 +33,6 @@ type LeadsWorkspaceProps = {
   /** A user id (only their leads) or `'all'`. */
   assigneeFilter?: string
   viewerId: string
-  /** `leads.convert`: dropping into Closed Won offers conversion. */
 }
 
 export function LeadsWorkspace({
@@ -122,6 +124,20 @@ export function LeadsWorkspace({
     [clear, router, startRefresh]
   )
 
+  // Winning a lead opens its company's Billing tab next, for whoever can
+  // make it a client there (the same step the lead sheet takes on save).
+  const { role } = useViewerAccess()
+  const canManageClients = roleCan(role, 'clients.manage')
+  const handleLeadClosedWon = useCallback(
+    (lead: LeadRecord) => {
+      if (!lead.companyId) return
+      router.push(companySheetHref(lead.companyId, 'billing'), {
+        scroll: false,
+      })
+    },
+    [router]
+  )
+
   const handleSheetSuccess = useCallback(() => {
     startRefresh(() => {
       router.refresh()
@@ -199,6 +215,7 @@ export function LeadsWorkspace({
         canManage={canManage}
         onEditLead={handleEditLead}
         onCreateLead={handleCreateLead}
+        onLeadClosedWon={canManageClients ? handleLeadClosedWon : undefined}
         activeLeadId={boardActiveLeadId}
       />
     </PageShell>

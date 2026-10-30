@@ -220,10 +220,12 @@ export function LeadsBoard({
         } else {
           columnsRef.current = result.nextColumns
 
+          // Just won (not a reorder inside Won): billing is the next step.
           if (
             result.targetColumnId === 'CLOSED_WON' &&
             draggedLead &&
-            !draggedLead.convertedToClientId &&
+            draggedLead.status !== 'CLOSED_WON' &&
+            draggedLead.companyId &&
             onLeadClosedWon
           ) {
             onLeadClosedWon(draggedLead)
