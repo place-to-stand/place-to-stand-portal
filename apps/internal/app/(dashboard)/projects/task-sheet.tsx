@@ -329,7 +329,10 @@ export function TaskSheet(props: TaskSheetProps) {
 
   const handleTimeLogMutationSuccess = useCallback(() => {
     if (taskId) {
-      queryClient.invalidateQueries({ queryKey: [TASK_TIME_LOGS_KEY, taskId] })
+      // Background refetch: its errors land in the query, not here.
+      void queryClient.invalidateQueries({
+        queryKey: [TASK_TIME_LOGS_KEY, taskId],
+      })
     }
   }, [queryClient, taskId])
 

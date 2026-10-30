@@ -9,16 +9,23 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint && node scripts/design-tokens.mjs --check && node scripts/permissions-manifest.mjs --check && node scripts/check-entities.mjs && node scripts/check-badges.mjs && node scripts/check-formatters.mjs",
+    "lint": "turbo lint && node scripts/design-tokens.mjs --check && node scripts/permissions-manifest.mjs --check && node scripts/check-entities.mjs && node scripts/check-badges.mjs && node scripts/check-formatters.mjs && node scripts/check-copy.mjs && node scripts/check-rule-guards.mjs",
     "design-tokens": "node scripts/design-tokens.mjs",
     "permissions-manifest": "node scripts/permissions-manifest.mjs",
     "type-check": "turbo type-check",
     "cli:link": "npm run build -w @pts/cli && cd packages/cli && npm link",
-    "test:e2e": "playwright test -c e2e/playwright.config.ts"
+    "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
     "turbo": "^2.11.10",
     "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=26"
   }
 }

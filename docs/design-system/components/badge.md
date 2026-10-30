@@ -8,7 +8,7 @@ A small pill of status or label text. From `@pts/ui/badge`: one size for every b
 
 `secondary` is a quiet neutral chip (a count, "Default"); `destructive` is for a failure state.
 
-**Rules (checked by `scripts/check-badges.mjs` in `npm run lint`):** never change a badge's case, letter spacing, weight, text size, height, vertical padding or radius at a call site; the component sets them. Colour and layout (`gap`, margins, `shrink-0`) are fine. Write the label in sentence case ("New opportunities", "Closed won"); the component shows it in caps.
+**Rules (checked by `scripts/check-badges.mjs` in `npm run lint`):** never change a badge's case, letter spacing, weight, text size, height, vertical padding or radius at a call site; the component sets them. Colour and layout (`gap`, margins, `shrink-0`) are fine. Write the label in sentence case ("New opportunities", "Closed won"); the component shows it in caps. (guard: scripts/check-badges.mjs)
 
 **Consumer provides:** one to three words; optional 12px icon (`[&>svg]:size-3`, `gap-1`).
 

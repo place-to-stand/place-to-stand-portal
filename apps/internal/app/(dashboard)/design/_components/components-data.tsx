@@ -53,7 +53,7 @@ import { getProjectStatusToken } from '@/lib/constants'
 
 import { DesignSection, Example, Specimen } from './specimen'
 
-const AVATAR_SIZES = ['xs', 'sm', 'md', 'lg'] as const
+const AVATAR_SIZES = ['xs', 'sm', 'md', 'lg', 'xl'] as const
 
 export function ComponentsAvatars() {
   return (
@@ -67,7 +67,7 @@ export function ComponentsAvatars() {
         note='components/ui/user-avatar'
         className='grid grid-cols-1 gap-6 sm:grid-cols-2'
       >
-        <Example caption="UserAvatar size='xs' | 'sm' | 'md' | 'lg'">
+        <Example caption="UserAvatar size='xs' | 'sm' | 'md' | 'lg' | 'xl'">
           {AVATAR_SIZES.map(size => (
             <UserAvatar
               key={size}

@@ -155,14 +155,14 @@ export function LeadUpdateItem({
         dangerouslySetInnerHTML={{ __html: sanitizedBody }}
       />
       <div className='text-muted-foreground mt-2 flex items-center gap-1.5 text-xs'>
-        <Avatar className='h-4 w-4'>
+        <Avatar size='xs'>
           {update.authorAvatarUrl ? (
             <AvatarImage
               src={`/api/storage/user-avatar/${update.authorId}`}
               alt={authorDisplay}
             />
           ) : null}
-          <AvatarFallback className='text-[8px]'>
+          <AvatarFallback>
             {authorDisplay.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>

@@ -138,7 +138,8 @@ export function GitHubReposSection({
   }, [projectId])
 
   useEffect(() => {
-    loadLinkedRepos()
+    // loadLinkedRepos catches its own errors.
+    void loadLinkedRepos()
   }, [loadLinkedRepos])
 
   // Notify parent of dirty state changes

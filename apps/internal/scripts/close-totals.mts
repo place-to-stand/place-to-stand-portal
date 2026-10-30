@@ -22,7 +22,7 @@ if (!/@(127\.0\.0\.1|localhost)[:/]/.test(url)) {
 
 type Totals = Record<string, number | string>
 // A report or a snapshot's report: read loosely, it only feeds a comparison.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- a report read loosely, only to compare totals
 type LooseReport = any
 
 // Section totals plus a per-client line, so a moved client shows by name.

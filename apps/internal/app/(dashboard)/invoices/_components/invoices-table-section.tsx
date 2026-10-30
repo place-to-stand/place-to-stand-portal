@@ -125,9 +125,14 @@ function ShareLinkCell({
   const truncatedPath = `${path.slice(0, path.length - invoice.share_token.length)}${invoice.share_token.slice(0, 8)}...`
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(shareUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard.writeText(shareUrl).then(
+      () => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      },
+      // Refused (permissions, insecure page): show no "Copied" tick.
+      () => setCopied(false)
+    )
   }
 
   return (

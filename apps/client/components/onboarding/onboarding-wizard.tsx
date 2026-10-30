@@ -94,7 +94,7 @@ export function OnboardingWizard({
         </h1>
         <p className='text-muted-foreground text-sm'>
           Your portal is ready. You can see your projects and the hours
-          remaining on your account from the dashboard.
+          remaining for your company from the dashboard.
         </p>
       </div>
       <form action={completeOnboarding}>
@@ -176,7 +176,7 @@ function ChooseSignInStep({
         setSettling(false)
       })
     // Runs once, on the return leg of the redirect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on the return leg of the redirect
   }, [])
 
   if (settling) {
@@ -205,7 +205,7 @@ function ChooseSignInStep({
         </h1>
         <p className='text-muted-foreground mt-1 text-sm'>
           Pick whichever is easiest. You can use the others later too — they all
-          get you into the same account.
+          sign you in as you.
         </p>
       </div>
 

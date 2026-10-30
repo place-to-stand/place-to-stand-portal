@@ -91,3 +91,57 @@ export function formatRelativeTime(
   }
   return 'just now'
 }
+
+/**
+ * Today's calendar date in {@link COMPANY_TIME_ZONE} as `YYYY-MM-DD`, the
+ * date column format (not for display: show it with formatCalendarDate).
+ */
+export function companyCalendarDate(now: Date = new Date()): string {
+  // en-CA renders as YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: COMPANY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now)
+}
+
+/**
+ * UTC offset (ms) of `timeZone` at the given instant: local wall time minus
+ * UTC. Negative for America/Los_Angeles.
+ */
+function zoneOffsetMs(utcMs: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(utcMs))
+  const get = (type: string) =>
+    Number(parts.find(part => part.type === type)?.value ?? 0)
+  const wallAsUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second')
+  )
+  return wallAsUtc - utcMs
+}
+
+/**
+ * The instant a month ends in {@link COMPANY_TIME_ZONE}: midnight on the
+ * first of the next month (so Aug 31 ends at Sep 1 07:00Z). `month` is
+ * 1-indexed. Two passes settle the offset across a DST change.
+ */
+export function companyMonthEndCutoff(year: number, month: number): Date {
+  const naive = Date.UTC(year, month, 1) // month is 1-indexed → next month
+  let utc = naive - zoneOffsetMs(naive, COMPANY_TIME_ZONE)
+  utc = naive - zoneOffsetMs(utc, COMPANY_TIME_ZONE)
+  return new Date(utc)
+}

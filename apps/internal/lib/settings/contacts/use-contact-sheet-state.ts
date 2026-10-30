@@ -188,7 +188,7 @@ export function useContactSheetState({
     })
 
     // Reset state - intentional setState during effect to sync UI with prop changes
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the sheet when the person it shows changes
     setCompaniesLoaded(!contactId)
     setCompaniesLoadFailed(false)
     setLoadedUpdatedAt(null)
@@ -281,7 +281,7 @@ export function useContactSheetState({
   // blank defaults.
   useEffect(() => {
     if (!open || !signInUserId) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the sign-in before reloading it for a refreshed person
     setSignInAccount(undefined)
     void loadSignIn()
   }, [open, contact, initialName, initialCompanyId, signInUserId, loadSignIn])

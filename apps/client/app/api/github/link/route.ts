@@ -137,7 +137,7 @@ export async function POST(request: Request) {
 
   if (!installation) {
     return NextResponse.json(
-      { ok: false, error: 'No GitHub App installation found for this client' },
+      { ok: false, error: 'No GitHub App installation found for this company' },
       { status: 400 }
     )
   }

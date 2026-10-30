@@ -57,7 +57,8 @@ export function LeadUpdatesSection({
   }, [lead.id])
 
   useEffect(() => {
-    fetchUpdates()
+    // fetchUpdates catches and reports its own errors.
+    void fetchUpdates()
   }, [fetchUpdates])
 
   const openLogDialog = useCallback(() => {

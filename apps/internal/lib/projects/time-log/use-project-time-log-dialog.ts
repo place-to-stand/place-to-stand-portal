@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { format } from 'date-fns'
 
 import type { SearchableComboboxItem } from '@/components/ui/searchable-combobox'
 import { useToast } from '@/components/ui/use-toast'
+import { todayCalendarDate } from '@/lib/dates/calendar-date'
 
 import {
   useProjectTimeLogMutation,
@@ -126,7 +126,7 @@ export function useProjectTimeLogDialog(
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
-  const getToday = useCallback(() => format(new Date(), 'yyyy-MM-dd'), [])
+  const getToday = useCallback(() => todayCalendarDate(), [])
   const normalizeLoggedOnValue = useCallback(
     (value: string | null | undefined) => {
       if (!value) {
@@ -267,7 +267,8 @@ export function useProjectTimeLogDialog(
       typeof queueMicrotask === 'function'
         ? queueMicrotask
         : (callback: () => void) => {
-            Promise.resolve().then(callback)
+            // Microtask fallback for queueMicrotask; the callback sets state.
+            void Promise.resolve().then(callback)
           }
 
     scheduleBaselineUpdate(() => {
@@ -305,7 +306,8 @@ export function useProjectTimeLogDialog(
       typeof queueMicrotask === 'function'
         ? queueMicrotask
         : (callback: () => void) => {
-            Promise.resolve().then(callback)
+            // Microtask fallback for queueMicrotask; the callback sets state.
+            void Promise.resolve().then(callback)
           }
 
     scheduleBaselineUpdate(() => {

@@ -6,4 +6,4 @@ On/off controls: `Switch` for settings-style toggles and `Checkbox` for selectio
 
 **Checkbox:** `size-4 rounded-[4px] border-input shadow-xs`; checked `bg-primary border-primary` with a 14px Check in `primary-foreground`.
 
-**Rules:** pair each with a `Label`; state styles use Base UI's `data-checked`/`data-unchecked`. Inside a sheet, bind to the form and apply on Save; a toggle in a table row may apply instantly.
+**Rules:** pair each with a `Label`; state styles use Base UI's `data-checked`/`data-unchecked`. Inside a sheet, bind to the form and apply on Save; a toggle in a table row may apply instantly. (guard: review)

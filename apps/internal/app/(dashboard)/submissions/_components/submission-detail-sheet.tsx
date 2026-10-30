@@ -75,7 +75,7 @@ function Kv({ label, value, wide = false }: KvProps) {
   )
 }
 
-const KV_GRID = 'grid gap-x-4 gap-y-3 sm:grid-cols-2'
+const KV_GRID = 'grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2'
 
 /** "42s" under a minute, "3m 12s" above it. */
 function formatDuration(ms: number): string {
@@ -435,7 +435,7 @@ export function SubmissionDetailSheet({
             </div>
 
             <Separator />
-            <SheetSection title='Contact'>
+            <SheetSection title='Contact details'>
               <dl className={KV_GRID}>
                 <Kv label='Name' value={value(displaySubmission.contactName)} />
                 <Kv
@@ -782,7 +782,6 @@ export function SubmissionDetailSheet({
           onCancel={() => setArchiveConfirmOpen(false)}
           onConfirm={handleArchiveConfirm}
         />
-
       </SheetContent>
     </Sheet>
   )

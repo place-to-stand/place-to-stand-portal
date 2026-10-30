@@ -134,7 +134,7 @@ export function buildFormEmailEntries(
       status: 'active',
       name: 'Team notification',
       description:
-        'Tells the team a visitor finished the Opportunity Audit and left their details. Same reading order as the contact notification, with the scored result and the full answer transcript.',
+        'Tells the team a visitor finished the Opportunity Audit and left their details. Same reading order as the contact form notification, with the scored result and the full answer transcript.',
       triggers: [
         'POST /api/integrations/audit-responses with status `captured` and `deliver: true` (sent by the marketing site’s BotID-gated server action, never by a progress beacon)',
       ],

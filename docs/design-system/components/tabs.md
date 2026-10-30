@@ -10,4 +10,4 @@ Segmented tabs on Base UI Tabs, kept on the Radix names `TabsList`/`TabsTrigger`
 
 **In a sheet:** only `SheetTabs` (`components/sheets/sheet-tabs.tsx`), the line tabs under the header. No inner tab group inside a sheet; use `SheetSection`s instead (comments last).
 
-**Rules:** style against `data-active`, never `data-[state=active]`; use `asChild` for navigable tabs; labels are one or two words, sentence case.
+**Rules:** style against `data-active`, never `data-[state=active]`; use `asChild` for navigable tabs; labels are one or two words, sentence case. (guard: eslint `pts/no-radix`; review)

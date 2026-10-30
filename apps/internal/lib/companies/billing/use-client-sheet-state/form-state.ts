@@ -191,7 +191,7 @@ export function useClientBillingForm({
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    /* eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag for the fetch this effect starts */
     setIsLoadingContacts(true)
     getClientSheetContactData(client?.id)
       .then(data => {

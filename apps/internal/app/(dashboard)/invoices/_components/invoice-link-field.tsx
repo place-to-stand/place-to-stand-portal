@@ -29,9 +29,14 @@ export function InvoiceLinkField({
 
   const handleCopy = useCallback(() => {
     if (!url) return
-    navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard.writeText(url).then(
+      () => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      },
+      // Refused (permissions, insecure page): show no "Copied" tick.
+      () => setCopied(false)
+    )
   }, [url])
 
   return (

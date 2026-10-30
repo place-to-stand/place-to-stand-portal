@@ -99,12 +99,15 @@ function DropdownMenuSubContent({
 
 function DropdownMenuContent({
   className,
+  // Left-aligned by default, like every popup (house rule 4).
+  align = "start",
   sideOffset = 4,
   ...props
 }: DropdownMenuContentProps) {
   return (
     <MenuPopup
       className={cn("tiptap-dropdown-menu", className)}
+      align={align}
       sideOffset={sideOffset}
       {...props}
     />

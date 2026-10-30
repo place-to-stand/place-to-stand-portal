@@ -39,12 +39,12 @@ const PASSWORD_SIGN_IN: AttemptPolicy = {
   kind: 'sign-in',
   perSubjectLimit: 10,
   perIpLimit: 30,
-  label: 'Password sign-in throttled',
+  label: 'Password sign-in throttled', // copy-check: allow — a server log label, not UI
 }
 
 /** Shown when sign-in is refused. Says nothing about whether the account exists. */
 export const SIGN_IN_THROTTLED_MESSAGE =
-  'Too many sign-in attempts. Try again in a few minutes.'
+  'Too many attempts to sign in. Try again in a few minutes.'
 
 /** Trimmed and lowercased, so `A@x.com ` and `a@x.com` share one bucket. */
 export function normaliseEmail(email: string): string {

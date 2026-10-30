@@ -66,6 +66,7 @@ export function UpdateToolbar({
               size='sm'
               variant='outline'
               onClick={onSave}
+              // eslint-disable-next-line pts/save-not-gated-on-dirty -- rule 6 exception: an inline editor on a page, not a sheet or dialog, may wait for a change
               disabled={busy || !hasChanges}
             >
               {isSaving ? <Loader2 className='animate-spin' /> : null}
