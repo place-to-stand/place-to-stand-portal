@@ -13,9 +13,11 @@
     "design-tokens": "node scripts/design-tokens.mjs",
     "permissions-manifest": "node scripts/permissions-manifest.mjs",
     "type-check": "turbo type-check",
-    "cli:link": "npm run build -w @pts/cli && cd packages/cli && npm link"
+    "cli:link": "npm run build -w @pts/cli && cd packages/cli && npm link",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "turbo": "^2.11.10",
     "typescript": "^6.0.3"
   }

@@ -4,7 +4,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { cookies } from 'next/headers'
-import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { companies, clientPortalAccess, contacts } from '@pts/db/schema'
@@ -118,7 +118,19 @@ export const fetchPortalContactOptions = cache(
         isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
       })
       .from(contacts)
-      .where(isNull(contacts.deletedAt))
+      // Only people who can see the portal: previewing anyone else shows an
+      // empty portal and reads as "nobody picked".
+      .where(
+        and(
+          isNull(contacts.deletedAt),
+          inArray(
+            contacts.id,
+            db
+              .selectDistinct({ id: clientPortalAccess.contactId })
+              .from(clientPortalAccess)
+          )
+        )
+      )
       .orderBy(asc(contacts.name))
   }
 )
