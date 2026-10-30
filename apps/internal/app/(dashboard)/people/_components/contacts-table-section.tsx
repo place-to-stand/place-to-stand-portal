@@ -25,7 +25,7 @@ import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
-import { LinkedClientsCell } from './linked-clients-cell'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import { cn } from '@/lib/utils'
@@ -106,7 +106,7 @@ export function ContactsTableSection({
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[18%]'>Companies</TableHead>
+            <TableHead className='w-[26%]'>Companies</TableHead>
             <SortableTableHead
               field='email'
               sort={sort}
@@ -127,18 +127,6 @@ export function ContactsTableSection({
             </SortableTableHead>
             {seesAccess ? (
               <TableHead className='w-24 text-center'>Sign-in</TableHead>
-            ) : null}
-            {seesAccess ? (
-              <SortableTableHead
-                field='clients'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={next => update({ sort: next })}
-                className='w-28'
-                align='center'
-              >
-                Portal access
-              </SortableTableHead>
             ) : null}
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
@@ -222,6 +210,11 @@ export function ContactsTableSection({
                           {contact.companyName}
                         </Link>
                       </TruncationTooltip>
+                      {contact.companies.find(
+                        company => company.id === contact.companyId
+                      )?.isClient ? (
+                        <ClientBadge className='shrink-0' />
+                      ) : null}
                       {contact.companies.length > 1 ? (
                         <LinkedRecordsHoverCell
                           count={contact.companies.length}
@@ -234,6 +227,7 @@ export function ContactsTableSection({
                             id: company.id,
                             label: company.name,
                             href: companySheetHref(company.id),
+                            trailing: company.isClient ? <ClientBadge /> : null,
                           }))}
                         />
                       ) : null}
@@ -286,14 +280,6 @@ export function ContactsTableSection({
                     )}
                   </TableCell>
                 ) : null}
-                {seesAccess ? (
-                  <TableCell
-                    label='Portal access'
-                    className='text-sm md:text-center'
-                  >
-                    <LinkedClientsCell clients={contact.metrics.clients} />
-                  </TableCell>
-                ) : null}
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
                     {showPreview ? (
@@ -338,7 +324,7 @@ export function ContactsTableSection({
           })}
           {contacts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={seesAccess ? 7 : 5} className='p-4'>
+              <TableCell colSpan={seesAccess ? 6 : 5} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>

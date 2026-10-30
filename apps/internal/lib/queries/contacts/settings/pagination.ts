@@ -43,7 +43,6 @@ export function buildSearchCondition(
 /**
  * Company filter: keeps contacts with a live link to the given company (for
  * a client, portal access in `portal` mode).
- * Mirrors the Linked Clients cell semantics (archived clients don't count).
  * Raw identifiers for the same dequalification reason as
  * `linkedClientsCountSql` below.
  */
@@ -83,10 +82,8 @@ export function buildClientCondition(
 }
 
 /**
- * Live linked-client count as a correlated subquery: counts only links to
- * non-archived clients so sorting (and the count the row displays) matches
- * the names shown in the Linked Clients cell, which filters archived
- * clients out.
+ * Live count of the clients a person can see in the portal, as a correlated
+ * subquery (the MCP directory reports it).
  *
  * Raw identifiers throughout: drizzle dequalifies interpolated columns when
  * a fragment is used as a selected field, which breaks references inside a
@@ -155,17 +152,6 @@ export const CONTACT_SORT_DESCRIPTORS: Record<
         : sql`${contacts.phone} = ${value}`,
     orderAsc: sql`${contacts.phone} ASC NULLS LAST`,
     orderDesc: sql`${contacts.phone} DESC NULLS LAST`,
-  },
-  clients: {
-    encode: row => String(row.metrics.totalClients),
-    compare: (op, value) =>
-      op === 'gt'
-        ? sql`${linkedClientsCountSql} > ${Number.parseInt(value, 10) || 0}`
-        : sql`${linkedClientsCountSql} < ${Number.parseInt(value, 10) || 0}`,
-    equals: value =>
-      sql`${linkedClientsCountSql} = ${Number.parseInt(value, 10) || 0}`,
-    orderAsc: sql`${linkedClientsCountSql} ASC`,
-    orderDesc: sql`${linkedClientsCountSql} DESC`,
   },
   created: {
     encode: row => String(row.createdAt),
