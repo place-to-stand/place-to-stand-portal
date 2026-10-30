@@ -23,6 +23,8 @@ type RowExtras = {
   /** Replaces the default detail line (e.g. "Pending save"). */
   note?: ReactNode
   actions?: ReactNode
+  /** Form fields on the record, on the card's second line (`RecordRowField`). */
+  fields?: ReactNode
   /** False when the viewer can't open this record (non-admins and clients). */
   openable?: boolean
   className?: string
@@ -33,6 +35,7 @@ export function ContactRecordRow({
   titleAddon,
   note,
   actions,
+  fields,
   openable = true,
   className,
 }: RowExtras & {
@@ -66,6 +69,7 @@ export function ContactRecordRow({
       onOpen={openable ? () => open('contact', contact.id) : undefined}
       openLabel={`Open ${name}`}
       actions={actions}
+      fields={fields}
       className={className}
     />
   )
@@ -76,6 +80,7 @@ export function CompanyRecordRow({
   titleAddon,
   note,
   actions,
+  fields,
   openable = true,
   className,
 }: RowExtras & {
@@ -101,6 +106,7 @@ export function CompanyRecordRow({
       onOpen={openable ? () => open('company', company.id) : undefined}
       openLabel={`Open ${company.name}`}
       actions={actions}
+      fields={fields}
       className={className}
     />
   )

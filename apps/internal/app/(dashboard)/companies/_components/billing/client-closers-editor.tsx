@@ -5,7 +5,10 @@ import { Plus, X } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
+import {
+  RecordRowField,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { cn } from '@/lib/utils'
 
@@ -73,16 +76,20 @@ export function ClientClosersEditor({
             return (
               <li key={key}>
                 <SheetRecordRow
-                  icon={closer.kind === 'user' ? ENTITY_ICONS.lead : ENTITY_ICONS.contact}
+                  icon={
+                    closer.kind === 'user'
+                      ? ENTITY_ICONS.lead
+                      : ENTITY_ICONS.contact
+                  }
                   title={closer.name}
                   description={
                     closer.email && closer.email !== closer.name
                       ? closer.email
                       : null
                   }
-                  actions={
-                    <span className='flex items-center gap-1'>
-                      {isSplit ? (
+                  fields={
+                    isSplit ? (
+                      <RecordRowField label='Share'>
                         <div className='relative w-20 shrink-0'>
                           <Input
                             value={closer.shareText}
@@ -99,7 +106,11 @@ export function ClientClosersEditor({
                             %
                           </span>
                         </div>
-                      ) : null}
+                      </RecordRowField>
+                    ) : undefined
+                  }
+                  actions={
+                    <span className='flex items-center gap-1'>
                       <DisabledFieldTooltip
                         disabled={locked}
                         reason={lockedReason}

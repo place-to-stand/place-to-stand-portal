@@ -64,6 +64,7 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
             hasAccess={access.has(contactId)}
             disabled={portal.disabled}
             disabledReason={PENDING_REASON}
+            showLabel={false}
             onChange={on => portal.onChange(contactId, on)}
           />
         )

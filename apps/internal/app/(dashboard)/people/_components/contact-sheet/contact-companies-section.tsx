@@ -11,7 +11,10 @@ import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { SectionAddButton } from '@/components/sheets/section-add-button'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
+import {
+  RecordRowField,
+  SheetRecordList,
+} from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -179,38 +182,47 @@ export function ContactCompaniesSection({
                     </span>
                   ) : undefined
                 }
+                fields={
+                  <>
+                    <RecordRowField label='Title'>
+                      <MembershipTitleInput
+                        value={entry.title}
+                        onChange={title => update(entry.companyId, { title })}
+                        ariaLabel={`Title at ${name}`}
+                        disabled={disabled}
+                      />
+                    </RecordRowField>
+                    {portal && showsPortal(entry) ? (
+                      <RecordRowField label='Portal'>
+                        <PortalAccessControl
+                          showLabel={false}
+                          person={{
+                            ...portal.person,
+                            hasSignIn: portal.signInStaged
+                              ? null
+                              : portal.person.hasSignIn,
+                          }}
+                          hasAccess={entry.portalAccess}
+                          disabled={
+                            disabled ||
+                            portal.disabled ||
+                            (Boolean(entry.formerClient) && !entry.portalAccess)
+                          }
+                          disabledReason={
+                            disabled || portal.disabled
+                              ? PENDING_REASON
+                              : 'Bill this company before giving its people portal access.'
+                          }
+                          onChange={on =>
+                            update(entry.companyId, { portalAccess: on })
+                          }
+                        />
+                      </RecordRowField>
+                    ) : null}
+                  </>
+                }
                 actions={
                   <>
-                    {portal && showsPortal(entry) ? (
-                      <PortalAccessControl
-                        person={{
-                          ...portal.person,
-                          hasSignIn: portal.signInStaged
-                            ? null
-                            : portal.person.hasSignIn,
-                        }}
-                        hasAccess={entry.portalAccess}
-                        disabled={
-                          disabled ||
-                          portal.disabled ||
-                          (Boolean(entry.formerClient) && !entry.portalAccess)
-                        }
-                        disabledReason={
-                          disabled || portal.disabled
-                            ? PENDING_REASON
-                            : 'Bill this company before giving its people portal access.'
-                        }
-                        onChange={on =>
-                          update(entry.companyId, { portalAccess: on })
-                        }
-                      />
-                    ) : null}
-                    <MembershipTitleInput
-                      value={entry.title}
-                      onChange={title => update(entry.companyId, { title })}
-                      ariaLabel={`Title at ${name}`}
-                      disabled={disabled}
-                    />
                     <DisabledFieldTooltip
                       disabled={!disabled && primaryLocked}
                       reason={primaryLocked ? CLIENT_PRIMARY_ADMIN_ONLY : null}

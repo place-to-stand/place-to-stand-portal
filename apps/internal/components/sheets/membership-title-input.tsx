@@ -3,9 +3,10 @@
 import { Input } from '@pts/ui/input'
 
 /**
- * A contact's title at a company, edited inline on a sheet row (the contact
- * sheet's Companies list and the company sheet's Contacts list). Staged with
- * the sheet; saved with Save.
+ * A contact's title at a company, edited on a sheet row's fields line (the
+ * person sheet's Companies list and the company sheet's People list), inside
+ * a `RecordRowField` labelled "Title". Staged with the sheet; saved with
+ * Save.
  */
 export function MembershipTitleInput({
   value,
@@ -23,7 +24,6 @@ export function MembershipTitleInput({
     <Input
       value={value}
       onChange={event => onChange(event.target.value)}
-      placeholder='Title'
       aria-label={ariaLabel}
       disabled={disabled}
       maxLength={160}

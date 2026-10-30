@@ -13,7 +13,10 @@ import {
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
+import {
+  RecordRowField,
+  SheetRecordList,
+} from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
@@ -122,14 +125,25 @@ export function CompanyPeopleSection({
     )
   }
 
-  const titleInput = (contact: { id: string; name: string }) => (
-    <MembershipTitleInput
-      value={titles[contact.id] ?? ''}
-      onChange={title => onTitleChange(contact.id, title)}
-      ariaLabel={`${contact.name}'s title`}
-      disabled={titleDisabled}
-    />
-  )
+  // The row's fields line: Title, then Portal (admins, billed companies).
+  const fields = (contact: { id: string; name: string }) => {
+    const portal = portalAccessFor?.(contact.id) ?? null
+    return (
+      <>
+        <RecordRowField label='Title'>
+          <MembershipTitleInput
+            value={titles[contact.id] ?? ''}
+            onChange={title => onTitleChange(contact.id, title)}
+            ariaLabel={`${contact.name}'s title`}
+            disabled={titleDisabled}
+          />
+        </RecordRowField>
+        {portal ? (
+          <RecordRowField label='Portal'>{portal}</RecordRowField>
+        ) : null}
+      </>
+    )
+  }
 
   const removeButton = (contact: {
     id: string
@@ -218,6 +232,7 @@ export function CompanyPeopleSection({
               <ContactRecordRow
                 key={contact.id}
                 contact={contact}
+                fields={fields(contact)}
                 actions={
                   <>
                     {contact.linkedinUrl ? (
@@ -234,8 +249,6 @@ export function CompanyPeopleSection({
                         }
                       />
                     ) : null}
-                    {portalAccessFor?.(contact.id)}
-                    {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}
                   </>
@@ -254,10 +267,9 @@ export function CompanyPeopleSection({
                     {from ? `Joins on save · also at ${from}` : 'Joins on save'}
                   </span>
                 }
+                fields={fields(contact)}
                 actions={
                   <>
-                    {portalAccessFor?.(contact.id)}
-                    {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}
                   </>
