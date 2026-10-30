@@ -91,6 +91,7 @@ export function useClientSheetFormState({
   initialName,
   initialCompanyId,
   onCreated,
+  quietSuccess = false,
   isEditing,
   setFeedback,
   toast,
@@ -674,7 +675,7 @@ export function useClientSheetFormState({
             })
           }
 
-          toast({
+          if (!quietSuccess) toast({
             title: isEditing ? 'Client updated' : 'Client created',
             description: isEditing
               ? 'Changes saved successfully.'
@@ -716,6 +717,7 @@ export function useClientSheetFormState({
       onComplete,
       onCreated,
       onOpenChange,
+      quietSuccess,
       closerShares,
       selectedContacts,
       selectedOriginationContact,
@@ -728,6 +730,7 @@ export function useClientSheetFormState({
 
   return {
     form,
+    hasUnsavedChanges,
     isSaving: isPending,
     startSave,
     submitDisabled,

@@ -68,6 +68,8 @@ export type UseClientSheetStateArgs = {
   /** Fires once with the new client after a successful create (not on edit). */
   onCreated?: (client: { id: string; name: string; slug: string }) => void
   client: ClientRow | null
+  /** Embedded in another sheet that shows its own success toast. */
+  quietSuccess?: boolean
   /** All available contacts for the contact picker (optional - will be fetched if not provided) */
   allContacts?: ClientContactOption[]
   /** Contacts linked to the client (optional - will be fetched if not provided) */
@@ -77,6 +79,7 @@ export type UseClientSheetStateArgs = {
 }
 
 export type BaseFormState = {
+  hasUnsavedChanges: boolean
   form: UseFormReturn<ClientSheetFormValues>
   /** A save is in flight — the only flag allowed to render as "Saving...". */
   isSaving: boolean
@@ -160,6 +163,8 @@ export type ClientDeletionStateArgs = {
 
 export type UseClientSheetStateReturn = {
   form: UseFormReturn<ClientSheetFormValues>
+  /** Fields, portal access or commission differ from what was loaded. */
+  hasUnsavedChanges: boolean
   isEditing: boolean
   feedback: string | null
   isPending: boolean

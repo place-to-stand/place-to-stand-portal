@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 
 import { ClientSheet } from '@/app/(dashboard)/clients/_components/clients-sheet'
+import { CompanySheet } from '@/app/(dashboard)/companies/_components/company-sheet'
 
 import { emitSheetCreated } from '../created'
 import { NEW_SHEET_VALUE } from '../entities'
@@ -10,6 +11,11 @@ import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
+/**
+ * `?client=new` is Make client. `?client=<id>` (old links, client rows) opens
+ * the client's company: a client is its company's billing record, edited on
+ * the company sheet.
+ */
 export function ClientSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
   const router = useRouter()
   const { getAux } = useSheetParams()
@@ -20,6 +26,17 @@ export function ClientSheetWrapper({ value, open, onRequestClose }: SheetWrapper
 
   if (!data) {
     return null
+  }
+
+  if (!isCreating && data.client) {
+    return (
+      <CompanySheet
+        key={data.client.company_id ?? data.client.id}
+        companyId={data.client.company_id ?? null}
+        open={open}
+        onClose={onRequestClose}
+      />
+    )
   }
 
   return (
@@ -34,7 +51,7 @@ export function ClientSheetWrapper({ value, open, onRequestClose }: SheetWrapper
         router.refresh()
         onRequestClose()
       }}
-      client={isCreating ? null : data.client}
+      client={null}
       initialName={initialName}
       onCreated={record => emitSheetCreated('client', record)}
     />

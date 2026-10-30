@@ -5,10 +5,7 @@ import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 
-import {
-  CLIENT_LINK_OPTIONS_QUERY_KEY,
-  type ClientLink,
-} from '@/components/clients/client-link-picker'
+import { CLIENT_LINK_OPTIONS_QUERY_KEY } from '@/components/clients/client-link-picker'
 import {
   CONTACT_OPTIONS_QUERY_KEY,
   useContactOptions,
@@ -30,10 +27,6 @@ export const companyFormSchema = z.object({
   ),
   /** People taken off the People list; they leave the company on Save. */
   removedContactIds: z.array(z.string()),
-  /** Existing clients picked on the Clients list; linked here on Save. */
-  addedClients: z.array(z.object({ id: z.string(), name: z.string() })),
-  /** Unlink the client linked now, on Save. */
-  unlinkClient: z.boolean(),
   /** Each contact's title here, by contact id; saved with the sheet. */
   titles: z.record(z.string(), z.string().max(160)),
 })
@@ -167,29 +160,7 @@ export function useCompanySheetForm({
     [companyId, contactOptions]
   )
 
-  const addedClients = useWatch({ control: form.control, name: 'addedClients' })
-
-  const unlinkClient = useWatch({ control: form.control, name: 'unlinkClient' })
-  // The slot holds one client: picking one replaces any staged pick.
-  const handleLinkClient = useCallback(
-    (client: ClientLink) => {
-      if (company?.clients.some(item => item.id === client.id)) return
-      form.setValue('addedClients', [client], { shouldDirty: true })
-    },
-    [company?.clients, form]
-  )
-  const handleClearStagedClient = useCallback(
-    () => form.setValue('addedClients', [], { shouldDirty: true }),
-    [form]
-  )
-  const handleSetUnlinkClient = useCallback(
-    (next: boolean) =>
-      form.setValue('unlinkClient', next, { shouldDirty: true }),
-    [form]
-  )
-
-  // "Link client → Create client" saves the client already linked here:
-  // refresh the list, and drop the stage the picker made for it.
+  // "Make client" saves a client for this company: refresh so Billing shows.
   useEffect(
     () =>
       subscribeSheetCreated('client', () => {
@@ -202,32 +173,16 @@ export function useCompanySheetForm({
       }),
     [companyId, queryClient]
   )
-  const linkedClientIds = company?.clients.map(client => client.id).join(',')
-  useEffect(() => {
-    if (!linkedClientIds) return
-    const linked = new Set(linkedClientIds.split(','))
-    const added = form.getValues('addedClients')
-    const stillPending = added.filter(item => !linked.has(item.id))
-    if (stillPending.length !== added.length) {
-      form.setValue('addedClients', stillPending, { shouldDirty: true })
-    }
-  }, [form, linkedClientIds])
-
   return {
     titles,
     primaryContactId,
     addedContacts,
     removedContactIds,
-    addedClients,
-    unlinkClient,
     movesFrom,
     handleTitleChange,
     handleSetPrimary,
     handleAddPerson,
     handleRemovePerson,
     handleUndoRemovePerson,
-    handleLinkClient,
-    handleClearStagedClient,
-    handleSetUnlinkClient,
   }
 }

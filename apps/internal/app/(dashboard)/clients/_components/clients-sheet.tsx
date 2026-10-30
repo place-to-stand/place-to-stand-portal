@@ -30,21 +30,16 @@ export function ClientSheet(props: ClientSheetProps) {
 
   const {
     form,
-    isEditing,
     feedback,
     isPending,
     submitDisabled,
     submitDisabledReason,
-    deleteDisabled,
-    deleteDisabledReason,
     pendingReason,
     isDeleteDialogOpen,
     clientDisplayName,
-    sheetTitle,
     unsavedChangesDialog,
     handleSheetOpenChange,
     handleFormSubmit,
-    handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
     // Contacts
@@ -92,20 +87,16 @@ export function ClientSheet(props: ClientSheetProps) {
           size='xl'
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
-          <SheetFormHeader entity='client' title={sheetTitle} />
+          <SheetFormHeader entity='client' title='Make client' />
           <ClientSheetForm
             form={form}
             feedback={feedback}
             isPending={isPending}
-            isEditing={isEditing}
             initialBillingType={props.client?.billing_type ?? null}
             pendingReason={pendingReason}
             submitDisabled={submitDisabled}
             submitDisabledReason={submitDisabledReason}
-            deleteDisabled={deleteDisabled}
-            deleteDisabledReason={deleteDisabledReason}
             onSubmit={handleFormSubmit}
-            onRequestDelete={handleRequestDelete}
             isSheetOpen={props.open}
             historyKey={props.client?.id ?? 'client:new'}
             selectedContacts={selectedContacts}

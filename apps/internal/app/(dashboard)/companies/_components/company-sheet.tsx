@@ -48,9 +48,10 @@ import {
   type CompanyFormValues,
 } from './use-company-sheet-form'
 import {
-  CompanyLinkedClientSection,
+  CompanyBillingSlot,
   CompanyLeadsSection,
 } from './company-sheet-sections'
+import type { CompanyBillingHandle } from './company-billing-section'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
@@ -79,6 +80,9 @@ export function CompanySheet({
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
+  // The Billing section (a client company, admins only) saves with Save.
+  const billingRef = useRef<CompanyBillingHandle>(null)
+  const [billingDirty, setBillingDirty] = useState(false)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: companySheetQueryKey(companyId),
@@ -102,8 +106,6 @@ export function CompanySheet({
       primaryContactId: null,
       addedContacts: [],
       removedContactIds: [],
-      addedClients: [],
-      unlinkClient: false,
       titles: {},
     },
   })
@@ -111,7 +113,7 @@ export function CompanySheet({
   // Seed the form once per loaded record, and never over unsaved edits (a
   // refetch while dirty waits until the form is clean again).
   const seededFor = useRef<string | null>(null)
-  const isDirty = form.formState.isDirty
+  const isDirty = form.formState.isDirty || billingDirty
   useEffect(() => {
     if (!data) return
     const key = company ? `${company.id}:${company.updatedAt}` : 'new'
@@ -126,8 +128,6 @@ export function CompanySheet({
       primaryContactId: company?.primaryContactId ?? null,
       addedContacts: [],
       removedContactIds: [],
-      addedClients: [],
-      unlinkClient: false,
       titles: Object.fromEntries(
         (company?.contacts ?? []).map(contact => [
           contact.id,
@@ -152,7 +152,6 @@ export function CompanySheet({
     router.refresh()
   }, [queryClient, router])
 
-  const linkedClientId = company?.clients[0]?.id ?? null
   // What the form was seeded with (reset values), not the live query data.
   const seededTitles = form.formState.defaultValues?.titles as
     Record<string, string> | undefined
@@ -170,9 +169,6 @@ export function CompanySheet({
           notes: values.notes,
           addContactIds: values.addedContacts.map(contact => contact.id),
           removeContactIds: values.removedContactIds,
-          addClientIds: values.addedClients.map(client => client.id),
-          unlinkClientIds:
-            values.unlinkClient && linkedClientId ? [linkedClientId] : [],
           // Only titles edited here (or that people joining here bring),
           // diffed against what the form was seeded with: a title another
           // sheet changed since then is not written back.
@@ -206,13 +202,18 @@ export function CompanySheet({
           description: values.name,
         })
         form.reset(values)
+        // Billing edits save next; their save closes the sheet.
+        const billing = billingRef.current
+        if (billing?.isDirty()) {
+          billing.submit()
+          return
+        }
         await refresh()
         // Save = done = close, for create and edit alike.
         onClose()
       })
     },
     [
-      linkedClientId,
       seededTitles,
       seededPrimaryContactId,
       companyId,
@@ -225,23 +226,9 @@ export function CompanySheet({
     ]
   )
 
-  // Unlinking the client ends its portal users' access, so Save asks first.
-  const [unlinkConfirmValues, setUnlinkConfirmValues] =
-    useState<CompanyFormValues | null>(null)
-  const submitWithConfirm = useCallback(
-    (values: CompanyFormValues) => {
-      if (values.unlinkClient && linkedClientId) {
-        setUnlinkConfirmValues(values)
-        return
-      }
-      handleSubmit(values)
-    },
-    [handleSubmit, linkedClientId]
-  )
-
   const handleSave = useCallback(
-    () => form.handleSubmit(submitWithConfirm)(),
-    [form, submitWithConfirm]
+    () => form.handleSubmit(handleSubmit)(),
+    [form, handleSubmit]
   )
 
   const submitDisabled = isPending || isLoading || isArchived
@@ -281,17 +268,12 @@ export function CompanySheet({
     primaryContactId,
     addedContacts,
     removedContactIds,
-    addedClients,
-    unlinkClient,
     movesFrom,
     handleTitleChange,
     handleSetPrimary,
     handleAddPerson,
     handleRemovePerson,
     handleUndoRemovePerson,
-    handleLinkClient,
-    handleClearStagedClient,
-    handleSetUnlinkClient,
   } = useCompanySheetForm({ form, company, companyId })
 
   const handleOpenChange = useCallback(
@@ -331,7 +313,10 @@ export function CompanySheet({
               <div className='flex-1 overflow-y-auto'>
                 <form
                   id={COMPANY_FORM_ID}
-                  onSubmit={form.handleSubmit(submitWithConfirm)}
+                  onSubmit={event => {
+                    event.preventDefault()
+                    handleSave()
+                  }}
                   className='flex flex-col gap-6 px-6 pt-6 pb-8'
                 >
                   <SheetSection title='Details'>
@@ -414,18 +399,6 @@ export function CompanySheet({
                   {company ? (
                     <>
                       <Separator />
-                      <CompanyLinkedClientSection
-                        companyId={company.id}
-                        client={company.clients[0] ?? null}
-                        staged={addedClients[0] ?? null}
-                        unlinking={unlinkClient}
-                        disabled={fieldsDisabled}
-                        onLink={handleLinkClient}
-                        onClearStaged={handleClearStagedClient}
-                        onUnlink={() => handleSetUnlinkClient(true)}
-                        onUndoUnlink={() => handleSetUnlinkClient(false)}
-                      />
-                      <Separator />
                       <CompanyPeopleSection
                         contacts={company.contacts}
                         added={addedContacts}
@@ -449,6 +422,24 @@ export function CompanySheet({
                       />
                       <Separator />
                       <CompanyLeadsSection leads={company.leads} />
+                      {isAdmin ? (
+                        <>
+                          <Separator />
+                          <CompanyBillingSlot
+                            companyId={company.id}
+                            client={company.clients[0] ?? null}
+                            open={open}
+                            disabled={fieldsDisabled}
+                            billingRef={billingRef}
+                            onDirtyChange={setBillingDirty}
+                            onSaved={async () => {
+                              setBillingDirty(false)
+                              await refresh()
+                              onClose()
+                            }}
+                          />
+                        </>
+                      ) : null}
                     </>
                   ) : null}
 
@@ -503,20 +494,6 @@ export function CompanySheet({
         confirmDisabled={isPending}
         onCancel={() => setArchiveOpen(false)}
         onConfirm={handleArchiveToggle}
-      />
-      <ConfirmDialog
-        open={Boolean(unlinkConfirmValues)}
-        title='Unlink client?'
-        description={`Portal users at ${company?.name ?? 'this company'} lose access to ${company?.clients[0]?.name ?? 'the client'}.`}
-        confirmLabel='Unlink and save'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={() => setUnlinkConfirmValues(null)}
-        onConfirm={() => {
-          const values = unlinkConfirmValues
-          setUnlinkConfirmValues(null)
-          if (values) handleSubmit(values)
-        }}
       />
       {unsavedChangesDialog}
     </>

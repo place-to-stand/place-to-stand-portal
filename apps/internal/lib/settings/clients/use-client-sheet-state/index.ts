@@ -25,6 +25,7 @@ export const useClientSheetState = ({
   initialName,
   initialCompanyId,
   onCreated,
+  quietSuccess,
 }: UseClientSheetStateArgs): UseClientSheetStateReturn => {
   const isEditing = Boolean(client)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -41,6 +42,7 @@ export const useClientSheetState = ({
     initialName,
     initialCompanyId,
     onCreated,
+    quietSuccess,
     isEditing,
     setFeedback,
     toast,
@@ -65,6 +67,7 @@ export const useClientSheetState = ({
 
   return {
     form: formState.form,
+    hasUnsavedChanges: formState.hasUnsavedChanges,
     isEditing,
     feedback,
     isPending,
