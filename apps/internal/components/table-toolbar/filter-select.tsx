@@ -80,7 +80,8 @@ function SingleFilterSelect({
       searchPlaceholder='Search…'
       emptyMessage='No matches.'
       ariaLabel={placeholder}
-      triggerClassName={cn('w-40', className)}
+      // The wrapper is full width by default: filters sit in one row.
+      className={cn('w-40 shrink-0', className)}
     />
   )
 }
