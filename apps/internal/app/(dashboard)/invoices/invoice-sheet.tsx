@@ -50,7 +50,7 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { computeLineItemAmount } from '@/lib/invoices/invoice-form'
 import { invoiceShareHref } from '@/lib/invoices/links'
 import type {
-  ClientRow,
+  InvoiceClient,
   InvoiceFormValues,
   InvoiceWithClient,
   ProductCatalogItemRow,
@@ -75,7 +75,7 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
 }

@@ -5,7 +5,7 @@ import 'server-only'
 import { asc } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies, } from '@/lib/db/schema'
+import { companies } from '@/lib/db/schema'
 
 /**
  * Fetches all clients (including archived) for the project sheet dropdown.

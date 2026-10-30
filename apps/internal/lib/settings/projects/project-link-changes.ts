@@ -3,7 +3,7 @@ import 'server-only'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { githubRepoLinks, projectIntegrationLinks } from '@/lib/db/schema'
 import {
   archiveRepoLink,
@@ -36,8 +36,6 @@ import {
 } from '@/lib/types/integrations'
 
 import type { ProjectInput } from './project-service'
-
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /** Every link change, checked against GitHub / Vercel / Supabase. */
 export type PreparedLinkChanges = {
@@ -211,7 +209,7 @@ async function loadIntegrationLinksToRemove(
 
 /** Writes prepared link changes inside the save's transaction. */
 export async function writeProjectLinkChanges(
-  tx: DbTransaction,
+  tx: DbTx,
   projectId: string,
   prepared: PreparedLinkChanges,
   actorId: string

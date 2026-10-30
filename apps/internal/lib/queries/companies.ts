@@ -55,9 +55,8 @@ import {
   companyNameSchema,
   normalizeWebAddress,
   saveCompanySchema,
-  type SaveCompanyInput,
 } from '@/lib/companies/schema'
-import { db } from '@/lib/db'
+import { db, uniqueViolation, type DbTx } from '@/lib/db'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -74,27 +73,11 @@ export type DeferActivity = (task: () => Promise<unknown>) => void
 
 const CLOSED_LEAD_STATUSES_SQL = sql`('CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED')`
 
-function isUniqueViolation(error: unknown): boolean {
-  const code =
-    (error as { code?: string })?.code ??
-    (error as { cause?: { code?: string } })?.cause?.code
-  return code === '23505'
-}
-
 const DUPLICATE_NAME_ERROR = 'A company with this name already exists.'
 
-/** The index a unique violation hit (postgres-js names it constraint_name). */
-function violatedConstraint(error: unknown): string | null {
-  const read = (value: unknown) =>
-    (value as { constraint_name?: string })?.constraint_name ??
-    (value as { constraint?: string })?.constraint ??
-    null
-  return read(error) ?? read((error as { cause?: unknown })?.cause)
-}
-
 /** A save's unique violation, in words that match the index it hit. */
-function saveConflictMessage(error: unknown): string {
-  switch (violatedConstraint(error)) {
+function saveConflictMessage(constraint: string): string {
+  switch (constraint) {
     case 'memberships_one_primary_per_company':
       return 'The primary contact just changed. Reload and try again.'
     case 'memberships_one_current_per_contact_company':
@@ -126,12 +109,7 @@ export async function listCompanies(
       name: companies.name,
       website: companies.website,
       // Billed now: the company is its own client.
-      companyId: sql<
-        string | null
-      >`case when ${isClientCompany()} then ${companies.id} end`,
-      clientName: sql<
-        string | null
-      >`case when ${isClientCompany()} then ${companies.name} end`,
+      isClient: sql<boolean | null>`${isClientCompany()}`,
       // Billed before but not now.
       formerClient: isFormerClientSql,
       updatedAt: companies.updatedAt,
@@ -180,8 +158,8 @@ export async function listCompanies(
     id: row.id,
     name: row.name,
     website: row.website,
-    companyId: row.companyId ?? null,
-    clientName: row.clientName ?? null,
+    companyId: row.isClient ? row.id : null,
+    clientName: row.isClient ? row.name : null,
     formerClient: Boolean(row.formerClient),
     people: row.people ?? [],
     openLeads: row.openLeads ?? [],
@@ -347,7 +325,6 @@ export async function listCompanyOptions(
 }
 
 type SaveCompanyValues = z.output<typeof saveCompanySchema>
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /** A save the database refused for a reason worth showing (rolls it back). */
 export class CompanySaveRefusal extends Error {}
@@ -554,7 +531,7 @@ export async function planCompanyWrite(
  * the whole transaction rolls back.
  */
 export async function writeCompany(
-  tx: DbTransaction,
+  tx: DbTx,
   actor: AppUser,
   plan: CompanyWritePlan
 ): Promise<string> {
@@ -690,47 +667,9 @@ export async function logCompanyWrite(
  */
 export function companySaveErrorMessage(error: unknown): string | null {
   if (error instanceof CompanySaveRefusal) return error.message
-  if (isUniqueViolation(error)) return saveConflictMessage(error)
+  const constraint = uniqueViolation(error)
+  if (constraint) return saveConflictMessage(constraint)
   return null
-}
-
-/**
- * Saves the company's details and people on their own (one transaction).
- * The company sheet saves through `saveCompanySheet`, which also writes
- * billing and portal access in the same transaction.
- */
-export async function saveCompany(
-  actor: AppUser,
-  input: SaveCompanyInput
-): Promise<CompanyActionResult> {
-  assertCrmAccess(actor)
-
-  const parsed = saveCompanySchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues[0]?.message ?? 'Invalid company details.',
-    }
-  }
-
-  const planned = await planCompanyWrite(actor, parsed.data)
-  if (!planned.ok) return planned
-  const { plan } = planned
-  if (plan.existing && plan.unchanged) {
-    return { ok: true, id: plan.existing.id }
-  }
-
-  let companyId: string
-  try {
-    companyId = await db.transaction(tx => writeCompany(tx, actor, plan))
-  } catch (error) {
-    const message = companySaveErrorMessage(error)
-    if (!message) console.error('Failed to save company', error)
-    return { ok: false, error: message ?? 'Unable to save the company.' }
-  }
-
-  await logCompanyWrite(actor, plan, companyId)
-  return { ok: true, id: companyId }
 }
 
 /**
@@ -876,7 +815,7 @@ export async function setCompanyArchived(
       }
     })
   } catch (error) {
-    if (!archived && isUniqueViolation(error)) {
+    if (!archived && uniqueViolation(error)) {
       return {
         ok: false,
         error: 'Another company already uses this name. Rename one first.',
@@ -1024,16 +963,4 @@ export async function fillCompanyWebsiteIfBlank(
     })
   if (options.defer) options.defer(log)
   else await log()
-}
-
-/** The company a client is: itself (a client is a company you bill). */
-export async function getClientCompanyId(
-  companyId: string
-): Promise<string | null> {
-  const [row] = await db
-    .select({ id: companies.id })
-    .from(companies)
-    .where(and(eq(companies.id, companyId), wasClientCompany()))
-    .limit(1)
-  return row?.id ?? null
 }

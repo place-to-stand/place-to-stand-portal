@@ -4,7 +4,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 
 import { ActivitySection } from '@/components/activity/activity-section'
 import { ProjectsAddButton } from '../_components/projects-add-button'
@@ -22,11 +22,13 @@ export default async function ProjectsActivityPage() {
     limit: 1,
   })
 
-  const clientRows: ClientRow[] = managementResult.clients.map(client => ({
-    id: client.id,
-    name: client.name,
-    deleted_at: client.deletedAt,
-  }))
+  const clientRows: ClientPickerRow[] = managementResult.clients.map(
+    client => ({
+      id: client.id,
+      name: client.name,
+      deleted_at: client.deletedAt,
+    })
+  )
 
   return (
     <PageShell

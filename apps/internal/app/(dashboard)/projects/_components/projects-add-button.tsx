@@ -1,10 +1,10 @@
 'use client'
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 
 type ProjectsAddButtonProps = {
-  clients: ClientRow[]
+  clients: ClientPickerRow[]
   /**
    * Members can only create personal projects, which need no client, so the
    * button stays enabled for them even when no client exists.

@@ -6,7 +6,7 @@ import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import { projectUpdatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { projectMembers, projects, users } from '@/lib/db/schema'
 
 /** A staff user who can be added to a project (non-admin staff). */
@@ -88,8 +88,6 @@ export async function assertValidProjectMemberIds(
   }
 }
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
 /**
  * Makes the project's live members exactly `memberIds`, inside the caller's
  * transaction. Only non-admin staff can be members (admins already see every
@@ -98,7 +96,7 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
  * commit (`logProjectMembersChanged`).
  */
 export async function writeProjectMembers(
-  tx: DbTransaction,
+  tx: DbTx,
   args: { actorId: string; projectId: string; memberIds: readonly string[] }
 ): Promise<{ added: string[]; removed: string[] }> {
   const { actorId, projectId } = args

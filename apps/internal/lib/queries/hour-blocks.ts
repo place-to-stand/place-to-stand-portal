@@ -20,7 +20,7 @@ import {
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 
@@ -119,7 +119,7 @@ export type ListHourBlocksForSettingsInput = {
 
 export type HourBlocksSettingsResult = {
   items: HourBlockWithClient[]
-  clients: ClientRow[]
+  clients: HourBlockClient[]
   /** Rows matching the active filters/search (drives `Showing N of M`). */
   totalCount: number
   /** Rows on the tab regardless of filters/search (the `M`). */
@@ -369,7 +369,7 @@ export async function getActiveClientSummary(
  */
 export async function listHourBlockClientDirectory(
   user: AppUser
-): Promise<ClientRow[]> {
+): Promise<HourBlockClient[]> {
   assertAdmin(user)
 
   const rows = await db
@@ -440,7 +440,7 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
   }
 }
 
-function mapClientRow(row: ClientSelection): ClientRow {
+function mapClientRow(row: ClientSelection): HourBlockClient {
   return {
     id: row.id,
     name: row.name,

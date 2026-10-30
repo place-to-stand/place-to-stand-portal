@@ -9,7 +9,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { clientUpdatedEvent } from '@/lib/activity/events'
 import type { AppUser, UserRole } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { companies } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { isMonthClosed } from '@/lib/data/reports/close'
@@ -90,8 +90,6 @@ export type ExistingClientRecord = {
   closers: ClientCloser[]
   companyId: string | null
 }
-
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /** A checked billing edit, ready to write in a transaction. */
 export type ClientUpdatePlan = {
@@ -233,7 +231,7 @@ export async function planClientUpdate(
  * dated into a month whose books are closed throws `ClosedMonthError`.
  */
 export async function applyClientUpdateInTx(
-  tx: DbTransaction,
+  tx: DbTx,
   plan: ClientUpdatePlan,
   actorId: string
 ): Promise<void> {

@@ -13,7 +13,7 @@ import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import { fetchClientDirectory } from '@/lib/queries/clients'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
 export const metadata: Metadata = {
@@ -46,7 +46,7 @@ export default async function ProjectBoardRoute({
     ])
   const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)
 
-  const allClients: ClientRow[] = clientDirectory.map(c => ({
+  const allClients: ClientPickerRow[] = clientDirectory.map(c => ({
     id: c.id,
     name: c.name,
     deleted_at: c.deletedAt,

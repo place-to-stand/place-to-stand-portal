@@ -2,12 +2,11 @@ import 'server-only'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { companies, contacts } from '@/lib/db/schema'
 import { joinCompany, leaveCompany } from '@/lib/queries/memberships'
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type Executor = typeof db | Tx
+type Executor = typeof db | DbTx
 type Role = 'ADMIN' | 'SALES' | 'CLIENT'
 
 /** The name the staff company gets if it has to be created. */

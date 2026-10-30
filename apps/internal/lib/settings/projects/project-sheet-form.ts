@@ -6,11 +6,11 @@ import {
   PROJECT_STATUS_VALUES,
   type ProjectStatusValue,
 } from '@/lib/constants'
-import type { DbClient, DbProject, ProjectTypeValue } from '@/lib/types'
+import type { ClientPickerRow, DbProject, ProjectTypeValue } from '@/lib/types'
 import type { IntegrationProvider } from '@/lib/types/integrations'
 
 type ProjectRow = DbProject
-export type ClientRow = Pick<DbClient, 'id' | 'name' | 'deleted_at'>
+export type { ClientPickerRow }
 
 export type ProjectOwnerSummary = {
   id: string | null
@@ -19,7 +19,7 @@ export type ProjectOwnerSummary = {
 }
 
 export type ProjectWithClient = ProjectRow & {
-  client: ClientRow | null
+  client: ClientPickerRow | null
   owner?: ProjectOwnerSummary | null
 }
 
@@ -206,7 +206,9 @@ export const createProjectSavePayload = ({
   }
 }
 
-export const sortClientsByName = (clients: ClientRow[]): ClientRow[] =>
+export const sortClientsByName = (
+  clients: ClientPickerRow[]
+): ClientPickerRow[] =>
   [...clients].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   )

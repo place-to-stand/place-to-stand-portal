@@ -67,7 +67,7 @@ export type ClientWithMetrics = {
   activeProjectCount: number
   activeProjects: ClientProjectSummary[]
   allProjects: ClientProjectSummary[]
-  /** Live contacts linked through `contact_clients`, name-ordered. */
+  /** Live people with portal access through a current membership, primary first then by name. */
   contacts: ClientContactSummary[]
   totalHoursPurchased: number
   totalHoursUsed: number

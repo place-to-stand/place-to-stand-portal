@@ -2,10 +2,10 @@
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { INVOICE_MISSING_CLIENT_REASON } from '@/lib/invoices/invoice-ui-state'
-import type { ClientRow } from '@/lib/invoices/invoice-form'
+import type { InvoiceClient } from '@/lib/invoices/invoice-form'
 
 type InvoicesAddButtonProps = {
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   className?: string
 }
 

@@ -48,7 +48,7 @@ const emptySummary = (): UserAssignmentSummary => ({
 /**
  * Per-user assignment summary for the settings users table and the archive
  * confirmation copy — four grouped queries regardless of page size.
- * Clients are live `client_members` rows on live clients; projects are live
+ * Clients are the live clients each login sees through `client_portal_access`; projects are live
  * projects the user owns (`projects.owner_id`); tasks are live
  * `task_assignees` rows. The client list backs the users-table hover card,
  * so its count is the list length; projects and tasks are plain counts for

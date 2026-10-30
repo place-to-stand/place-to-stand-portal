@@ -1,27 +1,19 @@
-import {
-  clientEndedAtSql,
-  clientSinceSql,
-  isClientCompany,
-} from '@pts/db/client-state'
-import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
+import { isClientCompany } from '@pts/db/client-state'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
-import {
-  currentOriginationContactIdSql,
-  currentOriginationUserIdSql,
-} from '@/lib/queries/clients/commission-terms'
+import { clientFields } from '@/lib/queries/clients/selectors'
 import { db } from '@/lib/db'
 import {
   clientPortalAccess,
   companies as companiesTable,
   users as usersTable,
 } from '@/lib/db/schema'
-import type { DbClient, DbUser } from '@/lib/types'
+import type { ClientCompanyView, DbUser } from '@/lib/types'
 
 import type { MemberWithUser } from '../types'
 
-export type ClientRow = {
+export type ClientRelationRow = {
   id: string
   name: string
   slug: string | null
@@ -29,7 +21,7 @@ export type ClientRow = {
   state: string | null
   originationContactId: string | null
   originationUserId: string | null
-  billingType: DbClient['billing_type']
+  billingType: ClientCompanyView['billing_type']
   companyId: string
   createdBy: string | null
   /** When it became a client. */
@@ -61,31 +53,15 @@ export type MemberRow = {
 
 export async function loadClientRows(
   companyIds: string[]
-): Promise<ClientRow[]> {
+): Promise<ClientRelationRow[]> {
   if (!companyIds.length) {
     return []
   }
 
   return db
-    .select({
-      id: companiesTable.id,
-      name: clientNameSql,
-      slug: companiesTable.slug,
-      notes: companiesTable.notes,
-      state: companiesTable.state,
-      originationContactId: currentOriginationContactIdSql(),
-      originationUserId: currentOriginationUserIdSql(),
-      billingType: currentBillingTypeSql(),
-      companyId: companiesTable.id,
-      createdBy: companiesTable.createdBy,
-      createdAt: clientSinceSql,
-      updatedAt: companiesTable.updatedAt,
-      deletedAt: clientEndedAtSql,
-    })
+    .select(clientFields)
     .from(companiesTable)
-    .where(
-      and(inArray(companiesTable.id, companyIds), isClientCompany())
-    )
+    .where(and(inArray(companiesTable.id, companyIds), isClientCompany()))
 }
 
 export async function loadMemberRows(
@@ -135,7 +111,7 @@ export async function loadMemberRows(
   )
 }
 
-export function mapClientRows(rows: ClientRow[]): DbClient[] {
+export function mapClientRows(rows: ClientRelationRow[]): ClientCompanyView[] {
   return rows.map(row => ({
     id: row.id,
     name: row.name,

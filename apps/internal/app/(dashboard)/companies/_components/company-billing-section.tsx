@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Form } from '@/components/ui/form'
 import { ClientBillingFields } from '@/app/(dashboard)/companies/_components/billing/client-billing-fields'
-import type { ClientRow } from '@/lib/companies/billing/client-sheet-utils'
+import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 import {
   useClientBillingForm,
   type UseClientBillingFormReturn,
@@ -54,7 +54,7 @@ type BillingContextValue = {
   setEffective: (effective: BillingEffectiveValue) => void
   /** The last month billed while a stop is scheduled. */
   billingEndsOn: string | null
-  client: ClientRow | null
+  client: ClientWithClosers | null
   state: UseClientBillingFormReturn | null
   isPending: boolean
 }
@@ -90,12 +90,14 @@ type CompanyBillingProviderProps = {
   children: ReactNode
 }
 
-async function fetchClientBilling(companyId: string): Promise<ClientRow> {
+async function fetchClientBilling(
+  companyId: string
+): Promise<ClientWithClosers> {
   const response = await fetch(
     `/api/sheets/init?entity=client&id=${encodeURIComponent(companyId)}`
   )
   const result = (await response.json()) as
-    | { ok: true; data: { client: ClientRow | null } }
+    | { ok: true; data: { client: ClientWithClosers | null } }
     | { ok: false; error?: string }
   if (!result.ok || !result.data.client) {
     throw new Error(result.ok ? 'Client not found' : result.error)
@@ -161,7 +163,7 @@ function BillingStateProvider({
   onDirtyChange,
   handleRef,
   children,
-}: CompanyBillingProviderProps & { client: ClientRow | null }) {
+}: CompanyBillingProviderProps & { client: ClientWithClosers | null }) {
   const mode: BillingMode = client
     ? billingEndsOn
       ? 'ending'

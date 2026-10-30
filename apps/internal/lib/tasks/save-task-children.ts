@@ -9,7 +9,7 @@ import {
   taskAttachmentsRemovedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { taskAssignees, taskAttachments } from '@/lib/db/schema'
 import {
   deleteAttachmentObject,
@@ -43,8 +43,7 @@ import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 type UserRole = UserRoleValue
 type StorageClient = SupabaseClient<Database>
 
-export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-export type DbExecutor = typeof db | DbTransaction
+export type DbExecutor = typeof db | DbTx
 
 /**
  * A task has one assignee. Callers may still pass a list (the CLI and MCP

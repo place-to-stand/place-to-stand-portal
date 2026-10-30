@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
 import type {
-  ClientRow,
+  ClientPickerRow,
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
@@ -22,7 +22,7 @@ import { PENDING_REASON } from '@/lib/forms/form-controls'
 type ProjectsManagementSectionProps = {
   mode: 'active' | 'archive'
   projects: ProjectWithClient[]
-  clients: ClientRow[]
+  clients: ClientPickerRow[]
   adminUsers: AdminUserForOwner[]
   contractorUsers: ContractorUserSummary[]
   membersByProject: Record<string, ContractorUserSummary[]>

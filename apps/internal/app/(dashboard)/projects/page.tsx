@@ -17,7 +17,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import type { LandingProject } from '@/lib/data/projects'
 import { fetchClientDirectory } from '@/lib/queries/clients'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
 
@@ -59,7 +59,7 @@ export default async function ProjectsPage({
   const filteredProjectCount = countVisibleProjects(projects, user.id)
   const clientHoursMap = buildClientHoursMap(clientHoursSummaries)
 
-  const clientRows: ClientRow[] = clientDirectory.map(client => ({
+  const clientRows: ClientPickerRow[] = clientDirectory.map(client => ({
     id: client.id,
     name: client.name,
     deleted_at: client.deletedAt,

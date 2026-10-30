@@ -15,7 +15,7 @@ import {
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, memberships, users } from '@/lib/db/schema'
 import {
   isMemberSql,
@@ -212,8 +212,6 @@ export async function getClientSheetContactData(
   return { allContacts, linkedContacts, allAdminUsers }
 }
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
 /** A person who can't be given portal access (no sign-in, or not a member). */
 export class PortalAccessRefusal extends Error {}
 
@@ -224,7 +222,7 @@ export class PortalAccessRefusal extends Error {}
  * `PortalAccessRefusal`, rolling the save back.
  */
 export async function applyPortalAccessInTx(
-  tx: DbTransaction,
+  tx: DbTx,
   companyId: string,
   changes: { grant: string[]; revoke: string[] }
 ): Promise<void> {

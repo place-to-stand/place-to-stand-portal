@@ -14,7 +14,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/project-lifecycle-dialogs'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
 import type {
-  ClientRow,
+  ClientPickerRow,
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
@@ -34,7 +34,7 @@ import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 type ProjectsBoardComponentProps = ProjectsBoardProps & {
   adminUsers?: AdminUserForOwner[]
-  allClients?: ClientRow[]
+  allClients?: ClientPickerRow[]
 }
 
 export function ProjectsBoard(props: ProjectsBoardComponentProps) {
@@ -45,7 +45,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   const { isAdmin } = useViewerAccess()
   const { toast } = useToast()
 
-  const clientRows = useMemo<ClientRow[]>(
+  const clientRows = useMemo<ClientPickerRow[]>(
     () => props.allClients ?? buildClientRows(props.projects),
     [props.allClients, props.projects]
   )
@@ -208,8 +208,8 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   )
 }
 
-function buildClientRows(projects: ProjectWithRelations[]): ClientRow[] {
-  const map = new Map<string, ClientRow>()
+function buildClientRows(projects: ProjectWithRelations[]): ClientPickerRow[] {
+  const map = new Map<string, ClientPickerRow>()
 
   projects.forEach(project => {
     if (project.client) {

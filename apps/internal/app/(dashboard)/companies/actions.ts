@@ -13,7 +13,6 @@ import { fetchProjectsForClient, type ClientProject } from '@/lib/data/clients'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { createUpdateDraft, listClientUpdates } from '@/lib/updates'
 import type { ClientUpdateSummary } from './_components/company-updates-section'
-import type { SaveCompanyInput } from '@/lib/companies/schema'
 import { saveCompanySheet as saveCompanySheetMutation } from '@/lib/companies/save-company-sheet'
 import type { SaveCompanySheetInput } from '@/lib/companies/sheet-save-schema'
 import type {
@@ -25,7 +24,6 @@ import { NotFoundError } from '@/lib/errors/http'
 import {
   getCompanyDetail,
   listCompanyOptions,
-  saveCompany as saveCompanyQuery,
   setCompanyArchived,
 } from '@/lib/queries/companies'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
@@ -72,15 +70,6 @@ export async function loadCompanySheet(
 export async function fetchCompanyOptions(): Promise<CompanyOption[]> {
   const user = await requireCrmUser()
   return listCompanyOptions(user)
-}
-
-export async function saveCompany(
-  input: SaveCompanyInput
-): Promise<CompanyActionResult> {
-  const user = await requireCrmUser()
-  const result = await saveCompanyQuery(user, input)
-  if (result.ok) revalidateCompanyRoutes()
-  return result
 }
 
 /**

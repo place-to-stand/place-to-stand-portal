@@ -21,7 +21,7 @@ import {
   hourBlockFormSchema,
   HOUR_BLOCK_FORM_FIELDS,
   sortClientsByName,
-  type ClientRow,
+  type HourBlockClient,
   type HourBlockFormValues,
   type HourBlockWithClient,
 } from './hour-block-form'
@@ -42,7 +42,7 @@ export type UseHourBlockSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   hourBlock: HourBlockWithClient | null
-  clients: ClientRow[]
+  clients: HourBlockClient[]
 }
 
 export type UseHourBlockSheetStateReturn = {

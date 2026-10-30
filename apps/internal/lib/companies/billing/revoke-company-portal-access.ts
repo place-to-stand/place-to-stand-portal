@@ -2,12 +2,11 @@ import 'server-only'
 
 import { and, eq } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { memberships } from '@/lib/db/schema'
 import type { ContactClientLinkChange } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type Executor = typeof db | Tx
+type Executor = typeof db | DbTx
 
 /**
  * Switches off portal access on every membership at a company, for when its

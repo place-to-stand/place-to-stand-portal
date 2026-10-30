@@ -5,7 +5,7 @@ import 'server-only'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { sql, type SQL } from 'drizzle-orm'
 
-import { companies, } from '@/lib/db/schema'
+import { companies } from '@/lib/db/schema'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 import {
   clampLimit,

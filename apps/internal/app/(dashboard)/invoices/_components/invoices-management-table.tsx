@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 import type {
-  ClientRow,
+  InvoiceClient,
   InvoiceWithClient,
   ProductCatalogItemRow,
 } from '@/lib/invoices/invoice-form'
@@ -25,7 +25,7 @@ import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 type InvoicesManagementTableProps = {
   invoices: InvoiceWithClient[]
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
   totalCount: number

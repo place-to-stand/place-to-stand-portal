@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
+import type { ClientPickerRow } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // Row types (snake_case, matching query layer)
@@ -47,12 +48,10 @@ export type InvoiceLineItemRow = {
   deleted_at: string | null
 }
 
-export type ClientRow = {
-  id: string
-  name: string
+/** A client in the invoice picker: billing type and state drive tax. */
+export type InvoiceClient = ClientPickerRow & {
   billing_type: string
   state: string | null
-  deleted_at: string | null
 }
 
 export type InvoiceWithClient = InvoiceRow & {

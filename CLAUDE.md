@@ -104,7 +104,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])
 ├── api/              # API routes: v1/, cli/v1/, tasks/, task-comments/, my-tasks/,
-│                     #   projects/, clients/, contacts/, leads/, invoices/, dashboard/,
+│                     #   projects/, contacts/, leads/, invoices/, dashboard/,
 │                     #   activity/, planning/, uploads/, storage/, public/, auth/,
 │                     #   github/, google/,
 │                     #   integrations/ (audit-responses, contact-submissions, stripe, github, google, ...)

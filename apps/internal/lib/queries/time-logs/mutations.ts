@@ -12,11 +12,9 @@ import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { HttpError, NotFoundError } from '@/lib/errors/http'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { projects, tasks, timeLogTasks, timeLogs } from '@/lib/db/schema'
 import type { ActivitySourceValue } from '@/lib/types'
-
-type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /**
  * Server-side eligibility check for linked tasks (the client-side filter and
@@ -27,7 +25,7 @@ type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
  * opened still fails cleanly with a 400.
  */
 async function assertLinkedTasksEligible(
-  tx: TransactionClient,
+  tx: DbTx,
   projectId: string,
   taskIds: string[]
 ): Promise<void> {

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import type { DbTx } from '@/lib/db'
 import { userRoleTerms, users } from '@/lib/db/schema'
 import {
   currentMonthStartUtc,
@@ -38,8 +38,6 @@ export function liveDuring(deletedAt: SQL | { name: string }, periodStart: strin
   return sql`(${deletedAt} is null or ${deletedAt} >= ${periodStart}::date)`
 }
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
 /**
  * Record a sign-in's role from a month on (a month start). Re-setting the
  * same month replaces it. Write it in the same transaction as `users.role`
@@ -47,7 +45,7 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
  * its first month.
  */
 export async function setRoleTerm(
-  tx: DbTransaction,
+  tx: DbTx,
   input: {
     userId: string
     role: (typeof userRoleTerms.$inferInsert)['role']

@@ -4,13 +4,11 @@ import { and, desc, eq, isNull } from 'drizzle-orm'
 
 import { clientBillingPeriods } from '@pts/db/schema'
 
-import type { db } from '@/lib/db'
+import type { DbTx } from '@/lib/db'
 import {
   currentMonthStartUtc,
   nextMonthStartUtc,
 } from '@/lib/queries/clients/billing-terms'
-
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /** Which month a start, stop or restart takes effect. */
 export type BillingEffective = 'current_month' | 'next_month'
@@ -31,7 +29,7 @@ function monthAfter(month: string): string {
 const monthOf = (effective: BillingEffective) =>
   effective === 'current_month' ? currentMonthStartUtc() : nextMonthStartUtc()
 
-async function latestPeriod(tx: DbTransaction, companyId: string) {
+async function latestPeriod(tx: DbTx, companyId: string) {
   const [period] = await tx
     .select({
       id: clientBillingPeriods.id,
@@ -54,7 +52,7 @@ async function latestPeriod(tx: DbTransaction, companyId: string) {
 
 /** Make a company a client: billing starts this month or next. */
 export async function startBilling(
-  tx: DbTransaction,
+  tx: DbTx,
   input: { companyId: string; effective: BillingEffective; actorId: string }
 ): Promise<{ startsOn: string }> {
   if (await latestPeriod(tx, input.companyId)) {
@@ -77,7 +75,7 @@ export async function startBilling(
  * it began never billed anything, so it is removed.
  */
 export async function stopBilling(
-  tx: DbTransaction,
+  tx: DbTx,
   input: { companyId: string; effective: BillingEffective }
 ): Promise<{ lastMonth: string | null }> {
   const period = await latestPeriod(tx, input.companyId)
@@ -108,7 +106,7 @@ export async function stopBilling(
  * taken effect yet (billed through this month) is simply cancelled.
  */
 export async function restartBilling(
-  tx: DbTransaction,
+  tx: DbTx,
   input: { companyId: string; effective: BillingEffective; actorId: string }
 ): Promise<{ startsOn: string }> {
   const period = await latestPeriod(tx, input.companyId)
@@ -137,7 +135,7 @@ export async function restartBilling(
 }
 
 /** Remove every billing stretch (a permanent client delete). */
-export async function removeBilling(tx: DbTransaction, companyId: string) {
+export async function removeBilling(tx: DbTx, companyId: string) {
   const now = new Date().toISOString()
   await tx
     .update(clientBillingPeriods)
