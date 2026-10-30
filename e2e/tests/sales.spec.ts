@@ -158,8 +158,12 @@ test('sales can’t edit or archive someone else’s lead update', async ({
 
     // Admin logs the update.
     await admin.getByRole('button', { name: 'Add update' }).click()
-    const logDialog = admin.getByRole('dialog', { name: 'Log update' })
-    await logDialog.locator('.ProseMirror').click()
+    const logDialog = admin
+      .getByRole('dialog')
+      .filter({ has: admin.getByText('Log update', { exact: true }) })
+      // It opens over the lead sheet: the top one.
+      .last()
+    await admin.locator('#lead-update-body .ProseMirror').click()
     await admin.keyboard.type(marker)
     await logDialog.getByRole('button', { name: 'Log', exact: true }).click()
     await expect(logDialog).toBeHidden()
@@ -169,7 +173,11 @@ test('sales can’t edit or archive someone else’s lead update', async ({
     await expect(adminEntry).toBeVisible()
     await adminEntry.getByRole('button', { name: /^Actions for / }).click()
     await admin.getByRole('menuitem', { name: 'Edit' }).click()
-    const editDialog = admin.getByRole('dialog', { name: 'Edit update' })
+    const editDialog = admin
+      .getByRole('dialog')
+      .filter({ has: admin.getByText('Edit update', { exact: true }) })
+      // It opens over the lead sheet: the top one.
+      .last()
     const editRequest = admin.waitForRequest(
       request =>
         request.method() === 'POST' &&
