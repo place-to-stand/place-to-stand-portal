@@ -264,7 +264,8 @@ export const requireUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
   // Admin-only by default. SALES staff get only the CRM pages, which call
@@ -290,7 +291,8 @@ export const requireCrmUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
   if (!roleCan(user.role, 'portal.sign_in')) {
