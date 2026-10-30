@@ -36,10 +36,15 @@ export type CompanyContactSummary = {
   linkedinUrl: string | null
   /** The company's primary contact (clients use it too). */
   isPrimary: boolean
-  /** Can see the company's client in the client portal. */
+  /**
+   * Can see the company's client in the client portal. Always false for a
+   * viewer who can't manage clients (sign-in details stay hidden from them).
+   */
   portalAccess: boolean
-  /** Has a portal login. */
+  /** Has a sign-in (false for a viewer who can't manage clients). */
   hasPortalLogin: boolean
+  /** Their sign-in is switched off or archived: no access until it's back. */
+  signInDisabled: boolean
 }
 
 export type CompanyLeadSummary = {
@@ -64,6 +69,13 @@ export type CompanyDetail = {
   clients: { id: string; name: string; slug: string | null }[]
   /** Its stopped client when it has no live one (billing can restart). */
   formerClientId: string | null
+  /**
+   * The last month billed when a stop is scheduled (billed through the end
+   * of this month); null while billing runs on or isn't open.
+   */
+  billingEndsOn: string | null
+  /** The agency's own company (`companies.is_staff`). */
+  isStaff: boolean
   createdAt: string
   updatedAt: string
   deletedAt: string | null

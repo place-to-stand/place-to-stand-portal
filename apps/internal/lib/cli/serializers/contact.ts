@@ -1,3 +1,4 @@
+import { roleCan, type Role } from '@/lib/auth/capabilities'
 import type { ContactsSettingsListItem } from '@/lib/queries/contacts/settings/types'
 import type { ContactMembership } from '@/lib/queries/memberships'
 
@@ -10,8 +11,11 @@ export type CliContactCompany = {
   title: string | null
   /** The company's primary contact. */
   isPrimary: boolean
-  /** Can see the company's client in the client portal (switch on and a portal login). */
-  portalAccess: boolean
+  /**
+   * Can see the company's client in the client portal (switch on and a
+   * portal login). Left out for a viewer who can't manage clients.
+   */
+  portalAccess?: boolean
   /** The company's client, if it is one. */
   /** The company's id when it is a client (0111: a client is its company). */
   clientId: string | null
@@ -30,22 +34,28 @@ export type CliContact = {
   updatedAt: string
 }
 
+/** Portal access is a client record: only people who manage clients see it. */
+type ViewerOptions = { viewerRole?: Role | null }
+
 export function serializeContactCompanies(
-  memberships: readonly ContactMembership[]
+  memberships: readonly ContactMembership[],
+  { viewerRole }: ViewerOptions = {}
 ): CliContactCompany[] {
+  const seesPortal = roleCan(viewerRole, 'clients.manage')
   return memberships.map(membership => ({
     companyId: membership.companyId,
     companyName: membership.companyName,
     title: membership.title,
     isPrimary: membership.isPrimary,
-    portalAccess: membership.hasPortalAccess,
+    ...(seesPortal ? { portalAccess: membership.hasPortalAccess } : {}),
     clientId: membership.clientId,
   }))
 }
 
 export function serializeContact(
   contact: ContactsSettingsListItem,
-  memberships: readonly ContactMembership[] = []
+  memberships: readonly ContactMembership[] = [],
+  options: ViewerOptions = {}
 ): CliContact {
   return {
     id: contact.id,
@@ -53,7 +63,7 @@ export function serializeContact(
     email: contact.email,
     phone: contact.phone,
     userId: contact.userId,
-    companies: serializeContactCompanies(memberships),
+    companies: serializeContactCompanies(memberships, options),
     createdAt: isoTimestamp(contact.createdAt),
     updatedAt: isoTimestamp(contact.updatedAt),
   }

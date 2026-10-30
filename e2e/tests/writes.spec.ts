@@ -36,8 +36,10 @@ test('billing: make a client, stop billing, restart, and back', async ({ page })
   await expect(page.getByRole('dialog').getByRole('switch', { name: 'Bill this company' })).toHaveAttribute('aria-checked', 'true')
   await setBilling(page, false)
 
+  // Stopping defaults to billing through the end of this month, so it is
+  // still a client with the stop scheduled; switching on cancels the stop.
   await page.goto(url)
-  await expect(page.getByRole('dialog').getByText('Billing stopped')).toBeVisible()
+  await expect(page.getByRole('dialog').getByText(/^Billing stops after /)).toBeVisible()
   await setBilling(page, true)
 
   await page.goto(url)

@@ -2,21 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import {
-  saveClient,
-  getClientSheetContactData,
-  syncClientContacts,
-} from '@/app/(dashboard)/companies/billing-actions'
+import { getClientSheetContactData } from '@/app/(dashboard)/companies/billing-actions'
 import { subscribeSheetCreated } from '@/lib/sheets/created'
-import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import {
-  finishSettingsInteraction,
-  startSettingsInteraction,
-} from '@/lib/posthog/settings'
 
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { isSelectableUser } from '@/lib/users/selectable'
+import type { CompanyBillingFields } from '@/lib/companies/sheet-save-schema'
 import {
   clientSheetFormSchema,
   type ClientSheetFormValues,
@@ -33,17 +25,17 @@ import {
 } from '../closers'
 
 import type {
-  BaseFormState,
   ClientContactOption,
-  ClientSheetFormStateArgs,
   CloserCandidate,
   CloserDraft,
   OriginationContactOption,
   PartnerUserOption,
+  UseClientBillingFormArgs,
+  UseClientBillingFormReturn,
 } from './types'
 
-/** Which picker opened the contact create sheet — gets the new record. */
-type ContactCreateTarget = 'contacts' | 'origination' | 'closer'
+/** Which picker opened the person create sheet — gets the new record. */
+type ContactCreateTarget = 'origination' | 'closer'
 
 const EMPTY_CLOSERS: ClientCloser[] = []
 
@@ -80,65 +72,42 @@ function toCloserShares(drafts: readonly CloserDraft[]): CloserShare[] {
   }))
 }
 
-export function useClientSheetFormState({
+export function useClientBillingForm({
   open,
-  onOpenChange,
-  onComplete,
   client,
-  allContacts: allContactsProp,
-  clientContacts: clientContactsProp,
-  allAdminUsers: allAdminUsersProp,
-  initialName,
-  initialCompanyId,
-  onCreated,
-  quietSuccess = false,
-  isEditing,
-  setFeedback,
-  toast,
-}: ClientSheetFormStateArgs): BaseFormState {
-  // Contact state
-  const [isContactPickerOpen, setIsContactPickerOpen] = useState(false)
-  const [fetchedAllContacts, setFetchedAllContacts] = useState<
-    ClientContactOption[]
-  >([])
-  const [fetchedAllAdminUsers, setFetchedAllAdminUsers] = useState<
-    PartnerUserOption[]
-  >([])
-  const [selectedContacts, setSelectedContacts] = useState<
-    ClientContactOption[]
-  >([])
-  const [initialContacts, setInitialContacts] = useState<ClientContactOption[]>(
-    []
-  )
+  isPending,
+}: UseClientBillingFormArgs): UseClientBillingFormReturn {
+  const [allContacts, setAllContacts] = useState<ClientContactOption[]>([])
+  const [allAdminUsers, setAllAdminUsers] = useState<PartnerUserOption[]>([])
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
-  // Contacts created from inside the picker this session — the fetched list
-  // predates them, so they're merged in to stay re-selectable after removal.
-  const [createdContacts, setCreatedContacts] = useState<ClientContactOption[]>(
-    []
-  )
   const { openNew } = useSheetParams()
 
-  // Origination state — one picker offers admins and contacts; whichever is
+  // Origination — one picker offers admins and contacts; whichever is
   // selected determines the kind, so the two selections are mutually exclusive.
   const [isOriginationPickerOpen, setIsOriginationPickerOpen] = useState(false)
   const [selectedOriginationUser, setSelectedOriginationUser] =
     useState<PartnerUserOption | null>(null)
   const [selectedOriginationContact, setSelectedOriginationContact] =
     useState<OriginationContactOption | null>(null)
-  const [initialOriginationUserId, setInitialOriginationUserId] = useState<
-    string | null
-  >(null)
-  const [initialOriginationContactId, setInitialOriginationContactId] =
-    useState<string | null>(null)
+  const initialOriginationUserId = client?.origination_user_id ?? null
+  const initialOriginationContactId = client?.origination_contact_id ?? null
 
-  // Closer state — seeded from the client row on open (no fetch needed).
+  // Closers — seeded from the client row (no fetch needed).
+  const savedClosers = client?.closers ?? EMPTY_CLOSERS
   const [isCloserPickerOpen, setIsCloserPickerOpen] = useState(false)
-  const [closers, setClosers] = useState<CloserDraft[]>([])
-  const [initialClosers, setInitialClosers] = useState<CloserShare[]>([])
-
-  // Field-level error for the closer split — rendered inline (shadcn
-  // FormMessage pattern) below the editor. Cleared as the user interacts
-  // so it doesn't linger after a fix.
+  const [closers, setClosers] = useState<CloserDraft[]>(() =>
+    toCloserDrafts(savedClosers)
+  )
+  const initialClosers = useMemo(
+    () =>
+      savedClosers.map(c => ({
+        kind: c.kind,
+        id: c.id,
+        sharePercent: c.sharePercent,
+      })),
+    [savedClosers]
+  )
+  // Field-level error for the closer split, cleared as the user edits.
   const [closerError, setCloserError] = useState<string | null>(null)
 
   const form = useForm<ClientSheetFormValues>({
@@ -155,44 +124,13 @@ export function useClientSheetFormState({
     },
   })
 
-  // Use provided data or fetched data
-  const baseContacts = allContactsProp ?? fetchedAllContacts
-  const allContacts = useMemo(() => {
-    if (createdContacts.length === 0) return baseContacts
-    const known = new Set(baseContacts.map(c => c.id))
-    return [...baseContacts, ...createdContacts.filter(c => !known.has(c.id))]
-  }, [baseContacts, createdContacts])
-  const allAdminUsers = allAdminUsersProp ?? fetchedAllAdminUsers
-
-  // Anyone not on Portal access yet; the picker lists the company's people
-  // first, then everyone else.
-  const availableContacts = useMemo(() => {
-    const selectedIds = new Set(selectedContacts.map(c => c.id))
-    return allContacts.filter(c => !selectedIds.has(c.id))
-  }, [allContacts, selectedContacts])
-
-  // Check if contact links have changed
-  const contactsDirty = useMemo(() => {
-    const initialIds = new Set(initialContacts.map(c => c.id))
-    const selectedIds = new Set(selectedContacts.map(c => c.id))
-
-    if (initialIds.size !== selectedIds.size) return true
-    for (const id of initialIds) {
-      if (!selectedIds.has(id)) return true
-    }
-    return false
-  }, [initialContacts, selectedContacts])
-
-  // Origination user picker: any selectable admin except the one already
-  // selected. Disabled admins stay in `allAdminUsers` so an existing
-  // origination/closer still resolves for display, but are never offered.
-  const availableOriginationUsers = useMemo<PartnerUserOption[]>(() => {
-    return allAdminUsers.filter(
-      u => isSelectableUser(u) && u.id !== selectedOriginationUser?.id
-    )
-  }, [allAdminUsers, selectedOriginationUser])
-
-  // Origination contact picker: any contact except the one already selected
+  const availableOriginationUsers = useMemo<PartnerUserOption[]>(
+    () =>
+      allAdminUsers.filter(
+        u => isSelectableUser(u) && u.id !== selectedOriginationUser?.id
+      ),
+    [allAdminUsers, selectedOriginationUser]
+  )
   const availableOriginationContacts = useMemo<OriginationContactOption[]>(
     () =>
       allContacts
@@ -201,8 +139,7 @@ export function useClientSheetFormState({
     [allContacts, selectedOriginationContact]
   )
 
-  // Closer picker: selectable admins and any contact, minus current closers.
-  // A contact can close too — e.g. an insider at the client who pushed the
+  // A person can close too — e.g. an insider at the client who pushed the
   // deal over the line.
   const closerKeys = useMemo(() => new Set(closers.map(closerKey)), [closers])
   const availableCloserUsers = useMemo<CloserCandidate[]>(
@@ -235,220 +172,65 @@ export function useClientSheetFormState({
     ? null
     : closerSharesTotal(closerShares)
 
-  // Origination dirty: either side differs from initial
-  const originationDirty = useMemo(() => {
-    const currentUserId = selectedOriginationUser?.id ?? null
-    const currentContactId = selectedOriginationContact?.id ?? null
-    return (
-      currentUserId !== initialOriginationUserId ||
-      currentContactId !== initialOriginationContactId
-    )
-  }, [
-    selectedOriginationUser,
-    selectedOriginationContact,
-    initialOriginationUserId,
-    initialOriginationContactId,
-  ])
-
+  const originationDirty =
+    (selectedOriginationUser?.id ?? null) !== initialOriginationUserId ||
+    (selectedOriginationContact?.id ?? null) !== initialOriginationContactId
   const closerDirty = !closerSplitsEqual(closerShares, initialClosers)
-
-  // Closer + origination are one effective-dated commission term (PRD 007);
-  // the form reveals the boundary select when either side changed.
+  // Closer + origination are one effective-dated commission term (PRD 007).
   const commissionDirty = originationDirty || closerDirty
+  const hasUnsavedChanges = form.formState.isDirty || commissionDirty
 
-  const resetFormState = useCallback(() => {
-    const defaults = {
-      name: client?.name ?? initialName ?? '',
-      slug: client?.slug ?? '',
-      billingType: client?.billing_type ?? 'prepaid',
-      billingEffective: 'next_month' as const,
-      commissionEffective: 'next_month' as const,
-      state: client?.state ?? '',
-      notes: client?.notes ?? '',
-      companyId: client?.company_id ?? initialCompanyId ?? '',
-    }
-
-    form.reset(defaults)
-    setFeedback(null)
-    setCloserError(null)
-
-    // Reset pickers
-    setIsContactPickerOpen(false)
-    setIsOriginationPickerOpen(false)
-    setIsCloserPickerOpen(false)
-  }, [client, form, initialCompanyId, initialName, setFeedback])
-
-  const hasUnsavedChanges =
-    form.formState.isDirty || contactsDirty || originationDirty || closerDirty
-
-  const {
-    isSaving: isPending,
-    startSave,
-    handleSheetOpenChange,
-    unsavedChangesDialog,
-  } = useSheetLifecycle({
-    open,
-    onOpenChange,
-    isDirty: hasUnsavedChanges,
-    onReset: resetFormState,
-    resetKey: client?.id ?? null,
-  })
-
-  // Never disabled for an empty list: the picker's create row is the escape
-  // hatch when every contact is linked (or none exist yet).
-  const contactsAddButtonDisabled = isPending || isLoadingContacts
-  const contactsAddButtonDisabledReason = contactsAddButtonDisabled
-    ? isPending
-      ? PENDING_REASON
-      : isLoadingContacts
-        ? 'Loading people...'
-        : null
-    : null
-
-  const originationPickerDisabled = isPending || isLoadingContacts
-  const originationPickerDisabledReason = originationPickerDisabled
+  const pickerDisabled = isPending || isLoadingContacts
+  const pickerDisabledReason = pickerDisabled
     ? isPending
       ? PENDING_REASON
       : 'Loading people...'
     : null
 
-  const closerPickerDisabled = isPending || isLoadingContacts
-  const closerPickerDisabledReason = closerPickerDisabled
-    ? isPending
-      ? PENDING_REASON
-      : 'Loading people...'
-    : null
-
-  const submitDisabled = isPending
-  const submitDisabledReason = submitDisabled ? PENDING_REASON : null
-
+  // Load the pickers' people once the sheet opens.
   useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    // Initialize contacts from props if provided
-    // Intentional: Sync contact state with props when sheet opens
-    /* eslint-disable react-hooks/set-state-in-effect */
-    const linkedFromProps = clientContactsProp ?? []
-    setSelectedContacts(linkedFromProps)
-    setInitialContacts(linkedFromProps)
-    /* eslint-enable react-hooks/set-state-in-effect */
-
-    // Fetch contact data if not provided via props
-    const clientId = client?.id
-    const clientOriginationContactId = client?.origination_contact_id ?? null
-    const clientOriginationUserId = client?.origination_user_id ?? null
-    const clientClosers = client?.closers ?? EMPTY_CLOSERS
-    const shouldFetch =
-      !allContactsProp ||
-      allContactsProp.length === 0 ||
-      !allAdminUsersProp ||
-      allAdminUsersProp.length === 0
-
-    // Initialize origination/closer "initial" references
-    setInitialOriginationUserId(clientOriginationUserId)
-    setInitialOriginationContactId(clientOriginationContactId)
-    setClosers(toCloserDrafts(clientClosers))
-    setInitialClosers(
-      clientClosers.map(c => ({
-        kind: c.kind,
-        id: c.id,
-        sharePercent: c.sharePercent,
-      }))
-    )
-
-    const hydrateSelectionsFromData = (
-      contacts: ClientContactOption[],
-      adminUsers: PartnerUserOption[]
-    ) => {
-      // Origination contact
-      if (clientOriginationContactId) {
-        const contact = contacts.find(c => c.id === clientOriginationContactId)
+    if (!open) return
+    let cancelled = false
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setIsLoadingContacts(true)
+    getClientSheetContactData(client?.id)
+      .then(data => {
+        if (cancelled) return
+        setAllContacts(data.allContacts)
+        setAllAdminUsers(data.allAdminUsers)
+        const contact = initialOriginationContactId
+          ? data.allContacts.find(c => c.id === initialOriginationContactId)
+          : null
         setSelectedOriginationContact(
           contact
             ? { id: contact.id, name: contact.name, email: contact.email }
             : null
         )
-      } else {
-        setSelectedOriginationContact(null)
-      }
-
-      // Origination user
-      if (clientOriginationUserId) {
-        const u = adminUsers.find(u => u.id === clientOriginationUserId)
-        setSelectedOriginationUser(u ?? null)
-      } else {
-        setSelectedOriginationUser(null)
-      }
+        setSelectedOriginationUser(
+          initialOriginationUserId
+            ? (data.allAdminUsers.find(
+                u => u.id === initialOriginationUserId
+              ) ?? null)
+            : null
+        )
+      })
+      .catch(err => {
+        console.error('Failed to fetch billing picker data:', err)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingContacts(false)
+      })
+    return () => {
+      cancelled = true
     }
+  }, [open, client?.id, initialOriginationContactId, initialOriginationUserId])
 
-    if (shouldFetch) {
-      setIsLoadingContacts(true)
-      getClientSheetContactData(clientId)
-        .then(data => {
-          setFetchedAllContacts(data.allContacts)
-          setFetchedAllAdminUsers(data.allAdminUsers)
-          if (clientId && data.linkedContacts.length > 0) {
-            setSelectedContacts(data.linkedContacts)
-            setInitialContacts(data.linkedContacts)
-          }
-          hydrateSelectionsFromData(data.allContacts, data.allAdminUsers)
-        })
-        .catch(err => {
-          console.error('Failed to fetch contact sheet data:', err)
-        })
-        .finally(() => {
-          setIsLoadingContacts(false)
-        })
-    } else {
-      hydrateSelectionsFromData(allContactsProp ?? [], allAdminUsersProp ?? [])
-    }
-  }, [
-    open,
-    client?.id,
-    client?.origination_contact_id,
-    client?.origination_user_id,
-    client?.closers,
-    allContactsProp,
-    clientContactsProp,
-    allAdminUsersProp,
-  ])
-
-  // Contact handlers
-  const handleContactPickerOpenChange = useCallback(
-    (next: boolean) => {
-      if (contactsAddButtonDisabled) {
-        setIsContactPickerOpen(false)
-        return
-      }
-      setIsContactPickerOpen(next)
-    },
-    [contactsAddButtonDisabled]
-  )
-
-  const handleAddContact = useCallback((contact: ClientContactOption) => {
-    setSelectedContacts(prev => {
-      if (prev.some(existing => existing.id === contact.id)) {
-        return prev
-      }
-      return [...prev, contact]
-    })
-    setIsContactPickerOpen(false)
-  }, [])
-
-  const handleRemoveContact = useCallback((contact: ClientContactOption) => {
-    setSelectedContacts(prev => prev.filter(c => c.id !== contact.id))
-  }, [])
-
-  // Create-from-picker: stack the contact create sheet on top of this one
-  // (`?client=…&contact=new`); the subscription below hands the saved record
-  // to whichever picker asked — only the contacts picker links it to the client.
-  const createContactTargetRef = useRef<ContactCreateTarget>('contacts')
+  // Create-from-picker: stack the person create sheet on top; the
+  // subscription below hands the saved record to whichever picker asked.
+  const createContactTargetRef = useRef<ContactCreateTarget>('origination')
   const requestContactCreate = useCallback(
     (target: ContactCreateTarget, query: string) => {
       createContactTargetRef.current = target
-      setIsContactPickerOpen(false)
       setIsOriginationPickerOpen(false)
       setIsCloserPickerOpen(false)
       openNew('contact', query ? { contactName: query } : undefined)
@@ -464,24 +246,15 @@ export function useClientSheetFormState({
     [requestContactCreate]
   )
 
-  // Origination handlers
   const handleOriginationPickerOpenChange = useCallback(
-    (next: boolean) => {
-      if (originationPickerDisabled) {
-        setIsOriginationPickerOpen(false)
-        return
-      }
-      setIsOriginationPickerOpen(next)
-    },
-    [originationPickerDisabled]
+    (next: boolean) => setIsOriginationPickerOpen(pickerDisabled ? false : next),
+    [pickerDisabled]
   )
-
   const handleSelectOriginationUser = useCallback((user: PartnerUserOption) => {
     setSelectedOriginationUser(user)
     setSelectedOriginationContact(null)
     setIsOriginationPickerOpen(false)
   }, [])
-
   const handleSelectOriginationContact = useCallback(
     (contact: OriginationContactOption) => {
       setSelectedOriginationContact(contact)
@@ -490,24 +263,15 @@ export function useClientSheetFormState({
     },
     []
   )
-
   const handleClearOrigination = useCallback(() => {
     setSelectedOriginationUser(null)
     setSelectedOriginationContact(null)
   }, [])
 
-  // Closer handlers
   const handleCloserPickerOpenChange = useCallback(
-    (next: boolean) => {
-      if (closerPickerDisabled) {
-        setIsCloserPickerOpen(false)
-        return
-      }
-      setIsCloserPickerOpen(next)
-    },
-    [closerPickerDisabled]
+    (next: boolean) => setIsCloserPickerOpen(pickerDisabled ? false : next),
+    [pickerDisabled]
   )
-
   const handleAddCloser = useCallback((candidate: CloserCandidate) => {
     setClosers(prev =>
       prev.some(c => closerKey(c) === closerKey(candidate))
@@ -517,12 +281,10 @@ export function useClientSheetFormState({
     setIsCloserPickerOpen(false)
     setCloserError(null)
   }, [])
-
   const handleRemoveCloser = useCallback((key: string) => {
     setClosers(prev => withEvenShares(prev.filter(c => closerKey(c) !== key)))
     setCloserError(null)
   }, [])
-
   const handleCloserShareChange = useCallback(
     (key: string, shareText: string) => {
       setClosers(prev =>
@@ -543,233 +305,74 @@ export function useClientSheetFormState({
         phone: record.phone,
         hasPortalAccess: false,
       }
-      setCreatedContacts(prev =>
+      setAllContacts(prev =>
         prev.some(c => c.id === option.id) ? prev : [...prev, option]
       )
-      switch (createContactTargetRef.current) {
-        case 'origination':
-          handleSelectOriginationContact({
-            id: option.id,
-            name: option.name,
-            email: option.email,
-          })
-          break
-        case 'closer':
-          handleAddCloser({
-            kind: 'contact',
-            id: option.id,
-            name: option.name?.trim() || option.email || 'Unnamed person',
-            email: option.email,
-          })
-          break
-        default:
-          handleAddContact(option)
-      }
-      createContactTargetRef.current = 'contacts'
-    })
-  }, [open, handleAddContact, handleSelectOriginationContact, handleAddCloser])
-
-  const handleFormSubmit = useCallback(
-    (values: ClientSheetFormValues) => {
-      if (isEditing && !values.slug?.trim()) {
-        form.setError('slug', { type: 'manual', message: 'Slug is required' })
-        return
-      }
-
-      // Origination and closers are both optional. With no closer the closer
-      // share stays in house (estimated) on the Monthly Close (PRD 007).
-      const splitError = closerSplitError(closerShares)
-      if (splitError) {
-        setCloserError(splitError)
-        return
-      }
-
-      setCloserError(null)
-
-      startSave(async () => {
-        setFeedback(null)
-
-        const payload = {
-          id: client?.id ?? undefined,
-          name: values.name?.trim() ?? '',
-          slug: isEditing
-            ? values.slug?.trim()
-              ? values.slug.trim()
-              : null
-            : null,
-          billingType: values.billingType,
-          billingEffective: values.billingEffective,
-          commissionEffective: values.commissionEffective,
-          state: values.state?.trim() ? values.state.trim() : null,
-          originationContactId: selectedOriginationContact?.id ?? null,
-          originationUserId: selectedOriginationUser?.id ?? null,
-          closers: closerShares,
-          notes: values.notes?.trim() ? values.notes.trim() : null,
-          // On edit an empty company unlinks it (null); a new client needs one.
-          companyId: values.companyId || (isEditing ? null : undefined),
-        } satisfies Parameters<typeof saveClient>[0]
-
-        // A new client needs its company; an existing one can be unlinked.
-        if (!isEditing && !payload.companyId) {
-          form.setError('companyId', {
-            message: 'Pick or create the company this client is',
-          })
-          return
-        }
-
-        if (payload.slug && payload.slug.length < 3) {
-          setFeedback('Slug must be at least 3 characters when provided.')
-          return
-        }
-
-        const interaction = startSettingsInteraction({
-          entity: 'client',
-          mode: isEditing ? 'edit' : 'create',
-          targetId: payload.id ?? null,
+      if (createContactTargetRef.current === 'closer') {
+        handleAddCloser({
+          kind: 'contact',
+          id: option.id,
+          name: option.name?.trim() || option.email || 'Unnamed person',
+          email: option.email,
         })
+      } else {
+        handleSelectOriginationContact({
+          id: option.id,
+          name: option.name,
+          email: option.email,
+        })
+      }
+    })
+  }, [open, handleAddCloser, handleSelectOriginationContact])
 
-        try {
-          const result = await saveClient(payload)
-
-          if (result.error) {
-            finishSettingsInteraction(interaction, {
-              status: 'error',
-              error: result.error,
-            })
-            setFeedback(result.error)
-            return
-          }
-
-          // Sync contact links if contacts changed
-          // For new clients, use the returned clientId; for existing, use payload.id
-          const clientIdForContacts = payload.id ?? result.clientId
-          if (clientIdForContacts && contactsDirty) {
-            const contactIds = selectedContacts.map(c => c.id)
-            const syncResult = await syncClientContacts(
-              clientIdForContacts,
-              contactIds
-            )
-
-            if (!syncResult.ok) {
-              setFeedback(syncResult.error ?? 'Unable to update people links.')
-              toast({
-                title: 'Unable to update people links',
-                description:
-                  'The client was saved, but its people links were not.',
-                variant: 'destructive',
-              })
-              // Still complete since the client was saved
-            }
-          }
-
-          finishSettingsInteraction(interaction, {
-            status: 'success',
-            targetId: payload.id ?? result.clientId ?? null,
-          })
-
-          if (!isEditing && result.clientId && onCreated) {
-            onCreated({
-              id: result.clientId,
-              name: payload.name,
-              slug: result.slug ?? payload.slug ?? '',
-            })
-          }
-
-          if (!quietSuccess) toast({
-            title: isEditing ? 'Client updated' : 'Client created',
-            description: isEditing
-              ? 'Changes saved successfully.'
-              : 'The client is ready for new projects.',
-          })
-
-          setInitialContacts(selectedContacts)
-          setInitialOriginationUserId(payload.originationUserId)
-          setInitialOriginationContactId(payload.originationContactId)
-          setInitialClosers(payload.closers)
-          form.reset({
-            name: payload.name,
-            slug: payload.slug ?? '',
-            billingType: payload.billingType,
-            billingEffective: 'next_month',
-            commissionEffective: 'next_month',
-            state: payload.state ?? '',
-            notes: payload.notes ?? '',
-            companyId: payload.companyId ?? '',
-          })
-
-          onOpenChange(false)
-          onComplete()
-        } catch (error) {
-          finishSettingsInteraction(interaction, {
-            status: 'error',
-            error: error instanceof Error ? error.message : 'Unknown error',
-          })
-          setFeedback('We could not save this client. Please try again.')
-          return
-        }
-      })
-    },
-    [
-      client?.id,
-      contactsDirty,
-      form,
-      isEditing,
-      onComplete,
-      onCreated,
-      onOpenChange,
-      quietSuccess,
-      closerShares,
-      selectedContacts,
-      selectedOriginationContact,
-      selectedOriginationUser,
-      setFeedback,
-      startSave,
-      toast,
-    ]
-  )
+  const collectFields = useCallback((): CompanyBillingFields | null => {
+    // Origination and closers are both optional. With no closer the closer
+    // share stays in house (estimated) on the Monthly Close (PRD 007).
+    const splitError = closerSplitError(closerShares)
+    if (splitError) {
+      setCloserError(splitError)
+      return null
+    }
+    setCloserError(null)
+    const values = form.getValues()
+    return {
+      billingType: values.billingType,
+      billingEffective: values.billingEffective,
+      state: values.state?.trim() ? values.state.trim() : null,
+      slug: values.slug?.trim() ? values.slug.trim() : null,
+      originationUserId: selectedOriginationUser?.id ?? null,
+      originationContactId: selectedOriginationContact?.id ?? null,
+      closers: closerShares,
+      commissionEffective: values.commissionEffective,
+    }
+  }, [closerShares, form, selectedOriginationContact, selectedOriginationUser])
 
   return {
     form,
     hasUnsavedChanges,
-    isSaving: isPending,
-    startSave,
-    submitDisabled,
-    submitDisabledReason,
-    unsavedChangesDialog,
-    handleSheetOpenChange,
-    handleFormSubmit,
-    // Contacts
-    availableContacts,
-    selectedContacts,
-    isContactPickerOpen,
-    contactsAddButtonDisabled,
-    contactsAddButtonDisabledReason,
-    isLoadingContacts,
-    handleContactPickerOpenChange,
-    handleAddContact,
-    handleRemoveContact,
+    isPending,
+    pendingReason: PENDING_REASON,
+    collectFields,
     handleCreateOriginationContact,
     handleCreateCloserContact,
-    // Origination
     selectedOriginationUser,
     selectedOriginationContact,
     availableOriginationUsers,
     availableOriginationContacts,
     isOriginationPickerOpen,
-    originationPickerDisabled,
-    originationPickerDisabledReason,
+    originationPickerDisabled: pickerDisabled,
+    originationPickerDisabledReason: pickerDisabledReason,
     handleOriginationPickerOpenChange,
     handleSelectOriginationUser,
     handleSelectOriginationContact,
     handleClearOrigination,
-    // Closers
     closers,
     availableCloserUsers,
     availableCloserContacts,
     closerShareTotal,
     isCloserPickerOpen,
-    closerPickerDisabled,
-    closerPickerDisabledReason,
+    closerPickerDisabled: pickerDisabled,
+    closerPickerDisabledReason: pickerDisabledReason,
     closerError,
     commissionDirty,
     handleCloserPickerOpenChange,

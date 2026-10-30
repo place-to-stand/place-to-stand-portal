@@ -19,7 +19,9 @@ export const GET = withCliAuth(async ({ user, request }) => {
   )
   return jsonOk(
     result.items.map(contact =>
-      serializeContact(contact, memberships.get(contact.id))
+      serializeContact(contact, memberships.get(contact.id), {
+        viewerRole: user.role,
+      })
     ),
     {
       meta: { totalCount: result.totalCount },

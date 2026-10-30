@@ -1,7 +1,13 @@
 import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { billingOpenSql, isClientCompany, isFormerClientSql, wasClientCompany } from '@pts/db/client-state'
+import {
+  billingEndsOnSql,
+  billingOpenSql,
+  isClientCompany,
+  isFormerClientSql,
+  wasClientCompany,
+} from '@pts/db/client-state'
 
 import {
   and,
@@ -13,8 +19,8 @@ import {
   isNotNull,
   isNull,
   sql,
-  TransactionRollbackError,
 } from 'drizzle-orm'
+import type { z } from 'zod'
 
 import {
   companyArchivedEvent,
@@ -36,6 +42,7 @@ import {
   setMembershipTitle,
 } from '@/lib/queries/memberships'
 import { roleCan } from '@/lib/auth/capabilities'
+import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import type {
@@ -219,6 +226,8 @@ export async function getCompanyDetail(
       createdAt: companies.createdAt,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
+      isStaff: companies.isStaff,
+      billingEndsOn: billingEndsOnSql,
     })
     .from(companies)
     .where(eq(companies.id, companyId))
@@ -227,6 +236,9 @@ export async function getCompanyDetail(
   if (!row) {
     throw new NotFoundError('Company not found')
   }
+  // Portal access and sign-ins are client records: hidden from anyone who
+  // can't manage clients.
+  const seesSignIns = roleCan(user.role, 'clients.manage')
 
   const [memberRows, leadRows, clientRows, formerRows] = await Promise.all([
     listCompanyMembers(companyId),
@@ -263,6 +275,25 @@ export async function getCompanyDetail(
       .limit(1),
   ])
 
+  const signInUserIds = seesSignIns
+    ? memberRows.flatMap(member => (member.userId ? [member.userId] : []))
+    : []
+  const disabledSignIns = new Set(
+    signInUserIds.length
+      ? (
+          await db
+            .select({ id: users.id })
+            .from(users)
+            .where(
+              and(
+                inArray(users.id, signInUserIds),
+                sql`(${users.disabledAt} is not null or ${users.deletedAt} is not null)`
+              )
+            )
+        ).map(signIn => signIn.id)
+      : []
+  )
+
   const people = memberRows
     .map(member => ({
       id: member.contactId,
@@ -271,8 +302,11 @@ export async function getCompanyDetail(
       jobTitle: member.title,
       linkedinUrl: member.linkedinUrl,
       isPrimary: member.isPrimary,
-      portalAccess: member.portalAccess,
-      hasPortalLogin: Boolean(member.userId),
+      portalAccess: seesSignIns && member.portalAccess,
+      hasPortalLogin: seesSignIns && Boolean(member.userId),
+      signInDisabled: Boolean(
+        member.userId && disabledSignIns.has(member.userId)
+      ),
     }))
     // Primary contact first.
     .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
@@ -284,6 +318,7 @@ export async function getCompanyDetail(
     primaryContactName: primary?.name ?? null,
     clients: clientRows,
     formerClientId: clientRows.length ? null : (formerRows[0]?.id ?? null),
+    billingEndsOn: clientRows.length ? row.billingEndsOn : null,
     contacts: people,
     leads: leadRows.map(lead => ({
       id: lead.id,
@@ -311,107 +346,116 @@ export async function listCompanyOptions(
     .orderBy(asc(sql`lower(${companies.name})`))
 }
 
-export async function saveCompany(
+type SaveCompanyValues = z.output<typeof saveCompanySchema>
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/** A save the database refused for a reason worth showing (rolls it back). */
+export class CompanySaveRefusal extends Error {}
+
+type CompanyFields = {
+  name: string
+  website: string | null
+  linkedinUrl: string | null
+  notes: string | null
+}
+
+/** A company save, checked and resolved, ready to write in a transaction. */
+export type CompanyWritePlan = {
+  /** The company being edited; null creates one. */
+  existing: { id: string; name: string } | null
+  next: CompanyFields
+  changedFields: string[]
+  before: Record<string, unknown>
+  after: Record<string, unknown>
+  moves: PeopleMove[]
+  titles: { contactId: string; title: string | null }[]
+  /** `null` contactId clears the primary; a `null` change leaves it. */
+  primaryChange: { contactId: string | null } | null
+  primaryContactName: string | null
+  /** An edit that changes nothing. */
+  unchanged: boolean
+}
+
+/**
+ * Checks a company save and resolves what it changes, before any write: the
+ * fields, the people who join or leave, titles and the primary contact, and
+ * the role rules (a client company's name, people and primary are admin-only;
+ * so is removing someone from the staff company).
+ */
+export async function planCompanyWrite(
   actor: AppUser,
-  input: SaveCompanyInput
-): Promise<CompanyActionResult> {
+  values: SaveCompanyValues
+): Promise<
+  { ok: true; plan: CompanyWritePlan } | { ok: false; error: string }
+> {
   assertCrmAccess(actor)
 
-  const parsed = saveCompanySchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues[0]?.message ?? 'Invalid company details.',
-    }
-  }
-
-  const values = parsed.data
-
-  const timestamp = new Date().toISOString()
-
-  if (!values.id) {
-    try {
-      const [inserted] = await db
-        .insert(companies)
-        .values({
-          name: values.name,
-          website: values.website,
-          linkedinUrl: values.linkedinUrl,
-          notes: values.notes,
-          createdBy: actor.id,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        })
-        .returning({ id: companies.id })
-
-      await logActivity({
-        actorId: actor.id,
-        actorRole: actor.role,
-        targetType: 'COMPANY',
-        targetId: inserted!.id,
-        ...companyCreatedEvent({ name: values.name }),
-      })
-
-      return { ok: true, id: inserted!.id }
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        return { ok: false, error: saveConflictMessage(error) }
-      }
-      console.error('Failed to create company', error)
-      return { ok: false, error: 'Unable to save the company.' }
-    }
-  }
-
-  const [existing] = await db
-    .select()
-    .from(companies)
-    .where(and(eq(companies.id, values.id), isNull(companies.deletedAt)))
-    .limit(1)
-
-  if (!existing) {
-    return { ok: false, error: 'Company not found.' }
-  }
-
-  const next = {
+  const next: CompanyFields = {
     name: values.name,
     website: values.website,
     linkedinUrl: values.linkedinUrl,
     notes: values.notes,
   }
+  const titles = values.contactTitles ?? []
+
+  let existing: (CompanyFields & { id: string; isStaff: boolean }) | null =
+    null
+  if (values.id) {
+    const [row] = await db
+      .select({
+        id: companies.id,
+        name: companies.name,
+        website: companies.website,
+        linkedinUrl: companies.linkedinUrl,
+        notes: companies.notes,
+        isStaff: companies.isStaff,
+      })
+      .from(companies)
+      .where(and(eq(companies.id, values.id), isNull(companies.deletedAt)))
+      .limit(1)
+    if (!row) return { ok: false, error: 'Company not found.' }
+    existing = row
+  }
 
   const changedFields: string[] = []
   const before: Record<string, unknown> = {}
   const after: Record<string, unknown> = {}
-  const labels: Record<keyof typeof next, string> = {
-    name: 'name',
-    website: 'website',
-    linkedinUrl: 'LinkedIn',
-    notes: 'notes',
-  }
-  for (const key of Object.keys(next) as (keyof typeof next)[]) {
-    if ((existing[key] ?? null) !== (next[key] ?? null)) {
-      changedFields.push(labels[key])
-      before[key] = existing[key]
-      after[key] = next[key]
+  if (existing) {
+    const labels: Record<keyof CompanyFields, string> = {
+      name: 'name',
+      website: 'website',
+      linkedinUrl: 'LinkedIn',
+      notes: 'notes',
+    }
+    for (const key of Object.keys(next) as (keyof CompanyFields)[]) {
+      if ((existing[key] ?? null) !== (next[key] ?? null)) {
+        changedFields.push(labels[key])
+        before[key] = existing[key]
+        after[key] = next[key]
+      }
     }
   }
 
   const people = await resolvePeopleChanges(
-    existing.id,
+    existing?.id ?? null,
     values.addContactIds ?? [],
     values.removeContactIds ?? []
   )
 
   // The primary contact (star on the People list) saves in the same
   // transaction as the people it may depend on. `undefined` = unchanged.
-  const [current] = await db
-    .select({ primaryContactId: primaryContactIdSql(companies.id) })
-    .from(companies)
-    .where(eq(companies.id, existing.id))
-    .limit(1)
+  let currentPrimary: string | null = null
+  if (existing) {
+    const [current] = await db
+      .select({ primaryContactId: primaryContactIdSql(companies.id) })
+      .from(companies)
+      .where(eq(companies.id, existing.id))
+      .limit(1)
+    currentPrimary = current?.primaryContactId ?? null
+  }
   const primaryChange =
     values.primaryContactId !== undefined &&
-    values.primaryContactId !== (current?.primaryContactId ?? null)
+    values.primaryContactId !== currentPrimary
       ? { contactId: values.primaryContactId }
       : null
   let primaryContactName: string | null = null
@@ -432,135 +476,180 @@ export async function saveCompany(
     primaryContactName = contact.name
   }
 
-  if (
-    !changedFields.length &&
-    !primaryChange &&
-    !people.moves.length &&
-    !(values.contactTitles ?? []).length
-  ) {
-    return { ok: true, id: existing.id }
-  }
-
-  const renamed = next.name !== existing.name
-  // A client's name is its company's name, its people are who it bills and
-  // gives portal access, and client records are admin-only.
-  if (!roleCan(actor.role, 'clients.manage')) {
-    if (renamed && (await companyHasClient(existing.id))) {
-      return {
-        ok: false,
-        error: 'This company is a client, so only an admin can rename it.',
-      }
-    }
-    if (people.moves.length && (await companyHasClient(existing.id))) {
-      return {
-        ok: false,
-        error:
-          'This company is a client, so only an admin can change its people.',
-      }
-    }
-    if (primaryChange && (await companyHasClient(existing.id))) {
-      return {
-        ok: false,
-        error:
-          'This company is a client, so only an admin can change its primary contact.',
-      }
-    }
-  }
-
-  if (people.moves.length) {
-    changedFields.push('people')
-  }
-  if ((values.contactTitles ?? []).length) {
-    changedFields.push('titles')
-  }
-
-  // Portal access ended by unlinking or moving a client, logged after commit.
-  const accessChanges: ContactClientLinkChange[] = []
-  try {
-    await db.transaction(async tx => {
-      await tx
-        .update(companies)
-        .set({ ...next, updatedAt: timestamp })
-        .where(eq(companies.id, existing.id))
-
-      // Joining keeps the person's other companies. Leaving ends their
-      // membership here, and with it being this company's primary contact
-      // and portal access to its client.
-      for (const move of people.moves) {
-        if (move.joins) {
-          await joinCompany(tx, move.contactId, existing.id)
-        } else {
-          await leaveCompany(tx, move.contactId, existing.id)
+  if (existing) {
+    const renamed = next.name !== existing.name
+    // A client's name is its company's name, its people are who it bills and
+    // gives portal access, and client records are admin-only.
+    if (!roleCan(actor.role, 'clients.manage')) {
+      const touchesClient =
+        renamed || people.moves.length > 0 || primaryChange !== null
+      if (touchesClient && (await companyHasClient(existing.id))) {
+        return {
+          ok: false,
+          error: renamed
+            ? 'This company is a client, so only an admin can rename it.'
+            : people.moves.length
+              ? 'This company is a client, so only an admin can change its people.'
+              : 'This company is a client, so only an admin can change its primary contact.',
         }
       }
-      for (const entry of values.contactTitles ?? []) {
-        await setMembershipTitle(tx, entry.contactId, existing.id, entry.title)
-      }
-
-      // After the people moves, so someone joining here can be made primary.
-      // A refusal rolls the whole save back.
-      if (primaryChange) {
-        const ok = await setCompanyPrimary(
-          tx,
-          existing.id,
-          primaryChange.contactId
-        )
-        if (!ok) tx.rollback()
-      }
-    })
-  } catch (error) {
-    if (error instanceof TransactionRollbackError) {
-      return { ok: false, error: 'That person is not at this company.' }
     }
-    if (isUniqueViolation(error)) {
-      return { ok: false, error: saveConflictMessage(error) }
+    // Staff sign in as members of the agency's own company.
+    if (
+      existing.isStaff &&
+      !isAdminRole(actor.role) &&
+      people.moves.some(move => !move.joins)
+    ) {
+      return {
+        ok: false,
+        error: `Only an admin can remove people from ${existing.name}.`,
+      }
     }
-    console.error('Failed to update company', error)
-    return { ok: false, error: 'Unable to save the company.' }
   }
 
-  await logActivity({
-    actorId: actor.id,
-    actorRole: actor.role,
-    targetType: 'COMPANY',
-    targetId: existing.id,
-    ...companyUpdatedEvent({
-      name: next.name,
+  if (people.moves.length) changedFields.push('people')
+  if (titles.length) changedFields.push('titles')
+
+  return {
+    ok: true,
+    plan: {
+      existing: existing ? { id: existing.id, name: existing.name } : null,
+      next,
       changedFields,
-      details: {
-        before,
-        after,
-        ...(people.moves.length
-          ? {
-              peopleAdded: people.moves
-                .filter(move => move.joins)
-                .map(move => move.name),
-              peopleRemoved: people.moves
-                .filter(move => !move.joins)
-                .map(move => move.name),
-            }
-          : {}),
-      },
-    }),
-  })
+      before,
+      after,
+      moves: people.moves,
+      titles,
+      primaryChange,
+      primaryContactName,
+      unchanged:
+        Boolean(existing) &&
+        !changedFields.length &&
+        !primaryChange &&
+        !people.moves.length,
+    },
+  }
+}
 
-  await logContactClientLinkChanges(actor, accessChanges)
+/**
+ * Writes a planned company save inside the caller's transaction and returns
+ * the company id. A refused primary contact throws `CompanySaveRefusal`, so
+ * the whole transaction rolls back.
+ */
+export async function writeCompany(
+  tx: DbTransaction,
+  actor: AppUser,
+  plan: CompanyWritePlan
+): Promise<string> {
+  const timestamp = new Date().toISOString()
+  let companyId: string
+  if (plan.existing) {
+    companyId = plan.existing.id
+    if (plan.unchanged) return companyId
+    await tx
+      .update(companies)
+      .set({ ...plan.next, updatedAt: timestamp })
+      .where(eq(companies.id, companyId))
+  } else {
+    const [inserted] = await tx
+      .insert(companies)
+      .values({
+        ...plan.next,
+        createdBy: actor.id,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+      .returning({ id: companies.id })
+    companyId = inserted!.id
+  }
 
-  if (primaryChange) {
+  // Joining keeps the person's other companies. Leaving ends their
+  // membership here, and with it being this company's primary contact
+  // and portal access to its client.
+  for (const move of plan.moves) {
+    if (move.joins) {
+      await joinCompany(tx, move.contactId, companyId)
+    } else {
+      await leaveCompany(tx, move.contactId, companyId)
+    }
+  }
+  for (const entry of plan.titles) {
+    await setMembershipTitle(tx, entry.contactId, companyId, entry.title)
+  }
+
+  // After the people moves, so someone joining here can be made primary.
+  if (plan.primaryChange) {
+    const ok = await setCompanyPrimary(
+      tx,
+      companyId,
+      plan.primaryChange.contactId
+    )
+    if (!ok) {
+      throw new CompanySaveRefusal('That person is not at this company.')
+    }
+  }
+  return companyId
+}
+
+/** A company save's activity rows, written once its transaction committed. */
+export async function logCompanyWrite(
+  actor: AppUser,
+  plan: CompanyWritePlan,
+  companyId: string
+): Promise<void> {
+  if (plan.unchanged) return
+  const { next } = plan
+
+  if (!plan.existing) {
     await logActivity({
       actorId: actor.id,
       actorRole: actor.role,
       targetType: 'COMPANY',
-      targetId: existing.id,
+      targetId: companyId,
+      ...companyCreatedEvent({ name: next.name }),
+    })
+  } else if (plan.changedFields.length) {
+    await logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'COMPANY',
+      targetId: companyId,
+      ...companyUpdatedEvent({
+        name: next.name,
+        changedFields: plan.changedFields,
+        details: {
+          before: plan.before,
+          after: plan.after,
+          ...(plan.moves.length
+            ? {
+                peopleAdded: plan.moves
+                  .filter(move => move.joins)
+                  .map(move => move.name),
+                peopleRemoved: plan.moves
+                  .filter(move => !move.joins)
+                  .map(move => move.name),
+              }
+            : {}),
+        },
+      }),
+    })
+  }
+
+  if (plan.primaryChange) {
+    await logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'COMPANY',
+      targetId: companyId,
       ...companyPrimaryContactSetEvent({
         companyName: next.name,
-        contactName: primaryContactName,
+        contactName: plan.primaryContactName,
       }),
     })
   }
 
   // Each person's own trail shows the company they joined or left.
-  for (const move of people.moves) {
+  for (const move of plan.moves) {
     await logActivity({
       actorId: actor.id,
       actorRole: actor.role,
@@ -576,8 +665,55 @@ export async function saveCompany(
       }),
     })
   }
+}
 
-  return { ok: true, id: existing.id }
+/**
+ * The words for a company save that failed in its transaction, or null for
+ * an unexpected failure (log it and say "Unable to save the company.").
+ */
+export function companySaveErrorMessage(error: unknown): string | null {
+  if (error instanceof CompanySaveRefusal) return error.message
+  if (isUniqueViolation(error)) return saveConflictMessage(error)
+  return null
+}
+
+/**
+ * Saves the company's details and people on their own (one transaction).
+ * The company sheet saves through `saveCompanySheet`, which also writes
+ * billing and portal access in the same transaction.
+ */
+export async function saveCompany(
+  actor: AppUser,
+  input: SaveCompanyInput
+): Promise<CompanyActionResult> {
+  assertCrmAccess(actor)
+
+  const parsed = saveCompanySchema.safeParse(input)
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? 'Invalid company details.',
+    }
+  }
+
+  const planned = await planCompanyWrite(actor, parsed.data)
+  if (!planned.ok) return planned
+  const { plan } = planned
+  if (plan.existing && plan.unchanged) {
+    return { ok: true, id: plan.existing.id }
+  }
+
+  let companyId: string
+  try {
+    companyId = await db.transaction(tx => writeCompany(tx, actor, plan))
+  } catch (error) {
+    const message = companySaveErrorMessage(error)
+    if (!message) console.error('Failed to save company', error)
+    return { ok: false, error: message ?? 'Unable to save the company.' }
+  }
+
+  await logCompanyWrite(actor, plan, companyId)
+  return { ok: true, id: companyId }
 }
 
 /**
@@ -588,12 +724,7 @@ async function companyHasClient(companyId: string) {
   const [client] = await db
     .select({ id: companies.id })
     .from(companies)
-    .where(
-      and(
-        eq(companies.id, companyId),
-        billingOpenSql()
-      )
-    )
+    .where(and(eq(companies.id, companyId), billingOpenSql()))
     .limit(1)
   return Boolean(client)
 }
@@ -609,14 +740,15 @@ type PeopleMove = {
 /**
  * The staged People edits that actually change something: live contacts
  * not yet members (they join; their other companies are untouched) and
- * current members (they leave). Anything else is a stale stage, skipped.
+ * current members (they leave). Anything else is a stale stage, skipped. A
+ * company not created yet (`null`) has no members: everyone added joins.
  */
 async function resolvePeopleChanges(
-  companyId: string,
+  companyId: string | null,
   addIds: string[],
   removeIds: string[]
 ): Promise<{ moves: PeopleMove[] }> {
-  const removeSet = new Set(removeIds)
+  const removeSet = new Set(companyId ? removeIds : [])
   const adds = [...new Set(addIds)].filter(id => !removeSet.has(id))
   const ids = [...new Set([...adds, ...removeSet])]
   if (!ids.length) return { moves: [] }
@@ -626,7 +758,9 @@ async function resolvePeopleChanges(
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
-      isMember: isMemberSql(contacts.id, sql`${companyId}::uuid`),
+      isMember: companyId
+        ? isMemberSql(contacts.id, sql`${companyId}::uuid`)
+        : sql<boolean>`false`,
     })
     .from(contacts)
     .where(and(inArray(contacts.id, ids), isNull(contacts.deletedAt)))

@@ -1,112 +1,59 @@
 'use client'
 
-import { X } from 'lucide-react'
-
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { Switch } from '@pts/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
-import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
-type ClientContactOption = {
+/** A person on the company's People list, as the Portal switch needs them. */
+export type PortalAccessPerson = {
   id: string
-  name: string | null
+  name: string
   email: string | null
-  phone: string | null
-  /** Has a portal user (`contacts.user_id`). */
-  hasPortalAccess: boolean
-  /** Portal user's sign-in switched off on their person sheet: no access until it's back on. */
+  /** Has a sign-in; null when not known yet (someone joining on Save). */
+  hasSignIn: boolean | null
+  /** Their sign-in is switched off: no access until it's back on. */
   signInDisabled?: boolean
-  companyId?: string | null
-  /** The company's primary contact (read-only here). */
-  isPrimary?: boolean
-}
-
-
-
-/**
- * Older portal access for people who aren't at the company (from before
- * access lived on the company's people). Remove only: add people on People.
- */
-export function PortalAccessOutsiders({
-  people,
-  isPending,
-  pendingReason,
-  onRevoke,
-}: {
-  people: ClientContactOption[]
-  isPending: boolean
-  pendingReason: string
-  onRevoke: (contact: ClientContactOption) => void
-}) {
-  return (
-    <SheetRecordList>
-      {people.map(contact => {
-        const label = contact.name ?? contact.email ?? 'this person'
-        return (
-          <ContactRecordRow
-            key={contact.id}
-            contact={contact}
-            note={<span className='text-warning'>Not at this company</span>}
-            actions={
-              <DisabledFieldTooltip
-                disabled={isPending}
-                reason={isPending ? pendingReason : null}
-                className='w-auto'
-              >
-                <RowActionButton
-                  type='button'
-                  label={`Remove ${label}'s portal access`}
-                  icon={<X />}
-                  className='text-muted-foreground hover:text-destructive'
-                  disabled={isPending}
-                  onClick={() => onRevoke(contact)}
-                />
-              </DisabledFieldTooltip>
-            }
-          />
-        )
-      })}
-    </SheetRecordList>
-  )
 }
 
 /**
  * One person's portal access, for a row on the company's People list: a
- * switch, staged and saved with the sheet. It takes effect while they can
- * sign in (their sign-in is set on their own sheet).
+ * switch, staged and saved with the sheet. Turning it on for someone with no
+ * sign-in gives them one on Save (their email is the sign-in), so a person
+ * without an email can't be switched on.
  */
 export function PortalAccessControl({
-  contact,
+  person,
   hasAccess,
-  isPending,
-  pendingReason,
-  onGrant,
-  onRevoke,
+  disabled,
+  disabledReason,
+  onChange,
 }: {
-  contact: ClientContactOption
+  person: PortalAccessPerson
   hasAccess: boolean
-  isPending: boolean
-  pendingReason: string
-  onGrant: (contact: ClientContactOption) => void
-  onRevoke: (contact: ClientContactOption) => void
+  disabled: boolean
+  disabledReason: string | null
+  onChange: (on: boolean) => void
 }) {
-  const label = contact.name ?? contact.email ?? 'this person'
-  const status = !contact.hasPortalAccess
-    ? hasAccess
-      ? 'Has portal access once they can sign in'
-      : 'Can’t sign in yet'
-    : contact.signInDisabled
-      ? 'Their sign-in is off: no access until it’s back on'
-      : hasAccess
-        ? 'Can see this client in the portal'
-        : 'Can’t see this client in the portal'
+  const noEmail = !person.email?.trim() && person.hasSignIn !== true
+  const blocked = noEmail && !hasAccess
+  const status = blocked
+    ? `Add an email to ${person.name} first: it is how they sign in.`
+    : person.hasSignIn === false
+      ? hasAccess
+        ? 'Gets a sign-in on save and sees this client in the portal'
+        : 'Switch on to give them a sign-in on save'
+      : person.signInDisabled
+        ? 'Their sign-in is off: no access until it’s back on'
+        : hasAccess
+          ? person.hasSignIn === null
+            ? 'Sees this client in the portal after save'
+            : 'Can see this client in the portal'
+          : 'Can’t see this client in the portal'
 
   return (
     <DisabledFieldTooltip
-      disabled={isPending}
-      reason={isPending ? pendingReason : null}
+      disabled={disabled}
+      reason={disabled ? disabledReason : null}
       className='w-auto'
     >
       <Tooltip>
@@ -115,11 +62,9 @@ export function PortalAccessControl({
             <span className='text-muted-foreground text-xs'>Portal</span>
             <Switch
               checked={hasAccess}
-              disabled={isPending}
-              aria-label={`Portal access for ${label}`}
-              onCheckedChange={checked =>
-                checked ? onGrant(contact) : onRevoke(contact)
-              }
+              disabled={disabled || blocked}
+              aria-label={`Portal access for ${person.name}`}
+              onCheckedChange={onChange}
             />
           </span>
         </TooltipTrigger>

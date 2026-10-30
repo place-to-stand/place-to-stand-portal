@@ -13,68 +13,77 @@ import {
 import { useQuery } from '@tanstack/react-query'
 
 import { Skeleton } from '@pts/ui/skeleton'
-import { FormFeedback } from '@/components/sheets/form-feedback'
-import { SheetSection } from '@/components/sheets/sheet-section'
 import { Form } from '@/components/ui/form'
 import { ClientBillingFields } from '@/app/(dashboard)/companies/_components/billing/client-billing-fields'
-import {
-  PortalAccessOutsiders,
-  PortalAccessControl,
-} from '@/app/(dashboard)/companies/_components/billing/client-contact-picker'
-import { useToast } from '@/components/ui/use-toast'
-import {
-  restoreClient,
-  softDeleteClient,
-} from '@/app/(dashboard)/companies/billing-actions'
 import type { ClientRow } from '@/lib/companies/billing/client-sheet-utils'
 import {
-  useClientSheetState,
-  type UseClientSheetStateReturn,
+  useClientBillingForm,
+  type UseClientBillingFormReturn,
 } from '@/lib/companies/billing/use-client-sheet-state'
+import type {
+  BillingEffectiveValue,
+  CompanyBillingIntent,
+} from '@/lib/companies/sheet-save-schema'
 
-/** What the company sheet needs from its client's billing form. */
+/** What the company sheet's Save reads from its Billing tab. */
 export type CompanyBillingHandle = {
-  /** Billing, commission or portal access has unsaved edits. */
-  isDirty: () => boolean
-  /** Saves the billing edits; `onSaved` fires when done. */
-  submit: () => void
+  /**
+   * The billing change for this save, or null when the tab's fields are
+   * invalid (the error shows on the tab).
+   */
+  collect: () => CompanyBillingIntent | null
+  /** "Bill this company" is on: the People tab shows portal switches. */
+  billingOn: () => boolean
 }
 
-/** Never billed, billed now, or billed before (stopped). */
-type BillingMode = 'new' | 'live' | 'former'
+/**
+ * Never billed, billed now, billed with a stop scheduled (billed through the
+ * end of this month), or billed before (stopped).
+ */
+export type BillingMode = 'new' | 'live' | 'ending' | 'former'
 
 type BillingContextValue = {
   /** Loading or failure of a live client's billing record. */
-  status: 'none' | 'loading' | 'error' | 'ready'
+  status: 'loading' | 'error' | 'ready'
   mode: BillingMode
   /** "Bill this company": staged until Save. */
   billingOn: boolean
   setBillingOn: (on: boolean) => void
+  /** When the staged start, stop or restart takes effect. */
+  effective: BillingEffectiveValue
+  setEffective: (effective: BillingEffectiveValue) => void
+  /** The last month billed while a stop is scheduled. */
+  billingEndsOn: string | null
   client: ClientRow | null
-  state: UseClientSheetStateReturn | null
+  state: UseClientBillingFormReturn | null
+  isPending: boolean
 }
 
 const BillingContext = createContext<BillingContextValue>({
-  status: 'none',
+  status: 'loading',
   mode: 'new',
   billingOn: false,
   setBillingOn: () => {},
+  effective: 'current_month',
+  setEffective: () => {},
+  billingEndsOn: null,
   client: null,
   state: null,
+  isPending: false,
 })
 
 /** The company's billing state, for its Billing tab and People rows. */
 export const useCompanyBilling = () => useContext(BillingContext)
 
 type CompanyBillingProviderProps = {
-  companyId: string
-  /** The company's live client, if billed now. */
+  /** The company's live client (billed now), if any. */
   clientId: string | null
-  /** Its stopped client, if billed before and not now. */
-  formerClientId: string | null
+  /** It was billed before and isn't now (billing can restart). */
+  wasClient: boolean
+  /** The last month billed while a stop is scheduled. */
+  billingEndsOn: string | null
   open: boolean
-  /** Fires after a billing save. */
-  onSaved: () => void
+  isPending: boolean
   /** Keeps the company sheet's unsaved-changes guard in step. */
   onDirtyChange: (dirty: boolean) => void
   handleRef: Ref<CompanyBillingHandle>
@@ -94,12 +103,15 @@ async function fetchClientBilling(clientId: string): Promise<ClientRow> {
   return result.data.client
 }
 
+/** Starting and restarting default to this month; stopping, to next. */
+const defaultEffective = (stopping: boolean): BillingEffectiveValue =>
+  stopping ? 'next_month' : 'current_month'
+
 /**
  * A company's billing lives in its sheet: the Billing tab's "Bill this
- * company" switch and fields, and the People rows' portal switches. One
- * provider holds that state and the company's Save saves it: switching
- * billing on makes the company a client (or restarts it), switching it off
- * stops billing.
+ * company" switch, when that takes effect, and the billing fields. This
+ * provider holds that state; the sheet's Save collects it (`collect`) and
+ * writes it in the same transaction as the company.
  */
 export function CompanyBillingProvider(props: CompanyBillingProviderProps) {
   const { clientId } = props
@@ -116,11 +128,15 @@ export function CompanyBillingProvider(props: CompanyBillingProviderProps) {
       <BillingContext.Provider
         value={{
           status: isError ? 'error' : 'loading',
-          mode: 'live',
-          billingOn: true,
+          mode: props.billingEndsOn ? 'ending' : 'live',
+          billingOn: !props.billingEndsOn,
           setBillingOn: () => {},
+          effective: 'current_month',
+          setEffective: () => {},
+          billingEndsOn: props.billingEndsOn,
           client: null,
           state: null,
+          isPending: props.isPending,
         }}
       >
         {props.children}
@@ -129,7 +145,7 @@ export function CompanyBillingProvider(props: CompanyBillingProviderProps) {
   }
   return (
     <BillingStateProvider
-      key={client?.updated_at ?? props.formerClientId ?? 'new'}
+      key={client?.updated_at ?? (props.wasClient ? 'former' : 'new')}
       client={client ?? null}
       {...props}
     />
@@ -137,69 +153,83 @@ export function CompanyBillingProvider(props: CompanyBillingProviderProps) {
 }
 
 function BillingStateProvider({
-  companyId,
   client,
-  formerClientId,
+  wasClient,
+  billingEndsOn,
   open,
-  onSaved,
+  isPending,
   onDirtyChange,
   handleRef,
   children,
 }: CompanyBillingProviderProps & { client: ClientRow | null }) {
-  const { toast } = useToast()
-  const mode: BillingMode = client ? 'live' : formerClientId ? 'former' : 'new'
+  const mode: BillingMode = client
+    ? billingEndsOn
+      ? 'ending'
+      : 'live'
+    : wasClient
+      ? 'former'
+      : 'new'
   const initialOn = mode === 'live'
-  const [billingOn, setBillingOn] = useState(initialOn)
-  // A billing form for the live client, or a blank one to make it a client.
-  const state = useClientSheetState({
-    open,
-    onOpenChange: () => {},
-    onComplete: onSaved,
-    client,
-    initialCompanyId: client ? undefined : companyId,
-    quietSuccess: true,
-  })
+  const [billingOn, setBillingOnState] = useState(initialOn)
+  const [effective, setEffective] = useState<BillingEffectiveValue>(
+    defaultEffective(false)
+  )
+  // A billing form for the live client, or a blank one to start billing.
+  const state = useClientBillingForm({ open, client, isPending })
+  const fieldsShown = billingOn && mode !== 'former'
+
+  const setBillingOn = useCallback(
+    (on: boolean) => {
+      setBillingOnState(on)
+      // Switching off a live client stops it; anything else starts.
+      setEffective(defaultEffective(mode === 'live' && !on))
+    },
+    [mode]
+  )
 
   const dirty =
-    billingOn !== initialOn ||
-    (billingOn && mode !== 'former' && state.hasUnsavedChanges)
+    billingOn !== initialOn || (fieldsShown && state.hasUnsavedChanges)
   useEffect(() => {
     onDirtyChange(dirty)
   }, [dirty, onDirtyChange])
 
-  const run = useCallback(
-    async (action: () => Promise<{ error?: string | null }>) => {
-      const result = await action()
-      if (result.error) {
-        toast({
-          title: 'Billing not saved',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-      onSaved()
-    },
-    [onSaved, toast]
-  )
-
   useImperativeHandle(
     handleRef,
     () => ({
-      isDirty: () => dirty,
-      submit: () => {
-        if (mode === 'live' && !billingOn && client) {
-          void run(() => softDeleteClient({ id: client.id }))
-        } else if (mode === 'former' && billingOn && formerClientId) {
-          void run(() => restoreClient({ id: formerClientId }))
-        } else if (billingOn && mode !== 'former') {
-          void state.form.handleSubmit(state.handleFormSubmit)()
-        } else {
-          onSaved()
+      billingOn: () => billingOn,
+      collect: () => {
+        const fields = () =>
+          fieldsShown && state.hasUnsavedChanges ? state.collectFields() : null
+        switch (mode) {
+          case 'new': {
+            if (!billingOn) return { kind: 'none' }
+            const start = state.collectFields()
+            return start ? { kind: 'start', effective, fields: start } : null
+          }
+          case 'live': {
+            if (!billingOn) return { kind: 'stop', effective }
+            if (!state.hasUnsavedChanges) return { kind: 'none' }
+            const update = state.collectFields()
+            return update ? { kind: 'update', fields: update } : null
+          }
+          case 'ending': {
+            if (!billingOn) return { kind: 'none' }
+            const changed = state.hasUnsavedChanges
+            const update = fields()
+            if (changed && !update) return null
+            // Restarting cancels the scheduled stop, whatever the month.
+            return {
+              kind: 'restart',
+              effective: 'current_month',
+              ...(update ? { fields: update } : {}),
+            }
+          }
+          case 'former':
+            return billingOn ? { kind: 'restart', effective } : { kind: 'none' }
         }
       },
     }),
-    [billingOn, client, dirty, formerClientId, mode, onSaved, run, state]
+    [billingOn, effective, fieldsShown, mode, state]
   )
 
   return (
@@ -209,8 +239,12 @@ function BillingStateProvider({
         mode,
         billingOn,
         setBillingOn,
+        effective,
+        setEffective,
+        billingEndsOn,
         client,
         state,
+        isPending,
       }}
     >
       {children}
@@ -239,22 +273,13 @@ export function CompanyBillingFields() {
   }
 
   const { client, state, mode } = billing
-  const companyIds = new Set(
-    [...state.selectedContacts, ...state.availableContacts]
-      .filter(contact => contact.companyId === client?.company_id)
-      .map(contact => contact.id)
-  )
-  // Older access for people not at the company (a live client only).
-  const outsiders = client
-    ? state.selectedContacts.filter(contact => !companyIds.has(contact.id))
-    : []
 
   return (
     <Form {...state.form}>
       <ClientBillingFields
         form={state.form}
         isPending={state.isPending}
-        isEditing={mode === 'live'}
+        isEditing={mode === 'live' || mode === 'ending'}
         initialBillingType={client?.billing_type ?? null}
         pendingReason={state.pendingReason}
         onCreateOriginationContact={state.handleCreateOriginationContact}
@@ -284,53 +309,6 @@ export function CompanyBillingFields() {
         onRemoveCloser={state.handleRemoveCloser}
         onCloserShareChange={state.handleCloserShareChange}
       />
-      {outsiders.length > 0 ? (
-        <SheetSection
-          title='Access outside this company'
-          description='Older access for people who aren’t at this company. Remove it, or add them on People.'
-        >
-          <PortalAccessOutsiders
-            people={outsiders}
-            isPending={state.contactsAddButtonDisabled}
-            pendingReason={
-              state.contactsAddButtonDisabledReason ?? state.pendingReason
-            }
-            onRevoke={state.handleRemoveContact}
-          />
-        </SheetSection>
-      ) : null}
-      <FormFeedback>{state.feedback}</FormFeedback>
     </Form>
   )
-}
-
-/** The portal access switch for one person on the People tab, if billed. */
-export function useCompanyPortalAccess() {
-  const billing = useCompanyBilling()
-  if (billing.status !== 'ready' || billing.mode !== 'live' || !billing.state)
-    return null
-  const { state } = billing
-  const selected = new Set(state.selectedContacts.map(contact => contact.id))
-  const options = new Map(
-    [...state.selectedContacts, ...state.availableContacts].map(contact => [
-      contact.id,
-      contact,
-    ])
-  )
-  return function portalAccessFor(contactId: string) {
-    const contact = options.get(contactId)
-    if (!contact) return null
-    return (
-      <PortalAccessControl
-        contact={contact}
-        hasAccess={selected.has(contactId)}
-        isPending={state.contactsAddButtonDisabled}
-        pendingReason={
-          state.contactsAddButtonDisabledReason ?? state.pendingReason
-        }
-        onGrant={state.handleAddContact}
-        onRevoke={state.handleRemoveContact}
-      />
-    )
-  }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
@@ -11,7 +11,6 @@ import {
   type ContactLink,
 } from '@/components/contacts/contact-link-picker'
 import type { CompanyDetail } from '@/lib/companies/types'
-import { subscribeSheetCreated } from '@/lib/sheets/created'
 
 export const companyFormSchema = z.object({
   name: z.string().trim().min(1, 'Company name is required').max(160),
@@ -28,6 +27,11 @@ export const companyFormSchema = z.object({
   removedContactIds: z.array(z.string()),
   /** Each contact's title here, by contact id; saved with the sheet. */
   titles: z.record(z.string(), z.string().max(160)),
+  /**
+   * Who can see the company in the client portal (its people, joining ones
+   * included); saved with the sheet. Admins only.
+   */
+  portalAccessIds: z.array(z.string()),
 })
 
 export type CompanyFormValues = z.infer<typeof companyFormSchema>
@@ -131,9 +135,18 @@ export function useCompanySheetForm({
           { shouldDirty: true }
         )
       }
-      // Leaving the company gives up being its primary contact.
+      // Leaving the company gives up being its primary contact and its
+      // portal access.
       if (form.getValues('primaryContactId') === contactId) {
         form.setValue('primaryContactId', null, { shouldDirty: true })
+      }
+      const access = form.getValues('portalAccessIds')
+      if (access.includes(contactId)) {
+        form.setValue(
+          'portalAccessIds',
+          access.filter(id => id !== contactId),
+          { shouldDirty: true }
+        )
       }
     },
     [form]
@@ -159,17 +172,27 @@ export function useCompanySheetForm({
     [companyId, contactOptions]
   )
 
-  // Billing switched on saves this company as a client: refresh so Billing shows.
-  useEffect(
-    () =>
-      subscribeSheetCreated('client', () => {
-        void queryClient.invalidateQueries({
-          queryKey: companySheetQueryKey(companyId),
-        })
-      }),
-    [companyId, queryClient]
+  const portalAccessIds = useWatch({
+    control: form.control,
+    name: 'portalAccessIds',
+  })
+  const handlePortalAccessChange = useCallback(
+    (contactId: string, on: boolean) => {
+      const access = form.getValues('portalAccessIds')
+      form.setValue(
+        'portalAccessIds',
+        on
+          ? [...new Set([...access, contactId])]
+          : access.filter(id => id !== contactId),
+        { shouldDirty: true }
+      )
+    },
+    [form]
   )
+
   return {
+    portalAccessIds,
+    handlePortalAccessChange,
     titles,
     primaryContactId,
     addedContacts,

@@ -2,7 +2,11 @@ import { billingOpenSql, wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import { and, eq, sql } from 'drizzle-orm'
 
-import { BillingPeriodError, stopBilling } from '@/lib/companies/billing/periods'
+import {
+  BillingPeriodError,
+  stopBilling,
+  type BillingEffective,
+} from '@/lib/companies/billing/periods'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientArchivedEvent } from '@/lib/activity/events'
@@ -25,6 +29,22 @@ import {
   type ClientMutationContext,
   type ClientMutationResult,
 } from './types'
+
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/**
+ * Stops a client's billing inside the caller's transaction (this month or
+ * after it) and switches off its people's portal access, so a restart
+ * doesn't silently bring it back. Returns the access trail to log once the
+ * transaction committed.
+ */
+export async function stopClientBillingInTx(
+  tx: DbTransaction,
+  input: { companyId: string; effective: BillingEffective }
+): Promise<ContactClientLinkChange[]> {
+  await stopBilling(tx, input)
+  return revokeCompanyPortalAccess(tx, input.companyId, input.companyId)
+}
 
 export async function softDeleteClientMutation(
   context: ClientMutationContext,
@@ -92,21 +112,12 @@ export async function softDeleteClientMutation(
       const archived = existingClient
       let accessChanges: ContactClientLinkChange[] = []
       try {
-        await db.transaction(async tx => {
-          await stopBilling(tx, {
-            companyId: parsed.data.id,
+        accessChanges = await db.transaction(tx =>
+          stopClientBillingInTx(tx, {
+            companyId: archived.companyId ?? archived.id,
             effective: parsed.data.effective ?? 'current_month',
           })
-          // An archived client grants nobody access; switch it off so a
-          // restore (or another client at the company) doesn't bring it back.
-          if (archived.companyId) {
-            accessChanges = await revokeCompanyPortalAccess(
-              tx,
-              archived.companyId,
-              archived.id
-            )
-          }
-        })
+        )
       } catch (error) {
         if (!(error instanceof BillingPeriodError)) {
           console.error('Failed to archive client', error)

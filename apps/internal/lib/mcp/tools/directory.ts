@@ -3,6 +3,7 @@ import 'server-only'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
+import { roleCan } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import { listUsersForCli } from '@/lib/cli/queries/users'
 import { serializeClient } from '@/lib/cli/serializers/client'
@@ -163,7 +164,9 @@ export function registerDirectoryTools(server: McpServer) {
       )
       return {
         items: result.items.map(contact => ({
-          ...serializeContact(contact, memberships.get(contact.id)),
+          ...serializeContact(contact, memberships.get(contact.id), {
+            viewerRole: user.role,
+          }),
           clients: contact.metrics.clients,
         })),
         hasMore: result.totalCount > result.items.length,
@@ -176,7 +179,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_contact',
     title: 'Get contact',
     description:
-      'One contact, the companies they belong to (title, primary, portal access) and the clients they can see in the portal.',
+      'One contact, the companies they belong to (title, primary, portal access) and the clients they can see in the portal. Portal access and portal clients are shown only to users who manage clients.',
     effect: 'read',
     input: { contactId: z.string().uuid().describe('Contact UUID.') },
     run: async ({ contactId }, { user }) => {
@@ -186,10 +189,15 @@ export function registerDirectoryTools(server: McpServer) {
         listContactMemberships([contactId]),
       ])
 
+      // Portal access is a client record: hidden from anyone who can't
+      // manage clients.
+      const seesPortal = roleCan(user.role, 'clients.manage')
       return {
         contact,
-        companies: serializeContactCompanies(memberships.get(contactId) ?? []),
-        clients,
+        companies: serializeContactCompanies(memberships.get(contactId) ?? [], {
+          viewerRole: user.role,
+        }),
+        ...(seesPortal ? { clients } : {}),
       }
     },
   })

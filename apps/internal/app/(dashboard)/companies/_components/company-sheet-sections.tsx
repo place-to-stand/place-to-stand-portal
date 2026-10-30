@@ -23,6 +23,12 @@ import {
 import { Label } from '@pts/ui/label'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { Switch } from '@pts/ui/switch'
+import { formatCalendarDate } from '@pts/ui/dates'
+import { PENDING_REASON } from '@/lib/forms/form-controls'
+import {
+  BillingEffectiveChoice,
+  monthLabel,
+} from './billing/billing-effective-choice'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 
@@ -53,8 +59,9 @@ export function CompanyLeadsSection({
 
 /**
  * The Billing tab (admins). "Bill this company" makes it a client when
- * switched on and saved, and stops billing when switched off; the billing
- * fields sit right under it.
+ * switched on and saved, and stops billing when switched off; when that
+ * takes effect and the billing fields sit right under it. Everything saves
+ * with the sheet's Save.
  */
 export function CompanyBillingTab({
   clientId,
@@ -70,7 +77,14 @@ export function CompanyBillingTab({
     enabled: Boolean(clientId),
     staleTime: 0,
   })
-  const { mode, billingOn } = billing
+  const { mode, billingOn, effective, setEffective } = billing
+  const endsLabel = billing.billingEndsOn
+    ? formatCalendarDate(billing.billingEndsOn, {
+        month: 'long',
+        year: 'numeric',
+      })
+    : null
+  const stopping = mode === 'live' && !billingOn
   const line =
     mode === 'new'
       ? billingOn
@@ -80,21 +94,52 @@ export function CompanyBillingTab({
         ? billingOn
           ? 'Saving restarts billing with its previous setup.'
           : 'Billing stopped. Switch on and save to restart it.'
-        : billingOn
-          ? null
-          : 'Saving stops billing: its people lose portal access. Its projects, invoices and history stay.'
+        : mode === 'ending'
+          ? billingOn
+            ? 'Saving keeps billing this company.'
+            : `Billing stops after ${endsLabel}. Switch on and save to keep billing.`
+          : billingOn
+            ? null
+            : 'Saving stops billing: its people lose portal access. Its projects, invoices and history stay.'
+  const isClient = mode === 'live' || mode === 'ending'
+  const choice = stopping
+    ? {
+        title: 'Billing stops',
+        options: [
+          {
+            value: 'next_month' as const,
+            label: 'Bill through the end of this month',
+          },
+          {
+            value: 'current_month' as const,
+            label: 'Stop now (not billed this month)',
+          },
+        ],
+      }
+    : billingOn && (mode === 'new' || mode === 'former')
+      ? {
+          title: mode === 'new' ? 'Billing starts' : 'Billing restarts',
+          options: [
+            {
+              value: 'current_month' as const,
+              label: `This month (${monthLabel(0)})`,
+            },
+            {
+              value: 'next_month' as const,
+              label: `Next month (${monthLabel(1)})`,
+            },
+          ],
+        }
+      : null
 
   return (
     <>
-      <SheetSection
-        title='Client'
-        action={mode === 'live' && billingOn ? <ClientBadge /> : null}
-      >
+      <SheetSection title='Client' action={isClient ? <ClientBadge /> : null}>
         <div className='flex items-center gap-2'>
           <Switch
             id='company-bill-switch'
             checked={billingOn}
-            disabled={disabled}
+            disabled={disabled || billing.status !== 'ready'}
             onCheckedChange={billing.setBillingOn}
           />
           <Label htmlFor='company-bill-switch'>Bill this company</Label>
@@ -103,16 +148,25 @@ export function CompanyBillingTab({
           <p
             className={cn(
               'text-sm',
-              mode === 'live' && !billingOn
-                ? 'text-destructive'
-                : 'text-muted-foreground'
+              stopping ? 'text-destructive' : 'text-muted-foreground'
             )}
           >
             {line}
           </p>
         ) : null}
+        {choice ? (
+          <BillingEffectiveChoice
+            id='company-billing-effective'
+            title={choice.title}
+            value={effective}
+            onChange={setEffective}
+            options={choice.options}
+            disabled={disabled}
+            disabledReason={disabled ? PENDING_REASON : null}
+          />
+        ) : null}
       </SheetSection>
-      {mode === 'live' && billingOn && work?.hours ? (
+      {isClient && billingOn && work?.hours ? (
         <SheetSection title='Hours'>
           <dl className='grid grid-cols-3 gap-4 text-sm'>
             {(
@@ -146,7 +200,14 @@ const formatHours = (value: number) =>
   `${Number.isInteger(value) ? value : value.toFixed(1)}h`
 
 /** The Projects tab: the client's projects and its latest updates. */
-export function CompanyProjectsTab({ clientId }: { clientId: string | null }) {
+export function CompanyProjectsTab({
+  clientId,
+  isCreating = false,
+}: {
+  clientId: string | null
+  /** The create sheet: the company has nothing yet. */
+  isCreating?: boolean
+}) {
   const { data: work, isLoading } = useQuery({
     queryKey: ['companyClientWork', clientId],
     queryFn: () => loadCompanyClientWork(clientId!),
@@ -154,6 +215,13 @@ export function CompanyProjectsTab({ clientId }: { clientId: string | null }) {
     staleTime: 0,
   })
 
+  if (isCreating) {
+    return (
+      <SheetSection title='Projects'>
+        <EmptyState message='No projects yet.' />
+      </SheetSection>
+    )
+  }
   if (!clientId) {
     return (
       <SheetSection title='Projects'>
