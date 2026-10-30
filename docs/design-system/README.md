@@ -163,18 +163,47 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 
 ## House rules (verified in code)
 
-1. **Every primitive is `@base-ui/react`.** Radix is gone. `asChild` still works through a `useRender`-based `Slot` (`packages/ui/src/slot.tsx`). State attributes are Base UI's: `data-active` on tabs, `data-checked` / `data-unchecked` on switch and checkbox, `data-highlighted` / `data-open` / `data-closed` on popups. Don't write `data-[state=…]`.
-2. **Base UI menu and select items need explicit `hover:` classes.** `data-highlighted` doesn't fire on plain mouse hover. Every item pairs `data-highlighted:bg-accent` with `hover:bg-accent hover:text-accent-foreground`.
-3. **Button has `gap-2` built into every size.** Never add `mr-*` or `ml-*` to an icon inside a Button. Put the icon first as a child and let the gap space it ("Create lead").
-4. **Dropdown, select and popover popups align left by default.** The wrappers default to `align='start'`. Never pass `align='start'` at a call site. Pass an explicit `align` only when you mean to deviate.
-5. **Sortable tables use `layout='fixed'`.** Give every header a width class and `truncate` long-text cells, so sorting and paging can't make columns jump.
-6. **Sheet and dialog Save is always enabled.** Never gate Save on `isDirty` or has-changes. (An inline editor outside a sheet, like the client notes card, may disable Save until something changed.) Disable it only while a save is in flight or when a real validation precondition fails.
-7. **Save means done, which closes the sheet.** A successful save closes the sheet, for create and edit alike. A create sheet never turns into an edit sheet.
-8. **One Save, one transaction; only Save writes.** Every control inside a sheet changes the form, and Save writes the record and everything that goes with it (people, billing, sign-in, links, assignees) in one database transaction; closing with unsaved changes asks "Discard changes?". Instant actions are records of their own or act outside the app (comments, lead updates, logging time, invoice send/void, acknowledging a submission, planning, password reset): they save on their own click. Sending an invoice is blocked while it has unsaved edits. Create and edit show the same sheet. Details: `components/sheet.md`.
-9. **Minimal helper copy.** See Content fundamentals.
-10. **Dates go through `@pts/ui/dates`.** `formatCalendarDate` for dates, timestamps and month labels (`{ month: 'long', year: 'numeric' }`); `formatRelativeTime` for "3 days ago". Never `toLocaleDateString`, a bare `Intl.DateTimeFormat`, or date-fns `format()` in the UI.
-11. **Icon-only row actions use `RowActionButton`** (`@pts/ui/row-action-button`): a real tooltip plus a matching accessible name. Never `title=` as a tooltip.
-12. **Pick a size, don't override it.** Buttons take `size` (`xs` 28px, `sm` 32px, default 36px, `icon-sm`), Avatars take `size` (`xs`–`xl`, initials scale with it; `xl` 64px is the photo upload field). No `h-*` or `text-[9px]` overrides.
-13. **Focus is `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`** on every custom interactive element. Never remove the outline without that replacement.
-14. **Toasts:** success is short and past tense ("Invoice sent", "Company saved"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks. **Every sheet and dialog reports its save result, success or failure, as a toast**, never an inline error box; only a field's own error stays under the field (`FormMessage`).
-15. **A responsive grid declares its phone column.** Write `grid grid-cols-1 lg:grid-cols-2`, never a bare `grid lg:grid-cols-2`: the implicit column grows to its widest child (an editor toolbar, a row of amounts) and pushes the whole page sideways on a phone.
+1. **Every primitive is `@base-ui/react`.** Radix is gone. `asChild` still works through a `useRender`-based `Slot` (`packages/ui/src/slot.tsx`). State attributes are Base UI's: `data-active` on tabs, `data-checked` / `data-unchecked` on switch and checkbox, `data-highlighted` / `data-open` / `data-closed` on popups. Don't write `data-[state=…]`. (guard: eslint `pts/no-radix`)
+2. **Base UI menu and select items need explicit `hover:` classes.** `data-highlighted` doesn't fire on plain mouse hover. Every item pairs `data-highlighted:bg-accent` with `hover:bg-accent hover:text-accent-foreground`. (guard: review)
+3. **Button has `gap-2` built into every size.** Never add `mr-*` or `ml-*` to an icon inside a Button. Put the icon first as a child and let the gap space it ("Create lead"). (guard: review)
+4. **Dropdown, select and popover popups align left by default.** The wrappers default to `align='start'`. Never pass `align='start'` at a call site. Pass an explicit `align` only when you mean to deviate. (guard: eslint `pts/no-align-start`)
+5. **Sortable tables use `layout='fixed'`.** Give every header a width class and `truncate` long-text cells, so sorting and paging can't make columns jump. (guard: review)
+6. **Sheet and dialog Save is always enabled.** Never gate Save on `isDirty` or has-changes. (An inline editor outside a sheet, like the client notes card, may disable Save until something changed.) Disable it only while a save is in flight or when a real validation precondition fails. (guard: eslint `pts/save-not-gated-on-dirty`)
+7. **Save means done, which closes the sheet.** A successful save closes the sheet, for create and edit alike. A create sheet never turns into an edit sheet. (guard: review)
+8. **One Save, one transaction; only Save writes.** Every control inside a sheet changes the form, and Save writes the record and everything that goes with it (people, billing, sign-in, links, assignees) in one database transaction; closing with unsaved changes asks "Discard changes?". Instant actions are records of their own or act outside the app (comments, lead updates, logging time, invoice send/void, acknowledging a submission, planning, password reset): they save on their own click. Sending an invoice is blocked while it has unsaved edits. Create and edit show the same sheet. Details: `components/sheet.md`. (guard: review)
+9. **Minimal helper copy.** See Content fundamentals. (guard: review)
+10. **Dates go through `@pts/ui/dates`.** `formatCalendarDate` for dates, timestamps and month labels (`{ month: 'long', year: 'numeric' }`); `formatRelativeTime` for "3 days ago". Never `toLocaleDateString`, a bare `Intl.DateTimeFormat`, or date-fns `format()` in the UI. (guard: eslint `pts/dates-through-ui`)
+11. **Icon-only row actions use `RowActionButton`** (`@pts/ui/row-action-button`): a real tooltip plus a matching accessible name. Never `title=` as a tooltip. (guard: eslint `pts/no-title-tooltip`)
+12. **Pick a size, don't override it.** Buttons take `size` (`xs` 28px, `sm` 32px, default 36px, `icon-sm`), Avatars take `size` (`xs`–`xl`, initials scale with it; `xl` 64px is the photo upload field). No `h-*` or `text-[9px]` overrides. (guard: eslint `pts/no-size-override`)
+13. **Focus is `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`** on every custom interactive element. Never remove the outline without that replacement. (guard: review)
+14. **Toasts:** success is short and past tense ("Invoice sent", "Company saved"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks. **Every sheet and dialog reports its save result, success or failure, as a toast**, never an inline error box; only a field's own error stays under the field (`FormMessage`). (guard: eslint `pts/toast-copy`; review)
+15. **A responsive grid declares its phone column.** Write `grid grid-cols-1 lg:grid-cols-2`, never a bare `grid lg:grid-cols-2`: the implicit column grows to its widest child (an editor toolbar, a row of amounts) and pushes the whole page sideways on a phone. (guard: eslint `pts/grid-phone-column`)
+
+Every rule here and in `components/*.md` ends with the check that guards it: `(guard: eslint `rule-id`)`, `(guard: scripts/<check>.mjs)`, or `(guard: review)` when it can't be automated. `scripts/check-rule-guards.mjs` (in `npm run lint`) fails on a rule without one, an unknown `pts/*` rule or a missing script, so a new preference can't land as words alone: add the rule and its guard together, and prefer a lint rule to `review`.
+
+## Which check guards which rule
+
+All of these run in `npm run lint` (and so in CI). The `pts/*` rules live in `packages/eslint-config/rules/` with RuleTester tests; each message quotes the rule it enforces.
+
+| Check | Guards |
+| --- | --- |
+| eslint `pts/no-radix` | House rule 1: Base UI only, no Radix import, no `data-[state=…]` |
+| eslint `pts/no-align-start` | House rule 4: no `align='start'` on a popup at a call site |
+| eslint `pts/save-not-gated-on-dirty` | House rule 6: Save never disabled on `isDirty` / has-changes |
+| eslint `pts/dates-through-ui` | House rule 10: no `toLocaleDateString`, bare `Intl.DateTimeFormat` or date-fns `format()` outside `@pts/ui/dates` (apps and packages) |
+| eslint `pts/no-title-tooltip` | House rule 11: no `title=` tooltip on a button |
+| eslint `pts/no-size-override` | House rule 12: no `h-*` / `text-[…]` on `Button` or `Avatar` |
+| eslint `pts/toast-copy` | House rule 14: no "Failed to", "successfully", "!" or an "Error" title in a toast |
+| eslint `pts/grid-phone-column` | House rule 15: a responsive grid writes `grid-cols-1` |
+| eslint `pts/ellipsis-character` | Copy: placeholders end with "…", not "..." |
+| eslint `pts/filter-select` | Layout: every list filter is `FilterSelect`, never a plain `Select` in a filter bar |
+| eslint `no-restricted-imports`, `no-restricted-syntax` | Entities: icons and `*-entity-*` colours only from the registry |
+| eslint `pts/drizzle-qualified-subquery` | Money: an outer column in a correlated `sql` subquery is written table-qualified |
+| eslint `pts/client-boundary`, `pts/query-layer-purity` | Layering: no server code in a `'use client'` file; no logging or permission checks in `lib/queries` (allowlist: follow-up D12) |
+| `scripts/check-badges.mjs` | `components/badge.md`: a badge's size, weight and case come from the component |
+| `scripts/check-formatters.mjs` | Content fundamentals: hours and money only through `@pts/ui/numbers` |
+| `scripts/check-entities.mjs` | Entities: every entity has an icon and a colour, icons unique, 3:1 contrast, status colours apart |
+| `scripts/check-copy.mjs` | Content fundamentals: person not "contact", companies (not clients, users or accounts) in the client portal, no "Partners", no "Delete forever" |
+| `scripts/design-tokens.mjs --check` | `tokens.json` matches the theme sources |
+| `scripts/permissions-manifest.mjs --check` | The permissions manifest is current, and every server action names its guard |
+| `scripts/check-rule-guards.mjs` | Every rule in this folder names one of the checks above, or review |
