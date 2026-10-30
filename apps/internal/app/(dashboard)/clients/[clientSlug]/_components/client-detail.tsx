@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import {
   Building2,
   Calendar,
@@ -18,12 +16,8 @@ import { formatCalendarDate } from '@pts/ui/dates'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Progress } from '@pts/ui/progress'
-import { useToast } from '@/components/ui/use-toast'
-import { softDeleteClient } from '@/app/(dashboard)/clients/actions'
 import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
 import type {
   ClientDetail as ClientDetailType,
@@ -31,20 +25,13 @@ import type {
 } from '@/lib/data/clients'
 import type { ContactWithClientLink } from '@/lib/types/client-contacts'
 import { getBillingTypeLabel } from '@/lib/settings/clients/billing-types'
-import {
-  ARCHIVE_CLIENT_CONFIRM_LABEL,
-  ARCHIVE_CLIENT_DIALOG_TITLE,
-  PENDING_REASON,
-  getArchiveClientDialogDescription,
-} from '@/lib/settings/clients/client-sheet-constants'
 import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
 import { closerKey, type ClientCloser } from '@/lib/settings/clients/closers'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 import { cn } from '@/lib/utils'
 
-import { ClientSheet } from '../../_components/clients-sheet'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ClientCompanySection } from './client-company-section'
 import { ClientContactsSection } from './client-contacts-section'
 import { ClientNotesSection } from './client-notes-section'
@@ -406,91 +393,22 @@ type ClientOverviewActionsProps = {
   contacts: ContactWithClientLink[]
 }
 
-function ClientOverviewActions({
-  client,
-  clientRow,
-  contacts,
-}: ClientOverviewActionsProps) {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [isPending, startTransition] = useTransition()
-
-  const handleSheetComplete = () => {
-    setSheetOpen(false)
-    router.refresh()
-  }
-
-  const handleSheetArchived = () => {
-    router.push('/clients')
-    router.refresh()
-  }
-
-  const handleConfirmArchive = () => {
-    startTransition(async () => {
-      const result = await softDeleteClient({ id: clientRow.id })
-
-      if (result.error) {
-        toast({
-          title: 'Unable to archive client',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Client archived',
-        description: `${client.name} is hidden from selectors but history remains accessible.`,
-      })
-      setConfirmOpen(false)
-      router.push('/clients')
-      router.refresh()
-    })
-  }
-
-  const disabledReason = isPending ? PENDING_REASON : null
+function ClientOverviewActions({ clientRow }: ClientOverviewActionsProps) {
+  // A client is its company's billing record: billing, commission, portal
+  // access and people are all edited on the company sheet.
+  const { open } = useSheetParams()
+  const companyId = clientRow.company_id
 
   return (
-    <>
-      <DisabledFieldTooltip disabled={isPending} reason={disabledReason}>
-        <Button
-          type='button'
-          variant='outline'
-          size='sm'
-          onClick={() => setSheetOpen(true)}
-          disabled={isPending}
-        >
-          <Pencil />
-          Edit client
-        </Button>
-      </DisabledFieldTooltip>
-      <ClientSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        onComplete={handleSheetComplete}
-        onArchived={handleSheetArchived}
-        client={clientRow}
-        clientContacts={contacts.map(c => ({
-          id: c.id,
-          name: c.name,
-          email: c.email,
-          phone: c.phone,
-          hasPortalAccess: Boolean(c.userId),
-          isPrimary: c.isPrimary,
-        }))}
-      />
-      <ConfirmDialog
-        open={confirmOpen}
-        title={ARCHIVE_CLIENT_DIALOG_TITLE}
-        description={getArchiveClientDialogDescription(client.name)}
-        confirmLabel={ARCHIVE_CLIENT_CONFIRM_LABEL}
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={handleConfirmArchive}
-      />
-    </>
+    <Button
+      type='button'
+      variant='outline'
+      size='sm'
+      disabled={!companyId}
+      onClick={() => (companyId ? open('company', companyId) : undefined)}
+    >
+      <Pencil />
+      Edit company
+    </Button>
   )
 }

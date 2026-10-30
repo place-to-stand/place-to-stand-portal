@@ -5,7 +5,6 @@ import {
   Clock,
   Clock3,
   FolderKanban,
-  Building2,
   Users,
   Home as HomeIcon,
   ListTodo,
@@ -104,12 +103,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Work',
     items: [
-      {
-        href: '/clients',
-        capability: 'clients.manage',
-        label: 'Clients',
-        icon: Building2,
-      },
       {
         href: '/projects',
         capability: 'projects.view_member',

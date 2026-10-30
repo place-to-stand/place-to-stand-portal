@@ -107,7 +107,7 @@ export default async function ClientDetailPage({
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/clients'), { label: client.name }]}
+      breadcrumbs={[...crumbsForNav('/companies'), { label: client.name }]}
       contentClassName='space-y-6'
     >
       <ClientRecordCycle

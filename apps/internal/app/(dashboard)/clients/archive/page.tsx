@@ -57,7 +57,7 @@ export default async function ClientsArchivePage({
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/clients'), { label: 'Archive' }]}
+      breadcrumbs={[...crumbsForNav('/companies'), { label: 'Archive' }]}
       tabs={CLIENTS_TABS}
       activeTab='archive'
       count={{

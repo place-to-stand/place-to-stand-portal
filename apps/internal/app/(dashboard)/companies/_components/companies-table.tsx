@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Briefcase,
-  Building2,
   Contact,
   ExternalLink,
   Handshake,
@@ -13,7 +11,6 @@ import {
 } from 'lucide-react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { EmptyState } from '@pts/ui/empty-state'
 import {
   Table,
@@ -30,7 +27,7 @@ import {
 import { EmptyValue } from '@/components/table/empty-value'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
-import { clientSheetHref, contactSheetHref, leadHref } from '@/lib/sheets/hrefs'
+import { contactSheetHref, leadHref } from '@/lib/sheets/hrefs'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { useToast } from '@/components/ui/use-toast'
@@ -45,6 +42,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 
 export function CompaniesTable({
@@ -128,7 +126,7 @@ export function CompaniesTable({
           <TableRow className='bg-muted/40'>
             {sortHead('name', 'Company', 'w-[36%]')}
             <TableHead className='w-[24%]'>Website</TableHead>
-            <TableHead className='w-[12%] text-center'>Linked client</TableHead>
+            <TableHead className='w-[12%] text-center'>Client</TableHead>
             {sortHead('people', 'Contacts', 'w-[12%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[12%]', 'center')}
             <TableHead className='w-16 text-right'>Actions</TableHead>
@@ -174,33 +172,9 @@ export function CompaniesTable({
                     <EmptyValue />
                   )}
                 </TableCell>
-                <TableCell
-                  label='Linked client'
-                  className='text-sm md:text-center'
+                <TableCell label='Client' className='text-sm md:text-center'
                 >
-                  {company.clientId && company.clientName ? (
-                    // One client at most, so a link with its name in a
-                    // tooltip (the row ignores clicks on links).
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Link
-                          href={clientSheetHref(company.clientId)}
-                          aria-label={`Open client ${company.clientName}`}
-                          className='text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 inline-flex rounded-sm transition outline-none focus-visible:ring-[3px]'
-                        >
-                          <Building2
-                            className={cn(
-                              ENTITY_ACCENTS.client.icon,
-                              'h-4 w-4'
-                            )}
-                          />
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent>{company.clientName}</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <EmptyValue />
-                  )}
+                  {company.clientId ? <ClientBadge /> : <EmptyValue />}
                 </TableCell>
                 <TableCell
                   label='Contacts'

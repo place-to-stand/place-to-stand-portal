@@ -70,10 +70,11 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
       (pathname === '/leads/archive' && value !== NEW_SHEET_VALUE),
   },
   client: {
-    // `clientName=` prefills the create sheet's name (create-from-picker);
-    // `clientCompanyId=` its company ("Create client" on a company sheet).
+    // `?client=new` is Make client: `clientName=` prefills from a picker,
+    // `clientCompanyId=` the company. `?client=<id>` opens its company's
+    // sheet. Only the archive (stopped billing) hosts its own client sheet.
     auxParams: ['clientName', 'clientCompanyId'],
-    claimsPathname: exactPaths('/clients', '/clients/archive'),
+    claimsPathname: exactPaths('/clients/archive'),
   },
   contact: {
     // `contactName=` prefills the create sheet's name (create-from-picker);

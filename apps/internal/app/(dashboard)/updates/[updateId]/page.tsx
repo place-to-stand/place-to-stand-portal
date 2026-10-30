@@ -79,7 +79,7 @@ export default async function UpdatePage({
   return (
     <PageShell
       breadcrumbs={[
-        ...crumbsForNav('/clients'),
+        ...crumbsForNav('/companies'),
         { label: client.name, href: clientDetailHref(client) },
         { label: update.status === 'SENT' ? 'Sent update' : 'Draft update' },
       ]}

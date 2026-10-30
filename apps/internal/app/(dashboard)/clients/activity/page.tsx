@@ -17,7 +17,7 @@ export default async function ClientsActivityPage() {
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/clients'), { label: 'Activity' }]}
+      breadcrumbs={[...crumbsForNav('/companies'), { label: 'Activity' }]}
       tabs={CLIENTS_TABS}
       activeTab='activity'
       primaryAction={
