@@ -100,6 +100,14 @@ export function LeadUpdatesSection({
         )}
       </div>
 
+      <LeadUpdateDialog
+        leadId={lead.id}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        update={editingUpdate}
+        onSaved={handleSaved}
+      />
+
       {isLoading ? (
         <div className='space-y-2'>
           <Skeleton className='h-16 w-full' />
@@ -138,14 +146,6 @@ export function LeadUpdatesSection({
           ))}
         </div>
       )}
-
-      <LeadUpdateDialog
-        leadId={lead.id}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        update={editingUpdate}
-        onSaved={handleSaved}
-      />
     </div>
   )
 }

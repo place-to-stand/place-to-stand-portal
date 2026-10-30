@@ -138,7 +138,7 @@ export function TimeLogsTable({
           <TableHeader>
             <TableRow className='bg-muted/40'>
               {sortHead('date', 'Date', 'w-[10%]')}
-              {sortHead('person', 'User', 'w-20', 'center')}
+              {sortHead('person', 'Person', 'w-20', 'center')}
               {sortHead('client', 'Client', 'w-[24%]')}
               {sortHead('project', 'Project', 'w-[30%]')}
               <TableHead className='w-[10%] text-center'>Tasks</TableHead>
@@ -163,7 +163,7 @@ export function TimeLogsTable({
                   <TableCell className='text-sm tabular-nums'>
                     {formatCalendarDate(item.loggedOn)}
                   </TableCell>
-                  <TableCell label='User'>
+                  <TableCell label='Person'>
                     <div className='flex items-center justify-center'>
                       <PersonAvatar
                         userId={item.userId}

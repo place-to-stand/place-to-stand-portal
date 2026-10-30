@@ -74,7 +74,7 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
 
       toast({
         title: 'Password updated',
-        description: 'Thanks for securing your account.',
+        description: 'Thanks for keeping your sign-in secure.',
       })
 
       form.reset({ password: '', confirmPassword: '' })

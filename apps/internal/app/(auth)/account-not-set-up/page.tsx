@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AuthShell, authLinkClass } from "@pts/ui/auth-shell";
 
 export const metadata: Metadata = {
-  title: 'User not set up',
+  title: 'Not set up yet',
 };
 
 /**
@@ -23,8 +23,8 @@ export default function AccountNotSetUpPage() {
     <AuthShell
       wide
       label="Internal Portal"
-      title="This user isn't set up yet"
-      description="We couldn't find a Place To Stand user for that email. If you're expecting access, contact your account manager and we'll get you set up."
+      title="You're not set up yet"
+      description="We couldn't find a sign-in for that email. If you're expecting access, ask a Place To Stand admin to set you up."
       footer={
         <Link className={authLinkClass} href="/sign-in">
           Back to sign in
