@@ -16,17 +16,14 @@ import { ProjectsCard } from '@/components/projects-card'
 
 export default async function DashboardPage() {
   const user = await requireClientUser()
-  const [
-    projects,
-    hoursSummaries,
-    invoiceSummaries,
-    scope,
-  ] = await Promise.all([
-    fetchClientProjects(user),
-    fetchClientHoursSummaries(user),
-    fetchClientInvoiceSummaries(user),
-    resolvePortalScope(user),
-  ])
+  const [projects, hoursSummaries, invoiceSummaries, scope] = await Promise.all(
+    [
+      fetchClientProjects(user),
+      fetchClientHoursSummaries(user),
+      fetchClientInvoiceSummaries(user),
+      resolvePortalScope(user),
+    ]
+  )
 
   const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
   const clients = [...scope.scopedClients].sort((a, b) =>
@@ -59,7 +56,9 @@ export default async function DashboardPage() {
           message={
             needsClientSelection
               ? 'Select a contact above to preview the portal.'
-              : 'No account information yet.'
+              : // Signed in but not added to a client yet (access is
+                // granted per client by Place To Stand).
+                "You haven't been added to a client yet. Contact Place To Stand and we'll add you."
           }
         />
       ) : (
