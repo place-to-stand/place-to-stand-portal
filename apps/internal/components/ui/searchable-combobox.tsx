@@ -244,16 +244,6 @@ export const SearchableCombobox = React.forwardRef<
           disabled={item.disabled}
           className='pr-3'
         >
-          {/* The check column only exists while something is selected: an
-              "Add …" picker (no value) shouldn't indent every option. */}
-          {selectedItem ? (
-            <CheckIcon
-              className={cn(
-                'mr-2 size-4 shrink-0',
-                selectedItem.value === item.value ? 'opacity-100' : 'opacity-0'
-              )}
-            />
-          ) : null}
           {item.userId ? (
             <Avatar size='xs' className='mr-2 shrink-0'>
               {item.avatarUrl && (
@@ -280,6 +270,11 @@ export const SearchableCombobox = React.forwardRef<
               </span>
             ) : null}
           </div>
+          {/* The selected option is marked on the right, so no row reserves
+              an empty column for it. */}
+          {selectedItem?.value === item.value ? (
+            <CheckIcon className='ml-2 size-4 shrink-0' />
+          ) : null}
         </CommandItem>
       )
     }
