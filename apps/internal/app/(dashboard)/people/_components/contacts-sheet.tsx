@@ -14,7 +14,7 @@ import {
 import { useWatch } from 'react-hook-form'
 import { Badge } from '@pts/ui/badge'
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -32,7 +32,7 @@ type ContactsSheetProps = UseContactSheetStateOptions
 export function ContactsSheet(props: ContactsSheetProps) {
   const { open, contact, onComplete } = props
   const queryClient = useQueryClient()
-  const { isAdmin } = useViewerAccess()
+
   // A company sheet stacked underneath lists this contact's title and
   // primary star: refetch it so its Save doesn't write back stale values.
   const handleComplete = useCallback(() => {
@@ -61,6 +61,9 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleCancelDelete,
     handleConfirmDelete,
     signInAccount,
+    roleMonths,
+    canManageSignIn,
+    readOnly,
     setIsAvatarUploading,
   } = useContactSheetState({ ...props, onComplete: handleComplete })
   // The header shows the photo as staged, so an upload shows at once.
@@ -94,7 +97,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
               )
             }
             badges={
-              isAdmin && signInAccount ? (
+              canManageSignIn && signInAccount ? (
                 <Badge variant='outline' className='text-xs font-normal'>
                   {ROLE_LABELS[signInAccount.role]}
                   {signInAccount.deletedAt
@@ -125,6 +128,9 @@ export function ContactsSheet(props: ContactsSheetProps) {
             contactId={contact?.id ?? null}
             portalUserId={portalUserId}
             signInAccount={signInAccount}
+            roleMonths={roleMonths}
+            canManageSignIn={canManageSignIn}
+            readOnly={readOnly}
             onAvatarUploadingChange={setIsAvatarUploading}
           />
         </SheetContent>

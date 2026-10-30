@@ -11,6 +11,7 @@ import {
   serializeContactCompanies,
 } from '@/lib/cli/serializers/contact'
 import { listContactMemberships } from '@/lib/queries/memberships'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import { serializeProject } from '@/lib/cli/serializers/project'
 import { serializeUser, serializeUserRow } from '@/lib/cli/serializers/user'
 import {
@@ -161,10 +162,14 @@ export function registerDirectoryTools(server: McpServer) {
       const memberships = await listContactMemberships(
         result.items.map(contact => contact.id)
       )
+      // Portal access and sign-ins are for people who manage clients.
+      const seesPortalAccess = canSeePortalAccess(user.role)
       return {
         items: result.items.map(contact => ({
-          ...serializeContact(contact, memberships.get(contact.id)),
-          clients: contact.metrics.clients,
+          ...serializeContact(contact, memberships.get(contact.id), {
+            seesPortalAccess,
+          }),
+          ...(seesPortalAccess ? { clients: contact.metrics.clients } : {}),
         })),
         hasMore: result.totalCount > result.items.length,
         totalCount: result.totalCount,
@@ -176,20 +181,29 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_contact',
     title: 'Get contact',
     description:
-      'One contact, the companies they belong to (title, primary, portal access) and the clients they can see in the portal.',
+      'One contact and the companies they belong to (title, primary). For admins, also their portal access, sign-in and the clients they can see in the portal.',
     effect: 'read',
     input: { contactId: z.string().uuid().describe('Contact UUID.') },
     run: async ({ contactId }, { user }) => {
-      const [contact, clients, memberships] = await Promise.all([
+      const seesPortalAccess = canSeePortalAccess(user.role)
+      const [contact, memberships] = await Promise.all([
         getContactSheetInputById(user, contactId),
-        listContactClients(user, contactId),
         listContactMemberships([contactId]),
       ])
-
+      const companies = serializeContactCompanies(
+        memberships.get(contactId) ?? [],
+        { seesPortalAccess }
+      )
+      // Portal access and sign-ins are for people who manage clients.
+      if (!seesPortalAccess) {
+        const { userId: _userId, ...rest } = contact
+        void _userId
+        return { contact: rest, companies }
+      }
       return {
         contact,
-        companies: serializeContactCompanies(memberships.get(contactId) ?? []),
-        clients,
+        companies,
+        clients: await listContactClients(user, contactId),
       }
     },
   })

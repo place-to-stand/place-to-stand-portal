@@ -14,7 +14,7 @@ import { MembershipTitleInput } from '@/components/sheets/membership-title-input
 import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { roleCan } from '@/lib/auth/capabilities'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sheet-state'
 
 type ContactCompaniesSectionProps = {
@@ -28,7 +28,8 @@ type ContactCompaniesSectionProps = {
 /**
  * The companies a person belongs to: title at each and the primary-contact
  * star (set on the company sheet, read-only here). Portal access shows here
- * but is set in one place, the company's People tab. All staged until
+ * (to people who manage clients) but is set in one place, the company's
+ * People tab. All staged until
  * Save, like the rest of the sheet.
  * The first one is their main company in lists.
  */
@@ -41,7 +42,8 @@ export function ContactCompaniesSection({
   // A failed load must not look like "no companies": block edits until reopened.
   const disabled = disabledProp || loadFailed
   const { role } = useViewerAccess()
-  const canManageAccess = Boolean(role && roleCan(role, 'clients.manage'))
+  // Portal access shows only to people who manage clients.
+  const canManageAccess = canSeePortalAccess(role)
   const [pickerOpen, setPickerOpen] = useState(false)
 
   const update = (companyId: string, patch: Partial<ContactCompanyEntry>) =>
@@ -104,7 +106,9 @@ export function ContactCompaniesSection({
                 company={{ id: entry.companyId, name: entry.companyName }}
                 className={entry.archived ? 'opacity-60' : undefined}
                 titleAddon={
-                  entry.clientId && !entry.archived ? (
+                  entry.clientId && !entry.archived && !canManageAccess ? (
+                    <ClientBadge />
+                  ) : entry.clientId && !entry.archived ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
@@ -122,7 +126,8 @@ export function ContactCompaniesSection({
                 note={
                   entry.archived ? (
                     'Archived'
-                  ) : entry.isPrimary || (entry.clientId && entry.portalAccess) ? (
+                  ) : entry.isPrimary ||
+                    (canManageAccess && entry.clientId && entry.portalAccess) ? (
                     <span className='inline-flex items-center gap-2'>
                       {entry.isPrimary ? (
                         <span className='inline-flex items-center gap-1'>
@@ -130,7 +135,7 @@ export function ContactCompaniesSection({
                           Primary contact
                         </span>
                       ) : null}
-                      {entry.clientId && entry.portalAccess ? (
+                      {canManageAccess && entry.clientId && entry.portalAccess ? (
                         <span>Portal access</span>
                       ) : null}
                     </span>

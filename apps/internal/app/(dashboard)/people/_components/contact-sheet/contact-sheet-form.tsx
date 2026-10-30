@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type React from 'react'
-import type { UseFormReturn } from 'react-hook-form'
+import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { FormFeedback } from '@/components/sheets/form-feedback'
@@ -23,9 +23,10 @@ import { PhoneInput } from '@/components/ui/phone-input'
 import { Separator } from '@pts/ui/separator'
 import { AvatarUploadField } from '@/components/forms/avatar-upload-field'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
+import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
+import type { RoleMonthOption } from '@/lib/settings/users/role-months'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
-import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
 
@@ -59,6 +60,12 @@ type ContactSheetFormProps = {
   portalUserId: string | null
   /** Their sign-in (admins only); undefined while loading. */
   signInAccount: PortalAccountSummary | null | undefined
+  /** Months a role change can start from (with closed ones disabled). */
+  roleMonths: RoleMonthOption[]
+  /** The viewer manages clients: sees and edits sign-ins and portal access. */
+  canManageSignIn: boolean
+  /** Someone with a sign-in, opened by a non-admin: shown, not editable. */
+  readOnly: boolean
   onAvatarUploadingChange: (uploading: boolean) => void
 }
 
@@ -86,15 +93,16 @@ export function ContactSheetForm({
   contactId,
   portalUserId,
   signInAccount,
+  roleMonths,
+  canManageSignIn,
+  readOnly,
   onAvatarUploadingChange,
 }: ContactSheetFormProps) {
-  // Portal accounts grant client access, so they stay admin-only.
-  const { isAdmin } = useViewerAccess()
-  // The sign-in shows and saves under the person's saved name and email.
   const personName =
     (form.formState.defaultValues?.name as string | undefined)?.trim() ?? ''
-  const savedEmail =
-    (form.formState.defaultValues?.email as string | undefined)?.trim() ?? ''
+  // The sign-in uses the email as typed: it changes with the same Save.
+  const typedEmail =
+    (useWatch({ control: form.control, name: 'email' }) ?? '').trim()
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -126,7 +134,12 @@ export function ContactSheetForm({
     }
   }, [isSheetOpen])
 
-  const fieldDisabledReason = isPending ? pendingReason : null
+  const locked = isPending || readOnly
+  const fieldDisabledReason = isPending
+    ? pendingReason
+    : readOnly
+      ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
+      : null
 
   return (
     <Form {...form}>
@@ -137,6 +150,11 @@ export function ContactSheetForm({
           className='flex flex-col'
         >
           <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+          {readOnly ? (
+            <p className='text-muted-foreground text-sm'>
+              {PERSON_WITH_SIGN_IN_ADMIN_ONLY}
+            </p>
+          ) : null}
           {/* Their photo: anyone can have one. */}
           <FormField
             control={form.control}
@@ -157,7 +175,7 @@ export function ContactSheetForm({
                     onUploadingChange={onAvatarUploadingChange}
                     initials={initialsOf(personName || '?')}
                     displayName={personName || null}
-                    disabled={isPending}
+                    disabled={locked}
                     contactId={contactId}
                   />
                 </FormControl>
@@ -175,7 +193,7 @@ export function ContactSheetForm({
                   <FormLabel>Full name</FormLabel>
                   <FormControl>
                     <DisabledFieldTooltip
-                      disabled={isPending}
+                      disabled={locked}
                       reason={fieldDisabledReason}
                     >
                       <Input
@@ -193,7 +211,7 @@ export function ContactSheetForm({
                         }}
                         value={field.value ?? ''}
                         placeholder='John Doe'
-                        disabled={isPending}
+                        disabled={locked}
                       />
                     </DisabledFieldTooltip>
                   </FormControl>
@@ -210,14 +228,14 @@ export function ContactSheetForm({
                     <FormLabel optional>Email</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
-                        disabled={isPending}
+                        disabled={locked}
                         reason={fieldDisabledReason}
                       >
                         <Input
                           {...field}
                           type='email'
                           placeholder='contact@example.com'
-                          disabled={isPending}
+                          disabled={locked}
                         />
                       </DisabledFieldTooltip>
                     </FormControl>
@@ -233,13 +251,13 @@ export function ContactSheetForm({
                     <FormLabel optional>Phone</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
-                        disabled={isPending}
+                        disabled={locked}
                         reason={fieldDisabledReason}
                       >
                         <PhoneInput
                           value={field.value ?? ''}
                           onChange={field.onChange}
-                          disabled={isPending}
+                          disabled={locked}
                         />
                       </DisabledFieldTooltip>
                     </FormControl>
@@ -256,7 +274,7 @@ export function ContactSheetForm({
                     <FormLabel optional>LinkedIn</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
-                        disabled={isPending}
+                        disabled={locked}
                         reason={fieldDisabledReason}
                       >
                         <UrlInput
@@ -264,7 +282,7 @@ export function ContactSheetForm({
                           value={field.value ?? ''}
                           openLabel='Open LinkedIn'
                           placeholder='linkedin.com/in/jane-doe'
-                          disabled={isPending}
+                          disabled={locked}
                         />
                       </DisabledFieldTooltip>
                     </FormControl>
@@ -281,27 +299,28 @@ export function ContactSheetForm({
             render={({ field }) => (
               <ContactCompaniesSection
                 companies={field.value}
-                disabled={isPending}
+                disabled={locked}
                 loadFailed={companiesLoadFailed}
                 onChange={next => field.onChange(next)}
               />
             )}
           />
-            {isEditing && isAdmin ? (
+            {canManageSignIn ? (
               <>
                 <Separator />
-                          <SheetSection title='Sign-in'>
-                            <ContactSignInFields
-                              form={form}
-                              account={portalUserId ? signInAccount : null}
-                              hasSignIn={Boolean(portalUserId)}
-                              contactId={contactId}
-                              personName={personName}
-                              personEmail={savedEmail}
-                              isPending={isPending}
-                              pendingReason={pendingReason}
-                            />
-                          </SheetSection>
+                <SheetSection title='Sign-in'>
+                  <ContactSignInFields
+                    form={form}
+                    account={portalUserId ? signInAccount : null}
+                    hasSignIn={Boolean(portalUserId)}
+                    contactId={contactId}
+                    personName={personName}
+                    personEmail={typedEmail}
+                    roleMonths={roleMonths}
+                    isPending={isPending}
+                    pendingReason={pendingReason}
+                  />
+                </SheetSection>
               </>
             ) : null}
           </div>

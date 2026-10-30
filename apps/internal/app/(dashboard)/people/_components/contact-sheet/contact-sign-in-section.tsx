@@ -29,6 +29,10 @@ import { sendPersonPasswordResetAction } from '@/app/(dashboard)/people/actions'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
+import {
+  monthLabel,
+  type RoleMonthOption,
+} from '@/lib/settings/users/role-months'
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
 
 type ContactSignInFieldsProps = {
@@ -38,8 +42,10 @@ type ContactSignInFieldsProps = {
   hasSignIn: boolean
   contactId: string | null
   personName: string
-  /** Their saved email: the one they sign in with. */
+  /** Their email as typed: the one they sign in with after Save. */
   personEmail: string
+  /** Months a role change can start from. */
+  roleMonths: RoleMonthOption[]
   isPending: boolean
   pendingReason: string
 }
@@ -79,6 +85,7 @@ export function ContactSignInFields({
   contactId,
   personName,
   personEmail,
+  roleMonths,
   isPending,
   pendingReason,
 }: ContactSignInFieldsProps) {
@@ -87,6 +94,8 @@ export function ContactSignInFields({
   const [isSending, startSending] = useTransition()
   const enabled = useWatch({ control: form.control, name: 'signIn.enabled' })
   const role = useWatch({ control: form.control, name: 'signIn.role' })
+  // A role change on an existing sign-in asks which month it starts.
+  const roleChanged = Boolean(hasSignIn && account && role && role !== account.role)
 
   if (hasSignIn && account === undefined) {
     return (
@@ -204,6 +213,57 @@ export function ContactSignInFields({
           )}
         />
       </div>
+
+      {roleChanged ? (
+        <FormField
+          control={form.control}
+          name='signIn.effectiveFrom'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role starts</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={Boolean(lockedReason)}
+                  reason={lockedReason}
+                >
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={Boolean(lockedReason)}
+                  >
+                    <SelectTrigger aria-label='Role starts'>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleMonths.map(option => (
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          disabled={Boolean(option.disabledReason)}
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormDescription>
+                The monthly close counts them in this role from this month.
+                Closed months can’t be changed.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
+
+      {account?.scheduledRole && !roleChanged ? (
+        <p className='text-muted-foreground text-sm'>
+          Becomes {ROLE_LABELS[account.scheduledRole.role]} from{' '}
+          {monthLabel(account.scheduledRole.effectiveFrom)}.
+        </p>
+      ) : null}
 
       {line ? <p className='text-muted-foreground text-sm'>{line}</p> : null}
 

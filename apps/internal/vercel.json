@@ -19,6 +19,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/apply-role-terms",
+      "schedule": "5 0 * * *"
+    },
+    {
       "path": "/api/cron/prune-activity-logs",
       "schedule": "0 7 * * 1"
     }

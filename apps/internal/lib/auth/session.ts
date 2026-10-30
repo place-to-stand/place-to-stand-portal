@@ -14,6 +14,9 @@ import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
 import { roleCan } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
+import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { roleAsOfSql } from '@/lib/queries/users/role-terms'
+import { applyDueRoleTerms } from '@/lib/settings/users/services/role'
 
 /**
  * The signed-in person: their sign-in row plus their name and photo, which
@@ -68,6 +71,14 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 
     if (!profile) {
       return null
+    }
+
+    // A scheduled role change has come into force: apply it before
+    // trusting the role (the daily cron does the same for everyone).
+    if (profile.roleInForce && profile.roleInForce !== profile.role) {
+      await applyDueRoleTerms(authUserId)
+      const updated = await fetchUserProfileUncached(authUserId)
+      return updated ? mapProfileToAppUser(updated) : null
     }
 
     // Sync profile if Supabase auth email differs from database email
@@ -128,13 +139,18 @@ type UserProfile = {
   onboardingCompletedAt: string | null
 }
 
-async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+async function fetchUserProfile(
+  userId: string
+): Promise<(UserProfile & { roleInForce: string | null }) | null> {
   const profileRows = await db
     .select({
       id: users.id,
       email: users.email,
       fullName: personNameSql,
       role: users.role,
+      // A role change dated this month or earlier that users.role hasn't
+      // caught up with yet (see applyDueRoleTerms).
+      roleInForce: roleAsOfSql(currentMonthStartUtc()),
       avatarUrl: personAvatarSql,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,

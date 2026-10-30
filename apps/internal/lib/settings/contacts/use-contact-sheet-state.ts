@@ -8,15 +8,16 @@ import { z } from 'zod'
 import { useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import {
-  saveContact,
+  savePersonSheetAction,
   softDeleteContact,
   getContactSheetData,
-  getContactPortalAccount,
-  savePersonAvatar,
-  savePersonSignInAction,
+  getPersonSignIn,
 } from '@/app/(dashboard)/people/actions'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
+import type { RoleMonthOption } from '@/lib/settings/users/role-months'
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
@@ -55,6 +56,8 @@ const contactFormSchema = z.object({
     .object({
       enabled: z.boolean(),
       role: z.enum(USER_ROLES),
+      /** The month a role change starts (month start). */
+      effectiveFrom: z.string(),
     })
     .optional(),
 })
@@ -78,6 +81,12 @@ export type ContactSheetInput = {
   linkedinUrl?: string | null
   companyId?: string | null
   companyName?: string | null
+}
+
+/** This month's start in UTC ('yyyy-MM-01'), as the server counts it. */
+function currentMonthStart() {
+  const now = new Date()
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`
 }
 
 export type UseContactSheetStateOptions = {
@@ -113,12 +122,17 @@ export function useContactSheetState({
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
-  // Sign-ins are admin-only. undefined = loading (or none to load).
-  const { isAdmin } = useViewerAccess()
-  const signInUserId = isAdmin ? (contact?.userId ?? null) : null
+  // Sign-ins and portal access are for people who manage clients
+  // (admins). undefined = loading (or none to load).
+  const { role: viewerRole } = useViewerAccess()
+  const canManageSignIn = canSeePortalAccess(viewerRole)
+  const signInUserId = canManageSignIn ? (contact?.userId ?? null) : null
   const [signInAccount, setSignInAccount] = useState<
     PortalAccountSummary | null | undefined
   >(undefined)
+  const [roleMonths, setRoleMonths] = useState<RoleMonthOption[]>([])
+  // Someone who can sign in is edited by admins only (the server agrees).
+  const readOnly = isEditing && !canManageSignIn && Boolean(contact?.userId)
   const [isAvatarUploading, setIsAvatarUploading] = useState(false)
 
   const form = useForm<ContactFormData>({
@@ -146,8 +160,11 @@ export function useContactSheetState({
     form.reset({
       avatarPath: null,
       avatarRemoved: false,
-      // No sign-in yet: off, and Client if they turn it on.
-      signIn: isAdmin && contact ? { enabled: false, role: 'CLIENT' } : undefined,
+      // No sign-in yet: off, and Client if they turn it on. Shown on create
+      // too, so a new person can get a sign-in in the same Save.
+      signIn: canManageSignIn
+        ? { enabled: false, role: 'CLIENT', effectiveFrom: currentMonthStart() }
+        : undefined,
       email: contact?.email ?? '',
       name: contact?.name ?? initialName ?? '',
       phone: contact?.phone ?? '',
@@ -204,20 +221,23 @@ export function useContactSheetState({
     return () => {
       cancelled = true
     }
-  }, [open, contact, form, initialName, initialCompanyId, isAdmin])
+  }, [open, contact, form, initialName, initialCompanyId, canManageSignIn])
 
   // Their sign-in, loaded after the reset like the companies: it becomes
   // the saved state of the Sign-in fields, not an edit.
   const loadSignIn = useCallback(async () => {
     if (!signInUserId) return
     try {
-      const account = await getContactPortalAccount(signInUserId)
+      const { account, roleMonths: months } =
+        await getPersonSignIn(signInUserId)
       setSignInAccount(account)
+      setRoleMonths(months)
       if (account) {
         form.resetField('signIn', {
           defaultValue: {
             enabled: !account.disabledAt && !account.deletedAt,
             role: account.role,
+            effectiveFrom: currentMonthStart(),
           },
         })
       }
@@ -244,12 +264,14 @@ export function useContactSheetState({
   const { requestConfirmation, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
 
-  const submitDisabled = isPending || isAvatarUploading
+  const submitDisabled = isPending || isAvatarUploading || readOnly
   const submitDisabledReason = isPending
     ? PENDING_REASON
     : isAvatarUploading
       ? 'Wait for the photo to finish uploading.'
-      : null
+      : readOnly
+        ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
+        : null
 
   const deleteDisabled = isPending || !isEditing
   const deleteDisabledReason = isPending
@@ -276,8 +298,10 @@ export function useContactSheetState({
     (data: ContactFormData) => {
       setFeedback(null)
       startTransition(async () => {
-        // Save contact data
-        const result = await saveContact({
+        // One Save: the person, their companies, photo and sign-in in one
+        // request (one transaction on the server).
+        const dirty = form.formState.dirtyFields
+        const result = await savePersonSheetAction({
           id: contact?.id || undefined,
           email: data.email,
           name: data.name,
@@ -289,6 +313,21 @@ export function useContactSheetState({
                 title: entry.title.trim() || null,
               }))
             : undefined,
+          avatar:
+            dirty.avatarPath || dirty.avatarRemoved
+              ? {
+                  path: data.avatarPath ?? null,
+                  removed: Boolean(data.avatarRemoved),
+                }
+              : undefined,
+          signIn:
+            canManageSignIn && data.signIn && dirty.signIn
+              ? {
+                  enabled: data.signIn.enabled,
+                  role: data.signIn.role,
+                  effectiveFrom: data.signIn.effectiveFrom,
+                }
+              : undefined,
         })
 
         if (result.error) {
@@ -303,47 +342,13 @@ export function useContactSheetState({
           return
         }
 
-        const savedId = contact?.id ?? result.id
-        // Their photo, then their sign-in (admins), save with the sheet too.
-        const dirty = form.formState.dirtyFields
-        if (savedId && (dirty.avatarPath || dirty.avatarRemoved)) {
-          const photo = await savePersonAvatar({
-            contactId: savedId,
-            avatarPath: data.avatarPath ?? null,
-            avatarRemoved: Boolean(data.avatarRemoved),
-          })
-          if (photo.error) {
-            setFeedback(photo.error)
-            toast({
-              title: 'Person saved, photo not saved',
-              description: photo.error,
-              variant: 'destructive',
-            })
-            return
-          }
-        }
-        if (savedId && isAdmin && data.signIn && dirty.signIn) {
-          const signIn = await savePersonSignInAction({
-            contactId: savedId,
-            enabled: data.signIn.enabled,
-            role: data.signIn.role,
-          })
-          if (signIn.error) {
-            setFeedback(signIn.error)
-            toast({
-              title: 'Person saved, sign-in not saved',
-              description: signIn.error,
-              variant: 'destructive',
-            })
-            return
-          }
-        }
-
         toast({
           title: isEditing ? 'Person updated' : 'Person created',
-          description: isEditing
-            ? `${data.name || data.email} has been updated.`
-            : `${data.name || data.email} has been created.`,
+          description:
+            result.warning ??
+            (isEditing
+              ? `${data.name || data.email} has been updated.`
+              : `${data.name || data.email} has been created.`),
         })
 
         // Call onCreated with the new contact ID if this was a create operation
@@ -353,7 +358,7 @@ export function useContactSheetState({
             email: data.email || null,
             name: data.name,
             phone: data.phone || null,
-            // Just created, so never promoted yet.
+            // The new person; a sign-in made in the same Save isn't needed by pickers.
             userId: null,
           })
         }
@@ -365,7 +370,7 @@ export function useContactSheetState({
       contact?.id,
       companiesLoaded,
       form,
-      isAdmin,
+      canManageSignIn,
       isEditing,
       toast,
       onComplete,
@@ -444,6 +449,9 @@ export function useContactSheetState({
     handleCancelDelete,
     handleConfirmDelete,
     signInAccount,
+    roleMonths,
+    canManageSignIn,
+    readOnly,
     setIsAvatarUploading,
   }
 }
