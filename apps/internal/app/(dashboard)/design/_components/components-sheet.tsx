@@ -1,0 +1,373 @@
+'use client'
+
+import { useState } from 'react'
+import {
+  Building2,
+  Handshake,
+  MoreHorizontal,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react'
+
+import { Badge } from '@pts/ui/badge'
+import { Button } from '@pts/ui/button'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@pts/ui/dropdown-menu'
+import { Input } from '@pts/ui/input'
+import { Label } from '@pts/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@pts/ui/select'
+import { Separator } from '@pts/ui/separator'
+import { Switch } from '@pts/ui/switch'
+import { Textarea } from '@pts/ui/textarea'
+import { ClientBadge } from '@/components/clients/client-badge'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
+import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
+import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
+import { SheetSection } from '@/components/sheets/sheet-section'
+import { SheetTabs } from '@/components/sheets/sheet-tabs'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { UserAvatar } from '@/components/ui/user-avatar'
+import { useToast } from '@/components/ui/use-toast'
+import { ENTITY_ACCENTS, type AccentEntity } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
+
+import { DesignSection, Specimen } from './specimen'
+
+const FORM_ID = 'design-sample-sheet-form'
+
+type Variant = {
+  entity: AccentEntity
+  noun: string
+  title: string
+  icon: LucideIcon
+}
+
+const VARIANTS: Variant[] = [
+  {
+    entity: 'company',
+    noun: 'company',
+    title: 'Acme Industries',
+    icon: Building2,
+  },
+  { entity: 'contact', noun: 'person', title: 'Ada Lovelace', icon: UserRound },
+  {
+    entity: 'lead',
+    noun: 'lead',
+    title: 'Northwind redesign',
+    icon: Handshake,
+  },
+]
+
+const SIZES = ['sm', 'md', 'lg', 'xl', '2xl', 'wide'] as const
+
+export function ComponentsSheets() {
+  const [variant, setVariant] = useState<Variant | null>(null)
+
+  return (
+    <DesignSection
+      id='sheets'
+      title='Sheets'
+      when='Every record opens in a right-side sheet over its list, addressed by a query param. Header, line tabs, sections, one footer. All tabs stay mounted and save together with the one Save, which closes the sheet.'
+    >
+      <Specimen
+        label='Entity sheet'
+        note='SheetFormHeader · SheetTabs · SheetSection · SheetFormFooter'
+      >
+        {VARIANTS.map(option => {
+          const Icon = option.icon
+          return (
+            <Button
+              key={option.entity}
+              variant='outline'
+              onClick={() => setVariant(option)}
+            >
+              <Icon className={ENTITY_ACCENTS[option.entity].icon} />
+              Open {option.noun} sheet
+            </Button>
+          )
+        })}
+        <SampleEntitySheet variant={variant} onClose={() => setVariant(null)} />
+      </Specimen>
+
+      <Specimen
+        label='Sizes'
+        note="SheetContent size='…' (plus split, xwide, full)"
+      >
+        {SIZES.map(size => (
+          <SizeSheet key={size} size={size} />
+        ))}
+      </Specimen>
+    </DesignSection>
+  )
+}
+
+function SizeSheet({ size }: { size: (typeof SIZES)[number] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button variant='outline' size='sm' onClick={() => setOpen(true)}>
+        {size}
+      </Button>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent size={size}>
+          <SheetHeader>
+            <SheetTitle>Sheet size {size}</SheetTitle>
+            <SheetDescription>
+              Pick the smallest size that fits the form without wrapping.
+            </SheetDescription>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+    </>
+  )
+}
+
+function SampleEntitySheet({
+  variant,
+  onClose,
+}: {
+  variant: Variant | null
+  onClose: () => void
+}) {
+  const { toast } = useToast()
+  const [tab, setTab] = useState('details')
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [lastVariant, setLastVariant] = useState<Variant | null>(null)
+
+  // Reset the form whenever a different sample opens.
+  if (variant && variant !== lastVariant) {
+    setLastVariant(variant)
+    setName(variant.title)
+    setTab('details')
+  }
+  const shown = variant ?? lastVariant
+  if (!shown) return null
+  const Icon = shown.icon
+
+  return (
+    <>
+      <Sheet open={Boolean(variant)} onOpenChange={next => !next && onClose()}>
+        <SheetContent
+          hideCloseButton
+          size='xl'
+          className='flex w-full flex-col gap-0 overflow-hidden p-0'
+        >
+          <SheetFormHeader
+            entity={shown.entity}
+            title={name || shown.title}
+            leading={
+              shown.entity === 'contact' ? (
+                <UserAvatar name={name} hasPhoto={false} size='sm' />
+              ) : (
+                <Icon
+                  aria-hidden
+                  className={cn(
+                    ENTITY_ACCENTS[shown.entity].icon,
+                    'size-4 shrink-0'
+                  )}
+                />
+              )
+            }
+            badges={
+              shown.entity === 'company' ? (
+                <ClientBadge />
+              ) : shown.entity === 'contact' ? (
+                <Badge variant='outline' className='text-xs font-normal'>
+                  Sales
+                </Badge>
+              ) : (
+                <LeadStatusBadge status='PROPOSAL_SENT' />
+              )
+            }
+            menu={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon-sm'
+                    aria-label={`${shown.noun} actions`}
+                  >
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='end'>
+                  <DropdownMenuItem>Copy link</DropdownMenuItem>
+                  <DropdownMenuItem>View activity</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+          <div className='flex-1 overflow-y-auto'>
+            <form
+              id={FORM_ID}
+              className='flex flex-col'
+              onSubmit={event => {
+                event.preventDefault()
+                toast({ title: `${capitalise(shown.noun)} saved` })
+                onClose()
+              }}
+            >
+              <SheetTabs
+                value={tab}
+                onValueChange={setTab}
+                tabs={[
+                  {
+                    value: 'details',
+                    label: 'Details',
+                    dirty: name !== shown.title,
+                    content: (
+                      <SheetSection
+                        title='Details'
+                        description='Everything here saves with the one Save below.'
+                      >
+                        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                          <div className='space-y-2'>
+                            <Label htmlFor='design-sheet-name'>Name</Label>
+                            <Input
+                              id='design-sheet-name'
+                              data-autofocus
+                              value={name}
+                              onChange={event => setName(event.target.value)}
+                            />
+                          </div>
+                          <div className='space-y-2'>
+                            <Label htmlFor='design-sheet-website'>
+                              Website
+                            </Label>
+                            <Input
+                              id='design-sheet-website'
+                              defaultValue='acme.com'
+                            />
+                          </div>
+                        </div>
+                        <div className='space-y-2'>
+                          <Label htmlFor='design-sheet-notes'>Notes</Label>
+                          <Textarea id='design-sheet-notes' rows={3} />
+                        </div>
+                      </SheetSection>
+                    ),
+                  },
+                  {
+                    value: 'people',
+                    label: 'People',
+                    content: (
+                      <SheetSection
+                        title='People'
+                        action={<SectionAddButton label='Add person' />}
+                      >
+                        <SheetRecordList>
+                          <ContactRecordRow
+                            contact={{
+                              id: 'design-ada',
+                              name: 'Ada Lovelace',
+                              email: 'ada@acme.com',
+                              jobTitle: 'Head of product',
+                            }}
+                            openable={false}
+                          />
+                          <ContactRecordRow
+                            contact={{
+                              id: 'design-grace',
+                              name: 'Grace Hopper',
+                              email: 'grace@acme.com',
+                            }}
+                            openable={false}
+                          />
+                        </SheetRecordList>
+                      </SheetSection>
+                    ),
+                  },
+                  {
+                    value: 'billing',
+                    label: 'Billing',
+                    content: (
+                      <>
+                        <SheetSection title='Billing'>
+                          <div className='space-y-2'>
+                            <Label>Billing type</Label>
+                            <Select defaultValue='net-30'>
+                              <SelectTrigger className='w-full sm:w-60'>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value='prepaid'>Prepaid</SelectItem>
+                                <SelectItem value='net-30'>Net 30</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </SheetSection>
+                        <Separator />
+                        <SheetSection title='Portal access'>
+                          <div className='flex items-center gap-2'>
+                            <Switch id='design-sheet-portal' defaultChecked />
+                            <Label htmlFor='design-sheet-portal'>
+                              People at this company can sign in to the client
+                              portal
+                            </Label>
+                          </div>
+                        </SheetSection>
+                      </>
+                    ),
+                  },
+                ]}
+              />
+            </form>
+          </div>
+          <SheetFormFooter
+            formId={FORM_ID}
+            saveLabel='Save'
+            submitDisabled={false}
+            submitDisabledReason={null}
+            undo={() => undefined}
+            redo={() => undefined}
+            canUndo={false}
+            canRedo={false}
+            isEditing
+            deleteDisabled={false}
+            deleteDisabledReason={null}
+            onRequestDelete={() => setArchiveOpen(true)}
+            deleteAriaLabel={`Archive ${shown.noun}`}
+          />
+        </SheetContent>
+      </Sheet>
+      <ConfirmDialog
+        open={archiveOpen}
+        title={`Archive ${name || shown.title}?`}
+        description='It leaves every list. You can restore it from the archive.'
+        confirmLabel={`Archive ${shown.noun}`}
+        confirmVariant='destructive'
+        onConfirm={() => {
+          setArchiveOpen(false)
+          toast({ title: `${capitalise(shown.noun)} archived` })
+          onClose()
+        }}
+        onCancel={() => setArchiveOpen(false)}
+      />
+    </>
+  )
+}
+
+function capitalise(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}

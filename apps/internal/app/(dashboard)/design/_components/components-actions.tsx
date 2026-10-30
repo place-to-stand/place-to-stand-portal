@@ -1,0 +1,280 @@
+'use client'
+
+import { useState } from 'react'
+import { Loader2, Plus, Send, Trash2 } from 'lucide-react'
+
+import { Badge } from '@pts/ui/badge'
+import { BADGE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
+import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
+import { ClientBadge } from '@/components/clients/client-badge'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
+import { ProjectStatusCell } from '@/components/projects/project-status-cell'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { InvoiceStatusBadge } from '@/app/(dashboard)/invoices/_components/invoice-status-badge'
+import { ROLE_LABELS } from '@/lib/auth/roles'
+import {
+  getProjectStatusLabel,
+  getProjectStatusToken,
+  PROJECT_STATUS_OPTIONS,
+  type ProjectStatusValue,
+} from '@/lib/constants'
+import { LEAD_STATUS_VALUES } from '@/lib/leads/constants'
+import {
+  getTaskStatusLabel,
+  getTaskStatusToken,
+} from '@/lib/projects/task-status'
+import { cn } from '@/lib/utils'
+
+import { Code, DesignSection, Example, Specimen } from './specimen'
+
+const VARIANTS = [
+  'default',
+  'outline',
+  'secondary',
+  'ghost',
+  'destructive',
+  'link',
+] as const
+const SIZES = ['xs', 'sm', 'default', 'lg'] as const
+const ICON_SIZES = ['icon-sm', 'icon', 'icon-lg'] as const
+
+const TASK_STATUSES = [
+  'ON_DECK',
+  'IN_PROGRESS',
+  'BLOCKED',
+  'DONE',
+  'ACCEPTED',
+  'ARCHIVED',
+] as const
+
+const INVOICE_STATUSES = ['DRAFT', 'SENT', 'VIEWED', 'PAID', 'VOID'] as const
+
+const ROLES = Object.keys(ROLE_LABELS) as Array<keyof typeof ROLE_LABELS>
+
+export function ComponentsButtons() {
+  const [saving, setSaving] = useState(false)
+
+  return (
+    <DesignSection
+      id='buttons'
+      title='Buttons'
+      when='One primary (default) Button per view, for the thing the view is for. Outline and ghost for everything else; destructive names what it destroys. Icons go first and the built-in gap spaces them.'
+    >
+      <Specimen label='Variants × sizes' bleed>
+        <div className='overflow-x-auto'>
+          <table className='w-full text-sm'>
+            <thead className='bg-muted/40 text-muted-foreground border-b text-xs'>
+              <tr>
+                <th className='px-5 py-2 text-left font-medium'>variant</th>
+                {SIZES.map(size => (
+                  <th key={size} className='px-3 py-2 text-left font-medium'>
+                    {size}
+                  </th>
+                ))}
+                <th className='px-3 py-2 text-left font-medium'>icon sizes</th>
+                <th className='px-3 py-2 text-left font-medium'>disabled</th>
+              </tr>
+            </thead>
+            <tbody className='divide-y'>
+              {VARIANTS.map(variant => (
+                <tr key={variant}>
+                  <td className='px-5 py-3'>
+                    <Code>{variant}</Code>
+                  </td>
+                  {SIZES.map(size => (
+                    <td key={size} className='px-3 py-3'>
+                      <Button variant={variant} size={size}>
+                        {variant === 'destructive' ? 'Archive' : 'Save'}
+                      </Button>
+                    </td>
+                  ))}
+                  <td className='px-3 py-3'>
+                    <span className='flex items-center gap-2'>
+                      {ICON_SIZES.map(size => (
+                        <Button
+                          key={size}
+                          variant={variant}
+                          size={size}
+                          aria-label={`Add (${size})`}
+                        >
+                          <Plus />
+                        </Button>
+                      ))}
+                    </span>
+                  </td>
+                  <td className='px-3 py-3'>
+                    <Button variant={variant} disabled>
+                      Save
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Specimen>
+
+      <Specimen
+        label='States and composition'
+        className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
+      >
+        <Example caption='icon first, no margin classes'>
+          <Button>
+            <Plus />
+            Create lead
+          </Button>
+          <Button variant='outline'>
+            <Send />
+            Send invoice
+          </Button>
+        </Example>
+        <Example caption='loading: spinner + disabled + "…ing" label'>
+          <Button
+            disabled={saving}
+            onClick={() => {
+              setSaving(true)
+              window.setTimeout(() => setSaving(false), 1500)
+            }}
+          >
+            {saving ? <Loader2 className='animate-spin' /> : null}
+            {saving ? 'Saving…' : 'Save changes'}
+          </Button>
+        </Example>
+        <Example caption='disabled with a reason (DisabledFieldTooltip)'>
+          <DisabledFieldTooltip
+            disabled
+            reason='Add a billing email before sending.'
+            className='w-auto'
+          >
+            <Button disabled>
+              <Send />
+              Send invoice
+            </Button>
+          </DisabledFieldTooltip>
+        </Example>
+        <Example caption='SectionAddButton: sheet section title rows'>
+          <SectionAddButton label='Add person' />
+          <SectionAddButton
+            label='Add person'
+            disabledReason='Save the company first.'
+          />
+        </Example>
+        <Example caption='RowActionButton: icon-only, real tooltip'>
+          <RowActionButton label='Delete attachment' icon={<Trash2 />} />
+          <RowActionButton label='Add task' icon={<Plus />} variant='outline' />
+        </Example>
+        <Example caption='RecordRowAction: fixed icon, colour and wording'>
+          <RecordRowActions>
+            <RecordRowAction kind='edit' entity='company' onClick={noop} />
+            <RecordRowAction kind='preview' onClick={noop} />
+            <RecordRowAction kind='promote' onClick={noop} />
+            <RecordRowAction kind='restore' entity='company' onClick={noop} />
+            <RecordRowAction kind='archive' entity='company' onClick={noop} />
+            <RecordRowAction
+              kind='archive'
+              entity='company'
+              onClick={noop}
+              pending
+            />
+          </RecordRowActions>
+        </Example>
+      </Specimen>
+    </DesignSection>
+  )
+}
+
+export function ComponentsBadges() {
+  const [projectStatus, setProjectStatus] =
+    useState<ProjectStatusValue>('ACTIVE')
+
+  return (
+    <DesignSection
+      id='badges'
+      title='Badges'
+      when='A badge marks a state, never an action. Status badges are an outline Badge with a BADGE_TINTS hue, mapped once per domain in a constants file; never write a tint inline.'
+    >
+      <Specimen label='Variants' note='@pts/ui/badge'>
+        <Badge>Default</Badge>
+        <Badge variant='secondary'>Secondary</Badge>
+        <Badge variant='outline'>Outline</Badge>
+        <Badge variant='destructive'>Overdue</Badge>
+      </Specimen>
+
+      <Specimen
+        label='Tints'
+        note='BADGE_TINTS (@pts/ui/badge-tints): 100 fill + 800 ink in light, 900/40 + 200 in dark'
+      >
+        {(Object.keys(BADGE_TINTS) as BadgeTint[]).map(tint => (
+          <Badge key={tint} variant='outline' className={BADGE_TINTS[tint]}>
+            {tint}
+          </Badge>
+        ))}
+      </Specimen>
+
+      <Specimen
+        label='Domain badges'
+        className='grid grid-cols-1 gap-6 md:grid-cols-2'
+      >
+        <Example caption='ClientBadge: the client state of a company'>
+          <ClientBadge />
+        </Example>
+        <Example caption='Sign-in role (ROLE_LABELS), on the person sheet'>
+          {ROLES.map(role => (
+            <Badge key={role} variant='outline' className='text-xs font-normal'>
+              {ROLE_LABELS[role]}
+            </Badge>
+          ))}
+          <Badge variant='outline' className='text-xs font-normal'>
+            {ROLE_LABELS.SALES} · off
+          </Badge>
+        </Example>
+        <Example caption='LeadStatusBadge'>
+          {LEAD_STATUS_VALUES.map(status => (
+            <LeadStatusBadge key={status} status={status} />
+          ))}
+        </Example>
+        <Example caption='Project status · ProjectStatusCell (click to change)'>
+          {PROJECT_STATUS_OPTIONS.map(option => (
+            <Badge
+              key={option.value}
+              variant='outline'
+              className={cn('text-xs', getProjectStatusToken(option.value))}
+            >
+              {getProjectStatusLabel(option.value)}
+            </Badge>
+          ))}
+          <ProjectStatusCell
+            projectId='design-sample'
+            status={projectStatus}
+            variant='standalone'
+            onStatusChange={async (_id, next) => setProjectStatus(next)}
+          />
+        </Example>
+        <Example caption='Task status'>
+          {TASK_STATUSES.map(status => (
+            <Badge
+              key={status}
+              variant='outline'
+              className={cn('text-xs', getTaskStatusToken(status))}
+            >
+              {getTaskStatusLabel(status)}
+            </Badge>
+          ))}
+        </Example>
+        <Example caption='InvoiceStatusBadge'>
+          {INVOICE_STATUSES.map(status => (
+            <InvoiceStatusBadge key={status} status={status} />
+          ))}
+        </Example>
+      </Specimen>
+    </DesignSection>
+  )
+}
+
+function noop() {}
