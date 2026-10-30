@@ -38,6 +38,7 @@ import {
   type RoleMonthOption,
 } from '@/lib/settings/users/role-months'
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 
 type ContactSignInFieldsProps = {
   form: UseFormReturn<ContactFormData>
@@ -54,7 +55,10 @@ type ContactSignInFieldsProps = {
   pendingReason: string
 }
 
-/** What turning sign-in on (or saving a change) will do, in one line. */
+/**
+ * What turning sign-in on (or saving a change) will do, in one line: a save
+ * side effect (a new sign-in and its email) or just their state.
+ */
 function outcomeLine({
   hasSignIn,
   enabled,
@@ -65,16 +69,23 @@ function outcomeLine({
   enabled: boolean
   role: (typeof USER_ROLES)[number]
   email: string
-}) {
+}): { text: string; onSave: boolean } | null {
   if (!hasSignIn) {
     if (!enabled) return null
-    return role === 'CLIENT'
-      ? `Saving creates a client portal sign-in for ${email} and emails them a link.`
-      : `Saving creates a ${ROLE_LABELS[role]} sign-in to this portal for ${email} and emails them an invite.`
+    return {
+      text:
+        role === 'CLIENT'
+          ? `Saving creates a client portal sign-in for ${email} and emails them a link.`
+          : `Saving creates a ${ROLE_LABELS[role]} sign-in to this portal for ${email} and emails them an invite.`,
+      onSave: true,
+    }
   }
-  return enabled
-    ? `They sign in with ${email}.`
-    : 'Turned off: they can’t sign in.'
+  return {
+    text: enabled
+      ? `They sign in with ${email}.`
+      : 'Turned off: they can’t sign in.',
+    onSave: false,
+  }
 }
 
 /**
@@ -99,7 +110,9 @@ export function ContactSignInFields({
   const enabled = useWatch({ control: form.control, name: 'signIn.enabled' })
   const role = useWatch({ control: form.control, name: 'signIn.role' })
   // A role change on an existing sign-in asks which month it starts.
-  const roleChanged = Boolean(hasSignIn && account && role && role !== account.role)
+  const roleChanged = Boolean(
+    hasSignIn && account && role && role !== account.role
+  )
 
   if (hasSignIn && account === undefined) {
     return (
@@ -168,7 +181,9 @@ export function ContactSignInFields({
                       onCheckedChange={field.onChange}
                       disabled={Boolean(lockedReason)}
                     />
-                    <span className='text-sm'>{field.value ? 'On' : 'Off'}</span>
+                    <span className='text-sm'>
+                      {field.value ? 'On' : 'Off'}
+                    </span>
                   </div>
                 </DisabledFieldTooltip>
               </FormControl>
@@ -272,7 +287,11 @@ export function ContactSignInFields({
         </p>
       ) : null}
 
-      {line ? <p className='text-muted-foreground text-sm'>{line}</p> : null}
+      {line?.onSave ? (
+        <SaveSideEffect>{line.text}</SaveSideEffect>
+      ) : line ? (
+        <p className='text-muted-foreground text-sm'>{line.text}</p>
+      ) : null}
 
       {hasSignIn && account ? (
         <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>

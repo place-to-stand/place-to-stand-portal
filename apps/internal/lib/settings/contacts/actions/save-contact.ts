@@ -10,6 +10,7 @@ import {
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { isAdminRole } from '@/lib/auth/roles'
+import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
 import type { AppUser } from '@/lib/auth/session'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
@@ -49,6 +50,7 @@ type CurrentMembership = {
   companyId: string
   companyName: string
   title: string | null
+  isPrimary: boolean
   portalAccess: boolean
   clientCompanyId: string | null
 }
@@ -119,6 +121,7 @@ async function loadCurrentMemberships(
       companyId: memberships.companyId,
       companyName: companies.name,
       title: memberships.title,
+      isPrimary: memberships.isPrimary,
       portalAccess: memberships.portalAccess,
       // A company billed now is its own client.
       clientCompanyId: sql<
@@ -186,6 +189,14 @@ export async function prepareContactSave(
 
   const { email, name, phone } = parsed.data
   const canManageAccess = roleCan(user.role, 'clients.manage')
+  // Portal access is for people who manage clients: a save from anyone
+  // else that names it is refused, never applied.
+  if (
+    !canManageAccess &&
+    parsed.data.companies?.some(entry => entry.portalAccess !== undefined)
+  ) {
+    return { error: 'Only an admin can change portal access.' }
+  }
 
   // The one-company shorthand (CLI, MCP, create-from-picker).
   let shorthandCompanyId: string | null = null
@@ -214,8 +225,8 @@ export async function prepareContactSave(
 
   if (!existing) {
     const plan = planMembershipChanges([], desired, shorthand)
-    const joinError = await clientJoinError(canManageAccess, plan.join)
-    if (joinError) return { error: joinError }
+    const staffError = await staffCompanyError(user, plan)
+    if (staffError) return { error: staffError }
     const linkedinUrl = parsed.data.linkedinUrl ?? null
     return {
       plan: {
@@ -268,33 +279,34 @@ export async function prepareContactSave(
   const currentById = new Map(current.map(m => [m.companyId, m]))
   const plan = planMembershipChanges(current, desired, shorthand)
 
-  // Leaving a client's company drops being its primary contact (its
-  // invoice recipient) and portal access, so it's admin-only, as on the
-  // company sheet.
-  if (!canManageAccess && (await clientIdsByCompany(plan.leave)).size > 0) {
-    return {
-      error:
-        'That company is a client, so only an admin can remove someone from it.',
-    }
+  // Sales builds the directory: joining or leaving any company, clients
+  // included, and titles there. A client's primary contact is its invoice
+  // recipient, so leaving it (which ends being primary) or changing their
+  // email is for people who manage clients, as on the company sheet.
+  const primaryAtClient = current.filter(m => m.isPrimary && m.clientCompanyId)
+  if (
+    !canManageAccess &&
+    plan.leave.some(companyId =>
+      primaryAtClient.some(m => m.companyId === companyId)
+    )
+  ) {
+    return { error: CLIENT_PRIMARY_ADMIN_ONLY }
   }
-  // Joining a client's company makes them one of the people it bills, so
-  // it's admin-only too, matching the company sheet.
-  const joinError = await clientJoinError(canManageAccess, plan.join)
-  if (joinError) return { error: joinError }
-  // A client contact's email is where invoices go, so only an admin can
-  // change it. (Someone with a sign-in is admin-only altogether.)
   if (
     !canManageAccess &&
     existing.email !== email &&
-    current.some(m => m.clientCompanyId)
+    primaryAtClient.length > 0
   ) {
     return {
       error:
-        'This person is at a client, so only an admin can change their email.',
+        'This person is a client’s primary contact, so only an admin can change their email.',
     }
   }
-  // Portal access is set only in the company's People tab. Leaving a
-  // company whose client they can see ends it, so that's admin-only.
+  // The staff company's people are admin-only (staff sign in through it).
+  const staffError = await staffCompanyError(user, plan)
+  if (staffError) return { error: staffError }
+  // Leaving a company whose client they can see ends their portal access,
+  // so that's admin-only (portal access needs a sign-in, which is too).
   if (
     !canManageAccess &&
     plan.leave.some(companyId => currentById.get(companyId)?.portalAccess)
@@ -524,27 +536,25 @@ function planMembershipChanges(
   return { join, leave, titles }
 }
 
-/** Refusal for a non-admin adding someone to a company that is a client. */
-async function clientJoinError(
-  canManageAccess: boolean,
-  joins: { companyId: string }[]
+/**
+ * Refusal for a non-admin joining someone to, removing them from, or
+ * retitling them at the staff company: staff sign in through it.
+ */
+async function staffCompanyError(
+  user: AppUser,
+  plan: MembershipPlan
 ): Promise<string | null> {
-  if (canManageAccess || !joins.length) return null
-  const companyIds = await clientIdsByCompany(joins.map(join => join.companyId))
-  return companyIds.size > 0
-    ? 'This company is a client, so only an admin can change its people.'
-    : null
-}
-
-async function clientIdsByCompany(companyIds: string[]) {
-  const map = new Map<string, string>()
-  if (!companyIds.length) return map
-  const rows = await db
-    .select({ id: companies.id })
+  if (isAdminRole(user.role)) return null
+  const companyIds = [
+    ...plan.join.map(join => join.companyId),
+    ...plan.leave,
+    ...plan.titles.map(change => change.companyId),
+  ]
+  if (!companyIds.length) return null
+  const [staff] = await db
+    .select({ name: companies.name })
     .from(companies)
-    .where(and(inArray(companies.id, companyIds), isClientCompany()))
-  for (const row of rows) {
-    map.set(row.id, row.id)
-  }
-  return map
+    .where(and(inArray(companies.id, companyIds), eq(companies.isStaff, true)))
+    .limit(1)
+  return staff ? `Only an admin can change the people at ${staff.name}.` : null
 }

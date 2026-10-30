@@ -133,7 +133,7 @@ The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,ov
 └── unauthorized/     # Access denied page
 ```
 
-Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. It is switched on per person on the company sheet's People tab.
+Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. It is switched on per person, by admins, on the company sheet's People section or the person sheet's Companies section (same switch, same Save rules: switching it on for someone with no sign-in gives them a Client sign-in and an invite).
 
 ### Database Schema
 
@@ -231,7 +231,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 
 **Roles:**
 - `ADMIN` - Full access to the internal portal
-- `SALES` - CRM only: leads and contacts. Conversion, lead tasks, client links and portal accounts stay admin-only
+- `SALES` - The CRM (leads) and the directory: creates and edits companies and people, client companies included (their name, notes, people and titles), and puts people at any company from any sheet. Making a company a client and anything billing (start, stop, terms, commission), a client's primary contact, portal access, people who can sign in and the staff company stay admin-only. A membership Sales creates always starts without portal access (`setPortalAccess` refuses anyone without `clients.manage`)
 - `CLIENT` - Client-portal users only; blocked from the internal portal at sign-in (redirected to `CLIENT_PORTAL_URL`). The role still exists so the internal portal can create/manage portal users.
 
 ### State Management

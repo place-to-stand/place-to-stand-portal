@@ -67,6 +67,7 @@ import { Skeleton } from '@pts/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { FormFeedback } from '@/components/sheets/form-feedback'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
@@ -202,15 +203,13 @@ export function ComponentsFeedback() {
           <Info />
           <AlertContent>
             <AlertDescription>
-              Ada Lovelace will be added to Acme Industries when you save.
+              Acme Industries has no primary contact yet.
             </AlertDescription>
           </AlertContent>
-          <AlertAction>
-            <Button type='button' variant='ghost' size='xs'>
-              Undo
-            </Button>
-          </AlertAction>
         </Alert>
+        <SaveSideEffect>
+          Saving emails a portal invite to Ada Lovelace.
+        </SaveSideEffect>
       </Specimen>
       <Specimen
         label='Toast'

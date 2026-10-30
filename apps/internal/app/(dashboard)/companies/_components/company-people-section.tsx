@@ -13,7 +13,12 @@ import {
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
+import {
+  RecordRowField,
+  SheetRecordList,
+} from '@/components/sheets/sheet-record-row'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
 import { cn } from '@/lib/utils'
 
@@ -38,10 +43,15 @@ type CompanyPeopleSectionProps = {
   clientName?: string | null
   disabled: boolean
   /**
-   * Why the list is locked (a client company, for a non-admin), shown on the
-   * Add button and in the description. Null when it isn't.
+   * Why the list is locked (the staff company, for a non-admin), shown on
+   * the Add button. Null when it isn't.
    */
   lockedReason: string | null
+  /**
+   * Why the primary contact can't change (a client, for someone who can't
+   * manage clients): the star, and removing the saved primary, are off.
+   */
+  primaryLockedReason?: string | null
   /** Each contact's title here, by contact id (staged). */
   titles: Record<string, string>
   /** Titles stay editable where the list is locked (as on the contact sheet). */
@@ -70,6 +80,7 @@ export function CompanyPeopleSection({
   clientName = null,
   disabled,
   lockedReason,
+  primaryLockedReason = null,
   titles,
   titleDisabled,
   onTitleChange,
@@ -89,44 +100,80 @@ export function CompanyPeopleSection({
   const star = (contact: { id: string; name: string }) => {
     const isPrimary = contact.id === primaryContactId
     return (
-      <RowActionButton
-        type='button'
-        disabled={disabled}
-        aria-pressed={isPrimary}
-        label={
-          isPrimary
-            ? `Remove ${contact.name} as primary contact`
-            : `Make ${contact.name} the primary contact`
-        }
-        onClick={() => onSetPrimary(isPrimary ? null : contact.id)}
-        className={cn(
-          'text-muted-foreground',
-          isPrimary && 'text-warning hover:text-warning'
-        )}
-        icon={<Star className={cn(isPrimary && 'fill-current')} />}
-      />
+      <DisabledFieldTooltip
+        disabled={!disabled && Boolean(primaryLockedReason)}
+        reason={primaryLockedReason}
+        className='w-auto'
+      >
+        <RowActionButton
+          type='button'
+          disabled={disabled || Boolean(primaryLockedReason)}
+          aria-pressed={isPrimary}
+          label={
+            isPrimary
+              ? `Remove ${contact.name} as primary contact`
+              : `Make ${contact.name} the primary contact`
+          }
+          onClick={() => onSetPrimary(isPrimary ? null : contact.id)}
+          className={cn(
+            'text-muted-foreground',
+            isPrimary && 'text-warning hover:text-warning'
+          )}
+          icon={<Star className={cn(isPrimary && 'fill-current')} />}
+        />
+      </DisabledFieldTooltip>
     )
   }
 
-  const titleInput = (contact: { id: string; name: string }) => (
-    <MembershipTitleInput
-      value={titles[contact.id] ?? ''}
-      onChange={title => onTitleChange(contact.id, title)}
-      ariaLabel={`${contact.name}'s title`}
-      disabled={titleDisabled}
-    />
-  )
+  // The row's fields line: Title, then Portal (admins, billed companies).
+  const fields = (contact: { id: string; name: string }) => {
+    const portal = portalAccessFor?.(contact.id) ?? null
+    return (
+      <>
+        <RecordRowField label='Title'>
+          <MembershipTitleInput
+            value={titles[contact.id] ?? ''}
+            onChange={title => onTitleChange(contact.id, title)}
+            ariaLabel={`${contact.name}'s title`}
+            disabled={titleDisabled}
+          />
+        </RecordRowField>
+        {portal ? (
+          <RecordRowField label='Portal'>{portal}</RecordRowField>
+        ) : null}
+      </>
+    )
+  }
 
-  const removeButton = (contact: { id: string; name: string }) => (
-    <RowActionButton
-      type='button'
-      disabled={disabled}
-      label={`Remove ${contact.name} from this company`}
-      onClick={() => onRemove(contact.id)}
-      className='text-muted-foreground hover:text-destructive'
-      icon={<X />}
-    />
-  )
+  const removeButton = (contact: {
+    id: string
+    name: string
+    isPrimary?: boolean
+    signInLocked?: boolean
+  }) => {
+    // Removing the saved primary ends them being primary.
+    const reason = contact.signInLocked
+      ? SIGN_IN_COMPANIES_ADMIN_ONLY
+      : contact.isPrimary
+        ? primaryLockedReason
+        : null
+    return (
+      <DisabledFieldTooltip
+        disabled={!disabled && Boolean(reason)}
+        reason={reason}
+        className='w-auto'
+      >
+        <RowActionButton
+          type='button'
+          disabled={disabled || Boolean(reason)}
+          label={`Remove ${contact.name} from this company`}
+          onClick={() => onRemove(contact.id)}
+          className='text-muted-foreground hover:text-destructive'
+          icon={<X />}
+        />
+      </DisabledFieldTooltip>
+    )
+  }
 
   return (
     <SheetSection
@@ -185,6 +232,7 @@ export function CompanyPeopleSection({
               <ContactRecordRow
                 key={contact.id}
                 contact={contact}
+                fields={fields(contact)}
                 actions={
                   <>
                     {contact.linkedinUrl ? (
@@ -201,8 +249,6 @@ export function CompanyPeopleSection({
                         }
                       />
                     ) : null}
-                    {portalAccessFor?.(contact.id)}
-                    {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}
                   </>
@@ -221,10 +267,9 @@ export function CompanyPeopleSection({
                     {from ? `Joins on save · also at ${from}` : 'Joins on save'}
                   </span>
                 }
+                fields={fields(contact)}
                 actions={
                   <>
-                    {portalAccessFor?.(contact.id)}
-                    {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}
                   </>

@@ -11,7 +11,6 @@ import {
   leadUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { roleCan } from '@/lib/auth/capabilities'
 import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -38,11 +37,7 @@ import {
   getLinkableCompany,
   type DeferActivity,
 } from '@/lib/queries/companies'
-import {
-  atClientCompanySql,
-  joinCompany,
-  mainCompanyIdSql,
-} from '@/lib/queries/memberships'
+import { joinCompany, mainCompanyIdSql } from '@/lib/queries/memberships'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -220,17 +215,15 @@ async function resolveLeadContact(
     phone: contacts.phone,
     hasCompany: sql<boolean>`${mainCompanyIdSql(contacts.id)} is not null`,
     userId: contacts.userId,
-    atClient: atClientCompanySql(contacts.id),
   }
   const timestamp = new Date().toISOString()
   const isAdmin = isAdminRole(actor.role)
-  const canManageClients = roleCan(actor.role, 'clients.manage')
   // Someone who can sign in is edited by admins only (their companies decide
-  // what they can see), and a client's people need `clients.manage`, as on
-  // the person sheet. A lead save still links them; it just leaves them be.
-  const isLocked = (contact: { userId: string | null; atClient: boolean }) =>
-    (Boolean(contact.userId) && !isAdmin) ||
-    (contact.atClient && !canManageClients)
+  // what they can see), as on the person sheet. A lead save still links
+  // them; it just leaves them be. A client's other people are Sales'
+  // directory to edit (name and phone; an email change relinks the lead).
+  const isLocked = (contact: { userId: string | null }) =>
+    Boolean(contact.userId) && !isAdmin
 
   // Saving a lead puts its person at its company, any company, clients
   // included: building the directory is open to Sales. Membership grants no

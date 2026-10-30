@@ -9,9 +9,8 @@ import {
   ContactLinkPicker,
   useContactOptions,
 } from '@/components/contacts/contact-link-picker'
-import { TriangleAlert } from 'lucide-react'
 
-import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import {
   FormControl,
   FormField,
@@ -296,14 +295,9 @@ function ContactCompanyMismatchNote({
   const contactName = contact.name || 'This person'
   const companyName = company.name || 'this company'
   return (
-    <Alert variant='warning'>
-      <TriangleAlert />
-      <AlertContent>
-        <AlertDescription>
-          {contactName} is not yet at {companyName}. Saving adds {contactName}{' '}
-          to {companyName}.
-        </AlertDescription>
-      </AlertContent>
-    </Alert>
+    <SaveSideEffect>
+      {contactName} is not yet at {companyName}. Saving adds {contactName} to{' '}
+      {companyName}.
+    </SaveSideEffect>
   )
 }

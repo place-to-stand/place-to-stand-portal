@@ -7,6 +7,7 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
+import { primaryAtClientSql } from '@/lib/queries/memberships'
 import {
   restoreContactSchema,
   type RestoreContactInput,
@@ -51,6 +52,7 @@ export async function restoreContactMutation(
             email: string | null
             name: string | null
             userId: string | null
+            primaryAtClient: boolean
           }
         | undefined
 
@@ -61,6 +63,7 @@ export async function restoreContactMutation(
             email: contacts.email,
             name: contacts.name,
             userId: contacts.userId,
+            primaryAtClient: primaryAtClientSql(contacts.id),
           })
           .from(contacts)
           .where(eq(contacts.id, parsed.data.id))
@@ -80,6 +83,16 @@ export async function restoreContactMutation(
       if (existingContact.userId && !roleCan(user.role, 'clients.manage')) {
         return buildMutationResult({
           error: 'This person can sign in. Ask an admin to restore them.',
+        })
+      }
+      // A client's primary contact, as when archiving them.
+      if (
+        existingContact.primaryAtClient &&
+        !roleCan(user.role, 'clients.manage')
+      ) {
+        return buildMutationResult({
+          error:
+            'This person is a client’s primary contact, so only an admin can restore them.',
         })
       }
 

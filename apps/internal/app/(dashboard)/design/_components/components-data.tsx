@@ -22,9 +22,12 @@ import {
   ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
 import {
+  RecordRowField,
   SheetRecordList,
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
+import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
+import { PortalAccessControl } from '@/components/clients/portal-access-control'
 import { EmptyValue } from '@/components/table/empty-value'
 import {
   RecordRowAction,
@@ -83,11 +86,13 @@ export function ComponentsAvatars() {
 
 export function ComponentsRecordRows() {
   const [starred, setStarred] = useState(true)
+  const [title, setTitle] = useState('CTO')
+  const [portal, setPortal] = useState(true)
   return (
     <DesignSection
       id='record-rows'
       title='Record rows'
-      when='A record inside a sheet list or widget: the entity’s icon, its name, one muted detail line and trailing actions. Every list of people, companies or leads uses the same row so they read the same everywhere.'
+      when='A record inside a sheet list or widget: the entity’s icon, its name, one muted detail line and trailing actions. Every list of people, companies or leads uses the same row so they read the same everywhere. A row that holds form fields (title, portal access, a closer’s share) keeps that first line and puts the fields on a second line inside the card, each with its label on the left.'
     >
       <Specimen
         label='Entity preview rows'
@@ -121,6 +126,40 @@ export function ComponentsRecordRows() {
             }}
             note='Pending save'
             openable={false}
+          />
+          <ContactRecordRow
+            contact={{
+              id: 'design-linus',
+              name: 'Linus Torvalds',
+              email: 'linus@acme.com',
+            }}
+            openable={false}
+            fields={
+              <>
+                <RecordRowField label='Title'>
+                  <MembershipTitleInput
+                    value={title}
+                    onChange={setTitle}
+                    ariaLabel='Linus Torvalds’s title'
+                  />
+                </RecordRowField>
+                <RecordRowField label='Portal'>
+                  <PortalAccessControl
+                    person={{
+                      id: 'design-linus',
+                      name: 'Linus Torvalds',
+                      email: 'linus@acme.com',
+                      hasSignIn: true,
+                    }}
+                    hasAccess={portal}
+                    disabled={false}
+                    disabledReason={null}
+                    onChange={setPortal}
+                    showLabel={false}
+                  />
+                </RecordRowField>
+              </>
+            }
           />
           <CompanyRecordRow
             company={{ id: 'design-acme', name: 'Acme Industries' }}

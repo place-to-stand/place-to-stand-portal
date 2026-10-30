@@ -1,8 +1,9 @@
 'use client'
 
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 
-import { PortalAccessControl } from './billing/client-contact-picker'
+import { PortalAccessControl } from '@/components/clients/portal-access-control'
 import { useCompanyBilling } from './company-billing-section'
 import { CompanyPeopleSection } from './company-people-section'
 
@@ -22,7 +23,7 @@ type CompanyPeopleTabProps = Omit<
 }
 
 /**
- * The People tab: the list, plus each person's Portal switch while the
+ * The People section (on the Details tab): the list, plus each person's Portal switch while the
  * company is (or is becoming) billed, and on a former client, whose
  * switches show as they are (access returns with billing). Turning it on
  * for someone without a sign-in gives them one on Save.
@@ -63,6 +64,7 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
             hasAccess={access.has(contactId)}
             disabled={portal.disabled}
             disabledReason={PENDING_REASON}
+            showLabel={false}
             onChange={on => portal.onChange(contactId, on)}
           />
         )
@@ -83,13 +85,13 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
       )
     : []
   const inviteNote = invitees.length ? (
-    <p className='text-muted-foreground text-xs'>
+    <SaveSideEffect>
       Saving emails a portal invite to{' '}
       {new Intl.ListFormat('en', { type: 'conjunction' }).format(
         invitees.map(contact => contact.name)
       )}
       .
-    </p>
+    </SaveSideEffect>
   ) : null
 
   const formerNote =

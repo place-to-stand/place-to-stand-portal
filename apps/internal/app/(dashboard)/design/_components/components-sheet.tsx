@@ -238,65 +238,61 @@ function SampleEntitySheet({
                     label: 'Details',
                     dirty: name !== shown.title,
                     content: (
-                      <SheetSection
-                        title='Details'
-                        description='Everything here saves with the one Save below.'
-                      >
-                        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-                          <div className='space-y-2'>
-                            <Label htmlFor='design-sheet-name'>Name</Label>
-                            <Input
-                              id='design-sheet-name'
-                              data-autofocus
-                              value={name}
-                              onChange={event => setName(event.target.value)}
-                            />
+                      <>
+                        <SheetSection
+                          title='Details'
+                          description='Everything here saves with the one Save below.'
+                        >
+                          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                            <div className='space-y-2'>
+                              <Label htmlFor='design-sheet-name'>Name</Label>
+                              <Input
+                                id='design-sheet-name'
+                                data-autofocus
+                                value={name}
+                                onChange={event => setName(event.target.value)}
+                              />
+                            </div>
+                            <div className='space-y-2'>
+                              <Label htmlFor='design-sheet-website'>
+                                Website
+                              </Label>
+                              <Input
+                                id='design-sheet-website'
+                                defaultValue='acme.com'
+                              />
+                            </div>
                           </div>
                           <div className='space-y-2'>
-                            <Label htmlFor='design-sheet-website'>
-                              Website
-                            </Label>
-                            <Input
-                              id='design-sheet-website'
-                              defaultValue='acme.com'
-                            />
+                            <Label htmlFor='design-sheet-notes'>Notes</Label>
+                            <Textarea id='design-sheet-notes' rows={3} />
                           </div>
-                        </div>
-                        <div className='space-y-2'>
-                          <Label htmlFor='design-sheet-notes'>Notes</Label>
-                          <Textarea id='design-sheet-notes' rows={3} />
-                        </div>
-                      </SheetSection>
-                    ),
-                  },
-                  {
-                    value: 'people',
-                    label: 'People',
-                    content: (
-                      <SheetSection
-                        title='People'
-                        action={<SectionAddButton label='Add person' />}
-                      >
-                        <SheetRecordList>
-                          <ContactRecordRow
-                            contact={{
-                              id: 'design-ada',
-                              name: 'Ada Lovelace',
-                              email: 'ada@acme.com',
-                              jobTitle: 'Head of product',
-                            }}
-                            openable={false}
-                          />
-                          <ContactRecordRow
-                            contact={{
-                              id: 'design-grace',
-                              name: 'Grace Hopper',
-                              email: 'grace@acme.com',
-                            }}
-                            openable={false}
-                          />
-                        </SheetRecordList>
-                      </SheetSection>
+                        </SheetSection>
+                        <SheetSection
+                          title='People'
+                          action={<SectionAddButton label='Add person' />}
+                        >
+                          <SheetRecordList>
+                            <ContactRecordRow
+                              contact={{
+                                id: 'design-ada',
+                                name: 'Ada Lovelace',
+                                email: 'ada@acme.com',
+                                jobTitle: 'Head of product',
+                              }}
+                              openable={false}
+                            />
+                            <ContactRecordRow
+                              contact={{
+                                id: 'design-grace',
+                                name: 'Grace Hopper',
+                                email: 'grace@acme.com',
+                              }}
+                              openable={false}
+                            />
+                          </SheetRecordList>
+                        </SheetSection>
+                      </>
                     ),
                   },
                   {

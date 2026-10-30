@@ -26,6 +26,16 @@ import {
   PERSON_WITH_SIGN_IN_ADMIN_ONLY,
 } from '@/lib/settings/contacts/person-sheet-copy'
 
+import { SignInConflictError } from '@/lib/companies/portal-sign-ins'
+import { PortalAccessRefusal } from '@/lib/queries/clients/settings/client-contacts'
+import { PortalAccessForbiddenError } from '@/lib/queries/memberships'
+
+import {
+  finishPersonPortalAccess,
+  planPersonPortalAccess,
+  preparePortalSignIn,
+  writePersonPortalAccess,
+} from './portal-access'
 import { finishSignIn, runSignInAuth, writeSignIn } from './sign-in-apply'
 import { prepareSignIn, type SignInInput } from './sign-in-plan'
 import { Undo } from './undo'
@@ -67,7 +77,11 @@ export async function savePersonSheet(
 ): Promise<PersonSheetResult> {
   const isUpdate = Boolean(input.id)
   return trackSettingsServerInteraction(
-    { entity: 'contact', mode: isUpdate ? 'edit' : 'create', targetId: input.id ?? undefined },
+    {
+      entity: 'contact',
+      mode: isUpdate ? 'edit' : 'create',
+      targetId: input.id ?? undefined,
+    },
     () => save(user, input)
   )
 }
@@ -112,6 +126,15 @@ async function save(
   if ('error' in signInPrepared) return { error: signInPrepared.error }
   const signInPlan = signInPrepared.plan
 
+  // Portal access to their client companies (admins), as on the company
+  // sheet's People section.
+  const portalPlanned = await planPersonPortalAccess(
+    plan,
+    contactInput.companies
+  )
+  if ('error' in portalPlanned) return { error: portalPlanned.error }
+  const { portal } = portalPlanned
+
   // Outside the transaction, each with its undo.
   const undo = new Undo()
   let avatarClaim: AvatarClaim | null = null
@@ -136,6 +159,16 @@ async function save(
       return { error: authError }
     }
   }
+  // Switched on for someone with no sign-in: a Client sign-in, unless the
+  // Sign-in fields give them one in this Save.
+  const portalSignIn = await preparePortalSignIn(plan, portal, {
+    hasSignIn: Boolean(existing?.userId) || Boolean(signInPlan?.create),
+    undo,
+  })
+  if ('error' in portalSignIn) {
+    await undo.run()
+    return { error: portalSignIn.error }
+  }
 
   try {
     await db.transaction(async tx => {
@@ -154,10 +187,20 @@ async function save(
       if (avatarClaim) {
         await tx
           .update(contacts)
-          .set({ avatarUrl: avatarClaim.next, updatedAt: new Date().toISOString() })
+          .set({
+            avatarUrl: avatarClaim.next,
+            updatedAt: new Date().toISOString(),
+          })
           .where(eq(contacts.id, contactId))
       }
       if (signInPlan) await writeSignIn(tx, user, signInPlan, contactId)
+      await writePersonPortalAccess(
+        tx,
+        user,
+        contactId,
+        portal,
+        portalSignIn.signIns
+      )
     })
   } catch (error) {
     if (!(error instanceof SavedElsewhereError)) {
@@ -169,6 +212,13 @@ async function save(
     }
     if (isEmailConflict(error)) {
       return { error: 'A person with this email already exists.' }
+    }
+    if (
+      error instanceof PortalAccessRefusal ||
+      error instanceof PortalAccessForbiddenError ||
+      error instanceof SignInConflictError
+    ) {
+      return { error: error.message }
     }
     return {
       error: input.id ? 'Unable to update person.' : 'Unable to create person.',
@@ -182,9 +232,16 @@ async function save(
     }
     await finishAvatarClaim(avatarClaim)
   }
+  if (plan.mode === 'update' && (portal.grant.length || portal.revoke.length)) {
+    plan.changedFields.push('portal access')
+  }
   await logContactSave(user, plan)
+  await finishPersonPortalAccess(user, contactId, portal, portalSignIn.signIns)
   const warning = signInPlan
-    ? await finishSignIn(user, signInPlan, { contactId, name: plan.values.name })
+    ? await finishSignIn(user, signInPlan, {
+        contactId,
+        name: plan.values.name,
+      })
     : null
 
   return {

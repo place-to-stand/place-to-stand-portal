@@ -153,7 +153,7 @@ export const CAPABILITIES = {
     area: 'Projects & tasks',
     label: 'See project hours and billing',
     description:
-      'Logged hours, billing terms, client notes, portal users, GitHub and integration links. Hidden from members.',
+      'Logged hours, billing terms, portal users, GitHub and integration links. Hidden from members.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },
@@ -223,21 +223,24 @@ export const CAPABILITIES = {
   'companies.manage': {
     area: 'Directory',
     label: 'Manage companies',
-    description: 'Companies, their people and leads.',
+    description:
+      'Any company, clients included: details, notes, people, titles and leads. A client’s billing, primary contact and portal access are admin-only.',
     roles: STAFF,
     surfaces: ['app'],
   },
   'contacts.manage': {
     area: 'Directory',
     label: 'Manage people',
-    description: 'People at companies, leads and clients.',
+    description:
+      'People at any company, clients included, and which companies they’re at. Someone who can sign in, and archiving a client’s primary contact, are admin-only.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
   },
   'clients.manage': {
     area: 'Directory',
     label: 'Manage clients',
-    description: 'Clients, billing terms and portal users.',
+    description:
+      'Make a company a client: billing, commission, its primary contact and who gets portal access.',
     roles: ADMIN_ONLY,
     surfaces: ['app', 'mcp', 'cli'],
   },

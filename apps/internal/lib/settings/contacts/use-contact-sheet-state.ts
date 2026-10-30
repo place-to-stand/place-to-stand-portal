@@ -45,6 +45,8 @@ const contactFormSchema = z.object({
       portalAccess: z.boolean(),
       clientCompanyId: z.string().nullable(),
       clientName: z.string().nullable(),
+      /** Billed before, not now: its portal access returns if billing restarts. */
+      formerClient: z.boolean().optional(),
       /** The company or its client is archived: shown muted, kept on save. */
       archived: z.boolean().optional(),
     })
@@ -226,6 +228,7 @@ export function useContactSheetState({
             portalAccess: membership.portalAccess,
             clientCompanyId: membership.clientCompanyId,
             clientName: membership.clientName,
+            formerClient: membership.formerClient,
             archived: membership.archived,
           })),
         })
@@ -336,6 +339,11 @@ export function useContactSheetState({
             ? data.companies.map(entry => ({
                 companyId: entry.companyId,
                 title: entry.title.trim() || null,
+                // Portal switches are for people who manage clients; anyone
+                // else's save never names portal access.
+                ...(canManageSignIn
+                  ? { portalAccess: entry.portalAccess }
+                  : {}),
               }))
             : undefined,
           avatar:

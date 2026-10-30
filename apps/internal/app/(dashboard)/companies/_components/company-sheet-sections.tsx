@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   LeadRecordRow,
@@ -90,22 +91,29 @@ export function CompanyBillingTab({
   // Starting next month still makes it a client on save, portal included.
   const portalNow =
     effective === 'next_month' ? ' Their people can use the portal now.' : ''
+  // What Save does (a caution alert), or just where billing stands.
+  const onSave = (text: string) => ({ text, onSave: true })
+  const state = (text: string) => ({ text, onSave: false })
   const line =
     mode === 'new'
       ? billingOn
-        ? `Saving makes this company a client.${portalNow}`
-        : 'Not billed. Switch on and save to make this company a client.'
+        ? onSave(`Saving makes this company a client.${portalNow}`)
+        : state('Not billed. Switch on and save to make this company a client.')
       : mode === 'former'
         ? billingOn
-          ? 'Saving restarts billing with these terms, any changes from its first month billed. Its people with Portal on get portal access back.'
-          : 'Billing stopped. Switch on and save to restart it.'
+          ? onSave(
+              'Saving restarts billing with these terms, any changes from its first month billed. Its people with Portal on get portal access back.'
+            )
+          : state('Billing stopped. Switch on and save to restart it.')
         : mode === 'ending' && billingOn
           ? billing.keepBilling
-            ? 'Saving cancels the stop and keeps billing this company.'
-            : `Billing stops after ${endsLabel}.`
+            ? onSave('Saving cancels the stop and keeps billing this company.')
+            : state(`Billing stops after ${endsLabel}.`)
           : billingOn
             ? null
-            : 'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
+            : onSave(
+                'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
+              )
   // A stop before this month leaves this month's net 30 time unbilled.
   const unbilledHours =
     stopping && effective === 'current_month'
@@ -143,15 +151,10 @@ export function CompanyBillingTab({
           />
           <Label htmlFor='company-bill-switch'>Bill this company</Label>
         </div>
-        {line ? (
-          <p
-            className={cn(
-              'text-sm',
-              stopping ? 'text-destructive' : 'text-muted-foreground'
-            )}
-          >
-            {line}
-          </p>
+        {line?.onSave ? (
+          <SaveSideEffect>{line.text}</SaveSideEffect>
+        ) : line ? (
+          <p className='text-muted-foreground text-sm'>{line.text}</p>
         ) : null}
         {mode === 'ending' && billingOn ? (
           <div>

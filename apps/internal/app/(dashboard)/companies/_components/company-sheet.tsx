@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { archiveCompanyDescription } from '../_lib/archive-copy'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
+import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
 import { FormFeedback } from '@/components/sheets/form-feedback'
@@ -51,10 +52,12 @@ import { CompanyDetailsFields } from './company-details-fields'
 import { CompanyPeopleTab } from './company-people-tab'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { SheetTabs, useSheetTab } from '@/components/sheets/sheet-tabs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
 const COMPANY_FORM_ID = 'company-form'
+const COMPANY_PEOPLE_SECTION_ID = 'company-people'
 
 type CompanySheetProps = {
   /** `null` opens the create sheet. */
@@ -68,7 +71,7 @@ type CompanySheetProps = {
 }
 
 /**
- * Create and edit are the same sheet: Details, People, Projects and Billing
+ * Create and edit are the same sheet: Details (with its People), Projects and Billing
  * (the last two for admins). One Save writes all of it — the company, its
  * people, billing and portal access — in one transaction.
  */
@@ -198,12 +201,24 @@ export function CompanySheet({
       ? formerClientId
       : null)
   const showProjects = isAdmin && isEditing && Boolean(projectsCompanyId)
+  // People sit on Details (referenced often); an old `tab=people` link
+  // lands there too.
   const tabValues = isAdmin
     ? showProjects
-      ? ['details', 'people', 'projects', 'billing']
-      : ['details', 'people', 'billing']
-    : ['details', 'people']
+      ? ['details', 'projects', 'billing']
+      : ['details', 'billing']
+    : ['details']
   const [tab, setTab] = useSheetTab(tabValues)
+  // A link to a company's people (`tab=people`) opens Details scrolled to
+  // the People section.
+  const { getAux } = useSheetParams()
+  const wantsPeople = open && getAux('tab') === 'people' && Boolean(data)
+  useEffect(() => {
+    if (!wantsPeople) return
+    document
+      .getElementById(COMPANY_PEOPLE_SECTION_ID)
+      ?.scrollIntoView({ block: 'start' })
+  }, [wantsPeople])
 
   // What the form was seeded with (reset values), not the live query data.
   const seededTitles = form.formState.defaultValues?.titles as
@@ -337,8 +352,12 @@ export function CompanySheet({
     })
   }, [company?.name, companyId, isArchived, onClose, refresh, toast])
 
-  // A client's people and primary contact are admin-only (the server agrees).
-  const peopleLocked = !isAdmin && Boolean(company?.clients.length)
+  // Sales builds the directory, client companies included; the staff
+  // company's people and a client's primary contact stay admin-only (the
+  // server agrees).
+  const peopleLocked = !isAdmin && Boolean(company?.isStaff)
+  const primaryLockedReason =
+    !canManageClients && clientCompanyId ? CLIENT_PRIMARY_ADMIN_ONLY : null
   const {
     titles,
     primaryContactId,
@@ -442,7 +461,7 @@ export function CompanySheet({
                         {
                           value: 'details',
                           label: 'Details',
-                          dirty: detailsDirty,
+                          dirty: detailsDirty || peopleDirty,
                           content: (
                             <>
                               <CompanyDetailsFields
@@ -450,47 +469,44 @@ export function CompanySheet({
                                 disabled={fieldsDisabled}
                               />
                               <Separator />
+                              <div id={COMPANY_PEOPLE_SECTION_ID}>
+                                <CompanyPeopleTab
+                                  contacts={company?.contacts ?? []}
+                                  added={addedContacts}
+                                  removedIds={removedContactIds}
+                                  movesFrom={movesFrom}
+                                  primaryContactId={primaryContactId}
+                                  clientName={company?.clients[0]?.name ?? null}
+                                  disabled={fieldsDisabled || peopleLocked}
+                                  lockedReason={
+                                    peopleLocked
+                                      ? `Only an admin can change the people at ${company?.name ?? 'this company'}.`
+                                      : null
+                                  }
+                                  primaryLockedReason={primaryLockedReason}
+                                  titles={titles}
+                                  titleDisabled={fieldsDisabled || peopleLocked}
+                                  onTitleChange={handleTitleChange}
+                                  onSetPrimary={handleSetPrimary}
+                                  onAdd={handleAddPerson}
+                                  onRemove={handleRemovePerson}
+                                  onUndoRemove={handleUndoRemovePerson}
+                                  portal={
+                                    canManageClients
+                                      ? {
+                                          ids: portalAccessIds,
+                                          onChange: handlePortalAccessChange,
+                                          disabled: fieldsDisabled,
+                                        }
+                                      : null
+                                  }
+                                />
+                              </div>
+                              <Separator />
                               <CompanyLeadsSection
                                 leads={company?.leads ?? []}
                               />
                             </>
-                          ),
-                        },
-                        {
-                          value: 'people',
-                          label: 'People',
-                          dirty: peopleDirty,
-                          content: (
-                            <CompanyPeopleTab
-                              contacts={company?.contacts ?? []}
-                              added={addedContacts}
-                              removedIds={removedContactIds}
-                              movesFrom={movesFrom}
-                              primaryContactId={primaryContactId}
-                              clientName={company?.clients[0]?.name ?? null}
-                              disabled={fieldsDisabled || peopleLocked}
-                              lockedReason={
-                                peopleLocked
-                                  ? 'This company is a client, so an admin changes its people and primary contact.'
-                                  : null
-                              }
-                              titles={titles}
-                              titleDisabled={fieldsDisabled}
-                              onTitleChange={handleTitleChange}
-                              onSetPrimary={handleSetPrimary}
-                              onAdd={handleAddPerson}
-                              onRemove={handleRemovePerson}
-                              onUndoRemove={handleUndoRemovePerson}
-                              portal={
-                                canManageClients
-                                  ? {
-                                      ids: portalAccessIds,
-                                      onChange: handlePortalAccessChange,
-                                      disabled: fieldsDisabled,
-                                    }
-                                  : null
-                              }
-                            />
                           ),
                         },
                         ...(showProjects && projectsCompanyId

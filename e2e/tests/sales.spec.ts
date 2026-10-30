@@ -90,11 +90,143 @@ test('sales sees no portal switches on a client company’s people', async ({
   await clientRow.click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
-  await sheet.getByRole('tab', { name: 'People' }).click()
   await expect(
     sheet.getByRole('switch', { name: /^Portal access for / })
   ).toHaveCount(0)
   await expect(sheet.getByText('Portal', { exact: true })).toHaveCount(0)
+})
+
+/** The first client company on the list, opened (People is on Details). */
+async function openClientPeople(page: Page) {
+  await page.goto('/companies')
+  const clientRow = page
+    .locator('tbody tr')
+    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
+    .first()
+  if ((await clientRow.count()) === 0) return null
+  const name = (
+    (await clientRow.locator('span.font-medium').first().textContent()) ?? ''
+  ).trim()
+  await clientRow.click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet).toBeVisible()
+  return { sheet, name }
+}
+
+// R4: Sales builds the directory, client companies included, but a client's
+// primary contact (its invoice recipient) is admin-only.
+test('sales can’t change a client’s primary contact', async ({ page }) => {
+  const opened = await openClientPeople(page)
+  test.skip(!opened, 'no client company to open')
+  const { sheet } = opened!
+  // Adding people is open to Sales here.
+  await expect(
+    sheet.getByRole('button', { name: 'Add person' }).first()
+  ).toBeEnabled()
+  const stars = sheet.getByRole('button', {
+    name: /^(Make .+ the primary contact|Remove .+ as primary contact)$/,
+  })
+  test.skip((await stars.count()) === 0, 'the client has no people')
+  await expect(stars.first()).toBeDisabled()
+})
+
+// R4: Sales adds someone to a client company from its People list; and a
+// Sales save that asks for portal access (replayed with the field added) is
+// refused by the server. Cleans up: removes them again and archives them.
+test('sales adds a person to a client company, never with portal access', async ({
+  page,
+}) => {
+  test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
+  const stamp = Date.now()
+  const personName = `E2E sales join ${stamp}`
+
+  // A throwaway person (no sign-in).
+  await page.goto('/people?contact=new')
+  const created = page.getByRole('dialog')
+  await created.getByPlaceholder('John Doe').fill(personName)
+  await created.getByRole('button', { name: 'Create person' }).click()
+  await expect(created).toBeHidden()
+
+  let companyName: string | null = null
+  try {
+    const opened = await openClientPeople(page)
+    test.skip(!opened, 'no client company to open')
+    const { sheet } = opened!
+    companyName = opened!.name
+
+    await sheet.getByRole('button', { name: 'Add person' }).first().click()
+    await page.keyboard.type(personName)
+    await page
+      .getByRole('option')
+      .filter({ hasText: personName })
+      .first()
+      .click()
+    await expect(sheet.getByText('Joins on save')).toBeVisible()
+
+    const saveRequest = page.waitForRequest(
+      request =>
+        request.method() === 'POST' &&
+        Boolean(request.headers()['next-action']) &&
+        (request.postData() ?? '').includes('addContactIds')
+    )
+    await sheet.getByRole('button', { name: 'Save changes' }).click()
+    const captured = await saveRequest
+    await expect(sheet).toBeHidden()
+
+    // Joined, and no portal switch for Sales.
+    const reopened = await openClientPeople(page)
+    await expect(reopened!.sheet.getByText(personName)).toBeVisible()
+    await expect(
+      reopened!.sheet.getByRole('switch', { name: /^Portal access for / })
+    ).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    // The same save, replayed with portal access for them: refused.
+    const args = JSON.parse(captured.postData() ?? '[]')
+    const contactId: string = args[0].addContactIds[0]
+    args[0].portalAccessContactIds = [contactId]
+    const response = await page.request.post(captured.url(), {
+      headers: {
+        'next-action': captured.headers()['next-action'],
+        'content-type':
+          captured.headers()['content-type'] ?? 'text/plain;charset=UTF-8',
+        accept: 'text/x-component',
+      },
+      data: JSON.stringify(args),
+    })
+    expect(await response.text()).toContain(
+      'Only an admin can change billing or portal access.'
+    )
+  } finally {
+    // Remove them from the company again, then archive them.
+    if (companyName) {
+      const opened = await openClientPeople(page)
+      const sheet = opened!.sheet
+      const remove = sheet.getByRole('button', {
+        name: `Remove ${personName} from this company`,
+      })
+      if (await remove.count()) {
+        await remove.click()
+        await sheet.getByRole('button', { name: 'Save changes' }).click()
+        await expect(sheet).toBeHidden()
+      }
+    }
+    await page.goto(`/people?q=${encodeURIComponent(personName)}`)
+    await page
+      .locator('tbody tr')
+      .filter({ hasText: personName })
+      .first()
+      .click()
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Archive person' })
+      .click()
+    await page
+      .getByRole('alertdialog')
+      .getByRole('button', { name: 'Archive' })
+      .click()
+    await expect(page.getByRole('dialog')).toBeHidden()
+  }
 })
 
 // The rest of the Sales write rules (lead saves leaving people with a sign-in

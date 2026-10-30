@@ -223,17 +223,18 @@ export class PortalAccessRefusal extends Error {}
  */
 export async function applyPortalAccessInTx(
   tx: DbTx,
+  actor: AppUser,
   companyId: string,
   changes: { grant: string[]; revoke: string[] }
 ): Promise<void> {
   for (const contactId of changes.grant) {
-    if (!(await setPortalAccess(tx, contactId, companyId, true))) {
+    if (!(await setPortalAccess(tx, actor, contactId, companyId, true))) {
       throw new PortalAccessRefusal(
         'Someone given portal access has no sign-in or left this company. Reload and try again.'
       )
     }
   }
   for (const contactId of changes.revoke) {
-    await setPortalAccess(tx, contactId, companyId, false)
+    await setPortalAccess(tx, actor, contactId, companyId, false)
   }
 }

@@ -2,7 +2,9 @@
 
 A notice that stays on the page or in a sheet while its cause does. From `@pts/ui/alert`: `Alert`, `AlertContent` (the text column), `AlertTitle`, `AlertDescription`, `AlertAction` (buttons after the text, right-aligned, wrapping under it on a phone). Shown on `/design#feedback`.
 
-**Variants:** `default` (card, muted icon: neutral information, e.g. "will be added when you save"), `warning` (the `warning` token: worth a look, never blocks saving), `destructive` (something is broken).
+**Variants:** `default` (card, muted icon: neutral information), `warning` (the `warning` token: worth a look, never blocks saving), `destructive` (something is broken).
+
+**A save side effect is a caution alert.** Anything Save does beyond the form itself ("Saving emails a portal invite to Ada Lovelace.", "Saving creates a client portal sign-in for ada@acme.com and emails them a link.", "Saving stops billing. …", "Ada Lovelace is not yet at Acme Industries. Saving adds Ada Lovelace to Acme Industries.") is one `SaveSideEffect` (`components/sheets/save-side-effect.tsx`): `warning` with `TriangleAlert`, starting "Saving …". Never a muted line. State and field help that Save doesn't act on ("Billing stops after June 2026.", "They sign in with ada@acme.com.") stay plain muted text.
 
 **Consumer provides:** a lucide icon as the first child (`TriangleAlert` for warning and destructive; it is sized, tinted and centred on the first line of text for you), then `AlertContent`, then an optional `AlertAction` with `size='xs'` buttons that fix the cause ("Add to Acme Industries").
 
