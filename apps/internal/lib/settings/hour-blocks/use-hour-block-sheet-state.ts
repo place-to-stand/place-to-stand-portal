@@ -169,9 +169,6 @@ export function useHourBlockSheetState({
 
           toast({
             title: isEditing ? 'Hour block updated' : 'Hour block created',
-            description: isEditing
-              ? 'Changes saved successfully.'
-              : 'The hour block is ready for tracking.',
           })
 
           // PRD 002 section 05: closed-month / future-billing notice.
@@ -190,7 +187,7 @@ export function useHourBlockSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('We could not save this hour block. Please try again.')
+          setFeedback('Unable to save the hour block.')
           toast({
             title: 'Unable to save hour block',
             description:

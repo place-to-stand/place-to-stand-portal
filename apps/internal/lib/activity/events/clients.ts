@@ -87,7 +87,3 @@ export const clientRestoredEvent = (args: { name: string }): ActivityEvent => ({
   summary: `Restored client "${args.name}"`,
 })
 
-export const clientDeletedEvent = (args: { name: string }): ActivityEvent => ({
-  verb: ActivityVerbs.CLIENT_DELETED,
-  summary: `Permanently deleted client "${args.name}"`,
-})

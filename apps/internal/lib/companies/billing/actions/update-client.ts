@@ -38,16 +38,7 @@ import {
   toClientSlug,
 } from '@/lib/companies/billing/client-service'
 
-import {
-  buildMutationResult,
-  type ClientMutationContext,
-  type ClientMutationResult,
-} from './types'
-import {
-  fillCompanyWebsiteIfBlank,
-  getClientCompanyId,
-  getLinkableCompany,
-} from '@/lib/queries/companies'
+import { getLinkableCompany } from '@/lib/queries/companies'
 
 export type UpdateClientPayload = {
   id: string
@@ -307,44 +298,6 @@ export async function logClientUpdate(
           : plan.companyId,
     },
   })
-}
-
-export async function updateClient(
-  context: ClientMutationContext,
-  payload: UpdateClientPayload
-): Promise<ClientMutationResult> {
-  const { user } = context
-  const planned = await planClientUpdate(user, payload)
-  if ('error' in planned) return buildMutationResult(planned)
-  const { plan } = planned
-
-  // A client is its company (0111): it can't move to another one, so a
-  // stray companyId is ignored and nobody's portal access is touched here.
-  try {
-    await db.transaction(tx => applyClientUpdateInTx(tx, plan, user.id))
-  } catch (error) {
-    if (error instanceof ClosedMonthError) {
-      return buildMutationResult({ error: error.message })
-    }
-    console.error('Failed to update client', error)
-    return buildMutationResult({
-      error:
-        error instanceof Error ? error.message : 'Unable to update client.',
-    })
-  }
-
-  const { website, companyId } = payload
-  if (website) {
-    const websiteCompanyId =
-      companyId === undefined ? await getClientCompanyId(plan.id) : companyId
-    if (websiteCompanyId) {
-      await fillCompanyWebsiteIfBlank(user, websiteCompanyId, website)
-    }
-  }
-
-  await logClientUpdate(user, plan)
-
-  return buildMutationResult({})
 }
 
 type RecordUpdateActivityArgs = {

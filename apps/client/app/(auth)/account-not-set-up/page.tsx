@@ -15,7 +15,7 @@ export default function AccountNotSetUpPage() {
     <AuthShell
       label="Client Portal"
       title="You're not set up yet"
-      description="We couldn't find a sign-in for that email. If you're expecting access, contact your Place To Stand team and we'll set you up."
+      description="We couldn't find portal access for that email. If you're expecting access, contact your Place To Stand team and we'll set you up."
       footer={
         <a href="/sign-in" className={authLinkClass}>
           Back to sign in

@@ -58,7 +58,7 @@ export function TaskSelector(props: TaskSelectorProps) {
       </DisabledFieldTooltip>
       <PopoverContent className='w-(--anchor-width) p-0'>
         <Command>
-          <CommandInput placeholder='Search tasks...' />
+          <CommandInput placeholder='Search tasks…' />
           <CommandEmpty>No matching tasks.</CommandEmpty>
           <CommandList>
             <CommandGroup heading='Tasks'>

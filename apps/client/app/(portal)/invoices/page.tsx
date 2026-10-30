@@ -63,7 +63,7 @@ export default async function InvoicesPage({
               href='/invoices'
               className='text-muted-foreground hover:text-foreground underline-offset-4 hover:underline'
             >
-              Show all clients
+              Show all companies
             </Link>
           </p>
         )}
@@ -73,7 +73,7 @@ export default async function InvoicesPage({
         <EmptyState
           message={
             needsClientSelection
-              ? 'Select a contact above to preview the portal.'
+              ? 'Choose a person above to see the portal as they do.'
               : 'No invoices yet.'
           }
         />

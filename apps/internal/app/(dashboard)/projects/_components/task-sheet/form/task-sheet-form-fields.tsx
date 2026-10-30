@@ -153,7 +153,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                       onBlur={field.onBlur}
                       name={field.name}
                       placeholder='Select project'
-                      searchPlaceholder='Search projects...'
+                      searchPlaceholder='Search projects…'
                       emptyMessage='No projects found.'
                       disabled={disabled}
                     />
@@ -269,7 +269,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                       onBlur={field.onBlur}
                       name={field.name}
                       placeholder='Unassigned'
-                      searchPlaceholder='Search teammates…'
+                      searchPlaceholder='Search people…'
                       emptyMessage='No teammates on this project.'
                       disabled={disabled}
                       onClear={() => field.onChange(null)}

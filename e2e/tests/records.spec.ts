@@ -91,11 +91,11 @@ test('client portal: admin preview shows a client’s dashboard', async ({
   if (
     await page
       .getByRole('main')
-      .getByText('Select a contact above to preview')
+      .getByText('Choose a person above to see the portal')
       .isVisible()
   ) {
     await page
-      .getByRole('button', { name: 'Select a contact to preview' })
+      .getByRole('button', { name: 'Choose a person to preview' })
       .click()
     await page.getByRole('menuitem').first().click()
   }

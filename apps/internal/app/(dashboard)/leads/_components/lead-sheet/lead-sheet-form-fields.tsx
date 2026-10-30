@@ -246,7 +246,7 @@ export function LeadSheetFormFields({
                     field.onChange(value.length ? value : null)
                   }
                   placeholder='Unassigned'
-                  searchPlaceholder='Search teammates…'
+                  searchPlaceholder='Search people…'
                   onClear={() => field.onChange(null)}
                 />
               </FormControl>

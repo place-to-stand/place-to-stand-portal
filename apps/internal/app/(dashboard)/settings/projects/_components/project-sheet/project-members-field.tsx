@@ -121,7 +121,7 @@ export function ProjectMembersField({
               if (!value) return
               setMembers([...(memberIds ?? []), value])
             }}
-            searchPlaceholder='Search sales staff…'
+            searchPlaceholder='Search people…'
             emptyMessage='No sales staff found.'
             ariaLabel='Add member'
             trigger={addButton}

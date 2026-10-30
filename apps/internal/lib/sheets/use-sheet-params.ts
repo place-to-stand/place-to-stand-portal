@@ -131,7 +131,7 @@ export function useSheetParams() {
     [buildUrl, router]
   )
 
-  /** Set/remove an entity's aux param (e.g. `leadMode=convert`). */
+  /** Set/remove an entity's aux param (e.g. `tab=billing`). */
   const setAux = useCallback(
     (aux: string, value: string | null) => {
       router.replace(

@@ -32,7 +32,7 @@ export default async function HoursPage() {
         <EmptyState
           message={
             needsClientSelection
-              ? 'Select a contact above to preview the portal.'
+              ? 'Choose a person above to see the portal as they do.'
               : 'No hours yet.'
           }
         />

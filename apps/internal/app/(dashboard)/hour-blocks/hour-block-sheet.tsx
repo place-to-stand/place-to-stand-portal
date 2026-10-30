@@ -143,7 +143,7 @@ export function HourBlockSheet({
                                 onChange={field.onChange}
                                 onBlur={field.onBlur}
                                 items={clientOptions}
-                                searchPlaceholder='Search clients...'
+                                searchPlaceholder='Search clients…'
                                 emptyMessage='No clients found.'
                                 disabled={clientField.disabled}
                               />

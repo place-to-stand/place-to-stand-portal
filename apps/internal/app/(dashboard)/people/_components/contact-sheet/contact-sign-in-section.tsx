@@ -129,7 +129,7 @@ export function ContactSignInFields({
       toast(
         result.error
           ? {
-              title: 'Reset email not sent',
+              title: 'Unable to send password reset',
               description: result.error,
               variant: 'destructive',
             }
@@ -205,7 +205,7 @@ export function ContactSignInFields({
                 {(field.value ?? 'CLIENT') === 'CLIENT'
                   ? 'The client portal, for the companies they have portal access to.'
                   : field.value === 'SALES'
-                    ? 'This portal: leads, people and companies.'
+                    ? 'This portal: leads, people, companies, and their own tasks and projects.'
                     : 'This portal, everything.'}
               </FormDescription>
               <FormMessage />

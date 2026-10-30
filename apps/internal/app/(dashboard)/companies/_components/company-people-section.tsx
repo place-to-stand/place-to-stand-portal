@@ -53,6 +53,8 @@ type CompanyPeopleSectionProps = {
   onUndoRemove: (contactId: string) => void
   /** A billed company (admins only): each person's portal access switch. */
   portalAccessFor?: ((contactId: string) => ReactNode) | null
+  /** One muted line under the list, e.g. who Save will email. */
+  footer?: ReactNode
 }
 
 /**
@@ -76,6 +78,7 @@ export function CompanyPeopleSection({
   onRemove,
   onUndoRemove,
   portalAccessFor = null,
+  footer = null,
 }: CompanyPeopleSectionProps) {
   const removed = new Set(removedIds)
   const listedIds = [...contacts.map(c => c.id), ...added.map(c => c.id)]
@@ -231,6 +234,7 @@ export function CompanyPeopleSection({
           })}
         </SheetRecordList>
       )}
+      {footer}
     </SheetSection>
   )
 }

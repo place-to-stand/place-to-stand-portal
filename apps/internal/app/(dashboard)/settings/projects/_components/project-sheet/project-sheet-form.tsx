@@ -370,7 +370,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                           items={clientOptions}
-                          searchPlaceholder='Search clients...'
+                          searchPlaceholder='Search clients…'
                           emptyMessage='No clients found.'
                           disabled={fieldState.client.disabled}
                         />
@@ -505,7 +505,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                           items={ownerOptions}
                           clearLabel='owner'
                           placeholder='Unassigned'
-                          searchPlaceholder='Search teammates…'
+                          searchPlaceholder='Search people…'
                           emptyMessage='No teammates found.'
                           disabled={fieldState.owner.disabled}
                           onClear={() => field.onChange('')}

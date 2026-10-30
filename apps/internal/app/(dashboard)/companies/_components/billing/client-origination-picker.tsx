@@ -143,13 +143,13 @@ export function ClientOriginationPicker({
       <PopoverContent className='w-80 p-0'>
         <Command>
           <CommandInput
-            placeholder='Search admins and people...'
+            placeholder='Search people…'
             value={query}
             onValueChange={setQuery}
           />
           <CommandList>
             {availableUsers.length > 0 ? (
-              <CommandGroup heading='Partners'>
+              <CommandGroup heading='Staff'>
                 {availableUsers.map(user => (
                   <CandidateItem
                     key={`user:${user.id}`}

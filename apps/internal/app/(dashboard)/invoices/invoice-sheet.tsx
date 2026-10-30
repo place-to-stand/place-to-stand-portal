@@ -427,7 +427,7 @@ export function InvoiceSheet({
                                     onChange={field.onChange}
                                     onBlur={field.onBlur}
                                     items={clientOptions}
-                                    searchPlaceholder='Search clients...'
+                                    searchPlaceholder='Search clients…'
                                     emptyMessage='No clients found.'
                                     disabled={
                                       clientField.disabled || isReadOnly
@@ -809,7 +809,7 @@ function LineItemRow({
                       onChange={value => onProductSelect(index, value)}
                       onBlur={field.onBlur}
                       groups={productGroups}
-                      searchPlaceholder='Search items...'
+                      searchPlaceholder='Search items…'
                       emptyMessage='No items found.'
                       disabled={disabled}
                     />

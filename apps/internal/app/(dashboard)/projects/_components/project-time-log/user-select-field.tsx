@@ -33,7 +33,7 @@ export function UserSelectField(props: UserSelectFieldProps) {
         onChange={onSelectUser}
         items={items}
         placeholder='Select teammate'
-        searchPlaceholder='Search collaborators...'
+        searchPlaceholder='Search people…'
         emptyMessage='No eligible collaborators found.'
         disabled={disabled}
         ariaDescribedBy={fieldErrorId}

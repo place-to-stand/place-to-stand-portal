@@ -311,7 +311,7 @@ export function useProjectSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('We could not save the project. Please try again.')
+          setFeedback('Unable to save the project.')
           toast({
             title: 'Unable to save project',
             description:

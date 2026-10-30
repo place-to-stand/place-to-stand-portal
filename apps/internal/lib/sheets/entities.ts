@@ -37,7 +37,7 @@ export const isValidSheetParamValue = (value: string) =>
 type SheetEntityConfig = {
   /**
    * Aux params carrying sub-state for this entity's sheet (always prefixed
-   * with the entity param, e.g. `leadMode=convert`). Removed alongside the
+   * with the entity param, e.g. `tab=billing`). Removed alongside the
    * entity param on close.
    */
   auxParams: readonly string[]
@@ -62,7 +62,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
       /^\/projects\/[^/]+\/[^/]+\/(tasks|review)$/.test(pathname),
   },
   lead: {
-    auxParams: ['leadMode'],
+    auxParams: [],
     // Only the board hosts the create sheet; the archive lists existing
     // leads, so `?lead=new` there falls through to the global host.
     claimsPathname: (pathname, value) =>
