@@ -556,7 +556,7 @@ export function CompanySheet({
                 company?.clients[0]?.name
               )
         }
-        confirmLabel={isArchived ? 'Restore' : 'Archive'}
+        confirmLabel={isArchived ? 'Restore company' : 'Archive company'}
         confirmVariant={isArchived ? 'default' : 'destructive'}
         confirmDisabled={isPending}
         onCancel={() => setArchiveOpen(false)}

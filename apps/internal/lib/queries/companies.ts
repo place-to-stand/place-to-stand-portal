@@ -108,6 +108,7 @@ export async function listCompanies(
       id: companies.id,
       name: companies.name,
       website: companies.website,
+      isStaff: companies.isStaff,
       // Billed now: the company is its own client.
       isClient: sql<boolean | null>`${isClientCompany()}`,
       // Billed before but not now.
@@ -166,6 +167,11 @@ export async function listCompanies(
     contactCount: row.people?.length ?? 0,
     openLeadCount: row.openLeads?.length ?? 0,
     primaryContactName: row.primaryContactName ?? null,
+    // Same rule as setCompanyArchived: staff sign in through this company.
+    archiveRefusal:
+      row.isStaff && !isAdminRole(user.role)
+        ? `Only an admin can change ${row.name}.`
+        : null,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   }))

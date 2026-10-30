@@ -24,6 +24,8 @@ export type CompanyListItem = {
   contactCount: number
   openLeadCount: number
   primaryContactName: string | null
+  /** Why this user can't archive or restore it (the staff company, for Sales). */
+  archiveRefusal: string | null
   updatedAt: string
   deletedAt: string | null
 }

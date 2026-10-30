@@ -224,14 +224,22 @@ export function CompaniesTable({
                       <RecordRowAction
                         kind='archive'
                         entity='company'
-                        disabled={isPending && pendingId === company.id}
+                        disabled={
+                          Boolean(company.archiveRefusal) ||
+                          (isPending && pendingId === company.id)
+                        }
+                        disabledReason={company.archiveRefusal}
                         onClick={() => setArchiveTarget(company)}
                       />
                     ) : (
                       <RecordRowAction
                         kind='restore'
                         entity='company'
-                        disabled={isPending && pendingId === company.id}
+                        disabled={
+                          Boolean(company.archiveRefusal) ||
+                          (isPending && pendingId === company.id)
+                        }
+                        disabledReason={company.archiveRefusal}
                         onClick={() => runAction(company, 'restore')}
                       />
                     )}
@@ -256,7 +264,7 @@ export function CompaniesTable({
           archiveTarget?.name,
           archiveTarget?.clientName
         )}
-        confirmLabel='Archive'
+        confirmLabel='Archive company'
         confirmVariant='destructive'
         confirmDisabled={isPending}
         onCancel={() => setArchiveTarget(null)}
