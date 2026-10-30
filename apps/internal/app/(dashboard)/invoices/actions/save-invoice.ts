@@ -13,11 +13,34 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceCreatedEvent, invoiceUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
+import { getStripe } from '@/lib/stripe/client'
 import { companies, invoices, invoiceLineItems } from '@/lib/db/schema'
 
 import { invoiceSchema } from './schemas'
 import type { ActionResult, InvoiceInput } from './types'
 import { INVOICES_PATH } from './helpers'
+
+/**
+ * Best effort: an intent that can still be paid would charge the old
+ * total, and its payment would no longer match the invoice. One already
+ * processing or finished can't be cancelled; the webhook's amount check
+ * covers it.
+ */
+async function cancelStalePaymentIntent(paymentIntentId: string) {
+  try {
+    const stripe = getStripe()
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    if (
+      intent.status === 'requires_payment_method' ||
+      intent.status === 'requires_confirmation' ||
+      intent.status === 'requires_action'
+    ) {
+      await stripe.paymentIntents.cancel(paymentIntentId)
+    }
+  } catch (error) {
+    console.error('Failed to cancel stale payment intent', error)
+  }
+}
 
 export async function saveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const mode = input.id ? 'edit' : 'create'
@@ -166,6 +189,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         taxRate: invoices.taxRate,
         subtotal: invoices.subtotal,
         total: invoices.total,
+        stripePaymentIntentId: invoices.stripePaymentIntentId,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
@@ -200,6 +224,11 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
 
         if (existing.status === 'SENT') {
           updateData.stripeCheckoutSessionId = null
+        }
+        // A payment intent was made for the old total: drop it so checkout
+        // makes one for the new total (and cancel it below).
+        if (existing.stripePaymentIntentId) {
+          updateData.stripePaymentIntentId = null
         }
 
         await tx.update(invoices).set(updateData).where(eq(invoices.id, id))
@@ -269,6 +298,10 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         error:
           error instanceof Error ? error.message : 'Unable to update invoice.',
       }
+    }
+
+    if (existing.stripePaymentIntentId) {
+      await cancelStalePaymentIntent(existing.stripePaymentIntentId)
     }
 
     const changedFields: string[] = []
