@@ -2,12 +2,11 @@ import 'server-only'
 
 import { and, asc, desc, eq, gt, isNull, lte, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { billingTerms } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type DbOrTransaction = typeof db | DbTransaction
+type DbOrTransaction = typeof db | DbTx
 
 /** First day of the current month in UTC, as 'yyyy-MM-dd'. */
 export function currentMonthStartUtc(): string {

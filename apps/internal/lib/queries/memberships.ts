@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, memberships } from '@/lib/db/schema'
 import { activeCompanySql, isClientCompany } from '@pts/db/client-state'
 
@@ -24,8 +24,7 @@ import { activeCompanySql, isClientCompany } from '@pts/db/client-state'
  * write of those facts goes through here.
  */
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type Executor = typeof db | Tx
+type Executor = typeof db | DbTx
 
 const now = sql`timezone('utc'::text, now())`
 

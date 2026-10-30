@@ -5,14 +5,13 @@ import { logActivity } from '@/lib/activity/logger'
 
 import { and, eq, isNull, ne, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { contacts, users } from '@/lib/db/schema'
 import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
 import { roleAsOfSql } from '@/lib/queries/users/role-terms'
 
 import { syncStaffMembership } from './person'
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 type Role = 'ADMIN' | 'SALES' | 'CLIENT'
 
 export type RoleChange = { from: Role; to: Role }
@@ -24,7 +23,7 @@ export type RoleChange = { from: Role; to: Role }
  * this save (null for a new sign-in). Returns the change, if any.
  */
 export async function applyRoleInForce(
-  tx: Tx,
+  tx: DbTx,
   input: { userId: string; contactId: string | null; previousRole: Role | null }
 ): Promise<RoleChange | null> {
   const [row] = await tx

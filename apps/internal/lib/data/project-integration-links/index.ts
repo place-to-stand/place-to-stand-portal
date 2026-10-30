@@ -2,7 +2,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { projectIntegrationLinks } from '@/lib/db/schema'
 import {
   INTEGRATION_PROVIDERS,
@@ -74,9 +74,8 @@ export async function getIntegrationLinkById(
   return link ?? null
 }
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 /** `db` or an open transaction, so a sheet save can write links in its own. */
-export type IntegrationLinkExecutor = typeof db | DbTransaction
+export type IntegrationLinkExecutor = typeof db | DbTx
 
 /**
  * Writes a link row for an external project. A previously unlinked row for

@@ -1,6 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import type { DbTx } from '@/lib/db'
 import { companies, leads } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
@@ -11,8 +11,6 @@ import {
 import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
 import type { CloserShare } from '@/lib/companies/billing/closers'
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
 /**
  * Makes a company a client inside the caller's transaction: its slug and
  * state, a billing period from this month (or next), and its first billing
@@ -21,7 +19,7 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
  * another company took meanwhile fails with a unique violation.
  */
 export async function startClientBillingInTx(
-  tx: DbTransaction,
+  tx: DbTx,
   input: {
     companyId: string
     slug: string

@@ -56,7 +56,7 @@ import {
   normalizeWebAddress,
   saveCompanySchema,
 } from '@/lib/companies/schema'
-import { db } from '@/lib/db'
+import { db, uniqueViolation, type DbTx } from '@/lib/db'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -73,27 +73,11 @@ export type DeferActivity = (task: () => Promise<unknown>) => void
 
 const CLOSED_LEAD_STATUSES_SQL = sql`('CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED')`
 
-function isUniqueViolation(error: unknown): boolean {
-  const code =
-    (error as { code?: string })?.code ??
-    (error as { cause?: { code?: string } })?.cause?.code
-  return code === '23505'
-}
-
 const DUPLICATE_NAME_ERROR = 'A company with this name already exists.'
 
-/** The index a unique violation hit (postgres-js names it constraint_name). */
-function violatedConstraint(error: unknown): string | null {
-  const read = (value: unknown) =>
-    (value as { constraint_name?: string })?.constraint_name ??
-    (value as { constraint?: string })?.constraint ??
-    null
-  return read(error) ?? read((error as { cause?: unknown })?.cause)
-}
-
 /** A save's unique violation, in words that match the index it hit. */
-function saveConflictMessage(error: unknown): string {
-  switch (violatedConstraint(error)) {
+function saveConflictMessage(constraint: string): string {
+  switch (constraint) {
     case 'memberships_one_primary_per_company':
       return 'The primary contact just changed. Reload and try again.'
     case 'memberships_one_current_per_contact_company':
@@ -341,7 +325,6 @@ export async function listCompanyOptions(
 }
 
 type SaveCompanyValues = z.output<typeof saveCompanySchema>
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /** A save the database refused for a reason worth showing (rolls it back). */
 export class CompanySaveRefusal extends Error {}
@@ -548,7 +531,7 @@ export async function planCompanyWrite(
  * the whole transaction rolls back.
  */
 export async function writeCompany(
-  tx: DbTransaction,
+  tx: DbTx,
   actor: AppUser,
   plan: CompanyWritePlan
 ): Promise<string> {
@@ -684,7 +667,8 @@ export async function logCompanyWrite(
  */
 export function companySaveErrorMessage(error: unknown): string | null {
   if (error instanceof CompanySaveRefusal) return error.message
-  if (isUniqueViolation(error)) return saveConflictMessage(error)
+  const constraint = uniqueViolation(error)
+  if (constraint) return saveConflictMessage(constraint)
   return null
 }
 
@@ -831,7 +815,7 @@ export async function setCompanyArchived(
       }
     })
   } catch (error) {
-    if (!archived && isUniqueViolation(error)) {
+    if (!archived && uniqueViolation(error)) {
       return {
         ok: false,
         error: 'Another company already uses this name. Rename one first.',

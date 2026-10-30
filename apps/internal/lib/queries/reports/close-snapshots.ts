@@ -3,7 +3,7 @@ import 'server-only'
 
 import { and, eq, gt, gte, isNull, lte, or, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { companies,
   hourBlocks,
   monthlyCloseSnapshots,
@@ -12,8 +12,7 @@ import { companies,
   users,
 } from '@/lib/db/schema'
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type DbOrTransaction = typeof db | DbTransaction
+type DbOrTransaction = typeof db | DbTx
 
 export type SnapshotRow = {
   id: string

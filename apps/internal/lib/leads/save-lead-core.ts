@@ -16,7 +16,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, leads, leadStageHistory } from '@/lib/db/schema'
 import { isTerminalLeadStatus } from '@/lib/leads/constants'
 import {
@@ -142,10 +142,8 @@ export async function saveLeadForActor(
   return result
 }
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
 type SaveContext = {
-  tx: Tx
+  tx: DbTx
   actor: AppUser
   /** Runs after commit: activity rows and notifications. */
   defer: DeferActivity

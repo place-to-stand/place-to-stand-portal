@@ -1,5 +1,5 @@
 import { eq, and, isNull, inArray } from 'drizzle-orm'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { githubRepoLinks } from '@/lib/db/schema'
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
@@ -54,9 +54,8 @@ export async function getReposForProjects(
   return reposByProject
 }
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 /** `db` or an open transaction, so a sheet save can write links in its own. */
-export type RepoLinkExecutor = typeof db | DbTransaction
+export type RepoLinkExecutor = typeof db | DbTx
 
 /** What a link row needs, resolved from GitHub before any write. */
 export type RepoLinkInput = {

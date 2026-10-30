@@ -8,7 +8,7 @@ import { requireStaffUser, type AppUser } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectCreatedEvent, projectUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
-import { db } from '@/lib/db'
+import { db, uniqueViolation, type DbTx } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 import {
   assertValidProjectMemberIds,
@@ -40,8 +40,6 @@ import {
 
 const INSERT_RETRY_LIMIT = 3
 const PROJECT_SLUG_INDEX = 'idx_projects_slug'
-
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 type RelatedWrites = {
   members: { added: string[]; removed: string[] }
@@ -162,7 +160,7 @@ export async function saveProject(
         return { error: links.error }
       }
 
-      const writeRelated = (tx: DbTransaction, projectId: string) =>
+      const writeRelated = (tx: DbTx, projectId: string) =>
         writeRelatedRows(tx, projectId, user.id, memberIds, links.prepared)
 
       if (!id) {
@@ -203,7 +201,7 @@ export async function saveProject(
           return writeRelated(tx, id)
         })
       } catch (error) {
-        if (violatedConstraint(error) === PROJECT_SLUG_INDEX) {
+        if (uniqueViolation(error) === PROJECT_SLUG_INDEX) {
           return { error: 'Another project already uses this slug.' }
         }
         console.error('Failed to update project', error)
@@ -264,7 +262,7 @@ async function loadProjectFields(id: string) {
 
 /** Members (when the sheet sent them) and link changes, in the save's tx. */
 async function writeRelatedRows(
-  tx: DbTransaction,
+  tx: DbTx,
   projectId: string,
   actorId: string,
   memberIds: string[] | undefined,
@@ -287,7 +285,7 @@ async function writeRelatedRows(
 async function insertProject(
   values: Omit<typeof projects.$inferInsert, 'slug'>,
   baseSlug: string,
-  writeRelated: (tx: DbTransaction, projectId: string) => Promise<RelatedWrites>
+  writeRelated: (tx: DbTx, projectId: string) => Promise<RelatedWrites>
 ): Promise<{ projectId: string; related: RelatedWrites } | { error: string }> {
   for (let attempt = 0; attempt < INSERT_RETRY_LIMIT; attempt += 1) {
     const slug = await generateUniqueProjectSlug(baseSlug)
@@ -301,7 +299,7 @@ async function insertProject(
         return { projectId: inserted.id, related }
       })
     } catch (error) {
-      if (violatedConstraint(error) === PROJECT_SLUG_INDEX) continue
+      if (uniqueViolation(error) === PROJECT_SLUG_INDEX) continue
       console.error('Failed to create project', error)
       return { error: 'Unable to create project.' }
     }
@@ -316,21 +314,4 @@ async function logRelatedChanges(
 ) {
   await logProjectMembersChanged({ actor, projectId, ...related.members })
   await logProjectLinkChanges(actor, projectId, related.links)
-}
-
-/**
- * The unique index a write hit, if any. drizzle-orm wraps the driver error
- * (DrizzleQueryError) with the PostgresError on `cause`; postgres-js names
- * the index `constraint_name`.
- */
-function violatedConstraint(error: unknown): string | null {
-  const read = (value: unknown): string | null => {
-    if (typeof value !== 'object' || value === null) return null
-    const { code, constraint_name } = value as {
-      code?: string
-      constraint_name?: string
-    }
-    return code === '23505' ? (constraint_name ?? 'unknown') : null
-  }
-  return read(error) ?? read((error as { cause?: unknown } | null)?.cause)
 }

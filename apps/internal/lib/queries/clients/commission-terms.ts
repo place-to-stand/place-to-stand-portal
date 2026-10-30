@@ -3,7 +3,7 @@ import 'server-only'
 
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import {
   commissionTermClosers,
   commissionTerms,
@@ -18,8 +18,7 @@ import {
 
 import { currentMonthStartUtc } from './billing-terms'
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type DbOrTransaction = typeof db | DbTransaction
+type DbOrTransaction = typeof db | DbTx
 
 /**
  * One commission split: who closed the deal (zero or more closers sharing

@@ -17,7 +17,7 @@ import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, memberships } from '@/lib/db/schema'
 import { isClientCompany } from '@pts/db/client-state'
 import {
@@ -39,8 +39,6 @@ import {
   type ContactMutationContext,
   type ContactMutationResult,
 } from './types'
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 type DesiredMembership = {
   companyId: string
@@ -325,7 +323,7 @@ export async function prepareContactSave(
 
 /** Writes a prepared person save inside the caller's transaction. */
 export async function writeContactSave(
-  tx: Tx,
+  tx: DbTx,
   user: AppUser,
   plan: ContactSavePlan
 ): Promise<void> {
