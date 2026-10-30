@@ -1,4 +1,8 @@
-import { wasClientCompany, clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
+import {
+  clientEndedAtSql,
+  clientSinceSql,
+  isClientCompany,
+} from '@pts/db/client-state'
 import 'server-only'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -80,7 +84,7 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
     })
     .from(companies)
     .where(
-      and(wasClientCompany(), eq(companies.id, id), isNull(clientEndedAtSql))
+      and(isClientCompany(), eq(companies.id, id))
     )
     .limit(1)
 

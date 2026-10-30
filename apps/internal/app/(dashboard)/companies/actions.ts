@@ -1,9 +1,9 @@
 'use server'
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 
 import { requireCrmUser, requireUser } from '@/lib/auth/session'
@@ -135,11 +135,7 @@ export async function loadCompanyClientWork(
     .select({ slug: companies.slug, billingType: currentBillingTypeSql() })
     .from(companies)
     .where(
-      and(
-        wasClientCompany(),
-        eq(companies.id, companyId),
-        isNull(clientEndedAtSql)
-      )
+      and(isClientCompany(), eq(companies.id, companyId))
     )
     .limit(1)
   if (!client) return null

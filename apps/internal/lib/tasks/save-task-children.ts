@@ -18,7 +18,7 @@ import {
 } from '@/lib/storage/task-attachments'
 import { TASK_ATTACHMENT_BUCKET } from '@/lib/storage/task-attachment-constants'
 import type { Database } from '@/lib/supabase/types'
-import type { ActivitySourceValue } from '@/lib/types'
+import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 
 /**
  * The rows a task save writes besides the task itself — assignees and
@@ -40,7 +40,7 @@ import type { ActivitySourceValue } from '@/lib/types'
  * file.
  */
 
-type UserRole = Database['public']['Enums']['user_role']
+type UserRole = UserRoleValue
 type StorageClient = SupabaseClient<Database>
 
 export type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]

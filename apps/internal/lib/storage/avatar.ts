@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/types";
+import type { UserRoleValue } from "@/lib/types";
 
 type AvatarBucketClient = SupabaseClient<Database>;
 
@@ -137,7 +138,7 @@ export function canManageAvatarPath({
   targetUserId,
 }: {
   actorId: string;
-  actorRole: Database["public"]["Enums"]["user_role"];
+  actorRole: UserRoleValue;
   path: string;
   targetUserId?: string | null;
 }) {

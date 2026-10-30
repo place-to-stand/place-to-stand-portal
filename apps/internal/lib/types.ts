@@ -154,8 +154,10 @@ export type DbTaskDeployment = {
   updated_at: string
 }
 
-// ProjectMemberWithUser represents a client member who has access to a project
-// The project_id is derived from the company_id for backwards compatibility
+// A person who can see a project in the client portal: a current member with
+// portal access at the project's client company (`client_portal_access`).
+// `id` is their contact id; `project_id` is filled in per project, since
+// access is granted per company, not per project.
 export type ProjectMemberWithUser = {
   id: string
   project_id: string

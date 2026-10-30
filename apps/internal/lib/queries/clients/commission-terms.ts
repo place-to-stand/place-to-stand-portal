@@ -5,7 +5,6 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import {
-  companies,
   commissionTermClosers,
   commissionTerms,
   contacts,
@@ -278,8 +277,9 @@ type CommissionColumn = 'id' | 'originationUserId' | 'originationContactId'
 /**
  * SQL fragment resolving one commission column as of a report period — the
  * newest `effective_from` <= period start wins, exactly like
- * `billingTypeAsOfSql`. Correlated against the outer `clients` table, so it
- * is only valid inside a query that joins `clients`. NULL when the resolved
+ * `billingTypeAsOfSql`. Correlated against the outer `companies` table
+ * (written table-qualified), so it is only valid inside a query that reads
+ * `companies`. NULL when the resolved
  * term has no assignment (or no term exists at or before the period).
  */
 function commissionColumnAsOfSql(
@@ -289,7 +289,7 @@ function commissionColumnAsOfSql(
   return sql<string | null>`(
     SELECT ${commissionTerms[column]}
     FROM ${commissionTerms}
-    WHERE ${commissionTerms.companyId} = ${companies.id}
+    WHERE ${commissionTerms.companyId} = ${sql.raw('"companies"."id"')}
       AND ${commissionTerms.effectiveFrom} <= ${periodStart}
       AND ${commissionTerms.deletedAt} IS NULL
     ORDER BY ${commissionTerms.effectiveFrom} DESC
@@ -313,7 +313,7 @@ export function originationContactIdAsOfSql(periodStart: string) {
 /**
  * The client's current origination: the newest term's (latest effective
  * date, even a future one, which is what the Billing tab last saved).
- * Correlated against the outer `clients` table. The terms table is the one
+ * Correlated against the outer `companies` table. The terms table is the one
  * place commission is stored; reports resolve by period with the `AsOf`
  * helpers above.
  */

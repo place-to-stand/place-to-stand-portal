@@ -1,6 +1,10 @@
-import { clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
+import {
+  clientEndedAtSql,
+  clientSinceSql,
+  isClientCompany,
+} from '@pts/db/client-state'
 import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import {
@@ -80,7 +84,7 @@ export async function loadClientRows(
     })
     .from(companiesTable)
     .where(
-      and(inArray(companiesTable.id, companyIds), isNull(clientEndedAtSql))
+      and(inArray(companiesTable.id, companyIds), isClientCompany())
     )
 }
 

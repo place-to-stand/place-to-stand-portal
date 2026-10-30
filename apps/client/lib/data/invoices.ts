@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { clientEndedAtSql, isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -65,7 +65,7 @@ export const fetchClientInvoices = cache(
         and(
           inArray(invoices.companyId, companyIds),
           isNull(invoices.deletedAt),
-          isNull(clientEndedAtSql),
+          isClientCompany(),
           ne(invoices.status, 'DRAFT')
         )
       )

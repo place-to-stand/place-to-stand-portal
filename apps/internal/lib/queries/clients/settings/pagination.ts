@@ -1,4 +1,4 @@
-import { clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
+import { clientSinceSql, isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -22,12 +22,13 @@ export function normalizeStatus(status?: string | null) {
 
 export type StatusFilter = 'active' | 'archived'
 
+/** Callers scope to companies ever billed, so archived = a former client. */
 export function buildStatusCondition(status: StatusFilter): SQL {
   if (status === 'archived') {
-    return sql`${clientEndedAtSql} IS NOT NULL`
+    return sql`not ${isClientCompany()}`
   }
 
-  return sql`${clientEndedAtSql} IS NULL`
+  return isClientCompany()
 }
 
 export function buildBillingCondition(

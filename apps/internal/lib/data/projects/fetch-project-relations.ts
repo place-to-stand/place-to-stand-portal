@@ -3,7 +3,7 @@ import { and, inArray, isNull, sql } from 'drizzle-orm'
 
 import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
 import { db } from '@/lib/db'
-import { contacts, users } from '@/lib/db/schema'
+import { users } from '@/lib/db/schema'
 
 import type { MemberWithUser, RawTaskWithRelations } from './types'
 
@@ -58,9 +58,11 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
   const rows = await db
     .select({
       id: users.id,
+      // Written table-qualified: drizzle drops the table name from an
+      // interpolated column here, so `${users.id}` would bind to contacts.id.
       contact_id: sql<
         string | null
-      >`(select ${contacts.id} from ${contacts} where ${contacts.userId} = ${users.id} and ${contacts.deletedAt} is null limit 1)`,
+      >`(select c.id from contacts c where c.user_id = "users"."id" and c.deleted_at is null limit 1)`,
       full_name: personNameSql,
       avatar_url: personAvatarSql,
     })

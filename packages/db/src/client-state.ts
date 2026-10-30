@@ -62,3 +62,14 @@ export const isFormerClientSql = sql<boolean>`(${wasClientCompany()} and not com
 export const billingEndsOnSql = sql<
   string | null
 >`company_billing_ends_on(${companies.id})::text`
+
+/**
+ * True when the company (by table alias) is active: not archived, and not a
+ * former client (billing stopped). Memberships at inactive companies stay in
+ * the database as history but are hidden from active views (lists, counts,
+ * main company, CLI/MCP). The alias is written raw, so pass only a literal.
+ */
+export const activeCompanySql = (alias: string): SQL =>
+  sql.raw(
+    `(${alias}.deleted_at is null and (company_billing_open(${alias}.id) or not company_was_client(${alias}.id)))`
+  )

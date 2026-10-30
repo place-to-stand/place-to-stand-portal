@@ -14,7 +14,7 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 import { db } from '@/lib/db'
 import { companies, contacts, memberships } from '@/lib/db/schema'
-import { isClientCompany } from '@pts/db/client-state'
+import { activeCompanySql, isClientCompany } from '@pts/db/client-state'
 
 /**
  * Memberships: a person at a company, with their title there, whether they
@@ -40,19 +40,6 @@ const ref = (value: AnyPgColumn | SQL): SQL =>
   'table' in value && 'name' in value
     ? sql.raw(`"${getTableName(value.table)}"."${value.name}"`)
     : (value as SQL)
-
-/**
- * True when the company (aliased `co`) is active: not archived, and not a
- * former client (billing stopped). Memberships at inactive companies stay in
- * the database as history but are hidden from active views (lists, counts,
- * main company, CLI/MCP).
- */
-const activeCompanyCondition = (co: string) =>
-  `${co}.deleted_at is null and (company_billing_open(${co}.id) or not company_was_client(${co}.id))`
-
-/** SQL predicate for an active company, by table alias. */
-export const activeCompanySql = (alias: string) =>
-  sql.raw(`(${activeCompanyCondition(alias)})`)
 
 /** The contact's main company id (oldest current membership at an active company). */
 export const mainCompanyIdSql = (contactId: AnyPgColumn | SQL) =>
