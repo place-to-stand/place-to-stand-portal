@@ -1,4 +1,4 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { wasClientCompany, clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
 import 'server-only'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -68,7 +68,7 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
       notes: companies.notes,
       state: companies.state,
       createdBy: companies.createdBy,
-      createdAt: companies.clientSince,
+      createdAt: clientSinceSql,
       updatedAt: companies.updatedAt,
       deletedAt: clientEndedAtSql,
       // Billing type and commission live on the terms; these are the

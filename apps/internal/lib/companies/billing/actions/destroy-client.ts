@@ -1,6 +1,8 @@
-import { wasClientCompany } from '@pts/db/client-state'
+import { billingOpenSql, wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { and, count, eq, inArray } from 'drizzle-orm'
+import { and, count, eq, inArray, sql } from 'drizzle-orm'
+
+import { removeBilling } from '@/lib/companies/billing/periods'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientDeletedEvent } from '@/lib/activity/events'
@@ -71,7 +73,7 @@ export async function destroyClientMutation(
             id: companies.id,
             name: clientNameSql,
             // Billing must have stopped (an archived company alone isn't enough).
-            deletedAt: companies.clientEndedAt,
+            deletedAt: sql<string | null>`case when ${billingOpenSql()} then null else now()::text end`,
           })
           .from(companies)
           .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
@@ -178,14 +180,7 @@ export async function destroyClientMutation(
           await tx
             .delete(billingTerms)
             .where(eq(billingTerms.companyId, parsed.data.id))
-          await tx
-            .update(companies)
-            .set({
-              clientSince: null,
-              clientEndedAt: null,
-              updatedAt: new Date().toISOString(),
-            })
-            .where(eq(companies.id, parsed.data.id))
+          await removeBilling(tx, parsed.data.id)
         })
       } catch (error) {
         console.error('Failed to permanently delete client', error)

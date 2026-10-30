@@ -1,4 +1,4 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { wasClientCompany, clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
 import { clientNameSql, personAvatarOf, personNameOf } from '@pts/db/names'
 import 'server-only'
 
@@ -147,7 +147,7 @@ export const fetchClientsWithMetrics = cache(
         originationUserUpdatedAt: originationUsers.updatedAt,
         companyId: companies.id,
         companyName: companies.name,
-        createdAt: companies.clientSince,
+        createdAt: clientSinceSql,
         updatedAt: companies.updatedAt,
         deletedAt: clientEndedAtSql,
       })
@@ -308,7 +308,7 @@ export const fetchClientById = cache(
         billingType: currentBillingTypeSql(),
         companyId: companies.id,
         companyName: companies.name,
-        createdAt: companies.clientSince,
+        createdAt: clientSinceSql,
         updatedAt: companies.updatedAt,
         deletedAt: clientEndedAtSql,
       })

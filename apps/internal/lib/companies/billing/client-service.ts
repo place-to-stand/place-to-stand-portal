@@ -198,8 +198,18 @@ const clientIdentifierSchema = {
   id: z.string().uuid(),
 }
 
-export const deleteClientSchema = z.object(clientIdentifierSchema)
-export const restoreClientSchema = z.object(clientIdentifierSchema)
+/** Stop or restart billing: this month (default) or next. */
+const billingEffectiveSchema = {
+  effective: z.enum(['current_month', 'next_month']).optional(),
+}
+export const deleteClientSchema = z.object({
+  ...clientIdentifierSchema,
+  ...billingEffectiveSchema,
+})
+export const restoreClientSchema = z.object({
+  ...clientIdentifierSchema,
+  ...billingEffectiveSchema,
+})
 export const destroyClientSchema = z.object(clientIdentifierSchema)
 
 export type ClientInput = z.infer<typeof clientSchema>

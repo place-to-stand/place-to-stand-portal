@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
 import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
@@ -74,7 +74,7 @@ export async function loadClientRows(
       billingType: currentBillingTypeSql(),
       companyId: companiesTable.id,
       createdBy: companiesTable.createdBy,
-      createdAt: companiesTable.clientSince,
+      createdAt: clientSinceSql,
       updatedAt: companiesTable.updatedAt,
       deletedAt: clientEndedAtSql,
     })

@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -65,8 +65,8 @@ export const CLIENT_SORT_DESCRIPTORS: Record<
     orderDesc: sql`${clientNameSql} DESC`,
   },
   created: {
-    orderAsc: sql`${companies.clientSince} ASC`,
-    orderDesc: sql`${companies.clientSince} DESC`,
+    orderAsc: sql`${clientSinceSql} ASC`,
+    orderDesc: sql`${clientSinceSql} DESC`,
   },
 }
 

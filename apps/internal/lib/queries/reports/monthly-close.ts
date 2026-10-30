@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { billedInMonth } from '@pts/db/client-state'
 import { clientNameSql, personAvatarOf, personAvatarSql, personNameOf, personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -25,6 +25,7 @@ import { companies,
   users,
 } from '@/lib/db/schema'
 import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
+import { liveDuring, roleAsOfSql } from '@/lib/queries/users/role-terms'
 import {
   commissionTermIdAsOfSql,
   originationContactIdAsOfSql,
@@ -133,10 +134,10 @@ export async function fetchEmployeePayroll(
     .innerJoin(projects, eq(projects.id, timeLogs.projectId))
     .where(
       and(
-        eq(users.role, 'ADMIN'),
+        sql`${roleAsOfSql(startDate)} = 'ADMIN'`,
         eq(projects.type, 'CLIENT'),
         isNull(timeLogs.deletedAt),
-        isNull(users.deletedAt),
+        liveDuring(users.deletedAt, startDate),
         isNull(projects.deletedAt),
         gte(timeLogs.loggedOn, startDate),
         lte(timeLogs.loggedOn, endDate)
@@ -172,10 +173,10 @@ export async function fetchBillableWorkHours(
     .innerJoin(projects, eq(projects.id, timeLogs.projectId))
     .where(
       and(
-        eq(users.role, 'ADMIN'),
+        sql`${roleAsOfSql(startDate)} = 'ADMIN'`,
         eq(projects.type, 'CLIENT'),
         isNull(timeLogs.deletedAt),
-        isNull(users.deletedAt),
+        liveDuring(users.deletedAt, startDate),
         isNull(projects.deletedAt),
         gte(timeLogs.loggedOn, startDate),
         lte(timeLogs.loggedOn, endDate)
@@ -231,8 +232,8 @@ export async function fetchOriginationCommissions(
           and(
             isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
-            isNull(clientEndedAtSql),
-            isNull(users.deletedAt),
+            billedInMonth(startDate),
+            liveDuring(users.deletedAt, startDate),
             gte(hourBlocks.billingMonth, startDate),
             lte(hourBlocks.billingMonth, endDate)
           )
@@ -264,8 +265,8 @@ export async function fetchOriginationCommissions(
           and(
             isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
-            isNull(clientEndedAtSql),
-            isNull(contacts.deletedAt),
+            billedInMonth(startDate),
+            liveDuring(contacts.deletedAt, startDate),
             gte(hourBlocks.billingMonth, startDate),
             lte(hourBlocks.billingMonth, endDate)
           )
@@ -300,8 +301,8 @@ export async function fetchOriginationCommissions(
             eq(projects.type, 'CLIENT'),
             isNull(timeLogs.deletedAt),
             isNull(projects.deletedAt),
-            isNull(clientEndedAtSql),
-            isNull(users.deletedAt),
+            billedInMonth(startDate),
+            liveDuring(users.deletedAt, startDate),
             gte(timeLogs.loggedOn, startDate),
             lte(timeLogs.loggedOn, endDate)
           )
@@ -336,8 +337,8 @@ export async function fetchOriginationCommissions(
             eq(projects.type, 'CLIENT'),
             isNull(timeLogs.deletedAt),
             isNull(projects.deletedAt),
-            isNull(clientEndedAtSql),
-            isNull(contacts.deletedAt),
+            billedInMonth(startDate),
+            liveDuring(contacts.deletedAt, startDate),
             gte(timeLogs.loggedOn, startDate),
             lte(timeLogs.loggedOn, endDate)
           )
@@ -467,8 +468,8 @@ export async function fetchCloserCommissions(
   // A closer is paid only while their user/contact record is live — same rule
   // the origination joins apply.
   const payableCloser = or(
-    and(isNotNull(closerUsers.id), isNull(closerUsers.deletedAt)),
-    and(isNotNull(closerContacts.id), isNull(closerContacts.deletedAt))
+    and(isNotNull(closerUsers.id), liveDuring(closerUsers.deletedAt, startDate)),
+    and(isNotNull(closerContacts.id), liveDuring(closerContacts.deletedAt, startDate))
   )
 
   const [prepaid, net30] = await Promise.all([
@@ -493,7 +494,7 @@ export async function fetchCloserCommissions(
         and(
           isPrepaidAsOf(startDate),
           isNull(hourBlocks.deletedAt),
-          isNull(clientEndedAtSql),
+          billedInMonth(startDate),
           payableCloser,
           gte(hourBlocks.billingMonth, startDate),
           lte(hourBlocks.billingMonth, endDate)
@@ -525,7 +526,7 @@ export async function fetchCloserCommissions(
           eq(projects.type, 'CLIENT'),
           isNull(timeLogs.deletedAt),
           isNull(projects.deletedAt),
-          isNull(clientEndedAtSql),
+          billedInMonth(startDate),
           payableCloser,
           gte(timeLogs.loggedOn, startDate),
           lte(timeLogs.loggedOn, endDate)
@@ -585,7 +586,7 @@ export async function fetchPrepaidBilling(
       and(
         isPrepaidAsOf(startDate),
         isNull(hourBlocks.deletedAt),
-        isNull(clientEndedAtSql),
+        billedInMonth(startDate),
         gte(hourBlocks.billingMonth, startDate),
         lte(hourBlocks.billingMonth, endDate)
       )
@@ -673,7 +674,7 @@ export async function fetchNet30Billing(
         eq(projects.type, 'CLIENT'),
         isNull(timeLogs.deletedAt),
         isNull(projects.deletedAt),
-        isNull(clientEndedAtSql),
+        billedInMonth(startDate),
         gte(timeLogs.loggedOn, startDate),
         lte(timeLogs.loggedOn, endDate)
       )

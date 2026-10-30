@@ -192,8 +192,8 @@ export const users = pgTable(
 /**
  * An organization (sales CRM): prospects and customers alike. People belong
  * to it through `memberships` (one of them can be its primary contact) and
- * leads hang under it. A company you bill is a client: `client_since` is set,
- * and `client_ended_at` once billing stops (a former client). Everything
+ * leads hang under it. A company you bill is a client: when it is billed lives
+ * in `client_billing_periods`, read through `@pts/db/client-state`. Everything
  * billed (projects, invoices, hours, terms, updates) keys on `company_id`.
  */
 export const companies = pgTable(
@@ -209,16 +209,11 @@ export const companies = pgTable(
     slug: text(),
     /** Two-letter US state for sales tax on invoices. */
     state: varchar({ length: 2 }),
-    /** When it became a client; null for a company never billed. */
-    clientSince: timestamp('client_since', {
-      withTimezone: true,
-      mode: 'string',
-    }),
-    /** When billing stopped (a former client); null while billed. */
-    clientEndedAt: timestamp('client_ended_at', {
-      withTimezone: true,
-      mode: 'string',
-    }),
+    /**
+     * The agency's own company, where staff are members. Marked by this flag,
+     * never found by name; at most one.
+     */
+    isStaff: boolean('is_staff').default(false).notNull(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -230,9 +225,7 @@ export const companies = pgTable(
   },
   table => [
     unique('companies_slug_key').on(table.slug),
-    index('idx_companies_client')
-      .on(table.id)
-      .where(sql`(client_since IS NOT NULL AND client_ended_at IS NULL)`),
+    uniqueIndex('uq_companies_staff').on(table.isStaff).where(sql`is_staff`),
     // One live company per name (case-insensitive), so pickers and the lead
     // backfill can't fork "Lasso Group" into two records.
     uniqueIndex('idx_companies_name_unique')
@@ -672,7 +665,7 @@ export const taskComments = pgTable(
       columns: [table.authorId],
       foreignColumns: [users.id],
       name: 'task_comments_author_id_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('restrict'),
   ]
 )
 
@@ -768,7 +761,7 @@ export const hourBlocks = pgTable(
       columns: [table.companyId],
       foreignColumns: [companies.id],
       name: 'hour_blocks_company_id_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('restrict'),
     check(
       'chk_hour_blocks_billing_month_month_start',
       sql`billing_month = date_trunc('month', billing_month)::date`
@@ -858,6 +851,101 @@ export const billingTerms = pgTable(
     }).onDelete('set null'),
     check(
       'chk_billing_terms_month_start',
+      sql`effective_from = date_trunc('month', effective_from)::date`
+    ),
+  ]
+)
+
+/**
+ * When a company is billed: one row per stretch of billing, by month. A
+ * company is a client while a period has not ended; the monthly close counts
+ * it in every month a period covers. The one source of client state: read it
+ * through `@pts/db/client-state`, never directly.
+ */
+export const clientBillingPeriods = pgTable(
+  'client_billing_periods',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    companyId: uuid('company_id').notNull(),
+    /** First month billed (a month start). */
+    startsOn: date('starts_on').notNull(),
+    /** Last month billed (a month start); null while billing continues. */
+    endsOn: date('ends_on'),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    index('idx_client_billing_periods_company')
+      .using('btree', table.companyId.asc(), table.startsOn.desc())
+      .where(sql`(deleted_at IS NULL)`),
+    // At most one open-ended stretch per company.
+    uniqueIndex('uq_client_billing_periods_open')
+      .on(table.companyId)
+      .where(sql`(ends_on IS NULL AND deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'client_billing_periods_company_id_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'client_billing_periods_created_by_fkey',
+    }).onDelete('set null'),
+    check(
+      'chk_client_billing_periods_months',
+      sql`starts_on = date_trunc('month', starts_on)::date AND (ends_on IS NULL OR (ends_on = date_trunc('month', ends_on)::date AND ends_on >= starts_on))`
+    ),
+  ]
+)
+
+/**
+ * A sign-in's role by month: the newest term on or before a month is the
+ * role in force for it. `users.role` is today's term (written in the same
+ * transaction); the monthly close reads the term for the period.
+ */
+export const userRoleTerms = pgTable(
+  'user_role_terms',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid('user_id').notNull(),
+    role: userRole().notNull(),
+    /** First day of the month this role takes effect (month-start CHECK). */
+    effectiveFrom: date('effective_from').notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    uniqueIndex('uq_user_role_terms_user_effective')
+      .on(table.userId, table.effectiveFrom)
+      .where(sql`(deleted_at IS NULL)`),
+    index('idx_user_role_terms_resolution')
+      .using('btree', table.userId.asc(), table.effectiveFrom.desc())
+      .where(sql`(deleted_at IS NULL)`),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'user_role_terms_user_id_fkey',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'user_role_terms_created_by_fkey',
+    }).onDelete('set null'),
+    check(
+      'chk_user_role_terms_month_start',
       sql`effective_from = date_trunc('month', effective_from)::date`
     ),
   ]
@@ -1032,7 +1120,7 @@ export const timeLogs = pgTable(
       columns: [table.userId],
       foreignColumns: [users.id],
       name: 'time_logs_user_id_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('restrict'),
     check('time_logs_hours_check', sql`hours > (0)::numeric`),
   ]
 )
@@ -1302,7 +1390,7 @@ export const clientUpdates = pgTable(
       columns: [table.companyId],
       foreignColumns: [companies.id],
       name: 'client_updates_company_id_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('restrict'),
     // RESTRICT for the same reason as lead_updates: a sent update is a record
     // of who told the client what, and users are disabled rather than deleted.
     foreignKey({

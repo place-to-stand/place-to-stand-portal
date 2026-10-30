@@ -19,7 +19,7 @@ export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
  * A client: a company you bill (0111), read from `companies`. `id` and
  * `company_id` are the same id. `billing_type` and `origination_*` come
  * from the newest terms; `deleted_at` means billing stopped
- * (`client_ended_at`, or the company archived).
+ * (billing ended, or the company archived).
  */
 export type DbClient = {
   id: string

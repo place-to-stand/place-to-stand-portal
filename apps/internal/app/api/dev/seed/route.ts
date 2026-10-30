@@ -99,13 +99,14 @@ async function upsertClient(input: {
   const companyId = await upsertCompany(input.name, input.createdBy)
   const [row] = await db
     .update(companies)
-    .set({
-      slug: input.slug,
-      clientSince: sql`coalesce(${companies.clientSince}, now())`,
-      clientEndedAt: null,
-    })
+    .set({ slug: input.slug })
     .where(eq(companies.id, companyId))
     .returning({ id: companies.id, slug: companies.slug })
+  // Billed from this month, unless it already is.
+  await db.execute(sql`insert into client_billing_periods (company_id, starts_on)
+    select ${companyId}, date_trunc('month', now())::date
+    where not exists (select 1 from client_billing_periods
+      where company_id = ${companyId} and deleted_at is null and ends_on is null)`)
   return { ...row, companyId }
 }
 

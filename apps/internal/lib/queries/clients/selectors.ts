@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import { companies } from '@/lib/db/schema'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -42,7 +42,7 @@ export const clientFields = {
   originationUserId: currentOriginationUserIdSql(),
   companyId: companies.id,
   createdBy: companies.createdBy,
-  createdAt: companies.clientSince,
+  createdAt: clientSinceSql,
   updatedAt: companies.updatedAt,
   deletedAt: clientEndedAtSql,
 }
@@ -55,7 +55,7 @@ export const clientGroupByColumns = [
   companies.state,
   companies.id,
   companies.createdBy,
-  companies.clientSince,
+  clientSinceSql,
   companies.updatedAt,
   clientEndedAtSql,
 ] as const

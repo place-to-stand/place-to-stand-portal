@@ -1,6 +1,8 @@
-import { wasClientCompany } from '@pts/db/client-state'
+import { billingOpenSql, wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
+
+import { BillingPeriodError, stopBilling } from '@/lib/companies/billing/periods'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientArchivedEvent } from '@/lib/activity/events'
@@ -56,7 +58,7 @@ export async function softDeleteClientMutation(
             id: string
             name: string
             companyId: string | null
-            endedAt: string | null
+            billingOpen: boolean
           }
         | undefined
 
@@ -66,7 +68,7 @@ export async function softDeleteClientMutation(
             id: companies.id,
             name: clientNameSql,
             companyId: companies.id,
-            endedAt: companies.clientEndedAt,
+            billingOpen: sql<boolean>`${billingOpenSql()}`,
           })
           .from(companies)
           .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
@@ -83,7 +85,7 @@ export async function softDeleteClientMutation(
       }
 
       // Stopping twice would move the date billing stopped.
-      if (existingClient.endedAt) {
+      if (!existingClient.billingOpen) {
         return buildMutationResult({ error: 'Billing has already stopped.' })
       }
 
@@ -91,13 +93,10 @@ export async function softDeleteClientMutation(
       let accessChanges: ContactClientLinkChange[] = []
       try {
         await db.transaction(async tx => {
-          await tx
-            .update(companies)
-            .set({
-              clientEndedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            })
-            .where(eq(companies.id, parsed.data.id))
+          await stopBilling(tx, {
+            companyId: parsed.data.id,
+            effective: parsed.data.effective ?? 'current_month',
+          })
           // An archived client grants nobody access; switch it off so a
           // restore (or another client at the company) doesn't bring it back.
           if (archived.companyId) {
@@ -109,7 +108,9 @@ export async function softDeleteClientMutation(
           }
         })
       } catch (error) {
-        console.error('Failed to archive client', error)
+        if (!(error instanceof BillingPeriodError)) {
+          console.error('Failed to archive client', error)
+        }
         return buildMutationResult({
           error:
             error instanceof Error

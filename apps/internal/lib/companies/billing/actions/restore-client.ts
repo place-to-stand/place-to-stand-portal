@@ -1,6 +1,8 @@
-import { wasClientCompany } from '@pts/db/client-state'
+import { billingOpenSql, wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
+
+import { BillingPeriodError, restartBilling } from '@/lib/companies/billing/periods'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientRestoredEvent } from '@/lib/activity/events'
@@ -50,7 +52,7 @@ export async function restoreClientMutation(
         | {
             id: string
             name: string
-            deletedAt: string | null
+            billingOpen: boolean
             companyArchived: string | null
           }
         | undefined
@@ -60,7 +62,7 @@ export async function restoreClientMutation(
           .select({
             id: companies.id,
             name: clientNameSql,
-            deletedAt: companies.clientEndedAt,
+            billingOpen: sql<boolean>`${billingOpenSql()}`,
             companyArchived: companies.deletedAt,
           })
           .from(companies)
@@ -77,7 +79,7 @@ export async function restoreClientMutation(
         return buildMutationResult({ error: 'Client not found.' })
       }
 
-      if (!existingClient.deletedAt) {
+      if (existingClient.billingOpen) {
         return buildMutationResult({ error: 'Client is already active.' })
       }
 
@@ -89,12 +91,17 @@ export async function restoreClientMutation(
       }
 
       try {
-        await db
-          .update(companies)
-          .set({ clientEndedAt: null, updatedAt: new Date().toISOString() })
-          .where(eq(companies.id, parsed.data.id))
+        await db.transaction(tx =>
+          restartBilling(tx, {
+            companyId: parsed.data.id,
+            effective: parsed.data.effective ?? 'current_month',
+            actorId: user.id,
+          })
+        )
       } catch (error) {
-        console.error('Failed to restore client', error)
+        if (!(error instanceof BillingPeriodError)) {
+          console.error('Failed to restore client', error)
+        }
         return buildMutationResult({
           error:
             error instanceof Error ? error.message : 'Unable to restore client.',

@@ -1,7 +1,7 @@
 import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { isClientCompany } from '@pts/db/client-state'
+import { billingOpenSql, isClientCompany, isFormerClientSql, wasClientCompany } from '@pts/db/client-state'
 
 import {
   and,
@@ -124,7 +124,7 @@ export async function listCompanies(
       clientId: sql<string | null>`case when ${isClientCompany()} then ${companies.id} end`,
       clientName: sql<string | null>`case when ${isClientCompany()} then ${companies.name} end`,
       // Billed before but not now.
-      formerClient: sql<boolean>`(${companies.clientSince} is not null and ${companies.clientEndedAt} is not null)`,
+      formerClient: isFormerClientSql,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
       people: sql<CompanyListItem['people']>`coalesce((
@@ -254,8 +254,8 @@ export async function getCompanyDetail(
       .where(
         and(
           eq(companies.id, companyId),
-          isNotNull(companies.clientSince),
-          isNotNull(companies.clientEndedAt)
+          wasClientCompany(),
+          sql`not ${billingOpenSql()}`
         )
       )
       .limit(1),
@@ -593,8 +593,7 @@ async function companyHasClient(companyId: string) {
     .where(
       and(
         eq(companies.id, companyId),
-        isNotNull(companies.clientSince),
-        isNull(companies.clientEndedAt)
+        billingOpenSql()
       )
     )
     .limit(1)
@@ -703,7 +702,7 @@ export async function setCompanyArchived(
       const [client] = await tx
         .select({ id: companies.id })
         .from(companies)
-        .where(and(eq(companies.id, companyId), isNotNull(companies.clientSince)))
+        .where(and(eq(companies.id, companyId), wasClientCompany()))
         .limit(1)
       if (client) {
         accessChanges = await revokeCompanyPortalAccess(
@@ -856,7 +855,7 @@ export async function getClientCompanyId(
   const [row] = await db
     .select({ id: companies.id })
     .from(companies)
-    .where(and(eq(companies.id, clientId), isNotNull(companies.clientSince)))
+    .where(and(eq(companies.id, clientId), wasClientCompany()))
     .limit(1)
   return row?.id ?? null
 }

@@ -1,4 +1,6 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
+
+import { billingOpenSql, wasClientCompany } from '@pts/db/client-state'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientCreatedEvent } from '@/lib/activity/events'
@@ -7,6 +9,7 @@ import { db } from '@/lib/db'
 import { companies, leads } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
+import { startBilling, type BillingEffective } from '@/lib/companies/billing/periods'
 import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
 import type { CloserShare } from '@/lib/companies/billing/closers'
 import {
@@ -44,6 +47,8 @@ type CreateClientPayload = {
   companyId?: string | null
   /** Deprecated and ignored: a company has one client. */
   label?: string | null
+  /** The first month billed: this month (default) or next. */
+  startEffective?: BillingEffective
 }
 
 const INSERT_RETRY_LIMIT = 3
@@ -64,6 +69,7 @@ export async function createClient(
     originationUserId,
     closers,
     companyId: requestedCompanyId,
+    startEffective,
   } = payload
 
   const partnerRoleError = await assertClientPartnerUserRoles({
@@ -103,17 +109,17 @@ export async function createClient(
   // A company is a client once: a former client restarts billing instead.
   const [current] = await db
     .select({
-      clientSince: companies.clientSince,
-      clientEndedAt: companies.clientEndedAt,
+      wasClient: sql<boolean>`${wasClientCompany()}`,
+      billingOpen: sql<boolean>`${billingOpenSql()}`,
       slug: companies.slug,
     })
     .from(companies)
     .where(eq(companies.id, companyId))
     .limit(1)
-  if (current?.clientSince && !current.clientEndedAt) {
+  if (current?.billingOpen) {
     return buildMutationResult({ error: 'That company is already a client.' })
   }
-  if (current?.clientSince) {
+  if (current?.wasClient) {
     return buildMutationResult({
       error: 'That company was a client: restart its billing instead.',
     })
@@ -134,19 +140,20 @@ export async function createClient(
       // aborts the transaction and the loop retries with a fresh slug.
       const clientId = await db.transaction(async tx => {
         // A client is the company, billed: it gets a slug, its state, and a
-        // start date (`client_since`).
+        // billing period from this month (or next).
         const now = new Date().toISOString()
         const made = await tx
           .update(companies)
-          .set({
-            slug: slugCandidate,
-            state,
-            clientSince: now,
-            clientEndedAt: null,
-            updatedAt: now,
-          })
-          .where(and(eq(companies.id, companyId), isNull(companies.clientSince)))
+          .set({ slug: slugCandidate, state, updatedAt: now })
+          .where(eq(companies.id, companyId))
           .returning({ id: companies.id })
+        if (made[0]) {
+          await startBilling(tx, {
+            companyId,
+            effective: startEffective ?? 'current_month',
+            actorId: user.id,
+          })
+        }
 
         const insertedId = made[0]?.id
 
