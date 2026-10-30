@@ -22,9 +22,7 @@ export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
   const user = await requireStaffUser()
   const result = await saveTaskForActor(user, input, 'ADMIN_UI')
 
-  // A `taskId` in the result means a row was written — including the partial
-  // failures, where the task exists but a follow-up step did not finish. Those
-  // still need the cached task views refreshed.
+  // A `taskId` means the save committed; an error means nothing was written.
   if (result.taskId) {
     await revalidateProjectTaskViews()
   }

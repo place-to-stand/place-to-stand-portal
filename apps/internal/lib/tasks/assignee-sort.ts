@@ -5,6 +5,8 @@ import { and, eq, isNull, ne, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { taskAssigneeMetadata, taskAssignees, tasks } from '@/lib/db/schema'
 
+import type { DbExecutor } from './save-task-children'
+
 type TaskStatus = typeof tasks.$inferSelect.status
 
 /**
@@ -17,16 +19,18 @@ type TaskStatus = typeof tasks.$inferSelect.status
  * change that leaves `sort_order` alone carries the old column's position into
  * the new one and the task surfaces somewhere in the middle, which is exactly
  * where nobody looks for the ticket they just moved. Call this after the
- * status is written and the assignee rows are final.
+ * status is written and the assignee rows are final; pass the save's
+ * transaction as `executor` so the pin commits with it.
  *
  * Writes `min(sort_order) - 1` for the destination column, so it can go
  * negative; the next drag renumbers the column from 1 (`upsertSortOrders`).
  */
 export async function pinTaskToTopOfAssigneeBoards(
   taskId: string,
-  status: TaskStatus
+  status: TaskStatus,
+  executor: DbExecutor = db
 ): Promise<void> {
-  const assignees = await db
+  const assignees = await executor
     .select({ userId: taskAssignees.userId })
     .from(taskAssignees)
     .where(and(eq(taskAssignees.taskId, taskId), isNull(taskAssignees.deletedAt)))
@@ -38,7 +42,7 @@ export async function pinTaskToTopOfAssigneeBoards(
   // Lowest ordered position per assignee among their *other* tasks in the
   // destination column. A user with no ordered rows there is absent, and any
   // value beats the unordered rows, which sort last.
-  const columnFloors = await db
+  const columnFloors = await executor
     .select({
       userId: taskAssigneeMetadata.userId,
       floor: sql<number>`min(${taskAssigneeMetadata.sortOrder})`,
@@ -73,7 +77,7 @@ export async function pinTaskToTopOfAssigneeBoards(
   )
   const timestamp = new Date().toISOString()
 
-  await db
+  await executor
     .insert(taskAssigneeMetadata)
     .values(
       assignees.map(({ userId }) => ({

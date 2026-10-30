@@ -150,13 +150,13 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
   // Session management
   const {
-    sessionId,
-    threads,
     activeThread,
     activeThreadId,
-    createDefaultThread,
+    ensureThread,
     isLoading: isSessionLoading,
   } = usePlanningSession(task.id, selectedRepoId)
+  // True while Start planning creates the session and first thread.
+  const [isStartingThread, setIsStartingThread] = useState(false)
 
   // Effective model tier: user selection overrides thread default
   const activeModel = selectedModel ?? toPlanningModelTier(activeThread?.model)
@@ -344,20 +344,27 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   // Whether we're in the empty state (no revisions generated yet)
   const hasStartedPlanning = latestVersion > 0 || isBusy || threadHasError
 
-  // Auto-create default thread when session loads with no threads
-  useEffect(() => {
-    if (!isSessionLoading && sessionId && threads.length === 0) {
-      createDefaultThread()
-    }
-  }, [isSessionLoading, sessionId, threads.length, createDefaultThread])
+  // Start planning — manual trigger for v1. Opening the panel writes nothing;
+  // this is where a task's planning session and first thread are created.
+  const handleStartPlanning = useCallback(async () => {
+    if (isBusy || isStartingThread) return
 
-  // Start planning — manual trigger for v1
-  const handleStartPlanning = useCallback(() => {
-    if (!activeThreadId || isBusy) return
+    setIsStartingThread(true)
+    const ensured = await ensureThread(activeModel)
+    setIsStartingThread(false)
+
+    if ('error' in ensured) {
+      toast({
+        variant: 'destructive',
+        title: 'Unable to start planning',
+        description: ensured.error,
+      })
+      return
+    }
 
     setGeneratingVersion(1)
     generate({
-      threadId: activeThreadId,
+      threadId: ensured.threadId,
       repoLinkId: selectedRepoId,
       taskTitle: task.title,
       taskDescription: task.description ?? null,
@@ -368,8 +375,10 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       invalidateRevisions()
     })
   }, [
-    activeThreadId,
     isBusy,
+    isStartingThread,
+    ensureThread,
+    toast,
     selectedRepoId,
     task,
     activeModel,
@@ -564,8 +573,11 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
               triggerLabel={activeModelLabel}
               align='center'
             />
-            <Button onClick={handleStartPlanning} disabled={!activeThreadId}>
-              <Play />
+            <Button
+              onClick={handleStartPlanning}
+              disabled={isStartingThread}
+            >
+              {isStartingThread ? <Loader2 className='animate-spin' /> : <Play />}
               Start planning
             </Button>
           </div>

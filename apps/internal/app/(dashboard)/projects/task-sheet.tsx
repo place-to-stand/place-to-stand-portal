@@ -147,16 +147,17 @@ export function TaskSheet(props: TaskSheetProps) {
 
   // Planning panel is collapsed by default; user expands it on demand.
   const [isPlanningOpen, setIsPlanningOpen] = useState(false)
-  // Deferred mount: the panel creates a planning session when it mounts, so
-  // it only mounts on first expand — after that it stays mounted so the
-  // collapse animation has content to slide away.
+  // Deferred mount: the panel's reads (session, revisions, deployments) only
+  // run once the user expands it — after that it stays mounted so the
+  // collapse animation has content to slide away. Opening it never writes;
+  // the session is created by Start planning.
   const [hasPlanningMounted, setHasPlanningMounted] = useState(false)
   const planningTaskId = props.task?.id ?? null
   const [prevPlanningTaskId, setPrevPlanningTaskId] = useState(planningTaskId)
 
   // The board reuses one TaskSheet instance across tasks — reset planning
-  // state on task switch so a hidden mounted panel can't create planning
-  // sessions for tasks the user never expanded planning on. Adjust-during-
+  // state on task switch so a hidden mounted panel doesn't load planning for
+  // tasks the user never expanded planning on. Adjust-during-
   // render (not an effect) so React restarts the render immediately.
   if (prevPlanningTaskId !== planningTaskId) {
     setPrevPlanningTaskId(planningTaskId)
@@ -535,8 +536,8 @@ export function TaskSheet(props: TaskSheetProps) {
             ) : null}
 
             {/* Planning panel — width-animated so it slides open from the rail.
-                Mounted on first expand only (opening a session writes rows),
-                then kept mounted so the collapse can animate. */}
+                Mounted on first expand only (it loads planning data), then
+                kept mounted so the collapse can animate. */}
             {canDeploy ? (
               <div
                 // `inert` (not just aria-hidden) — the mounted-but-collapsed
