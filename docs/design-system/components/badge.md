@@ -1,6 +1,6 @@
 # Badge
 
-A small pill of status or label text. From `@pts/ui/badge`: one size for every badge in both apps, `rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide`: all caps, semibold, slightly spaced (on trial since 30 Oct 2026).
+A small pill of status or label text. From `@pts/ui/badge`: one size for every badge in both apps, `rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide`: all caps, semibold, slightly spaced.
 
 **Two looks, and only two:**
 - **Status** (a state that changes: lead stage, project and task status, invoice state, billing type, deployment state): `variant='outline'` plus a soft tinted fill from `BADGE_TINTS` (`@pts/ui/badge-tints`) or the domain's status token (`getLeadStatusToken`, `getProjectStatusToken`, `getTaskStatusToken`, `invoiceStatusTint`). Use the domain components where they exist: `LeadStatusBadge`, `InvoiceStatusBadge`, `ProjectStatusBadge` (`components/projects/project-status-badge.tsx`), and `ProjectStatusCell` to change a project's status in place.

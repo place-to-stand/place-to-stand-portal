@@ -124,6 +124,61 @@ const sheetColumnClasses: Record<SheetColumns, string> = {
   2: 'sm:max-w-3xl lg:w-[1184px] lg:max-w-[calc(100vw-4rem)]',
 }
 
+const SHEET_FIELD_SELECTOR = [
+  '[data-autofocus]:not([disabled])',
+  'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([disabled]):not([readonly])',
+  'textarea:not([disabled]):not([readonly])',
+  '[contenteditable="true"]',
+  'button[role="combobox"]:not([disabled])',
+].join(', ')
+
+/** The sheet's first editable field, outside its header; null if none yet. */
+function firstSheetField(popup: HTMLElement | null): HTMLElement | null {
+  if (!popup) return null
+  const marked = popup.querySelector<HTMLElement>(
+    '[data-autofocus]:not([disabled])'
+  )
+  if (marked) return marked
+  for (const element of popup.querySelectorAll<HTMLElement>(
+    SHEET_FIELD_SELECTOR
+  )) {
+    if (element.closest('[data-slot="sheet-header"], [aria-hidden="true"]'))
+      continue
+    if (element.getClientRects().length === 0) continue
+    return element
+  }
+  return null
+}
+
+/** Put the caret at the end of a text field or editor. */
+function placeCaretAtEnd(element: HTMLElement) {
+  if (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement
+  ) {
+    const end = element.value.length
+    try {
+      element.setSelectionRange(end, end)
+    } catch {
+      // Inputs like type="email" don't support selection ranges.
+    }
+    return
+  }
+  if (element.isContentEditable) {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    range.collapse(false)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  }
+}
+
+function focusField(element: HTMLElement) {
+  element.focus({ preventScroll: true })
+  placeCaretAtEnd(element)
+}
+
 const SheetContent = React.forwardRef<
   HTMLDivElement,
   SheetPrimitive.Popup.Props & {
@@ -167,18 +222,32 @@ const SheetContent = React.forwardRef<
       },
       [ref]
     )
-    // Land focus on the sheet's `data-autofocus` field when it has one, else
-    // on the popup itself — never on its first tabbable (the header's close
-    // button), which stays one Tab away.
-    const focusPopup = React.useCallback(() => {
+    // Land focus on the sheet's first field so you can just type: a
+    // `data-autofocus` field when the sheet marks one, else the first enabled
+    // input, textarea, editor or picker trigger. Never the header's close
+    // button. Edit sheets render their fields after their data loads, so
+    // until a field exists focus sits on the popup, and the first field to
+    // appear takes it then (unless focus has moved on, e.g. to a dialog).
+    const focusPopup = React.useCallback(
+      () => firstSheetField(popupRef.current) ?? popupRef.current,
+      []
+    )
+    React.useEffect(() => {
       const popup = popupRef.current
-      if (!popup) {
-        return null
+      if (!popup || firstSheetField(popup)) return
+      const observer = new MutationObserver(() => {
+        const field = firstSheetField(popup)
+        if (!field) return
+        observer.disconnect()
+        const active = document.activeElement
+        if (active === popup || active === document.body) focusField(field)
+      })
+      observer.observe(popup, { childList: true, subtree: true })
+      const stop = window.setTimeout(() => observer.disconnect(), 5000)
+      return () => {
+        observer.disconnect()
+        window.clearTimeout(stop)
       }
-      return (
-        popup.querySelector<HTMLElement>('[data-autofocus]:not([disabled])') ??
-        popup
-      )
     }, [])
 
     return (
@@ -192,7 +261,14 @@ const SheetContent = React.forwardRef<
         )}
         <SheetPrimitive.Popup
           ref={setPopupRef}
-          initialFocus={focusPopup}
+          initialFocus={() => {
+            const target = focusPopup()
+            // Caret at the end of an edit sheet's text, after focus lands.
+            if (target && target !== popupRef.current) {
+              window.requestAnimationFrame(() => placeCaretAtEnd(target))
+            }
+            return target
+          }}
           data-slot='sheet-content'
           className={cn(
             // Open and close both 300ms: the open used to run at 500ms, which
