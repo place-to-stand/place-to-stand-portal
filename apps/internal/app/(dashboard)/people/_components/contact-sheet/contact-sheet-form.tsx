@@ -102,7 +102,7 @@ export function ContactSheetForm({
   const saveLabel = getSubmitLabel({
     isSaving: isPending,
     isEditing,
-    createLabel: 'Create contact',
+    createLabel: 'Create person',
   })
 
   const firstFieldRef = useRef<HTMLInputElement>(null)
@@ -310,7 +310,7 @@ export function ContactSheetForm({
         deleteDisabled={deleteDisabled}
         deleteDisabledReason={deleteDisabledReason}
         onRequestDelete={onRequestDelete}
-        deleteAriaLabel='Archive contact'
+        deleteAriaLabel='Archive person'
       />
     </Form>
   )

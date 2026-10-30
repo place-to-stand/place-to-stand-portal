@@ -181,11 +181,11 @@ export function useContactSheetState({
     }
   }, [open, contact, form, initialName, initialCompanyId])
 
-  const contactDisplayName = contact?.name || contact?.email || 'this contact'
-  const sheetTitle = isEditing ? 'Edit contact' : 'Create contact'
+  const contactDisplayName = contact?.name || contact?.email || 'this person'
+  const sheetTitle = isEditing ? 'Edit person' : 'Create person'
   const sheetDescription = isEditing
     ? `Update the details for ${contactDisplayName}.`
-    : 'Add a new contact to your organization.'
+    : 'Add a new person to your organization.'
 
   // Unsaved changes warning
   const { requestConfirmation, dialog: unsavedChangesDialog } =
@@ -198,7 +198,7 @@ export function useContactSheetState({
   const deleteDisabledReason = isPending
     ? PENDING_REASON
     : !isEditing
-      ? 'Cannot archive a new contact.'
+      ? 'Cannot archive a new person.'
       : null
 
   const handleSheetOpenChange = useCallback(
@@ -238,8 +238,8 @@ export function useContactSheetState({
           setFeedback(result.error)
           toast({
             title: isEditing
-              ? 'Unable to update contact'
-              : 'Unable to create contact',
+              ? 'Unable to update person'
+              : 'Unable to create person',
             description: result.error,
             variant: 'destructive',
           })
@@ -247,7 +247,7 @@ export function useContactSheetState({
         }
 
         toast({
-          title: isEditing ? 'Contact updated' : 'Contact created',
+          title: isEditing ? 'Person updated' : 'Person created',
           description: isEditing
             ? `${data.name || data.email} has been updated.`
             : `${data.name || data.email} has been created.`,
@@ -296,9 +296,9 @@ export function useContactSheetState({
   const promoteDisabledReason = isPending
     ? PENDING_REASON
     : !isEditing
-      ? 'Save the contact first.'
+      ? 'Save the person first.'
       : hasPortalAccess
-        ? 'This contact already has portal access.'
+        ? 'This person already has portal access.'
         : !hasEmail
           ? 'Add an email and save before giving portal access.'
           : null
@@ -328,7 +328,7 @@ export function useContactSheetState({
 
   const handleConfirmDelete = useCallback(() => {
     const contactId = contact?.id
-    const displayName = contact?.name || contact?.email || 'this contact'
+    const displayName = contact?.name || contact?.email || 'this person'
 
     if (!contactId || isPending) {
       setIsDeleteDialogOpen(false)
@@ -342,7 +342,7 @@ export function useContactSheetState({
       if (result.error) {
         setFeedback(result.error)
         toast({
-          title: 'Unable to archive contact',
+          title: 'Unable to archive person',
           description: result.error,
           variant: 'destructive',
         })
@@ -350,7 +350,7 @@ export function useContactSheetState({
       }
 
       toast({
-        title: 'Contact archived',
+        title: 'Person archived',
         description: `${displayName} has been archived.`,
       })
       onComplete()

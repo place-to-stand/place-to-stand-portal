@@ -79,28 +79,37 @@ Undo SQL goes in `sales-tools-rollout.md` with the rest of the batch.
   and `personNameSql()` (the contact's name for a user) replace direct reads
   of `clients.name` and `users.full_name`. CLI and MCP fields keep their
   names (`client.name`, `user.fullName`); only their source changes.
-- Writers: renaming happens on the company or the contact only. The client
-  portal's own profile rename writes the contact.
+- Writers: renaming happens on the company or the person only (renaming a
+  user renames their contact). The client portal has no profile rename.
 - The UI calls contacts **People** (sidebar, titles, buttons, empty states,
   ⌘K, activity). `/contacts` links redirect to `/people`.
 
-## UI
+## UI (built)
 
-- **Company sheet:** a Billing section for admins (billing type, state,
-  commission, portal access) saved with the company, plus links to the
-  company's projects, invoices and hour blocks. "Make client" turns billing
-  on. The separate client sheet and "Link client / Link company" go away.
-- **Company page:** the client page becomes the company's page;
-  `/clients` and `/clients/[slug]` and project URLs keep working.
-- **Companies list:** Client badge and a "Clients" filter. Clients leaves
-  the sidebar.
-- **Contact sheet:** a Sign-in section for admins: can sign in (the off
-  switch), role (including staff roles), sign-in email, archive sign-in,
-  reset password, create sign-in.
-- **Settings > Users** becomes Contacts filtered to people who can sign in.
-- **Lead conversion** = Make client (turns billing on for the lead's
-  company).
-- Sales never sees billing, hours or sign-in controls.
+- **Company sheet:** a Client section for admins with the billing record's
+  Billing (type, state), Commission and Portal access, saved by the
+  company's Save; "Client page" and "Stop billing" sit on its title row.
+  Without a client it offers **Make client** (`?client=new`, company
+  preselected). Link / unlink client are gone. `?client=<id>` links open the
+  company sheet.
+- **Client page** (`/clients/[slug]`) stays for projects, notes and updates;
+  its Edit opens the company sheet and its breadcrumbs sit under Companies.
+- **Companies list:** a "Client" badge column and the "Clients" filter.
+  Clients leaves the sidebar; `/clients` redirects to Companies filtered to
+  clients. `/clients/archive` (stopped billing) stays reachable.
+- **Person sheet:** a Sign-in section for admins: sign-in email, last
+  sign-in, role (Admin, Sales, Client), Can sign in (the off switch), set a
+  temporary password (forces a reset), archive / restore. Each applies right
+  away. "Create sign-in" when there is none.
+- **Archiving a person** switches their sign-in off in the same transaction,
+  then bans the auth account and revokes connections.
+- **Settings > Users** redirects to People filtered to sign-ins
+  (`?signIn=`, admins only); `?user=<id>` opens the person.
+- **Lead conversion** = Make client: the client takes the company's name;
+  if the company is already a client the lead links to it.
+- **People:** `/contacts` redirects to `/people`.
+- Sales never sees billing, hours or sign-in controls (UI gated on admin,
+  server actions require ADMIN).
 
 ## Checks
 

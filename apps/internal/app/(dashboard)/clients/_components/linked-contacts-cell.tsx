@@ -32,7 +32,7 @@ export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
         items={contacts.map(contact => ({
           id: contact.id,
           // Unnamed contacts show their email as the title, not twice.
-          label: contact.name ?? contact.email ?? 'Unnamed contact',
+          label: contact.name ?? contact.email ?? 'Unnamed person',
           sublabel: contact.name ? contact.email : null,
           href: contactSheetHref(contact.id),
           trailing: contact.isPrimary ? (

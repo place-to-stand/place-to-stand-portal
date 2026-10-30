@@ -113,7 +113,7 @@ function OriginatorAvatar({ client }: { client: ClientWithMetrics }) {
   const name = client.originationUserId
     ? (client.originationUserName ?? 'Unknown admin')
     : client.originationContactId
-      ? (client.originationContactName ?? 'Unknown contact')
+      ? (client.originationContactName ?? 'Unknown person')
       : null
 
   if (!name) {

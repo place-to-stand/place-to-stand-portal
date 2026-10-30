@@ -107,7 +107,7 @@ export async function saveContactMutation(
 
   if (!parsed.success) {
     return buildMutationResult({
-      error: parsed.error.issues[0]?.message ?? 'Invalid contact data.',
+      error: parsed.error.issues[0]?.message ?? 'Invalid person data.',
     })
   }
 
@@ -171,7 +171,7 @@ export async function saveContactMutation(
           .limit(1)
 
         if (!existing) {
-          return buildMutationResult({ error: 'Contact not found.' })
+          return buildMutationResult({ error: 'Person not found.' })
         }
 
         const next = {
@@ -232,8 +232,8 @@ export async function saveContactMutation(
         ) {
           return buildMutationResult({
             error: existing.userId
-              ? 'This contact is a portal user, so only an admin can change their email.'
-              : 'This contact is at a client, so only an admin can change their email.',
+              ? 'This person is a portal user, so only an admin can change their email.'
+              : 'This person is at a client, so only an admin can change their email.',
           })
         }
         // Portal access is set only in Edit client > Portal access. Leaving
@@ -276,10 +276,10 @@ export async function saveContactMutation(
           console.error('Failed to update contact', error)
           if (isEmailConflict(error)) {
             return buildMutationResult({
-              error: 'A contact with this email already exists.',
+              error: 'A person with this email already exists.',
             })
           }
-          return buildMutationResult({ error: 'Unable to update contact.' })
+          return buildMutationResult({ error: 'Unable to update person.' })
         }
 
         // Access trail on the client, as on the client sheet.
@@ -370,10 +370,10 @@ export async function saveContactMutation(
         console.error('Failed to create contact', error)
         if (isEmailConflict(error)) {
           return buildMutationResult({
-            error: 'A contact with this email already exists.',
+            error: 'A person with this email already exists.',
           })
         }
-        return buildMutationResult({ error: 'Unable to create contact.' })
+        return buildMutationResult({ error: 'Unable to create person.' })
       }
 
       const event = contactCreatedEvent({ email, name })
@@ -449,7 +449,7 @@ async function clientJoinError(
   if (canManageAccess || !joins.length) return null
   const clientIds = await clientIdsByCompany(joins.map(join => join.companyId))
   return clientIds.size > 0
-    ? 'This company is a client, so only an admin can change its contacts.'
+    ? 'This company is a client, so only an admin can change its people.'
     : null
 }
 

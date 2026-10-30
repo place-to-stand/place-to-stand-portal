@@ -20,7 +20,7 @@ import { resolveContactDeepLink } from './_lib/contact-deep-link'
 import { mapContactToTableRow } from './_lib/map-contact-to-table-row'
 
 export const metadata: Metadata = {
-  title: 'Contacts',
+  title: 'People',
 }
 
 export default async function ContactsPage({
@@ -85,12 +85,12 @@ export default async function ContactsPage({
       tabs={CONTACTS_TABS}
       activeTab='contacts'
       count={{
-        label: 'contacts',
+        label: 'people',
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
       primaryAction={
-        <SheetCreateButton entity='contact' label='Create contact' />
+        <SheetCreateButton entity='contact' label='Create person' />
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>

@@ -91,7 +91,7 @@ const ENTITY_CARDS: Array<{ name: string; color: string; className: string }> =
         'border-blue-500/35 hover:border-blue-500/60 hover:bg-blue-500/5',
     },
     {
-      name: 'Contact',
+      name: 'Person',
       color: 'cyan',
       className:
         'border-cyan-500/35 hover:border-cyan-500/60 hover:bg-cyan-500/5',

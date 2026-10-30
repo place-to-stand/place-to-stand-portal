@@ -82,7 +82,7 @@ export function LeadSheetFormFields({
         name='contact'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Contact</FormLabel>
+            <FormLabel>Person</FormLabel>
             <FormControl>
               <ContactLinkPicker
                 value={field.value ?? null}
@@ -296,7 +296,7 @@ function ContactCompanyMismatchNote({
     return null
   }
 
-  const contactName = contact.name || 'This contact'
+  const contactName = contact.name || 'This person'
   const companyName = company.name || 'this company'
   return (
     <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-sm'>

@@ -24,7 +24,7 @@ export type FindOrCreatePortalUserResult = UserServiceResult & {
 
 const STAFF_EMAIL_ERROR = {
   error:
-    'That email belongs to a staff user, so it can’t be a portal user. Use a different email for the contact.',
+    'That email belongs to a staff user, so it can’t be a portal user. Use a different email for the person.',
 }
 
 /**

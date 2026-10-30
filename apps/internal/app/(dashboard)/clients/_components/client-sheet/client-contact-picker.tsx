@@ -119,12 +119,12 @@ export function ClientPortalAccessList({
   if (companyPeople.length === 0 && outsiders.length === 0) {
     return companyId ? (
       <EmptyState
-        message='No contacts at this company yet. Add them on the company.'
+        message='No people at this company yet. Add them on the company.'
         label='Open company'
         onClick={() => open('company', companyId)}
       />
     ) : (
-      <EmptyState message='Link a company first: its contacts are listed here.' />
+      <EmptyState message='Link a company first: its people are listed here.' />
     )
   }
 
@@ -132,7 +132,7 @@ export function ClientPortalAccessList({
     <>
       <SheetRecordList>
         {people.map(contact => {
-          const label = contact.name ?? contact.email ?? 'this contact'
+          const label = contact.name ?? contact.email ?? 'this person'
           const hasAccess = selectedIds.has(contact.id)
           return (
             <ContactRecordRow
@@ -160,7 +160,7 @@ export function ClientPortalAccessList({
                     const createReason = isPending
                       ? pendingReason
                       : !contact.email
-                        ? 'Add an email to this contact first'
+                        ? 'Add an email to this person first'
                         : isCreatingUser && !isCreatingThis
                           ? 'Creating another portal user'
                           : null
@@ -212,7 +212,7 @@ export function ClientPortalAccessList({
           )
         })}
         {outsiders.map(contact => {
-          const label = contact.name ?? contact.email ?? 'this contact'
+          const label = contact.name ?? contact.email ?? 'this person'
           return (
             <ContactRecordRow
               key={contact.id}

@@ -17,7 +17,7 @@ export const leadFormSchema = z.object({
       phone: z.string().nullable(),
     })
     .nullable()
-    .refine(value => Boolean(value), 'Pick or create a contact'),
+    .refine(value => Boolean(value), 'Pick or create a person'),
   /** The linked company, chosen with the company picker. */
   company: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
   sourceType: z.enum(LEAD_SOURCE_TYPES).optional().nullable(),

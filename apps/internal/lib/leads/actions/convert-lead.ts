@@ -208,7 +208,7 @@ export async function convertLeadToClient(
             // Access needs a portal login; the contact sheet creates one.
             if (!granted) {
               warnings.push(
-                `${lead.contactName} has no portal user yet, so they weren’t given portal access. Create one from their contact, then switch it on in Edit client > Portal access.`
+                `${lead.contactName} has no portal user yet, so they weren’t given portal access. Create one from their person record, then switch it on in Edit client > Portal access.`
               )
             }
           }
@@ -235,8 +235,8 @@ export async function convertLeadToClient(
       )
       warnings.push(
         givePortalAccess
-          ? 'The contact could not be added to the client’s company or given portal access. You can do it from the client.'
-          : 'The contact could not be added to the client’s company. You can add them from the company.'
+          ? 'The person could not be added to the client’s company or given portal access. You can do it from the client.'
+          : 'The person could not be added to the client’s company. You can add them from the company.'
       )
     }
   }

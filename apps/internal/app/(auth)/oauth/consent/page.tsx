@@ -25,11 +25,11 @@ export const metadata: Metadata = {
 }
 
 const ADMIN_ACCESS_SUMMARY =
-  'It will act as you: read clients, contacts, projects, tasks and leads, and create and update tasks, task comments and leads.'
+  'It will act as you: read clients, people, projects, tasks and leads, and create and update tasks, task comments and leads.'
 
 /** SALES reaches the MCP's CRM tools only, as in the portal (PRD 009 D6). */
 const SALES_ACCESS_SUMMARY =
-  'It will act as you: read leads, contacts and their activity, and create and update leads and log lead updates.'
+  'It will act as you: read leads, people and their activity, and create and update leads and log lead updates.'
 
 function redirectHost(uri: string): string | null {
   try {

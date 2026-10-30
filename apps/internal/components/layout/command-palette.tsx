@@ -252,7 +252,7 @@ function CommandPalette() {
           </CommandGroup>
         ) : null}
         {contactResults.length > 0 ? (
-          <CommandGroup heading='Contacts'>
+          <CommandGroup heading='People'>
             {contactResults.map(contact => (
               <CommandItem
                 key={contact.id}

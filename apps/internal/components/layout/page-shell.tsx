@@ -20,10 +20,12 @@ import { TabsNav, type TabsNavTab } from './tabs-nav'
 
 /**
  * Count labels are declared as plural nouns ('users', 'archived leads');
- * all current labels pluralize with a plain trailing s, so a count of 1
- * just drops it. An irregular noun added later needs explicit handling.
+ * they pluralize with a plain trailing s, so a count of 1 just drops it,
+ * except 'people' → 'person'.
  */
 function singularizeLabel(label: string) {
+  if (label.endsWith('people'))
+    return `${label.slice(0, -'people'.length)}person`
   return label.endsWith('s') ? label.slice(0, -1) : label
 }
 

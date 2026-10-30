@@ -216,14 +216,14 @@ export const CAPABILITIES = {
   'companies.manage': {
     area: 'Directory',
     label: 'Manage companies',
-    description: 'Companies, their contacts and leads.',
+    description: 'Companies, their people and leads.',
     roles: STAFF,
     surfaces: ['app'],
   },
   'contacts.manage': {
     area: 'Directory',
-    label: 'Manage contacts',
-    description: 'Contacts at companies, leads and clients.',
+    label: 'Manage people',
+    description: 'People at companies, leads and clients.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
   },
@@ -237,7 +237,7 @@ export const CAPABILITIES = {
   'activity.read_crm': {
     area: 'Directory',
     label: 'See CRM activity',
-    description: 'History of leads, contacts and companies.',
+    description: 'History of leads, people and companies.',
     roles: STAFF,
     surfaces: ['app', 'mcp'],
   },

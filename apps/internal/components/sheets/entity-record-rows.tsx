@@ -50,7 +50,7 @@ export function ContactRecordRow({
   }
 }) {
   const { open } = useSheetParams()
-  const name = contact.name || contact.email || 'Unnamed contact'
+  const name = contact.name || contact.email || 'Unnamed person'
   return (
     <SheetRecordRow
       icon={Contact}

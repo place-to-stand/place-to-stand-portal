@@ -151,7 +151,7 @@ export function ContactsTableSection({
               ? isDeleting || isRestoring || isDestroying
                 ? pendingReason
                 : contact.deletedAt
-                  ? 'Contact already archived.'
+                  ? 'Person already archived.'
                   : null
               : null
 
@@ -162,7 +162,7 @@ export function ContactsTableSection({
               isDestroying || isDeleting || isRestoring || !contact.deletedAt
             const destroyDisabledReason = destroyDisabled
               ? !contact.deletedAt
-                ? 'Archive the contact before permanently deleting.'
+                ? 'Archive the person before permanently deleting.'
                 : pendingReason
               : null
 
@@ -314,7 +314,7 @@ export function ContactsTableSection({
                     {showRestore ? (
                       <RecordRowAction
                         kind='restore'
-                        entity='contact'
+                        entity='person'
                         onClick={() => onRestore(contact)}
                         disabled={restoreDisabled}
                         disabledReason={restoreDisabledReason}
@@ -323,7 +323,7 @@ export function ContactsTableSection({
                     {showSoftDelete ? (
                       <RecordRowAction
                         kind='archive'
-                        entity='contact'
+                        entity='person'
                         onClick={() => onRequestDelete(contact)}
                         disabled={deleteDisabled}
                         disabledReason={deleteDisabledReason}
@@ -332,7 +332,7 @@ export function ContactsTableSection({
                     {showDestroy ? (
                       <RecordRowAction
                         kind='destroy'
-                        entity='contact'
+                        entity='person'
                         onClick={() => onRequestDestroy(contact)}
                         disabled={destroyDisabled}
                         disabledReason={destroyDisabledReason}

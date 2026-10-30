@@ -69,17 +69,17 @@ export async function destroyContactMutation(
       } catch (error) {
         console.error('Failed to load contact for destroy', error)
         return buildMutationResult({
-          error: 'Unable to permanently delete contact.',
+          error: 'Unable to permanently delete person.',
         })
       }
 
       if (!existingContact) {
-        return buildMutationResult({ error: 'Contact not found.' })
+        return buildMutationResult({ error: 'Person not found.' })
       }
 
       if (!existingContact.deletedAt) {
         return buildMutationResult({
-          error: 'Contact must be archived before permanent deletion.',
+          error: 'Person must be archived before permanent deletion.',
         })
       }
 
@@ -92,7 +92,7 @@ export async function destroyContactMutation(
       if (lead) {
         return buildMutationResult({
           error:
-            'This contact has leads, so it can’t be permanently deleted. Delete their leads first, or keep the contact archived.',
+            'This person has leads, so they can’t be permanently deleted. Delete their leads first, or keep them archived.',
         })
       }
 
@@ -104,7 +104,7 @@ export async function destroyContactMutation(
           error:
             error instanceof Error
               ? error.message
-              : 'Unable to permanently delete contact.',
+              : 'Unable to permanently delete person.',
         })
       }
 

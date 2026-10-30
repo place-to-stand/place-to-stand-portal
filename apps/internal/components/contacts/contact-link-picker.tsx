@@ -89,8 +89,8 @@ export function ContactLinkPicker({
     <EntityLinkPicker
       id={id}
       entity='contact'
-      entityLabel='contact'
-      aria-label='Contact'
+      entityLabel='person'
+      aria-label='Person'
       icon={Contact}
       value={
         value

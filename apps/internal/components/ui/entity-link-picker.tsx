@@ -67,7 +67,11 @@ type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
 }
 
 const pluralize = (noun: string) =>
-  noun.endsWith('y') ? `${noun.slice(0, -1)}ies` : `${noun}s`
+  noun === 'person'
+    ? 'people'
+    : noun.endsWith('y')
+      ? `${noun.slice(0, -1)}ies`
+      : `${noun}s`
 
 /**
  * The portal's one pattern for linking a record to another, built on

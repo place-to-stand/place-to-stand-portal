@@ -243,7 +243,7 @@ function formatValue(
         : String(value)
     case 'contact':
       return typeof value === 'string'
-        ? (references?.contacts[value] ?? 'Unknown contact')
+        ? (references?.contacts[value] ?? 'Unknown person')
         : String(value)
     case 'project':
       return typeof value === 'string'

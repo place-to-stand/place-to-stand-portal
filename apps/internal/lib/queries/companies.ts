@@ -98,7 +98,7 @@ function saveConflictMessage(error: unknown): string {
     case 'memberships_one_primary_per_company':
       return 'The primary contact just changed. Reload and try again.'
     case 'memberships_one_current_per_contact_company':
-      return 'A contact on this company just changed. Reload and try again.'
+      return 'A person on this company just changed. Reload and try again.'
     case 'idx_companies_name_unique':
       return DUPLICATE_NAME_ERROR
     default:
@@ -463,7 +463,7 @@ export async function saveCompany(
       )
       .limit(1)
     if (!contact) {
-      return { ok: false, error: 'That contact is not at this company.' }
+      return { ok: false, error: 'That person is not at this company.' }
     }
     primaryContactName = contact.name
   }
@@ -496,7 +496,7 @@ export async function saveCompany(
       return {
         ok: false,
         error:
-          'This company is a client, so only an admin can change its contacts.',
+          'This company is a client, so only an admin can change its people.',
       }
     }
     if (primaryChange && (await companyHasClient(existing.id))) {
@@ -509,7 +509,7 @@ export async function saveCompany(
   }
 
   if (people.moves.length) {
-    changedFields.push('contacts')
+    changedFields.push('people')
   }
   if ((values.contactTitles ?? []).length) {
     changedFields.push('titles')
@@ -579,7 +579,7 @@ export async function saveCompany(
     })
   } catch (error) {
     if (error instanceof TransactionRollbackError) {
-      return { ok: false, error: 'That contact is not at this company.' }
+      return { ok: false, error: 'That person is not at this company.' }
     }
     if (isUniqueViolation(error)) {
       return { ok: false, error: saveConflictMessage(error) }
@@ -923,7 +923,7 @@ export async function setCompanyPrimaryContact(
       .where(and(eq(contacts.id, contactId), isNull(contacts.deletedAt)))
       .limit(1)
     if (!contact) {
-      return { ok: false, error: 'That contact is not at this company.' }
+      return { ok: false, error: 'That person is not at this company.' }
     }
     contactName = contact.name
   }
@@ -962,7 +962,7 @@ export async function setCompanyPrimaryContact(
     }
   }
   if (!set) {
-    return { ok: false, error: 'That contact is not at this company.' }
+    return { ok: false, error: 'That person is not at this company.' }
   }
 
   await logActivity({

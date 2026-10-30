@@ -40,8 +40,8 @@ type ContactsManagementTableProps = {
 }
 
 const EMPTY_MESSAGES = {
-  active: 'No contacts yet.',
-  archive: 'No archived contacts.',
+  active: 'No people yet.',
+  archive: 'No archived people.',
 } as const
 
 export function ContactsManagementTable({
@@ -92,7 +92,7 @@ export function ContactsManagementTable({
   // shows the filtered message, not the tab's default empty state.
   const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
   const emptyMessage = hasActiveFilter
-    ? 'No contacts match the current filters.'
+    ? 'No people match the current filters.'
     : EMPTY_MESSAGES[mode]
 
   const handleRequestPreview = useCallback(
@@ -135,15 +135,15 @@ export function ContactsManagementTable({
   return (
     <div className='space-y-4'>
       {contactNotFound ? (
-        <DeepLinkNotFoundNotice entity='contact' onDismiss={clearSelection} />
+        <DeepLinkNotFoundNotice entity='person' onDismiss={clearSelection} />
       ) : null}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title='Archive contact?'
+        title='Archive person?'
         description={
           deleteTarget
-            ? `Archiving ${deleteTarget.name || deleteTarget.email} hides it from active views but keeps the contact.`
-            : 'Archiving this contact hides it from active views but keeps the contact.'
+            ? `Archiving ${deleteTarget.name || deleteTarget.email} hides them from active views but keeps their record.`
+            : 'Archiving this person hides them from active views but keeps their record.'
         }
         confirmLabel='Archive'
         confirmVariant='destructive'
@@ -153,11 +153,11 @@ export function ContactsManagementTable({
       />
       <ConfirmDialog
         open={Boolean(destroyTarget)}
-        title='Permanently delete contact?'
+        title='Permanently delete person?'
         description={
           destroyTarget
-            ? `Permanently deleting ${destroyTarget.name || destroyTarget.email} removes this contact. This action cannot be undone.`
-            : 'Permanently deleting this contact removes it. This action cannot be undone.'
+            ? `Permanently deleting ${destroyTarget.name || destroyTarget.email} removes this person. This action cannot be undone.`
+            : 'Permanently deleting this person removes them. This action cannot be undone.'
         }
         confirmLabel='Delete forever'
         confirmVariant='destructive'

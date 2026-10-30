@@ -95,7 +95,7 @@ export const clientSchema = z
     data =>
       !(data.originationUserId !== null && data.originationContactId !== null),
     {
-      message: 'Origination is one admin or one contact, not both.',
+      message: 'Origination is one admin or one person, not both.',
       path: ['originationUserId'],
     }
   )
@@ -180,10 +180,10 @@ async function assertCloserContacts(
     for (const id of contactIds) {
       const contact = found.get(id)
       if (!contact) {
-        return { error: 'Selected closer contact no longer exists.' }
+        return { error: 'The selected closer no longer exists.' }
       }
       if (contact.deletedAt !== null) {
-        return { error: 'Selected closer contact is archived.' }
+        return { error: 'The selected closer is archived.' }
       }
     }
   } catch (error) {

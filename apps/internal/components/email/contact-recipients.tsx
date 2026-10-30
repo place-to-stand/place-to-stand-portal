@@ -70,7 +70,7 @@ export function ContactRecipients({
     <div className='space-y-3'>
       {contacts.length === 0 ? (
         <p className='text-muted-foreground text-sm'>
-          No contacts are linked to this client yet.
+          No people are linked to this client yet.
         </p>
       ) : (
         <ul className='space-y-2'>

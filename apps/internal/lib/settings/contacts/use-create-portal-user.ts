@@ -44,7 +44,7 @@ export function useCreatePortalUser() {
 
         toast({
           title: 'Portal user created',
-          description: `A sign-in link to the client portal has been emailed to ${contact.name || contact.email || 'the contact'}.`,
+          description: `A sign-in link to the client portal has been emailed to ${contact.name || contact.email || 'the person'}.`,
         })
         handlers.onSuccess?.()
       })

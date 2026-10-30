@@ -160,14 +160,14 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     },
     {
       id: 'portal-invite',
-      overview: 'Sent when a contact is given client portal access.',
+      overview: 'Sent when a person is given client portal access.',
       group: 'accounts',
       status: 'active',
       name: 'Client portal invite',
       description:
-        'Welcomes a new client portal user with a one-time sign-in link. Sent from the internal portal, but lands with client contacts.',
+        'Welcomes a new client portal user with a one-time sign-in link. Sent from the internal portal, but lands with people at the client.',
       triggers: [
-        'Promoting a contact to a portal user',
+        'Promoting a person to a portal user',
         'Creating a CLIENT-role user under Settings → Users',
       ],
       recipient: 'The new portal user',
@@ -231,7 +231,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
         'Send test on the same page (to the signed-in admin only, subject prefixed [Test])',
       ],
       recipient:
-        'The client’s linked contacts, with other staff cc’d — both editable before sending',
+        'The client’s linked people, with other staff cc’d — both editable before sending',
       from: 'The signed-in admin’s Gmail address',
       replyTo: 'The signed-in admin’s Gmail address',
       delivery:

@@ -9,7 +9,7 @@ import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { ActivitySection } from '@/components/activity/activity-section'
 
 export const metadata: Metadata = {
-  title: 'Contact activity',
+  title: 'People activity',
 }
 
 export default async function ContactsActivityPage() {
@@ -21,14 +21,14 @@ export default async function ContactsActivityPage() {
       tabs={CONTACTS_TABS}
       activeTab='activity'
       primaryAction={
-        <SheetCreateButton entity='contact' label='Create contact' />
+        <SheetCreateButton entity='contact' label='Create person' />
       }
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
         <ActivitySection
           targetType='CONTACT'
-          emptyState='No recent contact activity.'
-          description='Audit contact creation, edits, archives, and deletions in one place.'
+          emptyState='No recent people activity.'
+          description='Audit people creation, edits, archives, and deletions in one place.'
         />
       </section>
     </PageShell>

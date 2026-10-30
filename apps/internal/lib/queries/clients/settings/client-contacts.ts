@@ -224,7 +224,7 @@ export async function syncClientContacts(
     !UUID_PATTERN.test(clientId) ||
     !contactIds.every(id => UUID_PATTERN.test(id))
   ) {
-    return { ok: false, error: 'Invalid client or contact.' }
+    return { ok: false, error: 'Invalid client or person.' }
   }
 
   const [client] = await db
@@ -238,7 +238,7 @@ export async function syncClientContacts(
       ? {
           ok: false,
           error:
-            'Link this client to a company before giving its contacts portal access.',
+            'Link this client to a company before giving its people portal access.',
         }
       : { ok: true }
   }

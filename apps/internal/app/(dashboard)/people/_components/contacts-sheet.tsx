@@ -14,11 +14,11 @@ import {
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
 import { PromoteToUserDialog } from './contact-sheet/promote-to-user-dialog'
 
-const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive contact?'
+const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive person?'
 const ARCHIVE_CONTACT_CONFIRM_LABEL = 'Archive'
 
 function getArchiveContactDialogDescription(displayName: string) {
-  return `Archiving ${displayName} hides it from active views but keeps the contact.`
+  return `Archiving ${displayName} hides them from active views but keeps their record.`
 }
 
 type ContactsSheetProps = UseContactSheetStateOptions

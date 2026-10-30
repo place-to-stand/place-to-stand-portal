@@ -47,16 +47,16 @@ export async function promoteContactToUserMutation(
     .limit(1)
 
   if (!contact) {
-    return buildMutationResult({ error: 'Contact not found.' })
+    return buildMutationResult({ error: 'Person not found.' })
   }
 
   if (contact.deletedAt) {
-    return buildMutationResult({ error: 'Cannot promote an archived contact.' })
+    return buildMutationResult({ error: 'Cannot promote an archived person.' })
   }
 
   if (contact.userId) {
     return buildMutationResult({
-      error: 'This contact already has portal access.',
+      error: 'This person already has portal access.',
     })
   }
 
@@ -64,7 +64,7 @@ export async function promoteContactToUserMutation(
   const email = contact.email
   if (!email) {
     return buildMutationResult({
-      error: 'Add an email to this contact before giving portal access.',
+      error: 'Add an email to this person before giving portal access.',
     })
   }
 
@@ -82,7 +82,7 @@ export async function promoteContactToUserMutation(
         .where(eq(contacts.id, contact.id))
         .for('update')
       if (locked?.userId) {
-        return { error: 'This contact already has portal access.' }
+        return { error: 'This person already has portal access.' }
       }
 
       const portalResult = await findOrCreatePortalUser(user, {
@@ -102,7 +102,7 @@ export async function promoteContactToUserMutation(
         .where(and(eq(contacts.id, contact.id), isNull(contacts.userId)))
         .returning({ id: contacts.id })
       if (!linked.length) {
-        return { error: 'This contact already has portal access.' }
+        return { error: 'This person already has portal access.' }
       }
       return { userId: portalResult.userId, created: portalResult.created }
     })

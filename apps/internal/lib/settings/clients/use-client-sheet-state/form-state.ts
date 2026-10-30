@@ -224,7 +224,7 @@ export function useClientSheetFormState({
         .map(c => ({
           kind: 'contact' as const,
           id: c.id,
-          name: c.name?.trim() || c.email || 'Unnamed contact',
+          name: c.name?.trim() || c.email || 'Unnamed person',
           email: c.email,
         })),
     [allContacts, closerKeys]
@@ -301,7 +301,7 @@ export function useClientSheetFormState({
     ? isPending
       ? PENDING_REASON
       : isLoadingContacts
-        ? 'Loading contacts...'
+        ? 'Loading people...'
         : null
     : null
 
@@ -309,14 +309,14 @@ export function useClientSheetFormState({
   const originationPickerDisabledReason = originationPickerDisabled
     ? isPending
       ? PENDING_REASON
-      : 'Loading contacts...'
+      : 'Loading people...'
     : null
 
   const closerPickerDisabled = isPending || isLoadingContacts
   const closerPickerDisabledReason = closerPickerDisabled
     ? isPending
       ? PENDING_REASON
-      : 'Loading contacts...'
+      : 'Loading people...'
     : null
 
   const submitDisabled = isPending
@@ -558,7 +558,7 @@ export function useClientSheetFormState({
           handleAddCloser({
             kind: 'contact',
             id: option.id,
-            name: option.name?.trim() || option.email || 'Unnamed contact',
+            name: option.name?.trim() || option.email || 'Unnamed person',
             email: option.email,
           })
           break
@@ -651,11 +651,11 @@ export function useClientSheetFormState({
             )
 
             if (!syncResult.ok) {
-              setFeedback(syncResult.error ?? 'Unable to update contact links.')
+              setFeedback(syncResult.error ?? 'Unable to update people links.')
               toast({
-                title: 'Unable to update contact links',
+                title: 'Unable to update people links',
                 description:
-                  'The client was saved, but its contact links were not.',
+                  'The client was saved, but its people links were not.',
                 variant: 'destructive',
               })
               // Still complete since the client was saved

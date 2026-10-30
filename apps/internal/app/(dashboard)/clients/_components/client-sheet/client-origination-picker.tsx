@@ -56,7 +56,7 @@ function userDisplay(user: PartnerUserOption): OriginatorDisplay {
 function contactDisplay(contact: OriginationContactOption): OriginatorDisplay {
   return {
     kind: 'contact',
-    name: contact.name?.trim() || contact.email || 'Unnamed contact',
+    name: contact.name?.trim() || contact.email || 'Unnamed person',
     email: contact.email,
   }
 }
@@ -142,7 +142,7 @@ export function ClientOriginationPicker({
       <PopoverContent className='w-80 p-0'>
         <Command>
           <CommandInput
-            placeholder='Search admins and contacts...'
+            placeholder='Search admins and people...'
             value={query}
             onValueChange={setQuery}
           />
@@ -162,7 +162,7 @@ export function ClientOriginationPicker({
               </CommandGroup>
             ) : null}
             {availableContacts.length > 0 ? (
-              <CommandGroup heading='Contacts'>
+              <CommandGroup heading='People'>
                 {availableContacts.map(contact => (
                   <CandidateItem
                     key={`contact:${contact.id}`}
@@ -177,7 +177,7 @@ export function ClientOriginationPicker({
             ) : null}
             <CommandCreateRows
               query={query}
-              entityLabel='contact'
+              entityLabel='person'
               onCreate={onCreateContact}
             />
           </CommandList>

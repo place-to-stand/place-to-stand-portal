@@ -294,7 +294,7 @@ export function LeadsArchiveSection({
                 onSortChange={next => update({ sort: next })}
                 className='w-[20%]'
               >
-                Contact
+                Person
               </SortableTableHead>
               <TableHead className='w-[16%]'>Company</TableHead>
               <TableHead className='w-[18%]'>Email</TableHead>

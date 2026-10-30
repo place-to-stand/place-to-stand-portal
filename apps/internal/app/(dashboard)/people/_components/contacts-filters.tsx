@@ -52,7 +52,7 @@ export function ContactsFilters({
         <SearchInput
           value={search}
           onCommit={value => update({ q: value })}
-          placeholder='Search contacts…'
+          placeholder='Search people…'
         />
       }
       activeFilterCount={(clientId ? 1 : 0) + (signIn ? 1 : 0)}

@@ -61,11 +61,11 @@ export async function restoreContactMutation(
         existingContact = rows[0]
       } catch (error) {
         console.error('Failed to load contact for restore', error)
-        return buildMutationResult({ error: 'Unable to restore contact.' })
+        return buildMutationResult({ error: 'Unable to restore person.' })
       }
 
       if (!existingContact) {
-        return buildMutationResult({ error: 'Contact not found.' })
+        return buildMutationResult({ error: 'Person not found.' })
       }
 
       try {
@@ -81,7 +81,7 @@ export async function restoreContactMutation(
           error:
             error instanceof Error
               ? error.message
-              : 'Unable to restore contact.',
+              : 'Unable to restore person.',
         })
       }
 

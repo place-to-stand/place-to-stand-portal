@@ -10,7 +10,7 @@ import { extractLeadNotes } from '@/lib/leads/notes'
 
 export const saveLeadSchema = z.object({
   id: z.string().uuid().optional(),
-  contactName: z.string().trim().min(1, 'Contact name is required').max(160),
+  contactName: z.string().trim().min(1, 'Person name is required').max(160),
   status: z.enum(LEAD_STATUS_VALUES).optional(),
   sourceType: z.enum(LEAD_SOURCE_TYPES).optional().nullable(),
   sourceDetail: z

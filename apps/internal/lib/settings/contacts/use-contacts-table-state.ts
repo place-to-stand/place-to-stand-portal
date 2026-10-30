@@ -147,7 +147,7 @@ export function useContactsTableState({
 
         if (result.error) {
           toast({
-            title: 'Unable to archive contact',
+            title: 'Unable to archive person',
             description: result.error,
             variant: 'destructive',
           })
@@ -155,7 +155,7 @@ export function useContactsTableState({
         }
 
         toast({
-          title: 'Contact archived',
+          title: 'Person archived',
           description: `${contact.name || contact.email} has been archived.`,
         })
         clearIfSelected(contact.id)
@@ -178,7 +178,7 @@ export function useContactsTableState({
 
         if (result.error) {
           toast({
-            title: 'Unable to restore contact',
+            title: 'Unable to restore person',
             description: result.error,
             variant: 'destructive',
           })
@@ -186,7 +186,7 @@ export function useContactsTableState({
         }
 
         toast({
-          title: 'Contact restored',
+          title: 'Person restored',
           description: `${contact.name || contact.email} is active again.`,
         })
         clearIfSelected(contact.id)
@@ -229,7 +229,7 @@ export function useContactsTableState({
 
         if (result.error) {
           toast({
-            title: 'Unable to permanently delete contact',
+            title: 'Unable to permanently delete person',
             description: result.error,
             variant: 'destructive',
           })
@@ -237,7 +237,7 @@ export function useContactsTableState({
         }
 
         toast({
-          title: 'Contact permanently deleted',
+          title: 'Person permanently deleted',
           description: `${contact.name || contact.email} has been removed.`,
         })
         clearIfSelected(contact.id)

@@ -101,11 +101,11 @@ export async function softDeleteContactMutation(
           )
       } catch (error) {
         console.error('Failed to load contact for archive', error)
-        return buildMutationResult({ error: 'Unable to archive contact.' })
+        return buildMutationResult({ error: 'Unable to archive person.' })
       }
 
       if (!existingContact) {
-        return buildMutationResult({ error: 'Contact not found.' })
+        return buildMutationResult({ error: 'Person not found.' })
       }
 
       // Archiving a portal user ends their portal access, which only an
@@ -115,7 +115,7 @@ export async function softDeleteContactMutation(
         (existingContact.userId || accessRows.length > 0)
       ) {
         return buildMutationResult({
-          error: 'This contact is a portal user. Ask an admin to archive them.',
+          error: 'This person is a portal user. Ask an admin to archive them.',
         })
       }
 
@@ -160,7 +160,7 @@ export async function softDeleteContactMutation(
           error:
             error instanceof Error
               ? error.message
-              : 'Unable to archive contact.',
+              : 'Unable to archive person.',
         })
       }
 

@@ -214,7 +214,7 @@ export async function fetchLatestClosersByClient(
           id: row.closerContactId as string,
           sharePercent: Number(row.sharePercent),
           name:
-            row.contactName?.trim() || row.contactEmail || 'Unknown contact',
+            row.contactName?.trim() || row.contactEmail || 'Unknown person',
           email: row.contactEmail,
           avatarUrl: null,
           avatarUpdatedAt: null,
@@ -275,7 +275,7 @@ export async function resolveClosers(
     const contact = contactsById.get(share.id)
     return {
       ...share,
-      name: contact?.name?.trim() || contact?.email || 'Unknown contact',
+      name: contact?.name?.trim() || contact?.email || 'Unknown person',
       email: contact?.email ?? null,
       avatarUrl: null,
       avatarUpdatedAt: null,

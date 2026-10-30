@@ -32,11 +32,11 @@ export function UserLinkedContactSection({
     <>
       <Separator />
       <SheetSection
-        title='Linked contact'
+        title='Linked person'
         description={
           contact
-            ? 'Portal access follows the clients linked to this contact.'
-            : 'Create a portal user from their contact to link one.'
+            ? 'Portal access follows the clients linked to this person.'
+            : 'Create a portal user from their person record to link one.'
         }
       >
         {contact ? (
@@ -58,13 +58,13 @@ export function UserLinkedContactSection({
               <Button variant='outline' size='sm' asChild>
                 <Link href={contactSheetHref(contact.id)}>
                   <Contact />
-                  Open contact
+                  Open person
                 </Link>
               </Button>
             }
           />
         ) : (
-          <LinkedRecordCard icon={Contact} title='No linked contact' />
+          <LinkedRecordCard icon={Contact} title='No linked person' />
         )}
       </SheetSection>
     </>

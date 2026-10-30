@@ -168,7 +168,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
         {contact && (
           <RecordRow
             icon={UserRound}
-            label='Contact'
+            label='Person'
             name={contact.name}
             href={contactSheetHref(contact.id)}
           />

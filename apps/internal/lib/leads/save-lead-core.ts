@@ -198,7 +198,7 @@ async function resolveLeadContact(
       )
       .limit(1)
     if (!contact)
-      return { error: 'That contact no longer exists. Pick another.' }
+      return { error: 'That person no longer exists. Pick another.' }
     await linkCompany(contact)
     return { contact }
   }
@@ -311,7 +311,7 @@ async function resolveLeadContact(
       email: contacts.email,
       phone: contacts.phone,
     })
-  if (!created) return { error: 'Unable to save the contact.' }
+  if (!created) return { error: 'Unable to save the person.' }
   await linkCompany({ id: created.id, hasCompany: false })
 
   await logActivity({

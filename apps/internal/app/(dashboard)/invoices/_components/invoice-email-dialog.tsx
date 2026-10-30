@@ -249,8 +249,8 @@ function InvoiceEmailForm({
             <RecipientField
               label='To'
               options={contactOptions}
-              groupHeading={`${draft.clientName} contacts`}
-              searchPlaceholder='Search contacts or type an email'
+              groupHeading={`${draft.clientName} people`}
+              searchPlaceholder='Search people or type an email'
               value={to}
               onChange={setTo}
               allowTyped

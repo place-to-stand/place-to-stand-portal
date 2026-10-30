@@ -84,7 +84,7 @@ export function ContactCompaniesSection({
       }
     >
       {loadFailed ? (
-        <EmptyState message="Couldn't load this contact's companies. Close and reopen the sheet to edit them." />
+        <EmptyState message="Couldn't load this person's companies. Close and reopen the sheet to edit them." />
       ) : companies.length === 0 ? (
         <EmptyState
           message='Not at any company yet. Add one or create it.'

@@ -133,7 +133,7 @@ export async function getContactSheetInputById(
     .limit(1)
 
   if (!rows.length) {
-    throw new NotFoundError('Contact not found')
+    throw new NotFoundError('Person not found')
   }
 
   return rows[0]!

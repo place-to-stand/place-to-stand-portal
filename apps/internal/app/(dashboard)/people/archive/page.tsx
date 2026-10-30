@@ -19,7 +19,7 @@ import { resolveContactDeepLink } from '../_lib/contact-deep-link'
 import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
 
 export const metadata: Metadata = {
-  title: 'Contact archive',
+  title: 'People archive',
 }
 
 export default async function ContactsArchivePage({
@@ -81,12 +81,12 @@ export default async function ContactsArchivePage({
       tabs={CONTACTS_TABS}
       activeTab='archive'
       count={{
-        label: 'archived contacts',
+        label: 'archived people',
         total: unfilteredTotalCount,
         filteredTotal: totalCount,
       }}
       primaryAction={
-        <SheetCreateButton entity='contact' label='Create contact' />
+        <SheetCreateButton entity='contact' label='Create person' />
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
