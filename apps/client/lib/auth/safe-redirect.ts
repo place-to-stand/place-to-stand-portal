@@ -9,7 +9,6 @@
 export function isSafeRedirectPath(value: string): boolean {
   if (!value.startsWith('/')) return false
   if (/^\/[/\\]/.test(value)) return false
-  // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f]/.test(value)) return false
   return true
 }
