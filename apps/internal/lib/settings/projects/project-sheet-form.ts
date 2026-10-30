@@ -138,11 +138,15 @@ const deriveInitialStatus = (
 export const buildProjectFormDefaults = (
   project: ProjectWithClient | null,
   /** New projects start as this type; non-admins can only make personal boards. */
-  defaultType: ProjectTypeValue = 'CLIENT'
+  defaultType: ProjectTypeValue = 'CLIENT',
+  /** New client projects start on this company (a company's Projects tab). */
+  initialCompanyId?: string
 ): ProjectSheetFormValues => ({
   name: project?.name ?? '',
   projectType: project?.type ?? defaultType,
-  companyId: project?.company_id ?? '',
+  companyId:
+    project?.company_id ??
+    (!project && defaultType === 'CLIENT' ? (initialCompanyId ?? '') : ''),
   status: deriveInitialStatus(project),
   startsOn: project?.starts_on ? project.starts_on.slice(0, 10) : '',
   endsOn: project?.ends_on ? project.ends_on.slice(0, 10) : '',

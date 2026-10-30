@@ -24,6 +24,8 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
+  /** Prefills the create sheet's client. */
+  initialCompanyId?: string
   clients: ClientRow[]
   adminUsers?: AdminUserForOwner[]
   contractorDirectory?: ContractorUserSummary[]

@@ -99,7 +99,9 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
     claimsPathname: () => false,
   },
   project: {
-    auxParams: [],
+    // `projectCompanyId=` prefills the create sheet's client (a company's
+    // Projects tab).
+    auxParams: ['projectCompanyId'],
     // Unclaimed everywhere: the projects tables can't resolve an arbitrary
     // project id from their own rows (the landing's row type omits fields
     // the sheet needs), so the host serves `?project=` on every route and

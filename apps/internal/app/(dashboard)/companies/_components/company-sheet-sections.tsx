@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { EmptyState } from '@pts/ui/empty-state'
+import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
@@ -12,7 +13,9 @@ import {
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 
 import { loadCompanyClientWork } from '../actions'
@@ -191,36 +194,25 @@ export function CompanyBillingTab({
 const formatHours = (value: number) =>
   `${Number.isInteger(value) ? value : value.toFixed(1)}h`
 
-/** The Projects tab: the client's projects and its latest updates. */
+/**
+ * The Projects tab (clients, and former clients with projects): the
+ * company's projects and its latest updates. Hidden on the create sheet.
+ */
 export function CompanyProjectsTab({
   companyId,
-  isCreating = false,
+  canCreate,
 }: {
-  companyId: string | null
-  /** The create sheet: the company has nothing yet. */
-  isCreating?: boolean
+  companyId: string
+  /** A current client: new projects can start here. */
+  canCreate: boolean
 }) {
+  const { openNew } = useSheetParams()
   const { data: work, isLoading } = useQuery({
     queryKey: ['companyClientWork', companyId],
-    queryFn: () => loadCompanyClientWork(companyId!),
-    enabled: Boolean(companyId),
+    queryFn: () => loadCompanyClientWork(companyId),
     staleTime: 0,
   })
 
-  if (isCreating) {
-    return (
-      <SheetSection title='Projects'>
-        <EmptyState message='No projects yet.' />
-      </SheetSection>
-    )
-  }
-  if (!companyId) {
-    return (
-      <SheetSection title='Projects'>
-        <EmptyState message='Projects belong to clients, and this company isn’t billed yet.' />
-      </SheetSection>
-    )
-  }
   if (isLoading || !work) {
     return <Skeleton className='h-24 w-full' />
   }
@@ -230,9 +222,24 @@ export function CompanyProjectsTab({
       <SheetSection
         title='Projects'
         action={
-          <span className='text-muted-foreground text-xs'>
-            {work.projects.length}
-          </span>
+          <div className='flex items-center gap-3'>
+            <span className='text-muted-foreground text-xs'>
+              {work.projects.length}
+            </span>
+            {canCreate ? (
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() =>
+                  openNew('project', { projectCompanyId: companyId })
+                }
+              >
+                <ENTITY_ICONS.project />
+                Create project
+              </Button>
+            ) : null}
+          </div>
         }
       >
         {work.projects.length === 0 ? (

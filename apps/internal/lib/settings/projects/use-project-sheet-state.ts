@@ -58,6 +58,8 @@ export type UseProjectSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
+  /** Prefills the create sheet's client (a company's Projects tab). */
+  initialCompanyId?: string
   clients: ClientRow[]
   contractorDirectory?: ContractorUserSummary[]
   projectContractors?: Record<string, ContractorUserSummary[]>
@@ -116,15 +118,18 @@ export function useProjectSheetState({
   onOpenChange,
   onComplete,
   project,
+  initialCompanyId,
   clients,
 }: UseProjectSheetStateArgs): UseProjectSheetStateReturn {
   // New projects start on the first type the viewer may create
   // (`saveProject` enforces the same list).
   const { role } = useViewerAccess()
-  const newProjectType = useMemo(
-    () => creatableProjectTypes(role, PROJECT_TYPE_ENUM_VALUES)[0] ?? 'CLIENT',
-    [role]
-  )
+  const newProjectType = useMemo(() => {
+    const creatable = creatableProjectTypes(role, PROJECT_TYPE_ENUM_VALUES)
+    // A prefilled client means a client project, when the viewer may make one.
+    if (initialCompanyId && creatable.includes('CLIENT')) return 'CLIENT'
+    return creatable[0] ?? 'CLIENT'
+  }, [role, initialCompanyId])
   const isEditing = Boolean(project)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -145,7 +150,11 @@ export function useProjectSheetState({
 
   const form = useForm<ProjectSheetFormValues>({
     resolver,
-    defaultValues: buildProjectFormDefaults(project, newProjectType),
+    defaultValues: buildProjectFormDefaults(
+      project,
+      newProjectType,
+      initialCompanyId
+    ),
   })
 
   const hasUnsavedChanges = form.formState.isDirty || isReposDirty
@@ -157,13 +166,17 @@ export function useProjectSheetState({
   const requiresClientSelection = projectType === 'CLIENT'
 
   const resetFormState = useCallback(() => {
-    const defaults = buildProjectFormDefaults(project, newProjectType)
+    const defaults = buildProjectFormDefaults(
+      project,
+      newProjectType,
+      initialCompanyId
+    )
 
     form.reset(defaults, { keepDefaultValues: false })
     form.clearErrors()
     setFeedback(null)
     setIsReposDirty(false)
-  }, [form, newProjectType, project])
+  }, [form, newProjectType, project, initialCompanyId])
 
   const handleReposDirtyChange = useCallback((isDirty: boolean) => {
     setIsReposDirty(isDirty)

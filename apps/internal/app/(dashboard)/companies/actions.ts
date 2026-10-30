@@ -1,5 +1,5 @@
 'use server'
-import { isClientCompany } from '@pts/db/client-state'
+import { wasClientCompany } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
 
@@ -135,7 +135,8 @@ export async function loadCompanyClientWork(
     .select({ slug: companies.slug, billingType: currentBillingTypeSql() })
     .from(companies)
     .where(
-      and(isClientCompany(), eq(companies.id, companyId))
+      // Former clients too: their Projects tab keeps the history.
+      and(wasClientCompany(), eq(companies.id, companyId))
     )
     .limit(1)
   if (!client) return null
