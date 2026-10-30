@@ -8,6 +8,7 @@ import {
   useState,
   useTransition,
 } from 'react'
+import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -18,6 +19,11 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
+import {
+  LEAD_WON_NEEDS_COMPANY_MESSAGE,
+  breaksWonNeedsCompany,
+} from '@/lib/leads/won-rule'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 import {
   leadFormSchema,
   type LeadFormValues,
@@ -33,6 +39,7 @@ export function useLeadSheetState({
   onCreated,
   initialValues,
 }: Omit<LeadSheetProps, 'assignees' | 'canManage'>) {
+  const router = useRouter()
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
@@ -45,9 +52,10 @@ export function useLeadSheetState({
     lead?.status === 'CLOSED_WON' &&
     !lead?.convertedToClientId &&
     Boolean(lead?.companyId)
+  // Winning a lead opens its company's Billing tab next, for whoever can
+  // make it a client there.
+  const canManageClients = roleCan(role, 'clients.manage')
   const { toast } = useToast()
-
-
 
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
@@ -116,6 +124,21 @@ export function useLeadSheetState({
 
   const handleFormSubmit = useCallback(
     (values: LeadFormValues) => {
+      // Decision 7: Won needs a company. Say so on the field before asking
+      // the server, which enforces the same rule.
+      const existingWonState = lead
+        ? { status: lead.status, companyId: lead.companyId }
+        : null
+      if (
+        breaksWonNeedsCompany(
+          { status: values.status, companyId: values.company?.id },
+          existingWonState
+        )
+      ) {
+        form.setError('company', { message: LEAD_WON_NEEDS_COMPANY_MESSAGE })
+        return
+      }
+
       startSaveTransition(async () => {
         const { company, contact, ...fields } = values
         const result = await saveLead({
@@ -132,6 +155,9 @@ export function useLeadSheetState({
         })
 
         if (!result.success) {
+          if (result.error === LEAD_WON_NEEDS_COMPANY_MESSAGE) {
+            form.setError('company', { message: result.error })
+          }
           toast({
             variant: 'destructive',
             title: 'Unable to save lead',
@@ -165,9 +191,29 @@ export function useLeadSheetState({
         if (!isEditing && result.leadId) {
           onCreated?.(result.leadId)
         }
+
+        // Just won: billing the company is the next step, so open its
+        // Billing tab now that the lead sheet has closed.
+        const justWon =
+          values.status === 'CLOSED_WON' && lead?.status !== 'CLOSED_WON'
+        if (justWon && company && canManageClients) {
+          router.push(companySheetHref(company.id, 'billing'), {
+            scroll: false,
+          })
+        }
       })
     },
-    [form, isEditing, lead?.id, onOpenChange, onSuccess, onCreated, toast]
+    [
+      canManageClients,
+      form,
+      isEditing,
+      lead,
+      onOpenChange,
+      onSuccess,
+      onCreated,
+      router,
+      toast,
+    ]
   )
 
   const handleSaveShortcut = useCallback(

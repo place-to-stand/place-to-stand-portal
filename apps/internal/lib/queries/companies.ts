@@ -56,16 +56,14 @@ import {
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
-import {
-  companies,
-  contacts,
-  leads,
-  users,
-} from '@/lib/db/schema'
+import { companies, contacts, leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
 type DbExecutor = Pick<typeof db, 'select' | 'insert' | 'update'>
+
+/** Queues work (an activity write) to run once the caller's transaction commits. */
+export type DeferActivity = (task: () => Promise<unknown>) => void
 
 const CLOSED_LEAD_STATUSES_SQL = sql`('CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED')`
 
@@ -121,8 +119,12 @@ export async function listCompanies(
       name: companies.name,
       website: companies.website,
       // Billed now: the company is its own client.
-      clientId: sql<string | null>`case when ${isClientCompany()} then ${companies.id} end`,
-      clientName: sql<string | null>`case when ${isClientCompany()} then ${companies.name} end`,
+      clientId: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.id} end`,
+      clientName: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.name} end`,
       // Billed before but not now.
       formerClient: isFormerClientSql,
       updatedAt: companies.updatedAt,
@@ -400,7 +402,6 @@ export async function saveCompany(
     values.removeContactIds ?? []
   )
 
-
   // The primary contact (star on the People list) saves in the same
   // transaction as the people it may depend on. `undefined` = unchanged.
   const [current] = await db
@@ -481,7 +482,6 @@ export async function saveCompany(
         .update(companies)
         .set({ ...next, updatedAt: timestamp })
         .where(eq(companies.id, existing.id))
-
 
       // Joining keeps the person's other companies. Leaving ends their
       // membership here, and with it being this company's primary contact
@@ -576,8 +576,6 @@ export async function saveCompany(
       }),
     })
   }
-
-
 
   return { ok: true, id: existing.id }
 }
@@ -737,7 +735,6 @@ export async function setCompanyArchived(
   return { ok: true, id: existing.id }
 }
 
-
 /**
  * The live company with this name (case-insensitive), created when there is
  * none. Lead and contact saves call this so a typed company name always
@@ -759,7 +756,15 @@ export async function getLinkableCompany(
 export async function findOrCreateCompanyByName(
   actor: AppUser,
   rawName: string | null | undefined,
-  options: { website?: string | null; executor?: DbExecutor } = {}
+  options: {
+    website?: string | null
+    executor?: DbExecutor
+    /**
+     * Inside a transaction, hand the activity write to the caller to run after
+     * commit, so a rolled-back save never logs a company that doesn't exist.
+     */
+    defer?: DeferActivity
+  } = {}
 ): Promise<{ id: string; name: string; created: boolean } | null> {
   const parsedName = companyNameSchema.safeParse(rawName ?? '')
   if (!parsedName.success) return null
@@ -798,13 +803,16 @@ export async function findOrCreateCompanyByName(
     .returning({ id: companies.id, name: companies.name })
 
   if (inserted) {
-    await logActivity({
-      actorId: actor.id,
-      actorRole: actor.role,
-      targetType: 'COMPANY',
-      targetId: inserted.id,
-      ...companyCreatedEvent({ name }),
-    })
+    const log = () =>
+      logActivity({
+        actorId: actor.id,
+        actorRole: actor.role,
+        targetType: 'COMPANY',
+        targetId: inserted.id,
+        ...companyCreatedEvent({ name }),
+      })
+    if (options.defer) options.defer(log)
+    else await log()
     return { ...inserted, created: true }
   }
 
@@ -820,11 +828,13 @@ export async function findOrCreateCompanyByName(
 export async function fillCompanyWebsiteIfBlank(
   actor: AppUser,
   companyId: string,
-  rawWebsite: string | null | undefined
+  rawWebsite: string | null | undefined,
+  options: { executor?: DbExecutor; defer?: DeferActivity } = {}
 ): Promise<void> {
   const website = normalizeWebAddress(rawWebsite)
   if (!website) return
-  const [updated] = await db
+  const executor = options.executor ?? db
+  const [updated] = await executor
     .update(companies)
     .set({ website, updatedAt: new Date().toISOString() })
     .where(
@@ -835,17 +845,20 @@ export async function fillCompanyWebsiteIfBlank(
     )
     .returning({ id: companies.id, name: companies.name })
   if (!updated) return
-  await logActivity({
-    actorId: actor.id,
-    actorRole: actor.role,
-    targetType: 'COMPANY',
-    targetId: updated.id,
-    ...companyUpdatedEvent({
-      name: updated.name,
-      changedFields: ['website'],
-      details: { before: { website: null }, after: { website } },
-    }),
-  })
+  const log = () =>
+    logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'COMPANY',
+      targetId: updated.id,
+      ...companyUpdatedEvent({
+        name: updated.name,
+        changedFields: ['website'],
+        details: { before: { website: null }, after: { website } },
+      }),
+    })
+  if (options.defer) options.defer(log)
+  else await log()
 }
 
 /** The company a client is: itself (a client is a company you bill). */
@@ -859,4 +872,3 @@ export async function getClientCompanyId(
     .limit(1)
   return row?.id ?? null
 }
-

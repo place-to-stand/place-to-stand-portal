@@ -48,8 +48,9 @@ export function LeadSheet(props: LeadSheetProps) {
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          // Edit mode adds the tasks and updates column beside the form.
-          size={isEditing ? 'split' : '2xl'}
+          // Create and edit share one layout: the form plus the tasks and
+          // updates column, which waits for the lead to exist on create.
+          size='split'
           className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
         >
           {/* Header */}
@@ -71,8 +72,7 @@ export function LeadSheet(props: LeadSheetProps) {
               {/* Left Column - Form Fields */}
               <div
                 className={cn(
-                  'flex flex-1 flex-col overflow-hidden max-lg:contents',
-                  isEditing && lead && 'lg:border-r'
+                  'flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'
                 )}
               >
                 <div className='flex-1 p-6 lg:overflow-y-auto'>
@@ -103,24 +103,23 @@ export function LeadSheet(props: LeadSheetProps) {
                 </div>
               </div>
 
-              {/* Right Column - Conversion, tasks, updates (only for editing) */}
-              {isEditing && lead && (
-                <LeadSheetRightColumn
-                  lead={lead}
-                  canManage={canManage}
-                  canConvert={canConvert}
-                  onConvertToClient={() => {
-                    // A client is made on its company's Billing tab: swap the
-                    // lead sheet for the company's sheet.
-                    if (lead.companyId) {
-                      router.push(companySheetHref(lead.companyId, 'billing'), {
-                        scroll: false,
-                      })
-                    }
-                  }}
-                  onSuccess={onSuccess}
-                />
-              )}
+              {/* Right Column - Conversion, tasks, updates. On create the
+                  sections show but wait for the lead to exist. */}
+              <LeadSheetRightColumn
+                lead={lead}
+                canManage={canManage}
+                canConvert={canConvert}
+                onConvertToClient={() => {
+                  // A client is made on its company's Billing tab: swap the
+                  // lead sheet for the company's sheet.
+                  if (lead?.companyId) {
+                    router.push(companySheetHref(lead.companyId, 'billing'), {
+                      scroll: false,
+                    })
+                  }
+                }}
+                onSuccess={onSuccess}
+              />
             </form>
           </Form>
         </SheetContent>

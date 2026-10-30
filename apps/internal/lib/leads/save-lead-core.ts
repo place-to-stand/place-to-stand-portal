@@ -26,11 +26,16 @@ import {
 } from '@/lib/leads/lead-display'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
+import {
+  LEAD_WON_NEEDS_COMPANY_MESSAGE,
+  breaksWonNeedsCompany,
+} from '@/lib/leads/won-rule'
 import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
 import {
   fillCompanyWebsiteIfBlank,
   findOrCreateCompanyByName,
   getLinkableCompany,
+  type DeferActivity,
 } from '@/lib/queries/companies'
 import { joinCompany, mainCompanyIdSql } from '@/lib/queries/memberships'
 import type { ActivitySourceValue } from '@/lib/types'
@@ -91,16 +96,59 @@ export async function saveLeadForActor(
     }
   }
 
+  // One transaction: the company, the person, the lead and its stage history
+  // all land, or none do. Activity rows and notifications wait for the commit
+  // so a refused or failed save leaves no trace.
+  const afterCommit: Array<() => Promise<unknown>> = []
+  const defer: DeferActivity = task => {
+    afterCommit.push(task)
+  }
+
+  let result: SaveLeadResult
   try {
-    return normalized.id
-      ? await updateLead(actor, normalized.id, normalized, source)
-      : await createLead(actor, normalized, source)
+    result = await db.transaction(async tx => {
+      const ctx: SaveContext = { tx, actor, defer }
+      const saved = normalized.id
+        ? await updateLead(ctx, normalized.id, normalized, source)
+        : await createLead(ctx, normalized, source)
+      // A refusal after a write (a company made, then a missing person) must
+      // undo that write too.
+      if (!saved.success) throw new SaveRefused(saved)
+      return saved
+    })
   } catch (error) {
+    if (error instanceof SaveRefused) return error.result
     console.error('Failed to save lead', error)
     return {
       success: false,
       error: 'Unable to save lead. Please try again.',
     }
+  }
+
+  for (const task of afterCommit) {
+    try {
+      await task()
+    } catch (error) {
+      // The save committed; a failed side effect must not report it failed.
+      console.error('Lead saved, but a follow-up write failed', error)
+    }
+  }
+  return result
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+type SaveContext = {
+  tx: Tx
+  actor: AppUser
+  /** Runs after commit: activity rows and notifications. */
+  defer: DeferActivity
+}
+
+/** Rolls the transaction back and carries the refusal out of it. */
+class SaveRefused extends Error {
+  constructor(readonly result: SaveLeadResult) {
+    super(result.error ?? 'Lead save refused')
   }
 }
 
@@ -111,7 +159,7 @@ export async function saveLeadForActor(
  * a blank one clears it.
  */
 async function resolveLeadCompany(
-  actor: AppUser,
+  { tx, actor, defer }: SaveContext,
   normalized: NormalizedLead,
   existing?: { companyId: string | null; companyName: string | null }
 ): Promise<
@@ -119,7 +167,7 @@ async function resolveLeadCompany(
 > {
   if (normalized.companyId !== undefined) {
     if (normalized.companyId === null) return { company: null }
-    const company = await getLinkableCompany(normalized.companyId)
+    const company = await getLinkableCompany(normalized.companyId, tx)
     return company
       ? { company }
       : { error: 'That company no longer exists. Pick another.' }
@@ -136,6 +184,8 @@ async function resolveLeadCompany(
   return {
     company: await findOrCreateCompanyByName(actor, normalized.companyName, {
       website: normalized.companyWebsite,
+      executor: tx,
+      defer,
     }),
   }
 }
@@ -155,7 +205,7 @@ type LeadContact = {
  * contact (name-only when there's no email).
  */
 async function resolveLeadContact(
-  actor: AppUser,
+  { tx, actor, defer }: SaveContext,
   normalized: NormalizedLead,
   companyId: string | null,
   existing?: { contactId: string | null }
@@ -177,19 +227,24 @@ async function resolveLeadContact(
       if (!normalized.addContactToCompany) return
       // A client's contacts are admin-only (same rule as the contact sheet).
       if (!roleCan(actor.role, 'clients.manage')) {
-        const [client] = await db
+        const [client] = await tx
           .select({ id: companies.id })
           .from(companies)
-          .where(and(wasClientCompany(), and(eq(companies.id, companyId), isNull(clientEndedAtSql))))
+          .where(
+            and(
+              wasClientCompany(),
+              and(eq(companies.id, companyId), isNull(clientEndedAtSql))
+            )
+          )
           .limit(1)
         if (client) return
       }
     }
-    await joinCompany(db, contact.id, companyId)
+    await joinCompany(tx, contact.id, companyId)
   }
 
   if (normalized.contactId) {
-    const [contact] = await db
+    const [contact] = await tx
       .select(fields)
       .from(contacts)
       .where(
@@ -214,7 +269,7 @@ async function resolveLeadContact(
   // read it too); an email change relinks the lead instead, so a correction
   // never renames a contact other records share.
   if (existing?.contactId) {
-    const [contact] = await db
+    const [contact] = await tx
       .select(fields)
       .from(contacts)
       .where(
@@ -228,7 +283,7 @@ async function resolveLeadContact(
         contact.name !== details.name ||
         (contact.phone ?? null) !== details.phone
       if (changed) {
-        await db
+        await tx
           .update(contacts)
           .set({
             name: details.name,
@@ -236,24 +291,27 @@ async function resolveLeadContact(
             updatedAt: timestamp,
           })
           .where(eq(contacts.id, contact.id))
-        await logActivity({
-          actorId: actor.id,
-          actorRole: actor.role,
-          targetType: 'CONTACT',
-          targetId: contact.id,
-          ...contactUpdatedEvent({
-            email: contact.email,
-            name: details.name,
-            changedFields: [
-              ...(contact.name !== details.name ? ['name'] : []),
-              ...((contact.phone ?? null) !== details.phone ? ['phone'] : []),
-            ],
-            details: {
-              before: { name: contact.name, phone: contact.phone },
-              after: { name: details.name, phone: details.phone },
-            },
-          }),
+        const event = contactUpdatedEvent({
+          email: contact.email,
+          name: details.name,
+          changedFields: [
+            ...(contact.name !== details.name ? ['name'] : []),
+            ...((contact.phone ?? null) !== details.phone ? ['phone'] : []),
+          ],
+          details: {
+            before: { name: contact.name, phone: contact.phone },
+            after: { name: details.name, phone: details.phone },
+          },
         })
+        defer(() =>
+          logActivity({
+            actorId: actor.id,
+            actorRole: actor.role,
+            targetType: 'CONTACT',
+            targetId: contact.id,
+            ...event,
+          })
+        )
       }
       await linkCompany(contact)
       return {
@@ -272,7 +330,7 @@ async function resolveLeadContact(
     // Same rule as the 0096 backfill: a live contact wins, then an
     // exact-case match, then the oldest. An archived match is restored,
     // since a live lead now points at them.
-    const [match] = await db
+    const [match] = await tx
       .select({ ...fields, deletedAt: contacts.deletedAt })
       .from(contacts)
       .where(sql`lower(${contacts.email}) = ${email}`)
@@ -284,7 +342,7 @@ async function resolveLeadContact(
       .limit(1)
     if (match) {
       if (match.deletedAt) {
-        await db
+        await tx
           .update(contacts)
           .set({ deletedAt: null, updatedAt: timestamp })
           .where(eq(contacts.id, match.id))
@@ -301,7 +359,7 @@ async function resolveLeadContact(
     }
   }
 
-  const [created] = await db
+  const [created] = await tx
     .insert(contacts)
     .values({ ...details, createdBy: actor.id })
     .returning({
@@ -313,35 +371,47 @@ async function resolveLeadContact(
   if (!created) return { error: 'Unable to save the person.' }
   await linkCompany({ id: created.id, hasCompany: false })
 
-  await logActivity({
-    actorId: actor.id,
-    actorRole: actor.role,
-    targetType: 'CONTACT',
-    targetId: created.id,
-    ...contactCreatedEvent({ email: created.email, name: created.name }),
-  })
+  defer(() =>
+    logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      targetType: 'CONTACT',
+      targetId: created.id,
+      ...contactCreatedEvent({ email: created.email, name: created.name }),
+    })
+  )
   return { contact: created }
 }
 
 async function createLead(
-  actor: AppUser,
+  ctx: SaveContext,
   normalized: NormalizedLead,
   source: ActivitySourceValue
 ): Promise<SaveLeadResult> {
+  const { tx, actor, defer } = ctx
   const timestamp = new Date().toISOString()
-  const rank = await resolveNextLeadRank(normalized.status)
-  const resolved = await resolveLeadCompany(actor, normalized)
+  const rank = await resolveNextLeadRank(normalized.status, tx)
+  const resolved = await resolveLeadCompany(ctx, normalized)
   if ('error' in resolved) return { success: false, error: resolved.error }
   const { company } = resolved
+  if (
+    breaksWonNeedsCompany({
+      status: normalized.status,
+      companyId: company?.id,
+    })
+  ) {
+    return { success: false, error: LEAD_WON_NEEDS_COMPANY_MESSAGE }
+  }
   if (company) {
     await fillCompanyWebsiteIfBlank(
       actor,
       company.id,
-      normalized.companyWebsite
+      normalized.companyWebsite,
+      { executor: tx, defer }
     )
   }
   const contactResult = await resolveLeadContact(
-    actor,
+    ctx,
     normalized,
     company?.id ?? null
   )
@@ -349,7 +419,7 @@ async function createLead(
     return { success: false, error: contactResult.error }
   const { contact } = contactResult
 
-  const [inserted] = await db
+  const [inserted] = await tx
     .insert(leads)
     .values({
       contactId: contact.id,
@@ -370,7 +440,7 @@ async function createLead(
     return { success: false, error: 'Unable to save lead. Please try again.' }
   }
 
-  await db.insert(leadStageHistory).values({
+  await tx.insert(leadStageHistory).values({
     leadId: inserted.id,
     fromStatus: null,
     toStatus: normalized.status,
@@ -378,43 +448,47 @@ async function createLead(
     changedBy: actor.id,
   })
 
-  await logActivity({
-    actorId: actor.id,
-    actorRole: actor.role,
-    source,
-    targetType: 'LEAD',
-    targetId: inserted.id,
-    ...leadCreatedEvent({
-      name: normalized.contactName,
-      source: normalized.sourceType,
-      status: normalized.status,
-    }),
-  })
+  const leadId = inserted.id
+  defer(() =>
+    logActivity({
+      actorId: actor.id,
+      actorRole: actor.role,
+      source,
+      targetType: 'LEAD',
+      targetId: leadId,
+      ...leadCreatedEvent({
+        name: normalized.contactName,
+        source: normalized.sourceType,
+        status: normalized.status,
+      }),
+    })
+  )
 
-  if (normalized.assigneeId) {
-    await notifyLeadAssigned(
-      actor,
-      {
-        id: inserted.id,
-        contactName: normalized.contactName,
-        companyName: normalized.companyName,
-      },
-      normalized.assigneeId
-    )
+  const assigneeId = normalized.assigneeId
+  if (assigneeId) {
+    const notice = {
+      id: leadId,
+      contactName: normalized.contactName,
+      companyName: normalized.companyName,
+    }
+    defer(() => notifyLeadAssigned(actor, notice, assigneeId))
   }
 
   return { success: true, leadId: inserted.id }
 }
 
 async function updateLead(
-  actor: AppUser,
+  ctx: SaveContext,
   leadId: string,
   normalized: NormalizedLead,
   source: ActivitySourceValue
 ): Promise<SaveLeadResult> {
+  const { tx, actor, defer } = ctx
   const timestamp = new Date().toISOString()
 
-  const [existing] = await db
+  // Locks the lead row, so two saves of one lead can't both read the old
+  // status and each write a stage-history row.
+  const [existing] = await tx
     .select({
       id: leads.id,
       contactName: leadDisplayFields.contactName,
@@ -436,19 +510,29 @@ async function updateLead(
     .leftJoin(leadCompany, leadCompanyJoin)
     .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
     .limit(1)
+    .for('update', { of: leads })
 
   if (!existing) {
     return { success: false, error: 'Lead not found.', notFound: true }
   }
 
-  const resolved = await resolveLeadCompany(actor, normalized, existing)
+  const resolved = await resolveLeadCompany(ctx, normalized, existing)
   if ('error' in resolved) return { success: false, error: resolved.error }
   const { company } = resolved
+  if (
+    breaksWonNeedsCompany(
+      { status: normalized.status, companyId: company?.id },
+      existing
+    )
+  ) {
+    return { success: false, error: LEAD_WON_NEEDS_COMPANY_MESSAGE }
+  }
   if (company) {
     await fillCompanyWebsiteIfBlank(
       actor,
       company.id,
-      normalized.companyWebsite
+      normalized.companyWebsite,
+      { executor: tx, defer }
     )
   }
   // Always store the company's own spelling, so a case-only edit can't
@@ -457,7 +541,7 @@ async function updateLead(
     normalized = { ...normalized, companyName: company.name }
   }
   const contactResult = await resolveLeadContact(
-    actor,
+    ctx,
     normalized,
     company?.id ?? null,
     existing
@@ -478,7 +562,7 @@ async function updateLead(
   const statusChanged = existing.status !== normalized.status
   const diff = diffLeadFields(existing, normalized)
   const rank = statusChanged
-    ? await resolveNextLeadRank(normalized.status)
+    ? await resolveNextLeadRank(normalized.status, tx)
     : existing.rank
 
   const setPayload: Record<string, unknown> = {
@@ -512,10 +596,10 @@ async function updateLead(
     }
   }
 
-  await db.update(leads).set(setPayload).where(eq(leads.id, leadId))
+  await tx.update(leads).set(setPayload).where(eq(leads.id, leadId))
 
   if (statusChanged) {
-    await db.insert(leadStageHistory).values({
+    await tx.insert(leadStageHistory).values({
       leadId,
       fromStatus: existing.status,
       toStatus: normalized.status,
@@ -528,43 +612,47 @@ async function updateLead(
   // that carries status inside it when both changed. A no-op save logs
   // nothing.
   if (diff.changedFields.length === 1 && statusChanged) {
-    await logActivity({
-      actorId: actor.id,
-      actorRole: actor.role,
-      source,
-      targetType: 'LEAD',
-      targetId: leadId,
-      ...leadStatusChangedEvent({
-        name: normalized.contactName,
-        fromStatus: existing.status,
-        toStatus: normalized.status,
-      }),
+    const event = leadStatusChangedEvent({
+      name: normalized.contactName,
+      fromStatus: existing.status,
+      toStatus: normalized.status,
     })
+    defer(() =>
+      logActivity({
+        actorId: actor.id,
+        actorRole: actor.role,
+        source,
+        targetType: 'LEAD',
+        targetId: leadId,
+        ...event,
+      })
+    )
   } else if (diff.changedFields.length > 0) {
-    await logActivity({
-      actorId: actor.id,
-      actorRole: actor.role,
-      source,
-      targetType: 'LEAD',
-      targetId: leadId,
-      ...leadUpdatedEvent({
-        name: normalized.contactName,
-        changedFields: diff.changedFields,
-        details: { before: diff.before, after: diff.after },
-      }),
+    const event = leadUpdatedEvent({
+      name: normalized.contactName,
+      changedFields: diff.changedFields,
+      details: { before: diff.before, after: diff.after },
     })
+    defer(() =>
+      logActivity({
+        actorId: actor.id,
+        actorRole: actor.role,
+        source,
+        targetType: 'LEAD',
+        targetId: leadId,
+        ...event,
+      })
+    )
   }
 
-  if (normalized.assigneeId && normalized.assigneeId !== existing.assigneeId) {
-    await notifyLeadAssigned(
-      actor,
-      {
-        id: leadId,
-        contactName: normalized.contactName,
-        companyName: normalized.companyName,
-      },
-      normalized.assigneeId
-    )
+  const assigneeId = normalized.assigneeId
+  if (assigneeId && assigneeId !== existing.assigneeId) {
+    const notice = {
+      id: leadId,
+      contactName: normalized.contactName,
+      companyName: normalized.companyName,
+    }
+    defer(() => notifyLeadAssigned(actor, notice, assigneeId))
   }
 
   return { success: true, leadId }
