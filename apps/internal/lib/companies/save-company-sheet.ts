@@ -484,7 +484,7 @@ async function logAfterCommit(
       actorRole: actor.role,
       verb: event.verb,
       summary: event.summary,
-      targetType: 'CLIENT',
+      targetType: 'COMPANY',
       targetId: companyId,
       targetCompanyId: companyId,
       metadata: event.metadata,

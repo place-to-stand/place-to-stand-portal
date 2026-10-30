@@ -46,6 +46,7 @@ export type ActivityLogWithActor = DbActivityLog & {
 export const ACTIVITY_TARGET_TYPES = [
   'TASK',
   'PROJECT',
+  // Retired in 0113: billing events sit on the COMPANY. Kept so old filters parse.
   'CLIENT',
   'CONTACT',
   'COMPANY',

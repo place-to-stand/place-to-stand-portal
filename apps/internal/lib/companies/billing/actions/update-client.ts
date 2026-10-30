@@ -403,7 +403,7 @@ async function recordUpdateActivity(args: RecordUpdateActivityArgs) {
     actorRole: userContext.role,
     verb: event.verb,
     summary: event.summary,
-    targetType: 'CLIENT',
+    targetType: 'COMPANY',
     targetId: existingClient.id,
     targetCompanyId: existingClient.id,
     metadata: event.metadata,

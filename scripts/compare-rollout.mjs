@@ -109,7 +109,10 @@ for (const table of [
   check('every client maps to a company', unmapped.length === 0, `${clients.length} clients, ${unmapped.length} unmapped`)
 
   const companies = new Map(
-    (await rows(after, 'select id::text, slug, state, notes, client_since, client_ended_at from companies')).map(
+    // Client state is read through 0113's billing periods.
+    (await rows(after, `select id::text, slug, state, notes,
+       exists (select 1 from client_billing_periods p where p.company_id = companies.id and p.deleted_at is null) as was_client,
+       company_billing_open(id) as billing_open from companies`)).map(
       c => [c.id, c]
     )
   )
@@ -123,7 +126,7 @@ for (const table of [
   const stateWrong = clients.filter(c => {
     const co = companies.get(company(c.id))
     if (!co) return true
-    return c.deleted_at ? co.client_since === null : co.client_since === null || co.client_ended_at !== null
+    return c.deleted_at ? !co.was_client : !co.was_client || !co.billing_open
   })
   check('client state on the company (live / former)', stateWrong.length === 0, `${stateWrong.length} wrong`)
 

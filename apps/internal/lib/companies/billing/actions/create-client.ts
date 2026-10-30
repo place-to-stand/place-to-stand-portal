@@ -230,7 +230,7 @@ export async function createClient(
         actorRole: user.role,
         verb: event.verb,
         summary: event.summary,
-        targetType: 'CLIENT',
+        targetType: 'COMPANY',
         targetId: clientId,
         targetCompanyId: clientId,
         metadata: event.metadata,

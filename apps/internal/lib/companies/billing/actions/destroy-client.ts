@@ -199,7 +199,7 @@ export async function destroyClientMutation(
         actorRole: user.role,
         verb: event.verb,
         summary: event.summary,
-        targetType: 'CLIENT',
+        targetType: 'COMPANY',
         targetId: existingClient.id,
         targetCompanyId: existingClient.id,
         metadata: event.metadata,
