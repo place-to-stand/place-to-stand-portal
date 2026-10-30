@@ -14,7 +14,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Badge } from '@pts/ui/badge'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { formatCalendarDate } from '@pts/ui/dates'
+import {
+  LEAD_UPDATE_NOT_AUTHOR_MESSAGE,
+  canChangeLeadUpdate,
+} from '@/lib/leads/lead-update-access'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 import {
   LEAD_UPDATE_ICONS,
@@ -49,6 +55,11 @@ export function LeadUpdateItem({
     day: 'numeric',
     year: 'numeric',
   })
+  const actionsLabel = `Actions for ${label.toLowerCase()} logged ${occurredLabel}`
+  // Only the author or an admin may edit or archive it; the server enforces
+  // the same rule.
+  const { role, userId } = useViewerAccess()
+  const canChange = canChangeLeadUpdate({ role, userId }, update.authorId)
 
   // Same double-sanitize convention as task comments: the dialog sanitizes
   // before send, and the renderer sanitizes again before injecting. Pre-RTE
@@ -86,7 +97,21 @@ export function LeadUpdateItem({
           </Badge>
           <span className='text-muted-foreground text-xs'>{occurredLabel}</span>
         </div>
-        {canManage ? (
+        {canManage && !canChange ? (
+          // Someone else's update: the menu stays put but says why it's off.
+          <DisabledFieldTooltip disabled reason={LEAD_UPDATE_NOT_AUTHOR_MESSAGE}>
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon-sm'
+              className='text-muted-foreground shrink-0'
+              disabled
+              aria-label={actionsLabel}
+            >
+              <MoreHorizontal className='h-4 w-4' />
+            </Button>
+          </DisabledFieldTooltip>
+        ) : canManage ? (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -96,7 +121,7 @@ export function LeadUpdateItem({
                   size='icon-sm'
                   className='text-muted-foreground hover:text-foreground shrink-0'
                   disabled={isPending}
-                  aria-label={`Actions for ${label.toLowerCase()} logged ${occurredLabel}`}
+                  aria-label={actionsLabel}
                 />
               }
             >
