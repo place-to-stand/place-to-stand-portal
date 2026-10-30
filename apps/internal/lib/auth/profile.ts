@@ -3,10 +3,10 @@ import 'server-only'
 
 import type { User } from '@supabase/supabase-js'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { users as usersTable } from '@/lib/db/schema'
+import { contacts, users as usersTable } from '@/lib/db/schema'
 import { isUserAvatarPath } from '@/lib/storage/avatar'
 
 /**
@@ -68,14 +68,19 @@ export async function ensureUserProfile(
     return 'ok'
   }
 
-  await db
-    .update(usersTable)
-    .set({
-      email: nextEmail,
-      deletedAt: null,
-      ...(seedAvatar ? { avatarUrl: seedAvatar } : {}),
-    })
-    .where(eq(usersTable.id, user.id))
+  if (existing.email !== nextEmail) {
+    await db
+      .update(usersTable)
+      .set({ email: nextEmail, deletedAt: null })
+      .where(eq(usersTable.id, user.id))
+  }
+  // The photo is the person's (contacts.avatar_url, 0112).
+  if (seedAvatar) {
+    await db
+      .update(contacts)
+      .set({ avatarUrl: seedAvatar, updatedAt: new Date().toISOString() })
+      .where(and(eq(contacts.userId, user.id), isNull(contacts.deletedAt)))
+  }
 
   return 'ok'
 }

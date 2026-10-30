@@ -51,10 +51,13 @@ export const fetchClientHoursSummaries = cache(
         .select({
           id: companies.id,
           name: clientNameSql,
-          // The newest billing term (the one place billing type is stored).
+          // The billing term in force today (the one place billing type is stored).
           billingType: sql<'prepaid' | 'net_30'>`coalesce((
             select bt.billing_type from billing_terms bt
             where bt.company_id = "companies"."id" and bt.deleted_at is null
+              -- The term in force today, like the hours below (not one
+              -- scheduled for next month).
+              and bt.effective_from <= current_date
             order by bt.effective_from desc limit 1
           ), 'prepaid')`,
         })
