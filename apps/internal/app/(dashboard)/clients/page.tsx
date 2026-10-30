@@ -13,7 +13,7 @@ export default async function ClientsPage({
   await requireUser()
   const params = await searchParams
   const next = new URLSearchParams({ type: 'client' })
-  for (const key of ['client', 'clientName', 'clientCompanyId', 'search']) {
+  for (const key of ['client', 'search']) {
     const value = params[key]
     const first = Array.isArray(value) ? value[0] : value
     if (first) next.set(key === 'search' ? 'q' : key, first)
