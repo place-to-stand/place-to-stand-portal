@@ -333,7 +333,7 @@ export function ComponentsOverlays() {
               <Button variant='outline'>Billing terms</Button>
             </PopoverTrigger>
             <PopoverContent className='w-64 text-sm'>
-              Net 30 since Jan 2026. Change it on the client sheet.
+              Net 30 since Jan 2026.
             </PopoverContent>
           </Popover>
         </Example>

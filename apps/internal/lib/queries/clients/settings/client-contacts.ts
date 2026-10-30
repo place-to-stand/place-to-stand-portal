@@ -42,7 +42,7 @@ type ContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
-  /** Their login is switched off (or archived) on the Users page: no access anywhere. */
+  /** Their login is switched off (or archived) on their person sheet: no access anywhere. */
   signInDisabled?: boolean
   /** Their company's primary contact. */
   isPrimary?: boolean
@@ -62,7 +62,7 @@ export type ClientSheetContactData = {
 }
 
 /**
- * Every live contact, for the client sheet's pickers (origination, closers)
+ * Every live contact, for the Billing tab's pickers (origination, closers)
  * and Portal access list. `companyId` is the client's company when they are
  * a member of it (so the Portal access list can pick them out), otherwise
  * their main company; `isPrimary` is the client's company's primary.
@@ -185,7 +185,7 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
 }
 
 /**
- * Fetches all data needed for the client sheet contact and partner pickers.
+ * Fetches all data needed for the Billing tab's contact and partner pickers.
  * If clientId is provided, also fetches the client's linked contacts.
  */
 export async function getClientSheetContactData(
@@ -211,7 +211,7 @@ export async function getClientSheetContactData(
 }
 
 /**
- * Saves the client sheet's Portal access switches: which of the company's
+ * Saves the People tab's Portal switches: which of the company's
  * people can see this client in the client portal (those with a portal
  * login see it right away). Being at the company grants nothing by itself.
  * Access is a flag on each person's membership, so only members can have

@@ -234,7 +234,7 @@ export async function saveContactMutation(
               : 'This person is at a client, so only an admin can change their email.',
           })
         }
-        // Portal access is set only in Edit client > Portal access. Leaving
+        // Portal access is set only in the company's People tab. Leaving
         // a company whose client they can see ends it, so that's admin-only.
         if (
           !canManageAccess &&
@@ -280,7 +280,7 @@ export async function saveContactMutation(
           return buildMutationResult({ error: 'Unable to update person.' })
         }
 
-        // Access trail on the client, as on the client sheet.
+        // Access trail on the client, as on the company sheet.
         for (const companyId of plan.leave) {
           const left = currentById.get(companyId)
           if (left?.portalAccess && left.clientId) {

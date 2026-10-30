@@ -70,9 +70,8 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
       (pathname === '/leads/archive' && value !== NEW_SHEET_VALUE),
   },
   client: {
-    // `?client=new` is Make client: `clientName=` prefills from a picker,
-    // `clientCompanyId=` the company. `?client=<id>` opens its company's
-    // sheet. Only the archive (stopped billing) hosts its own client sheet.
+    // Old links only: `?client=<id>` opens that company's sheet (a client is
+    // a company you bill). Billing is switched on from the company's Billing tab.
     auxParams: ['clientName', 'clientCompanyId', 'tab'],
     claimsPathname: () => false,
   },

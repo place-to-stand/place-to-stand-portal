@@ -46,7 +46,7 @@ export async function ensureUserProfile(
   // Role is never read from the auth user. `user_metadata` is writable by the
   // signed-in user themselves (supabase.auth.updateUser), so trusting a role
   // there would let any account promote itself. The `users` row is the only
-  // source of truth; admins change it in Settings → Users.
+  // source of truth; admins change it on the person sheet.
 
   // Name and avatar are seeded, never re-synced. Supabase merges the identity
   // provider's own values into `user_metadata` at every sign-in, so mirroring

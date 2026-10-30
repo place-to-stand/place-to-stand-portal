@@ -179,7 +179,7 @@ export async function softDeleteContactMutation(
         }
       }
 
-      // Access trail on each client they lose, as on the client sheet.
+      // Access trail on each client they lose, as on the company sheet.
       const accessChanges: ContactClientLinkChange[] = []
       for (const row of accessRows) {
         // Only a current membership was granting access.

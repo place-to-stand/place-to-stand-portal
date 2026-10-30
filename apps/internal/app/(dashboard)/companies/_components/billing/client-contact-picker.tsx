@@ -16,7 +16,7 @@ type ClientContactOption = {
   phone: string | null
   /** Has a portal user (`contacts.user_id`). */
   hasPortalAccess: boolean
-  /** Portal user's sign-in switched off on the Users page: no access until it's back on. */
+  /** Portal user's sign-in switched off on their person sheet: no access until it's back on. */
   signInDisabled?: boolean
   companyId?: string | null
   /** The company's primary contact (read-only here). */

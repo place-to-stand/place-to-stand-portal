@@ -80,7 +80,7 @@ async function runClientMutation<TInput>(
 }
 
 /**
- * Fetches all data needed for the client sheet contact picker.
+ * Fetches all data needed for the company's Billing tab pickers.
  */
 export async function getClientSheetContactData(
   clientId?: string

@@ -8,7 +8,7 @@ import {
   tasks,
   timeLogs,
 } from '@/lib/db/schema'
-import { CAPABILITIES, roleCan, type Capability } from '@/lib/auth/capabilities'
+import { roleCan, type Capability } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 
@@ -26,14 +26,6 @@ export function can(
   return roleCan(user?.role, capability)
 }
 
-/** Throws ForbiddenError unless the user's role holds the capability. */
-export function assertCan(user: AppUser, capability: Capability) {
-  if (!can(user, capability)) {
-    throw new ForbiddenError(
-      `Not allowed: ${CAPABILITIES[capability].label.toLowerCase()}`
-    )
-  }
-}
 
 export function assertAdmin(user: AppUser) {
   if (!isAdmin(user)) {

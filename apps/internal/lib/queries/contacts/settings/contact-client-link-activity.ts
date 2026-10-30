@@ -22,7 +22,7 @@ export type ContactClientLinkChange = {
 /**
  * Records one CONTACT_CLIENT_LINKED / _UNLINKED row per (contact, client)
  * pair after a link sync has landed. Both sync directions (contact sheet and
- * client sheet) call this so the feed reads the same either way. Names are
+ * company sheet) call this so the feed reads the same either way. Names are
  * looked up here rather than threaded in: the sync helpers only hold ids.
  */
 export async function logContactClientLinkChanges(

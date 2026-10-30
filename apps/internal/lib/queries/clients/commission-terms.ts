@@ -321,7 +321,7 @@ export function originationContactIdAsOfSql(periodStart: string) {
 
 /**
  * The client's current origination: the newest term's (latest effective
- * date, even a future one, which is what the client sheet last saved).
+ * date, even a future one, which is what the Billing tab last saved).
  * Correlated against the outer `clients` table. The terms table is the one
  * place commission is stored; reports resolve by period with the `AsOf`
  * helpers above.

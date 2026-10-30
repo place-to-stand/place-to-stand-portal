@@ -39,12 +39,4 @@ export const leadContactNameSql = sql<string>`(
   select lc.name from contacts lc where lc.id = "leads"."contact_id"
 )`
 
-/** The lead contact's email, as a correlated subquery on `leads`. */
-export const leadContactEmailSql = sql<string | null>`(
-  select lc.email from contacts lc where lc.id = "leads"."contact_id"
-)`
 
-/** The lead company's name, as a correlated subquery on `leads`. */
-export const leadCompanyNameSql = sql<string | null>`(
-  select lco.name from companies lco where lco.id = "leads"."company_id"
-)`

@@ -52,7 +52,7 @@ export type ContactsSearchParams = {
   search: string | undefined
   /**
    * Linked-client filter (`?clientId=<uuid>`). Named `clientId` because
-   * `?client=` is the client sheet's deep-link param.
+   * `?client=` is an old deep-link param (it opens the company sheet).
    */
   clientId: string | undefined
   /** Who can sign in (admins only; ignored for others). */

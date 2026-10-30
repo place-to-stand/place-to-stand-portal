@@ -133,7 +133,7 @@ export function PatternsHouseRules() {
             </label>
           </div>
         }
-        doCaption='One switch, in Edit client › Portal access.'
+        doCaption='One switch per person, on the company’s People tab.'
         dontExample={
           <div className='flex flex-wrap items-center gap-3'>
             <Switch defaultChecked aria-label='Portal access' />
@@ -197,7 +197,7 @@ export function PatternsCopy() {
           <div className='w-full space-y-3'>
             <div className='flex flex-wrap gap-2'>
               <Button size='sm' variant='outline'>
-                Create sign-in
+                Add person
               </Button>
               <Button size='sm' variant='destructive'>
                 Archive company
@@ -206,7 +206,7 @@ export function PatternsCopy() {
             <EmptyState message='No people here yet.' />
           </div>
         }
-        doCaption='"Create sign-in", "Archive company", "No people here yet."'
+        doCaption='"Add person", "Archive company", "No people here yet."'
         dontExample={
           <div className='w-full space-y-3'>
             <div className='flex flex-wrap gap-2'>

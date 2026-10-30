@@ -21,7 +21,7 @@ export async function createPortalUser(
   actor: AppUser,
   input: CreateUserInput,
   /**
-   * A sign-in belongs to a person. The Users page creates or finds that
+   * A sign-in belongs to a person. Staff sign-ins create or find that
    * person here, in the same transaction; promoting a contact links its own
    * contact instead (`linkPerson: false`).
    */

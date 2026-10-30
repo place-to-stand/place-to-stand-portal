@@ -70,7 +70,6 @@ export const saveCompanySchema = z.object({
 })
 
 export type SaveCompanyInput = z.input<typeof saveCompanySchema>
-export type SaveCompanyValues = z.output<typeof saveCompanySchema>
 
 export const linkedinUrlSchema = optionalUrl(255)
 export const normalizeWebAddress = (value: string | null | undefined) => {

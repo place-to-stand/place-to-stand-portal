@@ -30,7 +30,7 @@ export type UserAssignmentSummary = {
   /**
    * The live contact this user was promoted from (`contacts.user_id` is
    * unique, so at most one). Null for admins and for portal users created
-   * straight from Settings → Users. Portal preview is keyed by contact.
+   * straight from the person sheet. Portal preview is keyed by contact.
    */
   contact: UserLinkedContact | null
 }

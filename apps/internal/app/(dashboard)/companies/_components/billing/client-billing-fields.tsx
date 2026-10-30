@@ -77,7 +77,7 @@ export type ClientBillingFieldsProps = {
 /**
  * A client's billing: billing type and state, commission, and portal access.
  * Shown in the company sheet (a client is its company's billing record) and
- * in the Make client sheet. Renders inside the caller's `<Form>`.
+ * on the company's Billing tab. Renders inside the caller's `<Form>`.
  */
 export function ClientBillingFields({
   form,

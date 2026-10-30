@@ -37,7 +37,7 @@ export const companySheetQueryKey = (companyId: string | null) =>
 
 /**
  * The company sheet's staged edits: People (add, remove, titles, primary
- * star) and the Linked client slot. Everything here only sets form values;
+ * star). Everything here only sets form values;
  * the sheet saves them together on Save.
  */
 export function useCompanySheetForm({
@@ -159,7 +159,7 @@ export function useCompanySheetForm({
     [companyId, contactOptions]
   )
 
-  // "Make client" saves a client for this company: refresh so Billing shows.
+  // Billing switched on saves this company as a client: refresh so Billing shows.
   useEffect(
     () =>
       subscribeSheetCreated('client', () => {

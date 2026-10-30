@@ -1,5 +1,5 @@
 /**
- * Closer splits (client-safe — shared by the client sheet, the save action
+ * Closer splits (client-safe — shared by the Billing tab, the save action
  * and the term queries).
  *
  * A commission term pays its closer rate to zero or more closers. Each closer

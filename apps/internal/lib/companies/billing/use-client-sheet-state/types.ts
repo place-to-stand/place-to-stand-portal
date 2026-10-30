@@ -21,7 +21,7 @@ export type ClientContactOption = {
   email: string | null
   phone: string | null
   hasPortalAccess: boolean
-  /** Login switched off on the Users page: no access until it's back on. */
+  /** Login switched off on their person sheet: no access until it's back on. */
   signInDisabled?: boolean
   /** Their company's primary contact (set on the company). */
   isPrimary?: boolean
@@ -173,7 +173,6 @@ export type UseClientSheetStateReturn = {
   deleteDisabled: boolean
   deleteDisabledReason: string | null
   clientDisplayName: string
-  sheetTitle: string
   sheetDescription: string
   pendingReason: string
   isDeleteDialogOpen: boolean

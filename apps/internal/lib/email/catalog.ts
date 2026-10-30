@@ -168,7 +168,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
         'Welcomes a new client portal user with a one-time sign-in link. Sent from the internal portal, but lands with people at the client.',
       triggers: [
         'Promoting a person to a portal user',
-        'Creating a CLIENT-role user under Settings → Users',
+        'Turning on “Can sign in” with the Client role on a person',
       ],
       recipient: 'The new portal user',
       from,
@@ -197,7 +197,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       name: 'Admin invite',
       description:
         'Gives a new admin a temporary password. They are forced through a password reset on first sign-in.',
-      triggers: ['Creating an ADMIN-role user under Settings → Users'],
+      triggers: ['Turning on “Can sign in” with the Admin or Sales role on a person'],
       recipient: 'The new admin user',
       from,
       replyTo,

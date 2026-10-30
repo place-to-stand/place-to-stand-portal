@@ -1296,20 +1296,6 @@
   },
   {
     "type": "route",
-    "name": "POST /api/contacts",
-    "file": "apps/internal/app/api/contacts/route.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "route",
-    "name": "GET /api/contacts/search",
-    "file": "apps/internal/app/api/contacts/search/route.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "route",
     "name": "GET /api/cron/abandon-stale-submissions",
     "file": "apps/internal/app/api/cron/abandon-stale-submissions/route.ts",
     "kind": "token",
