@@ -9,7 +9,7 @@ export function mapProjectToTableRow(
     name: project.name,
     status: project.status,
     slug: project.slug,
-    client_id: project.clientId,
+    company_id: project.companyId,
     type: project.type,
     created_by: project.createdBy,
     owner_id: project.ownerId,

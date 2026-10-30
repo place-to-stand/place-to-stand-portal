@@ -1,12 +1,13 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientDeletedEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 import {
   countHourBlocksForClient,
   countProjectsForClient,
@@ -60,12 +61,12 @@ export async function destroyClientMutation(
       try {
         const rows = await db
           .select({
-            id: clients.id,
+            id: companies.id,
             name: clientNameSql,
-            deletedAt: clients.deletedAt,
+            deletedAt: clientEndedAtSql,
           })
-          .from(clients)
-          .where(eq(clients.id, parsed.data.id))
+          .from(companies)
+          .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
           .limit(1)
 
         existingClient = rows[0]
@@ -130,7 +131,12 @@ export async function destroyClientMutation(
       // Portal access is derived from the company's memberships, so a
       // deleted client simply drops out of client_portal_access.
       try {
-        await db.delete(clients).where(eq(clients.id, parsed.data.id))
+        // Nothing references it: the company was never really billed, so
+        // it stops being a client at all (the company itself stays).
+        await db
+          .update(companies)
+          .set({ clientSince: null, clientEndedAt: null })
+          .where(eq(companies.id, parsed.data.id))
       } catch (error) {
         console.error('Failed to permanently delete client', error)
         return buildMutationResult({
@@ -150,7 +156,7 @@ export async function destroyClientMutation(
         summary: event.summary,
         targetType: 'CLIENT',
         targetId: existingClient.id,
-        targetClientId: existingClient.id,
+        targetCompanyId: existingClient.id,
         metadata: event.metadata,
       })
 

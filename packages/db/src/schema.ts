@@ -190,75 +190,12 @@ export const users = pgTable(
   table => [unique('users_email_key').on(table.email)]
 )
 
-export const clients = pgTable(
-  'clients',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    // A client is a company's billing record. Its name is its company's
-    // (0109 dropped clients.name): read it with clientNameSql (@pts/db/names).
-    slug: text(),
-    notes: text(),
-    // Billing type lives only on `client_billing_terms` (0108 dropped the
-    // copy that used to sit here).
-    website: text(),
-    state: varchar({ length: 2 }),
-    // Commission (origination 10%, closers 20%) lives only on
-    // `client_commission_terms` and its closer rows (0108 dropped the copies
-    // that used to sit here).
-    /**
-     * The organization this client is (every client has one). FK
-     * `clients_company_id_fkey` (added in 0096) is declared below.
-     */
-    companyId: uuid('company_id').notNull(),
-    /**
-     * Optional short label telling apart two billing setups for one company
-     * ("Retainer"). The client's name is its company's name plus this.
-     */
-    label: text(),
-    createdBy: uuid('created_by'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
-  },
-  table => [
-    index('idx_clients_company')
-      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
-    // A company has one (live) client.
-    uniqueIndex('clients_company_id_live_key')
-      .on(table.companyId)
-      .where(sql`(deleted_at IS NULL AND company_id IS NOT NULL)`),
-    index('idx_clients_created_by')
-      .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL)`),
-    index('idx_clients_slug_trgm').using(
-      'gin',
-      table.slug.op('gin_trgm_ops')
-    ),
-    foreignKey({
-      columns: [table.createdBy],
-      foreignColumns: [users.id],
-      name: 'clients_created_by_fkey',
-    }),
-    // companies is defined below; the callback runs lazily, so this is safe.
-    foreignKey({
-      columns: [table.companyId],
-      foreignColumns: [companies.id],
-      name: 'clients_company_id_fkey',
-    }).onDelete('set null'),
-    unique('clients_slug_key').on(table.slug),
-  ]
-)
-
 /**
  * An organization (sales CRM): prospects and customers alike. People belong
  * to it through `memberships` (one of them can be its primary contact) and
- * leads hang under it. Once it signs, its paying customer record is the one
- * live `clients` row whose `company_id` points here (`clients_company_id_live_key`).
+ * leads hang under it. A company you bill is a client: `client_since` is set,
+ * and `client_ended_at` once billing stops (a former client). Everything
+ * billed (projects, invoices, hours, terms, updates) keys on `company_id`.
  */
 export const companies = pgTable(
   'companies',
@@ -269,6 +206,20 @@ export const companies = pgTable(
     linkedinUrl: text('linkedin_url'),
     /** Rich text (TipTap HTML). */
     notes: text(),
+    /** URL segment for its projects (`/projects/<slug>/…`); set once billed. */
+    slug: text(),
+    /** Two-letter US state for sales tax on invoices. */
+    state: varchar({ length: 2 }),
+    /** When it became a client; null for a company never billed. */
+    clientSince: timestamp('client_since', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    /** When billing stopped (a former client); null while billed. */
+    clientEndedAt: timestamp('client_ended_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -279,6 +230,10 @@ export const companies = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
+    unique('companies_slug_key').on(table.slug),
+    index('idx_companies_client')
+      .on(table.id)
+      .where(sql`(client_since IS NOT NULL AND client_ended_at IS NULL)`),
     // One live company per name (case-insensitive), so pickers and the lead
     // backfill can't fork "Lasso Group" into two records.
     uniqueIndex('idx_companies_name_unique')
@@ -409,7 +364,7 @@ export const projects = pgTable(
   'projects',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    clientId: uuid('client_id'),
+    companyId: uuid('company_id'),
     name: text().notNull(),
     status: projectStatus().default('ACTIVE').notNull(),
     startsOn: date('starts_on'),
@@ -427,8 +382,8 @@ export const projects = pgTable(
     type: projectType('type').default('CLIENT').notNull(),
   },
   table => [
-    index('idx_projects_client')
-      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+    index('idx_projects_company')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
     // Every projects listing sorts by name; without this the full table is
     // sorted per request.
@@ -456,9 +411,9 @@ export const projects = pgTable(
       .using('btree', table.slug.asc().nullsLast().op('text_ops'))
       .where(sql`(slug IS NOT NULL)`),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'projects_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'projects_company_id_fkey',
     }),
     foreignKey({
       columns: [table.createdBy],
@@ -471,12 +426,12 @@ export const projects = pgTable(
       name: 'projects_owner_id_fkey',
     }),
     check(
-      'projects_type_client_check',
+      'projects_type_company_check',
       sql`(
-        (type = 'CLIENT' AND client_id IS NOT NULL)
+        (type = 'CLIENT' AND company_id IS NOT NULL)
         OR (
           type IN ('PERSONAL', 'INTERNAL')
-          AND client_id IS NULL
+          AND company_id IS NULL
         )
       )`
     ),
@@ -776,7 +731,7 @@ export const hourBlocks = pgTable(
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
-    clientId: uuid('client_id').notNull(),
+    companyId: uuid('company_id').notNull(),
     /**
      * The invoice line that created this block (blocks made by hand have
      * none). Its invoice is read through the line (0108 dropped the copied
@@ -796,8 +751,8 @@ export const hourBlocks = pgTable(
     index('idx_hour_blocks_billing_month')
       .using('btree', table.billingMonth.asc())
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_hour_blocks_client_id')
-      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+    index('idx_hour_blocks_company_id')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
     index('idx_hour_blocks_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
@@ -811,9 +766,9 @@ export const hourBlocks = pgTable(
       name: 'hour_blocks_created_by_fkey',
     }),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'hour_blocks_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'hour_blocks_company_id_fkey',
     }).onDelete('cascade'),
     check(
       'chk_hour_blocks_billing_month_month_start',
@@ -866,11 +821,11 @@ export const monthlyCloseSnapshots = pgTable(
   ]
 )
 
-export const clientBillingTerms = pgTable(
-  'client_billing_terms',
+export const billingTerms = pgTable(
+  'billing_terms',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    clientId: uuid('client_id').notNull(),
+    companyId: uuid('company_id').notNull(),
     billingType: clientBillingType('billing_type').notNull(),
     /** First day of the month this billing type takes effect (month-start CHECK). */
     effectiveFrom: date('effective_from').notNull(),
@@ -885,35 +840,35 @@ export const clientBillingTerms = pgTable(
   },
   table => [
     // One active term per client per boundary; re-editing a boundary upserts.
-    uniqueIndex('uq_client_billing_terms_client_effective')
-      .on(table.clientId, table.effectiveFrom)
+    uniqueIndex('uq_billing_terms_company_effective')
+      .on(table.companyId, table.effectiveFrom)
       .where(sql`(deleted_at IS NULL)`),
     // Resolution path: latest effective_from <= period start for a client.
-    index('idx_client_billing_terms_resolution')
-      .using('btree', table.clientId.asc(), table.effectiveFrom.desc())
+    index('idx_billing_terms_resolution')
+      .using('btree', table.companyId.asc(), table.effectiveFrom.desc())
       .where(sql`(deleted_at IS NULL)`),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'client_billing_terms_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'billing_terms_company_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
-      name: 'client_billing_terms_created_by_fkey',
+      name: 'billing_terms_created_by_fkey',
     }).onDelete('set null'),
     check(
-      'chk_client_billing_terms_month_start',
+      'chk_billing_terms_month_start',
       sql`effective_from = date_trunc('month', effective_from)::date`
     ),
   ]
 )
 
-export const clientCommissionTerms = pgTable(
-  'client_commission_terms',
+export const commissionTerms = pgTable(
+  'commission_terms',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    clientId: uuid('client_id').notNull(),
+    companyId: uuid('company_id').notNull(),
     /** First day of the month this commission split takes effect (month-start CHECK). */
     effectiveFrom: date('effective_from').notNull(),
     // Closers (20%, split by percentage) are child rows in
@@ -933,39 +888,39 @@ export const clientCommissionTerms = pgTable(
   },
   table => [
     // One active term per client per boundary; re-editing a boundary upserts.
-    uniqueIndex('uq_client_commission_terms_client_effective')
-      .on(table.clientId, table.effectiveFrom)
+    uniqueIndex('uq_commission_terms_company_effective')
+      .on(table.companyId, table.effectiveFrom)
       .where(sql`(deleted_at IS NULL)`),
     // Resolution path: latest effective_from <= period start for a client.
-    index('idx_client_commission_terms_resolution')
-      .using('btree', table.clientId.asc(), table.effectiveFrom.desc())
+    index('idx_commission_terms_resolution')
+      .using('btree', table.companyId.asc(), table.effectiveFrom.desc())
       .where(sql`(deleted_at IS NULL)`),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'client_commission_terms_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'commission_terms_company_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.originationUserId],
       foreignColumns: [users.id],
-      name: 'client_commission_terms_origination_user_id_fkey',
+      name: 'commission_terms_origination_user_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.originationContactId],
       foreignColumns: [contacts.id],
-      name: 'client_commission_terms_origination_contact_id_fkey',
+      name: 'commission_terms_origination_contact_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
-      name: 'client_commission_terms_created_by_fkey',
+      name: 'commission_terms_created_by_fkey',
     }).onDelete('set null'),
     check(
-      'chk_client_commission_terms_month_start',
+      'chk_commission_terms_month_start',
       sql`effective_from = date_trunc('month', effective_from)::date`
     ),
     check(
-      'chk_client_commission_terms_origination_mutex',
+      'chk_commission_terms_origination_mutex',
       sql`NOT (origination_user_id IS NOT NULL AND origination_contact_id IS NOT NULL)`
     ),
   ]
@@ -978,8 +933,8 @@ export const clientCommissionTerms = pgTable(
  * (mutex CHECK): an insider at the client can help close a deal too. Rows are
  * replaced as a set when a term's split is re-edited (old rows soft-deleted).
  */
-export const clientCommissionTermClosers = pgTable(
-  'client_commission_term_closers',
+export const commissionTermClosers = pgTable(
+  'commission_term_closers',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     termId: uuid('term_id').notNull(),
@@ -996,36 +951,36 @@ export const clientCommissionTermClosers = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
-    index('idx_client_commission_term_closers_term')
+    index('idx_commission_term_closers_term')
       .using('btree', table.termId.asc())
       .where(sql`(deleted_at IS NULL)`),
-    uniqueIndex('uq_client_commission_term_closers_user')
+    uniqueIndex('uq_commission_term_closers_user')
       .on(table.termId, table.closerUserId)
       .where(sql`(deleted_at IS NULL AND closer_user_id IS NOT NULL)`),
-    uniqueIndex('uq_client_commission_term_closers_contact')
+    uniqueIndex('uq_commission_term_closers_contact')
       .on(table.termId, table.closerContactId)
       .where(sql`(deleted_at IS NULL AND closer_contact_id IS NOT NULL)`),
     foreignKey({
       columns: [table.termId],
-      foreignColumns: [clientCommissionTerms.id],
-      name: 'client_commission_term_closers_term_id_fkey',
+      foreignColumns: [commissionTerms.id],
+      name: 'commission_term_closers_term_id_fkey',
     }).onDelete('cascade'),
     foreignKey({
       columns: [table.closerUserId],
       foreignColumns: [users.id],
-      name: 'client_commission_term_closers_closer_user_id_fkey',
+      name: 'commission_term_closers_closer_user_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.closerContactId],
       foreignColumns: [contacts.id],
-      name: 'client_commission_term_closers_closer_contact_id_fkey',
+      name: 'commission_term_closers_closer_contact_id_fkey',
     }).onDelete('restrict'),
     check(
-      'chk_client_commission_term_closers_one_party',
+      'chk_commission_term_closers_one_party',
       sql`(closer_user_id IS NULL) <> (closer_contact_id IS NULL)`
     ),
     check(
-      'chk_client_commission_term_closers_share',
+      'chk_commission_term_closers_share',
       sql`share_percent > 0 AND share_percent <= 100`
     ),
   ]
@@ -1155,7 +1110,6 @@ export const leads = pgTable(
 
     // Conversion
     convertedAt: timestamp('converted_at', { withTimezone: true, mode: 'string' }),
-    convertedToClientId: uuid('converted_to_client_id'),
 
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1178,11 +1132,6 @@ export const leads = pgTable(
       columns: [table.assigneeId],
       foreignColumns: [users.id],
       name: 'leads_assignee_id_fkey',
-    }),
-    foreignKey({
-      columns: [table.convertedToClientId],
-      foreignColumns: [clients.id],
-      name: 'leads_converted_to_client_id_fkey',
     }),
     index('idx_leads_company')
       .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
@@ -1304,7 +1253,7 @@ export const clientUpdates = pgTable(
   'client_updates',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    clientId: uuid('client_id').notNull(),
+    companyId: uuid('company_id').notNull(),
     status: clientUpdateStatus().default('DRAFT').notNull(),
     subject: text().notNull(),
     /** Opening line under the greeting. The greeting itself is derived at render. */
@@ -1343,17 +1292,17 @@ export const clientUpdates = pgTable(
   table => [
     // Serves the client page's recent-updates list and the "last sent" lookup
     // that seeds the next draft's window.
-    index('idx_client_updates_client_created')
+    index('idx_client_updates_company_created')
       .using(
         'btree',
-        table.clientId.asc().nullsLast().op('uuid_ops'),
+        table.companyId.asc().nullsLast().op('uuid_ops'),
         table.createdAt.desc().nullsLast().op('timestamptz_ops')
       )
       .where(sql`(deleted_at IS NULL)`),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'client_updates_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'client_updates_company_id_fkey',
     }).onDelete('cascade'),
     // RESTRICT for the same reason as lead_updates: a sent update is a record
     // of who told the client what, and users are disabled rather than deleted.
@@ -1381,7 +1330,7 @@ export const activityLogs = pgTable(
     summary: text().notNull(),
     targetType: text('target_type').notNull(),
     targetId: uuid('target_id'),
-    targetClientId: uuid('target_client_id'),
+    targetCompanyId: uuid('target_company_id'),
     targetProjectId: uuid('target_project_id'),
     contextRoute: text('context_route'),
     metadata: jsonb().default({}).notNull(),
@@ -1525,7 +1474,7 @@ export const githubAppInstallations = pgTable(
   'github_app_installations',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    clientId: uuid('client_id').notNull(),
+    companyId: uuid('company_id').notNull(),
     installedByUserId: uuid('installed_by_user_id').notNull(),
     installationId: bigint('installation_id', { mode: 'number' }).notNull(),
     accountLogin: text('account_login').notNull(),
@@ -1560,16 +1509,16 @@ export const githubAppInstallations = pgTable(
     unique('github_app_installations_installation_id_key').on(
       table.installationId
     ),
-    index('idx_github_app_installations_client')
-      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+    index('idx_github_app_installations_company')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
     index('idx_github_app_installations_status')
       .using('btree', table.status.asc().nullsLast())
       .where(sql`(deleted_at IS NULL)`),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'github_app_installations_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'github_app_installations_company_id_fkey',
     }),
     foreignKey({
       columns: [table.installedByUserId],
@@ -1953,7 +1902,7 @@ export const invoices = pgTable(
     id: uuid().defaultRandom().primaryKey().notNull(),
     invoiceNumber: text('invoice_number').unique(),
     status: invoiceStatus().notNull().default('DRAFT'),
-    clientId: uuid('client_id').notNull(),
+    companyId: uuid('company_id').notNull(),
     createdBy: uuid('created_by'),
     issuedDate: date('issued_date'),
     dueDate: date('due_date'),
@@ -1981,8 +1930,8 @@ export const invoices = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
-    index('idx_invoices_client_id')
-      .using('btree', table.clientId.asc().nullsLast().op('uuid_ops'))
+    index('idx_invoices_company_id')
+      .using('btree', table.companyId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
     index('idx_invoices_status')
       .using('btree', table.status.asc())
@@ -1999,9 +1948,9 @@ export const invoices = pgTable(
       .using('btree', table.stripeCheckoutSessionId.asc())
       .where(sql`(stripe_checkout_session_id IS NOT NULL)`),
     foreignKey({
-      columns: [table.clientId],
-      foreignColumns: [clients.id],
-      name: 'invoices_client_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'invoices_company_id_fkey',
     }).onDelete('restrict'),
     foreignKey({
       columns: [table.createdBy],
@@ -2383,7 +2332,7 @@ export const currentUserWithRole = pgView('current_user_with_role', {
  * source both portals read; there is nothing to keep in sync.
  */
 export const clientPortalAccess = pgView('client_portal_access', {
-  clientId: uuid('client_id').notNull(),
+  companyId: uuid('company_id').notNull(),
   contactId: uuid('contact_id').notNull(),
   /** The contact's portal login (always set: access needs a login). */
   userId: uuid('user_id'),

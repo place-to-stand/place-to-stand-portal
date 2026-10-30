@@ -1,12 +1,13 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, leads, projects } from '@/lib/db/schema'
+import { companies, contacts, leads, projects } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { LeadConversionSummary } from '@/lib/leads/types'
 
@@ -28,7 +29,7 @@ export async function fetchLeadConversionSummary(
 
   const [lead] = await db
     .select({
-      convertedToClientId: leads.convertedToClientId,
+      convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
       contactId: leads.contactId,
     })
     .from(leads)
@@ -45,14 +46,14 @@ export async function fetchLeadConversionSummary(
   const [clientRows, contactRows, projectRows] = await Promise.all([
     db
       .select({
-        id: clients.id,
+        id: companies.id,
         name: clientNameSql,
-        slug: clients.slug,
-        companyId: clients.companyId,
-        deletedAt: clients.deletedAt,
+        slug: companies.slug,
+        companyId: companies.id,
+        deletedAt: clientEndedAtSql,
       })
-      .from(clients)
-      .where(eq(clients.id, clientId))
+      .from(companies)
+      .where(and(wasClientCompany(), eq(companies.id, clientId)))
       .limit(1),
     db
       .select({
@@ -71,7 +72,7 @@ export async function fetchLeadConversionSummary(
         status: projects.status,
       })
       .from(projects)
-      .where(and(eq(projects.clientId, clientId), isNull(projects.deletedAt)))
+      .where(and(eq(projects.companyId, clientId), isNull(projects.deletedAt)))
       .orderBy(asc(projects.name)),
   ])
 

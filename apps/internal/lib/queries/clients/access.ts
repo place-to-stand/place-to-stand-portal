@@ -1,10 +1,11 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { asc } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 
 /**
  * Fetches all clients (including archived) for the project sheet dropdown.
@@ -15,11 +16,11 @@ export async function fetchClientDirectory(): Promise<
 > {
   return db
     .select({
-      id: clients.id,
+      id: companies.id,
       name: clientNameSql,
-      deletedAt: clients.deletedAt,
+      deletedAt: clientEndedAtSql,
     })
-    .from(clients)
+    .from(companies).where(wasClientCompany())
     .orderBy(asc(clientNameSql))
 }
 

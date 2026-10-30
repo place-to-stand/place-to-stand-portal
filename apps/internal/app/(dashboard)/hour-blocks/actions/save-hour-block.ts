@@ -91,7 +91,7 @@ async function performSaveHourBlock(
       const [inserted] = await db
         .insert(hourBlocks)
         .values({
-          clientId,
+          companyId: clientId,
           hoursPurchased: hoursPurchasedValue,
           notes,
           createdBy: user.id,
@@ -115,7 +115,7 @@ async function performSaveHourBlock(
         summary: event.summary,
         targetType: 'HOUR_BLOCK',
         targetId: inserted.id,
-        targetClientId: clientId,
+        targetCompanyId: clientId,
         metadata: event.metadata,
       })
 
@@ -151,7 +151,7 @@ async function performSaveHourBlock(
       await db
         .update(hourBlocks)
         .set({
-          clientId,
+          companyId: clientId,
           hoursPurchased: hoursPurchasedValue,
           notes,
           updatedAt: nowIso,
@@ -172,9 +172,9 @@ async function performSaveHourBlock(
     const previousDetails: Record<string, unknown> = {}
     const nextDetails: Record<string, unknown> = {}
 
-    if (existingHourBlock.client_id !== clientId) {
+    if (existingHourBlock.company_id !== clientId) {
       changedFields.push('client')
-      previousDetails.clientId = existingHourBlock.client_id
+      previousDetails.clientId = existingHourBlock.company_id
       previousDetails.clientName = existingHourBlock.client?.name ?? null
       nextDetails.clientId = clientId
       nextDetails.clientName = targetClientName
@@ -209,7 +209,7 @@ async function performSaveHourBlock(
         summary: event.summary,
         targetType: 'HOUR_BLOCK',
         targetId: id,
-        targetClientId: clientId,
+        targetCompanyId: clientId,
         metadata: event.metadata,
       })
     }

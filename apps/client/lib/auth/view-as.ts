@@ -1,3 +1,4 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -6,7 +7,7 @@ import { cookies } from 'next/headers'
 import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clientPortalAccess, clients, contacts } from '@pts/db/schema'
+import { companies, clientPortalAccess, contacts } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 
@@ -80,9 +81,9 @@ export const resolvePortalScope = cache(
 
     // The view only lists live clients and live contacts.
     const accessible = await db
-      .select({ id: clients.id, name: clientNameSql })
+      .select({ id: companies.id, name: clientNameSql })
       .from(clientPortalAccess)
-      .innerJoin(clients, eq(clients.id, clientPortalAccess.clientId))
+      .innerJoin(companies, eq(companies.id, clientPortalAccess.companyId))
       .where(eq(clientPortalAccess.userId, user.id))
       .orderBy(asc(clientNameSql))
 
@@ -137,14 +138,13 @@ async function resolveAdminScope(): Promise<PortalScope> {
   // (fail closed); rows with a null client mean a valid contact with nothing
   // linked yet, which is still a valid preview.
   const rows = await db
-    .select({ clientId: clients.id, clientName: clientNameSql })
+    .select({ clientId: companies.id, clientName: clientNameSql })
     .from(contacts)
     .leftJoin(clientPortalAccess, eq(clientPortalAccess.contactId, contacts.id))
-    .leftJoin(
-      clients,
+    .leftJoin(companies,
       and(
-        eq(clients.id, clientPortalAccess.clientId),
-        isNull(clients.deletedAt)
+        eq(companies.id, clientPortalAccess.companyId),
+        isNull(clientEndedAtSql)
       )
     )
     .where(and(eq(contacts.id, selectedContactId), isNull(contacts.deletedAt)))

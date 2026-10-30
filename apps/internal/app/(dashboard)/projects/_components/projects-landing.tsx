@@ -303,15 +303,15 @@ export function ProjectsLanding({
         return
       }
 
-      if (!project.client_id || !project.client) {
+      if (!project.company_id || !project.client) {
         return
       }
 
-      const existing = clientMap.get(project.client_id)
+      const existing = clientMap.get(project.company_id)
       if (existing) {
         existing.projects.push(project)
       } else {
-        clientMap.set(project.client_id, {
+        clientMap.set(project.company_id, {
           client: {
             id: project.client.id,
             name: project.client.name,

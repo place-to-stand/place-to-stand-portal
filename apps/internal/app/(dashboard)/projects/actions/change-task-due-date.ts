@@ -59,7 +59,7 @@ export async function changeTaskDueDate(input: {
       title: tasks.title,
       dueOn: tasks.dueOn,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(tasks.projectId, projects.id))
@@ -101,7 +101,7 @@ export async function changeTaskDueDate(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetClientId: task.clientId ?? null,
+    targetCompanyId: task.clientId ?? null,
     metadata: event.metadata,
   })
 

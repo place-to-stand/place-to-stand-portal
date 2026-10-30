@@ -22,7 +22,7 @@ export async function buildMembersByClient(
 
   const rows = await db
     .select({
-      clientId: clientPortalAccess.clientId,
+      clientId: clientPortalAccess.companyId,
       userId: users.id,
       email: users.email,
       fullName: personNameSql,
@@ -31,7 +31,7 @@ export async function buildMembersByClient(
     .innerJoin(users, eq(users.id, clientPortalAccess.userId))
     .where(
       and(
-        inArray(clientPortalAccess.clientId, clientIds),
+        inArray(clientPortalAccess.companyId, clientIds),
         eq(users.role, 'CLIENT'),
         isNull(users.deletedAt)
       )

@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import 'server-only'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
@@ -14,7 +15,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, contacts, leads, leadStageHistory } from '@/lib/db/schema'
+import { companies, contacts, leads, leadStageHistory } from '@/lib/db/schema'
 import { isTerminalLeadStatus } from '@/lib/leads/constants'
 import {
   leadCompany,
@@ -177,11 +178,9 @@ async function resolveLeadContact(
       // A client's contacts are admin-only (same rule as the contact sheet).
       if (!roleCan(actor.role, 'clients.manage')) {
         const [client] = await db
-          .select({ id: clients.id })
-          .from(clients)
-          .where(
-            and(eq(clients.companyId, companyId), isNull(clients.deletedAt))
-          )
+          .select({ id: companies.id })
+          .from(companies)
+          .where(and(wasClientCompany(), and(eq(companies.id, companyId), isNull(clientEndedAtSql))))
           .limit(1)
         if (client) return
       }

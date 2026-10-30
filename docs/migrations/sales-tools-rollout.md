@@ -1,26 +1,28 @@
 # Sales tools rollout: production migration plan
 
-Covers PR #279's database chain, migrations **0089 → 0110**, and the matching deploys of the internal app and the client portal. Nothing here has been run against production. This document holds no production data: the pre-flight queries produce the numbers and names to review at release time, and their expected values are shared outside the repo.
+Covers PR #279's database chain, migrations **0089 → 0111**, and the matching deploys of the internal app and the client portal. Nothing here has been run against production. This document holds no production data: the pre-flight queries produce the numbers and names to review at release time, and their expected values are shared outside the repo.
 
 ## Summary
 
-1. This PR adds 22 migrations (0089–0110) on top of 0088. Pre-flight P0 confirms production is at 0088.
+1. This PR adds 23 migrations (0089–0111) on top of 0088. Pre-flight P0 confirms production is at 0088.
 2. Net effect:
    - leads, contacts and clients are reorganised around **companies**;
    - people belong to companies through **memberships** (several per person allowed);
    - portal access becomes one flag on a membership, read through the `client_portal_access` view;
    - leads read their person's name, email and phone from the linked **contact**;
-   - a client is its company's billing record and takes the company's name; a user is a person's sign-in and takes the contact's name (0109).
+   - a client is its company's billing record and takes the company's name; a user is a person's sign-in and takes the contact's name (0109);
+   - then (0111) a client is simply a company you bill: `clients` folds into `companies` (`slug`, `state`, `client_since`, `client_ended_at`) and everything keyed on `client_id` keys on `company_id`. Old client ids stay in `archive_sales_tools.client_id_map`; the CLI and MCP accept them for one release.
 3. Every backfill runs **before** any drop.
-4. 0107, 0108 and 0109 copy every table and column they drop into the `archive_sales_tools` schema.
+4. 0107, 0108, 0109 and 0111 copy every table and column they drop into the `archive_sales_tools` schema.
 5. 0097 also archives the three columns it drops, and 0090 archives every lead's company name as typed before it respells them (see [Archives made before 0107](#archives-made-before-0107)).
-6. **Five migrations stop the release on bad data** (drizzle runs the whole batch in one transaction, so a stop leaves production at 0088):
+6. **Six migrations stop the release on bad data** (drizzle runs the whole batch in one transaction, so a stop leaves production at 0088):
    - 0104: a company would end up with two live clients;
    - 0106: a lead with no contact;
    - 0107: a live portal grant would be lost, or someone would gain portal access they didn't have;
    - 0108: a client's origination or billing type differs from its newest term, an old term closer has no closer row, a live client has no billing term in force this month, a `contact_leads` row isn't its lead's contact, or an hour block's `invoice_id` isn't its line's invoice;
-   - 0109: a client has no company, or a live user doesn't have exactly one live contact.
-7. **Rollout shape:** one short maintenance window. Run 0089–0110, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
+   - 0109: a client has no company, or a live user doesn't have exactly one live contact;
+   - 0111: a client has no company, two clients of one company have billing or commission terms for the same month, a company has two live clients, or a client has a label.
+7. **Rollout shape:** one short maintenance window. Run 0089–0111, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
 8. **Rehearse first** on a Supabase branch or restored snapshot, using the same commands and checks.
 9. **Rollback:**
    - before 0107, roll back the code (the old tables are still there);
@@ -59,6 +61,7 @@ Run the read-only pre-flight queries (P0–P14) and compare with the values shar
 | 0108 `drop_duplicated_data` | Drops five copies of data stored elsewhere: `client_commission_terms.closer_user_id` (superseded by the closer rows in 0086, never read since), `clients.billing_type` (billing type lives on `client_billing_terms`; the column was a cache of the newest term, so a change scheduled for next month showed at once, and readers keep that meaning; `invoices.billing_type` stays as a snapshot), `clients.origination_contact_id`, `origination_user_id`, `closer_user_id` (commission lives on `client_commission_terms` and its closer rows; the client columns were a cache of the newest term), the `contact_leads` table (`leads.contact_id` is the lead's contact), and `hour_blocks.invoice_id` (the invoice is read through `invoice_line_item_id`). Archives each first, gives a client with origination but no term one from its creation month, then **stops before dropping anything** if any value would be lost. | No | **Stops** on any client whose origination or billing type differs from its newest term, any live client with no billing term in force this month, any old term closer with no closer row on that term, any `contact_leads` row that isn't its lead's contact, or any hour block whose `invoice_id` isn't its line's invoice; stops if an archive table already exists. |
 | 0109 `one_company_one_person` | Drops `clients.name` (a client's name is its company's) and `users.full_name` (a user's name is their contact's), and makes `clients.company_id` NOT NULL. Archives both columns first. Gives every live user without a contact one: linked to an unlinked live contact with the same email when exactly one matches, else a new contact named as the user was. Staff (Admin, Sales) get a membership at a **Place To Stand** company, created if missing. Clients named differently from their company show the company's name afterwards (pre-flight lists them; rename the company before release if the client's name was better). | No | **Stops** on any client with no company or any live user without exactly one live contact; stops if an archive table already exists. |
 | 0110 `person_avatar` | Adds `contacts.avatar_url` (a photo belongs to the person, with or without a sign-in) and fills it from their sign-in's `users.avatar_url`. `users.avatar_url` stays and is kept in step until the sign-in table is slimmed. | Yes (re-copies the same paths) | — |
+| 0111 `clients_into_companies` | Folds `clients` into `companies`: adds `slug`, `state`, `client_since`, `client_ended_at` (from the company's live client, else its most recently stopped one; `client_since` is its first client's creation, `client_ended_at` set only when no client is live), keeps every client's notes after the company's and fills a blank company website. Rewrites every `client_id` (projects, hour blocks, invoices, billing and commission terms, client updates, GitHub installs, activity targets, ids inside closed-month snapshots) to the company's id and renames the columns `company_id`; renames `client_billing_terms`, `client_commission_terms`, `client_commission_term_closers` to `billing_terms`, `commission_terms`, `commission_term_closers` (with their keys and indexes); drops `leads.converted_to_client_id` (a won lead's client is its company); drops `clients`; recreates `client_portal_access` keyed by company. Updated-at triggers stay off while ids move. Archives `clients`, `companies`, every old reference and every snapshot first, plus `client_id_map`. | No | **Stops** on a client with no company, terms that collide when two clients of one company merge, a company with two live clients, or a client with a label; stops if an archive table already exists. |
 
 ### Archives made before 0107
 
@@ -450,7 +453,9 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
 
 Option B SQL. Run it inside one transaction. Re-add constraints as they were in the pre-PR schema (`0000_supabase_baseline` and later).
 
-Undo 0110 first (tested on a copy of the production trial):
+Undo 0111 first: run [`0111-undo.sql`](0111-undo.sql) in one transaction (`psql "$DATABASE_URL" --single-transaction -v ON_ERROR_STOP=1 -f docs/migrations/0111-undo.sql`). It rebuilds `clients` from the archive, puts every `client_id` back (rows made since map to their company's client; a company first billed after the release gets a client row with the company's id), restores the snapshots, `leads.converted_to_client_id`, the company notes and websites, the old names and the view, and removes the 0111 migration row. Tested on a copy of the 0111 database: schema and every table's data come back identical (the one difference is `leads.converted_to_client_id` returning as the last column).
+
+Then undo 0110 (tested on a copy of the production trial):
 
 ```sql
 BEGIN;

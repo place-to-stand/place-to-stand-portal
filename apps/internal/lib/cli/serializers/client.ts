@@ -32,7 +32,7 @@ export function serializeClient(client: ClientWithMetrics): CliClient {
     totalHoursPurchased: client.totalHoursPurchased,
     totalHoursUsed: client.totalHoursUsed,
     hoursRemaining: client.hoursRemaining,
-    createdAt: isoTimestamp(client.createdAt),
+    createdAt: isoTimestamp(client.createdAt ?? client.updatedAt),
     updatedAt: isoTimestamp(client.updatedAt),
   }
 }

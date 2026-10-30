@@ -127,7 +127,7 @@ async function getCommentTaskContext(
     .select({
       title: tasks.title,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -160,7 +160,7 @@ async function logCommentActivity(args: {
     targetType: 'COMMENT',
     targetId: args.commentId,
     targetProjectId: context?.projectId ?? null,
-    targetClientId: context?.clientId ?? null,
+    targetCompanyId: context?.clientId ?? null,
     metadata: { taskId: args.taskId, commentId: args.commentId },
   })
 }

@@ -1,21 +1,20 @@
 'use server'
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
 
-import { roleCan } from '@/lib/auth/capabilities'
 import { and, eq, isNull } from 'drizzle-orm'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 
 import { requireCrmUser, requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies } from '@/lib/db/schema'
 import { fetchProjectsForClient, type ClientProject } from '@/lib/data/clients'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { createUpdateDraft, listClientUpdates } from '@/lib/updates'
 import type { ClientUpdateSummary } from './_components/company-updates-section'
 import type { SaveCompanyInput } from '@/lib/companies/schema'
 import type {
-  ClientLinkOption,
   CompanyActionResult,
   CompanyDetail,
   CompanyOption,
@@ -23,7 +22,6 @@ import type {
 import { NotFoundError } from '@/lib/errors/http'
 import {
   getCompanyDetail,
-  listClientLinkOptions,
   listCompanyOptions,
   saveCompany as saveCompanyQuery,
   setCompanyArchived,
@@ -73,13 +71,6 @@ export async function fetchCompanyOptions(): Promise<CompanyOption[]> {
   return listCompanyOptions(user)
 }
 
-/** Clients the company sheet can link; client records are admin-only. */
-export async function fetchClientLinkOptions(): Promise<ClientLinkOption[]> {
-  const user = await requireCrmUser()
-  if (!roleCan(user.role, 'clients.manage')) return []
-  return listClientLinkOptions()
-}
-
 export async function saveCompany(
   input: SaveCompanyInput
 ): Promise<CompanyActionResult> {
@@ -125,9 +116,15 @@ export async function loadCompanyClientWork(
   if (!UUID_PATTERN.test(clientId)) return null
 
   const [client] = await db
-    .select({ slug: clients.slug, billingType: currentBillingTypeSql() })
-    .from(clients)
-    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+    .select({ slug: companies.slug, billingType: currentBillingTypeSql() })
+    .from(companies)
+    .where(
+      and(
+        wasClientCompany(),
+        eq(companies.id, clientId),
+        isNull(clientEndedAtSql)
+      )
+    )
     .limit(1)
   if (!client) return null
 

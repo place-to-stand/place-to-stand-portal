@@ -1,3 +1,4 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -6,7 +7,7 @@ import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientPortalAccess, clients, contacts } from '@/lib/db/schema'
+import { companies, clientPortalAccess, contacts } from '@/lib/db/schema'
 import { type PageInfo } from '@/lib/pagination/cursor'
 import {
   decodeSortCursor,
@@ -138,17 +139,17 @@ async function fetchClientDetails(
   const rows = await db
     .select({
       contactId: clientPortalAccess.contactId,
-      clientId: clients.id,
+      clientId: companies.id,
       clientName: clientNameSql,
-      clientSlug: clients.slug,
-      companyId: clients.companyId,
+      clientSlug: companies.slug,
+      companyId: companies.id,
     })
     .from(clientPortalAccess)
-    .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))
+    .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
     .where(
       and(
         inArray(clientPortalAccess.contactId, contactIds),
-        sql`${clients.deletedAt} IS NULL`
+        sql`${clientEndedAtSql} IS NULL`
       )
     )
     .orderBy(asc(clientNameSql))

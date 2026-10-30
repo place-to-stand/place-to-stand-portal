@@ -1,7 +1,8 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { inArray } from 'drizzle-orm'
+import { and, inArray } from 'drizzle-orm'
 
 import {
   contactClientLinkedEvent,
@@ -10,7 +11,7 @@ import {
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, contacts } from '@/lib/db/schema'
+import { companies, contacts } from '@/lib/db/schema'
 
 export type ContactClientLinkChange = {
   contactId: string
@@ -43,9 +44,9 @@ export async function logContactClientLinkChanges(
         .from(contacts)
         .where(inArray(contacts.id, contactIds)),
       db
-        .select({ id: clients.id, name: clientNameSql })
-        .from(clients)
-        .where(inArray(clients.id, clientIds)),
+        .select({ id: companies.id, name: clientNameSql })
+        .from(companies)
+        .where(and(wasClientCompany(), inArray(companies.id, clientIds))),
     ])
   } catch (error) {
     // The links already landed; like `logActivity`, never fail the caller.
@@ -81,7 +82,7 @@ export async function logContactClientLinkChanges(
       summary: event.summary,
       targetType: 'CONTACT',
       targetId: change.contactId,
-      targetClientId: change.clientId,
+      targetCompanyId: change.clientId,
       metadata: event.metadata,
     })
   }

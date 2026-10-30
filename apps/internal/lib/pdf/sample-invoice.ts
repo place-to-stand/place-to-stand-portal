@@ -13,7 +13,7 @@ export function buildSampleInvoice(
     id: '00000000-0000-4000-8000-000000000001',
     invoice_number: 'INV-0042',
     status: 'SENT',
-    client_id: '00000000-0000-4000-8000-000000000002',
+    company_id: '00000000-0000-4000-8000-000000000002',
     created_by: null,
     issued_date: '2026-09-01',
     due_date: null,

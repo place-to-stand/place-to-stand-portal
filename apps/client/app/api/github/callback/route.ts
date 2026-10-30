@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
 
     // Upsert the installation record
     const existing = await db
-      .select({ id: githubAppInstallations.id, clientId: githubAppInstallations.clientId })
+      .select({ id: githubAppInstallations.id, clientId: githubAppInstallations.companyId })
       .from(githubAppInstallations)
       .where(eq(githubAppInstallations.installationId, installation.id))
       .limit(1)
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Create new installation
       await db.insert(githubAppInstallations).values({
-        clientId: returnClientId,
+        companyId: returnClientId,
         installedByUserId: user.id,
         installationId: installation.id,
         accountLogin: installation.account.login,

@@ -1,8 +1,9 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import { and, eq, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import {
   clientSchema,
@@ -55,15 +56,13 @@ export async function saveClientMutation(
       return buildMutationResult({ error: 'That company no longer exists.' })
     }
     const [taken] = await db
-      .select({ id: clients.id, name: clientNameSql })
-      .from(clients)
-      .where(
-        and(
-          eq(clients.companyId, companyId),
-          isNull(clients.deletedAt),
-          id ? ne(clients.id, id) : undefined
-        )
-      )
+      .select({ id: companies.id, name: clientNameSql })
+      .from(companies)
+      .where(and(wasClientCompany(), and(
+          eq(companies.id, companyId),
+          isNull(clientEndedAtSql),
+          id ? ne(companies.id, id) : undefined
+        )))
       .limit(1)
     if (taken) {
       return buildMutationResult({

@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, desc, eq, gt, isNull, lte, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clientBillingTerms, clients } from '@/lib/db/schema'
+import { companies, billingTerms, } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -42,8 +42,8 @@ export async function insertInitialBillingTerm(
     createdBy: string | null
   }
 ): Promise<void> {
-  await tx.insert(clientBillingTerms).values({
-    clientId: params.clientId,
+  await tx.insert(billingTerms).values({
+    companyId: params.clientId,
     billingType: params.billingType,
     effectiveFrom: currentMonthStartUtc(),
     createdBy: params.createdBy,
@@ -66,15 +66,15 @@ export async function upsertBillingTerm(
   }
 ): Promise<void> {
   await tx
-    .insert(clientBillingTerms)
+    .insert(billingTerms)
     .values({
-      clientId: params.clientId,
+      companyId: params.clientId,
       billingType: params.billingType,
       effectiveFrom: params.effectiveFrom,
       createdBy: params.createdBy,
     })
     .onConflictDoUpdate({
-      target: [clientBillingTerms.clientId, clientBillingTerms.effectiveFrom],
+      target: [billingTerms.companyId, billingTerms.effectiveFrom],
       targetWhere: sql`deleted_at IS NULL`,
       set: {
         billingType: params.billingType,
@@ -93,12 +93,12 @@ export async function upsertBillingTerm(
  */
 export function billingTypeAsOfSql(periodStart: string) {
   return sql<'prepaid' | 'net_30' | null>`(
-    SELECT ${clientBillingTerms.billingType}
-    FROM ${clientBillingTerms}
-    WHERE ${clientBillingTerms.clientId} = ${clients.id}
-      AND ${clientBillingTerms.effectiveFrom} <= ${periodStart}
-      AND ${clientBillingTerms.deletedAt} IS NULL
-    ORDER BY ${clientBillingTerms.effectiveFrom} DESC
+    SELECT ${billingTerms.billingType}
+    FROM ${billingTerms}
+    WHERE ${billingTerms.companyId} = ${companies.id}
+      AND ${billingTerms.effectiveFrom} <= ${periodStart}
+      AND ${billingTerms.deletedAt} IS NULL
+    ORDER BY ${billingTerms.effectiveFrom} DESC
     LIMIT 1
   )`
 }
@@ -112,16 +112,16 @@ async function resolveBillingTypeAsOf(
   tx: DbOrTransaction = db
 ): Promise<ClientBillingTypeValue | null> {
   const [row] = await tx
-    .select({ billingType: clientBillingTerms.billingType })
-    .from(clientBillingTerms)
+    .select({ billingType: billingTerms.billingType })
+    .from(billingTerms)
     .where(
       and(
-        eq(clientBillingTerms.clientId, clientId),
-        lte(clientBillingTerms.effectiveFrom, periodStart),
-        isNull(clientBillingTerms.deletedAt)
+        eq(billingTerms.companyId, clientId),
+        lte(billingTerms.effectiveFrom, periodStart),
+        isNull(billingTerms.deletedAt)
       )
     )
-    .orderBy(desc(clientBillingTerms.effectiveFrom))
+    .orderBy(desc(billingTerms.effectiveFrom))
     .limit(1)
 
   return row?.billingType ?? null
@@ -145,17 +145,17 @@ export async function resolveHourBlockBillingMonth(
   }
 
   const [upcoming] = await tx
-    .select({ effectiveFrom: clientBillingTerms.effectiveFrom })
-    .from(clientBillingTerms)
+    .select({ effectiveFrom: billingTerms.effectiveFrom })
+    .from(billingTerms)
     .where(
       and(
-        eq(clientBillingTerms.clientId, clientId),
-        eq(clientBillingTerms.billingType, 'prepaid'),
-        gt(clientBillingTerms.effectiveFrom, monthStart),
-        isNull(clientBillingTerms.deletedAt)
+        eq(billingTerms.companyId, clientId),
+        eq(billingTerms.billingType, 'prepaid'),
+        gt(billingTerms.effectiveFrom, monthStart),
+        isNull(billingTerms.deletedAt)
       )
     )
-    .orderBy(asc(clientBillingTerms.effectiveFrom))
+    .orderBy(asc(billingTerms.effectiveFrom))
     .limit(1)
 
   if (upcoming) {
@@ -180,11 +180,11 @@ export async function resolveHourBlockBillingMonth(
  */
 export function currentBillingTypeSql() {
   return sql<'prepaid' | 'net_30'>`coalesce((
-    SELECT ${clientBillingTerms.billingType}
-    FROM ${clientBillingTerms}
-    WHERE ${clientBillingTerms.clientId} = ${sql.raw('"clients"."id"')}
-      AND ${clientBillingTerms.deletedAt} IS NULL
-    ORDER BY ${clientBillingTerms.effectiveFrom} DESC
+    SELECT ${billingTerms.billingType}
+    FROM ${billingTerms}
+    WHERE ${billingTerms.companyId} = ${sql.raw('"companies"."id"')}
+      AND ${billingTerms.deletedAt} IS NULL
+    ORDER BY ${billingTerms.effectiveFrom} DESC
     LIMIT 1
   ), 'prepaid')`
 }

@@ -1,4 +1,5 @@
 'use server'
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 
 import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
@@ -10,7 +11,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceArchivedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { invoices, clients } from '@/lib/db/schema'
+import { companies, invoices, } from '@/lib/db/schema'
 
 import { deleteSchema } from './schemas'
 import type { ActionResult, DeleteInput } from './types'
@@ -46,7 +47,7 @@ async function performArchiveInvoice(
   const existingRows = await db
     .select({
       id: invoices.id,
-      clientId: invoices.clientId,
+      clientId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
     })
     .from(invoices)
@@ -61,8 +62,8 @@ async function performArchiveInvoice(
 
   const clientRows = await db
     .select({ name: clientNameSql })
-    .from(clients)
-    .where(and(eq(clients.id, existing.clientId), isNull(clients.deletedAt)))
+    .from(companies)
+    .where(and(wasClientCompany(), and(eq(companies.id, existing.clientId), isNull(clientEndedAtSql))))
     .limit(1)
 
   const clientName = clientRows[0]?.name ?? null
@@ -98,7 +99,7 @@ async function performArchiveInvoice(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: existing.id,
-    targetClientId: existing.clientId,
+    targetCompanyId: existing.clientId,
     metadata: event.metadata,
   })
 

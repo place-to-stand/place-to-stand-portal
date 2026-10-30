@@ -3,7 +3,7 @@ import { and, asc, eq, ilike, inArray, isNull, or } from 'drizzle-orm'
 
 import type { ProjectStatusValue } from '@/lib/constants'
 import { db } from '@/lib/db'
-import { clients, projects } from '@/lib/db/schema'
+import { companies, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import type { DbProject } from '@/lib/types'
 
@@ -73,7 +73,7 @@ export async function fetchBaseProjects(
       name: projects.name,
       status: projects.status,
       type: projects.type,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
       slug: projects.slug,
       startsOn: projects.startsOn,
       endsOn: projects.endsOn,
@@ -87,7 +87,7 @@ export async function fetchBaseProjects(
 
   // Join clients only when searching — the client name is a search target.
   const rows = await (trimmedSearch
-    ? baseQuery.leftJoin(clients, eq(projects.clientId, clients.id))
+    ? baseQuery.leftJoin(companies, eq(projects.companyId, companies.id))
     : baseQuery
   )
     .where(and(...conditions))
@@ -98,7 +98,7 @@ export async function fetchBaseProjects(
     name: row.name,
     status: row.status,
     type: row.type,
-    client_id: row.clientId,
+    company_id: row.clientId,
     slug: row.slug,
     starts_on: row.startsOn,
     ends_on: row.endsOn,
@@ -113,7 +113,7 @@ export async function fetchBaseProjects(
   const clientIds = Array.from(
     new Set(
       normalizedProjects
-        .map(project => project.client_id)
+        .map(project => project.company_id)
         .filter((clientId): clientId is string => Boolean(clientId))
     )
   )
@@ -127,7 +127,7 @@ export async function fetchBaseProjects(
 
   const projectClientLookup = new Map<string, string | null>()
   normalizedProjects.forEach(project => {
-    projectClientLookup.set(project.id, project.client_id ?? null)
+    projectClientLookup.set(project.id, project.company_id ?? null)
   })
 
   return {

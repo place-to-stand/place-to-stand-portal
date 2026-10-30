@@ -72,7 +72,7 @@ export function filterEntriesToScope<T extends { taskId: string }>(
     }
 
     if (!isAllClients) {
-      return project.client_id === scope.clientId
+      return project.company_id === scope.clientId
     }
 
     return !scope.hiddenProjectTypes.includes(project.type)

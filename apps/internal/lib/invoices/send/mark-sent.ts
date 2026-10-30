@@ -1,3 +1,4 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -9,7 +10,7 @@ import { invoiceSentEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, invoices } from '@/lib/db/schema'
+import { companies, invoices } from '@/lib/db/schema'
 
 export type SendableInvoice = {
   id: string
@@ -31,7 +32,7 @@ export async function fetchSendableInvoice(
     .select({
       id: invoices.id,
       status: invoices.status,
-      clientId: invoices.clientId,
+      clientId: invoices.companyId,
       clientName: clientNameSql,
       invoiceNumber: invoices.invoiceNumber,
       total: invoices.total,
@@ -40,9 +41,8 @@ export async function fetchSendableInvoice(
       shareEnabled: invoices.shareEnabled,
     })
     .from(invoices)
-    .leftJoin(
-      clients,
-      and(eq(clients.id, invoices.clientId), isNull(clients.deletedAt))
+    .leftJoin(companies,
+      and(eq(companies.id, invoices.companyId), isNull(clientEndedAtSql))
     )
     .where(and(eq(invoices.id, id), isNull(invoices.deletedAt)))
     .limit(1)
@@ -129,7 +129,7 @@ export async function markInvoiceSent(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoice.id,
-    targetClientId: invoice.clientId,
+    targetCompanyId: invoice.clientId,
     metadata: event.metadata,
   })
 

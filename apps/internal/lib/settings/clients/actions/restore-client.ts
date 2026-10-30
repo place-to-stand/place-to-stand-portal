@@ -1,12 +1,13 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientRestoredEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 import {
   restoreClientSchema,
   type RestoreClientInput,
@@ -56,12 +57,12 @@ export async function restoreClientMutation(
       try {
         const rows = await db
           .select({
-            id: clients.id,
+            id: companies.id,
             name: clientNameSql,
-            deletedAt: clients.deletedAt,
+            deletedAt: clientEndedAtSql,
           })
-          .from(clients)
-          .where(eq(clients.id, parsed.data.id))
+          .from(companies)
+          .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
           .limit(1)
 
         existingClient = rows[0]
@@ -80,9 +81,9 @@ export async function restoreClientMutation(
 
       try {
         await db
-          .update(clients)
-          .set({ deletedAt: null })
-          .where(eq(clients.id, parsed.data.id))
+          .update(companies)
+          .set({ clientEndedAt: null })
+          .where(eq(companies.id, parsed.data.id))
       } catch (error) {
         console.error('Failed to restore client', error)
         return buildMutationResult({
@@ -100,7 +101,7 @@ export async function restoreClientMutation(
         summary: event.summary,
         targetType: 'CLIENT',
         targetId: existingClient.id,
-        targetClientId: existingClient.id,
+        targetCompanyId: existingClient.id,
         metadata: event.metadata,
       })
 

@@ -1,3 +1,4 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -15,7 +16,7 @@ import {
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, memberships, users } from '@/lib/db/schema'
+import { companies, contacts, memberships, users } from '@/lib/db/schema'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -130,19 +131,17 @@ async function listClientContacts(
       companyId: memberships.companyId,
       isPrimary: memberships.isPrimary,
     })
-    .from(clients)
-    .innerJoin(memberships, eq(memberships.companyId, clients.companyId))
+    .from(companies)
+    .innerJoin(memberships, eq(memberships.companyId, companies.id))
     .innerJoin(contacts, eq(contacts.id, memberships.contactId))
-    .where(
-      and(
-        eq(clients.id, clientId),
+    .where(and(wasClientCompany(), and(
+        eq(companies.id, clientId),
         isNull(memberships.endedAt),
         eq(memberships.portalAccess, true),
         // Access needs a login (same rule as client_portal_access).
         isNotNull(contacts.userId),
         isNull(contacts.deletedAt)
-      )
-    )
+      )))
     .orderBy(asc(contacts.name), asc(contacts.email))
 
   return rows.map(row => ({
@@ -197,9 +196,9 @@ export async function getClientSheetContactData(
 
   const [client] = clientId
     ? await db
-        .select({ companyId: clients.companyId })
-        .from(clients)
-        .where(eq(clients.id, clientId))
+        .select({ companyId: companies.id })
+        .from(companies)
+        .where(and(wasClientCompany(), eq(companies.id, clientId)))
         .limit(1)
     : []
   const [allContacts, linkedContacts, allAdminUsers] = await Promise.all([
@@ -234,9 +233,9 @@ export async function syncClientContacts(
   }
 
   const [client] = await db
-    .select({ companyId: clients.companyId })
-    .from(clients)
-    .where(eq(clients.id, clientId))
+    .select({ companyId: companies.id })
+    .from(companies)
+    .where(and(wasClientCompany(), eq(companies.id, clientId)))
     .limit(1)
   const companyId = client?.companyId ?? null
   if (!companyId) {

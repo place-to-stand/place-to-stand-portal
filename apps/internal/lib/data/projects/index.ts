@@ -278,7 +278,7 @@ const fetchProjectById = cache(
         slug: projects.slug,
         type: projects.type,
         status: projects.status,
-        clientId: projects.clientId,
+        clientId: projects.companyId,
         startsOn: projects.startsOn,
         endsOn: projects.endsOn,
         createdBy: projects.createdBy,

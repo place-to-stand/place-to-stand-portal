@@ -22,7 +22,7 @@ export async function getActiveInstallationForProject(
   projectId: string
 ): Promise<ActiveAppInstallation | null> {
   const [project] = await db
-    .select({ clientId: projects.clientId })
+    .select({ clientId: projects.companyId })
     .from(projects)
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
     .limit(1)
@@ -40,7 +40,7 @@ export async function getActiveInstallationForProject(
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.clientId, project.clientId),
+        eq(githubAppInstallations.companyId, project.clientId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )

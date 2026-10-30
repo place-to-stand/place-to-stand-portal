@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -5,7 +6,7 @@ import { cache } from 'react'
 import { and, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients } from '@pts/db/schema'
+import { companies, } from '@pts/db/schema'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
@@ -48,17 +49,17 @@ export const fetchClientHoursSummaries = cache(
     const [clientRows, hoursByClient] = await Promise.all([
       db
         .select({
-          id: clients.id,
+          id: companies.id,
           name: clientNameSql,
           // The newest billing term (the one place billing type is stored).
           billingType: sql<'prepaid' | 'net_30'>`coalesce((
-            select bt.billing_type from client_billing_terms bt
-            where bt.client_id = "clients"."id" and bt.deleted_at is null
+            select bt.billing_type from billing_terms bt
+            where bt.company_id = "companies"."id" and bt.deleted_at is null
             order by bt.effective_from desc limit 1
           ), 'prepaid')`,
         })
-        .from(clients)
-        .where(and(inArray(clients.id, clientIds), isNull(clients.deletedAt))),
+        .from(companies)
+        .where(and(wasClientCompany(), and(inArray(companies.id, clientIds), isNull(clientEndedAtSql)))),
       getClientHoursTotals(db, clientIds),
     ])
 

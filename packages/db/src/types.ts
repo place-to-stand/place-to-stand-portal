@@ -1,8 +1,7 @@
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm'
 import type {
   users,
-  clients,
-  clientBillingTerms,
+  billingTerms,
   monthlyCloseSnapshots,
   projects,
   tasks,
@@ -36,8 +35,7 @@ import type {
 
 // Select types (for reading from DB)
 export type User = InferSelectModel<typeof users>
-export type Client = InferSelectModel<typeof clients>
-export type ClientBillingTerm = InferSelectModel<typeof clientBillingTerms>
+export type ClientBillingTerm = InferSelectModel<typeof billingTerms>
 export type MonthlyCloseSnapshot = InferSelectModel<typeof monthlyCloseSnapshots>
 export type Project = InferSelectModel<typeof projects>
 export type Task = InferSelectModel<typeof tasks>
@@ -70,7 +68,6 @@ export type FormSubmission = InferSelectModel<typeof formSubmissions>
 
 // Insert types (for writing to DB)
 export type NewUser = InferInsertModel<typeof users>
-export type NewClient = InferInsertModel<typeof clients>
 export type NewProject = InferInsertModel<typeof projects>
 export type NewTask = InferInsertModel<typeof tasks>
 export type NewLead = InferInsertModel<typeof leads>

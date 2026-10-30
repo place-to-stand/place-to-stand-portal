@@ -274,7 +274,7 @@ export function useInvoiceSheetState({
       try {
         const fullInvoice = await getInvoiceDetails(invoice.id)
         // Mark the loaded client so auto-fill skips hydration
-        loadedClientIdRef.current = fullInvoice?.client_id ?? null
+        loadedClientIdRef.current = fullInvoice?.company_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
         resetFormState(fullInvoice)
       } catch {
@@ -483,7 +483,7 @@ export function useInvoiceSheetState({
         mode: 'delete',
         targetId: invoice.id,
         metadata: {
-          clientId: invoice.client_id ?? null,
+          clientId: invoice.company_id ?? null,
         },
       })
 

@@ -169,13 +169,6 @@
   },
   {
     "type": "action",
-    "name": "fetchClientLinkOptions",
-    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
-    "kind": "capability",
-    "capability": "clients.manage"
-  },
-  {
-    "type": "action",
     "name": "saveCompany",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "capability",

@@ -3,21 +3,21 @@ import 'server-only'
 import { and, eq, ne } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies } from '@/lib/db/schema'
 
 export async function clientSlugExistsDrizzle(
   slug: string,
   options: { excludeId?: string } = {},
 ) {
-  const conditions = [eq(clients.slug, slug)]
+  const conditions = [eq(companies.slug, slug)]
 
   if (options.excludeId) {
-    conditions.push(ne(clients.id, options.excludeId))
+    conditions.push(ne(companies.id, options.excludeId))
   }
 
   const rows = await db
-    .select({ id: clients.id })
-    .from(clients)
+    .select({ id: companies.id })
+    .from(companies)
     .where(conditions.length > 1 ? and(...conditions) : conditions[0])
     .limit(1)
 

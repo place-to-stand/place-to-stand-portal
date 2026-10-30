@@ -63,10 +63,10 @@ export default async function UpdatePage({
     .filter((id): id is string => !!id)
   const [client, contacts, hoursByClient, taskOptions, hints, staff] =
     await Promise.all([
-      fetchClientById(user, update.clientId),
-      fetchContactsForClient(update.clientId),
-      getClientHoursTotals(db, [update.clientId]),
-      fetchComposerTaskOptions(update.clientId),
+      fetchClientById(user, update.companyId),
+      fetchContactsForClient(update.companyId),
+      getClientHoursTotals(db, [update.companyId]),
+      fetchComposerTaskOptions(update.companyId),
       fetchLatestCommentHints(taskIds),
       fetchActiveStaff(),
     ])

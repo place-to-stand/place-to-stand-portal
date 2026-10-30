@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -6,8 +7,7 @@ import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import {
-  clients,
+import { companies,
   hourBlocks,
   invoiceLineItems,
   invoices,
@@ -78,7 +78,7 @@ type ClientSelection = {
 // hourBlocks.invoiceLineItemId, then invoices on invoiceLineItems.invoiceId.
 const hourBlockSelection = {
   id: hourBlocks.id,
-  clientId: hourBlocks.clientId,
+  clientId: hourBlocks.companyId,
   hoursPurchased: hourBlocks.hoursPurchased,
   invoiceId: invoiceLineItems.invoiceId,
   invoiceNumber: invoices.invoiceNumber,
@@ -94,10 +94,10 @@ const hourBlockSelection = {
 } as const
 
 const clientSelection = {
-  id: clients.id,
+  id: companies.id,
   name: clientNameSql,
-  companyId: clients.companyId,
-  deletedAt: clients.deletedAt,
+  companyId: companies.id,
+  deletedAt: clientEndedAtSql,
 } as const
 
 export type ListHourBlocksForSettingsInput = {
@@ -181,7 +181,7 @@ export async function listHourBlocksForSettings(
   }
 
   if (input.clientId) {
-    baseConditions.push(eq(hourBlocks.clientId, input.clientId))
+    baseConditions.push(eq(hourBlocks.companyId, input.clientId))
   }
 
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
@@ -204,7 +204,7 @@ export async function listHourBlocksForSettings(
         client: clientSelection,
       })
       .from(hourBlocks)
-      .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
       .leftJoin(
         invoiceLineItems,
         eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
@@ -250,7 +250,7 @@ export async function listHourBlocksForSettings(
         client: clientSelection,
       })
       .from(hourBlocks)
-      .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
       .leftJoin(
         invoiceLineItems,
         eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
@@ -275,7 +275,7 @@ export async function listHourBlocksForSettings(
       db
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
-        .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+        .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
         .leftJoin(
           invoiceLineItems,
           eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
@@ -286,7 +286,7 @@ export async function listHourBlocksForSettings(
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
         .where(statusCondition),
-      db.select(clientSelection).from(clients).orderBy(asc(clientNameSql)),
+      db.select(clientSelection).from(companies).where(wasClientCompany()).orderBy(asc(clientNameSql)),
     ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
@@ -340,8 +340,8 @@ export async function getActiveClientSummary(
 
   const rows = await db
     .select(clientSelection)
-    .from(clients)
-    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+    .from(companies)
+    .where(and(wasClientCompany(), and(eq(companies.id, clientId), isNull(clientEndedAtSql))))
     .limit(1)
 
   if (!rows.length) {
@@ -365,7 +365,7 @@ export async function listHourBlockClientDirectory(
 
   const rows = await db
     .select(clientSelection)
-    .from(clients)
+    .from(companies).where(wasClientCompany())
     .orderBy(asc(clientNameSql))
 
   return rows.map(mapClientRow)
@@ -383,7 +383,7 @@ export async function getHourBlockWithClientById(
       client: clientSelection,
     })
     .from(hourBlocks)
-    .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
+    .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
     .leftJoin(
       invoiceLineItems,
       eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
@@ -412,7 +412,7 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
 
   return {
     id: row.block.id,
-    client_id: row.block.clientId,
+    company_id: row.block.clientId,
     hours_purchased: Number(row.block.hoursPurchased ?? '0'),
     invoice_id: row.block.invoiceId,
     invoice_number: row.block.invoiceNumber,

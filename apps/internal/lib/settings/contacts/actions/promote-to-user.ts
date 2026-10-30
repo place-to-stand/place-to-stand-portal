@@ -121,7 +121,7 @@ export async function promoteContactToUserMutation(
   // 4. Portal access follows the contact's memberships
   // (client_portal_access), so the new login sees those clients at once.
   const linkedClients = await db
-    .select({ clientId: clientPortalAccess.clientId })
+    .select({ clientId: clientPortalAccess.companyId })
     .from(clientPortalAccess)
     .where(eq(clientPortalAccess.contactId, contact.id))
 
@@ -145,7 +145,7 @@ export async function promoteContactToUserMutation(
       summary: userEvent.summary,
       targetType: 'USER',
       targetId: userId,
-      targetClientId: primaryClientId,
+      targetCompanyId: primaryClientId,
       metadata: userEvent.metadata,
     })
   }
@@ -163,7 +163,7 @@ export async function promoteContactToUserMutation(
     summary: contactEvent.summary,
     targetType: 'CONTACT',
     targetId: contact.id,
-    targetClientId: primaryClientId,
+    targetCompanyId: primaryClientId,
     metadata: contactEvent.metadata,
   })
 

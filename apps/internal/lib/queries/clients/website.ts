@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 
-import { clients, companies } from '@/lib/db/schema'
+import { companies } from '@/lib/db/schema'
 
 /**
  * A client's website: its company's (the company owns it), falling back to
@@ -8,5 +8,5 @@ import { clients, companies } from '@/lib/db/schema'
  */
 export const clientWebsiteSql = sql<string | null>`coalesce(
   nullif(btrim(${companies.website}), ''),
-  nullif(btrim(${clients.website}), '')
+  nullif(btrim(${companies.website}), '')
 )`

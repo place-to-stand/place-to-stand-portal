@@ -242,7 +242,7 @@ export async function emailInvoice(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoice.id,
-    targetClientId: invoice.clientId,
+    targetCompanyId: invoice.clientId,
     metadata: event.metadata,
   })
 

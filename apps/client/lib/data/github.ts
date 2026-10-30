@@ -93,7 +93,7 @@ async function fetchActiveInstallation(clientId: string) {
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.clientId, clientId),
+        eq(githubAppInstallations.companyId, clientId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )

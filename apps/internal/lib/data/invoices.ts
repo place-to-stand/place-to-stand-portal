@@ -4,8 +4,7 @@ import 'server-only'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  clients,
+import { companies,
   hourBlocks,
   invoiceLineItems,
   invoices,
@@ -28,14 +27,14 @@ export async function createHourBlocksFromInvoice(
   const [invoice] = await db
     .select({
       id: invoices.id,
-      clientId: invoices.clientId,
+      clientId: invoices.companyId,
       billingType: invoices.billingType,
       invoiceNumber: invoices.invoiceNumber,
       createdBy: invoices.createdBy,
       clientName: clientNameSql,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.id, invoiceId))
     .limit(1)
 
@@ -90,7 +89,7 @@ export async function createHourBlocksFromInvoice(
     const rows = await db
       .insert(hourBlocks)
       .values({
-        clientId: invoice.clientId,
+        companyId: invoice.clientId,
         hoursPurchased,
         // The invoice is read through the line.
         invoiceLineItemId: item.id,
@@ -126,7 +125,7 @@ export async function createHourBlocksFromInvoice(
     summary: event.summary,
     targetType: 'HOUR_BLOCK',
     targetId: inserted[0]?.id ?? null,
-    targetClientId: invoice.clientId,
+    targetCompanyId: invoice.clientId,
     metadata: event.metadata,
   })
 }

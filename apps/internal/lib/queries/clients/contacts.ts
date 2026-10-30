@@ -1,9 +1,10 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients, contacts, memberships } from '@/lib/db/schema'
+import { companies, contacts, memberships } from '@/lib/db/schema'
 
 export type ClientContactRow = {
   id: string
@@ -44,18 +45,16 @@ export async function fetchContactsForClient(
       // Read from the one source of portal access.
       hasPortalAccess: sql<boolean>`exists (
         select 1 from client_portal_access a
-        where a.client_id = "clients"."id" and a.contact_id = "contacts"."id"
+        where a.company_id = "companies"."id" and a.contact_id = "contacts"."id"
       )`,
     })
-    .from(clients)
-    .innerJoin(memberships, eq(memberships.companyId, clients.companyId))
+    .from(companies)
+    .innerJoin(memberships, eq(memberships.companyId, companies.id))
     .innerJoin(contacts, eq(contacts.id, memberships.contactId))
-    .where(
-      and(
-        eq(clients.id, clientId),
+    .where(and(wasClientCompany(), and(
+        eq(companies.id, clientId),
         isNull(memberships.endedAt),
         isNull(contacts.deletedAt)
-      )
-    )
+      )))
     .orderBy(desc(memberships.isPrimary), asc(contacts.email))
 }

@@ -79,7 +79,7 @@ export async function destroySubmission(
       targetType: 'SUBMISSION',
       targetId: existing.id,
       // Submissions precede any client relationship.
-      targetClientId: null,
+      targetCompanyId: null,
       metadata: event.metadata,
     })
   }

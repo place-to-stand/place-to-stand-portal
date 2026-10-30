@@ -1,12 +1,13 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientArchivedEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -61,12 +62,12 @@ export async function softDeleteClientMutation(
       try {
         const rows = await db
           .select({
-            id: clients.id,
+            id: companies.id,
             name: clientNameSql,
-            companyId: clients.companyId,
+            companyId: companies.id,
           })
-          .from(clients)
-          .where(eq(clients.id, parsed.data.id))
+          .from(companies)
+          .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
           .limit(1)
 
         existingClient = rows[0]
@@ -84,9 +85,9 @@ export async function softDeleteClientMutation(
       try {
         await db.transaction(async tx => {
           await tx
-            .update(clients)
-            .set({ deletedAt: new Date().toISOString() })
-            .where(eq(clients.id, parsed.data.id))
+            .update(companies)
+            .set({ clientEndedAt: new Date().toISOString() })
+            .where(eq(companies.id, parsed.data.id))
           // An archived client grants nobody access; switch it off so a
           // restore (or another client at the company) doesn't bring it back.
           if (archived.companyId) {
@@ -118,7 +119,7 @@ export async function softDeleteClientMutation(
         summary: event.summary,
         targetType: 'CLIENT',
         targetId: existingClient.id,
-        targetClientId: existingClient.id,
+        targetCompanyId: existingClient.id,
         metadata: event.metadata,
       })
 

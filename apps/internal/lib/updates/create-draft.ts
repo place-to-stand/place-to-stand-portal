@@ -97,7 +97,7 @@ export async function createUpdateDraft(
     summary: event.summary,
     targetType: 'CLIENT_UPDATE',
     targetId: update.id,
-    targetClientId: clientId,
+    targetCompanyId: clientId,
     metadata: event.metadata,
   })
 
@@ -125,7 +125,7 @@ async function materializeItems(
       .where(
         and(
           inArray(tasks.id, taskIds),
-          eq(projects.clientId, clientId),
+          eq(projects.companyId, clientId),
           isNull(tasks.deletedAt)
         )
       )

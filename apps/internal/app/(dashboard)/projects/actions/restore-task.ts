@@ -56,7 +56,7 @@ export async function restoreTask(input: {
       title: tasks.title,
       deletedAt: tasks.deletedAt,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -85,7 +85,7 @@ export async function restoreTask(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetClientId: task.clientId ?? null,
+    targetCompanyId: task.clientId ?? null,
     metadata: event.metadata,
   })
 

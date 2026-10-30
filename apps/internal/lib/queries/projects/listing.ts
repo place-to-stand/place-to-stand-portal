@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -6,7 +7,7 @@ import { and, asc, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin, ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, projects, users } from '@/lib/db/schema'
+import { companies, projects, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 import { clampLimit, createSearchPattern } from '@/lib/pagination/cursor'
@@ -107,9 +108,9 @@ export async function listProjectsForSettings(
     .select({
       project: projectSelection,
       client: {
-        id: clients.id,
+        id: companies.id,
         name: clientNameSql,
-        deletedAt: clients.deletedAt,
+        deletedAt: clientEndedAtSql,
       },
       owner: {
         id: users.id,
@@ -118,7 +119,7 @@ export async function listProjectsForSettings(
       },
     })
     .from(projects)
-    .leftJoin(clients, eq(projects.clientId, clients.id))
+    .leftJoin(companies, eq(projects.companyId, companies.id))
     .leftJoin(users, eq(projects.createdBy, users.id))
     .where(whereClause)
     .groupBy(...projectGroupByColumns)
@@ -134,7 +135,7 @@ export async function listProjectsForSettings(
 
   const mappedItems: ProjectsSettingsListItem[] = rows.map(row => ({
     ...row.project,
-    client: row.project.clientId
+    client: row.project.companyId
       ? row.client && row.client.id
         ? {
             id: row.client.id,
@@ -170,11 +171,11 @@ export async function listProjectsForSettings(
       .where(statusCondition),
     db
       .select({
-        id: clients.id,
+        id: companies.id,
         name: clientNameSql,
-        deletedAt: clients.deletedAt,
+        deletedAt: clientEndedAtSql,
       })
-      .from(clients)
+      .from(companies).where(wasClientCompany())
       .orderBy(asc(clientNameSql)),
   ])
 

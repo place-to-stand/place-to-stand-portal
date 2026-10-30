@@ -13,6 +13,7 @@ export type CliContactCompany = {
   /** Can see the company's client in the client portal (switch on and a portal login). */
   portalAccess: boolean
   /** The company's client, if it is one. */
+  /** The company's id when it is a client (0111: a client is its company). */
   clientId: string | null
 }
 

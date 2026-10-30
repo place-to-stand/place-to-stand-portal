@@ -55,7 +55,7 @@ type ActivityLogSelection = {
     summary: string
     targetType: string
     targetId: string | null
-    targetClientId: string | null
+    targetCompanyId: string | null
     targetProjectId: string | null
     contextRoute: string | null
     metadata: Json
@@ -78,7 +78,7 @@ const activityLogSelection = {
   summary: activityLogs.summary,
   targetType: activityLogs.targetType,
   targetId: activityLogs.targetId,
-  targetClientId: activityLogs.targetClientId,
+  targetCompanyId: activityLogs.targetCompanyId,
   targetProjectId: activityLogs.targetProjectId,
   contextRoute: activityLogs.contextRoute,
   metadata: activityLogs.metadata,
@@ -260,7 +260,7 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
   }
 
   if (filters.clientId) {
-    conditions.push(eq(activityLogs.targetClientId, filters.clientId))
+    conditions.push(eq(activityLogs.targetCompanyId, filters.clientId))
   }
 
   conditions.push(...buildAttributionConditions(filters))
@@ -361,7 +361,7 @@ function mapToActivityLog(row: ActivityLogSelection): ActivityLogWithActor {
     summary: log.summary,
     target_type: log.targetType,
     target_id: log.targetId,
-    target_client_id: log.targetClientId,
+    target_company_id: log.targetCompanyId,
     target_project_id: log.targetProjectId,
     context_route: log.contextRoute,
     metadata,

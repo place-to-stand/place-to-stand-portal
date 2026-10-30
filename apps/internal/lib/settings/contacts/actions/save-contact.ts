@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import {
@@ -14,7 +14,8 @@ import {
   type ContactClientLinkChange,
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { db } from '@/lib/db'
-import { clients, companies, contacts, memberships } from '@/lib/db/schema'
+import { companies, contacts, memberships } from '@/lib/db/schema'
+import { isClientCompany } from '@pts/db/client-state'
 import {
   findOrCreateCompanyByName,
   getLinkableCompany,
@@ -77,14 +78,11 @@ async function loadCurrentMemberships(
       companyName: companies.name,
       title: memberships.title,
       portalAccess: memberships.portalAccess,
-      clientId: clients.id,
+      // A company billed now is its own client.
+      clientId: sql<string | null>`case when ${isClientCompany()} then ${companies.id} end`,
     })
     .from(memberships)
     .innerJoin(companies, eq(companies.id, memberships.companyId))
-    .leftJoin(
-      clients,
-      and(eq(clients.companyId, companies.id), isNull(clients.deletedAt))
-    )
     .where(
       and(eq(memberships.contactId, contactId), isNull(memberships.endedAt))
     )
@@ -457,13 +455,11 @@ async function clientIdsByCompany(companyIds: string[]) {
   const map = new Map<string, string>()
   if (!companyIds.length) return map
   const rows = await db
-    .select({ id: clients.id, companyId: clients.companyId })
-    .from(clients)
-    .where(
-      and(inArray(clients.companyId, companyIds), isNull(clients.deletedAt))
-    )
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(inArray(companies.id, companyIds), isClientCompany()))
   for (const row of rows) {
-    if (row.companyId) map.set(row.companyId, row.id)
+    map.set(row.id, row.id)
   }
   return map
 }

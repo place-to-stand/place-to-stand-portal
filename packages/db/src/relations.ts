@@ -1,10 +1,9 @@
 import { relations } from 'drizzle-orm/relations'
 import {
   users,
-  clients,
-  clientBillingTerms,
-  clientCommissionTerms,
-  clientCommissionTermClosers,
+  billingTerms,
+  commissionTerms,
+  commissionTermClosers,
   monthlyCloseSnapshots,
   tasks,
   githubAppInstallations,
@@ -43,24 +42,6 @@ import {
   formSubmissions,
 } from './schema'
 
-export const clientsRelations = relations(clients, ({ one, many }) => ({
-  company: one(companies, {
-    fields: [clients.companyId],
-    references: [companies.id],
-  }),
-  user: one(users, {
-    fields: [clients.createdBy],
-    references: [users.id],
-    relationName: 'clients_createdBy_users_id',
-  }),
-  hourBlocks: many(hourBlocks),
-  billingTerms: many(clientBillingTerms),
-  commissionTerms: many(clientCommissionTerms),
-  projects: many(projects),
-  invoices: many(invoices),
-  githubAppInstallations: many(githubAppInstallations),
-  updates: many(clientUpdates),
-}))
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   contactsCreated: many(contacts, {
@@ -68,9 +49,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   contactsLinked: many(contacts, {
     relationName: 'contacts_userId_users_id',
-  }),
-  clients: many(clients, {
-    relationName: 'clients_createdBy_users_id',
   }),
   taskAssignees: many(taskAssignees),
   taskAssigneeMetadata: many(taskAssigneeMetadata),
@@ -167,10 +145,6 @@ export const leadsRelations = relations(leads, ({ one, many }) => ({
     fields: [leads.assigneeId],
     references: [users.id],
   }),
-  convertedToClient: one(clients, {
-    fields: [leads.convertedToClientId],
-    references: [clients.id],
-  }),
   company: one(companies, {
     fields: [leads.companyId],
     references: [companies.id],
@@ -192,9 +166,9 @@ export const leadUpdatesRelations = relations(leadUpdates, ({ one }) => ({
 }))
 
 export const clientUpdatesRelations = relations(clientUpdates, ({ one }) => ({
-  client: one(clients, {
-    fields: [clientUpdates.clientId],
-    references: [clients.id],
+  company: one(companies, {
+    fields: [clientUpdates.companyId],
+    references: [companies.id],
   }),
   createdBy: one(users, {
     fields: [clientUpdates.createdById],
@@ -227,9 +201,9 @@ export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
     fields: [hourBlocks.createdBy],
     references: [users.id],
   }),
-  client: one(clients, {
-    fields: [hourBlocks.clientId],
-    references: [clients.id],
+  company: one(companies, {
+    fields: [hourBlocks.companyId],
+    references: [companies.id],
   }),
   invoiceLineItem: one(invoiceLineItems, {
     fields: [hourBlocks.invoiceLineItemId],
@@ -247,65 +221,65 @@ export const monthlyCloseSnapshotsRelations = relations(
   })
 )
 
-export const clientBillingTermsRelations = relations(
-  clientBillingTerms,
+export const billingTermsRelations = relations(
+  billingTerms,
   ({ one }) => ({
-    client: one(clients, {
-      fields: [clientBillingTerms.clientId],
-      references: [clients.id],
+    company: one(companies, {
+      fields: [billingTerms.companyId],
+      references: [companies.id],
     }),
     createdByUser: one(users, {
-      fields: [clientBillingTerms.createdBy],
+      fields: [billingTerms.createdBy],
       references: [users.id],
     }),
   })
 )
 
-export const clientCommissionTermsRelations = relations(
-  clientCommissionTerms,
+export const commissionTermsRelations = relations(
+  commissionTerms,
   ({ one, many }) => ({
-    client: one(clients, {
-      fields: [clientCommissionTerms.clientId],
-      references: [clients.id],
+    company: one(companies, {
+      fields: [commissionTerms.companyId],
+      references: [companies.id],
     }),
-    closers: many(clientCommissionTermClosers),
+    closers: many(commissionTermClosers),
     originationUser: one(users, {
-      fields: [clientCommissionTerms.originationUserId],
+      fields: [commissionTerms.originationUserId],
       references: [users.id],
     }),
     originationContact: one(contacts, {
-      fields: [clientCommissionTerms.originationContactId],
+      fields: [commissionTerms.originationContactId],
       references: [contacts.id],
     }),
     createdByUser: one(users, {
-      fields: [clientCommissionTerms.createdBy],
+      fields: [commissionTerms.createdBy],
       references: [users.id],
     }),
   })
 )
 
-export const clientCommissionTermClosersRelations = relations(
-  clientCommissionTermClosers,
+export const commissionTermClosersRelations = relations(
+  commissionTermClosers,
   ({ one }) => ({
-    term: one(clientCommissionTerms, {
-      fields: [clientCommissionTermClosers.termId],
-      references: [clientCommissionTerms.id],
+    term: one(commissionTerms, {
+      fields: [commissionTermClosers.termId],
+      references: [commissionTerms.id],
     }),
     closerUser: one(users, {
-      fields: [clientCommissionTermClosers.closerUserId],
+      fields: [commissionTermClosers.closerUserId],
       references: [users.id],
     }),
     closerContact: one(contacts, {
-      fields: [clientCommissionTermClosers.closerContactId],
+      fields: [commissionTermClosers.closerContactId],
       references: [contacts.id],
     }),
   })
 )
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
-  client: one(clients, {
-    fields: [projects.clientId],
-    references: [clients.id],
+  company: one(companies, {
+    fields: [projects.companyId],
+    references: [companies.id],
   }),
   user: one(users, {
     fields: [projects.createdBy],
@@ -418,7 +392,8 @@ export const companiesRelations = relations(companies, ({ one, many }) => ({
     references: [users.id],
     relationName: 'companies_createdBy_users_id',
   }),
-  clients: many(clients),
+  billingTerms: many(billingTerms),
+  commissionTerms: many(commissionTerms),
   memberships: many(memberships),
   leads: many(leads),
 }))
@@ -453,9 +428,9 @@ export const membershipsRelations = relations(memberships, ({ one }) => ({
 export const githubAppInstallationsRelations = relations(
   githubAppInstallations,
   ({ one, many }) => ({
-    client: one(clients, {
-      fields: [githubAppInstallations.clientId],
-      references: [clients.id],
+    company: one(companies, {
+      fields: [githubAppInstallations.companyId],
+      references: [companies.id],
     }),
     installedByUser: one(users, {
       fields: [githubAppInstallations.installedByUserId],
@@ -591,9 +566,9 @@ export const taxRatesRelations = relations(taxRates, () => ({}))
 // =============================================================================
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({
-  client: one(clients, {
-    fields: [invoices.clientId],
-    references: [clients.id],
+  company: one(companies, {
+    fields: [invoices.companyId],
+    references: [companies.id],
   }),
   creator: one(users, {
     fields: [invoices.createdBy],

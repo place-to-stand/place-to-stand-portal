@@ -97,7 +97,7 @@ export const renderReviewRoute = async ({
     )
   }
 
-  const activeClientId = project.client_id ?? null
+  const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
   const activeTaskId = taskId ?? null
 

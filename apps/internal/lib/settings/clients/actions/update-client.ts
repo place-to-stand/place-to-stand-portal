@@ -1,5 +1,6 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -9,7 +10,7 @@ import { clientUpdatedEvent } from '@/lib/activity/events'
 import type { UserRole } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import {
   logContactClientLinkChanges,
@@ -161,17 +162,17 @@ export async function updateClient(
   try {
     const rows = await db
       .select({
-        id: clients.id,
+        id: companies.id,
         name: clientNameSql,
-        slug: clients.slug,
+        slug: companies.slug,
         billingType: currentBillingTypeSql(),
-        notes: clients.notes,
+        notes: companies.notes,
         originationContactId: currentOriginationContactIdSql(),
         originationUserId: currentOriginationUserIdSql(),
-        companyId: clients.companyId,
+        companyId: companies.id,
       })
-      .from(clients)
-      .where(eq(clients.id, id))
+      .from(companies)
+      .where(and(wasClientCompany(), eq(companies.id, id)))
       .limit(1)
 
     const closersByClient = rows[0]
@@ -257,15 +258,9 @@ export async function updateClient(
       // displays read the newest term, and effective_from controls report
       // resolution.
       await tx
-        .update(clients)
-        .set({
-          slug: slugToUpdate,
-          state,
-          notes,
-          // A client always has a company (it is that company's billing).
-          ...(companyId ? { companyId } : {}),
-        })
-        .where(eq(clients.id, id))
+        .update(companies)
+        .set({ slug: slugToUpdate, state })
+        .where(eq(companies.id, id))
 
       // Portal access is a flag on the old company's memberships: switch it
       // off so linking a client there later doesn't silently grant it.
@@ -372,7 +367,7 @@ async function recordUpdateActivity(args: RecordUpdateActivityArgs) {
     summary: event.summary,
     targetType: 'CLIENT',
     targetId: existingClient.id,
-    targetClientId: existingClient.id,
+    targetCompanyId: existingClient.id,
     metadata: event.metadata,
   })
 }

@@ -22,11 +22,11 @@ export async function ensureClientAccess(user: AppUser, clientId: string) {
   }
 
   const [access] = await db
-    .select({ clientId: clientPortalAccess.clientId })
+    .select({ clientId: clientPortalAccess.companyId })
     .from(clientPortalAccess)
     .where(
       and(
-        eq(clientPortalAccess.clientId, clientId),
+        eq(clientPortalAccess.companyId, clientId),
         eq(clientPortalAccess.userId, user.id)
       )
     )

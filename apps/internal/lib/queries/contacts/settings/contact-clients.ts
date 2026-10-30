@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -6,7 +7,7 @@ import { asc, eq, and, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clientPortalAccess, clients, contacts } from '@/lib/db/schema'
+import { companies, clientPortalAccess, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 
 import {
@@ -51,13 +52,13 @@ export async function listAllActiveClients(
 
   const rows = await db
     .select({
-      id: clients.id,
+      id: companies.id,
       name: clientNameSql,
-      slug: clients.slug,
-      companyId: clients.companyId,
+      slug: companies.slug,
+      companyId: companies.id,
     })
-    .from(clients)
-    .where(sql`${clients.deletedAt} IS NULL`)
+    .from(companies)
+    .where(and(wasClientCompany(), sql`${clientEndedAtSql} IS NULL`))
     .orderBy(asc(clientNameSql))
 
   return rows.map(row => ({
@@ -78,17 +79,17 @@ export async function listContactClients(
 
   const rows = await db
     .select({
-      id: clients.id,
+      id: companies.id,
       name: clientNameSql,
-      slug: clients.slug,
-      companyId: clients.companyId,
+      slug: companies.slug,
+      companyId: companies.id,
     })
     .from(clientPortalAccess)
-    .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))
+    .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
     .where(
       and(
         eq(clientPortalAccess.contactId, contactId),
-        sql`${clients.deletedAt} IS NULL`
+        sql`${clientEndedAtSql} IS NULL`
       )
     )
     .orderBy(asc(clientNameSql))

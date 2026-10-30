@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
 
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -37,15 +37,21 @@ const leadFields = {
   lossReason: leads.lossReason,
   lossNotes: leads.lossNotes,
   convertedAt: leads.convertedAt,
-  convertedToClientId: leads.convertedToClientId,
+  // A won lead's client is its company (0111).
+  convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
 }
 
 export type CliLeadRow = Pick<
   typeof leads.$inferSelect,
-  Exclude<keyof typeof leadFields, keyof typeof leadDisplayFields>
+  Exclude<
+    keyof typeof leadFields,
+    keyof typeof leadDisplayFields | 'convertedToClientId'
+  >
 > & {
+  /** The client it became: its company, once won and converted. */
+  convertedToClientId: string | null
   /** Read through the lead's contact and company. */
   contactName: string
   contactEmail: string | null

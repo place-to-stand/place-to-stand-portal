@@ -80,7 +80,7 @@ async function performSoftDeleteHourBlock(
     summary: event.summary,
     targetType: 'HOUR_BLOCK',
     targetId: existingHourBlock.id,
-    targetClientId: existingHourBlock.client_id,
+    targetCompanyId: existingHourBlock.company_id,
     metadata: event.metadata,
   })
 

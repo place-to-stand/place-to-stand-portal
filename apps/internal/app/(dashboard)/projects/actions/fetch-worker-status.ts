@@ -196,7 +196,7 @@ export async function fetchWorkerStatus(input: {
         .select({
           title: tasks.title,
           projectId: tasks.projectId,
-          clientId: projects.clientId,
+          clientId: projects.companyId,
         })
         .from(tasks)
         .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -217,7 +217,7 @@ export async function fetchWorkerStatus(input: {
         targetType: 'TASK',
         targetId: deployment.taskId,
         targetProjectId: task?.projectId ?? null,
-        targetClientId: task?.clientId ?? null,
+        targetCompanyId: task?.clientId ?? null,
         metadata: event.metadata,
       })
     }

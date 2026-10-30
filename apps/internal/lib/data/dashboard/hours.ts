@@ -1,3 +1,4 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -21,8 +22,7 @@ import type { AppUser } from '@/lib/auth/session'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
-import {
-  clients,
+import { companies,
   hourBlocks,
   projects,
   tasks,
@@ -161,7 +161,7 @@ export async function fetchTimeLogPage(
 
   const where = and(
     filters.userId ? eq(timeLogs.userId, filters.userId) : undefined,
-    filters.clientId ? eq(projects.clientId, filters.clientId) : undefined,
+    filters.clientId ? eq(projects.companyId, filters.clientId) : undefined,
     filters.projectId ? eq(timeLogs.projectId, filters.projectId) : undefined,
     filters.from ? gte(timeLogs.loggedOn, filters.from) : undefined,
     filters.to ? lte(timeLogs.loggedOn, filters.to) : undefined,
@@ -188,14 +188,14 @@ export async function fetchTimeLogPage(
         projectName: projects.name,
         projectSlug: projects.slug,
         projectType: projects.type,
-        clientId: clients.id,
+        clientId: companies.id,
         clientName: clientNameSql,
-        clientSlug: clients.slug,
-        companyId: clients.companyId,
+        clientSlug: companies.slug,
+        companyId: companies.id,
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .leftJoin(companies, eq(projects.companyId, companies.id))
       .leftJoin(users, eq(users.id, timeLogs.userId))
       .where(where)
       // createdAt breaks ties within a day; id makes the order total, so paging
@@ -372,8 +372,8 @@ async function sumPrepaidHours({
       >`COALESCE(SUM(${hourBlocks.hoursPurchased}), '0')`,
     })
     .from(hourBlocks)
-    .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
-    .where(and(...conditions, isNull(clients.deletedAt)))) as Array<{
+    .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
+    .where(and(...conditions, isNull(clientEndedAtSql)))) as Array<{
     totalHours: string | null
   }>
 

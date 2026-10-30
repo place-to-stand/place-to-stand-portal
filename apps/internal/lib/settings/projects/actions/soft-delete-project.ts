@@ -51,7 +51,7 @@ export async function softDeleteProject(
           .select({
             id: projects.id,
             name: projects.name,
-            clientId: projects.clientId,
+            clientId: projects.companyId,
           })
           .from(projects)
           .where(eq(projects.id, projectId))
@@ -90,7 +90,7 @@ export async function softDeleteProject(
         targetType: 'PROJECT',
         targetId: existingProject.id,
         targetProjectId: existingProject.id,
-        targetClientId: existingProject.clientId,
+        targetCompanyId: existingProject.clientId,
         metadata: event.metadata,
       })
 

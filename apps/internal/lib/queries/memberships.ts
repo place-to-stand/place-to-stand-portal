@@ -1,4 +1,3 @@
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -14,7 +13,8 @@ import {
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 import { db } from '@/lib/db'
-import { clients, companies, contacts, memberships } from '@/lib/db/schema'
+import { companies, contacts, memberships } from '@/lib/db/schema'
+import { isClientCompany } from '@pts/db/client-state'
 
 /**
  * Memberships: a person at a company, with their title there, whether they
@@ -42,16 +42,13 @@ const ref = (value: AnyPgColumn | SQL): SQL =>
     : (value as SQL)
 
 /**
- * True when the company (aliased `co`) is active: not archived itself, and
- * not a client company whose client is archived. Memberships at inactive
- * companies stay in the database as history but are hidden from active
- * views (lists, counts, main company, CLI/MCP).
+ * True when the company (aliased `co`) is active: not archived, and not a
+ * former client (billing stopped). Memberships at inactive companies stay in
+ * the database as history but are hidden from active views (lists, counts,
+ * main company, CLI/MCP).
  */
-const activeCompanyCondition = (co: string) => `${co}.deleted_at is null
-  and (
-    exists (select 1 from clients ac where ac.company_id = ${co}.id and ac.deleted_at is null)
-    or not exists (select 1 from clients ac where ac.company_id = ${co}.id)
-  )`
+const activeCompanyCondition = (co: string) =>
+  `${co}.deleted_at is null and ${co}.client_ended_at is null`
 
 /** SQL predicate for an active company, by table alias. */
 export const activeCompanySql = (alias: string) =>
@@ -150,22 +147,19 @@ export async function listContactMemberships(
       title: memberships.title,
       isPrimary: memberships.isPrimary,
       portalAccess: memberships.portalAccess,
-      clientId: clients.id,
-      clientName: clientNameSql,
+      // A company billed now is a client: its id is the client's.
+      clientId: sql<string | null>`case when ${isClientCompany()} then ${companies.id} end`,
+      clientName: sql<string | null>`case when ${isClientCompany()} then ${companies.name} end`,
       startedAt: memberships.startedAt,
       archived: sql<boolean>`not ${activeCompanySql('companies')}`,
       hasPortalAccess: sql<boolean>`exists (
         select 1 from client_portal_access a
         where a.contact_id = "memberships"."contact_id"
-          and a.client_id = "clients"."id"
+          and a.company_id = "memberships"."company_id"
       )`,
     })
     .from(memberships)
     .innerJoin(companies, eq(companies.id, memberships.companyId))
-    .leftJoin(
-      clients,
-      and(eq(clients.companyId, companies.id), isNull(clients.deletedAt))
-    )
     .where(
       and(
         isCurrentMembership,

@@ -1,9 +1,10 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
 import { and, asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients, contacts, memberships } from '@/lib/db/schema'
+import { companies, contacts, memberships } from '@/lib/db/schema'
 
 export type ClientContactSummary = {
   id: string
@@ -28,25 +29,23 @@ export async function fetchContactSummariesByClient(
 
   const rows = await db
     .select({
-      clientId: clients.id,
+      clientId: companies.id,
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
       isPrimary: memberships.isPrimary,
     })
-    .from(clients)
-    .innerJoin(memberships, eq(memberships.companyId, clients.companyId))
+    .from(companies)
+    .innerJoin(memberships, eq(memberships.companyId, companies.id))
     .innerJoin(contacts, eq(contacts.id, memberships.contactId))
-    .where(
-      and(
-        inArray(clients.id, clientIds),
+    .where(and(wasClientCompany(), and(
+        inArray(companies.id, clientIds),
         isNull(memberships.endedAt),
         eq(memberships.portalAccess, true),
         // Access needs a portal login.
         isNotNull(contacts.userId),
         isNull(contacts.deletedAt)
-      )
-    )
+      )))
     .orderBy(
       desc(memberships.isPrimary),
       asc(contacts.name),

@@ -2,14 +2,14 @@ import { sql } from 'drizzle-orm'
 
 /**
  * One name per record (migration 0109):
- *  - a client (a company's billing record) is called by its company's name;
+ *  - a client is a company you bill, so it is called by the company's name;
  *  - a user (a person's sign-in) is called by their contact's name.
  * Correlated subqueries written table-qualified, because drizzle drops the
  * table name from an interpolated column inside a selected fragment.
  */
 
-/** A client's name: its company's. Correlated on the outer `clients`. */
-export const clientNameSql = sql<string>`(select co.name from companies co where co.id = "clients"."company_id")`
+/** A client's name: its company's (a client is a company you bill). */
+export const clientNameSql = sql<string>`"companies"."name"`
 
 /**
  * A user's name: their contact's. `table` is the outer users table's name

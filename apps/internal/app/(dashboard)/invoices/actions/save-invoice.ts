@@ -1,4 +1,5 @@
 'use server'
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 
 import { clientNameSql } from '@pts/db/names'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -11,7 +12,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceCreatedEvent, invoiceUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { invoices, invoiceLineItems, clients } from '@/lib/db/schema'
+import { companies, invoices, invoiceLineItems, } from '@/lib/db/schema'
 
 import { invoiceSchema } from './schemas'
 import type { ActionResult, InvoiceInput } from './types'
@@ -51,12 +52,12 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
 
   const clientRows = await db
     .select({
-      id: clients.id,
+      id: companies.id,
       name: clientNameSql,
       billingType: currentBillingTypeSql(),
     })
-    .from(clients)
-    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+    .from(companies)
+    .where(and(wasClientCompany(), and(eq(companies.id, clientId), isNull(clientEndedAtSql))))
     .limit(1)
 
   const client = clientRows[0]
@@ -88,7 +89,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         const [inv] = await tx
           .insert(invoices)
           .values({
-            clientId,
+            companyId: clientId,
             invoiceNumber,
             billingType: client.billingType,
             notes: notes ?? null,
@@ -137,7 +138,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         summary: event.summary,
         targetType: 'INVOICE',
         targetId: inserted.id,
-        targetClientId: clientId,
+        targetCompanyId: clientId,
         metadata: event.metadata,
       })
     } catch (error) {
@@ -153,7 +154,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       .select({
         id: invoices.id,
         status: invoices.status,
-        clientId: invoices.clientId,
+        clientId: invoices.companyId,
         invoiceNumber: invoices.invoiceNumber,
         notes: invoices.notes,
         taxRate: invoices.taxRate,
@@ -328,7 +329,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         summary: event.summary,
         targetType: 'INVOICE',
         targetId: id,
-        targetClientId: clientId,
+        targetCompanyId: clientId,
         metadata: event.metadata,
       })
     }

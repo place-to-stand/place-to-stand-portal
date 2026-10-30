@@ -58,7 +58,7 @@ export async function changeTaskStatus(input: {
       status: tasks.status,
       completedAt: tasks.completedAt,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
       deletedAt: tasks.deletedAt,
     })
     .from(tasks)
@@ -120,7 +120,7 @@ export async function changeTaskStatus(input: {
       targetType: 'TASK',
       targetId: taskId,
       targetProjectId: task.projectId,
-      targetClientId: task.clientId ?? null,
+      targetCompanyId: task.clientId ?? null,
       metadata: event.metadata,
     })
   }

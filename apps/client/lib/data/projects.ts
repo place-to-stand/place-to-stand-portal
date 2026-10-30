@@ -1,3 +1,4 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -5,8 +6,7 @@ import { cache } from 'react'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  clients,
+import { companies,
   githubAppInstallations,
   githubRepoLinks,
   projects,
@@ -47,16 +47,16 @@ export const fetchClientProjects = cache(
           name: projects.name,
           status: projects.status,
           slug: projects.slug,
-          clientId: projects.clientId,
+          clientId: projects.companyId,
         })
         .from(projects)
         .where(
-          and(inArray(projects.clientId, clientIds), isNull(projects.deletedAt))
+          and(inArray(projects.companyId, clientIds), isNull(projects.deletedAt))
         ),
       db
-        .select({ id: clients.id, name: clientNameSql })
-        .from(clients)
-        .where(inArray(clients.id, clientIds)),
+        .select({ id: companies.id, name: clientNameSql })
+        .from(companies)
+        .where(and(wasClientCompany(), inArray(companies.id, clientIds))),
     ])
 
     const clientNameMap = new Map(clientRows.map(c => [c.id, c.name]))
@@ -95,11 +95,11 @@ export const fetchClientProjects = cache(
             )
         : [],
       db
-        .selectDistinct({ clientId: githubAppInstallations.clientId })
+        .selectDistinct({ clientId: githubAppInstallations.companyId })
         .from(githubAppInstallations)
         .where(
           and(
-            inArray(githubAppInstallations.clientId, clientIds),
+            inArray(githubAppInstallations.companyId, clientIds),
             eq(githubAppInstallations.status, 'ACTIVE'),
             isNull(githubAppInstallations.deletedAt)
           )

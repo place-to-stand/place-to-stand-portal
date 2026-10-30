@@ -72,7 +72,7 @@ export async function getOrCreatePlanningSession(input: {
       .select({
         title: tasks.title,
         projectId: tasks.projectId,
-        clientId: projects.clientId,
+        clientId: projects.companyId,
       })
       .from(tasks)
       .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -91,7 +91,7 @@ export async function getOrCreatePlanningSession(input: {
       targetType: 'PLAN',
       targetId: session.id,
       targetProjectId: task?.projectId ?? null,
-      targetClientId: task?.clientId ?? null,
+      targetCompanyId: task?.clientId ?? null,
       metadata: event.metadata,
     })
   }

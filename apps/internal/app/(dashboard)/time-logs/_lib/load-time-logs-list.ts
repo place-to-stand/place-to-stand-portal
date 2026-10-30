@@ -45,7 +45,7 @@ export async function loadTimeLogsList(
     .map(client => ({ value: client.id, label: client.name }))
   const projectOptions = toProjectOptions(
     projects.filter(
-      project => !params.clientId || project.client_id === params.clientId
+      project => !params.clientId || project.company_id === params.clientId
     )
   )
   const people = admins.map(admin => ({

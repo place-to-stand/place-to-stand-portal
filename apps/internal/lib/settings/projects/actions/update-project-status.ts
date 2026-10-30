@@ -58,7 +58,7 @@ export async function updateProjectStatus(
             id: projects.id,
             name: projects.name,
             status: projects.status,
-            clientId: projects.clientId,
+            clientId: projects.companyId,
           })
           .from(projects)
           .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
@@ -110,7 +110,7 @@ export async function updateProjectStatus(
         targetType: 'PROJECT',
         targetId: projectId,
         targetProjectId: projectId,
-        targetClientId: existingProject.clientId,
+        targetCompanyId: existingProject.clientId,
         metadata: event.metadata,
       })
 

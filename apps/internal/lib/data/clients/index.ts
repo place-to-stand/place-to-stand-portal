@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql, personNameOf } from '@pts/db/names'
 import 'server-only'
 
@@ -12,9 +13,10 @@ import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, companies, contacts, projects, users } from '@/lib/db/schema'
+import { companies, contacts, projects, users } from '@/lib/db/schema'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 import { NotFoundError } from '@/lib/errors/http'
+import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 import { clientWebsiteSql } from '@/lib/queries/clients/website'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
@@ -39,7 +41,6 @@ export type ClientWithMetrics = {
   name: string
   /** The company this client is. */
   companyId: string | null
-  label: string | null
   companyName: string | null
   slug: string | null
   notes: string | null
@@ -55,7 +56,8 @@ export type ClientWithMetrics = {
   originationUserUpdatedAt: string | null
   /** Closers on the newest commission term, largest share first. */
   closers: ClientCloser[]
-  createdAt: string
+  /** When it became a client. */
+  createdAt: string | null
   updatedAt: string
   deletedAt: string | null
   projectCount: number
@@ -74,7 +76,6 @@ export type ClientDetail = {
   name: string
   /** The company this client is. */
   companyId: string | null
-  label: string | null
   companyName: string | null
   slug: string | null
   notes: string | null
@@ -86,7 +87,8 @@ export type ClientDetail = {
   /** Closers on the newest commission term, largest share first. */
   closers: ClientCloser[]
   billingType: 'prepaid' | 'net_30'
-  createdAt: string
+  /** When it became a client. */
+  createdAt: string | null
   updatedAt: string
   deletedAt: string | null
 }
@@ -99,7 +101,7 @@ export const fetchClientsWithMetrics = cache(
   ): Promise<ClientWithMetrics[]> => {
     assertAdmin(user)
 
-    const baseConditions = [isNull(clients.deletedAt)]
+    const baseConditions = [isNull(clientEndedAtSql)]
 
     // PRD 004 §03: server-side `?q=` search on the clients landing table.
     // Must match name OR slug — the shell header count comes from
@@ -109,7 +111,7 @@ export const fetchClientsWithMetrics = cache(
     if (trimmedSearch) {
       const pattern = createSearchPattern(trimmedSearch)
       baseConditions.push(
-        sql`(${clientNameSql} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
+        sql`(${clientNameSql} ILIKE ${pattern} OR ${companies.slug} ILIKE ${pattern})`
       )
     }
 
@@ -129,13 +131,13 @@ export const fetchClientsWithMetrics = cache(
     // returns exactly one row per client with no grouping.
     const rows = await db
       .select({
-        id: clients.id,
+        id: companies.id,
         name: clientNameSql,
-        slug: clients.slug,
-        notes: clients.notes,
+        slug: companies.slug,
+        notes: companies.notes,
         website: clientWebsiteSql,
         billingType: currentBillingTypeSql(),
-        state: clients.state,
+        state: companies.state,
         originationContactId: currentOriginationContactIdSql(),
         originationContactName: contacts.name,
         originationUserId: currentOriginationUserIdSql(),
@@ -143,21 +145,19 @@ export const fetchClientsWithMetrics = cache(
         originationUserEmail: originationUsers.email,
         originationUserAvatarUrl: originationUsers.avatarUrl,
         originationUserUpdatedAt: originationUsers.updatedAt,
-        companyId: clients.companyId,
-        label: clients.label,
+        companyId: companies.id,
         companyName: companies.name,
-        createdAt: clients.createdAt,
-        updatedAt: clients.updatedAt,
-        deletedAt: clients.deletedAt,
+        createdAt: companies.clientSince,
+        updatedAt: companies.updatedAt,
+        deletedAt: clientEndedAtSql,
       })
-      .from(clients)
-      .leftJoin(companies, eq(companies.id, clients.companyId))
+      .from(companies)
       .leftJoin(contacts, eq(currentOriginationContactIdSql(), contacts.id))
       .leftJoin(
         originationUsers,
         eq(currentOriginationUserIdSql(), originationUsers.id)
       )
-      .where(and(...baseConditions))
+      .where(and(wasClientCompany(), and(...baseConditions)))
       .orderBy(asc(clientNameSql))
 
     if (rows.length === 0) {
@@ -178,12 +178,12 @@ export const fetchClientsWithMetrics = cache(
             name: projects.name,
             slug: projects.slug,
             status: projects.status,
-            clientId: projects.clientId,
+            clientId: projects.companyId,
           })
           .from(projects)
           .where(
             and(
-              inArray(projects.clientId, clientIds),
+              inArray(projects.companyId, clientIds),
               isNull(projects.deletedAt)
             )
           )
@@ -234,7 +234,6 @@ export const fetchClientsWithMetrics = cache(
         originationUserAvatarUrl: row.originationUserAvatarUrl ?? null,
         originationUserUpdatedAt: row.originationUserUpdatedAt ?? null,
         companyId: row.companyId,
-        label: row.label,
         companyName: row.companyName ?? null,
         closers: closersByClient.get(row.id) ?? [],
         createdAt: row.createdAt,
@@ -271,9 +270,9 @@ export const fetchClientHoursSummaries = cache(
     assertAdmin(user)
 
     const rows = await db
-      .select({ id: clients.id, billingType: currentBillingTypeSql() })
-      .from(clients)
-      .where(isNull(clients.deletedAt))
+      .select({ id: companies.id, billingType: currentBillingTypeSql() })
+      .from(companies)
+      .where(and(wasClientCompany(), isNull(clientEndedAtSql)))
 
     const prepaidIds = rows
       .filter(row => row.billingType === 'prepaid')
@@ -298,25 +297,23 @@ export const fetchClientById = cache(
 
     const rows = await db
       .select({
-        id: clients.id,
+        id: companies.id,
         name: clientNameSql,
-        slug: clients.slug,
-        notes: clients.notes,
+        slug: companies.slug,
+        notes: companies.notes,
         website: clientWebsiteSql,
-        state: clients.state,
+        state: companies.state,
         originationContactId: currentOriginationContactIdSql(),
         originationUserId: currentOriginationUserIdSql(),
         billingType: currentBillingTypeSql(),
-        companyId: clients.companyId,
-        label: clients.label,
+        companyId: companies.id,
         companyName: companies.name,
-        createdAt: clients.createdAt,
-        updatedAt: clients.updatedAt,
-        deletedAt: clients.deletedAt,
+        createdAt: companies.clientSince,
+        updatedAt: companies.updatedAt,
+        deletedAt: clientEndedAtSql,
       })
-      .from(clients)
-      .leftJoin(companies, eq(companies.id, clients.companyId))
-      .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+      .from(companies)
+      .where(and(wasClientCompany(), and(eq(companies.id, clientId), isNull(clientEndedAtSql))))
       .limit(1)
 
     if (!rows.length) {
@@ -331,9 +328,9 @@ export const fetchClientById = cache(
 const fetchClientBySlug = cache(
   async (user: AppUser, slug: string): Promise<ClientDetail> => {
     const clientRow = await db
-      .select({ id: clients.id })
-      .from(clients)
-      .where(and(eq(clients.slug, slug), isNull(clients.deletedAt)))
+      .select({ id: companies.id })
+      .from(companies)
+      .where(and(wasClientCompany(), and(eq(companies.slug, slug), isNull(clientEndedAtSql))))
       .limit(1)
 
     if (!clientRow.length) {
@@ -372,7 +369,7 @@ export const fetchProjectsForClient = cache(
         endsOn: projects.endsOn,
       })
       .from(projects)
-      .where(and(eq(projects.clientId, clientId), isNull(projects.deletedAt)))
+      .where(and(eq(projects.companyId, clientId), isNull(projects.deletedAt)))
       .orderBy(asc(projects.name))
 
     // Fetch task counts for each project
@@ -431,7 +428,11 @@ export const resolveClientIdentifier = cache(
     let client: ClientDetail
 
     if (isUUID) {
-      client = await fetchClientById(user, identifier)
+      // Old client ids (before 0111) still resolve, for one release.
+      client = await fetchClientById(
+        user,
+        await companyIdForLegacyClientId(identifier)
+      )
     } else {
       client = await fetchClientBySlug(user, identifier)
     }

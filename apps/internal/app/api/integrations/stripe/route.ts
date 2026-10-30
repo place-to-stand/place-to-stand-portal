@@ -53,7 +53,7 @@ async function markInvoicePaid(
       summary: paidEvent.summary,
       targetType: 'INVOICE',
       targetId: invoice.id,
-      targetClientId: invoice.client_id,
+      targetCompanyId: invoice.company_id,
       metadata: paidEvent.metadata,
     })
 

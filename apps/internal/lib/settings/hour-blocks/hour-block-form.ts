@@ -23,7 +23,7 @@ export type HourBlockFormValues = z.infer<typeof hourBlockFormSchema>
 
 type HourBlockRow = {
   id: string
-  client_id: string
+  company_id: string
   hours_purchased: number
   invoice_id: string | null
   /**
@@ -63,7 +63,7 @@ export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
 export const buildHourBlockFormDefaults = (
   hourBlock: HourBlockWithClient | null
 ): HourBlockFormValues => ({
-  clientId: hourBlock?.client_id ?? '',
+  clientId: hourBlock?.company_id ?? '',
   hoursPurchased: hourBlock?.hours_purchased ?? DEFAULT_HOURS_PURCHASED,
   notes: hourBlock?.notes ?? '',
 })

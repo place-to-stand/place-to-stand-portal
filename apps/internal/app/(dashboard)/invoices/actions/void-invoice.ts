@@ -1,4 +1,5 @@
 'use server'
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 
 import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
@@ -10,7 +11,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceVoidedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { invoices, clients } from '@/lib/db/schema'
+import { companies, invoices, } from '@/lib/db/schema'
 
 import { voidSchema } from './schemas'
 import type { ActionResult, VoidInput } from './types'
@@ -47,7 +48,7 @@ async function performVoidInvoice(
     .select({
       id: invoices.id,
       status: invoices.status,
-      clientId: invoices.clientId,
+      clientId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
     })
     .from(invoices)
@@ -66,8 +67,8 @@ async function performVoidInvoice(
 
   const clientRows = await db
     .select({ name: clientNameSql })
-    .from(clients)
-    .where(and(eq(clients.id, existing.clientId), isNull(clients.deletedAt)))
+    .from(companies)
+    .where(and(wasClientCompany(), and(eq(companies.id, existing.clientId), isNull(clientEndedAtSql))))
     .limit(1)
 
   const clientName = clientRows[0]?.name ?? null
@@ -103,7 +104,7 @@ async function performVoidInvoice(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoiceId,
-    targetClientId: existing.clientId,
+    targetCompanyId: existing.clientId,
     metadata: event.metadata,
   })
 

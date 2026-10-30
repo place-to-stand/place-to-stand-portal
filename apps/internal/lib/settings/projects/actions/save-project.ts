@@ -123,7 +123,7 @@ export async function saveProject(
               .insert(projects)
               .values({
                 name: trimmedName,
-                clientId: normalizedClientId,
+                companyId: normalizedClientId,
                 status,
                 type: projectType,
                 startsOn: startsOn ?? null,
@@ -175,7 +175,7 @@ export async function saveProject(
           targetType: 'PROJECT',
           targetId: insertedId,
           targetProjectId: insertedId,
-          targetClientId: normalizedClientId,
+          targetCompanyId: normalizedClientId,
           metadata: event.metadata,
         })
 
@@ -217,7 +217,7 @@ export async function saveProject(
             startsOn: projects.startsOn,
             endsOn: projects.endsOn,
             slug: projects.slug,
-            clientId: projects.clientId,
+            clientId: projects.companyId,
             type: projects.type,
             ownerId: projects.ownerId,
           })
@@ -240,7 +240,7 @@ export async function saveProject(
           .update(projects)
           .set({
             name: trimmedName,
-            clientId: normalizedClientId,
+            companyId: normalizedClientId,
             status,
             type: projectType,
             startsOn: startsOn ?? null,
@@ -336,7 +336,7 @@ export async function saveProject(
           targetType: 'PROJECT',
           targetId: id,
           targetProjectId: id,
-          targetClientId: normalizedClientId,
+          targetCompanyId: normalizedClientId,
           metadata: event.metadata,
         })
       }

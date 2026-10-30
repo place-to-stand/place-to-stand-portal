@@ -96,7 +96,7 @@ export async function cancelDeployment(input: {
       id: tasks.id,
       title: tasks.title,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -204,7 +204,7 @@ export async function cancelDeployment(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetClientId: task.clientId ?? null,
+    targetCompanyId: task.clientId ?? null,
     metadata: event.metadata,
   })
 
@@ -263,7 +263,7 @@ export async function deployPlan(input: {
       title: tasks.title,
       description: tasks.description,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -426,7 +426,7 @@ export async function deployPlan(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetClientId: task.clientId ?? null,
+    targetCompanyId: task.clientId ?? null,
     metadata: { ...(event.metadata as Record<string, unknown> ?? {}), planId, prdPath },
   })
 

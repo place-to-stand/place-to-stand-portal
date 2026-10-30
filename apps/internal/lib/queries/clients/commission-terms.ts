@@ -4,10 +4,9 @@ import 'server-only'
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  clientCommissionTermClosers,
-  clientCommissionTerms,
-  clients,
+import { companies,
+  commissionTermClosers,
+  commissionTerms,
   contacts,
   users,
 } from '@/lib/db/schema'
@@ -51,7 +50,7 @@ async function insertTermClosers(
   closers: CloserShare[]
 ): Promise<void> {
   if (closers.length === 0) return
-  await tx.insert(clientCommissionTermClosers).values(
+  await tx.insert(commissionTermClosers).values(
     closers.map(closer => ({
       termId,
       closerUserId: closer.kind === 'user' ? closer.id : null,
@@ -74,15 +73,15 @@ export async function insertInitialCommissionTerm(
   }
 ): Promise<void> {
   const [term] = await tx
-    .insert(clientCommissionTerms)
+    .insert(commissionTerms)
     .values({
-      clientId: params.clientId,
+      companyId: params.clientId,
       effectiveFrom: currentMonthStartUtc(),
       originationUserId: params.originationUserId,
       originationContactId: params.originationContactId,
       createdBy: params.createdBy,
     })
-    .returning({ id: clientCommissionTerms.id })
+    .returning({ id: commissionTerms.id })
 
   await insertTermClosers(tx, term.id, params.closers)
 }
@@ -104,9 +103,9 @@ export async function upsertCommissionTerm(
 ): Promise<void> {
   const now = new Date().toISOString()
   const [term] = await tx
-    .insert(clientCommissionTerms)
+    .insert(commissionTerms)
     .values({
-      clientId: params.clientId,
+      companyId: params.clientId,
       effectiveFrom: params.effectiveFrom,
       originationUserId: params.originationUserId,
       originationContactId: params.originationContactId,
@@ -114,8 +113,8 @@ export async function upsertCommissionTerm(
     })
     .onConflictDoUpdate({
       target: [
-        clientCommissionTerms.clientId,
-        clientCommissionTerms.effectiveFrom,
+        commissionTerms.companyId,
+        commissionTerms.effectiveFrom,
       ],
       targetWhere: sql`deleted_at IS NULL`,
       set: {
@@ -125,15 +124,15 @@ export async function upsertCommissionTerm(
         updatedAt: now,
       },
     })
-    .returning({ id: clientCommissionTerms.id })
+    .returning({ id: commissionTerms.id })
 
   await tx
-    .update(clientCommissionTermClosers)
+    .update(commissionTermClosers)
     .set({ deletedAt: now, updatedAt: now })
     .where(
       and(
-        eq(clientCommissionTermClosers.termId, term.id),
-        isNull(clientCommissionTermClosers.deletedAt)
+        eq(commissionTermClosers.termId, term.id),
+        isNull(commissionTermClosers.deletedAt)
       )
     )
 
@@ -153,29 +152,29 @@ export async function fetchLatestClosersByClient(
   if (clientIds.length === 0) return result
 
   const latestTerms = db
-    .selectDistinctOn([clientCommissionTerms.clientId], {
-      termId: clientCommissionTerms.id,
-      clientId: clientCommissionTerms.clientId,
+    .selectDistinctOn([commissionTerms.companyId], {
+      termId: commissionTerms.id,
+      clientId: commissionTerms.companyId,
     })
-    .from(clientCommissionTerms)
+    .from(commissionTerms)
     .where(
       and(
-        inArray(clientCommissionTerms.clientId, clientIds),
-        isNull(clientCommissionTerms.deletedAt)
+        inArray(commissionTerms.companyId, clientIds),
+        isNull(commissionTerms.deletedAt)
       )
     )
     .orderBy(
-      clientCommissionTerms.clientId,
-      desc(clientCommissionTerms.effectiveFrom)
+      commissionTerms.companyId,
+      desc(commissionTerms.effectiveFrom)
     )
     .as('latest_terms')
 
   const rows = await db
     .select({
       clientId: latestTerms.clientId,
-      closerUserId: clientCommissionTermClosers.closerUserId,
-      closerContactId: clientCommissionTermClosers.closerContactId,
-      sharePercent: clientCommissionTermClosers.sharePercent,
+      closerUserId: commissionTermClosers.closerUserId,
+      closerContactId: commissionTermClosers.closerContactId,
+      sharePercent: commissionTermClosers.sharePercent,
       userName: personNameSql,
       userEmail: users.email,
       userAvatarUrl: users.avatarUrl,
@@ -185,18 +184,18 @@ export async function fetchLatestClosersByClient(
     })
     .from(latestTerms)
     .innerJoin(
-      clientCommissionTermClosers,
+      commissionTermClosers,
       and(
-        eq(clientCommissionTermClosers.termId, latestTerms.termId),
-        isNull(clientCommissionTermClosers.deletedAt)
+        eq(commissionTermClosers.termId, latestTerms.termId),
+        isNull(commissionTermClosers.deletedAt)
       )
     )
-    .leftJoin(users, eq(users.id, clientCommissionTermClosers.closerUserId))
+    .leftJoin(users, eq(users.id, commissionTermClosers.closerUserId))
     .leftJoin(
       contacts,
-      eq(contacts.id, clientCommissionTermClosers.closerContactId)
+      eq(contacts.id, commissionTermClosers.closerContactId)
     )
-    .orderBy(desc(clientCommissionTermClosers.sharePercent))
+    .orderBy(desc(commissionTermClosers.sharePercent))
 
   for (const row of rows) {
     const closer: ClientCloser = row.closerUserId
@@ -297,12 +296,12 @@ function commissionColumnAsOfSql(
   periodStart: string
 ) {
   return sql<string | null>`(
-    SELECT ${clientCommissionTerms[column]}
-    FROM ${clientCommissionTerms}
-    WHERE ${clientCommissionTerms.clientId} = ${clients.id}
-      AND ${clientCommissionTerms.effectiveFrom} <= ${periodStart}
-      AND ${clientCommissionTerms.deletedAt} IS NULL
-    ORDER BY ${clientCommissionTerms.effectiveFrom} DESC
+    SELECT ${commissionTerms[column]}
+    FROM ${commissionTerms}
+    WHERE ${commissionTerms.companyId} = ${companies.id}
+      AND ${commissionTerms.effectiveFrom} <= ${periodStart}
+      AND ${commissionTerms.deletedAt} IS NULL
+    ORDER BY ${commissionTerms.effectiveFrom} DESC
     LIMIT 1
   )`
 }
@@ -332,11 +331,11 @@ function latestCommissionColumnSql(column: CommissionColumn) {
   // name from an interpolated column inside a selected fragment, which would
   // bind it to the terms table's own id.
   return sql<string | null>`(
-    SELECT ${clientCommissionTerms[column]}
-    FROM ${clientCommissionTerms}
-    WHERE ${clientCommissionTerms.clientId} = ${sql.raw('"clients"."id"')}
-      AND ${clientCommissionTerms.deletedAt} IS NULL
-    ORDER BY ${clientCommissionTerms.effectiveFrom} DESC
+    SELECT ${commissionTerms[column]}
+    FROM ${commissionTerms}
+    WHERE ${commissionTerms.companyId} = ${sql.raw('"companies"."id"')}
+      AND ${commissionTerms.deletedAt} IS NULL
+    ORDER BY ${commissionTerms.effectiveFrom} DESC
     LIMIT 1
   )`
 }

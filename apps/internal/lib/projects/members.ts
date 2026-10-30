@@ -147,7 +147,7 @@ export async function syncProjectMembers(args: {
   })
 
   const [project] = await db
-    .select({ name: projects.name, clientId: projects.clientId })
+    .select({ name: projects.name, clientId: projects.companyId })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)
@@ -166,7 +166,7 @@ export async function syncProjectMembers(args: {
     targetType: 'PROJECT',
     targetId: projectId,
     targetProjectId: projectId,
-    targetClientId: project?.clientId ?? null,
+    targetCompanyId: project?.clientId ?? null,
     metadata: event.metadata,
   })
 

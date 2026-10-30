@@ -5,7 +5,6 @@ import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 
-import { CLIENT_LINK_OPTIONS_QUERY_KEY } from '@/components/clients/client-link-picker'
 import {
   CONTACT_OPTIONS_QUERY_KEY,
   useContactOptions,
@@ -166,9 +165,6 @@ export function useCompanySheetForm({
       subscribeSheetCreated('client', () => {
         void queryClient.invalidateQueries({
           queryKey: companySheetQueryKey(companyId),
-        })
-        void queryClient.invalidateQueries({
-          queryKey: CLIENT_LINK_OPTIONS_QUERY_KEY,
         })
       }),
     [companyId, queryClient]

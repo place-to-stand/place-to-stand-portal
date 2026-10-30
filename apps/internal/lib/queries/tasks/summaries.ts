@@ -6,8 +6,7 @@ import { eq } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
-import {
-  clients,
+import { companies,
   projects,
   taskAssignees,
   tasks,
@@ -86,17 +85,17 @@ export async function getTaskSummaryForUser(
         id: projects.id,
         name: projects.name,
         slug: projects.slug,
-        clientId: projects.clientId,
+        clientId: projects.companyId,
       },
       client: {
-        id: clients.id,
+        id: companies.id,
         name: clientNameSql,
-        slug: clients.slug,
+        slug: companies.slug,
       },
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
-    .leftJoin(clients, eq(clients.id, projects.clientId))
+    .leftJoin(companies, eq(companies.id, projects.companyId))
     .where(eq(tasks.id, taskId))
     .limit(1)) as TaskSummarySelection[]
 

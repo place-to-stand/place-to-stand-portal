@@ -8,7 +8,7 @@ export type InvoiceRow = {
   id: string
   invoice_number: string | null
   status: string
-  client_id: string
+  company_id: string
   created_by: string | null
   issued_date: string | null
   due_date: string | null

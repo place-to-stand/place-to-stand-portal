@@ -32,6 +32,7 @@ import {
 
 import { listLimit, page, searchText } from '../output'
 import { defineTool } from '../tool'
+import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 
 const clientRef = z.string().trim().min(1).describe('Client slug or UUID.')
 
@@ -40,8 +41,9 @@ async function resolveContactFilterClient(
   reference: string
 ): Promise<string> {
   const clients = await listAllActiveClients(user)
+  const id = await companyIdForLegacyClientId(reference)
   const match = clients.find(
-    client => client.id === reference || client.slug === reference
+    client => client.id === id || client.slug === reference
   )
 
   if (!match) {
@@ -211,7 +213,7 @@ export function registerDirectoryTools(server: McpServer) {
 
       const projects = (await fetchProjectsLite()).filter(
         project =>
-          (!clientId || project.client_id === clientId) &&
+          (!clientId || project.company_id === clientId) &&
           (!needle ||
             project.name.toLowerCase().includes(needle) ||
             project.slug?.toLowerCase().includes(needle))

@@ -92,8 +92,8 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 ```
 ├── (auth)/           # Sign-in, forgot/force-reset password (unauthenticated)
 ├── (dashboard)/      # Protected routes
-│   ├── clients/      # Client management ([clientSlug] detail, archive, activity)
-│   ├── contacts/     # Contact management, portal user promotion (archive, activity)
+│   ├── companies/    # Companies and their billing (archive, activity); /clients/* redirects here
+│   ├── people/       # People and their sign-ins (archive, activity); /contacts/* redirects here
 │   ├── hour-blocks/  # Prepaid hour block management (archive, activity)
 │   ├── invoices/     # Invoicing (settings, archive, activity)
 │   ├── leads/        # Lead kanban board (board, archive, activity)
@@ -133,20 +133,19 @@ The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,ov
 └── unauthorized/     # Access denied page
 ```
 
-Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. It is switched on only in Edit client > Portal access.
+Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. It is switched on per person on the company sheet's People tab.
 
 ### Database Schema
 
 **Core tables** (`packages/db/src/schema.ts`):
 - `contacts` - People (UI: "People"). The person's name lives here; `contacts.user_id` links their sign-in
 - `users` - A person's sign-in: auth id, sign-in email, role (ADMIN, SALES, CLIENT), disabled/archived. No name column: read it with `personNameSql` / `personNameOf()` from `@pts/db/names`. Every live user has exactly one live contact; staff are at the "Place To Stand" company
-- `companies` - Every business (UI: "Companies"); a company you bill is a client
-- `clients` - A company's billing record (one per company, `company_id` NOT NULL): slug, state, notes, and everything keyed on `client_id`. No name column: read it with `clientNameSql` from `@pts/db/names`
+- `companies` - Every business (UI: "Companies"). A company you bill is a client: `client_since` set, `client_ended_at` null (`isClientCompany()` / `wasClientCompany()` in `@pts/db/client-state`); `slug` and `state` serve its projects and invoices. Everything billed keys on `company_id`
 - `memberships` - Contact-to-company (title, primary contact, portal access); a contact can be at several companies
-- `client_portal_access` - View: who can see which client in the client portal
-- `client_commission_terms` + `client_commission_term_closers` - The one place commission (origination, closers) is stored, by effective month
-- `client_billing_terms` - The one place a client's billing type (prepaid / net 30) is stored, by effective month; screens show the newest term (`currentBillingTypeSql`), reports the one in force for the period
-- `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
+- `client_portal_access` - View: who can see which client company in the client portal (`company_id`, `contact_id`, `user_id`)
+- `commission_terms` + `commission_term_closers` - The one place commission (origination, closers) is stored, by effective month
+- `billing_terms` - The one place a client's billing type (prepaid / net 30) is stored, by effective month; screens show the newest term (`currentBillingTypeSql`), reports the one in force for the period
+- `projects` - Projects with types: CLIENT (tied to a client company), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
 - `tasks` - Tasks with workflow: ON_DECK → IN_PROGRESS → BLOCKED → DONE, then archived (soft delete via `deletedAt`, not a status value)
 - `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE_OPPORTUNITIES → PROPOSAL_SENT → ON_ICE → CLOSED_WON/CLOSED_LOST/UNQUALIFIED
 - `lead_stage_history` - Lead stage transition history
@@ -161,7 +160,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 - `planning_sessions` + `plan_threads` + `plan_revisions` + `plan_messages` - AI planning sessions
 - `form_submissions` - Website form submissions
 - `oauth_connections` - Google/GitHub OAuth connections
-- `github_app_installations` - GitHub App installs per client
+- `github_app_installations` - GitHub App installs per client company
 - `github_repo_links` - Repository links per project
 - `project_integration_links` - Vercel/Supabase projects linked to projects (external ids only; access resolved per viewer from their own token in `oauth_connections`)
 - `activity_logs` + `activity_overview_cache` - Activity audit trail

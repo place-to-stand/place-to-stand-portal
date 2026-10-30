@@ -4,8 +4,7 @@ import 'server-only'
 import { and, eq, gt, gte, isNull, lte, or, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  clients,
+import { companies,
   hourBlocks,
   monthlyCloseSnapshots,
   projects,
@@ -165,7 +164,7 @@ export async function fetchLateRecords(
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .leftJoin(companies, eq(projects.companyId, companies.id))
       .where(
         and(
           gte(timeLogs.loggedOn, monthStart),
@@ -188,7 +187,7 @@ export async function fetchLateRecords(
         deletedAt: hourBlocks.deletedAt,
       })
       .from(hourBlocks)
-      .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
       .where(
         and(
           gte(hourBlocks.billingMonth, monthStart),

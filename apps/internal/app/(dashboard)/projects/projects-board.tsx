@@ -248,7 +248,7 @@ function mapRelationsToSheetProject(
     name: project.name,
     status: project.status,
     slug: project.slug,
-    client_id: project.client_id,
+    company_id: project.company_id,
     type: project.type,
     created_by: project.created_by,
     owner_id: project.owner_id,

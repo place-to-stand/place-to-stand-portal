@@ -1,3 +1,4 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
 import { and, asc, eq, sql, type SQL } from 'drizzle-orm'
@@ -5,7 +6,7 @@ import { and, asc, eq, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, projects } from '@/lib/db/schema'
+import { companies, projects } from '@/lib/db/schema'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
 import type { ClientCloser } from '@/lib/settings/clients/closers'
 import { DEFAULT_CLIENTS_SORT } from '@/lib/settings/clients/filters'
@@ -79,9 +80,9 @@ async function queryClientRows(
         ), 0)
       `,
     })
-    .from(clients)
-    .leftJoin(projects, eq(projects.clientId, clients.id))
-    .where(whereClause)
+    .from(companies)
+    .leftJoin(projects, eq(projects.companyId, companies.id))
+    .where(and(wasClientCompany(), whereClause))
     .groupBy(...clientGroupByColumns)
     .orderBy(...ordering)
     .limit(limit)
@@ -102,7 +103,6 @@ function mapClientMetrics(
     originationContactId: row.originationContactId,
     originationUserId: row.originationUserId,
     companyId: row.companyId,
-    label: row.label,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -118,8 +118,8 @@ function mapClientMetrics(
 async function resolveCount(conditions: SQL[]) {
   const result = await db
     .select({ count: sql<number>`count(*)` })
-    .from(clients)
-    .where(conditions.length ? and(...conditions) : undefined)
+    .from(companies)
+    .where(and(wasClientCompany(), conditions.length ? and(...conditions) : undefined))
 
   return Number(result[0]?.count ?? 0)
 }
@@ -150,8 +150,8 @@ export async function listClientsForSettings(
   // tiebreaker keeps page boundaries stable when sort values collide.
   const ordering =
     sort.direction === 'asc'
-      ? [descriptor.orderAsc, asc(clients.id)]
-      : [descriptor.orderDesc, sql`${clients.id} DESC`]
+      ? [descriptor.orderAsc, asc(companies.id)]
+      : [descriptor.orderDesc, sql`${companies.id} DESC`]
 
   const [rows, totalCount, unfilteredTotalCount] = await Promise.all([
     queryClientRows(and(...baseConditions), ordering, limit, offset),

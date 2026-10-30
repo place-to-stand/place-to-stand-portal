@@ -5,7 +5,10 @@ import { isoTimestamp } from './timestamp'
 
 export type CliClientUpdate = {
   id: string
+  /** The client company (same as `companyId`; kept for older callers). */
+  /** Since 0111 the client is its company: same value as companyId. */
   clientId: string
+  companyId: string
   status: ClientUpdateRow['status']
   subject: string
   intro: string
@@ -27,7 +30,8 @@ export function serializeClientUpdate(
 ): CliClientUpdate {
   return {
     id: update.id,
-    clientId: update.clientId,
+    clientId: update.companyId,
+    companyId: update.companyId,
     status: update.status,
     subject: update.subject,
     intro: update.intro,

@@ -3,9 +3,8 @@ import 'server-only'
 
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import {
+import { companies,
   clientPortalAccess,
-  clients,
   contacts,
   projects,
   taskAssignees,
@@ -69,12 +68,12 @@ export async function buildAssignmentsForUsers(
       db
         .select({
           userId: sql<string>`${clientPortalAccess.userId}`,
-          id: clients.id,
+          id: companies.id,
           name: clientNameSql,
-          slug: clients.slug,
+          slug: companies.slug,
         })
         .from(clientPortalAccess)
-        .innerJoin(clients, eq(clientPortalAccess.clientId, clients.id))
+        .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
         .where(inArray(clientPortalAccess.userId, userIds))
         .orderBy(asc(clientNameSql)),
       db

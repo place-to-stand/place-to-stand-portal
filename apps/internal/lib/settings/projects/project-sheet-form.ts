@@ -141,7 +141,7 @@ export const buildProjectFormDefaults = (
 ): ProjectSheetFormValues => ({
   name: project?.name ?? '',
   projectType: project?.type ?? defaultType,
-  clientId: project?.client_id ?? '',
+  clientId: project?.company_id ?? '',
   status: deriveInitialStatus(project),
   startsOn: project?.starts_on ? project.starts_on.slice(0, 10) : '',
   endsOn: project?.ends_on ? project.ends_on.slice(0, 10) : '',

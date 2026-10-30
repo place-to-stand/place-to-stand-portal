@@ -57,7 +57,7 @@ export default async function PublicInvoicePage({
             summary: event.summary,
             targetType: 'INVOICE',
             targetId: invoice.id,
-            targetClientId: invoice.client?.id ?? null,
+            targetCompanyId: invoice.client?.id ?? null,
             metadata: event.metadata,
           })
         }

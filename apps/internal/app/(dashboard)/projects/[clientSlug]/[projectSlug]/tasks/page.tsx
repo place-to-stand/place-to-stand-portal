@@ -98,7 +98,7 @@ export default async function ProjectBoardRoute({
     )
   }
 
-  const activeClientId = project.client_id ?? null
+  const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
   const activeTaskId = taskParam && UUID_PATTERN.test(taskParam) ? taskParam : null
 

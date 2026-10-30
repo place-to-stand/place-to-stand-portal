@@ -36,7 +36,7 @@ export async function DELETE(
   }
 
   const [project] = await db
-    .select({ id: projects.id, clientId: projects.clientId })
+    .select({ id: projects.id, clientId: projects.companyId })
     .from(projects)
     .where(and(eq(projects.id, link.projectId), isNull(projects.deletedAt)))
     .limit(1)

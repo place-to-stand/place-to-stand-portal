@@ -52,7 +52,7 @@ export async function getTaskAttachmentForDownload(
       },
       project: {
         id: projects.id,
-        clientId: projects.clientId,
+        clientId: projects.companyId,
         deletedAt: projects.deletedAt,
       },
     })

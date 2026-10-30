@@ -29,7 +29,11 @@ type CreateClientUpdateInput = {
 export async function createClientUpdate(
   input: CreateClientUpdateInput
 ): Promise<ClientUpdateRow> {
-  const [row] = await db.insert(clientUpdates).values(input).returning()
+  const { clientId, ...rest } = input
+  const [row] = await db
+    .insert(clientUpdates)
+    .values({ ...rest, companyId: clientId })
+    .returning()
   return normalizeClientUpdateRow(row)
 }
 
@@ -55,7 +59,7 @@ export async function listClientUpdates(
 ): Promise<ClientUpdateRow[]> {
   const conditions = [isNull(clientUpdates.deletedAt)]
   if (options.clientId)
-    conditions.push(eq(clientUpdates.clientId, options.clientId))
+    conditions.push(eq(clientUpdates.companyId, options.clientId))
   if (options.status) conditions.push(eq(clientUpdates.status, options.status))
 
   const rows = await db
@@ -126,7 +130,7 @@ export async function fetchLastSentPeriodEnd(
     .from(clientUpdates)
     .where(
       and(
-        eq(clientUpdates.clientId, clientId),
+        eq(clientUpdates.companyId, clientId),
         eq(clientUpdates.status, 'SENT'),
         isNull(clientUpdates.deletedAt)
       )

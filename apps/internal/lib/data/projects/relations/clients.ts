@@ -1,3 +1,4 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql, personNameSql } from '@pts/db/names'
 import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
@@ -9,7 +10,7 @@ import {
 import { db } from '@/lib/db'
 import {
   clientPortalAccess,
-  clients as clientsTable,
+  companies as companiesTable,
   users as usersTable,
 } from '@/lib/db/schema'
 import type { DbClient, DbUser } from '@/lib/types'
@@ -27,7 +28,8 @@ export type ClientRow = {
   billingType: DbClient['billing_type']
   companyId: string
   createdBy: string | null
-  createdAt: string
+  /** When it became a client. */
+  createdAt: string | null
   updatedAt: string
   deletedAt: string | null
 }
@@ -62,23 +64,23 @@ export async function loadClientRows(
 
   return db
     .select({
-      id: clientsTable.id,
+      id: companiesTable.id,
       name: clientNameSql,
-      slug: clientsTable.slug,
-      notes: clientsTable.notes,
-      state: clientsTable.state,
+      slug: companiesTable.slug,
+      notes: companiesTable.notes,
+      state: companiesTable.state,
       originationContactId: currentOriginationContactIdSql(),
       originationUserId: currentOriginationUserIdSql(),
       billingType: currentBillingTypeSql(),
-      companyId: clientsTable.companyId,
-      createdBy: clientsTable.createdBy,
-      createdAt: clientsTable.createdAt,
-      updatedAt: clientsTable.updatedAt,
-      deletedAt: clientsTable.deletedAt,
+      companyId: companiesTable.id,
+      createdBy: companiesTable.createdBy,
+      createdAt: companiesTable.clientSince,
+      updatedAt: companiesTable.updatedAt,
+      deletedAt: clientEndedAtSql,
     })
-    .from(clientsTable)
+    .from(companiesTable)
     .where(
-      and(inArray(clientsTable.id, clientIds), isNull(clientsTable.deletedAt))
+      and(inArray(companiesTable.id, clientIds), isNull(clientEndedAtSql))
     )
 }
 
@@ -93,7 +95,7 @@ export async function loadMemberRows(
     .select({
       membership: {
         id: clientPortalAccess.contactId,
-        clientId: clientPortalAccess.clientId,
+        clientId: clientPortalAccess.companyId,
         userId: clientPortalAccess.userId,
       },
       user: {
@@ -112,7 +114,7 @@ export async function loadMemberRows(
     .leftJoin(usersTable, eq(clientPortalAccess.userId, usersTable.id))
     .where(
       and(
-        inArray(clientPortalAccess.clientId, clientIds),
+        inArray(clientPortalAccess.companyId, clientIds),
         isNotNull(clientPortalAccess.userId)
       )
     )
@@ -141,7 +143,7 @@ export function mapClientRows(rows: ClientRow[]): DbClient[] {
     billing_type: row.billingType,
     company_id: row.companyId,
     created_by: row.createdBy ?? null,
-    created_at: row.createdAt,
+    created_at: row.createdAt ?? row.updatedAt,
     updated_at: row.updatedAt,
     deleted_at: row.deletedAt,
   }))
@@ -150,7 +152,7 @@ export function mapClientRows(rows: ClientRow[]): DbClient[] {
 export function mapMemberRows(rows: MemberRow[]): MemberWithUser[] {
   return rows.map(row => ({
     id: row.membership.id,
-    client_id: row.membership.clientId,
+    company_id: row.membership.clientId,
     user_id: row.membership.userId,
     // Access has no date of its own; the login's creation stands in.
     created_at: row.user?.createdAt ?? '',

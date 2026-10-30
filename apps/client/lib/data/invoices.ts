@@ -1,3 +1,4 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -5,7 +6,7 @@ import { cache } from 'react'
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients, invoiceLineItems, invoices } from '@pts/db/schema'
+import { companies, invoiceLineItems, invoices } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
 import type { InvoiceWithLineItems } from '@pts/pdf'
@@ -50,7 +51,7 @@ export const fetchClientInvoices = cache(
         id: invoices.id,
         invoiceNumber: invoices.invoiceNumber,
         status: invoices.status,
-        clientId: invoices.clientId,
+        clientId: invoices.companyId,
         clientName: clientNameSql,
         issuedDate: invoices.issuedDate,
         total: invoices.total,
@@ -59,12 +60,12 @@ export const fetchClientInvoices = cache(
         shareEnabled: invoices.shareEnabled,
       })
       .from(invoices)
-      .innerJoin(clients, eq(clients.id, invoices.clientId))
+      .innerJoin(companies, eq(companies.id, invoices.companyId))
       .where(
         and(
-          inArray(invoices.clientId, clientIds),
+          inArray(invoices.companyId, clientIds),
           isNull(invoices.deletedAt),
-          isNull(clients.deletedAt),
+          isNull(clientEndedAtSql),
           ne(invoices.status, 'DRAFT')
         )
       )
@@ -123,19 +124,19 @@ export const fetchClientInvoiceSummaries = cache(
 
     const rows = await db
       .select({
-        clientId: invoices.clientId,
+        clientId: invoices.companyId,
         unpaidCount: sql<number>`count(*)::int`,
         unpaidTotal: sql<string>`coalesce(sum(${invoices.total}), 0)::text`,
       })
       .from(invoices)
       .where(
         and(
-          inArray(invoices.clientId, clientIds),
+          inArray(invoices.companyId, clientIds),
           isNull(invoices.deletedAt),
           inArray(invoices.status, ['SENT', 'VIEWED'])
         )
       )
-      .groupBy(invoices.clientId)
+      .groupBy(invoices.companyId)
 
     return new Map(rows.map(({ clientId, ...summary }) => [clientId, summary]))
   }
@@ -162,18 +163,18 @@ export const fetchClientInvoiceForPdf = cache(
       .select({
         invoice: invoices,
         client: {
-          id: clients.id,
+          id: companies.id,
           name: clientNameSql,
-          slug: clients.slug,
-          deletedAt: clients.deletedAt,
+          slug: companies.slug,
+          deletedAt: clientEndedAtSql,
         },
       })
       .from(invoices)
-      .innerJoin(clients, eq(clients.id, invoices.clientId))
+      .innerJoin(companies, eq(companies.id, invoices.companyId))
       .where(
         and(
           eq(invoices.id, invoiceId),
-          inArray(invoices.clientId, clientIds),
+          inArray(invoices.companyId, clientIds),
           isNull(invoices.deletedAt),
           ne(invoices.status, 'DRAFT')
         )
@@ -199,7 +200,7 @@ export const fetchClientInvoiceForPdf = cache(
       id: invoice.id,
       invoice_number: invoice.invoiceNumber,
       status: invoice.status,
-      client_id: invoice.clientId,
+      company_id: invoice.companyId,
       created_by: invoice.createdBy,
       issued_date: invoice.issuedDate,
       due_date: invoice.dueDate,

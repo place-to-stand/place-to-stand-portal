@@ -10,7 +10,8 @@
     "./rate-limit": "./src/rate-limit.ts",
     "./client": "./src/client.ts",
     "./types": "./src/types.ts",
-    "./names": "./src/names.ts"
+    "./names": "./src/names.ts",
+    "./client-state": "./src/client-state.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",

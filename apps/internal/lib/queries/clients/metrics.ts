@@ -11,7 +11,7 @@ export async function countProjectsForClient(clientId: string) {
       count: sql<number>`count(*)`,
     })
     .from(projects)
-    .where(eq(projects.clientId, clientId))
+    .where(eq(projects.companyId, clientId))
 
   return Number(result[0]?.count ?? 0)
 }
@@ -22,7 +22,7 @@ export async function countHourBlocksForClient(clientId: string) {
       count: sql<number>`count(*)`,
     })
     .from(hourBlocks)
-    .where(eq(hourBlocks.clientId, clientId))
+    .where(eq(hourBlocks.companyId, clientId))
 
   return Number(result[0]?.count ?? 0)
 }

@@ -54,8 +54,8 @@ export function assembleProjectsWithRelations({
 
   return projects.map(project => ({
     ...project,
-    client: project.client_id
-      ? (clientLookup.get(project.client_id) ?? null)
+    client: project.company_id
+      ? (clientLookup.get(project.company_id) ?? null)
       : null,
     owner: project.owner_id
       ? (ownerLookup.get(project.owner_id) ?? null)
@@ -111,14 +111,14 @@ function organizeMembers(
       member.deleted_at ||
       !member.user ||
       member.user.deleted_at ||
-      !member.client_id
+      !member.company_id
     ) {
       return
     }
 
-    const memberList = membersByClient.get(member.client_id) ?? []
+    const memberList = membersByClient.get(member.company_id) ?? []
     memberList.push(member)
-    membersByClient.set(member.client_id, memberList)
+    membersByClient.set(member.company_id, memberList)
   })
 
   // Then, map client members to all projects under that client
@@ -203,7 +203,7 @@ function buildProjectBurndown(
   const projectLogSummary = timeLogTotalsByProject.get(project.id) ?? null
   // Client-level totals come from the shared client-scoped query — every
   // project of the client counts toward the burndown, not just this one.
-  const clientTotals = clientHoursTotalsFor(clientHours, project.client_id)
+  const clientTotals = clientHoursTotalsFor(clientHours, project.company_id)
   const totalProjectLoggedHours = projectLogSummary?.totalHours ?? 0
   const projectMonthToDateLoggedHours =
     projectLogSummary?.monthToDateHours ?? 0

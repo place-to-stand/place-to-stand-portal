@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.clientId, clientId),
+        eq(githubAppInstallations.companyId, clientId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )

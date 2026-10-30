@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -25,7 +26,7 @@ import {
 import { getCurrentUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { activityLogs, clients, leads, projects, tasks } from '@/lib/db/schema'
+import { companies, activityLogs, leads, projects, tasks } from '@/lib/db/schema'
 
 const VALID_TIMEFRAMES = [1, 7, 14, 28] as const
 const ONE_HOUR_MS = 60 * 60 * 1000
@@ -604,7 +605,7 @@ async function buildActivityContext(
   logs: ActivityLogWithActor[]
 ): Promise<ActivityContext> {
   const allowedProjectIds = dedupeIds(logs.map(log => log.target_project_id))
-  const allowedClientIds = dedupeIds(logs.map(log => log.target_client_id))
+  const allowedClientIds = dedupeIds(logs.map(log => log.target_company_id))
 
   const [projectRows, clientRows] = await Promise.all([
     allowedProjectIds.length
@@ -612,7 +613,7 @@ async function buildActivityContext(
           .select({
             id: projects.id,
             name: projects.name,
-            clientId: projects.clientId,
+            clientId: projects.companyId,
           })
           .from(projects)
           .where(
@@ -625,16 +626,14 @@ async function buildActivityContext(
     allowedClientIds.length
       ? db
           .select({
-            id: clients.id,
+            id: companies.id,
             name: clientNameSql,
           })
-          .from(clients)
-          .where(
-            and(
-              inArray(clients.id, allowedClientIds),
-              isNull(clients.deletedAt)
-            )
-          )
+          .from(companies)
+          .where(and(wasClientCompany(), and(
+              inArray(companies.id, allowedClientIds),
+              isNull(clientEndedAtSql)
+            )))
       : Promise.resolve([]),
   ])
 
@@ -686,8 +685,8 @@ function resolveProjectClientLabels(
       ? context.clients[projectFromContext.clientId]
       : null
 
-  const clientFromContext = log.target_client_id
-    ? (context.clients[log.target_client_id] ?? null)
+  const clientFromContext = log.target_company_id
+    ? (context.clients[log.target_company_id] ?? null)
     : null
 
   const projectName = selectFirstNonEmpty(

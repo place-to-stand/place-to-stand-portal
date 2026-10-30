@@ -1,5 +1,7 @@
-import { clientNameSql, personNameSql } from '@pts/db/names'
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
+
+import { isClientCompany } from '@pts/db/client-state'
 
 import {
   and,
@@ -19,7 +21,6 @@ import {
   companyPrimaryContactSetEvent,
   companyCreatedEvent,
   companyRestoredEvent,
-  clientUpdatedEvent,
   companyUpdatedEvent,
   contactUpdatedEvent,
 } from '@/lib/activity/events'
@@ -37,9 +38,7 @@ import {
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
-import { clientDisplayName } from '@/lib/companies/client-name'
 import type {
-  ClientLinkOption,
   CompanyActionResult,
   CompanyDetail,
   CompanyListItem,
@@ -58,7 +57,6 @@ import {
 } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { revokeCompanyPortalAccess } from '@/lib/settings/clients/revoke-company-portal-access'
 import {
-  clients,
   companies,
   contacts,
   leads,
@@ -92,8 +90,6 @@ function violatedConstraint(error: unknown): string | null {
 /** A save's unique violation, in words that match the index it hit. */
 function saveConflictMessage(error: unknown): string {
   switch (violatedConstraint(error)) {
-    case 'clients_company_id_live_key':
-      return 'A company has one client, and this one already has it. Reload and try again.'
     case 'memberships_one_primary_per_company':
       return 'The primary contact just changed. Reload and try again.'
     case 'memberships_one_current_per_contact_company':
@@ -124,24 +120,11 @@ export async function listCompanies(
       id: companies.id,
       name: companies.name,
       website: companies.website,
-      // A company's client: its earliest live client (most have one).
-      clientId: sql<string | null>`(
-        select cl.id from clients cl
-        where cl.company_id = companies.id and cl.deleted_at is null
-        order by cl.created_at limit 1
-      )`,
-      // A client is called by its company's name.
-      clientName: sql<string | null>`(
-        select companies.name where exists (
-          select 1 from clients cl
-          where cl.company_id = companies.id and cl.deleted_at is null
-        )
-      )`,
-      // Billed before but not now: only archived clients.
-      formerClient: sql<boolean>`(
-        exists (select 1 from clients cl where cl.company_id = companies.id and cl.deleted_at is not null)
-        and not exists (select 1 from clients cl where cl.company_id = companies.id and cl.deleted_at is null)
-      )`,
+      // Billed now: the company is its own client.
+      clientId: sql<string | null>`case when ${isClientCompany()} then ${companies.id} end`,
+      clientName: sql<string | null>`case when ${isClientCompany()} then ${companies.name} end`,
+      // Billed before but not now.
+      formerClient: sql<boolean>`(${companies.clientSince} is not null and ${companies.clientEndedAt} is not null)`,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
       people: sql<CompanyListItem['people']>`coalesce((
@@ -259,19 +242,22 @@ export async function getCompanyDetail(
       .leftJoin(users, eq(users.id, leads.assigneeId))
       .where(and(eq(leads.companyId, companyId), isNull(leads.deletedAt)))
       .orderBy(desc(leads.updatedAt)),
+    // Billed now: the company is its own client.
     db
-      .select({ id: clients.id, name: clientNameSql, slug: clients.slug })
-      .from(clients)
-      .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
-      .orderBy(asc(clientNameSql)),
-    // Its newest stopped client, so billing can restart where it left off.
+      .select({ id: companies.id, name: companies.name, slug: companies.slug })
+      .from(companies)
+      .where(and(eq(companies.id, companyId), isClientCompany())),
+    // Billed before (billing stopped), so it can restart.
     db
-      .select({ id: clients.id })
-      .from(clients)
+      .select({ id: companies.id })
+      .from(companies)
       .where(
-        and(eq(clients.companyId, companyId), isNotNull(clients.deletedAt))
+        and(
+          eq(companies.id, companyId),
+          isNotNull(companies.clientSince),
+          isNotNull(companies.clientEndedAt)
+        )
       )
-      .orderBy(desc(clients.deletedAt))
       .limit(1),
   ])
 
@@ -414,44 +400,6 @@ export async function saveCompany(
     values.removeContactIds ?? []
   )
 
-  const clientMoves = await resolveClientMoves(
-    existing.id,
-    values.addClientIds ?? []
-  )
-  // Unlinking only applies to a client linked here now.
-  const unlinkIds = (values.unlinkClientIds ?? []).length
-    ? await db
-        .select({ id: clients.id, name: clientNameSql })
-        .from(clients)
-        .where(
-          and(
-            inArray(clients.id, values.unlinkClientIds ?? []),
-            eq(clients.companyId, existing.id),
-            isNull(clients.deletedAt)
-          )
-        )
-    : []
-  // A client is its company's billing record: it can't be unlinked (archive
-  // the client to stop billing).
-  if (unlinkIds.length) {
-    return {
-      ok: false,
-      error:
-        'Billing belongs to its company. Archive the client to stop billing.',
-    }
-  }
-  // A company has one client.
-  if (
-    clientMoves.length > 1 ||
-    (clientMoves.length === 1 &&
-      !unlinkIds.length &&
-      (await companyHasClient(existing.id)))
-  ) {
-    return {
-      ok: false,
-      error: 'A company has one client, and this one already has it.',
-    }
-  }
 
   // The primary contact (star on the People list) saves in the same
   // transaction as the people it may depend on. `undefined` = unchanged.
@@ -487,9 +435,7 @@ export async function saveCompany(
     !changedFields.length &&
     !primaryChange &&
     !people.moves.length &&
-    !(values.contactTitles ?? []).length &&
-    !clientMoves.length &&
-    !unlinkIds.length
+    !(values.contactTitles ?? []).length
   ) {
     return { ok: true, id: existing.id }
   }
@@ -498,9 +444,6 @@ export async function saveCompany(
   // A client's name is its company's name, its people are who it bills and
   // gives portal access, and client records are admin-only.
   if (!roleCan(actor.role, 'clients.manage')) {
-    if (clientMoves.length || unlinkIds.length) {
-      return { ok: false, error: 'Only an admin can link or unlink clients.' }
-    }
     if (renamed && (await companyHasClient(existing.id))) {
       return {
         ok: false,
@@ -529,9 +472,6 @@ export async function saveCompany(
   if ((values.contactTitles ?? []).length) {
     changedFields.push('titles')
   }
-  if (clientMoves.length || unlinkIds.length) {
-    changedFields.push('linked client')
-  }
 
   // Portal access ended by unlinking or moving a client, logged after commit.
   const accessChanges: ContactClientLinkChange[] = []
@@ -542,30 +482,6 @@ export async function saveCompany(
         .set({ ...next, updatedAt: timestamp })
         .where(eq(companies.id, existing.id))
 
-      // Unlink first so the one-client index allows the new link. Access is
-      // a flag on this company's memberships: switch it off so the next
-      // client linked here doesn't silently inherit it.
-
-      // A client takes its company's name (read through the company).
-      for (const move of clientMoves) {
-        await tx
-          .update(clients)
-          .set({
-            companyId: existing.id,
-            updatedAt: timestamp,
-          })
-          .where(eq(clients.id, move.clientId))
-        // A client moving here leaves its old company's people behind.
-        if (move.fromCompanyId) {
-          accessChanges.push(
-            ...(await revokeCompanyPortalAccess(
-              tx,
-              move.fromCompanyId,
-              move.clientId
-            ))
-          )
-        }
-      }
 
       // Joining keeps the person's other companies. Leaving ends their
       // membership here, and with it being this company's primary contact
@@ -624,9 +540,6 @@ export async function saveCompany(
                 .map(move => move.name),
             }
           : {}),
-        ...(clientMoves.length
-          ? { clientsLinked: clientMoves.map(move => move.name) }
-          : {}),
       },
     }),
   })
@@ -664,90 +577,16 @@ export async function saveCompany(
     })
   }
 
-  for (const client of unlinkIds) {
-    await logActivity({
-      actorId: actor.id,
-      actorRole: actor.role,
-      targetType: 'CLIENT',
-      targetId: client.id,
-      targetClientId: client.id,
-      ...clientUpdatedEvent({
-        name: client.name,
-        changedFields: ['company'],
-        details: {
-          before: { companyId: existing.id },
-          after: { companyId: null },
-        },
-      }),
-    })
-  }
 
-  for (const move of clientMoves) {
-    const nextName = clientDisplayName(next.name)
-    const nameChanged = nextName !== move.name
-    await logActivity({
-      actorId: actor.id,
-      actorRole: actor.role,
-      targetType: 'CLIENT',
-      targetId: move.clientId,
-      targetClientId: move.clientId,
-      ...clientUpdatedEvent({
-        name: nextName,
-        changedFields: nameChanged ? ['company', 'name'] : ['company'],
-        details: {
-          before: {
-            companyId: move.fromCompanyId,
-            ...(nameChanged ? { name: move.name } : {}),
-          },
-          after: {
-            companyId: existing.id,
-            ...(nameChanged ? { name: nextName } : {}),
-          },
-        },
-      }),
-    })
-  }
 
   return { ok: true, id: existing.id }
 }
 
-/** Live clients being linked here that aren't already. */
-async function resolveClientMoves(companyId: string, clientIds: string[]) {
-  const ids = [...new Set(clientIds)]
-  if (!ids.length) return []
-  const rows = await db
-    .select({
-      clientId: clients.id,
-      name: clientNameSql,
-      fromCompanyId: clients.companyId,
-    })
-    .from(clients)
-    .where(and(inArray(clients.id, ids), isNull(clients.deletedAt)))
-  return rows.filter(row => row.fromCompanyId !== companyId)
-}
-
-/** Unlinked live clients for the company sheet's Linked client picker. */
-export async function listClientLinkOptions(): Promise<ClientLinkOption[]> {
-  const rows = await db
-    .select({
-      id: clients.id,
-      name: clientNameSql,
-      companyId: clients.companyId,
-      companyName: companies.name,
-    })
-    .from(clients)
-    .leftJoin(companies, eq(companies.id, clients.companyId))
-    // Only clients not linked to a company: a company has one client.
-    .where(and(isNull(clients.deletedAt), isNull(clients.companyId)))
-    .orderBy(asc(sql`lower(${clientNameSql})`))
-  return rows
-}
-
 async function companyHasClient(companyId: string) {
   const [client] = await db
-    .select({ id: clients.id })
-    .from(clients)
-    .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.id, companyId), isClientCompany()))
     .limit(1)
   return Boolean(client)
 }
@@ -850,10 +689,11 @@ export async function setCompanyArchived(
         .set({ deletedAt: archived ? timestamp : null, updatedAt: timestamp })
         .where(eq(companies.id, companyId))
       if (!archived) return
+      // Archiving a client company ends its people's portal access.
       const [client] = await tx
-        .select({ id: clients.id })
-        .from(clients)
-        .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
+        .select({ id: companies.id })
+        .from(companies)
+        .where(and(eq(companies.id, companyId), isNotNull(companies.clientSince)))
         .limit(1)
       if (client) {
         accessChanges = await revokeCompanyPortalAccess(
@@ -999,15 +839,15 @@ export async function fillCompanyWebsiteIfBlank(
   })
 }
 
-/** The company a client is, or null. */
+/** The company a client is: itself (a client is a company you bill). */
 export async function getClientCompanyId(
   clientId: string
 ): Promise<string | null> {
   const [row] = await db
-    .select({ companyId: clients.companyId })
-    .from(clients)
-    .where(eq(clients.id, clientId))
+    .select({ id: companies.id })
+    .from(companies)
+    .where(and(eq(companies.id, clientId), isNotNull(companies.clientSince)))
     .limit(1)
-  return row?.companyId ?? null
+  return row?.id ?? null
 }
 

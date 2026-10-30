@@ -22,7 +22,7 @@ import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
 import { leadContactNameSql } from '@/lib/leads/lead-display'
 import {
-  clients as clientsTable,
+  companies as companiesTable,
   leads as leadsTable,
   projects as projectsTable,
   taskAssigneeMetadata as taskAssigneeMetadataTable,
@@ -103,7 +103,7 @@ function projectScopeConditions(
       : projectIds.length > 0
         ? [inArray(projectsTable.id, [...projectIds])]
         : [sql`false`]),
-    ...(clientId ? [eq(projectsTable.clientId, clientId)] : []),
+    ...(clientId ? [eq(projectsTable.companyId, clientId)] : []),
     ...(hiddenProjectTypes.length > 0
       ? [notInArray(projectsTable.type, [...hiddenProjectTypes])]
       : []),
@@ -250,9 +250,9 @@ async function loadAssignedTaskSummaries({
         createdBy: projectsTable.createdBy,
       },
       client: {
-        id: clientsTable.id,
+        id: companiesTable.id,
         name: clientNameSql,
-        slug: clientsTable.slug,
+        slug: companiesTable.slug,
       },
       lead: {
         id: leadsTable.id,
@@ -262,7 +262,7 @@ async function loadAssignedTaskSummaries({
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
-    .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
+    .leftJoin(companiesTable, eq(projectsTable.companyId, companiesTable.id))
     .leftJoin(
       leadsTable,
       and(eq(leadsTable.id, tasksTable.leadId), isNull(leadsTable.deletedAt))
@@ -432,15 +432,15 @@ export async function listAssignedDoneSlice({
         createdBy: projectsTable.createdBy,
       },
       client: {
-        id: clientsTable.id,
+        id: companiesTable.id,
         name: clientNameSql,
-        slug: clientsTable.slug,
+        slug: companiesTable.slug,
       },
     })
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
-    .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
+    .leftJoin(companiesTable, eq(projectsTable.companyId, companiesTable.id))
     .leftJoin(
       taskAssigneeMetadataTable,
       and(

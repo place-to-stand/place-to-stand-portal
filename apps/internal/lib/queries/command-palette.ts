@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -6,7 +7,7 @@ import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, projects } from '@/lib/db/schema'
+import { companies, contacts, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 
 const RESULT_LIMIT = 8
@@ -55,7 +56,7 @@ export async function searchCommandPalette(
   const pattern = createSearchPattern(query)
 
   const clientCondition = and(
-    isNull(clients.deletedAt),
+    isNull(clientEndedAtSql),
     sql`${clientNameSql} ILIKE ${pattern}`
   )
 
@@ -87,9 +88,9 @@ export async function searchCommandPalette(
 
   const [clientRows, projectRows, contactRows] = await Promise.all([
     db
-      .select({ id: clients.id, name: clientNameSql, slug: clients.slug })
-      .from(clients)
-      .where(clientCondition)
+      .select({ id: companies.id, name: clientNameSql, slug: companies.slug })
+      .from(companies)
+      .where(and(wasClientCompany(), clientCondition))
       .orderBy(asc(clientNameSql))
       .limit(RESULT_LIMIT),
     db
@@ -99,10 +100,10 @@ export async function searchCommandPalette(
         slug: projects.slug,
         type: projects.type,
         clientName: clientNameSql,
-        clientSlug: clients.slug,
+        clientSlug: companies.slug,
       })
       .from(projects)
-      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .leftJoin(companies, eq(projects.companyId, companies.id))
       .where(projectCondition)
       .orderBy(asc(clientNameSql), asc(projects.name))
       .limit(RESULT_LIMIT),

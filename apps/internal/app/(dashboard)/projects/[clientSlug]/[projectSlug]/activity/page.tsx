@@ -77,7 +77,7 @@ export default async function ProjectActivityRoute({
     redirect(`/projects/${canonicalClientSlug}/${project.slug}/activity`)
   }
 
-  const activeClientId = project.client_id ?? null
+  const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
 
   const [hydratedProject] = await fetchProjectsWithRelationsByIds([

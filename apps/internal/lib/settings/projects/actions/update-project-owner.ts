@@ -63,7 +63,7 @@ export async function updateProjectOwner(
             id: projects.id,
             name: projects.name,
             ownerId: projects.ownerId,
-            clientId: projects.clientId,
+            clientId: projects.companyId,
           })
           .from(projects)
           .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
@@ -139,7 +139,7 @@ export async function updateProjectOwner(
         targetType: 'PROJECT',
         targetId: projectId,
         targetProjectId: projectId,
-        targetClientId: existingProject.clientId,
+        targetCompanyId: existingProject.clientId,
         metadata: event.metadata,
       })
 

@@ -10,7 +10,7 @@ type DbActivityLog = {
   summary: string
   target_type: string
   target_id: string | null
-  target_client_id: string | null
+  target_company_id: string | null
   target_project_id: string | null
   context_route: string | null
   metadata: Json

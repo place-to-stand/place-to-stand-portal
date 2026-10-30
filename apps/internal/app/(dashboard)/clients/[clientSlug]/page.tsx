@@ -1,9 +1,10 @@
-import { eq, or } from 'drizzle-orm'
+import { wasClientCompany } from '@pts/db/client-state'
+import { and, eq, or } from 'drizzle-orm'
 import { notFound, redirect } from 'next/navigation'
 
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 /**
@@ -17,13 +18,11 @@ export default async function ClientDetailPage({
   const { clientSlug } = await params
 
   const [client] = await db
-    .select({ companyId: clients.companyId })
-    .from(clients)
-    .where(
-      UUID_PATTERN.test(clientSlug)
-        ? or(eq(clients.slug, clientSlug), eq(clients.id, clientSlug))
-        : eq(clients.slug, clientSlug)
-    )
+    .select({ companyId: companies.id })
+    .from(companies)
+    .where(and(wasClientCompany(), UUID_PATTERN.test(clientSlug)
+        ? or(eq(companies.slug, clientSlug), eq(companies.id, clientSlug))
+        : eq(companies.slug, clientSlug)))
     .limit(1)
 
   if (!client) notFound()

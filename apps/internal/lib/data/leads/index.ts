@@ -263,7 +263,8 @@ async function selectLeadRows({
     expectedCloseDate: leads.expectedCloseDate,
     // Conversion
     convertedAt: leads.convertedAt,
-    convertedToClientId: leads.convertedToClientId,
+    // A won lead's client is its company (0111).
+  convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
     // Raw SQL on purpose: interpolating the Drizzle columns here would strip
     // the table qualification and break the correlation with the outer row.
     openTaskCount: sql<number>`(

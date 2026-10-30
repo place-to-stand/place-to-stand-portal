@@ -77,7 +77,7 @@ export default async function ProjectReviewRoute({
     redirect(`/projects/${canonicalClientSlug}/${project.slug}/review`)
   }
 
-  const activeClientId = project.client_id ?? null
+  const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
 
   const [hydratedProject] = await fetchProjectsWithRelationsByIds([

@@ -5,7 +5,7 @@ import { and, desc, eq, exists, inArray, isNull, sql } from 'drizzle-orm'
 import { assertAdmin } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, projects, taskAssignees, tasks } from '@/lib/db/schema'
+import { companies, projects, taskAssignees, tasks } from '@/lib/db/schema'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 import { getTaskById } from '@/lib/queries/tasks/basic'
 import { taskFields, type SelectTask } from '@/lib/queries/tasks/common'
@@ -84,10 +84,10 @@ export async function fetchBoardLocationsByProject(
       id: projects.id,
       slug: projects.slug,
       type: projects.type,
-      clientSlug: clients.slug,
+      clientSlug: companies.slug,
     })
     .from(projects)
-    .leftJoin(clients, eq(clients.id, projects.clientId))
+    .leftJoin(companies, eq(companies.id, projects.companyId))
     .where(inArray(projects.id, uniqueIds))
 
   for (const row of rows) {

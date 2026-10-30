@@ -223,7 +223,7 @@ export async function POST(request: Request) {
           targetType: 'PLAN',
           targetId: context?.sessionId ?? null,
           targetProjectId: context?.projectId ?? null,
-          targetClientId: context?.clientId ?? null,
+          targetCompanyId: context?.clientId ?? null,
           metadata: event.metadata,
         })
       }

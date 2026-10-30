@@ -1,3 +1,4 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -6,7 +7,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { clients, contacts, memberships, users } from '@/lib/db/schema'
+import { companies, contacts, memberships, users } from '@/lib/db/schema'
 import { setPortalUserDisabled } from '@/lib/settings/users/services'
 import {
   logContactClientLinkChanges,
@@ -82,15 +83,14 @@ export async function softDeleteContactMutation(
         accessRows = await db
           .select({
             companyId: memberships.companyId,
-            clientId: clients.id,
+            clientId: companies.id,
             endedAt: memberships.endedAt,
           })
           .from(memberships)
-          .leftJoin(
-            clients,
+          .leftJoin(companies,
             and(
-              eq(clients.companyId, memberships.companyId),
-              isNull(clients.deletedAt)
+              eq(companies.id, memberships.companyId),
+              isNull(clientEndedAtSql)
             )
           )
           .where(

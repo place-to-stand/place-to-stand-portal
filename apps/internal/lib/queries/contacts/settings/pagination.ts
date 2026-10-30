@@ -57,7 +57,7 @@ export function buildClientCondition(
     select 1
     from client_portal_access cpa
     where cpa.contact_id = contacts.id
-      and cpa.client_id = ${clientId}
+      and cpa.company_id = ${clientId}
   )`
 }
 

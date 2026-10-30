@@ -28,7 +28,6 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/use-toast'
 import { COMPANY_OPTIONS_QUERY_KEY } from '@/components/companies/company-link-picker'
-import { CLIENT_LINK_OPTIONS_QUERY_KEY } from '@/components/clients/client-link-picker'
 import { CONTACT_OPTIONS_QUERY_KEY } from '@/components/contacts/contact-link-picker'
 import { PENDING_REASON, getSubmitLabel } from '@/lib/forms/form-controls'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -153,9 +152,6 @@ export function CompanySheet({
       queryClient.invalidateQueries({ queryKey: ['companySheet'] }),
       queryClient.invalidateQueries({ queryKey: COMPANY_OPTIONS_QUERY_KEY }),
       queryClient.invalidateQueries({ queryKey: CONTACT_OPTIONS_QUERY_KEY }),
-      queryClient.invalidateQueries({
-        queryKey: CLIENT_LINK_OPTIONS_QUERY_KEY,
-      }),
     ])
     router.refresh()
   }, [queryClient, router])

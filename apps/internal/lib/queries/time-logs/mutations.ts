@@ -86,7 +86,7 @@ async function getTimeLogProjectContext(
   projectId: string
 ): Promise<TimeLogProjectContext> {
   const rows = await db
-    .select({ name: projects.name, clientId: projects.clientId })
+    .select({ name: projects.name, clientId: projects.companyId })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)
@@ -196,7 +196,7 @@ export async function createTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetClientId: project.clientId,
+    targetCompanyId: project.clientId,
     metadata: event.metadata,
   })
 
@@ -263,7 +263,7 @@ export async function softDeleteTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetClientId: project.clientId,
+    targetCompanyId: project.clientId,
     metadata: event.metadata,
   })
 
@@ -331,7 +331,7 @@ export async function restoreTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetClientId: project.clientId,
+    targetCompanyId: project.clientId,
     metadata: event.metadata,
   })
 
@@ -508,7 +508,7 @@ async function logTimeLogUpdate(args: {
     targetType: 'TIME_LOG',
     targetId: args.timeLogId,
     targetProjectId: args.projectId,
-    targetClientId: project.clientId,
+    targetCompanyId: project.clientId,
     metadata: event.metadata,
   })
 }

@@ -222,7 +222,7 @@ async function logAttachmentActivity({
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: activity.projectId,
-    targetClientId: activity.clientId,
+    targetCompanyId: activity.clientId,
     metadata: event.metadata,
   })
 }

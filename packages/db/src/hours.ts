@@ -1,7 +1,7 @@
 import { and, eq, gte, inArray, isNull, or, sql, type AnyColumn, type SQL } from 'drizzle-orm'
 
 import type { DbClient } from './client'
-import { clientBillingTerms, hourBlocks, projects, timeLogs } from './schema'
+import { billingTerms, hourBlocks, projects, timeLogs } from './schema'
 
 /**
  * Prepaid hours balance for a single client.
@@ -67,27 +67,27 @@ async function fetchPrepaidEraStarts(
 ): Promise<Map<string, string>> {
   const rows = await db
     .select({
-      clientId: clientBillingTerms.clientId,
-      eraStart: sql<string>`min(${clientBillingTerms.effectiveFrom})`,
+      clientId: billingTerms.companyId,
+      eraStart: sql<string>`min(${billingTerms.effectiveFrom})`,
     })
-    .from(clientBillingTerms)
+    .from(billingTerms)
     .where(
       and(
-        inArray(clientBillingTerms.clientId, clientIds),
-        eq(clientBillingTerms.billingType, 'prepaid'),
-        isNull(clientBillingTerms.deletedAt),
-        sql`${clientBillingTerms.effectiveFrom} <= CURRENT_DATE`,
-        sql`${clientBillingTerms.effectiveFrom} > COALESCE((
+        inArray(billingTerms.companyId, clientIds),
+        eq(billingTerms.billingType, 'prepaid'),
+        isNull(billingTerms.deletedAt),
+        sql`${billingTerms.effectiveFrom} <= CURRENT_DATE`,
+        sql`${billingTerms.effectiveFrom} > COALESCE((
           SELECT max(prior.effective_from)
-          FROM ${clientBillingTerms} prior
-          WHERE prior.client_id = ${clientBillingTerms.clientId}
+          FROM ${billingTerms} prior
+          WHERE prior.company_id = ${billingTerms.companyId}
             AND prior.billing_type <> 'prepaid'
             AND prior.deleted_at IS NULL
             AND prior.effective_from <= CURRENT_DATE
         ), DATE '0001-01-01')`
       )
     )
-    .groupBy(clientBillingTerms.clientId)
+    .groupBy(billingTerms.companyId)
 
   const eraByClient = new Map<string, string>()
   for (const row of rows) {
@@ -168,7 +168,7 @@ export async function getClientHoursTotals(
   const [purchasedRows, usedRows] = await Promise.all([
     db
       .select({
-        clientId: hourBlocks.clientId,
+        clientId: hourBlocks.companyId,
         purchased: sql<string>`coalesce(sum(${hourBlocks.hoursPurchased}), 0)`,
       })
       .from(hourBlocks)
@@ -176,17 +176,17 @@ export async function getClientHoursTotals(
         and(
           isNull(hourBlocks.deletedAt),
           buildEraScopedCondition(
-            hourBlocks.clientId,
+            hourBlocks.companyId,
             hourBlocks.billingMonth,
             clientIds,
             eraByClient
           )
         )
       )
-      .groupBy(hourBlocks.clientId),
+      .groupBy(hourBlocks.companyId),
     db
       .select({
-        clientId: projects.clientId,
+        clientId: projects.companyId,
         used: sql<string>`coalesce(sum(${timeLogs.hours}), 0)`,
       })
       .from(timeLogs)
@@ -201,14 +201,14 @@ export async function getClientHoursTotals(
           // all carry the same guard.
           eq(projects.type, 'CLIENT'),
           buildEraScopedCondition(
-            projects.clientId,
+            projects.companyId,
             timeLogs.loggedOn,
             clientIds,
             eraByClient
           )
         )
       )
-      .groupBy(projects.clientId),
+      .groupBy(projects.companyId),
   ])
 
   const purchasedByClient = new Map<string, number>()

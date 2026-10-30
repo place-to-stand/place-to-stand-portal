@@ -4,7 +4,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { clientCreatedEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, leads } from '@/lib/db/schema'
+import { companies, leads } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
 import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
 import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
@@ -63,7 +63,6 @@ export async function createClient(
     originationContactId,
     originationUserId,
     closers,
-    notes,
     companyId: requestedCompanyId,
   } = payload
 
@@ -101,25 +100,31 @@ export async function createClient(
   }
   await fillCompanyWebsiteIfBlank(user, companyId, website)
 
-  // A company has one client.
-  if (companyId) {
-    const [taken] = await db
-      .select({ id: clients.id })
-      .from(clients)
-      .where(and(eq(clients.companyId, companyId), isNull(clients.deletedAt)))
-      .limit(1)
-    if (taken) {
-      return buildMutationResult({
-        error:
-          'That company already has a client. A company has one client: link to it instead.',
-      })
-    }
+  // A company is a client once: a former client restarts billing instead.
+  const [current] = await db
+    .select({
+      clientSince: companies.clientSince,
+      clientEndedAt: companies.clientEndedAt,
+      slug: companies.slug,
+    })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1)
+  if (current?.clientSince && !current.clientEndedAt) {
+    return buildMutationResult({ error: 'That company is already a client.' })
+  }
+  if (current?.clientSince) {
+    return buildMutationResult({
+      error: 'That company was a client: restart its billing instead.',
+    })
   }
 
   const baseSlug = providedSlug
     ? toClientSlug(providedSlug)
     : toClientSlug(name)
-  let slugCandidate = await generateUniqueClientSlug(baseSlug)
+  // Keep a slug it already has (its project URLs use it).
+  let slugCandidate =
+    current?.slug ?? (await generateUniqueClientSlug(baseSlug))
   let attempt = 0
 
   while (attempt < INSERT_RETRY_LIMIT) {
@@ -128,18 +133,22 @@ export async function createClient(
       // without a terms row is invisible to every monthly close. A slug unique-violation
       // aborts the transaction and the loop retries with a fresh slug.
       const clientId = await db.transaction(async tx => {
-        const inserted = await tx
-          .insert(clients)
-          .values({
+        // A client is the company, billed: it gets a slug, its state, and a
+        // start date (`client_since`).
+        const now = new Date().toISOString()
+        const made = await tx
+          .update(companies)
+          .set({
             slug: slugCandidate,
             state,
-            notes,
-            companyId,
-            createdBy: user.id,
+            clientSince: now,
+            clientEndedAt: null,
+            updatedAt: now,
           })
-          .returning({ id: clients.id })
+          .where(and(eq(companies.id, companyId), isNull(companies.clientSince)))
+          .returning({ id: companies.id })
 
-        const insertedId = inserted[0]?.id
+        const insertedId = made[0]?.id
 
         if (!insertedId) {
           return null
@@ -161,18 +170,15 @@ export async function createClient(
           createdBy: user.id,
         })
 
-        // Won leads at this company now point at the client they became.
+        // Won leads at this company are converted: it became the client.
         await tx
           .update(leads)
-          .set({
-            convertedToClientId: insertedId,
-            convertedAt: new Date().toISOString(),
-          })
+          .set({ convertedAt: now })
           .where(
             and(
               eq(leads.companyId, companyId),
               eq(leads.status, 'CLOSED_WON'),
-              isNull(leads.convertedToClientId),
+              isNull(leads.convertedAt),
               isNull(leads.deletedAt)
             )
           )
@@ -197,7 +203,7 @@ export async function createClient(
         summary: event.summary,
         targetType: 'CLIENT',
         targetId: clientId,
-        targetClientId: clientId,
+        targetCompanyId: clientId,
         metadata: event.metadata,
       })
 

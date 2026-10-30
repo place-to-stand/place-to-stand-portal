@@ -38,7 +38,8 @@ export type DbClient = {
 export type DbClientMember = {
   /** The contact behind the login. */
   id: string
-  client_id: string
+  /** The billed company they can see. */
+  company_id: string
   user_id: string
   created_at: string
   deleted_at: string | null
@@ -46,7 +47,8 @@ export type DbClientMember = {
 
 export type DbProject = {
   id: string
-  client_id: string | null
+  /** The billed company (CLIENT projects). */
+  company_id: string | null
   name: string
   status: string
   type: ProjectTypeValue
@@ -150,7 +152,7 @@ export type DbTaskDeployment = {
 }
 
 // ProjectMemberWithUser represents a client member who has access to a project
-// The project_id is derived from the client_id for backwards compatibility
+// The project_id is derived from the company_id for backwards compatibility
 export type ProjectMemberWithUser = {
   id: string
   project_id: string

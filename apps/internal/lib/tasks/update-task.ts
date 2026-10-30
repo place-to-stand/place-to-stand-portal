@@ -55,7 +55,7 @@ export async function updateTaskForActor(
       dueOn: tasks.dueOn,
       completedAt: tasks.completedAt,
       leadId: tasks.leadId,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -69,7 +69,7 @@ export async function updateTaskForActor(
   }
 
   const projectChanged = existingTask.projectId !== projectId
-  let targetClientId = existingTask.clientId ?? null
+  let targetCompanyId = existingTask.clientId ?? null
 
   // When moving the task to a different project, authorize access to the
   // destination project (mirrors the create path) and resolve its client.
@@ -94,7 +94,7 @@ export async function updateTaskForActor(
     }
 
     const newProjectContext = await db
-      .select({ clientId: projects.clientId })
+      .select({ clientId: projects.companyId })
       .from(projects)
       .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
       .limit(1)
@@ -103,7 +103,7 @@ export async function updateTaskForActor(
       return { error: 'Selected project is unavailable.' }
     }
 
-    targetClientId = newProjectContext[0].clientId ?? null
+    targetCompanyId = newProjectContext[0].clientId ?? null
   }
 
   const existingAssignees = await db
@@ -177,7 +177,7 @@ export async function updateTaskForActor(
       actorId: actor.id,
       actorRole: actor.role,
       attachmentsInput: attachments,
-      activity: { taskTitle: title, projectId, clientId: targetClientId, source },
+      activity: { taskTitle: title, projectId, clientId: targetCompanyId, source },
     })
   } catch (assigneeError) {
     console.error('Failed to sync task assignees', assigneeError)
@@ -229,7 +229,7 @@ export async function updateTaskForActor(
       targetType: 'TASK',
       targetId: taskId,
       targetProjectId: projectId,
-      targetClientId,
+      targetCompanyId,
       metadata: event.metadata,
     })
   }

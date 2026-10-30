@@ -77,7 +77,7 @@ export default async function ProjectTimeLogsRoute({
     redirect(`/projects/${canonicalClientSlug}/${project.slug}/time-logs`)
   }
 
-  const activeClientId = project.client_id ?? null
+  const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
 
   const [hydratedProject] = await fetchProjectsWithRelationsByIds([

@@ -472,7 +472,7 @@ export function useProjectSheetState({
         mode: 'delete',
         targetId: project.id,
         metadata: {
-          clientId: project.client_id ?? null,
+          clientId: project.company_id ?? null,
         },
       })
 

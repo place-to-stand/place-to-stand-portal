@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   }
 
   const [project] = await db
-    .select({ id: projects.id, clientId: projects.clientId })
+    .select({ id: projects.id, clientId: projects.companyId })
     .from(projects)
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
     .limit(1)
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
 
   // Verify project belongs to this client
   const [project] = await db
-    .select({ id: projects.id, clientId: projects.clientId })
+    .select({ id: projects.id, clientId: projects.companyId })
     .from(projects)
     .where(
       and(eq(projects.id, projectId), isNull(projects.deletedAt))
@@ -120,7 +120,7 @@ export async function POST(request: Request) {
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.clientId, clientId),
+        eq(githubAppInstallations.companyId, clientId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )

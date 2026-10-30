@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, companies, contacts, projects } from '@/lib/db/schema'
+import { companies, contacts, projects } from '@/lib/db/schema'
 import { joinCompany, setPortalAccess } from '@/lib/queries/memberships'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
@@ -95,30 +95,17 @@ async function upsertClient(input: {
   name: string
   createdBy: string
 }) {
+  // A client is a company you bill: the company, with a slug and a start.
   const companyId = await upsertCompany(input.name, input.createdBy)
-  const [existing] = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.slug, input.slug), isNull(clients.deletedAt)))
-    .limit(1)
-  if (existing) {
-    if (!existing.companyId) {
-      await db
-        .update(clients)
-        .set({ companyId })
-        .where(eq(clients.id, existing.id))
-    }
-    return { ...existing, companyId: existing.companyId ?? companyId }
-  }
-
   const [row] = await db
-    .insert(clients)
-    .values({
+    .update(companies)
+    .set({
       slug: input.slug,
-      createdBy: input.createdBy,
-      companyId,
+      clientSince: sql`coalesce(${companies.clientSince}, now())`,
+      clientEndedAt: null,
     })
-    .returning()
+    .where(eq(companies.id, companyId))
+    .returning({ id: companies.id, slug: companies.slug })
   return { ...row, companyId }
 }
 
@@ -139,7 +126,7 @@ async function upsertProject(input: {
     .values({
       slug: input.slug,
       name: input.name,
-      clientId: input.clientId,
+      companyId: input.clientId,
       createdBy: input.createdBy,
     })
     .returning()

@@ -1,10 +1,11 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { sql, type SQL } from 'drizzle-orm'
 
-import { clients } from '@/lib/db/schema'
+import { companies, } from '@/lib/db/schema'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 import {
   clampLimit,
@@ -23,10 +24,10 @@ export type StatusFilter = 'active' | 'archived'
 
 export function buildStatusCondition(status: StatusFilter): SQL {
   if (status === 'archived') {
-    return sql`${clients.deletedAt} IS NOT NULL`
+    return sql`${clientEndedAtSql} IS NOT NULL`
   }
 
-  return sql`${clients.deletedAt} IS NULL`
+  return sql`${clientEndedAtSql} IS NULL`
 }
 
 export function buildBillingCondition(
@@ -46,7 +47,7 @@ export function buildSearchCondition(search: string | null | undefined): SQL | n
   }
 
   const pattern = createSearchPattern(trimmed)
-  return sql`(${clientNameSql} ILIKE ${pattern} OR ${clients.slug} ILIKE ${pattern})`
+  return sql`(${clientNameSql} ILIKE ${pattern} OR ${companies.slug} ILIKE ${pattern})`
 }
 
 /** Per-sort order expressions for the archive list (PRD 004 §03, R5). */
@@ -64,8 +65,8 @@ export const CLIENT_SORT_DESCRIPTORS: Record<
     orderDesc: sql`${clientNameSql} DESC`,
   },
   created: {
-    orderAsc: sql`${clients.createdAt} ASC`,
-    orderDesc: sql`${clients.createdAt} DESC`,
+    orderAsc: sql`${companies.clientSince} ASC`,
+    orderDesc: sql`${companies.clientSince} DESC`,
   },
 }
 

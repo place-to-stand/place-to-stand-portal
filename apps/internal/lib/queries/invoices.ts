@@ -1,3 +1,4 @@
+import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -17,8 +18,7 @@ import {
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import {
-  clients,
+import { companies,
   hourBlocks,
   invoices,
   invoiceLineItems,
@@ -53,7 +53,7 @@ const invoiceSelection = {
   id: invoices.id,
   invoiceNumber: invoices.invoiceNumber,
   status: invoices.status,
-  clientId: invoices.clientId,
+  clientId: invoices.companyId,
   createdBy: invoices.createdBy,
   issuedDate: invoices.issuedDate,
   dueDate: invoices.dueDate,
@@ -91,13 +91,13 @@ const lineItemSelection = {
 } as const
 
 const clientSelection = {
-  id: clients.id,
+  id: companies.id,
   name: clientNameSql,
-  slug: clients.slug,
-  companyId: clients.companyId,
+  slug: companies.slug,
+  companyId: companies.id,
   billingType: currentBillingTypeSql(),
-  state: clients.state,
-  deletedAt: clients.deletedAt,
+  state: companies.state,
+  deletedAt: clientEndedAtSql,
 } as const
 
 // ---------------------------------------------------------------------------
@@ -243,7 +243,7 @@ export async function listInvoices(
     baseConditions.push(eq(invoices.status, input.invoiceStatus))
   }
   if (input.clientId) {
-    baseConditions.push(eq(invoices.clientId, input.clientId))
+    baseConditions.push(eq(invoices.companyId, input.clientId))
   }
   const searchQuery = input.search?.trim() ?? ''
   if (searchQuery) {
@@ -267,7 +267,7 @@ export async function listInvoices(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(baseWhere)
     .orderBy(...ordering)
     .limit(limit)
@@ -287,7 +287,7 @@ export async function listInvoices(
     db
       .select({ count: sql<number>`count(*)` })
       .from(invoices)
-      .leftJoin(clients, eq(invoices.clientId, clients.id))
+      .leftJoin(companies, eq(invoices.companyId, companies.id))
       .where(baseWhere),
     db
       .select({ count: sql<number>`count(*)` })
@@ -295,7 +295,7 @@ export async function listInvoices(
       .where(statusCondition),
     db
       .select(clientSelection)
-      .from(clients)
+      .from(companies).where(wasClientCompany())
       .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
     listProductCatalogItems(),
     listTaxRates(),
@@ -380,7 +380,7 @@ export async function listInvoiceReferenceData(
   const [clientDirectory, productCatalog, activeTaxRates] = await Promise.all([
     db
       .select(clientSelection)
-      .from(clients)
+      .from(companies).where(wasClientCompany())
       .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
     listProductCatalogItems(),
     listTaxRates(),
@@ -409,7 +409,7 @@ export async function getInvoiceById(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.id, id))
     .limit(1)) as InvoiceSelectionRow[]
 
@@ -457,7 +457,7 @@ export async function getInvoiceByShareToken(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(
       and(
         eq(invoices.shareToken, token),
@@ -506,7 +506,7 @@ export async function getInvoiceByStripeSession(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.stripeCheckoutSessionId, sessionId))
     .limit(1)) as InvoiceSelectionRow[]
 
@@ -542,7 +542,7 @@ export async function getInvoiceByPaymentIntent(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.stripePaymentIntentId, paymentIntentId))
     .limit(1)) as InvoiceSelectionRow[]
 
@@ -611,7 +611,7 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
     id: row.invoice.id,
     invoice_number: row.invoice.invoiceNumber,
     status: row.invoice.status,
-    client_id: row.invoice.clientId,
+    company_id: row.invoice.clientId,
     created_by: row.invoice.createdBy,
     issued_date: row.invoice.issuedDate,
     due_date: row.invoice.dueDate,

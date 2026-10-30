@@ -48,7 +48,7 @@ export async function createTaskForActor({
   const projectContext = await db
     .select({
       id: projects.id,
-      clientId: projects.clientId,
+      clientId: projects.companyId,
       name: projects.name,
     })
     .from(projects)
@@ -155,7 +155,7 @@ export async function createTaskForActor({
       targetType: 'TASK',
       targetId: insertedId,
       targetProjectId: projectId,
-      targetClientId: projectContext[0].clientId,
+      targetCompanyId: projectContext[0].clientId,
       metadata: event.metadata,
     })
   } catch (activityError) {

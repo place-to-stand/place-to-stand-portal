@@ -31,7 +31,7 @@ export async function fetchComposerTaskOptions(
     .innerJoin(projects, eq(tasks.projectId, projects.id))
     .where(
       and(
-        eq(projects.clientId, clientId),
+        eq(projects.companyId, clientId),
         isNull(projects.deletedAt),
         isNull(tasks.deletedAt),
         ne(projects.status, 'COMPLETED')
