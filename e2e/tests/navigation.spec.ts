@@ -2,9 +2,13 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('admin sidebar: Settings starts with Integrations and ends with Design system', async ({ page }) => {
+test('admin sidebar: Settings starts with Integrations and ends with Design system', async ({
+  page,
+}) => {
   await page.goto('/my/home')
-  const settings = page.locator('[data-sidebar="group"]').filter({ hasText: 'Settings' })
+  const settings = page
+    .locator('[data-sidebar="group"]')
+    .filter({ hasText: 'Settings' })
   const items = settings.locator('[data-sidebar="menu-button"]')
   await expect(items.first()).toContainText('Integrations')
   await expect(items.last()).toContainText('Design system')
@@ -12,11 +16,15 @@ test('admin sidebar: Settings starts with Integrations and ends with Design syst
 
 test('the Design system item is active on /design', async ({ page }) => {
   await page.goto('/design')
-  const item = page.locator('[data-sidebar="menu-button"]', { hasText: 'Design system' })
+  const item = page.locator('[data-sidebar="menu-button"]', {
+    hasText: 'Design system',
+  })
   await expect(item).toHaveAttribute('data-active', 'true')
 })
 
-test('hour blocks and time logs have different sidebar icons', async ({ page }) => {
+test('hour blocks and time logs have different sidebar icons', async ({
+  page,
+}) => {
   await page.goto('/my/home')
   const icon = async (label: string) =>
     page

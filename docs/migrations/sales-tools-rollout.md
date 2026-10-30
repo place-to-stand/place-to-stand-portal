@@ -11,7 +11,7 @@ Covers PR #279's database chain, migrations **0089 → 0112**, and the matching 
    - portal access becomes one flag on a membership, read through the `client_portal_access` view;
    - leads read their person's name, email and phone from the linked **contact**;
    - a client is its company's billing record and takes the company's name; a user is a person's sign-in and takes the contact's name (0109);
-   - then (0111) a client is simply a company you bill: `clients` folds into `companies` (`slug`, `state`, `client_since`, `client_ended_at`) and everything keyed on `client_id` keys on `company_id`. Old client ids stay in `archive_sales_tools.client_id_map`; the CLI and MCP accept them for one release.
+   - then (0111) a client is simply a company you bill: `clients` folds into `companies` (`slug`, `state`, `client_since`, `client_ended_at`) and everything keyed on `client_id` keys on `company_id`. Old client ids stay in `archive_sales_tools.client_id_map` for good, and the CLI and MCP keep accepting them.
 3. Every backfill runs **before** any drop.
 4. 0107, 0108, 0109, 0111 and 0112 copy every table and column they drop into the `archive_sales_tools` schema.
 5. 0097 also archives the three columns it drops, and 0090 archives every lead's company name as typed before it respells them (see [Archives made before 0107](#archives-made-before-0107)).
@@ -107,7 +107,7 @@ Steps:
 8. **Promote both deployments** together: internal app, then client portal.
    - **Add Dave to the Sales project** (project members) so his Sales role sees it from the first sign-in.
 9. **Run the "after" checks** (section 2b) and the click-test (section 4, step 5) on production.
-10. **Close the window.** Keep `archive_sales_tools` for at least one billing cycle. A later migration can drop it.
+10. **Close the window.** Keep `archive_sales_tools` for at least one billing cycle. A later migration can drop it, except `client_id_map`, which stays for good (old client ids in activity rows and links still resolve through it).
 
 ## 2. How nothing is lost
 

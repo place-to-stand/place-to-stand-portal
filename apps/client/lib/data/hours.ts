@@ -1,12 +1,12 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
-import { and, inArray, isNull, sql } from 'drizzle-orm'
+import { and, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies, } from '@pts/db/schema'
+import { companies } from '@pts/db/schema'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
@@ -62,7 +62,7 @@ export const fetchClientHoursSummaries = cache(
           ), 'prepaid')`,
         })
         .from(companies)
-        .where(and(wasClientCompany(), and(inArray(companies.id, clientIds), isNull(clientEndedAtSql)))),
+        .where(and(isClientCompany(), inArray(companies.id, clientIds))),
       getClientHoursTotals(db, clientIds),
     ])
 

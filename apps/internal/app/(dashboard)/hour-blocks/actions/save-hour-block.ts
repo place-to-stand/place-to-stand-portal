@@ -1,5 +1,6 @@
 'use server'
 
+import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
 import { revalidatePath } from 'next/cache'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { eq } from 'drizzle-orm'
@@ -72,6 +73,10 @@ async function performSaveHourBlock(
     parsed.data.notes && parsed.data.notes.length > 0 ? parsed.data.notes : null
   const hoursPurchasedValue = hoursPurchased.toString()
 
+  const notClient = await ensureClientCompany(clientId)
+  if (notClient) {
+    return { error: notClient }
+  }
   const client = await getActiveClientSummary(user, clientId)
 
   if (!client) {

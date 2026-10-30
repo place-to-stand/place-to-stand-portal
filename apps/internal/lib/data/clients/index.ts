@@ -1,4 +1,9 @@
-import { wasClientCompany, clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
+import {
+  clientEndedAtSql,
+  clientSinceSql,
+  isClientCompany,
+  wasClientCompany,
+} from '@pts/db/client-state'
 import { clientNameSql, personAvatarOf, personNameOf } from '@pts/db/names'
 import 'server-only'
 
@@ -252,7 +257,6 @@ export const fetchClientsWithMetrics = cache(
   }
 )
 
-
 export type ClientHoursSummary = {
   id: string
   billingType: 'prepaid' | 'net_30'
@@ -272,7 +276,7 @@ export const fetchClientHoursSummaries = cache(
     const rows = await db
       .select({ id: companies.id, billingType: currentBillingTypeSql() })
       .from(companies)
-      .where(and(wasClientCompany(), isNull(clientEndedAtSql)))
+      .where(isClientCompany())
 
     const prepaidIds = rows
       .filter(row => row.billingType === 'prepaid')
@@ -313,7 +317,7 @@ export const fetchClientById = cache(
         deletedAt: clientEndedAtSql,
       })
       .from(companies)
-      .where(and(wasClientCompany(), and(eq(companies.id, clientId), isNull(clientEndedAtSql))))
+      .where(and(isClientCompany(), eq(companies.id, clientId)))
       .limit(1)
 
     if (!rows.length) {
@@ -330,7 +334,7 @@ const fetchClientBySlug = cache(
     const clientRow = await db
       .select({ id: companies.id })
       .from(companies)
-      .where(and(wasClientCompany(), and(eq(companies.slug, slug), isNull(clientEndedAtSql))))
+      .where(and(isClientCompany(), eq(companies.slug, slug)))
       .limit(1)
 
     if (!clientRow.length) {

@@ -8,10 +8,11 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
- * Migration 0111 folded clients into companies. For one release the CLI and
- * MCP still accept a client's old id: this returns the company it became
- * (from archive_sales_tools.client_id_map), or the input unchanged. Remove
- * after the release that follows 0111.
+ * Migration 0111 folded clients into companies. The CLI and MCP keep
+ * accepting a client's old id, for good (decided Oct 30): old activity rows
+ * and saved links still carry them. This returns the company it became (from
+ * archive_sales_tools.client_id_map, which is kept permanently), or the input
+ * unchanged.
  */
 export async function companyIdForLegacyClientId(id: string): Promise<string> {
   if (!UUID_PATTERN.test(id)) return id

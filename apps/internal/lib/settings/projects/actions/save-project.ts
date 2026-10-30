@@ -1,5 +1,6 @@
 'use server'
 
+import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
 import { eq } from 'drizzle-orm'
 
 import { creatableProjectTypes, roleCan } from '@/lib/auth/capabilities'
@@ -107,6 +108,11 @@ export async function saveProject(
   }
 
   const companyId = projectType === 'CLIENT' ? clientId : null
+  if (projectType === 'CLIENT') {
+    const notClient = await ensureClientCompany(companyId)
+    if (notClient)
+      return { error: notClient, fieldErrors: { clientId: [notClient] } }
+  }
   const fields = {
     name: trimmedName,
     companyId,

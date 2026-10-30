@@ -19,6 +19,8 @@ test('a draft invoice with unsaved edits cannot be sent', async ({ page }) => {
   await notes.fill(`${(await notes.inputValue()) || ''} (edited)`)
 
   await expect(send).toBeDisabled()
-  await expect(sheet.getByRole('button', { name: 'Mark as sent' })).toBeDisabled()
+  await expect(
+    sheet.getByRole('button', { name: 'Mark as sent' })
+  ).toBeDisabled()
   await expect(sheet.getByTestId('invoice-send-blocked')).toBeVisible()
 })

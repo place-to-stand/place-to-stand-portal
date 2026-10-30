@@ -42,8 +42,9 @@ test('project: create with a member in one save', async ({ page }) => {
   const firstCandidate = page.getByRole('option').first()
   const memberName = ((await firstCandidate.textContent()) ?? '').trim()
   await firstCandidate.click()
-  await expect(sheet.getByRole('button', { name: `Remove ${memberName}` }))
-    .toBeVisible()
+  await expect(
+    sheet.getByRole('button', { name: `Remove ${memberName}` })
+  ).toBeVisible()
 
   // Count only what Save sends.
   const actions: Request[] = []
@@ -70,8 +71,9 @@ test('project: create with a member in one save', async ({ page }) => {
   await page.goto(`/projects?project=${projectId}`)
   const edit = page.getByRole('dialog')
   await expect(edit.getByRole('textbox', { name: 'Name' })).toHaveValue(name)
-  await expect(edit.getByRole('button', { name: `Remove ${memberName}` }))
-    .toBeVisible()
+  await expect(
+    edit.getByRole('button', { name: `Remove ${memberName}` })
+  ).toBeVisible()
 
   // Put it back: archive the project.
   await edit.getByRole('button', { name: 'Archive project' }).click()

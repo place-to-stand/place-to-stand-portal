@@ -32,7 +32,10 @@ function recordWrites(page: Page) {
 
 test('opening the planning panel writes nothing', async ({ page }) => {
   const path = process.env.E2E_PLANNING_TASK_PATH
-  test.skip(!path, 'set E2E_PLANNING_TASK_PATH to a task on a repo-linked project')
+  test.skip(
+    !path,
+    'set E2E_PLANNING_TASK_PATH to a task on a repo-linked project'
+  )
 
   await page.goto(path!)
   const sheet = page.getByRole('dialog')
@@ -42,8 +45,9 @@ test('opening the planning panel writes nothing', async ({ page }) => {
   const writes = recordWrites(page)
   const planningRead = page.waitForResponse(
     response =>
-      /\/api\/tasks\/[0-9a-f-]{36}\/planning$/.test(new URL(response.url()).pathname) &&
-      response.request().method() === 'GET'
+      /\/api\/tasks\/[0-9a-f-]{36}\/planning$/.test(
+        new URL(response.url()).pathname
+      ) && response.request().method() === 'GET'
   )
 
   await sheet.getByRole('button', { name: 'Planning' }).click()
@@ -55,7 +59,9 @@ test('opening the planning panel writes nothing', async ({ page }) => {
   expect(writes.posts.map(request => request.url())).toEqual([])
 })
 
-test('creating a task with an assignee is one request on Save', async ({ page }) => {
+test('creating a task with an assignee is one request on Save', async ({
+  page,
+}) => {
   const title = `E2E one-save ${Date.now()}`
 
   // The global sheet host fills the assignee with the signed-in admin.
@@ -68,9 +74,9 @@ test('creating a task with an assignee is one request on Save', async ({ page })
   await sheet.getByLabel('Title').fill(title)
   await sheet.getByRole('combobox', { name: 'Project' }).click()
   await page.getByRole('option').first().click()
-  await expect(sheet.getByRole('combobox', { name: 'Assignee' })).not.toHaveText(
-    /Unassigned/
-  )
+  await expect(
+    sheet.getByRole('combobox', { name: 'Assignee' })
+  ).not.toHaveText(/Unassigned/)
 
   beforeSave.stop()
   expect(beforeSave.posts.map(request => request.url())).toEqual([])

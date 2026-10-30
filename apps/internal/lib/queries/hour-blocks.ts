@@ -1,4 +1,8 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import {
+  clientEndedAtSql,
+  isClientCompany,
+  wasClientCompany,
+} from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -7,7 +11,8 @@ import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { companies,
+import {
+  companies,
   hourBlocks,
   invoiceLineItems,
   invoices,
@@ -286,7 +291,11 @@ export async function listHourBlocksForSettings(
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
         .where(statusCondition),
-      db.select(clientSelection).from(companies).where(wasClientCompany()).orderBy(asc(clientNameSql)),
+      db
+        .select(clientSelection)
+        .from(companies)
+        .where(wasClientCompany())
+        .orderBy(asc(clientNameSql)),
     ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
@@ -341,7 +350,7 @@ export async function getActiveClientSummary(
   const rows = await db
     .select(clientSelection)
     .from(companies)
-    .where(and(wasClientCompany(), and(eq(companies.id, clientId), isNull(clientEndedAtSql))))
+    .where(and(isClientCompany(), eq(companies.id, clientId)))
     .limit(1)
 
   if (!rows.length) {
@@ -365,7 +374,8 @@ export async function listHourBlockClientDirectory(
 
   const rows = await db
     .select(clientSelection)
-    .from(companies).where(wasClientCompany())
+    .from(companies)
+    .where(wasClientCompany())
     .orderBy(asc(clientNameSql))
 
   return rows.map(mapClientRow)

@@ -1,5 +1,6 @@
 'use server'
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
+import { isClientCompany } from '@pts/db/client-state'
 
 import { clientNameSql } from '@pts/db/names'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
@@ -12,7 +13,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceCreatedEvent, invoiceUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { companies, invoices, invoiceLineItems, } from '@/lib/db/schema'
+import { companies, invoices, invoiceLineItems } from '@/lib/db/schema'
 
 import { invoiceSchema } from './schemas'
 import type { ActionResult, InvoiceInput } from './types'
@@ -50,6 +51,11 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
 
   const { id, clientId, notes, taxRate, lineItems } = parsed.data
 
+  const notClient = await ensureClientCompany(clientId)
+  if (notClient) {
+    return { error: notClient }
+  }
+
   const clientRows = await db
     .select({
       id: companies.id,
@@ -57,7 +63,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       billingType: currentBillingTypeSql(),
     })
     .from(companies)
-    .where(and(wasClientCompany(), and(eq(companies.id, clientId), isNull(clientEndedAtSql))))
+    .where(and(isClientCompany(), eq(companies.id, clientId)))
     .limit(1)
 
   const client = clientRows[0]

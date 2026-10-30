@@ -1,9 +1,9 @@
 'use server'
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 
 import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -11,14 +11,14 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceArchivedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { companies, invoices, } from '@/lib/db/schema'
+import { companies, invoices } from '@/lib/db/schema'
 
 import { deleteSchema } from './schemas'
 import type { ActionResult, DeleteInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
 export async function archiveInvoice(
-  input: DeleteInput,
+  input: DeleteInput
 ): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
@@ -26,12 +26,12 @@ export async function archiveInvoice(
       mode: 'delete',
       targetId: input.id,
     },
-    async () => performArchiveInvoice(input),
+    async () => performArchiveInvoice(input)
   )
 }
 
 async function performArchiveInvoice(
-  input: DeleteInput,
+  input: DeleteInput
 ): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
@@ -63,7 +63,7 @@ async function performArchiveInvoice(
   const clientRows = await db
     .select({ name: clientNameSql })
     .from(companies)
-    .where(and(wasClientCompany(), and(eq(companies.id, existing.clientId), isNull(clientEndedAtSql))))
+    .where(and(isClientCompany(), eq(companies.id, existing.clientId)))
     .limit(1)
 
   const clientName = clientRows[0]?.name ?? null
@@ -81,9 +81,7 @@ async function performArchiveInvoice(
 
     return {
       error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to archive invoice.',
+        error instanceof Error ? error.message : 'Unable to archive invoice.',
     }
   }
 

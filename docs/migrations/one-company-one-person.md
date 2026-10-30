@@ -108,7 +108,7 @@ A client is a company you bill, so the separate billing record is gone:
 - `companies` gains `slug` (project URLs), `state` (sales tax), `client_since` and `client_ended_at`. A company is a client while `client_since` is set and `client_ended_at` is not; a former client has both. Helpers: `isClientCompany()`, `wasClientCompany()` and `clientEndedAtSql` in `@pts/db/client-state`.
 - Every `client_id` is `company_id` (projects, hour blocks, invoices, terms, client updates, GitHub installs, activity); the term tables are `billing_terms`, `commission_terms`, `commission_term_closers`.
 - Making a company a client sets `client_since` and a slug; stopping billing sets `client_ended_at`; restarting clears it.
-- CLI and MCP: `clientId` stays in every response as an alias with the company's id, beside a new `companyId`. Old client ids are accepted for one release through `archive_sales_tools.client_id_map` (`lib/queries/legacy-client-ids.ts`); remove that after the next release.
+- CLI and MCP: `clientId` stays in every response as an alias with the company's id, beside a new `companyId`. Old client ids are accepted for good through `archive_sales_tools.client_id_map` (`lib/queries/legacy-client-ids.ts`), which is kept permanently.
 - Undo: `docs/migrations/0111-undo.sql`, described in `sales-tools-rollout.md`.
 
 Still named "client" on purpose: the client portal, `client_portal_access`, `client_updates`, and code that means the company in its client role (the billed party on an invoice, hours by client). Renaming those identifiers is a follow-up.

@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test'
 
-import { LIST_PAGES, REDIRECT_ONLY, expectHealthy, inAppHrefs, rowHeights, waitForList } from './helpers'
+import {
+  LIST_PAGES,
+  REDIRECT_ONLY,
+  expectHealthy,
+  inAppHrefs,
+  rowHeights,
+  waitForList,
+} from './helpers'
 
 for (const path of LIST_PAGES) {
   test.describe(path, () => {
@@ -11,10 +18,14 @@ for (const path of LIST_PAGES) {
       await expectHealthy(page)
     })
 
-    test('links go straight to their page (no redirect-only routes)', async ({ page }) => {
+    test('links go straight to their page (no redirect-only routes)', async ({
+      page,
+    }) => {
       await page.goto(path)
       await waitForList(page)
-      const bad = (await inAppHrefs(page)).filter(href => REDIRECT_ONLY.some(re => re.test(href)))
+      const bad = (await inAppHrefs(page)).filter(href =>
+        REDIRECT_ONLY.some(re => re.test(href))
+      )
       expect(bad).toEqual([])
     })
 
@@ -24,7 +35,9 @@ for (const path of LIST_PAGES) {
       const rows = await rowHeights(page)
       test.skip(rows.length < 2, 'not enough rows')
       // The last row has no bottom border.
-      const heights = new Set(rows.filter(row => !row.last).map(row => row.height))
+      const heights = new Set(
+        rows.filter(row => !row.last).map(row => row.height)
+      )
       expect([...heights]).toHaveLength(1)
       const [height] = heights
       for (const row of rows.filter(row => row.last)) {
@@ -34,7 +47,9 @@ for (const path of LIST_PAGES) {
   })
 }
 
-test('the design system page renders every entity with passing contrast', async ({ page }) => {
+test('the design system page renders every entity with passing contrast', async ({
+  page,
+}) => {
   await page.goto('/design#entities')
   await expectHealthy(page)
   const section = page.locator('#entities')
@@ -49,12 +64,18 @@ test('the design system page renders every entity with passing contrast', async 
 test('the design system page shows the Alert variants', async ({ page }) => {
   await page.goto('/design#feedback')
   await expect(page.locator('#feedback [data-slot="alert"]')).toHaveCount(3)
-  await expect(page.locator('#feedback [data-slot="alert-action"] button').first()).toBeVisible()
+  await expect(
+    page.locator('#feedback [data-slot="alert-action"] button').first()
+  ).toBeVisible()
 })
 
-test('home page widgets and the command palette link straight to their page', async ({ page }) => {
+test('home page widgets and the command palette link straight to their page', async ({
+  page,
+}) => {
   await page.goto('/my/home')
   await waitForList(page)
-  const bad = (await inAppHrefs(page)).filter(href => REDIRECT_ONLY.some(re => re.test(href)))
+  const bad = (await inAppHrefs(page)).filter(href =>
+    REDIRECT_ONLY.some(re => re.test(href))
+  )
   expect(bad).toEqual([])
 })

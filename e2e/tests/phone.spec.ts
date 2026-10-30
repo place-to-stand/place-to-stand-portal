@@ -8,7 +8,9 @@ for (const path of [...LIST_PAGES, '/design', '/my/home', '/leads']) {
     await page.waitForLoadState('networkidle')
     await expectHealthy(page)
     const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth
     )
     expect(overflow).toBeLessThanOrEqual(1)
   })

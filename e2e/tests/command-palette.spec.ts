@@ -6,7 +6,9 @@ type Company = { id: string; name: string; isClient: boolean }
 
 // Decision 8: ⌘K lists Companies (not Clients), with a Client badge on the
 // ones you bill. Names come from the database, so nothing is hard-coded.
-test('⌘K shows a Companies group with a Client badge on clients', async ({ page }) => {
+test('⌘K shows a Companies group with a Client badge on clients', async ({
+  page,
+}) => {
   await page.goto('/my/home')
   const found: Company[] = []
   for (const q of ['co', 'in', 'an', 'er']) {
@@ -22,7 +24,9 @@ test('⌘K shows a Companies group with a Client badge on clients', async ({ pag
   await dialog.getByRole('combobox').fill(client!.name.slice(0, 20))
   const group = dialog.locator('[cmdk-group]', { hasText: 'Companies' })
   await expect(group).toBeVisible()
-  await expect(dialog.locator('[cmdk-group-heading]', { hasText: /^Clients$/ })).toHaveCount(0)
+  await expect(
+    dialog.locator('[cmdk-group-heading]', { hasText: /^Clients$/ })
+  ).toHaveCount(0)
   const item = group.locator('[cmdk-item]', { hasText: client!.name }).first()
   await expect(item).toContainText('Client')
 
