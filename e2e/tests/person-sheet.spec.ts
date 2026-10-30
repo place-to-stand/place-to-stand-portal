@@ -50,6 +50,40 @@ test('changing a role asks which month it starts', async ({ page }) => {
   await expect(page.getByText('Discard changes?')).toBeVisible()
 })
 
+test('stopping being Admin starts next month, and warns about this month', async ({
+  page,
+}) => {
+  // Another admin: you can't change your own sign-in.
+  const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
+  await page.goto('/people?signIn=ADMIN')
+  await expectHealthy(page)
+  const rows = page.locator('tbody tr').filter({ hasNotText: adminEmail })
+  test.skip((await rows.count()) === 0, 'needs a second person with an Admin sign-in')
+  await rows.first().click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet.getByText('Can sign in')).toBeVisible()
+  const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+  await expect(role).toContainText('Admin')
+
+  await role.click()
+  await page.getByRole('option', { name: 'Sales' }).click()
+  const roleStarts = sheet.getByRole('combobox', { name: 'Role starts' })
+  await expect(roleStarts).toContainText('(next month)')
+  const warning = sheet.getByText('Their hours this month won’t count as payroll.')
+  await expect(warning).toHaveCount(0)
+
+  await roleStarts.click()
+  await page.getByRole('option', { name: /\(this month\)/ }).click()
+  await expect(roleStarts).toContainText('(this month)')
+  await expect(warning).toBeVisible()
+
+  // Back to Admin: no month to pick. Leave without saving.
+  await role.click()
+  await page.getByRole('option', { name: 'Admin' }).click()
+  await expect(roleStarts).toHaveCount(0)
+  await page.keyboard.press('Escape')
+})
+
 test.describe('writes', () => {
   test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 

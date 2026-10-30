@@ -30,8 +30,11 @@ import { sendPersonPasswordResetAction } from '@/app/(dashboard)/people/actions'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
+import { currentMonthStartUtc } from '@/lib/billing/months'
 import {
+  defaultRoleMonth,
   monthLabel,
+  rolePayrollWarning,
   type RoleMonthOption,
 } from '@/lib/settings/users/role-months'
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
@@ -185,7 +188,22 @@ export function ContactSignInFields({
                   reason={lockedReason}
                 >
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={next => {
+                      field.onChange(next)
+                      // Stopping being Admin starts next month by default,
+                      // so this month's hours still count as payroll.
+                      if (account) {
+                        form.setValue(
+                          'signIn.effectiveFrom',
+                          defaultRoleMonth(
+                            account.role,
+                            next as (typeof USER_ROLES)[number],
+                            currentMonthStartUtc()
+                          ),
+                          { shouldDirty: true }
+                        )
+                      }
+                    }}
                     value={field.value ?? 'CLIENT'}
                     disabled={Boolean(lockedReason)}
                   >
@@ -227,7 +245,17 @@ export function ContactSignInFields({
                 value={field.value}
                 onChange={field.onChange}
                 options={roleMonths}
-                note='The monthly close counts them in this role from this month. Closed months can’t be changed.'
+                note={
+                  (account &&
+                    role &&
+                    rolePayrollWarning(
+                      account.role,
+                      role,
+                      field.value ?? '',
+                      currentMonthStartUtc()
+                    )) ??
+                  'The monthly close counts them in this role from this month. Closed months can’t be changed.'
+                }
                 disabled={Boolean(lockedReason)}
                 disabledReason={lockedReason}
               />

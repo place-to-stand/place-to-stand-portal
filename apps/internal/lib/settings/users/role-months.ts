@@ -74,3 +74,43 @@ export function roleMonthOptions(
   }
   return options
 }
+
+type Role = 'ADMIN' | 'SALES' | 'CLIENT'
+
+/**
+ * The month a role change starts from unless the admin picks another.
+ * Payroll pays whoever is Admin in a month, so someone stopping being Admin
+ * starts their new role next month: their hours already logged this month
+ * still count. Every other change starts this month.
+ */
+export function defaultRoleMonth(
+  from: Role,
+  to: Role,
+  currentMonth: string
+): string {
+  return from === 'ADMIN' && to !== 'ADMIN'
+    ? addMonths(currentMonth, 1)
+    : currentMonth
+}
+
+/**
+ * The note under "Role starts" when someone stops being Admin from this
+ * month or earlier (their hours from then on no longer count as payroll),
+ * else null.
+ */
+export function rolePayrollWarning(
+  from: Role,
+  to: Role,
+  effectiveFrom: string,
+  currentMonth: string
+): string | null {
+  if (from !== 'ADMIN' || to === 'ADMIN' || !isMonthStart(effectiveFrom)) {
+    return null
+  }
+  if (effectiveFrom === currentMonth) {
+    return 'Their hours this month won’t count as payroll.'
+  }
+  return effectiveFrom < currentMonth
+    ? `Their hours since ${monthLabel(effectiveFrom)} won’t count as payroll.`
+    : null
+}
