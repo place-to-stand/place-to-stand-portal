@@ -65,6 +65,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { Progress } from '@pts/ui/progress'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { FormFeedback } from '@/components/sheets/form-feedback'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -389,6 +390,7 @@ export function ComponentsOverlays() {
 
 export function ComponentsDialogs() {
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [archiveOpen, setArchiveOpen] = useState(false)
   const { toast } = useToast()
   return (
     <DesignSection
@@ -456,6 +458,26 @@ export function ComponentsDialogs() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </Specimen>
+      <Specimen
+        label='ArchiveConfirmDialog'
+        note='components/sheets/archive-confirm-dialog.tsx'
+      >
+        <Button variant='destructive' onClick={() => setArchiveOpen(true)}>
+          <Archive />
+          Archive project
+        </Button>
+        <ArchiveConfirmDialog
+          open={archiveOpen}
+          entity='project'
+          name='Website refresh'
+          list='active projects'
+          onConfirm={() => {
+            setArchiveOpen(false)
+            toast({ title: 'Project archived' })
+          }}
+          onCancel={() => setArchiveOpen(false)}
+        />
       </Specimen>
     </DesignSection>
   )

@@ -2,11 +2,13 @@
 
 import type { ReactNode } from 'react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 
 type LeadSheetDialogsProps = {
   // Archive dialog
   isArchiveDialogOpen: boolean
+  /** The lead's name (its contact's), for the confirmation. */
+  leadName?: string | null
   isArchiving: boolean
   onArchiveCancel: () => void
   onArchiveConfirm: () => void
@@ -16,6 +18,7 @@ type LeadSheetDialogsProps = {
 
 export function LeadSheetDialogs({
   isArchiveDialogOpen,
+  leadName,
   isArchiving,
   onArchiveCancel,
   onArchiveConfirm,
@@ -23,13 +26,12 @@ export function LeadSheetDialogs({
 }: LeadSheetDialogsProps) {
   return (
     <>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={isArchiveDialogOpen}
-        title='Archive this lead?'
-        description='Archiving removes the lead from the board without permanently deleting history.'
-        confirmLabel={isArchiving ? 'Archiving...' : 'Archive'}
-        confirmVariant='destructive'
-        confirmDisabled={isArchiving}
+        entity='lead'
+        name={leadName || 'this lead'}
+        list='the board'
+        pending={isArchiving}
         onCancel={onArchiveCancel}
         onConfirm={onArchiveConfirm}
       />

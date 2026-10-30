@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { Archive, MoreHorizontal, Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,12 +140,11 @@ export function LeadUpdateItem({
         </p>
       ) : null}
 
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={showArchiveConfirm}
-        title='Archive this update?'
-        description={`The ${label.toLowerCase()} from ${occurredLabel} will be removed from the timeline.`}
-        confirmLabel='Archive'
-        confirmVariant='destructive'
+        entity='update'
+        name={`the ${label.toLowerCase()} from ${occurredLabel}`}
+        list='the timeline'
         onConfirm={() => {
           setShowArchiveConfirm(false)
           handleArchive()

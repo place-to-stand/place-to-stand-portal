@@ -14,7 +14,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { ClipboardList, HelpCircle, MessageSquare } from 'lucide-react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import {
   Tooltip,
@@ -607,13 +607,12 @@ export function TaskSheet(props: TaskSheetProps) {
           onMutationSuccess={handleTimeLogMutationSuccess}
         />
       ) : null}
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={isDeleteDialogOpen}
-        title='Archive task?'
-        description='Archiving this task removes it from the project board. Proceed?'
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='task'
+        name={props.task?.title || 'this task'}
+        list='the project board'
+        pending={isPending}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />

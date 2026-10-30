@@ -126,6 +126,7 @@ export function LeadSheet(props: LeadSheetProps) {
       </Sheet>
       <LeadSheetDialogs
         isArchiveDialogOpen={isArchiveDialogOpen}
+        leadName={lead?.contactName}
         isArchiving={isArchiving}
         onArchiveCancel={() => {
           if (!isArchiving) {

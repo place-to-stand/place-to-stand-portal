@@ -103,6 +103,7 @@ export function ProjectSheet(props: Props) {
       </Sheet>
       <ProjectSheetDialogs
         isDeleteDialogOpen={isDeleteDialogOpen}
+        projectName={props.project?.name}
         isPending={isPending}
         unsavedChangesDialog={unsavedChangesDialog}
         onCancelDelete={handleCancelDelete}
