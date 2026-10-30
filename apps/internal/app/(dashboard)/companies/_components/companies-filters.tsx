@@ -16,7 +16,8 @@ import {
 } from '@/lib/companies/filters'
 import { ClientBadge } from '@/components/clients/client-badge'
 
-// Clients show as the list's Client badge; former clients have no badge.
+// Clients show as the list's Client badge; the other two have no badge in
+// the list, so they're plain text.
 const TYPE_OPTIONS = COMPANY_TYPE_VALUES.map(value => ({
   value,
   label: COMPANY_TYPE_LABELS[value],
