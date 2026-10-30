@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type React from 'react'
-import { User2, UserPlus } from 'lucide-react'
+import { UserRound, UserPlus } from 'lucide-react'
 import type { UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
@@ -24,6 +24,9 @@ import { Input } from '@pts/ui/input'
 import { UrlInput } from '@/components/ui/url-input'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { Separator } from '@pts/ui/separator'
+import { Avatar, AvatarFallback } from '@pts/ui/avatar'
+import { AvatarUploadField } from '@/components/forms/avatar-upload-field'
+import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -31,7 +34,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
 
 import { ContactCompaniesSection } from './contact-companies-section'
-import { ContactSignInSection } from './contact-sign-in-section'
+import { ContactSignInFields } from './contact-sign-in-section'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -59,6 +62,16 @@ type ContactSheetFormProps = {
   onRequestPromote: () => void
   /** The portal user this contact was promoted to, if any. */
   portalUserId: string | null
+  /** Their sign-in (admins only); undefined while loading. */
+  signInAccount: PortalAccountSummary | null | undefined
+  onSignInChanged: () => void
+  onAvatarUploadingChange: (uploading: boolean) => void
+}
+
+function initialsOf(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  const letters = parts.length > 1 ? parts[0][0] + parts.at(-1)![0] : parts[0]?.slice(0, 2)
+  return (letters ?? '?').toUpperCase()
 }
 
 export function ContactSheetForm({
@@ -80,6 +93,9 @@ export function ContactSheetForm({
   promoteDisabledReason,
   onRequestPromote,
   portalUserId,
+  signInAccount,
+  onSignInChanged,
+  onAvatarUploadingChange,
 }: ContactSheetFormProps) {
   // Portal accounts grant client access, so they stay admin-only.
   const { isAdmin } = useViewerAccess()
@@ -127,6 +143,60 @@ export function ContactSheetForm({
           onSubmit={form.handleSubmit(onSubmit)}
           className='flex flex-col gap-6 px-6 pt-6 pb-8'
         >
+          {/* The photo belongs to their sign-in: uploadable once they have
+              one (admins), initials otherwise. */}
+          {isEditing ? (
+            <>
+              {isAdmin && portalUserId && signInAccount ? (
+                <FormField
+                  control={form.control}
+                  name='signIn.avatarPath'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <AvatarUploadField
+                          key={signInAccount.id}
+                          value={field.value ?? null}
+                          onChange={next =>
+                            form.setValue('signIn.avatarPath', next, {
+                              shouldDirty: true,
+                            })
+                          }
+                          onRemovalChange={removed =>
+                            form.setValue('signIn.avatarRemoved', removed, {
+                              shouldDirty: true,
+                            })
+                          }
+                          onUploadingChange={onAvatarUploadingChange}
+                          initials={initialsOf(personName || signInAccount.email)}
+                          displayName={personName || null}
+                          disabled={isPending}
+                          targetUserId={signInAccount.id}
+                          existingUserId={signInAccount.id}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <div className='flex items-center gap-4'>
+                  <Avatar className='h-16 w-16'>
+                    <AvatarFallback className='text-base font-semibold uppercase'>
+                      {initialsOf(personName || '?')}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isAdmin ? (
+                    <p className='text-muted-foreground text-xs'>
+                      A photo can be added once they have a sign-in.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+              <Separator />
+            </>
+          ) : null}
+
           <SheetSection title='Details'>
             <FormField
               control={form.control}
@@ -263,14 +333,17 @@ export function ContactSheetForm({
               }
             >
               {portalUserId ? (
-                <ContactSignInSection
-                  key={portalUserId}
-                  userId={portalUserId}
+                <ContactSignInFields
+                  form={form}
+                  account={signInAccount}
                   personName={personName}
+                  isPending={isPending}
+                  pendingReason={pendingReason}
+                  onAccountChanged={onSignInChanged}
                 />
               ) : (
                 <LinkedRecordCard
-                  icon={User2}
+                  icon={UserRound}
                   title='No sign-in'
                   action={
                     <DisabledFieldTooltip

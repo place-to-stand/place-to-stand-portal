@@ -1,6 +1,6 @@
 'use client'
 
-import { Mail, Phone, Star, UserCheck, Users } from 'lucide-react'
+import { Mail, Phone, Star, UserCheck, UserRound } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -22,8 +22,8 @@ export function ClientContactsSection({ contacts }: Props) {
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
       <div className='flex items-center gap-3 border-b px-4 py-3'>
-        <div className='flex h-7 w-7 items-center justify-center rounded-md bg-cyan-500/10'>
-          <Users className='h-4 w-4 text-cyan-500' />
+        <div className='flex h-7 w-7 items-center justify-center rounded-md bg-rose-500/10'>
+          <UserRound className='h-4 w-4 text-rose-500' />
         </div>
         <h2 className='font-semibold'>Portal access</h2>
         <Badge variant='secondary' className='ml-auto'>

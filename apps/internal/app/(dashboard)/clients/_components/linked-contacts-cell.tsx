@@ -1,6 +1,6 @@
 'use client'
 
-import { Contact, Star } from 'lucide-react'
+import { UserRound, Star } from 'lucide-react'
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import type { ClientContactSummary } from '@/lib/queries/clients/contact-summaries'
@@ -24,7 +24,7 @@ export function LinkedContactsCell({ contacts }: LinkedContactsCellProps) {
       <LinkedRecordsHoverCell
         withIcon
         count={count}
-        icon={Contact}
+        icon={UserRound}
         iconClassName={ENTITY_ACCENTS.contact.icon}
         ariaLabel={`${count} with portal access`}
         triggerClassName='text-muted-foreground'

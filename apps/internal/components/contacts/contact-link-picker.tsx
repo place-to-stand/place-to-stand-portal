@@ -2,7 +2,7 @@
 
 import type { ReactElement } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Contact } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 
 import { fetchContactOptions } from '@/app/(dashboard)/people/actions'
 import {
@@ -91,7 +91,7 @@ export function ContactLinkPicker({
       entity='contact'
       entityLabel='person'
       aria-label='Person'
-      icon={Contact}
+      icon={UserRound}
       value={
         value
           ? { id: value.id, label: value.name, description: describe(value) }

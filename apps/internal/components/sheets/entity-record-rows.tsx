@@ -1,7 +1,12 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Briefcase, Building2, Contact, Handshake, Link2 } from 'lucide-react'
+import {
+  Building2,
+  UserRound,
+  Handshake,
+  Link2,
+} from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
@@ -11,8 +16,8 @@ import type { LeadStatusValue } from '@/lib/leads/constants'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 /**
- * One preview row per entity, with the entity's sidebar icon (Contact,
- * Building2 for clients, Briefcase for companies, Handshake for leads), so a contact (or client, company, lead) looks
+ * One preview row per entity, with the entity's sidebar icon (UserRound for
+ * people, Building2 for companies and clients, Handshake for leads), so a person (or company, lead) looks
  * the same in every sheet list: the same icon, the same detail line, and a
  * click opens its sheet. Callers add only state (a note like "Pending save")
  * and actions.
@@ -53,7 +58,7 @@ export function ContactRecordRow({
   const name = contact.name || contact.email || 'Unnamed person'
   return (
     <SheetRecordRow
-      icon={Contact}
+      icon={UserRound}
       title={
         titleAddon ? (
           <span className='flex items-center gap-1.5'>
@@ -113,7 +118,7 @@ export function CompanyRecordRow({
   const { open } = useSheetParams()
   return (
     <SheetRecordRow
-      icon={Briefcase}
+      icon={Building2}
       title={
         titleAddon ? (
           <span className='flex items-center gap-1.5'>

@@ -1,20 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { KeyRound } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import type { UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { formatRelativeTime } from '@pts/ui/dates'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@pts/ui/dialog'
 import { Input } from '@pts/ui/input'
 import {
   Select,
@@ -26,106 +17,57 @@ import {
 import { Skeleton } from '@pts/ui/skeleton'
 import { Switch } from '@pts/ui/switch'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import {
   restoreUser,
-  setUserDisabled,
   softDeleteUser,
-  updateUser,
 } from '@/app/(dashboard)/settings/users/actions'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
+import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
 
-import { getContactPortalAccount } from '../../actions'
-
-type Role = (typeof USER_ROLES)[number]
-
-type ContactSignInSectionProps = {
-  /** `contacts.user_id`. */
-  userId: string
-  /** The person's name, for copy and the update payload. */
+type ContactSignInFieldsProps = {
+  form: UseFormReturn<ContactFormData>
+  /** undefined = loading, null = could not load. */
+  account: PortalAccountSummary | null | undefined
   personName: string
+  isPending: boolean
+  pendingReason: string
+  /** Refetch after archive / restore. */
+  onAccountChanged: () => void
 }
 
-type PendingConfirm =
-  | { kind: 'disable' }
-  | { kind: 'archive' }
-  | { kind: 'role'; role: Role }
-
 /**
- * A person's sign-in (admins only): sign-in email, role, the "Can sign in"
- * off switch, a temporary password, and archive. Each control applies right
- * away, like the switch on the People list — it is an emergency control.
+ * A person's sign-in (admins only), laid out like the old Edit user sheet:
+ * Role | Access, then Temporary password. These save with the sheet's Save.
+ * Archive / restore sign-in is a confirmed action, like the footer archive.
  */
-export function ContactSignInSection({
-  userId,
+export function ContactSignInFields({
+  form,
+  account,
   personName,
-}: ContactSignInSectionProps) {
-  const router = useRouter()
+  isPending,
+  pendingReason,
+  onAccountChanged,
+}: ContactSignInFieldsProps) {
   const { toast } = useToast()
   const { userId: viewerId } = useViewerAccess()
-  const isSelf = viewerId === userId
-  // undefined = loading, null = the id no longer resolves to a user.
-  const [account, setAccount] = useState<PortalAccountSummary | null>()
-  const [confirm, setConfirm] = useState<PendingConfirm | null>(null)
-  const [passwordOpen, setPasswordOpen] = useState(false)
-  const [password, setPassword] = useState('')
-  const [isPending, startTransition] = useTransition()
-
-  const load = useCallback(async () => {
-    try {
-      setAccount(await getContactPortalAccount(userId))
-    } catch (error) {
-      console.error('Failed to load sign-in:', error)
-      setAccount(null)
-    }
-  }, [userId])
-
-  useEffect(() => {
-    let cancelled = false
-    getContactPortalAccount(userId)
-      .then(result => {
-        if (!cancelled) setAccount(result)
-      })
-      .catch(error => {
-        console.error('Failed to load sign-in:', error)
-        if (!cancelled) setAccount(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [userId])
-
-  const run = useCallback(
-    (
-      action: () => Promise<{ error?: string | null }>,
-      success: string,
-      after?: () => void
-    ) => {
-      startTransition(async () => {
-        const result = await action()
-        if (result.error) {
-          toast({
-            title: 'Sign-in not changed',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-        toast({ title: success, description: personName })
-        after?.()
-        await load()
-        router.refresh()
-      })
-    },
-    [load, personName, router, toast]
-  )
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const [isActing, startAction] = useTransition()
 
   if (account === undefined) {
     return (
-      <div className='space-y-2'>
+      <div className='grid gap-4 sm:grid-cols-2'>
         <Skeleton className='h-9 w-full' />
         <Skeleton className='h-9 w-full' />
       </div>
@@ -139,118 +81,169 @@ export function ContactSignInSection({
     )
   }
 
+  const isSelf = viewerId === account.id
   const isArchived = Boolean(account.deletedAt)
-  const canSignIn = !account.disabledAt && !isArchived
-  const selfReason = isSelf ? 'You can’t change your own sign-in here.' : null
-  const pendingReason = isPending ? 'Saving…' : null
-  const lockedReason = selfReason ?? pendingReason
-  const fullName = personName || account.email
+  const busy = isPending || isActing
+  const lockedReason = busy
+    ? pendingReason
+    : isArchived
+      ? 'Restore the sign-in to change it.'
+      : null
+  const selfReason = isSelf ? 'You can’t change your own role or access.' : null
+  const name = personName || account.email
 
-  const setRole = (role: Role) =>
-    run(
-      () => updateUser({ id: userId, fullName, role }),
-      `Role changed to ${ROLE_LABELS[role]}`
-    )
-  const setCanSignIn = (next: boolean) =>
-    run(
-      () => setUserDisabled({ id: userId, disabled: !next }),
-      next ? 'Sign-in turned on' : 'Sign-in turned off'
-    )
+  const runArchive = (archive: boolean) =>
+    startAction(async () => {
+      const result = archive
+        ? await softDeleteUser({ id: account.id })
+        : await restoreUser({ id: account.id })
+      if (result.error) {
+        toast({
+          title: archive ? 'Unable to archive sign-in' : 'Unable to restore sign-in',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+      toast({
+        title: archive ? 'Sign-in archived' : 'Sign-in restored',
+        description: name,
+      })
+      onAccountChanged()
+    })
 
   return (
-    <div className='space-y-3'>
-      <dl className='grid grid-cols-[8rem_1fr] items-center gap-x-4 gap-y-3 text-sm'>
-        <dt className='text-muted-foreground'>Sign-in email</dt>
-        <dd className='truncate'>{account.email}</dd>
-
-        <dt className='text-muted-foreground'>Last sign-in</dt>
-        <dd>{formatRelativeTime(account.lastSignInAt) ?? 'Never'}</dd>
-
-        <dt className='text-muted-foreground'>Role</dt>
-        <dd>
-          <DisabledFieldTooltip
-            disabled={Boolean(lockedReason) || isArchived}
-            reason={lockedReason ?? 'Restore the sign-in to change its role.'}
-            className='w-48'
-          >
-            <Select
-              value={account.role}
-              onValueChange={value =>
-                value !== account.role &&
-                setConfirm({ kind: 'role', role: value as Role })
-              }
-              disabled={Boolean(lockedReason) || isArchived}
-            >
-              <SelectTrigger className='h-8 w-48' aria-label='Role'>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {USER_ROLES.map(role => (
-                  <SelectItem key={role} value={role}>
-                    {ROLE_LABELS[role]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </DisabledFieldTooltip>
-        </dd>
-
-        <dt className='text-muted-foreground'>Can sign in</dt>
-        <dd>
-          <DisabledFieldTooltip
-            disabled={Boolean(lockedReason) || isArchived}
-            reason={lockedReason ?? 'This sign-in is archived.'}
-            className='w-auto'
-          >
-            <Switch
-              checked={canSignIn}
-              aria-label='Can sign in'
-              disabled={Boolean(lockedReason) || isArchived}
-              onCheckedChange={next =>
-                next ? setCanSignIn(true) : setConfirm({ kind: 'disable' })
-              }
-            />
-          </DisabledFieldTooltip>
-        </dd>
+    <>
+      <dl className='grid grid-cols-1 gap-4 text-sm sm:grid-cols-2'>
+        <div className='space-y-1'>
+          <dt className='text-muted-foreground text-xs'>Sign-in email</dt>
+          <dd className='truncate'>{account.email}</dd>
+        </div>
+        <div className='space-y-1'>
+          <dt className='text-muted-foreground text-xs'>Last sign-in</dt>
+          <dd>
+            {isArchived
+              ? 'Archived'
+              : (formatRelativeTime(account.lastSignInAt) ?? 'Never')}
+          </dd>
+        </div>
       </dl>
 
-      <div className='flex flex-wrap gap-2'>
+      <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+        <FormField
+          control={form.control}
+          name='signIn.role'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={Boolean(lockedReason ?? selfReason)}
+                  reason={lockedReason ?? selfReason}
+                >
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value ?? account.role}
+                    disabled={Boolean(lockedReason ?? selfReason)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select a role' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {USER_ROLES.map(role => (
+                        <SelectItem key={role} value={role}>
+                          {ROLE_LABELS[role]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='signIn.accessEnabled'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor='person-sheet-access-toggle'>Access</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={Boolean(lockedReason ?? selfReason)}
+                  reason={lockedReason ?? selfReason}
+                  className='w-auto'
+                >
+                  <div className='flex h-9 items-center gap-2'>
+                    <Switch
+                      id='person-sheet-access-toggle'
+                      checked={field.value ?? true}
+                      onCheckedChange={field.onChange}
+                      disabled={Boolean(lockedReason ?? selfReason)}
+                      aria-label={
+                        (field.value ?? true)
+                          ? `Disable sign-in for ${name}`
+                          : `Enable sign-in for ${name}`
+                      }
+                    />
+                    <span className='text-sm'>
+                      {(field.value ?? true) ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </div>
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <FormField
+        control={form.control}
+        name='signIn.password'
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Temporary password</FormLabel>
+            <FormControl>
+              <DisabledFieldTooltip
+                disabled={Boolean(lockedReason)}
+                reason={lockedReason}
+              >
+                <Input
+                  {...field}
+                  type='password'
+                  autoComplete='new-password'
+                  value={field.value ?? ''}
+                  placeholder='••••••••'
+                  disabled={Boolean(lockedReason)}
+                />
+              </DisabledFieldTooltip>
+            </FormControl>
+            <FormDescription>
+              Setting one forces a reset on next sign-in. 8+ characters.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div>
         <DisabledFieldTooltip
-          disabled={Boolean(lockedReason) || isArchived}
-          reason={lockedReason ?? 'Restore the sign-in first.'}
+          disabled={busy || isSelf}
+          reason={busy ? pendingReason : selfReason}
           className='w-auto'
         >
           <Button
             type='button'
             variant='outline'
             size='sm'
-            disabled={Boolean(lockedReason) || isArchived}
-            onClick={() => {
-              setPassword('')
-              setPasswordOpen(true)
-            }}
-          >
-            <KeyRound />
-            Set temporary password
-          </Button>
-        </DisabledFieldTooltip>
-        <DisabledFieldTooltip
-          disabled={Boolean(lockedReason)}
-          reason={lockedReason}
-          className='w-auto'
-        >
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
             className={
               isArchived ? undefined : 'text-muted-foreground hover:text-destructive'
             }
-            disabled={Boolean(lockedReason)}
+            disabled={busy || isSelf}
             onClick={() =>
-              isArchived
-                ? run(() => restoreUser({ id: userId }), 'Sign-in restored')
-                : setConfirm({ kind: 'archive' })
+              isArchived ? runArchive(false) : setArchiveOpen(true)
             }
           >
             {isArchived ? 'Restore sign-in' : 'Archive sign-in'}
@@ -259,94 +252,18 @@ export function ContactSignInSection({
       </div>
 
       <ConfirmDialog
-        open={confirm !== null}
-        title={
-          confirm?.kind === 'disable'
-            ? 'Turn off sign-in?'
-            : confirm?.kind === 'archive'
-              ? 'Archive sign-in?'
-              : `Make ${fullName} ${confirm?.kind === 'role' ? ROLE_LABELS[confirm.role] : ''}?`
-        }
-        description={
-          confirm?.kind === 'disable'
-            ? `${fullName} is signed out and can’t sign in until this is turned back on.`
-            : confirm?.kind === 'archive'
-              ? `${fullName} can no longer sign in. The person stays; their sign-in can be restored.`
-              : confirm?.kind === 'role' && confirm.role === 'CLIENT'
-                ? `${fullName} loses access to the internal portal and signs in to the client portal instead.`
-                : confirm?.kind === 'role' && confirm.role === 'ADMIN'
-                  ? `${fullName} gets full access, including billing and sign-ins.`
-                  : `${fullName} can use leads, people and companies, but not billing.`
-        }
-        confirmLabel={
-          confirm?.kind === 'disable'
-            ? 'Turn off'
-            : confirm?.kind === 'archive'
-              ? 'Archive'
-              : 'Change role'
-        }
-        confirmVariant={confirm?.kind === 'role' ? 'default' : 'destructive'}
-        confirmDisabled={isPending}
-        onCancel={() => setConfirm(null)}
+        open={archiveOpen}
+        title='Archive sign-in?'
+        description={`${name} can no longer sign in. The person stays, and the sign-in can be restored.`}
+        confirmLabel='Archive'
+        confirmVariant='destructive'
+        confirmDisabled={busy}
+        onCancel={() => setArchiveOpen(false)}
         onConfirm={() => {
-          const current = confirm
-          setConfirm(null)
-          if (!current) return
-          if (current.kind === 'disable') setCanSignIn(false)
-          else if (current.kind === 'archive')
-            run(() => softDeleteUser({ id: userId }), 'Sign-in archived')
-          else setRole(current.role)
+          setArchiveOpen(false)
+          runArchive(true)
         }}
       />
-
-      <Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
-        <DialogContent className='sm:max-w-md'>
-          <DialogHeader>
-            <DialogTitle>Set temporary password</DialogTitle>
-            <DialogDescription>
-              {fullName} signs in with this once, then picks their own. Share
-              it with them directly.
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            type='text'
-            autoComplete='off'
-            value={password}
-            onChange={event => setPassword(event.target.value)}
-            placeholder='At least 8 characters'
-            aria-label='Temporary password'
-          />
-          <DialogFooter className='mt-2'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => setPasswordOpen(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type='button'
-              disabled={isPending || password.length < 8}
-              onClick={() =>
-                run(
-                  () =>
-                    updateUser({
-                      id: userId,
-                      fullName,
-                      role: account.role,
-                      password,
-                    }),
-                  'Temporary password set',
-                  () => setPasswordOpen(false)
-                )
-              }
-            >
-              Set password
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </>
   )
 }

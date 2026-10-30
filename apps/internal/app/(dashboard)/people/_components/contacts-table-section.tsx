@@ -1,7 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { Briefcase, Contact, Mail, Phone } from 'lucide-react'
+import {
+  Building2,
+  UserRound,
+  Mail,
+  Phone,
+} from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import {
@@ -187,7 +192,7 @@ export function ContactsTableSection({
               >
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
-                    <Contact
+                    <UserRound
                       className={cn(
                         ENTITY_ACCENTS.contact.icon,
                         'h-4 w-4 shrink-0'
@@ -201,7 +206,7 @@ export function ContactsTableSection({
                 <TableCell label='Companies' className='text-sm'>
                   {contact.companyId && contact.companyName ? (
                     <span className='flex min-w-0 items-center gap-2'>
-                      <Briefcase
+                      <Building2
                         className={cn(
                           ENTITY_ACCENTS.company.icon,
                           'h-4 w-4 shrink-0'
@@ -223,7 +228,7 @@ export function ContactsTableSection({
                           count={contact.companies.length}
                           triggerLabel={`+${contact.companies.length - 1}`}
                           triggerClassName='text-muted-foreground shrink-0'
-                          icon={Briefcase}
+                          icon={Building2}
                           iconClassName={ENTITY_ACCENTS.company.icon}
                           ariaLabel={`${contact.companies.length} companies`}
                           items={contact.companies.map(company => ({

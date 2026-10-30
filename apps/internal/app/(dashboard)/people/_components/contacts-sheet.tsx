@@ -59,6 +59,9 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleConfirmDelete,
     handleRequestPromote,
     handleConfirmPromote,
+    signInAccount,
+    reloadSignIn,
+    setIsAvatarUploading,
   } = useContactSheetState({ ...props, onComplete: handleComplete })
 
   return (
@@ -89,6 +92,9 @@ export function ContactsSheet(props: ContactsSheetProps) {
             promoteDisabledReason={promoteDisabledReason}
             onRequestPromote={handleRequestPromote}
             portalUserId={portalUserId}
+            signInAccount={signInAccount}
+            onSignInChanged={() => void reloadSignIn()}
+            onAvatarUploadingChange={setIsAvatarUploading}
           />
         </SheetContent>
       </Sheet>

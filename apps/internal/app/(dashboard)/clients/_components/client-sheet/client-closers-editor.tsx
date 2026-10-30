@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Handshake, LinkIcon, Plus, User2, X } from 'lucide-react'
+import {
+  Handshake,
+  LinkIcon,
+  Plus,
+  UserRound,
+  X,
+} from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
@@ -270,7 +276,7 @@ function CandidateItem({
         onAdd(candidate)
       }}
     >
-      <User2 className='text-muted-foreground h-4 w-4' />
+      <UserRound className='text-muted-foreground h-4 w-4' />
       <div className='flex min-w-0 flex-col'>
         <span className='truncate font-medium'>{candidate.name}</span>
         {candidate.email && candidate.email !== candidate.name ? (

@@ -11,8 +11,13 @@ import {
   saveContact,
   softDeleteContact,
   getContactSheetData,
+  getContactPortalAccount,
 } from '@/app/(dashboard)/people/actions'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
+import { updateUser } from '@/app/(dashboard)/settings/users/actions'
+import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
+import { USER_ROLES } from '@/lib/settings/users/user-validation'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 
@@ -42,6 +47,20 @@ const contactFormSchema = z.object({
       archived: z.boolean().optional(),
     })
   ),
+  /** Their sign-in (admins only), saved with the sheet like the rest. */
+  signIn: z
+    .object({
+      role: z.enum(USER_ROLES),
+      accessEnabled: z.boolean(),
+      password: z
+        .string()
+        .refine(value => value.trim().length === 0 || value.trim().length >= 8, {
+          message: 'Password must be at least 8 characters.',
+        }),
+      avatarPath: z.string().trim().max(255).nullable(),
+      avatarRemoved: z.boolean(),
+    })
+    .optional(),
 })
 
 export type ContactCompanyEntry = z.infer<
@@ -100,6 +119,13 @@ export function useContactSheetState({
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
+  // Sign-ins are admin-only. undefined = loading (or none to load).
+  const { isAdmin } = useViewerAccess()
+  const signInUserId = isAdmin ? (contact?.userId ?? null) : null
+  const [signInAccount, setSignInAccount] = useState<
+    PortalAccountSummary | null | undefined
+  >(undefined)
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false)
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
@@ -181,6 +207,37 @@ export function useContactSheetState({
     }
   }, [open, contact, form, initialName, initialCompanyId])
 
+  // Their sign-in, loaded after the reset like the companies: it becomes
+  // the saved state of the Sign-in fields, not an edit.
+  const loadSignIn = useCallback(async () => {
+    if (!signInUserId) return
+    try {
+      const account = await getContactPortalAccount(signInUserId)
+      setSignInAccount(account)
+      if (account) {
+        form.resetField('signIn', {
+          defaultValue: {
+            role: account.role,
+            accessEnabled: !account.disabledAt,
+            password: '',
+            avatarPath: account.avatarUrl,
+            avatarRemoved: false,
+          },
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load sign-in:', error)
+      setSignInAccount(null)
+    }
+  }, [form, signInUserId])
+
+  useEffect(() => {
+    if (!open || !signInUserId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSignInAccount(undefined)
+    void loadSignIn()
+  }, [open, signInUserId, loadSignIn])
+
   const contactDisplayName = contact?.name || contact?.email || 'this person'
   const sheetTitle = isEditing ? 'Edit person' : 'Create person'
   const sheetDescription = isEditing
@@ -191,8 +248,12 @@ export function useContactSheetState({
   const { requestConfirmation, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
 
-  const submitDisabled = isPending
-  const submitDisabledReason = isPending ? PENDING_REASON : null
+  const submitDisabled = isPending || isAvatarUploading
+  const submitDisabledReason = isPending
+    ? PENDING_REASON
+    : isAvatarUploading
+      ? 'Wait for the photo to finish uploading.'
+      : null
 
   const deleteDisabled = isPending || !isEditing
   const deleteDisabledReason = isPending
@@ -246,6 +307,33 @@ export function useContactSheetState({
           return
         }
 
+        // The sign-in saves with the sheet too (admins only).
+        const signIn = data.signIn
+        const signInDirty = Boolean(form.formState.dirtyFields.signIn)
+        if (signInUserId && signIn && signInDirty) {
+          const password = signIn.password.trim()
+          const signInResult = await updateUser({
+            id: signInUserId,
+            fullName: data.name,
+            role: signIn.role,
+            disabled: !signIn.accessEnabled,
+            ...(password ? { password } : {}),
+            ...(signIn.avatarPath?.trim()
+              ? { avatarPath: signIn.avatarPath.trim() }
+              : {}),
+            avatarRemoved: signIn.avatarRemoved,
+          })
+          if (signInResult.error) {
+            setFeedback(signInResult.error)
+            toast({
+              title: 'Person saved, sign-in not saved',
+              description: signInResult.error,
+              variant: 'destructive',
+            })
+            return
+          }
+        }
+
         toast({
           title: isEditing ? 'Person updated' : 'Person created',
           description: isEditing
@@ -268,7 +356,16 @@ export function useContactSheetState({
         onComplete()
       })
     },
-    [contact?.id, companiesLoaded, isEditing, toast, onComplete, onCreated]
+    [
+      contact?.id,
+      companiesLoaded,
+      form,
+      isEditing,
+      signInUserId,
+      toast,
+      onComplete,
+      onCreated,
+    ]
   )
 
   const handleRequestDelete = useCallback(() => {
@@ -385,5 +482,8 @@ export function useContactSheetState({
     handleConfirmDelete,
     handleRequestPromote,
     handleConfirmPromote,
+    signInAccount,
+    reloadSignIn: loadSignIn,
+    setIsAvatarUploading,
   }
 }

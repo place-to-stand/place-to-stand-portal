@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LinkIcon, User2, X } from 'lucide-react'
+import { LinkIcon, UserRound, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
@@ -92,7 +92,7 @@ export function ClientOriginationPicker({
     const locked = isPending || disabled
     return (
       <SheetRecordRow
-        icon={selected.kind === 'user' ? User2 : LinkIcon}
+        icon={selected.kind === 'user' ? UserRound : LinkIcon}
         title={selected.name}
         description={
           selected.email && selected.email !== selected.name
@@ -133,7 +133,7 @@ export function ClientOriginationPicker({
               className='w-full justify-start'
               disabled={disabled}
             >
-              <User2 className='h-4 w-4' />
+              <UserRound className='h-4 w-4' />
               No originator
             </Button>
           </PopoverTrigger>
@@ -199,7 +199,7 @@ function CandidateItem({
       value={`${display.kind} ${display.name} ${display.email ?? ''}`}
       onSelect={onSelect}
     >
-      <User2 className='text-muted-foreground h-4 w-4' />
+      <UserRound className='text-muted-foreground h-4 w-4' />
       <div className='flex min-w-0 flex-col'>
         <span className='truncate font-medium'>{display.name}</span>
         {display.email && display.email !== display.name ? (

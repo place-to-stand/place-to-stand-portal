@@ -1,6 +1,6 @@
 'use client'
 
-import { Briefcase } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
@@ -23,8 +23,8 @@ export function ClientCompanySection({ clientId, company }: Props) {
   return (
     <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
       <div className='flex items-center gap-3 border-b px-4 py-3'>
-        <div className='flex h-7 w-7 items-center justify-center rounded-md bg-indigo-500/10'>
-          <Briefcase className='h-4 w-4 text-indigo-500' />
+        <div className='flex h-7 w-7 items-center justify-center rounded-md bg-blue-500/10'>
+          <Building2 className='h-4 w-4 text-blue-500' />
         </div>
         <h2 className='font-semibold'>Company</h2>
       </div>

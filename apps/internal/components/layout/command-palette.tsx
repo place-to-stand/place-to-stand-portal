@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Building2, Contact, FolderKanban } from 'lucide-react'
+import { Building2, UserRound, FolderKanban } from 'lucide-react'
 
 import {
   CommandDialog,
@@ -266,7 +266,7 @@ function CommandPalette() {
                   )
                 }
               >
-                <Contact className='size-4' />
+                <UserRound className='size-4' />
                 <span>
                   {contact.name}{' '}
                   <span className='text-muted-foreground'>{contact.email}</span>

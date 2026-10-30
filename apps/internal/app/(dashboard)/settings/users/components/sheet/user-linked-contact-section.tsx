@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Contact } from 'lucide-react'
+import { UserRound } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Separator } from '@pts/ui/separator'
@@ -41,7 +41,7 @@ export function UserLinkedContactSection({
       >
         {contact ? (
           <LinkedRecordCard
-            icon={Contact}
+            icon={UserRound}
             title={contact.name}
             description={contact.email}
             details={[
@@ -57,14 +57,14 @@ export function UserLinkedContactSection({
               // open, rather than stacking it here.
               <Button variant='outline' size='sm' asChild>
                 <Link href={contactSheetHref(contact.id)}>
-                  <Contact />
+                  <UserRound />
                   Open person
                 </Link>
               </Button>
             }
           />
         ) : (
-          <LinkedRecordCard icon={Contact} title='No linked person' />
+          <LinkedRecordCard icon={UserRound} title='No linked person' />
         )}
       </SheetSection>
     </>

@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Briefcase,
-  Contact,
+  Building2,
+  UserRound,
   ExternalLink,
   Handshake,
   Star,
@@ -146,7 +146,7 @@ export function CompaniesTable({
               >
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2'>
-                    <Briefcase className='h-4 w-4 shrink-0 text-indigo-500' />
+                    <Building2 className='h-4 w-4 shrink-0 text-blue-500' />
                     <span className='truncate font-medium' title={company.name}>
                       {company.name}
                     </span>
@@ -183,7 +183,7 @@ export function CompaniesTable({
                   <LinkedRecordsHoverCell
                     count={company.contactCount}
                     withIcon
-                    icon={Contact}
+                    icon={UserRound}
                     iconClassName={ENTITY_ACCENTS.contact.icon}
                     ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'person' : 'people'}`}
                     items={company.people.map(person => ({
