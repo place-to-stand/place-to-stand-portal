@@ -66,8 +66,8 @@ Known and harmless (both were already in production before this PR):
 
 | Sev | Id | Finding | Status |
 | --- | --- | --- | --- |
-| High | S1 | An auth account someone signed up for themselves was reused (and kept its password) when an admin later granted that email a sign-in | **Fixed**: the account is taken over first (new random password, sessions revoked). Defence in depth: decision below |
-| High | S2 / R3 | A client-portal user could attach another organisation's GitHub App installation by guessing its id | **Decision** (GitHub app setting + code) |
+| High | S1 | An auth account someone signed up for themselves was reused (and kept its password) when an admin later granted that email a sign-in | **Fixed**: the account is taken over first (new random password, sessions revoked). Email sign-up is already off in production (checked 30 Oct) |
+| High | S2 / R3 | A client-portal user could attach another organisation's GitHub App installation by guessing its id **Deferred until after release** (known gap: no code change in this PR) |
 | Medium | S3 | Open redirect after sign-in via `/\evil.com` | **Fixed** (shared safe-redirect helper, 6 sites + reset form) |
 | Medium | S4 | Stored XSS: Sales uploads HTML as an "image", sets the type to text/html, an admin opens it | **Fixed** (type allowlist; non-images download; sandbox CSP) |
 | Medium | S5 | Stripe payment amount never checked against the invoice total (pay old total after an edit → marked PAID) | **Fixed** (reuse only matching intents; webhook requires full amount) |
@@ -76,10 +76,10 @@ Known and harmless (both were already in production before this PR):
 | Medium | R4 | Sales can add a person to a client company through a lead save | **Decision** |
 | Medium | R5 | Sales could move people with sign-ins between companies via the company sheet | **Fixed** |
 | Low | S6 | Avatar save could move any file in the photo bucket | **Fixed** |
-| Low | S7 | Anyone with the public key could call SECURITY DEFINER functions | **Fixed** in 0115 (revoked; dead functions dropped). Data API off: decision |
+| Low | S7 | Anyone with the public key could call SECURITY DEFINER functions | **Fixed** in 0115 (revoked; dead functions dropped). The Data API is already off in production (checked 30 Oct) |
 | Low | S8 / R12 / I4 | Scheduled role changes weren't applied on CLI, MCP or the client portal until the nightly cron | **Fixed** |
 | Low | S9 | Editor sanitizer failed open | **Fixed** (also nested children) |
-| Low | S10 | No app-side throttle on password sign-in | **Decision** |
+| Low | S10 | No app-side throttle on password sign-in | **Approved**: per-email and per-IP limit in both portals (in progress) |
 | Low | R6 | Sales could set titles on client people | **Fixed** |
 | Low | R7 | Sales can read and edit client notes | **Decision** |
 | Low | R8 | Sales could archive a client's primary contact | **Fixed** |
@@ -200,14 +200,9 @@ My recommendation comes first in each. None of these is built.
 
 ### Security settings and permissions
 
-- **S2 / R3. GitHub installation claim.**
-  - **Recommend:** turn on "Request user authorization (OAuth) during installation" on the GitHub App, and check in the callback that the user can access that installation (a code change I'll make once the setting is on).
-- **S1 (defence in depth).**
-  - **Recommend:** turn off email sign-up in production Supabase (`[auth.email] enable_signup = false`). People are only invited. Google sign-in is unaffected.
-- **S7.**
-  - **Recommend:** turn off the Supabase Data API (the app never uses PostgREST). 0115 already revokes the functions.
-- **S10.**
-  - **Recommend:** a per-email and per-IP limit on password sign-in in both apps, like magic links. Today Supabase's limit sees one IP (Vercel's), which risks locking everyone out.
+- **S2 / R3. GitHub installation claim. Decided: deferred until after release.** This is a known gap. The fix later is to turn on "Request user authorization (OAuth) during installation" and check, in the callback, that the user can access that installation.
+- **S1 and S7. Decided: done.** Email sign-up and the Data API are already off in production.
+- **S10. Decided: yes.** A per-email and per-IP limit on password sign-in in both portals, reusing the magic-link limiter.
 - **R4. Sales can add a person with no company to a client company through a lead save.**
   - **Recommend:** for non-admins, link the lead but skip joining a client company, as the person and company sheets already do.
 - **R7. Sales can read and edit notes on client companies.**
