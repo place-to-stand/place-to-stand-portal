@@ -35,6 +35,10 @@ import {
 } from '@/components/table/record-row-action'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
+import type { CalendarDateRange } from '@/lib/dates/calendar-date'
+import { currentMonthRange } from '@/lib/time-logs/filters'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
@@ -302,6 +306,9 @@ export function SampleProjectList({
 }) {
   const [search, setSearch] = useState<string | undefined>()
   const [statuses, setStatuses] = useState<string[]>([])
+  const [company, setCompany] = useState<string | undefined>()
+  const [range, setRange] = useState<CalendarDateRange>(currentMonthRange)
+  const isDefaultRange = range.from === currentMonthRange().from
   const [sort, setSort] = useState<string | undefined>()
   const [page, setPage] = useState(1)
 
@@ -312,7 +319,8 @@ export function SampleProjectList({
         (!query ||
           row.name.toLowerCase().includes(query) ||
           row.company.toLowerCase().includes(query)) &&
-        (!statuses.length || statuses.includes(row.status))
+        (!statuses.length || statuses.includes(row.status)) &&
+        (!company || row.company === company)
     )
     const [field, direction] = (sort ?? 'name:asc').split(':')
     const sign = direction === 'desc' ? -1 : 1
@@ -321,9 +329,11 @@ export function SampleProjectList({
         ? (a.hours - b.hours) * sign
         : a.name.localeCompare(b.name) * sign
     )
-  }, [search, statuses, sort])
+  }, [search, statuses, company, sort])
 
-  const filtered = Boolean(search) || statuses.length > 0
+  const filterCount =
+    (statuses.length ? 1 : 0) + (company ? 1 : 0) + (isDefaultRange ? 0 : 1)
+  const filtered = Boolean(search) || filterCount > 0
 
   return (
     <div className='space-y-3'>
@@ -335,19 +345,39 @@ export function SampleProjectList({
             placeholder='Search projects…'
           />
         }
-        activeFilterCount={statuses.length ? 1 : 0}
+        activeFilterCount={filterCount}
         showReset={filtered}
         onReset={() => {
           setSearch(undefined)
           setStatuses([])
+          setCompany(undefined)
+          setRange(currentMonthRange())
         }}
       >
+        {/* One trigger look: single (clearable combobox), multi and date
+            range differ only in their popovers. */}
+        <FilterSelect
+          value={company}
+          onChange={setCompany}
+          placeholder='All companies'
+          options={[...new Set(PROJECTS.map(row => row.company))].map(name => ({
+            value: name,
+            label: name,
+          }))}
+        />
         <FilterSelect
           mode='multi'
           values={statuses}
           onChange={setStatuses}
           placeholder='Status'
           options={STATUS_OPTIONS}
+        />
+        <DateRangePicker
+          className={FILTER_TRIGGER_WIDTH}
+          value={range}
+          onChange={setRange}
+          isDefault={isDefaultRange}
+          onClear={() => setRange(currentMonthRange())}
         />
       </FilterBar>
       <div className='overflow-hidden rounded-lg border'>
@@ -486,7 +516,7 @@ export function ComponentsTables() {
     >
       <Specimen
         label='List: FilterBar, sortable fixed table, row actions, pagination'
-        note='Try the search, the status filter, the sort heads and a phone width'
+        note='Try the search, the three filters (one trigger look: company is single choice, status multi with badges, dates a range), the sort heads and a phone width'
         className='block'
       >
         <SampleProjectList />
