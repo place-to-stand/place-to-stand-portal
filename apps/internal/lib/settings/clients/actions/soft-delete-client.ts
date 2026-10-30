@@ -56,6 +56,7 @@ export async function softDeleteClientMutation(
             id: string
             name: string
             companyId: string | null
+            endedAt: string | null
           }
         | undefined
 
@@ -65,6 +66,7 @@ export async function softDeleteClientMutation(
             id: companies.id,
             name: clientNameSql,
             companyId: companies.id,
+            endedAt: companies.clientEndedAt,
           })
           .from(companies)
           .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
@@ -80,13 +82,21 @@ export async function softDeleteClientMutation(
         return buildMutationResult({ error: 'Client not found.' })
       }
 
+      // Stopping twice would move the date billing stopped.
+      if (existingClient.endedAt) {
+        return buildMutationResult({ error: 'Billing has already stopped.' })
+      }
+
       const archived = existingClient
       let accessChanges: ContactClientLinkChange[] = []
       try {
         await db.transaction(async tx => {
           await tx
             .update(companies)
-            .set({ clientEndedAt: new Date().toISOString() })
+            .set({
+              clientEndedAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })
             .where(eq(companies.id, parsed.data.id))
           // An archived client grants nobody access; switch it off so a
           // restore (or another client at the company) doesn't bring it back.

@@ -4,7 +4,7 @@ import { CalendarDays, ChevronRight, Loader2, User, Users } from 'lucide-react'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
-import { leadHref, myTaskHref } from '@/lib/sheets/hrefs'
+import { companySheetHref, leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
@@ -276,12 +276,8 @@ function getClientLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
     return { href: null }
   }
 
-  const clientSlug = client.slug
-  if (clientSlug) {
-    return { href: `/clients/${clientSlug}` }
-  }
-
-  return { href: `/clients/${client.id}` }
+  // A client is its company: open the company on its Projects tab.
+  return { href: companySheetHref(client.id, 'projects') }
 }
 
 function getClientDisplayName(task: AssignedTaskSummary): string {

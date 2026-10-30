@@ -215,13 +215,10 @@ export async function updateClient(
       : nextMonthStartUtc()
     : null
 
-  // Leaving its company (unlink or move) ends portal access through it.
-  const leftCompanyId =
-    companyId !== undefined &&
-    existingClient.companyId &&
-    existingClient.companyId !== companyId
-      ? existingClient.companyId
-      : null
+  // A client is its company (0111): it can't move to another one, so a
+  // stray companyId is ignored and nobody's portal access is touched here.
+  void companyId
+  const leftCompanyId: string | null = null
   let accessChanges: ContactClientLinkChange[] = []
 
   try {
@@ -259,7 +256,7 @@ export async function updateClient(
       // resolution.
       await tx
         .update(companies)
-        .set({ slug: slugToUpdate, state })
+        .set({ slug: slugToUpdate, state, updatedAt: new Date().toISOString() })
         .where(eq(companies.id, id))
 
       // Portal access is a flag on the old company's memberships: switch it

@@ -66,6 +66,16 @@ BEGIN
     RAISE EXCEPTION '0111: commission terms collide when merged onto company %', bad;
   END IF;
 
+  -- A company with more than one client record (a stopped one and a new
+  -- one) would merge two billing and commission histories, which can change
+  -- how past months resolve. Production has none; stop if that changes.
+  SELECT string_agg("company_id"::text, ', ') INTO bad FROM (
+    SELECT "company_id" FROM "clients" GROUP BY 1 HAVING count(*) > 1
+  ) x;
+  IF bad IS NOT NULL THEN
+    RAISE EXCEPTION '0111: companies with more than one client record (merge by hand): %', bad;
+  END IF;
+
   -- Every live client must be its company's only live one (it is: 0096's
   -- clients_company_id_live_key), so a company is a client at most once.
   SELECT string_agg("company_id"::text, ', ') INTO bad FROM (
@@ -123,6 +133,9 @@ UPDATE "companies" co SET
 FROM ranked r JOIN per_company pc ON pc."company_id" = r."company_id"
 WHERE r."company_id" = co."id" AND r.rn = 1;--> statement-breakpoint
 ALTER TABLE "companies" ENABLE TRIGGER USER;--> statement-breakpoint
+-- What this wrote, so a rollback can tell untouched values from later edits.
+CREATE TABLE "archive_sales_tools"."companies_after_0111" AS
+  SELECT "id", "notes", "website" FROM "companies";--> statement-breakpoint
 ALTER TABLE "companies" ADD CONSTRAINT "companies_slug_key" UNIQUE("slug");--> statement-breakpoint
 CREATE INDEX "idx_companies_client" ON "companies" USING btree ("id") WHERE (client_since IS NOT NULL AND client_ended_at IS NULL);--> statement-breakpoint
 
@@ -222,12 +235,15 @@ ALTER TABLE "github_app_installations" ADD CONSTRAINT "github_app_installations_
 -- 7. Portal access: a current, portal-enabled membership at a company that
 --    is a client now (same rule as before, read off the company).
 DROP TABLE "clients";--> statement-breakpoint
+-- An old database helper (not called by the app since the activity logger
+-- moved into code) still writes target_client_id: drop it.
+DROP FUNCTION IF EXISTS "public"."log_activity"(uuid, user_role, text, text, text, uuid, uuid, uuid, text, jsonb);--> statement-breakpoint
 CREATE VIEW "client_portal_access" AS
   SELECT co.id AS company_id,
     m.contact_id,
     c.user_id
   FROM memberships m
-    JOIN companies co ON co.id = m.company_id AND co.client_since IS NOT NULL AND co.client_ended_at IS NULL
+    JOIN companies co ON co.id = m.company_id AND co.client_since IS NOT NULL AND co.client_ended_at IS NULL AND co.deleted_at IS NULL
     JOIN contacts c ON c.id = m.contact_id AND c.deleted_at IS NULL AND c.user_id IS NOT NULL
     JOIN users u ON u.id = c.user_id AND u.deleted_at IS NULL AND u.disabled_at IS NULL
   WHERE m.ended_at IS NULL AND m.portal_access;

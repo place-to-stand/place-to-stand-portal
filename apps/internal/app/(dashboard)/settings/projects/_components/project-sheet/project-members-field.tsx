@@ -104,7 +104,7 @@ export function ProjectMembersField({
   return (
     <SheetSection
       title='Members'
-      description='Admins see every project. Sales users see only the projects they are members of.'
+      description='Admins see every project. Sales staff see only the projects they are members of.'
       action={
         canAdd ? (
           <SearchableCombobox
@@ -116,8 +116,8 @@ export function ProjectMembersField({
               if (!value) return
               setMembers([...(memberIds ?? []), value])
             }}
-            searchPlaceholder='Search sales users...'
-            emptyMessage='No sales users found.'
+            searchPlaceholder='Search sales staff…'
+            emptyMessage='No sales staff found.'
             ariaLabel='Add member'
             trigger={addButton}
           />
@@ -135,7 +135,7 @@ export function ProjectMembersField({
       ) : members.length === 0 ? (
         <EmptyState
           message={
-            options.length > 0 ? 'No members yet.' : 'No sales users yet.'
+            options.length > 0 ? 'No members yet.' : 'No sales staff yet.'
           }
           label={canAdd ? 'Add member' : undefined}
           onClick={canAdd ? () => setPickerOpen(true) : undefined}

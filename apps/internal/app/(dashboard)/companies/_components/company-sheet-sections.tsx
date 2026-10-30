@@ -157,7 +157,7 @@ export function CompanyProjectsTab({ clientId }: { clientId: string | null }) {
   if (!clientId) {
     return (
       <SheetSection title='Projects'>
-        <EmptyState message='Projects belong to clients. Make client on the Billing tab to start one.' />
+        <EmptyState message='Projects belong to clients, and this company isn’t billed yet.' />
       </SheetSection>
     )
   }

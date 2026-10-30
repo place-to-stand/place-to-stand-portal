@@ -149,7 +149,7 @@ export function ClientOriginationPicker({
           />
           <CommandList>
             {availableUsers.length > 0 ? (
-              <CommandGroup heading='Admin users'>
+              <CommandGroup heading='Partners'>
                 {availableUsers.map(user => (
                   <CandidateItem
                     key={`user:${user.id}`}

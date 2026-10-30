@@ -8,9 +8,17 @@
 
 -- Companies first made clients after 0111 need a client row to point at.
 INSERT INTO "archive_sales_tools"."clients_0111" ("id", "slug", "notes", "created_by", "created_at", "updated_at", "deleted_at", "website", "state", "company_id", "label")
-  SELECT co."id", co."slug", NULL, co."created_by", co."client_since", co."updated_at", co."client_ended_at", NULL, co."state", co."id", NULL
+  SELECT co."id", co."slug", NULL, co."created_by", COALESCE(co."client_since", co."created_at"), co."updated_at", CASE WHEN co."client_since" IS NULL THEN COALESCE(co."client_ended_at", now()) ELSE co."client_ended_at" END, NULL, co."state", co."id", NULL
   FROM "companies" co
-  WHERE co."client_since" IS NOT NULL
+  WHERE (co."client_since" IS NOT NULL
+      -- or anything billed still points at it (e.g. a client deleted since)
+      OR EXISTS (SELECT 1 FROM "projects" x WHERE x."company_id" = co."id")
+      OR EXISTS (SELECT 1 FROM "hour_blocks" x WHERE x."company_id" = co."id")
+      OR EXISTS (SELECT 1 FROM "invoices" x WHERE x."company_id" = co."id")
+      OR EXISTS (SELECT 1 FROM "billing_terms" x WHERE x."company_id" = co."id")
+      OR EXISTS (SELECT 1 FROM "commission_terms" x WHERE x."company_id" = co."id")
+      OR EXISTS (SELECT 1 FROM "client_updates" x WHERE x."company_id" = co."id")
+      OR EXISTS (SELECT 1 FROM "github_app_installations" x WHERE x."company_id" = co."id"))
     AND NOT EXISTS (SELECT 1 FROM "archive_sales_tools"."clients_0111" a WHERE a."company_id" = co."id");
 
 -- company → the client a new row belongs to.
@@ -106,19 +114,29 @@ ALTER TABLE "activity_logs" RENAME COLUMN "target_company_id" TO "target_client_
 ALTER TABLE "projects" DISABLE TRIGGER USER;
 ALTER TABLE "hour_blocks" DISABLE TRIGGER USER;
 ALTER TABLE "activity_logs" DISABLE TRIGGER USER;
-UPDATE "projects" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'projects' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
-UPDATE "hour_blocks" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'hour_blocks' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
-UPDATE "invoices" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'invoices' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
-UPDATE "client_billing_terms" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'client_billing_terms' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
-UPDATE "client_commission_terms" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'client_commission_terms' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
-UPDATE "client_updates" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'client_updates' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
-UPDATE "github_app_installations" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'github_app_installations' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
-UPDATE "activity_logs" t SET "target_client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'activity_logs.target_client_id' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."target_client_id";
-UPDATE "activity_logs" t SET "target_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'activity_logs.target_id' AND r."id" = t."id"), uc."client_id") FROM "undo_company_client" uc WHERE t."target_type" = 'CLIENT' AND uc."company_id" = t."target_id";
+UPDATE "projects" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'projects' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
+UPDATE "hour_blocks" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'hour_blocks' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
+UPDATE "invoices" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'invoices' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
+UPDATE "client_billing_terms" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'client_billing_terms' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
+UPDATE "client_commission_terms" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'client_commission_terms' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
+UPDATE "client_updates" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'client_updates' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
+UPDATE "github_app_installations" t SET "client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'github_app_installations' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."client_id";
+UPDATE "activity_logs" t SET "target_client_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'activity_logs.target_client_id' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE uc."company_id" = t."target_client_id";
+UPDATE "activity_logs" t SET "target_id" = COALESCE((SELECT r."client_id" FROM "archive_sales_tools"."client_refs_0111" r JOIN "archive_sales_tools"."client_id_map" mm ON mm."client_id" = r."client_id" WHERE r."table_name" = 'activity_logs.target_id' AND r."id" = t."id" AND mm."company_id" = uc."company_id"), uc."client_id") FROM "undo_company_client" uc WHERE t."target_type" = 'CLIENT' AND uc."company_id" = t."target_id";
 ALTER TABLE "projects" ENABLE TRIGGER USER;
 ALTER TABLE "hour_blocks" ENABLE TRIGGER USER;
 ALTER TABLE "activity_logs" ENABLE TRIGGER USER;
-UPDATE "monthly_close_snapshots" s SET "report" = a."report" FROM "archive_sales_tools"."monthly_close_snapshots_0111" a WHERE a."id" = s."id";
+-- Closed-month reports keep what they hold now (a month reclosed after the
+-- release keeps its new figures); only the ids go back to client ids.
+DO $$
+DECLARE pair record;
+BEGIN
+  FOR pair IN SELECT "company_id", "client_id" FROM "undo_company_client" WHERE "company_id" <> "client_id" LOOP
+    UPDATE "monthly_close_snapshots"
+      SET "report" = replace("report"::text, pair."company_id"::text, pair."client_id"::text)::jsonb
+      WHERE "report"::text LIKE '%' || pair."company_id"::text || '%';
+  END LOOP;
+END $$;
 
 ALTER TABLE "leads" ADD COLUMN "converted_to_client_id" uuid;
 UPDATE "leads" l SET "converted_to_client_id" = r."client_id" FROM "archive_sales_tools"."client_refs_0111" r WHERE r."table_name" = 'leads.converted_to_client_id' AND r."id" = l."id";
@@ -132,9 +150,17 @@ ALTER TABLE "client_updates" ADD CONSTRAINT "client_updates_client_id_fkey" FORE
 ALTER TABLE "github_app_installations" ADD CONSTRAINT "github_app_installations_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "clients"("id");
 ALTER TABLE "leads" ADD CONSTRAINT "leads_converted_to_client_id_fkey" FOREIGN KEY ("converted_to_client_id") REFERENCES "clients"("id");
 
--- The company's own columns as they were (notes, website), new ones dropped.
+-- Notes and website go back to what they were before 0111 where nobody has
+-- edited them since (still what 0111 wrote); an edit since the release stays.
 ALTER TABLE "companies" DISABLE TRIGGER USER;
-UPDATE "companies" co SET "notes" = a."notes", "website" = a."website" FROM "archive_sales_tools"."companies_0111" a WHERE a."id" = co."id";
+UPDATE "companies" co SET "notes" = b."notes"
+  FROM "archive_sales_tools"."companies_0111" b
+  JOIN "archive_sales_tools"."companies_after_0111" w ON w."id" = b."id"
+  WHERE b."id" = co."id" AND co."notes" IS NOT DISTINCT FROM w."notes";
+UPDATE "companies" co SET "website" = b."website"
+  FROM "archive_sales_tools"."companies_0111" b
+  JOIN "archive_sales_tools"."companies_after_0111" w ON w."id" = b."id"
+  WHERE b."id" = co."id" AND co."website" IS NOT DISTINCT FROM w."website";
 ALTER TABLE "companies" ENABLE TRIGGER USER;
 DROP INDEX "idx_companies_client";
 ALTER TABLE "companies" DROP CONSTRAINT "companies_slug_key";
@@ -157,5 +183,6 @@ DELETE FROM "drizzle"."__drizzle_migrations" WHERE "id" = (SELECT max("id") FROM
 DROP TABLE "archive_sales_tools"."client_id_map";
 DROP TABLE "archive_sales_tools"."clients_0111";
 DROP TABLE "archive_sales_tools"."companies_0111";
+DROP TABLE "archive_sales_tools"."companies_after_0111";
 DROP TABLE "archive_sales_tools"."client_refs_0111";
 DROP TABLE "archive_sales_tools"."monthly_close_snapshots_0111";

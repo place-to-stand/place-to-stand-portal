@@ -1,13 +1,20 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
-import { and, eq } from 'drizzle-orm'
+import { and, count, eq, inArray } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientDeletedEvent } from '@/lib/activity/events'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { companies, } from '@/lib/db/schema'
+import {
+  billingTerms,
+  clientUpdates,
+  commissionTermClosers,
+  commissionTerms,
+  companies,
+  invoices,
+} from '@/lib/db/schema'
 import {
   countHourBlocksForClient,
   countProjectsForClient,
@@ -63,7 +70,8 @@ export async function destroyClientMutation(
           .select({
             id: companies.id,
             name: clientNameSql,
-            deletedAt: clientEndedAtSql,
+            // Billing must have stopped (an archived company alone isn't enough).
+            deletedAt: companies.clientEndedAt,
           })
           .from(companies)
           .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
@@ -89,12 +97,25 @@ export async function destroyClientMutation(
 
       let projectCount = 0
       let hourBlockCount = 0
+      let invoiceCount = 0
+      let updateCount = 0
 
       try {
-        ;[projectCount, hourBlockCount] = await Promise.all([
-          countProjectsForClient(parsed.data.id),
-          countHourBlocksForClient(parsed.data.id),
-        ])
+        ;[projectCount, hourBlockCount, invoiceCount, updateCount] =
+          await Promise.all([
+            countProjectsForClient(parsed.data.id),
+            countHourBlocksForClient(parsed.data.id),
+            db
+              .select({ n: count() })
+              .from(invoices)
+              .where(eq(invoices.companyId, parsed.data.id))
+              .then(rows => rows[0]?.n ?? 0),
+            db
+              .select({ n: count() })
+              .from(clientUpdates)
+              .where(eq(clientUpdates.companyId, parsed.data.id))
+              .then(rows => rows[0]?.n ?? 0),
+          ])
       } catch (error) {
         console.error(
           'Failed to check client dependencies before delete',
@@ -115,6 +136,14 @@ export async function destroyClientMutation(
         blockingResources.push('hour blocks')
       }
 
+      if (invoiceCount > 0) {
+        blockingResources.push('invoices')
+      }
+
+      if (updateCount > 0) {
+        blockingResources.push('client updates')
+      }
+
       if (blockingResources.length > 0) {
         const resourceSummary =
           blockingResources.length === 1
@@ -131,12 +160,33 @@ export async function destroyClientMutation(
       // Portal access is derived from the company's memberships, so a
       // deleted client simply drops out of client_portal_access.
       try {
-        // Nothing references it: the company was never really billed, so
-        // it stops being a client at all (the company itself stays).
-        await db
-          .update(companies)
-          .set({ clientSince: null, clientEndedAt: null })
-          .where(eq(companies.id, parsed.data.id))
+        // Nothing billed references it: the company was never really billed,
+        // so it stops being a client at all (the company itself stays) and
+        // the terms made with it go too, so making it a client again starts
+        // clean.
+        await db.transaction(async tx => {
+          const termIds = tx
+            .select({ id: commissionTerms.id })
+            .from(commissionTerms)
+            .where(eq(commissionTerms.companyId, parsed.data.id))
+          await tx
+            .delete(commissionTermClosers)
+            .where(inArray(commissionTermClosers.termId, termIds))
+          await tx
+            .delete(commissionTerms)
+            .where(eq(commissionTerms.companyId, parsed.data.id))
+          await tx
+            .delete(billingTerms)
+            .where(eq(billingTerms.companyId, parsed.data.id))
+          await tx
+            .update(companies)
+            .set({
+              clientSince: null,
+              clientEndedAt: null,
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(companies.id, parsed.data.id))
+        })
       } catch (error) {
         console.error('Failed to permanently delete client', error)
         return buildMutationResult({

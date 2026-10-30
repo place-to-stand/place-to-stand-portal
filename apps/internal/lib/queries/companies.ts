@@ -582,11 +582,21 @@ export async function saveCompany(
   return { ok: true, id: existing.id }
 }
 
+/**
+ * Billed now, archived or not: SALES can't archive or restore it (restoring
+ * an archived client would put it back into the open month's close).
+ */
 async function companyHasClient(companyId: string) {
   const [client] = await db
     .select({ id: companies.id })
     .from(companies)
-    .where(and(eq(companies.id, companyId), isClientCompany()))
+    .where(
+      and(
+        eq(companies.id, companyId),
+        isNotNull(companies.clientSince),
+        isNull(companies.clientEndedAt)
+      )
+    )
     .limit(1)
   return Boolean(client)
 }

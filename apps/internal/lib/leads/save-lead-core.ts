@@ -507,7 +507,6 @@ async function updateLead(
     ) {
       setPayload.resolvedAt = null
       setPayload.convertedAt = null
-      setPayload.convertedToClientId = null
       setPayload.lossReason = null
       setPayload.lossNotes = null
     }

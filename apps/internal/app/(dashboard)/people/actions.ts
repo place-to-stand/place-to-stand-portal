@@ -8,8 +8,8 @@ import {
 } from '@/lib/settings/contacts/person-sign-in'
 import { isAdminRole } from '@/lib/auth/roles'
 import { db } from '@/lib/db'
-import { contacts } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { contacts, users } from '@/lib/db/schema'
+import { and, eq, ne, sql } from 'drizzle-orm'
 
 import { revalidatePath } from 'next/cache'
 
@@ -78,9 +78,25 @@ export async function saveContact(
   if (emailChanged && !input.email) {
     return { error: 'Someone who can sign in needs an email.' }
   }
+  // Check before saving, so the person and their sign-in never end up with
+  // different emails.
+  if (emailChanged && existing?.userId && input.email) {
+    const [taken] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(
+        and(
+          ne(users.id, existing.userId),
+          sql`lower(${users.email}) = lower(${input.email})`
+        )
+      )
+      .limit(1)
+    if (taken) return { error: 'Another sign-in already uses that email.' }
+  }
 
   const result = await runContactMutation(input, saveContactMutation)
-  if (!result.error && emailChanged && input.id) {
+  // An admin's save also heals an earlier failed sync (no-op when equal).
+  if (!result.error && existing?.userId && input.id && isAdminRole(user.role)) {
     const synced = await syncSignInEmail(user, input.id)
     if (synced.error) return { ...result, error: synced.error }
   }
@@ -160,9 +176,9 @@ export async function savePersonAvatar(input: {
   avatarPath?: string | null
   avatarRemoved?: boolean
 }): Promise<{ error?: string }> {
-  await requireCrmUser()
+  const user = await requireCrmUser()
   if (!UUID_PATTERN.test(input.contactId)) return { error: 'Invalid person.' }
-  return updatePersonAvatar(input)
+  return updatePersonAvatar(user, input)
 }
 
 /** The Sign-in tab's save: "Can sign in" and the role (admins). */
@@ -173,6 +189,9 @@ export async function savePersonSignInAction(input: {
 }): Promise<{ error?: string }> {
   const user = await requireUser()
   if (!UUID_PATTERN.test(input.contactId)) return { error: 'Invalid person.' }
+  if (!['ADMIN', 'SALES', 'CLIENT'].includes(input.role)) {
+    return { error: 'Choose a role.' }
+  }
   const result = await savePersonSignIn(user, input)
   for (const path of CONTACT_ROUTES_TO_REVALIDATE) revalidatePath(path)
   return result

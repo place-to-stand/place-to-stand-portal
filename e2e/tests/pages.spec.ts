@@ -51,3 +51,10 @@ test('the design system page shows the Alert variants', async ({ page }) => {
   await expect(page.locator('#feedback [data-slot="alert"]')).toHaveCount(3)
   await expect(page.locator('#feedback [data-slot="alert-action"] button').first()).toBeVisible()
 })
+
+test('home page widgets and the command palette link straight to their page', async ({ page }) => {
+  await page.goto('/my/home')
+  await waitForList(page)
+  const bad = (await inAppHrefs(page)).filter(href => REDIRECT_ONLY.some(re => re.test(href)))
+  expect(bad).toEqual([])
+})

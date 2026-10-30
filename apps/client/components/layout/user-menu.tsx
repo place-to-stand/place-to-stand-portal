@@ -29,7 +29,7 @@ export function UserMenu({ email, scopedClients }: UserMenuProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant='ghost' size='sm' className='min-w-0'>
-          <span className='truncate'>Account</span>
+          <span className='truncate'>Profile</span>
           <ChevronDownIcon aria-hidden='true' />
         </Button>
       </DropdownMenuTrigger>
@@ -37,10 +37,10 @@ export function UserMenu({ email, scopedClients }: UserMenuProps) {
         {scopedClients.length > 0 && (
           <>
             {/* Only worth a heading when there is a list to head. A single name
-                under an "Account" trigger needs no further label. */}
+                under a "Profile" trigger needs no further label. */}
             {scopedClients.length > 1 && (
               <DropdownMenuLabel className='text-muted-foreground text-xs font-normal'>
-                Your accounts
+                Your companies
               </DropdownMenuLabel>
             )}
             {scopedClients.map(client => (

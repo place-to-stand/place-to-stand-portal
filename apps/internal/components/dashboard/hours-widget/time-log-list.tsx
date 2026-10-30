@@ -6,7 +6,7 @@ import { Loader2, User, Users } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
-import { projectTasksHref } from '@/lib/sheets/hrefs'
+import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 
 import { formatHours } from './month-cursor'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
@@ -220,11 +220,11 @@ function getProjectHref(entry: DashboardTimeLogEntry) {
 }
 
 function getClientHref(entry: DashboardTimeLogEntry) {
-  if (!entry.clientSlug) {
+  if (!entry.companyId) {
     return null
   }
 
-  return `/clients/${entry.clientSlug}`
+  return companySheetHref(entry.companyId, 'projects')
 }
 
 function renderProjectTypeIcon(projectType: string) {

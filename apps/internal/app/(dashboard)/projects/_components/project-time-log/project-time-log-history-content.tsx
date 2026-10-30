@@ -140,7 +140,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
     props
 
   const { open: openSheet } = useSheetParams()
-  const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown user'
+  const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown person'
   const loggedDate = formatCalendarDate(log.logged_on) ?? 'Unknown date'
   const deleteDisabled = isDeleting
   const deleteReason = deleteDisabled ? 'Removing time log...' : null

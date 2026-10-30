@@ -25,6 +25,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
 import type { PaletteSearchResult } from '@/lib/queries/command-palette'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -215,10 +216,10 @@ function CommandPalette() {
                 // unique across same-named records.
                 value={`${client.name} ${client.slug ?? ''} client-${client.id}`}
                 onSelect={() =>
-                  navigate(`/clients/${client.slug ?? client.id}`)
+                  navigate(companySheetHref(client.id, 'projects'))
                 }
               >
-                <ENTITY_ICONS.company className='size-4' />
+                <ENTITY_ICONS.client className='size-4' />
                 <span>{client.name}</span>
               </CommandItem>
             ))}

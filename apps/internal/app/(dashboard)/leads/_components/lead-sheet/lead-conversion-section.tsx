@@ -52,7 +52,7 @@ export function LeadConversionSection({
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <ENTITY_ICONS.company className='text-muted-foreground h-4 w-4' />
+          <ENTITY_ICONS.client className='text-muted-foreground h-4 w-4' />
           <span className='text-sm font-medium'>Client</span>
         </div>
         <Button
@@ -61,12 +61,12 @@ export function LeadConversionSection({
           size='sm'
           onClick={onConvertToClient}
         >
-          <ENTITY_ICONS.company className='h-3 w-3' />
-          Make client
+          <ENTITY_ICONS.client className='h-3 w-3' />
+          Bill this company
         </Button>
       </div>
       <p className='text-muted-foreground text-sm'>
-        Not a client yet. Make client sets up billing on the lead’s company.
+        Not a client yet: billing is set up on the lead’s company.
       </p>
     </div>
   )

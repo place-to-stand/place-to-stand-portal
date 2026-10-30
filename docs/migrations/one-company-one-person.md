@@ -9,46 +9,15 @@ Companies and People; tables, URLs kept for old links, and CLI fields keep
 the `contact` name (the API is a contract: fields are added, not renamed). Nothing here runs against
 production; it ships with the rest of the unreleased batch (0089–0109).
 
-## Schema end state
+## Schema end state (after 0111 and 0112)
 
-### Company and client
+- `companies` is every business. A company you bill is a client: `client_since` set and `client_ended_at` null (a former client has both). It carries the billing bits that used to be on `clients`: `slug` (project URLs) and `state` (sales tax). Everything billed keys on `company_id`: projects, hour blocks, invoices, `billing_terms`, `commission_terms` (+ `commission_term_closers`), client updates, GitHub installs. There is no `clients` table (0111).
+- `contacts` is the person (UI: People): name, email, phone, LinkedIn, photo (`avatar_url`), companies through `memberships`.
+- `users` is only the sign-in: auth id, sign-in email (always the person's email), role, `disabled_at`, `deleted_at`, onboarding. Name and photo are read from the person (`personNameSql`, `personAvatarSql`). Each sign-in has exactly one person (`contacts.user_id`).
+- Staff (Admin, Sales) are people at the **Place To Stand** company.
+- Still on `users` (a decision for later): the 38 foreign keys that record who acted or owns something (created_by, author, assignee, owner, time logs, commission closers and origination).
 
-- `companies` stays the record for every business (name, website, people).
-- `clients` stays, but only as the company's **billing record**: one per
-  company, `company_id` NOT NULL and unique while live (already enforced by
-  `clients_company_id_live_key`). It keeps what is about billing: `slug` (URLs),
-  `state` (sales tax), `notes` (billing notes), `label`, plus everything keyed
-  on `client_id` (projects, invoices, hour blocks, billing and commission
-  terms, portal access, GitHub installs, client updates, monthly close).
-- **Dropped:** `clients.name`. A client's name is its company's name.
-
-Why not move the billing columns onto `companies` and repoint every
-`client_id` to `company_id`? Projects, invoices, hour blocks, both term
-tables, the portal access view, the monthly close and the CLI all key on
-`client_id`; repointing them is a large, risky migration with no visible
-difference. Keeping the billing record 1:1 and hiding it in the UI gives the
-same experience with a fraction of the change.
-
-### Contact and user
-
-- `contacts` is the person: name, email, phone, LinkedIn, companies.
-- `users` stays, but only as the **sign-in**: id (the auth id), sign-in
-  email, role, `disabled_at` (the emergency off switch), `deleted_at`,
-  onboarding, and the photo the person uploads (`avatar_url`, shown on the
-  contact). A user hangs off exactly one contact (`contacts.user_id`, already
-  unique).
-- **Dropped:** `users.full_name`. A person's name is their contact's name.
-- The sign-in email stays on `users` (the auth provider needs it). It can
-  differ from the contact's email; the contact sheet shows both when they do.
-
-### Staff
-
-Staff users (Admin, Sales) have no contact today. 0109
-gives each one a contact at a new **Place To Stand** company (title
-"Partner" or "Sales"). A staff contact is linked to an existing contact only
-on an exact email match. A staff member who also has a contact under a
-different email is not merged automatically: the pre-flight lists likely
-duplicates by name to decide by hand.
+The sections below record how it got there: 0109 first kept `clients` as a billing record; 0111 then folded it into companies.
 
 ## Migration 0109
 
@@ -86,30 +55,11 @@ Undo SQL goes in `sales-tools-rollout.md` with the rest of the batch.
 
 ## UI (built)
 
-- **Company sheet:** a Client section for admins with the billing record's
-  Billing (type, state), Commission and Portal access, saved by the
-  company's Save; "Client page" and "Stop billing" sit on its title row.
-  Without a client it offers **Make client** (`?client=new`, company
-  preselected). Link / unlink client are gone. `?client=<id>` links open the
-  company sheet.
-- **Client page** (`/clients/[slug]`) stays for projects, notes and updates;
-  its Edit opens the company sheet and its breadcrumbs sit under Companies.
-- **Companies list:** a "Client" badge column and the "Clients" filter.
-  Clients leaves the sidebar; `/clients` redirects to Companies filtered to
-  clients. `/clients/archive` (stopped billing) stays reachable.
-- **Person sheet:** a Sign-in section for admins: sign-in email, last
-  sign-in, role (Admin, Sales, Client), Can sign in (the off switch), set a
-  temporary password (forces a reset), archive / restore. Each applies right
-  away. "Create sign-in" when there is none.
-- **Archiving a person** switches their sign-in off in the same transaction,
-  then bans the auth account and revokes connections.
-- **Settings > Users** redirects to People filtered to sign-ins
-  (`?signIn=`, admins only); `?user=<id>` opens the person.
-- **Lead conversion** = Make client: the client takes the company's name;
-  if the company is already a client the lead links to it.
-- **People:** `/contacts` redirects to `/people`.
-- Sales never sees billing, hours or sign-in controls (UI gated on admin,
-  server actions require ADMIN).
+- **Company sheet:** tabs Details · People · Projects · Billing. Billing has one "Bill this company" switch (make, stop, restart), billing type, state and commission, saved with the sheet's one Save. Each People row has the person's Portal switch.
+- **Person sheet:** one stacked form: photo, details, companies, and Sign-in ("Can sign in" plus a role, saved with Save; "Send password reset"). The email is the sign-in.
+- **Lists:** Companies (with the Client badge and Clients / Former clients filters) and People (sign-in column for admins). `/clients/*`, `/contacts/*` and `/settings/users` only redirect, for old bookmarks; the app never links to them.
+- **Leads:** a lead's person and company are records; a person who isn't at the company shows a warning with "Add to <company>"; billing a won lead's company happens on that company.
+- Sales never sees billing, hours, portal or sign-in controls.
 
 ## Checks
 
@@ -145,7 +95,7 @@ the client/user split, does the wording name the entity.
 | Person Companies rows: portal tooltip | Pointed to another screen | Read-only "Portal access" note |
 | People list: "User" column | Word "user"; photo only for sign-ins | Photo beside every name; "Sign-in" column with the role (admins) |
 | Settings > Users page and sheet ("Linked contact", "Open contact") | Leftover from the split | Removed; redirects to People (sign-ins) and the person |
-| Client badge / filters / Billing state | Same icon as the company | Client is the blue briefcase; company the indigo building; person the rose user |
+| Client badge / filters / Billing state | Same icon as the company | Client is the briefcase, company the building, person the user icon, in the palette B colours from the entity registry |
 
 Kept on purpose:
 `users` until 0112; Gmail client helpers and generated Supabase types (not

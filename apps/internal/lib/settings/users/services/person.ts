@@ -79,7 +79,9 @@ async function findOrCreateStaffCompany(executor: Executor): Promise<string> {
   const [existing] = await executor
     .select({ id: companies.id })
     .from(companies)
-    .where(sql`lower(${companies.name}) = lower(${STAFF_COMPANY_NAME})`)
+    .where(
+      sql`lower(${companies.name}) = lower(${STAFF_COMPANY_NAME}) and ${companies.deletedAt} is null`
+    )
     .limit(1)
   if (existing) return existing.id
   const [created] = await executor

@@ -614,6 +614,8 @@ FROM archive_sales_tools.lead_contact_copies a WHERE a.lead_id = l.id;
 -- Leads created after the release have no copy: fill from their contact.
 UPDATE leads l SET contact_name = c.name, contact_email = c.email, contact_phone = c.phone
 FROM contacts c WHERE c.id = l.contact_id AND l.contact_name IS NULL;
+UPDATE leads l SET company_name = co.name, company_website = co.website
+FROM companies co WHERE co.id = l.company_id AND l.company_name IS NULL;
 ALTER TABLE leads ALTER COLUMN contact_name SET NOT NULL;
 
 -- Undo 0105-0107 and tell drizzle.
@@ -624,10 +626,13 @@ ALTER TABLE leads DROP CONSTRAINT leads_contact_id_fkey,
   ADD CONSTRAINT leads_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL;
 -- 0106 gave leads with only a typed company name a company: undo that.
 UPDATE leads l SET company_id = NULL FROM archive_sales_tools.lead_companies_0106 a WHERE a.lead_id = l.id;
+-- Remove those companies unless something made since the release uses them
+-- (a lead's company would otherwise be cleared without an error).
 DO $$
 DECLARE r record;
 BEGIN
-  FOR r IN SELECT id FROM archive_sales_tools.companies_created_0106 LOOP
+  FOR r IN SELECT c.id FROM archive_sales_tools.companies_created_0106 c
+    WHERE NOT EXISTS (SELECT 1 FROM leads l WHERE l.company_id = c.id) LOOP
     BEGIN DELETE FROM companies WHERE id = r.id; EXCEPTION WHEN foreign_key_violation THEN NULL; END;
   END LOOP;
 END $$;

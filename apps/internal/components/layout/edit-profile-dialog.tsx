@@ -211,7 +211,7 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
 
                   return (
                     <FormItem>
-                      <FormLabel>Avatar</FormLabel>
+                      <FormLabel>Photo</FormLabel>
                       <FormControl>
                         <AvatarUploadField
                           key={avatarFieldKey}

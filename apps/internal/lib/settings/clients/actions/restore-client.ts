@@ -1,4 +1,4 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import { wasClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import { and, eq } from 'drizzle-orm'
 
@@ -51,6 +51,7 @@ export async function restoreClientMutation(
             id: string
             name: string
             deletedAt: string | null
+            companyArchived: string | null
           }
         | undefined
 
@@ -59,7 +60,8 @@ export async function restoreClientMutation(
           .select({
             id: companies.id,
             name: clientNameSql,
-            deletedAt: clientEndedAtSql,
+            deletedAt: companies.clientEndedAt,
+            companyArchived: companies.deletedAt,
           })
           .from(companies)
           .where(and(wasClientCompany(), eq(companies.id, parsed.data.id)))
@@ -79,10 +81,17 @@ export async function restoreClientMutation(
         return buildMutationResult({ error: 'Client is already active.' })
       }
 
+      // An archived company can't be billed: restore the company first.
+      if (existingClient.companyArchived) {
+        return buildMutationResult({
+          error: 'Restore the company before restarting its billing.',
+        })
+      }
+
       try {
         await db
           .update(companies)
-          .set({ clientEndedAt: null })
+          .set({ clientEndedAt: null, updatedAt: new Date().toISOString() })
           .where(eq(companies.id, parsed.data.id))
       } catch (error) {
         console.error('Failed to restore client', error)

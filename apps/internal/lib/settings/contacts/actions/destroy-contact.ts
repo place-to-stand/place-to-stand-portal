@@ -50,6 +50,7 @@ export async function destroyContactMutation(
             email: string | null
             name: string | null
             deletedAt: string | null
+            userId: string | null
           }
         | undefined
 
@@ -60,6 +61,7 @@ export async function destroyContactMutation(
             email: contacts.email,
             name: contacts.name,
             deletedAt: contacts.deletedAt,
+            userId: contacts.userId,
           })
           .from(contacts)
           .where(eq(contacts.id, parsed.data.id))
@@ -80,6 +82,14 @@ export async function destroyContactMutation(
       if (!existingContact.deletedAt) {
         return buildMutationResult({
           error: 'Person must be archived before permanent deletion.',
+        })
+      }
+
+      // A sign-in belongs to exactly one person: deleting the person would
+      // leave it with none.
+      if (existingContact.userId) {
+        return buildMutationResult({
+          error: 'This person has a sign-in. Archive them instead.',
         })
       }
 

@@ -113,8 +113,8 @@ export function ContactCompaniesSection({
                       </TooltipTrigger>
                       <TooltipContent>
                         {entry.portalAccess
-                          ? 'Can see this client in the portal (set on the company’s People tab)'
-                          : 'No portal access (set on the company’s People tab)'}
+                          ? 'Can see this client in the portal'
+                          : 'No portal access'}
                       </TooltipContent>
                     </Tooltip>
                   ) : null

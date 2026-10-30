@@ -45,12 +45,6 @@ export const saveCompanySchema = z.object({
   addContactIds: z.array(z.string().uuid()).max(500).optional(),
   removeContactIds: z.array(z.string().uuid()).max(500).optional(),
   /**
-   * The client linked in the sheet's Linked client slot (edit only, admin
-   * only). One linked elsewhere moves here and is renamed to match. A
-   * company has one client.
-   */
-  addClientIds: z.array(z.string().uuid()).max(1).optional(),
-  /**
    * Titles at this company, set on the Contacts list (edit only): for
    * current members and people joining in this save. Blank clears it.
    */
@@ -73,8 +67,6 @@ export const saveCompanySchema = z.object({
    * a member after this save's people changes.
    */
   primaryContactId: z.string().uuid().nullable().optional(),
-  /** The linked client to unlink (admin only); it keeps its own records. */
-  unlinkClientIds: z.array(z.string().uuid()).max(1).optional(),
 })
 
 export type SaveCompanyInput = z.input<typeof saveCompanySchema>

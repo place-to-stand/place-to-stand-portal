@@ -219,7 +219,7 @@ function CloserAddButton({
           />
           <CommandList>
             {availableUsers.length > 0 ? (
-              <CommandGroup heading='Admin users'>
+              <CommandGroup heading='Partners'>
                 {availableUsers.map(candidate => (
                   <CandidateItem
                     key={closerKey(candidate)}

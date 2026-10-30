@@ -239,7 +239,7 @@ function formatValue(
       return typeof value === 'string' ? humanizeEnum(value) : String(value)
     case 'user':
       return typeof value === 'string'
-        ? (references?.users[value]?.name ?? 'Unknown user')
+        ? (references?.users[value]?.name ?? 'Unknown person')
         : String(value)
     case 'contact':
       return typeof value === 'string'
@@ -283,7 +283,7 @@ function MembershipChips({
   resolveNames: boolean
 }) {
   const nameFor = (id: string) =>
-    resolveNames ? (references?.users[id]?.name ?? 'Unknown user') : id
+    resolveNames ? (references?.users[id]?.name ?? 'Unknown person') : id
 
   return (
     <span className='inline-flex flex-wrap items-center gap-1'>
