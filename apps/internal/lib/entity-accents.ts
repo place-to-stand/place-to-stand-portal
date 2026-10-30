@@ -28,7 +28,7 @@ import {
   UserRound,
   type LucideIcon,
 } from 'lucide-react'
-/* eslint-enable no-restricted-imports */
+/* eslint-enable no-restricted-imports -- closes the registry-owned icon import above */
 
 export type AccentEntity =
   | 'lead'

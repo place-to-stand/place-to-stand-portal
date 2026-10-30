@@ -1,3 +1,4 @@
 import { base } from '@pts/eslint-config/base'
 
-export default base()
+// A command-line tool: printing is its output.
+export default base({ allowConsole: true })

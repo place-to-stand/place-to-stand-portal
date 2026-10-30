@@ -86,6 +86,28 @@ export function nextApp({ dir, entityRegistry } = {}) {
       rules: HOUSE_RULES,
     },
     {
+      // Type-aware, so only these two (the type information is the slow
+      // part): an unawaited promise loses its error; a switch over a union
+      // must handle every member.
+      files: ['**/*.{ts,tsx}'],
+      ignores: ['scripts/**'],
+      languageOptions: {
+        parserOptions: { projectService: true, tsconfigRootDir: dir },
+      },
+      rules: {
+        '@typescript-eslint/no-floating-promises': 'error',
+        '@typescript-eslint/switch-exhaustiveness-check': [
+          'error',
+          { considerDefaultExhaustiveForUnions: true },
+        ],
+      },
+    },
+    {
+      // Dev scripts print their output.
+      files: ['scripts/**'],
+      rules: { 'no-console': 'off' },
+    },
+    {
       // Layering: no server code in a 'use client' file.
       rules: { 'pts/client-boundary': ['error', { appDir: dir }] },
     },

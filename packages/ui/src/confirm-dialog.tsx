@@ -46,7 +46,7 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   confirmVariant = 'default',
   confirmDisabled = false,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- accepted for API compatibility; an alert dialog has no close button
   showCloseButton: _showCloseButton = false,
   onConfirm,
   onCancel,

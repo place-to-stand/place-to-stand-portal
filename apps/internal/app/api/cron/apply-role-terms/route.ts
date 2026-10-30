@@ -18,9 +18,6 @@ export async function GET(request: NextRequest) {
 
   try {
     const changes = await applyDueRoleTerms()
-    if (changes.length > 0) {
-      console.log(`Applied ${changes.length} scheduled role change(s)`)
-    }
     return NextResponse.json({ ok: true, data: { applied: changes.length } })
   } catch (error) {
     console.error('Failed to apply scheduled role changes', error)

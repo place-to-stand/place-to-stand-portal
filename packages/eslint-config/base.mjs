@@ -7,6 +7,7 @@
  * The apps layer Next.js and the house rules on top (`./next.mjs`).
  */
 import { globalIgnores } from 'eslint/config'
+import eslintComments from '@eslint-community/eslint-plugin-eslint-comments'
 import tseslint from 'typescript-eslint'
 
 import { pts } from './plugin.mjs'
@@ -20,12 +21,23 @@ export const IGNORES = globalIgnores([
   '**/next-env.d.ts',
 ])
 
-/** Rules for every workspace, apps and packages alike. */
-export function common() {
+/**
+ * Rules for every workspace, apps and packages alike. `allowConsole` for
+ * command-line code (the pts CLI); scripts/ and e2e/ are never linted as app
+ * code.
+ */
+export function common({ allowConsole = false } = {}) {
   return [
     {
-      plugins: { pts },
+      plugins: { pts, '@eslint-community/eslint-comments': eslintComments },
       rules: {
+        // Every eslint-disable says why: `// eslint-disable-next-line rule -- reason`.
+        '@eslint-community/eslint-comments/require-description': 'error',
+        // Logs are for problems. Report events through PostHog or the activity
+        // log; return results from the route.
+        'no-console': allowConsole
+          ? 'off'
+          : ['error', { allow: ['warn', 'error'] }],
         // Money: an outer column in a correlated subquery binds to the inner
         // table (three past bugs). See rules/drizzle-qualified-subquery.mjs.
         'pts/drizzle-qualified-subquery': 'error',
@@ -38,11 +50,11 @@ export function common() {
 }
 
 /** A package that isn't a Next app. */
-export function base() {
+export function base({ allowConsole = false } = {}) {
   return [
     IGNORES,
     // The same TypeScript rules eslint-config-next/typescript gives the apps.
     ...tseslint.configs.recommended,
-    ...common(),
+    ...common({ allowConsole }),
   ]
 }

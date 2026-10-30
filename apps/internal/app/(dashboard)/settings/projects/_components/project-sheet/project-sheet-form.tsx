@@ -148,7 +148,8 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     (e?: React.BaseSyntheticEvent) => {
       e?.preventDefault()
       // Convert removedRepoIds Set to array for submission
-      form.handleSubmit(values =>
+      // onSubmit reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values =>
         onSubmit(values, {
           pendingRepos: pendingReposRef.current,
           removedRepoIds: Array.from(removedRepoIdsRef.current),

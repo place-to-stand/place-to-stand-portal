@@ -58,7 +58,8 @@ export function usePlanRevisions(threadId: string | null, enabled: boolean) {
   }, [])
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey })
+    // Background refetch: its errors land in the query, not here.
+    void queryClient.invalidateQueries({ queryKey })
     // Reset to latest on next refetch
     setViewingVersion(null)
   }, [queryClient, queryKey])

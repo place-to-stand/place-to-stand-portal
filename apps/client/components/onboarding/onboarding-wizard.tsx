@@ -176,7 +176,7 @@ function ChooseSignInStep({
         setSettling(false)
       })
     // Runs once, on the return leg of the redirect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once, on the return leg of the redirect
   }, [])
 
   if (settling) {

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-require-imports -- a CommonJS require hook, loaded with --require */
 /** Lets server modules run under tsx: `server-only` is a bundler marker. */
 const Module = require('module')
 const resolve = Module._resolveFilename

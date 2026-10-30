@@ -267,7 +267,8 @@ export function useProjectTimeLogDialog(
       typeof queueMicrotask === 'function'
         ? queueMicrotask
         : (callback: () => void) => {
-            Promise.resolve().then(callback)
+            // Microtask fallback for queueMicrotask; the callback sets state.
+            void Promise.resolve().then(callback)
           }
 
     scheduleBaselineUpdate(() => {
@@ -305,7 +306,8 @@ export function useProjectTimeLogDialog(
       typeof queueMicrotask === 'function'
         ? queueMicrotask
         : (callback: () => void) => {
-            Promise.resolve().then(callback)
+            // Microtask fallback for queueMicrotask; the callback sets state.
+            void Promise.resolve().then(callback)
           }
 
     scheduleBaselineUpdate(() => {

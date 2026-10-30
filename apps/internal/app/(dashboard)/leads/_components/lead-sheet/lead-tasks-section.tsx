@@ -73,7 +73,8 @@ export function LeadTasksSection({
   }, [lead.id])
 
   useEffect(() => {
-    fetchTasks()
+    // fetchTasks catches and reports its own errors.
+    void fetchTasks()
   }, [fetchTasks])
 
   // Warm the task sheet's reference data while the user reads the lead, so

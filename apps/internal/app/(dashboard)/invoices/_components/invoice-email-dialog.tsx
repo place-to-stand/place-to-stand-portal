@@ -132,6 +132,9 @@ function InvoiceEmailForm({
       setCc(draft.cc)
       setSubject(draft.subject)
       setMessage(draft.message)
+    }, (error: unknown) => {
+      if (cancelled) return
+      setLoadError(error instanceof Error ? error.message : 'Unable to load the email.')
     })
     return () => {
       cancelled = true

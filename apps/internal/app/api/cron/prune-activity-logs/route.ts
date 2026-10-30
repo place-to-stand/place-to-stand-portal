@@ -27,12 +27,6 @@ export async function GET(request: NextRequest) {
   try {
     const deletedCount = await pruneActivityLogsBefore(cutoff)
 
-    if (deletedCount > 0) {
-      console.log(
-        `Pruned ${deletedCount} activity log row(s) older than ${cutoff.toISOString()}`
-      )
-    }
-
     return NextResponse.json({
       ok: true,
       data: { deletedCount, cutoff: cutoff.toISOString() },

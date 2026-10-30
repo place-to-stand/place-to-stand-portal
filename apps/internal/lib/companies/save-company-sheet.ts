@@ -203,6 +203,9 @@ export async function saveCompanySheet(
         const companyId = await writeCompany(tx, actor, plan)
 
         switch (billingPlan.kind) {
+          case 'none':
+            // Billing unchanged: nothing to write.
+            break
           case 'start':
             await startClientBillingInTx(tx, {
               companyId,
@@ -557,6 +560,9 @@ async function logAfterCommit(
     })
 
   switch (billing.kind) {
+    case 'none':
+      // Billing unchanged: nothing to log.
+      break
     case 'start':
       await clientActivity(
         clientCreatedEvent({ name: plan.next.name, memberIds: [] })

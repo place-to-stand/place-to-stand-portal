@@ -131,7 +131,8 @@ export function useFormHistory<T extends FieldValues>({
       if (typeof queueMicrotask === 'function') {
         queueMicrotask(releaseFlag)
       } else {
-        Promise.resolve().then(releaseFlag)
+        // Microtask fallback; releaseFlag only resets a ref and never throws.
+        void Promise.resolve().then(releaseFlag)
       }
     },
     [applyExternalState, flushPendingSnapshots, form, refreshCapabilities]
