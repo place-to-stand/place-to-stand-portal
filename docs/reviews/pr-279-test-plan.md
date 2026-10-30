@@ -30,7 +30,7 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
 
 ## 2. Companies and billing
 
-1. **MUST** Companies › **Create company**. Expect: Details, People and Billing tabs (no Projects tab on create).
+1. **MUST** Companies › **Create company**. Expect: Details and Billing tabs (no Projects tab on create); People is a section on Details.
    - Add a name and a person.
    - Switch **Bill this company** on with "First month billed: October 2026 (this month)".
    - Save once.
@@ -108,8 +108,7 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
 
 1. **MUST** Preview as a person with portal access at a client. Expect: only that company's projects, hours and invoices.
 2. **MUST** Preview as a person at **two** clients. Expect: both companies, nothing else.
-3. **MUST** A person at a company stopped with "last month": no portal access.
-   - For one billed through this month, access is cut today: decision **P1** in the audit.
+3. **MUST** A person at a company stopped with "last month": no portal access. One billed through this month keeps access until the month ends (P1); restarting billing brings it back (P2).
 4. Empty states:
    - the portal says "Your portal isn't set up yet…";
    - the preview says "Choose a person to preview" (once, not twice).
@@ -160,7 +159,7 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
 
 1. Toasts: success has a green check; error has a red title on a light red wash; warning is amber; info is neutral.
 2. Alerts: the warning icon is centred on the first line, also when the text wraps.
-3. Badges: all the same size and weight, sentence case. Project status badges look the same everywhere.
+3. Badges: all the same size, in caps and semibold (on trial). Project status badges look the same everywhere.
 4. Pickers open on the selected option; scrolling and hovering never snap back. Staff pickers say "Search people…" with a **Staff** group.
 5. Popovers and menus have the stronger shadow.
 6. Entity colours: money is green (Client green, Invoice teal, Hour block lime); work is blue (Project blue, Task indigo, Time log sky).
@@ -181,3 +180,43 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
 3. Check that nobody was stopped as a client earlier in the release month: after the migration, a stop dated this month counts as billed through the month (I8).
 4. In Supabase › SQL editor, run `select has_table_privilege('postgres', 'auth.sessions', 'DELETE'), has_table_privilege('postgres', 'auth.refresh_tokens', 'DELETE');`. Expect both true. The S1 takeover needs them; if they're false, granting a sign-in to a reused email fails safely with an error.
 5. Confirm `CRON_SECRET` is set in Vercel (new daily `/api/cron/apply-role-terms`).
+
+## 12. Decisions built on 30 Oct (try these on :3003)
+
+**Money**
+
+1. **MUST (C1)** An hour block for a client whose billing starts next month counts in the close. Every existing month is unchanged: the 13-month close compares identically.
+2. **MUST (W4)** Archive a company that's still billed. Expect: the archive button is disabled, with "Stop billing first." (list and sheet).
+3. **MUST (P1/P2)** Stop a client with "this month". Expect: their portal people can still sign in until the month ends. Restart billing: the same people get access back.
+4. **MUST (PW3)** In a client's final billed month, the Billing switch stays on with "Billing stops after <month>" and **Keep billing**. Press it and Save: the stop is cancelled. Terms are editable meanwhile.
+5. **MUST (PW4)** Restart a former client. Expect: its last terms are filled in, and edits save in the same Save.
+6. **MUST (PW2)** On a Net 30 client with hours this month, choose the "last month" stop. Expect: a warning with the hours that won't be billed.
+7. **MUST (W3)** Open the same company (or person) in two tabs. Save one, then the other. Expect: the second is refused with a toast, "Someone else saved this … Reload to see their changes."
+8. **MUST (P5)** Change an Admin to Sales. Expect: Role starts defaults to next month. Pick this month: "Their hours this month won't count as payroll."
+
+**Permissions (sign in as Sales)**
+
+9. **MUST (R4)** Add a person to a client company from the company sheet, the person sheet and a lead save: all allowed, and no portal access appears.
+10. **MUST** As Sales, the primary star on a client is disabled ("Only an admin can change a client's primary contact."). On a non-client it works.
+11. **MUST** As Sales, people who have a user, the Place To Stand company, billing and portal switches stay locked.
+12. **MUST (R14)** As Sales, someone else's lead update has its actions menu disabled. Your own still works.
+13. **MUST (R10)** Move a Won lead back a stage. Expect: it keeps "Made a client" and its Converted section.
+14. **MUST (S10)** Sign in with a wrong password 11 times for one email. Expect: "Too many sign-in attempts. Try again in a few minutes." (This uses up attempts for 15 minutes.)
+
+**Product**
+
+15. **(P4)** Person sheet: each client company row has a Portal switch (admin), labelled "Portal" on the row's second line. Turning it on for someone with no user shows the caution "Saving emails a portal invite to …".
+16. **(U31)** Lead sheet with a person not at the company: one caution, "<Person> is not yet at <Company>. Saving adds <Person> to <Company>." Save, and they're at the company.
+17. **Caution alerts:** every save side effect is shown the same way (billing start/stop/restart, sign-in creation, invites).
+18. **(U18)** Save failures and successes appear as toasts on every sheet; required-field messages stay under fields.
+19. **(U24)** Sheets come in two widths. The task sheet shows Time logs, Activity, then Comments as sections.
+20. **(U12/U25)** Linked records open on top of the current sheet. An archived company opens read-only: "Archived. Restore it from the archive list."
+21. **(U30)** No "Delete forever" anywhere.
+22. **(U29/PI7)** The People list has no Clients column, and client companies carry the badge. The Companies list shows the badge next to the name.
+23. **Filters:** every list filter is a searchable picker that opens on the selected option. People has a Role filter (All roles, Admin, Sales, Client, No user).
+24. **Time logs:** every time-log dialog (project, task, My tasks, /time-logs, home widget) shows the client's hours: prepaid remaining, or Net 30 this month.
+25. **Invoices:** the sheet lists its hour blocks as rows ("40h · $4,800.00"); clicking one opens it on top.
+26. **(U21)** Hours read "1.5h" and money "$1,234.00" everywhere, including emails and PDFs (money exact to the cent).
+27. **Rich text:** type a very long URL in a task description and Save. Expect: it wraps; nothing runs past the edge.
+28. **(PI9, client portal)** A Net 30 client's Hours page shows this month's hours, then earlier months as lines. **(PI4)** The account menu shows the person's first name.
+

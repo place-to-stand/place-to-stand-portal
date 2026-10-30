@@ -162,7 +162,63 @@ Second wave (product, UI and data-layer cleanups with an obvious answer):
 
 ---
 
-## 4. Decisions for you
+## 4. Decisions: Jason's answers (30 Oct 2026)
+
+Every decision below has been answered. What was built is on the PR branch, at 048cb978. The original write-ups follow the table for reference.
+
+| Id | Answer | Built |
+| --- | --- | --- |
+| C1 | Prepaid hour blocks count in the month bought; a new client's first terms are dated from the first billed month | d4175ed0 |
+| W4 | Archiving a company that's still billed is refused: "Stop billing first." | 64154745 |
+| P1 + P2 | Stopping billing leaves portal flags alone. The portal ends access when billing ends, and a restart brings back the people who had it | c105123f |
+| P5 | Moving someone away from Admin defaults to next month, with a payroll note if this month is picked | 87ce686c |
+| PW2 | A Net 30 "last month" stop warns about hours logged this month that won't be billed | 00557799 |
+| PW3 | Final billed month: the switch stays on, "Billing stops after <month>", Keep billing, terms editable | cd661d7a |
+| PW4 | Restarting a former client shows its last terms, saved in the same Save | 92d0f925 |
+| W3 | Company and person sheets refuse a save made over someone else's newer save | 0d0eb8f9, 2febb4f0 |
+| I10 | Payroll counts all client work by month worked (code comment) | b851f130 |
+| S1, S7 | Already off in production (email sign-up, Data API) | none needed |
+| S2 / R3 | Deferred until after release: a known gap | not built |
+| S10 | Password sign-in limit: 10 per email and 30 per IP every 15 min, in both portals. Gap: a direct-to-Supabase call skips it | d7ad6310 … 25489a71 |
+| R4 | Sales builds the directory, clients included, from any sheet. Billing, portal access, a client's primary contact, people with a user and the staff company stay admin-only. A membership Sales makes never has portal access (enforced in `setPortalAccess`) | e1233712 |
+| R7 | Company notes are open to Sales on every company | e1233712 (wording) |
+| Primary contact | Sales may set it on non-clients; admin-only once the company is billed | e1233712 |
+| R10 | A Won lead moved back keeps its conversion | 7180f6cb |
+| R14 | Only the author or an admin edits or archives a lead update | 863dbba4 |
+| P4 | Portal switch per client company on the person sheet (admin only) | 358d8473 |
+| PW12 | Sidebar unchanged | none needed |
+| PI1 | Role month list: next month, this month, and the latest open earlier month | 9d645dfe |
+| PI4 | Client portal account menu shows the first name | eb296044 |
+| PI7 | Client badge next to the company name; the list still opens on All | bd262dbd |
+| PI9 | Net 30 Hours page: this month's hours, then earlier months as lines | 39cd07eb |
+| U29 | People list: Clients column gone; client companies carry the badge | e5be7904 |
+| U30 | "Delete forever" removed everywhere. Submissions lose their privacy erase: an erasure request now needs a manual DB step | ab42fc99 … c110e3ca |
+| U31 | Lead sheet: one caution, "<Person> is not yet at <Company>. Saving adds <Person> to <Company>." | 4c84b449 |
+| U25 | Restore only from archive lists | 3479d460 |
+| U12 | Related records always stack a sheet | f4ba603e |
+| U18 | Save results, success or failure, are toasts on every sheet; field errors stay on fields | 9c2d4124 |
+| U24 | Two sheet widths (narrow, wide), one tab style, comments a section at the bottom | 5072dd6f |
+| U21 | One `formatHours` ("1.5h") and `formatCurrency` ("$1,234.00") everywhere, with a lint guard | 07ea9719 … 9594c04a |
+| U2, U8, U9, U10, D2, D5–D27, D14, D16–D19, D22, D23 | Approved as small follow-up PRs after release; any production schema drop needs Jason's go-ahead each time | later |
+| D30 | Keep the unused columns | none needed |
+
+**Asks made while deciding, also built:**
+
+- **Badges:** on trial in caps and semibold (8c40c50a, one commit to revert).
+- **/design:** the eyebrow is gone.
+- **Time-log dialogs:** every one shows the client's hours.
+- **Invoices:** the sheet lists its hour blocks as record rows.
+- **Save side effects:** all shown as one caution alert.
+- **Portal switch:** the tooltip is gone.
+- **Record rows:** fields sit on a second line, with labels.
+- **Company sheet:** People sits on the Details tab.
+- **People list:** a Role filter.
+- **Filters:** every list filter is a searchable picker.
+- **Rich-text editor:** the overflow while saving is fixed. The cause: the disabled-field wrapper let the editor grow to fit its longest word.
+
+---
+
+## 4a. The decisions as first written
 
 My recommendation comes first in each. None of these is built.
 
