@@ -31,7 +31,6 @@ type ReviewArchivedSectionProps = {
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
   isReviewActionPending: boolean
-  onRequestDestroy: (task: TaskWithRelations) => void
 }
 
 const ARCHIVED_BADGE = getTaskStatusToken('ARCHIVED')
@@ -45,7 +44,6 @@ export function ReviewArchivedSection({
   reviewActionTaskId,
   reviewActionType,
   isReviewActionPending,
-  onRequestDestroy,
 }: ReviewArchivedSectionProps) {
   return (
     <section className='bg-background rounded-xl border shadow-sm'>
@@ -61,8 +59,8 @@ export function ReviewArchivedSection({
               </span>
             </div>
             <p className='text-muted-foreground text-xs'>
-              Archived tasks remain available for reference until permanently
-              deleted.
+              Archived tasks stay for reference. Restore one to put it back on
+              the board.
             </p>
           </div>
         </div>
@@ -95,10 +93,6 @@ export function ReviewArchivedSection({
                   isReviewActionPending &&
                   reviewActionTaskId === task.id &&
                   reviewActionType === 'restore'
-                const isDestroyAction =
-                  isReviewActionPending &&
-                  reviewActionTaskId === task.id &&
-                  reviewActionType === 'destroy'
                 const blockOtherActions =
                   isReviewActionPending && reviewActionTaskId !== task.id
                 const disabledReason = blockOtherActions
@@ -140,14 +134,6 @@ export function ReviewArchivedSection({
                           disabled={Boolean(disabledReason)}
                           disabledReason={disabledReason}
                           pending={isRestoreAction}
-                        />
-                        <RecordRowAction
-                          kind='destroy'
-                          entity='task'
-                          onClick={() => onRequestDestroy(task)}
-                          disabled={Boolean(disabledReason)}
-                          disabledReason={disabledReason}
-                          pending={isDestroyAction}
                         />
                       </RecordRowActions>
                     </TableCell>

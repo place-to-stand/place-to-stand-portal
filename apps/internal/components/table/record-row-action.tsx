@@ -41,11 +41,6 @@ const KINDS = {
     icon: <RefreshCw />,
     variant: 'outline',
   },
-  destroy: {
-    label: e => `Permanently delete ${e}`,
-    icon: <Trash2 />,
-    variant: 'destructive',
-  },
   delete: {
     label: e => `Delete ${e}`,
     icon: <Trash2 />,

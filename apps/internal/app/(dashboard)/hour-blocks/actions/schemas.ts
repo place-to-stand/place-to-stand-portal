@@ -22,4 +22,3 @@ export const hourBlockSchema = z.object({
 
 export const deleteSchema = z.object({ id: z.string().uuid() })
 export const restoreSchema = z.object({ id: z.string().uuid() })
-export const destroySchema = z.object({ id: z.string().uuid() })

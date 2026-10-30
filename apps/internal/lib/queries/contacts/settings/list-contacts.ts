@@ -100,8 +100,7 @@ async function queryContactRows(
   opts?: { offset?: number }
 ) {
   // Correlated subquery instead of a join + GROUP BY: it counts only live
-  // clients (matching the Linked Clients cell) and is also what the
-  // `clients` sort descriptor orders by.
+  // clients with portal access (the MCP directory reports it).
   const query = db
     .select({
       ...contactFields,
@@ -261,11 +260,7 @@ export async function listContactsForSettings(
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
   const seesAccess = canSeePortalAccess(user.role)
-  // Sorting by portal access would reveal it.
-  const sort =
-    input.sort && (seesAccess || input.sort.field !== 'clients')
-      ? input.sort
-      : DEFAULT_CONTACTS_SORT
+  const sort = input.sort ?? DEFAULT_CONTACTS_SORT
   const descriptor = CONTACT_SORT_DESCRIPTORS[sort.field]
 
   const statusCondition = buildStatusCondition(normalizedStatus)

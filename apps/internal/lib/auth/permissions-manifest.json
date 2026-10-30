@@ -211,13 +211,6 @@
   },
   {
     "type": "action",
-    "name": "destroyHourBlock",
-    "file": "apps/internal/app/(dashboard)/hour-blocks/actions/destroy-hour-block.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "restoreHourBlock",
     "file": "apps/internal/app/(dashboard)/hour-blocks/actions/restore-hour-block.ts",
     "kind": "admin",
@@ -255,13 +248,6 @@
     "type": "action",
     "name": "archiveInvoice",
     "file": "apps/internal/app/(dashboard)/invoices/actions/archive-invoice.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "destroyInvoice",
-    "file": "apps/internal/app/(dashboard)/invoices/actions/destroy-invoice.ts",
     "kind": "admin",
     "capability": null
   },
@@ -379,13 +365,6 @@
   },
   {
     "type": "action",
-    "name": "destroyLead",
-    "file": "apps/internal/app/(dashboard)/leads/_actions/destroy-lead.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "moveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/move-lead.ts",
     "kind": "capability",
@@ -499,13 +478,6 @@
   {
     "type": "action",
     "name": "restoreContact",
-    "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "destroyContact",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "capability",
     "capability": "leads.manage"
@@ -635,13 +607,6 @@
     "file": "apps/internal/app/(dashboard)/projects/actions/change-task-status.ts",
     "kind": "capability",
     "capability": "portal.sign_in"
-  },
-  {
-    "type": "action",
-    "name": "destroyTask",
-    "file": "apps/internal/app/(dashboard)/projects/actions/destroy-task.ts",
-    "kind": "admin",
-    "capability": null
   },
   {
     "type": "action",
@@ -812,13 +777,6 @@
     "capability": "projects.manage"
   },
   {
-    "type": "action",
-    "name": "destroyProject",
-    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
-    "kind": "capability",
-    "capability": "projects.manage"
-  },
-  {
     "type": "page",
     "name": "/settings/projects",
     "file": "apps/internal/app/(dashboard)/settings/projects/page.tsx",
@@ -885,13 +843,6 @@
     "type": "action",
     "name": "archiveSubmission",
     "file": "apps/internal/app/(dashboard)/submissions/actions/archive-submission.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "destroySubmission",
-    "file": "apps/internal/app/(dashboard)/submissions/actions/destroy-submission.ts",
     "kind": "admin",
     "capability": null
   },

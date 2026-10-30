@@ -63,11 +63,6 @@ export const leadRestoredEvent = (args: { name: string }): ActivityEvent => ({
   summary: `Restored lead "${args.name}"`,
 })
 
-export const leadDeletedEvent = (args: { name: string }): ActivityEvent => ({
-  verb: ActivityVerbs.LEAD_DELETED,
-  summary: `Permanently deleted lead "${args.name}"`,
-})
-
 export const leadUpdateLoggedEvent = (args: {
   contactName: string
   type: string

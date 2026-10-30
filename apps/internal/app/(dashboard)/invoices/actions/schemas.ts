@@ -23,7 +23,6 @@ export const invoiceSchema = z.object({
 
 export const deleteSchema = z.object({ id: z.string().uuid() })
 export const restoreSchema = z.object({ id: z.string().uuid() })
-export const destroySchema = z.object({ id: z.string().uuid() })
 export const sendSchema = z.object({ id: z.string().uuid() })
 export const unsendSchema = z.object({ id: z.string().uuid() })
 export const voidSchema = z.object({ id: z.string().uuid() })

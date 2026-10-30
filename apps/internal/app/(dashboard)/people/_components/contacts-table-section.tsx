@@ -25,7 +25,7 @@ import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
-import { LinkedClientsCell } from './linked-clients-cell'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import { cn } from '@/lib/utils'
@@ -47,13 +47,11 @@ export type ContactsTableSectionProps = {
   onEdit: (contact: ContactsTableContact) => void
   onRequestDelete: (contact: ContactsTableContact) => void
   onRestore: (contact: ContactsTableContact) => void
-  onRequestDestroy: (contact: ContactsTableContact) => void
   onRequestPreview: (contact: ContactsTableContact) => void
   isPending: boolean
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
@@ -66,13 +64,11 @@ export function ContactsTableSection({
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   onRequestPreview,
   isPending,
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   emptyMessage,
 }: ContactsTableSectionProps) {
   const { isAdmin, role } = useViewerAccess()
@@ -106,7 +102,7 @@ export function ContactsTableSection({
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[18%]'>Companies</TableHead>
+            <TableHead className='w-[26%]'>Companies</TableHead>
             <SortableTableHead
               field='email'
               sort={sort}
@@ -128,18 +124,6 @@ export function ContactsTableSection({
             {seesAccess ? (
               <TableHead className='w-24 text-center'>Sign-in</TableHead>
             ) : null}
-            {seesAccess ? (
-              <SortableTableHead
-                field='clients'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={next => update({ sort: next })}
-                className='w-28'
-                align='center'
-              >
-                Portal access
-              </SortableTableHead>
-            ) : null}
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -147,36 +131,23 @@ export function ContactsTableSection({
           {contacts.map(contact => {
             const isDeleting = isPending && pendingDeleteId === contact.id
             const isRestoring = isPending && pendingRestoreId === contact.id
-            const isDestroying = isPending && pendingDestroyId === contact.id
 
             const deleteDisabled =
-              isDeleting ||
-              isRestoring ||
-              isDestroying ||
-              Boolean(contact.deletedAt)
+              isDeleting || isRestoring || Boolean(contact.deletedAt)
             const deleteDisabledReason = deleteDisabled
-              ? isDeleting || isRestoring || isDestroying
+              ? isDeleting || isRestoring
                 ? pendingReason
                 : contact.deletedAt
                   ? 'Person already archived.'
                   : null
               : null
 
-            const restoreDisabled = isRestoring || isDeleting || isDestroying
+            const restoreDisabled = isRestoring || isDeleting
             const restoreDisabledReason = restoreDisabled ? pendingReason : null
-
-            const destroyDisabled =
-              isDestroying || isDeleting || isRestoring || !contact.deletedAt
-            const destroyDisabledReason = destroyDisabled
-              ? !contact.deletedAt
-                ? 'Archive the person before permanently deleting.'
-                : pendingReason
-              : null
 
             const showSoftDelete = mode === 'active'
             const showRestore = mode === 'archive'
-            // Hard delete, portal preview and portal accounts are admin-only.
-            const showDestroy = isAdmin && mode === 'archive'
+            // Portal preview is admin-only.
             const showPreview = isAdmin && mode === 'active'
 
             return (
@@ -222,6 +193,11 @@ export function ContactsTableSection({
                           {contact.companyName}
                         </Link>
                       </TruncationTooltip>
+                      {contact.companies.find(
+                        company => company.id === contact.companyId
+                      )?.isClient ? (
+                        <ClientBadge className='shrink-0' />
+                      ) : null}
                       {contact.companies.length > 1 ? (
                         <LinkedRecordsHoverCell
                           count={contact.companies.length}
@@ -234,6 +210,7 @@ export function ContactsTableSection({
                             id: company.id,
                             label: company.name,
                             href: companySheetHref(company.id),
+                            trailing: company.isClient ? <ClientBadge /> : null,
                           }))}
                         />
                       ) : null}
@@ -286,14 +263,6 @@ export function ContactsTableSection({
                     )}
                   </TableCell>
                 ) : null}
-                {seesAccess ? (
-                  <TableCell
-                    label='Portal access'
-                    className='text-sm md:text-center'
-                  >
-                    <LinkedClientsCell clients={contact.metrics.clients} />
-                  </TableCell>
-                ) : null}
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
                     {showPreview ? (
@@ -322,15 +291,6 @@ export function ContactsTableSection({
                         disabledReason={deleteDisabledReason}
                       />
                     ) : null}
-                    {showDestroy ? (
-                      <RecordRowAction
-                        kind='destroy'
-                        entity='person'
-                        onClick={() => onRequestDestroy(contact)}
-                        disabled={destroyDisabled}
-                        disabledReason={destroyDisabledReason}
-                      />
-                    ) : null}
                   </RecordRowActions>
                 </TableCell>
               </TableRow>
@@ -338,7 +298,7 @@ export function ContactsTableSection({
           })}
           {contacts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={seesAccess ? 7 : 5} className='p-4'>
+              <TableCell colSpan={seesAccess ? 6 : 5} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>

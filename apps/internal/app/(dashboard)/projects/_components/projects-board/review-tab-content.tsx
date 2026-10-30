@@ -1,9 +1,8 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { TabsContent } from '@pts/ui/tabs'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
   FEEDBACK_CLASSES,
@@ -34,7 +33,6 @@ export type ReviewTabContentProps = {
   activeSheetTaskId: string | null
   onUnacceptTask: (taskId: string) => void
   onRestoreTask: (taskId: string) => void
-  onDestroyTask: (taskId: string) => void
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
   isReviewActionPending: boolean
@@ -58,28 +56,10 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
     activeSheetTaskId,
     onUnacceptTask,
     onRestoreTask,
-    onDestroyTask,
     reviewActionTaskId,
     reviewActionType,
     isReviewActionPending,
   } = props
-
-  const [destroyTarget, setDestroyTarget] = useState<TaskWithRelations | null>(
-    null
-  )
-
-  const handleCancelDestroy = () => {
-    setDestroyTarget(null)
-  }
-
-  const handleConfirmDestroy = () => {
-    if (!destroyTarget) {
-      return
-    }
-
-    onDestroyTask(destroyTarget.id)
-    setDestroyTarget(null)
-  }
 
   const sortedDone = useMemo(() => {
     return doneTasks.slice().sort((a, b) => {
@@ -99,24 +79,6 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
       className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'
     >
       {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
-      <ConfirmDialog
-        open={Boolean(destroyTarget)}
-        title='Delete task permanently?'
-        description={
-          destroyTarget
-            ? `This will permanently remove "${destroyTarget.title}" and all of its history.`
-            : 'This action cannot be undone.'
-        }
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={Boolean(
-          isReviewActionPending &&
-          reviewActionType === 'destroy' &&
-          reviewActionTaskId === destroyTarget?.id
-        )}
-        onCancel={handleCancelDestroy}
-        onConfirm={handleConfirmDestroy}
-      />
       {!activeProject ? (
         <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       ) : (
@@ -156,7 +118,6 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
             reviewActionTaskId={reviewActionTaskId}
             reviewActionType={reviewActionType}
             isReviewActionPending={isReviewActionPending}
-            onRequestDestroy={task => setDestroyTarget(task)}
           />
         </div>
       )}

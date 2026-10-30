@@ -166,7 +166,6 @@ export function useProjectsBoardViewModel({
       onAcceptTask: reviewActions.handleAcceptTask,
       onUnacceptTask: reviewActions.handleUnacceptTask,
       onRestoreTask: reviewActions.handleRestoreTask,
-      onDestroyTask: reviewActions.handleDestroyTask,
       reviewActionTaskId,
       reviewActionType,
       isReviewActionPending: reviewActions.isReviewActionPending,

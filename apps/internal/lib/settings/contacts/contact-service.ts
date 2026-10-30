@@ -76,12 +76,10 @@ const contactIdentifierSchema = {
 
 export const deleteContactSchema = z.object(contactIdentifierSchema)
 export const restoreContactSchema = z.object(contactIdentifierSchema)
-export const destroyContactSchema = z.object(contactIdentifierSchema)
 
 export type ContactInput = z.input<typeof contactSchema>
 export type DeleteContactInput = z.infer<typeof deleteContactSchema>
 export type RestoreContactInput = z.infer<typeof restoreContactSchema>
-export type DestroyContactInput = z.infer<typeof destroyContactSchema>
 
 export type ContactActionResult = {
   error?: string

@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
@@ -16,7 +15,7 @@ import type {
 } from '@/lib/invoices/invoice-form'
 import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
 import { isInvoiceStatus } from '@/lib/invoices/filters'
-import { archiveInvoice, restoreInvoice, destroyInvoice } from '../actions'
+import { archiveInvoice, restoreInvoice } from '../actions'
 
 import { InvoiceArchiveDialog } from './invoice-archive-dialog'
 import { InvoicesTableSection } from './invoices-table-section'
@@ -74,12 +73,8 @@ export function InvoicesManagementTable({
   const [deleteTarget, setDeleteTarget] = useState<InvoiceWithClient | null>(
     null
   )
-  const [destroyTarget, setDestroyTarget] = useState<InvoiceWithClient | null>(
-    null
-  )
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
-  const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const sortedClients = useMemo(
@@ -238,54 +233,6 @@ export function InvoicesManagementTable({
     })
   }
 
-  // -------------------------------------------------------------------------
-  // Destroy handlers
-  // -------------------------------------------------------------------------
-
-  const handleRequestDestroy = (invoice: InvoiceWithClient) => {
-    if (!invoice.deleted_at || isPending) return
-    setDestroyTarget(invoice)
-  }
-
-  const handleCancelDestroy = () => {
-    if (isPending) return
-    setDestroyTarget(null)
-  }
-
-  const handleConfirmDestroy = () => {
-    if (!destroyTarget || !destroyTarget.deleted_at) {
-      setDestroyTarget(null)
-      return
-    }
-
-    const invoice = destroyTarget
-    setDestroyTarget(null)
-    setPendingDestroyId(invoice.id)
-
-    startTransition(async () => {
-      try {
-        const result = await destroyInvoice({ id: invoice.id })
-
-        if (result.error) {
-          toast({
-            title: 'Unable to permanently delete invoice',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Invoice permanently deleted',
-          description: 'The invoice has been removed.',
-        })
-        router.refresh()
-      } finally {
-        setPendingDestroyId(null)
-      }
-    })
-  }
-
   const handleRefresh = useCallback(() => {
     router.refresh()
   }, [router])
@@ -319,29 +266,17 @@ export function InvoicesManagementTable({
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />
-      <ConfirmDialog
-        open={Boolean(destroyTarget)}
-        title='Permanently delete invoice?'
-        description='This action removes the invoice forever. Make sure no other records depend on it.'
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={handleCancelDestroy}
-        onConfirm={handleConfirmDestroy}
-      />
       <InvoicesTableSection
         invoices={invoices}
         mode={mode}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
-        onRequestDestroy={handleRequestDestroy}
         onRefresh={handleRefresh}
         isPending={isPending}
         pendingReason={PENDING_REASON}
         pendingDeleteId={pendingDeleteId}
         pendingRestoreId={pendingRestoreId}
-        pendingDestroyId={pendingDestroyId}
         emptyMessage={emptyMessage}
         basePath={basePath}
       />

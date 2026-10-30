@@ -144,17 +144,3 @@ export const invoiceRestoredEvent = (args: {
     clientName: args.clientName ?? null,
   }),
 })
-
-export const invoiceDeletedEvent = (args: {
-  invoiceNumber?: string | null
-  clientName?: string | null
-}): ActivityEvent => ({
-  verb: ActivityVerbs.INVOICE_DELETED,
-  summary: args.invoiceNumber
-    ? `Permanently deleted invoice ${args.invoiceNumber}`
-    : 'Permanently deleted invoice draft',
-  metadata: toMetadata({
-    invoiceNumber: args.invoiceNumber ?? null,
-    clientName: args.clientName ?? null,
-  }),
-})

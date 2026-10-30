@@ -48,14 +48,6 @@ export const contactRestoredEvent = (args: {
   summary: `Restored person "${args.name || args.email}"`,
 })
 
-export const contactDeletedEvent = (args: {
-  email: string | null
-  name: string | null
-}): ActivityEvent => ({
-  verb: ActivityVerbs.CONTACT_DELETED,
-  summary: `Permanently deleted person "${args.name || args.email}"`,
-})
-
 export const contactInvitedToPortalEvent = (args: {
   email: string | null
   name: string | null

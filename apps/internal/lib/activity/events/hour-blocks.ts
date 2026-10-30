@@ -80,12 +80,3 @@ export const hourBlockRestoredEvent = (args: {
     ? `Restored hour block for ${args.clientName}`
     : 'Restored hour block',
 })
-
-export const hourBlockDeletedEvent = (args: {
-  clientName?: string | null
-}): ActivityEvent => ({
-  verb: ActivityVerbs.HOUR_BLOCK_DELETED,
-  summary: args.clientName
-    ? `Permanently deleted hour block for ${args.clientName}`
-    : 'Permanently deleted hour block',
-})

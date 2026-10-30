@@ -2,7 +2,6 @@
 
 import type {
   DeleteProjectInput,
-  DestroyProjectInput,
   ProjectActionResult,
   ProjectInput,
   RestoreProjectInput,
@@ -11,7 +10,6 @@ import type {
 import { saveProject as saveProjectAction } from '@/lib/settings/projects/actions/save-project'
 import { softDeleteProject as softDeleteProjectAction } from '@/lib/settings/projects/actions/soft-delete-project'
 import { restoreProject as restoreProjectAction } from '@/lib/settings/projects/actions/restore-project'
-import { destroyProject as destroyProjectAction } from '@/lib/settings/projects/actions/destroy-project'
 export async function saveProject(
   input: ProjectInput
 ): Promise<ProjectActionResult> {
@@ -31,11 +29,4 @@ export async function restoreProject(
 ): Promise<ProjectActionResult> {
   // permission: projects.manage
   return restoreProjectAction(input)
-}
-
-export async function destroyProject(
-  input: DestroyProjectInput
-): Promise<ProjectActionResult> {
-  // permission: projects.manage
-  return destroyProjectAction(input)
 }

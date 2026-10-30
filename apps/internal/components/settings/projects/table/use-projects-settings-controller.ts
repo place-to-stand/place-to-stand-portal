@@ -1,7 +1,6 @@
 import { useState, useTransition } from 'react'
 
 import {
-  destroyProject,
   restoreProject as restoreProjectAction,
   softDeleteProject,
 } from '@/app/(dashboard)/settings/projects/actions'
@@ -23,10 +22,8 @@ type UseProjectsSettingsControllerReturn = {
   sheetOpen: boolean
   selectedProject: ProjectWithClient | null
   deleteTarget: ProjectWithClient | null
-  destroyTarget: ProjectWithClient | null
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   isPending: boolean
   openEdit: (project: ProjectWithClient) => void
   handleSheetOpenChange: (open: boolean) => void
@@ -35,9 +32,6 @@ type UseProjectsSettingsControllerReturn = {
   cancelDelete: () => void
   confirmDelete: () => void
   restoreProject: (project: ProjectWithClient) => void
-  requestDestroy: (project: ProjectWithClient) => void
-  cancelDestroy: () => void
-  confirmDestroy: () => void
 }
 
 export function useProjectsSettingsController({
@@ -50,12 +44,8 @@ export function useProjectsSettingsController({
   const [deleteTarget, setDeleteTarget] = useState<ProjectWithClient | null>(
     null
   )
-  const [destroyTarget, setDestroyTarget] = useState<ProjectWithClient | null>(
-    null
-  )
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
-  const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const openEdit = (project: ProjectWithClient) => {
@@ -156,64 +146,12 @@ export function useProjectsSettingsController({
     })
   }
 
-  const requestDestroy = (project: ProjectWithClient) => {
-    if (!project.deleted_at || isPending) {
-      return
-    }
-
-    setDestroyTarget(project)
-  }
-
-  const cancelDestroy = () => {
-    if (isPending) {
-      return
-    }
-
-    setDestroyTarget(null)
-  }
-
-  const confirmDestroy = () => {
-    if (!destroyTarget || !destroyTarget.deleted_at) {
-      setDestroyTarget(null)
-      return
-    }
-
-    const project = destroyTarget
-    setDestroyTarget(null)
-    setPendingDestroyId(project.id)
-
-    startTransition(async () => {
-      try {
-        const result = await destroyProject({ id: project.id })
-
-        if (result.error) {
-          toast({
-            title: 'Unable to permanently delete project',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Project permanently deleted',
-          description: `${project.name} has been removed.`,
-        })
-        onRefresh()
-      } finally {
-        setPendingDestroyId(null)
-      }
-    })
-  }
-
   return {
     sheetOpen,
     selectedProject,
     deleteTarget,
-    destroyTarget,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     isPending,
     openEdit,
     handleSheetOpenChange,
@@ -222,8 +160,5 @@ export function useProjectsSettingsController({
     cancelDelete,
     confirmDelete,
     restoreProject,
-    requestDestroy,
-    cancelDestroy,
-    confirmDestroy,
   }
 }

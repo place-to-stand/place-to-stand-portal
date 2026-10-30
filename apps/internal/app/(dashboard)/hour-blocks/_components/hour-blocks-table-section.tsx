@@ -41,11 +41,9 @@ export type HourBlocksTableSectionProps = {
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   onEdit: (block: HourBlockWithClient) => void
   onRequestDelete: (block: HourBlockWithClient) => void
   onRestore: (block: HourBlockWithClient) => void
-  onRequestDestroy: (block: HourBlockWithClient) => void
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
@@ -63,11 +61,9 @@ export function HourBlocksTableSection({
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   emptyMessage,
   basePath,
 }: HourBlocksTableSectionProps) {
@@ -109,18 +105,12 @@ export function HourBlocksTableSection({
             const isArchived = Boolean(block.deleted_at)
             const isDeleting = isPending && pendingDeleteId === block.id
             const isRestoring = isPending && pendingRestoreId === block.id
-            const isDestroying = isPending && pendingDestroyId === block.id
 
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
-            const showDestroy = mode === 'archive'
 
-            const archiveDisabled =
-              isDeleting || isRestoring || isDestroying || isArchived
-            const restoreDisabled =
-              isRestoring || isDeleting || isDestroying || !isArchived
-            const destroyDisabled =
-              isDestroying || isDeleting || isRestoring || !isArchived
+            const archiveDisabled = isDeleting || isRestoring || isArchived
+            const restoreDisabled = isRestoring || isDeleting || !isArchived
 
             const archiveDisabledReason = archiveDisabled
               ? isArchived
@@ -132,12 +122,6 @@ export function HourBlocksTableSection({
               ? isArchived
                 ? pendingReason
                 : 'Hour block is already active.'
-              : null
-
-            const destroyDisabledReason = destroyDisabled
-              ? !isArchived
-                ? 'Archive the hour block before permanently deleting.'
-                : pendingReason
               : null
 
             return (
@@ -250,15 +234,6 @@ export function HourBlocksTableSection({
                         onClick={() => onRequestDelete(block)}
                         disabled={archiveDisabled}
                         disabledReason={archiveDisabledReason}
-                      />
-                    ) : null}
-                    {showDestroy ? (
-                      <RecordRowAction
-                        kind='destroy'
-                        entity='hour block'
-                        onClick={() => onRequestDestroy(block)}
-                        disabled={destroyDisabled}
-                        disabledReason={destroyDisabledReason}
                       />
                     ) : null}
                   </RecordRowActions>

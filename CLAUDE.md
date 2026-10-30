@@ -231,7 +231,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 
 **Roles:**
 - `ADMIN` - Full access to the internal portal
-- `SALES` - CRM only: leads and contacts. Conversion, lead tasks, hard deletes, client links and portal accounts stay admin-only
+- `SALES` - CRM only: leads and contacts. Conversion, lead tasks, client links and portal accounts stay admin-only
 - `CLIENT` - Client-portal users only; blocked from the internal portal at sign-in (redirected to `CLIENT_PORTAL_URL`). The role still exists so the internal portal can create/manage portal users.
 
 ### State Management
@@ -359,7 +359,7 @@ Sep 2026.
 - All core entities use `deletedAt` timestamps
 - Active records: `WHERE deletedAt IS NULL`
 - Archive/restore via setting/clearing `deletedAt`
-- Never hard delete records (preserve historical data)
+- Never hard delete records (preserve historical data): there is no "Delete forever" anywhere (UI, server actions, API, CLI, MCP), only archive and restore
 
 **Slug-based URLs:**
 - Projects: `[clientSlug]/[projectSlug]`

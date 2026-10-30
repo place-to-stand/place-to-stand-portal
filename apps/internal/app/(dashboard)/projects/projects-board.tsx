@@ -67,7 +67,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     sheetOpen,
     selectedProject,
     deleteTarget,
-    destroyTarget,
     isPending: projectMutationPending,
     openEdit,
     requestDelete,
@@ -75,8 +74,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     handleSheetComplete,
     cancelDelete,
     confirmDelete,
-    cancelDestroy,
-    confirmDestroy,
   } = controller
 
   const activeProject = viewModel.dialogs.activeProject
@@ -187,12 +184,9 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
       <ProjectsBoardDialogs {...viewModel.dialogs} />
       <ProjectLifecycleDialogs
         deleteTarget={deleteTarget}
-        destroyTarget={destroyTarget}
         isPending={projectMutationPending}
         onCancelDelete={cancelDelete}
         onConfirmDelete={confirmDelete}
-        onCancelDestroy={cancelDestroy}
-        onConfirmDestroy={confirmDestroy}
       />
       <ProjectSheet
         open={sheetOpen}

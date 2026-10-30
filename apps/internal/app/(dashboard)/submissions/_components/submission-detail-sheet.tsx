@@ -12,13 +12,11 @@ import {
   ThumbsDown,
   ThumbsUp,
   Timer,
-  Trash2,
   Undo2,
 } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Separator } from '@pts/ui/separator'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
@@ -44,7 +42,6 @@ import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
   archiveSubmission,
-  destroySubmission,
   restoreSubmission,
   unacknowledgeSubmission,
 } from '../actions'
@@ -169,7 +166,6 @@ export function SubmissionDetailSheet({
     acknowledged: boolean
   } | null>(null)
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
-  const [destroyConfirmOpen, setDestroyConfirmOpen] = useState(false)
   const [retainedSubmission, setRetainedSubmission] = useState(submission)
   const [isPending, startTransition] = useTransition()
 
@@ -247,7 +243,7 @@ export function SubmissionDetailSheet({
     )
   }, [runInlineAction, submission])
 
-  // D9: archive/restore/destroy CLOSE the sheet — the row leaves the
+  // D9: archive/restore CLOSE the sheet — the row leaves the
   // current tab's list.
   const runClosingAction = useCallback(
     (
@@ -291,14 +287,6 @@ export function SubmissionDetailSheet({
 
   const handleRestore = useCallback(() => {
     runClosingAction(restoreSubmission, 'Unable to restore submission')
-  }, [runClosingAction])
-
-  const handleDestroyConfirm = useCallback(() => {
-    setDestroyConfirmOpen(false)
-    runClosingAction(
-      destroySubmission,
-      'Unable to permanently delete submission'
-    )
   }, [runClosingAction])
 
   // Retain the last row through the close animation — the parent nulls
@@ -785,16 +773,7 @@ export function SubmissionDetailSheet({
               disabled={isPending}
               onClick={() => setArchiveConfirmOpen(true)}
             />
-          ) : (
-            <RowActionButton
-              type='button'
-              label='Permanently delete submission'
-              icon={<Trash2 />}
-              variant='destructive'
-              disabled={isPending}
-              onClick={() => setDestroyConfirmOpen(true)}
-            />
-          )}
+          ) : null}
         </SheetFooterBar>
 
         <SubmissionArchiveDialog
@@ -804,20 +783,6 @@ export function SubmissionDetailSheet({
           onConfirm={handleArchiveConfirm}
         />
 
-        <ConfirmDialog
-          open={destroyConfirmOpen}
-          title='Permanently delete submission?'
-          description={`Permanently deleting the submission from ${
-            displaySubmission.contactName ||
-            displaySubmission.contactEmail ||
-            'this anonymous visitor'
-          } removes it and its history. This action cannot be undone.`}
-          confirmLabel='Delete forever'
-          confirmVariant='destructive'
-          confirmDisabled={isPending}
-          onCancel={() => setDestroyConfirmOpen(false)}
-          onConfirm={handleDestroyConfirm}
-        />
       </SheetContent>
     </Sheet>
   )

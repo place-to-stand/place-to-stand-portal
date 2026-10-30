@@ -69,7 +69,6 @@ export type ProjectsBoardTabsProps = {
   onAcceptTask: (taskId: string) => void
   onUnacceptTask: (taskId: string) => void
   onRestoreTask: (taskId: string) => void
-  onDestroyTask: (taskId: string) => void
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
   isReviewActionPending: boolean
@@ -127,7 +126,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     onAcceptTask,
     onUnacceptTask,
     onRestoreTask,
-    onDestroyTask,
     reviewActionTaskId,
     reviewActionType,
     isReviewActionPending,
@@ -208,7 +206,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activeSheetTaskId={activeSheetTaskId}
         onUnacceptTask={onUnacceptTask}
         onRestoreTask={onRestoreTask}
-        onDestroyTask={onDestroyTask}
         reviewActionTaskId={reviewActionTaskId}
         reviewActionType={reviewActionType}
         isReviewActionPending={isReviewActionPending}
