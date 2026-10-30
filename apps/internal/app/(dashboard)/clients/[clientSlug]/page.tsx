@@ -1,158 +1,31 @@
-import { personNameSql } from '@pts/db/names'
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { and, eq, isNull } from 'drizzle-orm'
+import { eq, or } from 'drizzle-orm'
+import { notFound, redirect } from 'next/navigation'
 
-import { PageShell } from '@/components/layout/page-shell'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { contacts, users } from '@/lib/db/schema'
-import {
-  fetchClientCycleDirectory,
-  fetchProjectsForClient,
-  resolveClientIdentifier,
-} from '@/lib/data/clients'
-import { fetchContactsForClient } from '@/lib/queries/clients/contacts'
-import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
-import { listClientUpdates } from '@/lib/updates'
+import { clients } from '@/lib/db/schema'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 
-import { ClientRecordCycle } from '../_components/client-record-cycle'
-import { ClientDetail } from './_components/client-detail'
-
-export async function generateMetadata({
-  params,
-}: PageProps<'/clients/[clientSlug]'>): Promise<Metadata> {
-  const { clientSlug } = await params
-
-  try {
-    const user = await requireUser()
-    const client = await resolveClientIdentifier(user, clientSlug)
-
-    return {
-      title: `${client.name} | Clients`,
-    }
-  } catch {
-    return {
-      title: 'Client not found',
-    }
-  }
-}
-
+/**
+ * A client is its company's billing record, so the client page is the
+ * company sheet now: old links open it on its Projects tab.
+ */
 export default async function ClientDetailPage({
   params,
 }: PageProps<'/clients/[clientSlug]'>) {
+  await requireUser()
   const { clientSlug } = await params
-  const user = await requireUser()
 
-  let client
-  try {
-    client = await resolveClientIdentifier(user, clientSlug)
-  } catch {
-    notFound()
-  }
+  const [client] = await db
+    .select({ companyId: clients.companyId })
+    .from(clients)
+    .where(
+      UUID_PATTERN.test(clientSlug)
+        ? or(eq(clients.slug, clientSlug), eq(clients.id, clientSlug))
+        : eq(clients.slug, clientSlug)
+    )
+    .limit(1)
 
-  // Build origination lookups. Origination may be either a contact
-  // (external referrer) or an admin user (internal partner). Closers arrive
-  // resolved on the client (`client.closers`).
-  const originationContactPromise = client.originationContactId
-    ? db
-        .select({
-          id: contacts.id,
-          name: contacts.name,
-          email: contacts.email,
-        })
-        .from(contacts)
-        .where(
-          and(
-            eq(contacts.id, client.originationContactId),
-            isNull(contacts.deletedAt)
-          )
-        )
-        .limit(1)
-        .then(rows => rows[0] ?? null)
-    : Promise.resolve(null)
-
-  const originationUserPromise = client.originationUserId
-    ? db
-        .select({
-          id: users.id,
-          fullName: personNameSql,
-          email: users.email,
-          avatarUrl: users.avatarUrl,
-        })
-        .from(users)
-        .where(
-          and(eq(users.id, client.originationUserId), isNull(users.deletedAt))
-        )
-        .limit(1)
-        .then(rows => rows[0] ?? null)
-    : Promise.resolve(null)
-
-  const [
-    cycleClients,
-    projects,
-    clientContacts,
-    recentUpdates,
-    originationContact,
-    originationUser,
-  ] = await Promise.all([
-    fetchClientCycleDirectory(user),
-    fetchProjectsForClient(user, client.resolvedId),
-    fetchContactsForClient(client.resolvedId),
-    listClientUpdates({ clientId: client.resolvedId, limit: 3 }),
-    originationContactPromise,
-    originationUserPromise,
-  ])
-
-  return (
-    <PageShell
-      breadcrumbs={[...crumbsForNav('/companies'), { label: client.name }]}
-      contentClassName='space-y-6'
-    >
-      <ClientRecordCycle
-        clients={cycleClients}
-        selectedClientId={client.resolvedId}
-      />
-      <ClientDetail
-        client={client}
-        projects={projects}
-        // Only people who can actually sign in and see this client.
-        contacts={clientContacts.filter(contact => contact.hasPortalAccess)}
-        updates={recentUpdates.map(update => ({
-          id: update.id,
-          subject: update.subject,
-          status: update.status,
-          sentAt: update.sentAt,
-          createdAt: update.createdAt,
-        }))}
-        clientRow={mapClientDetailToRow(client)}
-        originationContact={originationContact}
-        originationUser={originationUser}
-        closers={client.closers}
-      />
-    </PageShell>
-  )
-}
-
-function mapClientDetailToRow(
-  client: Awaited<ReturnType<typeof resolveClientIdentifier>>
-): ClientRow {
-  return {
-    id: client.resolvedId,
-    name: client.name,
-    slug: client.slug,
-    notes: client.notes,
-    state: client.state ?? null,
-    origination_contact_id: client.originationContactId,
-    origination_user_id: client.originationUserId,
-    billing_type: client.billingType,
-    company_id: client.companyId ?? null,
-    label: client.label ?? null,
-    created_by: null,
-    created_at: client.createdAt,
-    updated_at: client.updatedAt,
-    deleted_at: client.deletedAt,
-    closers: client.closers,
-  }
+  if (!client) notFound()
+  redirect(`/companies?company=${client.companyId}&tab=projects`)
 }

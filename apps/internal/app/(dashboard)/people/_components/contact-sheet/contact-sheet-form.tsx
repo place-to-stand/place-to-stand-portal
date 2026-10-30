@@ -35,6 +35,7 @@ import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-
 
 import { ContactCompaniesSection } from './contact-companies-section'
 import { ContactSignInFields } from './contact-sign-in-section'
+import { SheetTabs, useSheetTab } from '@/components/sheets/sheet-tabs'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -102,6 +103,25 @@ export function ContactSheetForm({
   // The sign-in shows and saves under the person's saved name.
   const personName =
     (form.formState.defaultValues?.name as string | undefined)?.trim() ?? ''
+  const tabValues = isAdmin
+    ? ['details', 'companies', 'sign-in']
+    : ['details', 'companies']
+  const [tab, setTab] = useSheetTab(tabValues)
+  const dirtyFields = form.formState.dirtyFields
+  const detailsDirty = Boolean(
+    dirtyFields.name ||
+      dirtyFields.email ||
+      dirtyFields.phone ||
+      dirtyFields.linkedinUrl ||
+      dirtyFields.signIn?.avatarPath ||
+      dirtyFields.signIn?.avatarRemoved
+  )
+  const companiesDirty = Boolean(dirtyFields.companies)
+  const signInDirty = Boolean(
+    dirtyFields.signIn?.role ||
+      dirtyFields.signIn?.accessEnabled ||
+      dirtyFields.signIn?.password
+  )
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -141,8 +161,19 @@ export function ContactSheetForm({
         <form
           id={CONTACT_FORM_ID}
           onSubmit={form.handleSubmit(onSubmit)}
-          className='flex flex-col gap-6 px-6 pt-6 pb-8'
+          className='flex flex-col'
         >
+          {isEditing ? (
+            <SheetTabs
+              value={tab}
+              onValueChange={setTab}
+              tabs={[
+                {
+                  value: 'details',
+                  label: 'Details',
+                  dirty: detailsDirty,
+                  content: (
+                    <>
           {/* The photo belongs to their sign-in: uploadable once they have
               one (admins), initials otherwise. */}
           {isEditing ? (
@@ -196,7 +227,6 @@ export function ContactSheetForm({
               <Separator />
             </>
           ) : null}
-
           <SheetSection title='Details'>
             <FormField
               control={form.control}
@@ -305,9 +335,14 @@ export function ContactSheetForm({
               />
             </div>
           </SheetSection>
-
-          <Separator />
-
+                    </>
+                  ),
+                },
+                {
+                  value: 'companies',
+                  label: 'Companies',
+                  dirty: companiesDirty,
+                  content: (
           <FormField
             control={form.control}
             name='companies'
@@ -320,10 +355,15 @@ export function ContactSheetForm({
               />
             )}
           />
-
-          <Separator />
-
-          {isEditing && isAdmin ? (
+                  ),
+                },
+                ...(isAdmin
+                  ? [
+                      {
+                        value: 'sign-in',
+                        label: 'Sign-in',
+                        dirty: signInDirty,
+                        content: (
             <SheetSection
               title='Sign-in'
               description={
@@ -366,8 +406,140 @@ export function ContactSheetForm({
                 />
               )}
             </SheetSection>
-          ) : null}
-          <FormFeedback>{feedback}</FormFeedback>
+                        ),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          ) : (
+            <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+          <SheetSection title='Details'>
+            <FormField
+              control={form.control}
+              name='name'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full name</FormLabel>
+                  <FormControl>
+                    <DisabledFieldTooltip
+                      disabled={isPending}
+                      reason={fieldDisabledReason}
+                    >
+                      <Input
+                        {...field}
+                        data-autofocus
+                        ref={node => {
+                          firstFieldRef.current = node
+                          if (typeof field.ref === 'function') {
+                            field.ref(node)
+                          } else if (field.ref) {
+                            ;(
+                              field.ref as React.MutableRefObject<HTMLInputElement | null>
+                            ).current = node
+                          }
+                        }}
+                        value={field.value ?? ''}
+                        placeholder='John Doe'
+                        disabled={isPending}
+                      />
+                    </DisabledFieldTooltip>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>Email</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <Input
+                          {...field}
+                          type='email'
+                          placeholder='contact@example.com'
+                          disabled={isPending}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='phone'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>Phone</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <PhoneInput
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          disabled={isPending}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* Under Email, in its column. */}
+              <FormField
+                control={form.control}
+                name='linkedinUrl'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>LinkedIn</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={isPending}
+                        reason={fieldDisabledReason}
+                      >
+                        <UrlInput
+                          {...field}
+                          value={field.value ?? ''}
+                          openLabel='Open LinkedIn'
+                          placeholder='linkedin.com/in/jane-doe'
+                          disabled={isPending}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </SheetSection>
+              <Separator />
+          <FormField
+            control={form.control}
+            name='companies'
+            render={({ field }) => (
+              <ContactCompaniesSection
+                companies={field.value}
+                disabled={isPending}
+                loadFailed={companiesLoadFailed}
+                onChange={next => field.onChange(next)}
+              />
+            )}
+          />
+            </div>
+          )}
+          <div className='px-6 pb-6 empty:hidden'>
+            <FormFeedback>{feedback}</FormFeedback>
+          </div>
         </form>
       </div>
       <SheetFormFooter

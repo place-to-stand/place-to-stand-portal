@@ -4,10 +4,11 @@ import type { CompanyListItem } from './types'
 
 /** Companies list filters and sort (`?type=&leads=&sort=`). Client-safe. */
 // Only "Clients": any other `?type=` (an old `prospect` link) means All.
-export const COMPANY_TYPE_VALUES = ['client'] as const
+export const COMPANY_TYPE_VALUES = ['client', 'former'] as const
 export type CompanyTypeFilter = (typeof COMPANY_TYPE_VALUES)[number]
 export const COMPANY_TYPE_LABELS: Record<CompanyTypeFilter, string> = {
   client: 'Clients',
+  former: 'Former clients',
 }
 
 export const COMPANY_LEADS_VALUES = ['open', 'none'] as const
@@ -69,7 +70,8 @@ export function applyCompanyListParams(
 ): CompanyListItem[] {
   const filtered = rows.filter(
     row =>
-      (!type || (type === 'client') === Boolean(row.clientId)) &&
+      (!type ||
+        (type === 'client' ? Boolean(row.clientId) : row.formerClient)) &&
       (!leads || (leads === 'open') === row.openLeadCount > 0)
   )
   const value = (row: CompanyListItem): string | number => {

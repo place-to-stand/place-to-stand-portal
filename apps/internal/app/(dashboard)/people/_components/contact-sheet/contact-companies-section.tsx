@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
@@ -27,8 +27,8 @@ type ContactCompaniesSectionProps = {
 
 /**
  * The companies a person belongs to: title at each and the primary-contact
- * star (set on the company sheet, read-only here). Portal access is set on
- * the client (Edit client > Portal access), not here. All staged until
+ * star (set on the company sheet, read-only here). Portal access shows here
+ * but is set in one place, the company's People tab. All staged until
  * Save, like the rest of the sheet.
  * The first one is their main company in lists.
  */
@@ -107,12 +107,14 @@ export function ContactCompaniesSection({
                   entry.clientId && !entry.archived ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge variant='secondary' className='text-xs'>
-                          Client
-                        </Badge>
+                        <span>
+                          <ClientBadge />
+                        </span>
                       </TooltipTrigger>
                       <TooltipContent>
-                        Client: {entry.clientName ?? name}
+                        {entry.portalAccess
+                          ? 'Can see this client in the portal (set on the company’s People tab)'
+                          : 'No portal access (set on the company’s People tab)'}
                       </TooltipContent>
                     </Tooltip>
                   ) : null
@@ -120,10 +122,17 @@ export function ContactCompaniesSection({
                 note={
                   entry.archived ? (
                     'Archived'
-                  ) : entry.isPrimary ? (
-                    <span className='inline-flex items-center gap-1'>
-                      <Star className='text-warning size-3 fill-current' />
-                      Primary contact
+                  ) : entry.isPrimary || (entry.clientId && entry.portalAccess) ? (
+                    <span className='inline-flex items-center gap-2'>
+                      {entry.isPrimary ? (
+                        <span className='inline-flex items-center gap-1'>
+                          <Star className='text-warning size-3 fill-current' />
+                          Primary contact
+                        </span>
+                      ) : null}
+                      {entry.clientId && entry.portalAccess ? (
+                        <span>Portal access</span>
+                      ) : null}
                     </span>
                   ) : undefined
                 }

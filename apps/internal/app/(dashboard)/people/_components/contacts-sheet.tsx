@@ -11,6 +11,22 @@ import {
   type UseContactSheetStateOptions,
 } from '@/lib/settings/contacts/use-contact-sheet-state'
 
+import { MoreHorizontal, UserRound } from 'lucide-react'
+import { Badge } from '@pts/ui/badge'
+import { Button } from '@pts/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@pts/ui/dropdown-menu'
+import { UserAvatar } from '@/components/ui/user-avatar'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { SHEET_TAB_PARAM } from '@/components/sheets/sheet-tabs'
+import { ROLE_LABELS } from '@/lib/auth/roles'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
 import { PromoteToUserDialog } from './contact-sheet/promote-to-user-dialog'
 
@@ -26,6 +42,8 @@ type ContactsSheetProps = UseContactSheetStateOptions
 export function ContactsSheet(props: ContactsSheetProps) {
   const { open, contact, onComplete } = props
   const queryClient = useQueryClient()
+  const { isAdmin } = useViewerAccess()
+  const { setAux } = useSheetParams()
   // A company sheet stacked underneath lists this contact's title and
   // primary star: refetch it so its Save doesn't write back stale values.
   const handleComplete = useCallback(() => {
@@ -60,6 +78,8 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleRequestPromote,
     handleConfirmPromote,
     signInAccount,
+    promoteRole,
+    setPromoteRole,
     reloadSignIn,
     setIsAvatarUploading,
   } = useContactSheetState({ ...props, onComplete: handleComplete })
@@ -72,7 +92,72 @@ export function ContactsSheet(props: ContactsSheetProps) {
           size='2xl'
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
-          <SheetFormHeader entity='contact' title={sheetTitle} />
+          <SheetFormHeader
+            entity='contact'
+            title={isEditing ? contactDisplayName : sheetTitle}
+            leading={
+              isEditing ? (
+                <UserAvatar
+                  userId={portalUserId}
+                  name={contactDisplayName}
+                  hasPhoto={Boolean(signInAccount?.avatarUrl)}
+                  version={signInAccount?.avatarUrl ?? null}
+                  size='sm'
+                />
+              ) : (
+                <UserRound
+                  aria-hidden
+                  className={`${ENTITY_ACCENTS.contact.icon} size-4`}
+                />
+              )
+            }
+            badges={
+              isAdmin && signInAccount ? (
+                <Badge variant='outline' className='text-xs font-normal'>
+                  {ROLE_LABELS[signInAccount.role]}
+                  {signInAccount.deletedAt
+                    ? ' · archived'
+                    : signInAccount.disabledAt
+                      ? ' · off'
+                      : ''}
+                </Badge>
+              ) : null
+            }
+            menu={
+              isAdmin && isEditing ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='icon-sm'
+                        aria-label='Person actions'
+                      />
+                    }
+                  >
+                    <MoreHorizontal />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end'>
+                    {portalUserId ? (
+                      <DropdownMenuItem
+                        onClick={() => setAux(SHEET_TAB_PARAM, 'sign-in')}
+                      >
+                        Sign-in settings
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        disabled={promoteDisabled}
+                        onClick={handleRequestPromote}
+                      >
+                        Create sign-in…
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null
+            }
+          />
           <ContactSheetForm
             form={form}
             feedback={feedback}
@@ -115,6 +200,8 @@ export function ContactsSheet(props: ContactsSheetProps) {
         contactEmail={contact?.email ?? ''}
         isPending={isPending}
         onConfirm={handleConfirmPromote}
+        role={promoteRole}
+        onRoleChange={setPromoteRole}
       />
       {unsavedChangesDialog}
     </>

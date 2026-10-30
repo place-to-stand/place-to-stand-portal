@@ -8,6 +8,8 @@ export type CompanyListItem = {
   /** The company's (first live) client, when it has signed. */
   clientId: string | null
   clientName: string | null
+  /** Was a client (billing stopped), not one now. */
+  formerClient: boolean
   /** The company's people, for the People hover card. */
   people: {
     id: string

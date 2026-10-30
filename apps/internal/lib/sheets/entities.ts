@@ -74,7 +74,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
     // `clientCompanyId=` the company. `?client=<id>` opens its company's
     // sheet. Only the archive (stopped billing) hosts its own client sheet.
     auxParams: ['clientName', 'clientCompanyId', 'tab'],
-    claimsPathname: exactPaths('/clients/archive'),
+    claimsPathname: () => false,
   },
   contact: {
     // `contactName=` prefills the create sheet's name (create-from-picker);

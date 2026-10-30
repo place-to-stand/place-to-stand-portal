@@ -138,6 +138,11 @@ export async function listCompanies(
           where cl.company_id = companies.id and cl.deleted_at is null
         )
       )`,
+      // Billed before but not now: only archived clients.
+      formerClient: sql<boolean>`(
+        exists (select 1 from clients cl where cl.company_id = companies.id and cl.deleted_at is not null)
+        and not exists (select 1 from clients cl where cl.company_id = companies.id and cl.deleted_at is null)
+      )`,
       updatedAt: companies.updatedAt,
       deletedAt: companies.deletedAt,
       people: sql<CompanyListItem['people']>`coalesce((
@@ -186,6 +191,7 @@ export async function listCompanies(
     website: row.website,
     clientId: row.clientId ?? null,
     clientName: row.clientName ?? null,
+    formerClient: Boolean(row.formerClient),
     people: row.people ?? [],
     openLeads: row.openLeads ?? [],
     contactCount: row.people?.length ?? 0,

@@ -15,7 +15,7 @@ import {
 } from '@/app/(dashboard)/people/actions'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useCreatePortalUser } from '@/lib/settings/contacts/use-create-portal-user'
-import { updateUser } from '@/app/(dashboard)/settings/users/actions'
+import { createUser, updateUser } from '@/app/(dashboard)/settings/users/actions'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import { USER_ROLES } from '@/lib/settings/users/user-validation'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
@@ -112,6 +112,11 @@ export function useContactSheetState({
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
+  // The role a new sign-in gets: Client goes to the client portal; Admin
+  // and Sales sign in here (and join Place To Stand).
+  const [promoteRole, setPromoteRole] = useState<
+    (typeof USER_ROLES)[number]
+  >('CLIENT')
   // An edit's Companies list arrives after the sheet opens. Until it has,
   // a save leaves their companies alone rather than sending an empty list.
   const [companiesLoaded, setCompaniesLoaded] = useState(false)
@@ -413,15 +418,40 @@ export function useContactSheetState({
     }
 
     setIsPromoteDialogOpen(false)
-    createPortalUser(
-      {
-        id: contactId,
-        name: contact?.name ?? null,
-        email: contact?.email ?? null,
-      },
-      { onSuccess: onComplete, onError: setFeedback }
-    )
-  }, [contact, isPending, createPortalUser, onComplete])
+    if (promoteRole === 'CLIENT') {
+      createPortalUser(
+        {
+          id: contactId,
+          name: contact?.name ?? null,
+          email: contact?.email ?? null,
+        },
+        { onSuccess: onComplete, onError: setFeedback }
+      )
+      return
+    }
+    // Staff: the new sign-in links to this person by their email.
+    startTransition(async () => {
+      const result = await createUser({
+        email: contact?.email ?? '',
+        fullName: contact?.name || contact?.email || '',
+        role: promoteRole,
+      })
+      if (result.error) {
+        setFeedback(result.error)
+        toast({
+          title: 'Unable to create sign-in',
+          description: result.error,
+          variant: 'destructive',
+        })
+        return
+      }
+      toast({
+        title: 'Sign-in created',
+        description: `${contact?.name || contact?.email} can sign in as ${promoteRole === 'ADMIN' ? 'Admin' : 'Sales'}; an invite was emailed.`,
+      })
+      onComplete()
+    })
+  }, [contact, isPending, createPortalUser, onComplete, promoteRole, toast])
 
   const handleConfirmDelete = useCallback(() => {
     const contactId = contact?.id
@@ -483,6 +513,8 @@ export function useContactSheetState({
     handleRequestPromote,
     handleConfirmPromote,
     signInAccount,
+    promoteRole,
+    setPromoteRole,
     reloadSignIn: loadSignIn,
     setIsAvatarUploading,
   }
