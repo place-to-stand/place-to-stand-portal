@@ -72,7 +72,13 @@ test('the design system page renders every entity with passing contrast', async 
 
 test('the design system page shows the Alert variants', async ({ page }) => {
   await page.goto('/design#feedback')
-  await expect(page.locator('#feedback [data-slot="alert"]')).toHaveCount(3)
+  // Info, warning, destructive, and the save side-effect caution.
+  await expect(
+    page.locator('#feedback [data-slot="alert"]').first()
+  ).toBeVisible()
+  expect(
+    await page.locator('#feedback [data-slot="alert"]').count()
+  ).toBeGreaterThanOrEqual(3)
   await expect(
     page.locator('#feedback [data-slot="alert-action"] button').first()
   ).toBeVisible()

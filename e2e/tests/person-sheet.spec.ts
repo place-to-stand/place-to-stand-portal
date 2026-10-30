@@ -26,7 +26,7 @@ test('changing a role asks which month it starts', async ({ page }) => {
   const salesEmail = process.env.E2E_SALES_EMAIL ?? 'dave@local.test'
   await page.goto(`/people?q=${encodeURIComponent(salesEmail)}`)
   await expectHealthy(page)
-  await page.locator('tbody tr').first().click()
+  await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet.getByText('Can sign in')).toBeVisible()
 
@@ -144,7 +144,7 @@ test.describe('writes', () => {
     ).toBeVisible()
 
     // Put it back: archiving the person switches their sign-in off.
-    await row.click()
+    await row.locator('td').first().click()
     await page
       .getByRole('dialog')
       .getByRole('button', { name: 'Archive person' })

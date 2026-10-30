@@ -43,7 +43,9 @@ test('a long word stays inside the task description, editing and saving', async 
   await expect(sheet).toBeVisible()
 
   await sheet.locator('.ProseMirror').first().click()
-  await page.keyboard.insertText(`${LONG_WORD} https://example.com/${'path-'.repeat(60)}`)
+  await page.keyboard.insertText(
+    `${LONG_WORD} https://example.com/${'path-'.repeat(60)}`
+  )
   await expectNoHorizontalOverflow(sheet)
 
   // Fill the required fields so Save starts the (held) request.

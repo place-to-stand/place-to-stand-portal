@@ -28,8 +28,12 @@ export const REDIRECT_ONLY = [
 
 export async function expectHealthy(page: Page) {
   await expect(page.locator('body')).not.toContainText('Application error')
-  await expect(page.locator('body')).not.toContainText('Unhandled Runtime Error')
-  await expect(page.locator('nextjs-portal [data-nextjs-dialog]')).toHaveCount(0)
+  await expect(page.locator('body')).not.toContainText(
+    'Unhandled Runtime Error'
+  )
+  await expect(page.locator('nextjs-portal [data-nextjs-dialog]')).toHaveCount(
+    0
+  )
 }
 
 /** Waits for the page's list (or its empty state) to render. */

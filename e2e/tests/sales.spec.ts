@@ -71,7 +71,7 @@ test('sales sees no billing or sign-in controls on a company', async ({
   page,
 }) => {
   await page.goto('/companies')
-  await page.locator('tbody tr').first().click()
+  await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab', { name: 'Billing' })).toHaveCount(0)

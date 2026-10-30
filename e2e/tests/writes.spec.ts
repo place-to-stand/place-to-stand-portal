@@ -14,7 +14,7 @@ async function openFirstNonClientCompany(page: Page) {
       hasNot: page.locator('[data-slot="badge"]', { hasText: 'Client' }),
     })
     .first()
-  await row.click()
+  await row.locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await sheet.getByRole('tab', { name: 'Billing' }).click()
   await expect(page).toHaveURL(/tab=billing/)

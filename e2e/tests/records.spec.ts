@@ -2,13 +2,13 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('company sheet: four line tabs, Billing reachable by deep link', async ({
+test('company sheet: three line tabs, Billing reachable by deep link', async ({
   page,
 }) => {
   await page.goto('/companies')
-  await page.locator('tbody tr').first().click()
+  await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  for (const tab of ['Details', 'People', 'Projects', 'Billing']) {
+  for (const tab of ['Details', 'Projects', 'Billing']) {
     await expect(sheet.getByRole('tab', { name: tab })).toBeVisible()
   }
   await sheet.getByRole('tab', { name: 'Billing' }).click()
@@ -30,7 +30,7 @@ test('a client company shows the Client badge and its projects', async ({
   await expect(
     row.locator('[data-slot="badge"]', { hasText: 'Client' })
   ).toBeVisible()
-  await row.click()
+  await row.locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await sheet.getByRole('tab', { name: 'Projects' }).click()
   await expect(sheet.getByRole('tabpanel')).toBeVisible()
@@ -38,12 +38,14 @@ test('a client company shows the Client badge and its projects', async ({
 
 test('person sheet is one stacked form, sign-in included', async ({ page }) => {
   await page.goto('/people')
-  await page.locator('tbody tr').first().click()
+  await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab')).toHaveCount(0)
   await expect(sheet.getByText('Can sign in')).toBeVisible()
-  await expect(sheet.getByRole('button', { name: /^Save changes/ })).toHaveCount(1)
+  await expect(
+    sheet.getByRole('button', { name: /^Save changes/ })
+  ).toHaveCount(1)
 })
 
 test('projects list: client rows open the company on its Projects tab', async ({
