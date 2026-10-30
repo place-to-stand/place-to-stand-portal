@@ -43,6 +43,11 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 - `npm run cli:link` - Build the `pts` CLI and link it onto your PATH (see `packages/cli/README.md`)
 - `npm run design-tokens` - Regenerate `docs/design-system/tokens.json` from the theme sources (`npm run lint` checks it)
 
+### CI and pre-commit
+- **CI** (`.github/workflows/ci.yml`) runs `npm ci`, `npm run lint`, `npm run type-check` and `npm run build` on every pull request and on pushes to `main`, on the Node version in `.nvmrc`. It needs no secrets: the build gets placeholder env that satisfies both apps' `lib/env.server.ts` schemas. A new required env var must get a placeholder there too.
+- **Pre-commit** (husky → `lint-staged.config.mjs`, installed by `npm install` through the `prepare` script) runs `eslint --fix` and `prettier --write` on the staged files only, so it stays fast; type-check and build are left to CI.
+- **ESLint config** is shared: `packages/eslint-config` (`base.mjs` for packages, `next.mjs` for both apps, custom rules in `rules/`). Change rules there, not in an app.
+
 ### Development (from `apps/internal/` or `apps/client/`)
 - `npm run dev` - Start app with Turbopack (internal: port 3000, client: port 3001)
 - `npm run build` - Build app with Turbopack

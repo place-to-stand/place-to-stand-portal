@@ -38,12 +38,14 @@ export function nextApp({ dir, entityRegistry } = {}) {
 
   const entityColourMessage = entityRegistry
     ? 'Entity colours come from the registry: ENTITY_ACCENTS.<entity> (icon, card, cardStatic, tint, badge, sheetHeader) in @/lib/entity-accents.'
-    : 'Entity colours belong to the internal portal\'s entity registry (apps/internal/lib/entity-accents.ts); this app has none. Use the semantic tokens.'
+    : "Entity colours belong to the internal portal's entity registry (apps/internal/lib/entity-accents.ts); this app has none. Use the semantic tokens."
 
   return [
     ...nextCoreWebVitals,
     ...nextTypescript,
     {
+      // Lets eslint run from the repo root (pre-commit) as well as the app.
+      settings: { next: { rootDir: dir } },
       rules: {
         ...(restrictedImports.length && {
           'no-restricted-imports': ['error', { paths: restrictedImports }],
