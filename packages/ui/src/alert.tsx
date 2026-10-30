@@ -6,10 +6,11 @@ import { cn } from './cn'
 /**
  * A notice inside the page or a sheet: an icon, a title and/or description,
  * and an optional action (AlertAction) that sits after the text and wraps
- * under it on narrow screens.
+ * under it on narrow screens. The icon and the action are each one text line
+ * tall, so both centre on the first line of text however the text wraps.
  */
 const alertVariants = cva(
-  'relative flex w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3.5 py-2.5 text-sm [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:self-start [&>svg]:translate-y-0.5',
+  'relative flex w-full flex-wrap items-start gap-x-3 gap-y-2 rounded-lg border px-3.5 py-2.5 text-sm leading-snug [&>svg]:h-[1lh] [&>svg]:w-4 [&>svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -77,7 +78,7 @@ function AlertAction({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot='alert-action'
-      className={cn('ml-auto flex shrink-0 items-center gap-2', className)}
+      className={cn('ml-auto flex h-[1lh] shrink-0 items-center gap-2', className)}
       {...props}
     />
   )
