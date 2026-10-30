@@ -5,6 +5,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import {
   contactCreatedEvent,
+  contactRestoredEvent,
   contactUpdatedEvent,
   leadCreatedEvent,
   leadStatusChangedEvent,
@@ -12,6 +13,7 @@ import {
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { roleCan } from '@/lib/auth/capabilities'
+import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -37,7 +39,11 @@ import {
   getLinkableCompany,
   type DeferActivity,
 } from '@/lib/queries/companies'
-import { joinCompany, mainCompanyIdSql } from '@/lib/queries/memberships'
+import {
+  atClientCompanySql,
+  joinCompany,
+  mainCompanyIdSql,
+} from '@/lib/queries/memberships'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -216,13 +222,28 @@ async function resolveLeadContact(
     email: contacts.email,
     phone: contacts.phone,
     hasCompany: sql<boolean>`${mainCompanyIdSql(contacts.id)} is not null`,
+    userId: contacts.userId,
+    atClient: atClientCompanySql(contacts.id),
   }
   const timestamp = new Date().toISOString()
+  const isAdmin = isAdminRole(actor.role)
+  const canManageClients = roleCan(actor.role, 'clients.manage')
+  // Someone who can sign in is edited by admins only (their companies decide
+  // what they can see), and a client's people need `clients.manage`, as on
+  // the person sheet. A lead save still links them; it just leaves them be.
+  const isLocked = (contact: { userId: string | null; atClient: boolean }) =>
+    (Boolean(contact.userId) && !isAdmin) ||
+    (contact.atClient && !canManageClients)
 
   // A contact with no company joins the lead's. Membership grants no client
   // access (that's switched on per person on the client).
-  const linkCompany = async (contact: { id: string; hasCompany: boolean }) => {
+  const linkCompany = async (contact: {
+    id: string
+    hasCompany: boolean
+    userId: string | null
+  }) => {
     if (!companyId) return
+    if (contact.userId && !isAdmin) return
     if (contact.hasCompany) {
       if (!normalized.addContactToCompany) return
       // A client's contacts are admin-only (same rule as the contact sheet).
@@ -279,9 +300,11 @@ async function resolveLeadContact(
     const sameEmail =
       (contact?.email ?? '').toLowerCase() === (details.email ?? '')
     if (contact && sameEmail) {
+      const locked = isLocked(contact)
       const changed =
-        contact.name !== details.name ||
-        (contact.phone ?? null) !== details.phone
+        !locked &&
+        (contact.name !== details.name ||
+          (contact.phone ?? null) !== details.phone)
       if (changed) {
         await tx
           .update(contacts)
@@ -317,10 +340,10 @@ async function resolveLeadContact(
       return {
         contact: {
           id: contact.id,
-          name: details.name,
+          name: locked ? contact.name : details.name,
           // Keep the contact's own spelling of its email.
           email: contact.email,
-          phone: details.phone,
+          phone: locked ? contact.phone : details.phone,
         },
       }
     }
@@ -342,10 +365,27 @@ async function resolveLeadContact(
       .limit(1)
     if (match) {
       if (match.deletedAt) {
+        // Restoring someone who can sign in is admin-only (as on the
+        // person sheet).
+        if (match.userId && !isAdmin) {
+          return {
+            error:
+              'That email belongs to an archived person who can sign in. Ask an admin to restore them.',
+          }
+        }
         await tx
           .update(contacts)
           .set({ deletedAt: null, updatedAt: timestamp })
           .where(eq(contacts.id, match.id))
+        defer(() =>
+          logActivity({
+            actorId: actor.id,
+            actorRole: actor.role,
+            targetType: 'CONTACT',
+            targetId: match.id,
+            ...contactRestoredEvent({ email: match.email, name: match.name }),
+          })
+        )
       }
       await linkCompany(match)
       return {
@@ -369,7 +409,7 @@ async function resolveLeadContact(
       phone: contacts.phone,
     })
   if (!created) return { error: 'Unable to save the person.' }
-  await linkCompany({ id: created.id, hasCompany: false })
+  await linkCompany({ id: created.id, hasCompany: false, userId: null })
 
   defer(() =>
     logActivity({
