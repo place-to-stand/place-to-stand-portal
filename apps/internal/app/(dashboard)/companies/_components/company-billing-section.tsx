@@ -32,8 +32,11 @@ export type CompanyBillingHandle = {
    * invalid (the error shows on the tab).
    */
   collect: () => CompanyBillingIntent | null
-  /** "Bill this company" is on: the People tab shows portal switches. */
-  billingOn: () => boolean
+  /**
+   * The People tab shows portal switches: "Bill this company" is on, or it
+   * is a former client (its switches show as they are).
+   */
+  portalShown: () => boolean
 }
 
 /**
@@ -198,7 +201,7 @@ function BillingStateProvider({
   useImperativeHandle(
     handleRef,
     () => ({
-      billingOn: () => billingOn,
+      portalShown: () => billingOn || mode === 'former',
       collect: () => {
         const fields = () =>
           fieldsShown && state.hasUnsavedChanges ? state.collectFields() : null

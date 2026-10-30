@@ -179,7 +179,9 @@ export function CompanySheet({
   const canManageClients = roleCan(role, 'clients.manage')
 
   const clientCompanyId = company?.clients[0]?.id ?? null
-  const formerClientId = clientCompanyId ? null : (company?.formerClientId ?? null)
+  const formerClientId = clientCompanyId
+    ? null
+    : (company?.formerClientId ?? null)
   // A former client keeps its Projects tab only while it has projects.
   const { data: formerWork } = useQuery({
     queryKey: ['companyClientWork', formerClientId],
@@ -219,8 +221,9 @@ export function CompanySheet({
         }
         billing = collected
       }
-      // Portal switches show while the company is (or is becoming) billed.
-      const sendPortal = canManageClients && Boolean(handle?.billingOn())
+      // Portal switches show while the company is (or is becoming) billed,
+      // and on a former client.
+      const sendPortal = canManageClients && Boolean(handle?.portalShown())
 
       startTransition(async () => {
         const result = await saveCompanySheet({

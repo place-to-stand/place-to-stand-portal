@@ -67,10 +67,7 @@ import {
   writeCompany,
   type CompanyWritePlan,
 } from '@/lib/queries/companies'
-import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { listCompanyMembers } from '@/lib/queries/memberships'
 
 type BillingFields = ReturnType<typeof companyBillingFieldsSchema.parse>
@@ -159,7 +156,7 @@ export async function saveCompanySheet(
   }
 
   let billingPlan = billing.plan
-  let committed: { companyId: string; accessChanges: ContactClientLinkChange[] }
+  let committed: { companyId: string }
   let attempt = 0
   for (;;) {
     try {
@@ -187,7 +184,6 @@ export async function saveCompanySheet(
           }
         }
         const companyId = await writeCompany(tx, actor, plan)
-        let accessChanges: ContactClientLinkChange[] = []
 
         switch (billingPlan.kind) {
           case 'start':
@@ -207,7 +203,8 @@ export async function saveCompanySheet(
             await applyClientUpdateInTx(tx, billingPlan.update, actor.id)
             break
           case 'stop':
-            accessChanges = await stopClientBillingInTx(tx, {
+            // Portal switches stay as they are: access ends with billing.
+            await stopClientBillingInTx(tx, {
               companyId,
               effective: billingPlan.effective,
             })
@@ -229,7 +226,7 @@ export async function saveCompanySheet(
         if (portal.changes) {
           await applyPortalAccessInTx(tx, companyId, portal.changes)
         }
-        return { companyId, accessChanges }
+        return { companyId }
       })
       break
     } catch (error) {
@@ -424,18 +421,13 @@ async function planPortalAccess(
 ): Promise<
   { changes: PortalPlan | null; signIns: SignInRequest[] } | { error: string }
 > {
-  // Stopping billing switches everyone's access off.
+  // A stop leaves the switches as they are (access ends with billing).
   if (wantedIds === undefined || billing.kind === 'stop') {
     return { changes: null, signIns: [] }
   }
   const billedAfter =
     billing.kind === 'start' || billing.kind === 'restart' || billingOpenBefore
   const wanted = new Set(wantedIds)
-  if (!billedAfter && wanted.size) {
-    return {
-      error: 'Bill this company before giving its people portal access.',
-    }
-  }
 
   const leaving = new Set(
     plan.moves.filter(move => !move.joins).map(move => move.contactId)
@@ -476,6 +468,13 @@ async function planPortalAccess(
   const grant = members.filter(
     member => wanted.has(member.contactId) && !member.portalAccess
   )
+  // A former client's switches can go off (so a restart doesn't give that
+  // access back), but only a billed company gives anyone access.
+  if (!billedAfter && grant.length) {
+    return {
+      error: 'Bill this company before giving its people portal access.',
+    }
+  }
   const revoke = members.filter(
     member => !wanted.has(member.contactId) && member.portalAccess
   )
@@ -500,7 +499,7 @@ async function logAfterCommit(
   billing: BillingPlan,
   portal: { changes: PortalPlan | null },
   signIns: PreparedSignIn[],
-  committed: { companyId: string; accessChanges: ContactClientLinkChange[] }
+  committed: { companyId: string }
 ) {
   const { companyId } = committed
   await logCompanyWrite(actor, plan, companyId)
@@ -549,7 +548,6 @@ async function logAfterCommit(
   await afterSignInsCommitted(actor, signIns, companyId)
 
   await logContactClientLinkChanges(actor, [
-    ...committed.accessChanges,
     ...(portal.changes?.grant ?? []).map(contactId => ({
       contactId,
       clientCompanyId: companyId,

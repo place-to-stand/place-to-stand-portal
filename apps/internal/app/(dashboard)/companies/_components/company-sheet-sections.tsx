@@ -29,10 +29,7 @@ import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
-import {
-  monthLabelFromNow,
-  thisOrNextMonthOptions,
-} from '@/lib/billing/months'
+import { monthLabelFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
 
 export function CompanyLeadsSection({
   leads,
@@ -97,7 +94,7 @@ export function CompanyBillingTab({
         : 'Not billed. Switch on and save to make this company a client.'
       : mode === 'former'
         ? billingOn
-          ? `Saving restarts billing with its previous setup.${portalNow}`
+          ? 'Saving restarts billing with its previous setup. Its people with Portal on get portal access back.'
           : 'Billing stopped. Switch on and save to restart it.'
         : mode === 'ending'
           ? billingOn
@@ -105,7 +102,7 @@ export function CompanyBillingTab({
             : `Billing stops after ${endsLabel}. Switch on and save to keep billing.`
           : billingOn
             ? null
-            : 'Saving stops billing: its people lose portal access. Its projects, invoices and history stay.'
+            : 'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
   const isClient = mode === 'live' || mode === 'ending'
   const choice = stopping
     ? {
