@@ -11,6 +11,7 @@ import { PersonSelector } from '@/components/my-tasks/person-selector'
 import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import {
   useSheetParamSelection,
+  useSheetParams,
 } from '@/lib/sheets/use-sheet-params'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
@@ -18,7 +19,6 @@ import type { LeadStatusValue } from '@/lib/leads/constants'
 import { LEAD_WON_NEEDS_COMPANY_MESSAGE } from '@/lib/leads/won-rule'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
@@ -160,7 +160,6 @@ export function LeadsWorkspace({
       router.refresh()
     })
   }, [router, startRefresh])
-
 
   const isSheetOpen = canManage && (isCreating || Boolean(activeLead))
   // Keep the last-opened lead rendered while the close animation plays so
