@@ -1,14 +1,12 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import type { TemplateAudience } from '@/lib/templates/audience'
 
-import {
-  AUDIENCE_STYLES,
-  TEMPLATE_AUDIENCES,
-} from './template-labels'
+import { AUDIENCE_STYLES, TEMPLATE_AUDIENCES } from './template-labels'
 
 const AUDIENCE_OPTIONS = TEMPLATE_AUDIENCES.map(value => ({
   value,
@@ -107,8 +105,6 @@ export function TemplateSection({
 
 export function NoMatchingTemplates() {
   return (
-    <p className='text-muted-foreground text-sm'>
-      No templates match. Try a different search or recipient.
-    </p>
+    <EmptyState message='No templates match. Try a different search or recipient.' />
   )
 }

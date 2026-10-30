@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { Fragment, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -84,9 +85,9 @@ export function PartnerPayoutsTable({
       </div>
 
       {table.rows.length === 0 ? (
-        <p className='text-muted-foreground border-t px-5 py-8 text-center text-sm'>
-          No payouts this month.
-        </p>
+        <div className='border-t p-5'>
+          <EmptyState message='No payouts this month.' />
+        </div>
       ) : (
         // A money grid reads across its columns, so on a narrow screen it
         // keeps a floor width and scrolls inside the card rather than

@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import Link from 'next/link'
 import { Loader2, User, Users } from 'lucide-react'
 
@@ -34,11 +35,7 @@ export function TimeLogList({
   const remaining = Math.max(0, totalCount - items.length)
 
   if (!items.length) {
-    return (
-      <p className='text-muted-foreground pt-3 text-xs'>
-        No time logged this month.
-      </p>
-    )
+    return <EmptyState className='mt-3' message='No time logged this month.' />
   }
 
   return (

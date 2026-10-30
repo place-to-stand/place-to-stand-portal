@@ -1,3 +1,4 @@
+import { EmptyState } from '@pts/ui/empty-state'
 import type { SalesTaxData } from '@/lib/data/reports/types'
 
 import { formatMoney, formatShortDay } from './format'
@@ -31,9 +32,9 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
         </span>
       </div>
       {rows.length === 0 ? (
-        <p className='text-muted-foreground px-5 py-8 text-center text-sm'>
-          No sales tax collected this month.
-        </p>
+        <div className='p-5'>
+          <EmptyState message='No sales tax collected this month.' />
+        </div>
       ) : (
         <div className='flex flex-col pb-3'>
           <div className='flex items-baseline gap-3 px-5 pt-3 pb-1.5 text-sm'>
@@ -51,7 +52,10 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
               className='flex items-center gap-3 px-5 py-1.5 text-sm'
             >
               <span className='flex min-w-0 flex-1 items-center gap-2'>
-                <TreeBranch first={index === 0} last={index === rows.length - 1} />
+                <TreeBranch
+                  first={index === 0}
+                  last={index === rows.length - 1}
+                />
                 <span className='min-w-0'>
                   {row.clientName}
                   <span className='text-muted-foreground'>

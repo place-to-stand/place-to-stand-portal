@@ -1,3 +1,4 @@
+import { EmptyState } from '@pts/ui/empty-state'
 import type { Net30Data, PrepaidBillingData } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
@@ -88,9 +89,9 @@ export function BillingInCard({ prepaid, net30, total }: BillingInCardProps) {
         </span>
       </div>
       {empty ? (
-        <p className='text-muted-foreground px-5 py-8 text-center text-sm'>
-          No billing this month.
-        </p>
+        <div className='p-5'>
+          <EmptyState message='No billing this month.' />
+        </div>
       ) : (
         <div className='flex flex-col pb-3'>
           <Group

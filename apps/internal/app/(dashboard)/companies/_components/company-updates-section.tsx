@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -77,13 +78,20 @@ export function ClientUpdatesSection({
         </Button>
       </div>
       {updates.length === 0 ? (
-        <p className='text-muted-foreground px-4 py-6 text-center text-sm'>
-          No updates yet. Draft one here or with{' '}
-          <code className='bg-muted rounded px-1 py-0.5 text-xs'>
-            pts updates draft
-          </code>
-          .
-        </p>
+        <div className='p-4'>
+          <EmptyState
+            message='No updates yet.'
+            action={
+              <p className='text-xs'>
+                Draft one here or with{' '}
+                <code className='bg-muted rounded px-1 py-0.5'>
+                  pts updates draft
+                </code>
+                .
+              </p>
+            }
+          />
+        </div>
       ) : (
         <ul className='divide-y'>
           {updates.map(update => (
