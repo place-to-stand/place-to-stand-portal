@@ -7,7 +7,12 @@ import { and, inArray, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { companies } from '@pts/db/schema'
-import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
+import {
+  clientHoursTotalsFor,
+  getClientHoursTotals,
+  getNet30MonthlyHours,
+  type MonthHours,
+} from '@pts/db/hours'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
 
@@ -91,5 +96,50 @@ export const fetchClientHoursSummaries = cache(
         }
       })
       .sort((a, b) => a.clientName.localeCompare(b.clientName))
+  }
+)
+
+/** A Net 30 client's logged hours: this month, then earlier months. */
+export type Net30MonthlyHours = {
+  /** This month's start ('yyyy-MM-01', UTC, as the monthly close counts). */
+  currentMonth: string
+  currentHours: number
+  /** Earlier months with hours, newest first. */
+  earlierMonths: MonthHours[]
+}
+
+/** First day of the current month in UTC, as 'yyyy-MM-01'. */
+function currentMonthStartUtc(): string {
+  const now = new Date()
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0')
+  return `${now.getUTCFullYear()}-${month}-01`
+}
+
+/**
+ * Net 30 hours by month per client in scope, keyed by company id. Reads
+ * `getNet30MonthlyHours` in `@pts/db/hours`, which counts a month exactly
+ * the way the monthly close bills it, so the portal shows the hours the
+ * client is invoiced for. Only meaningful for clients whose summary is
+ * net_30; the Hours page reads it for those alone.
+ *
+ * SECURITY: client ids come only from resolvePortalScope.
+ */
+export const fetchNet30MonthlyHours = cache(
+  async (user: AppUser): Promise<Map<string, Net30MonthlyHours>> => {
+    const { companyIds } = await resolvePortalScope(user)
+    const byClient = await getNet30MonthlyHours(db, companyIds)
+    const currentMonth = currentMonthStartUtc()
+
+    const result = new Map<string, Net30MonthlyHours>()
+    for (const companyId of companyIds) {
+      const months = byClient.get(companyId) ?? []
+      result.set(companyId, {
+        currentMonth,
+        currentHours:
+          months.find(entry => entry.month === currentMonth)?.hours ?? 0,
+        earlierMonths: months.filter(entry => entry.month < currentMonth),
+      })
+    }
+    return result
   }
 )
