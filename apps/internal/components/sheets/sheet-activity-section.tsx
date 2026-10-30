@@ -1,17 +1,16 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useId, useState, type ReactNode } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { type ReactNode } from 'react'
 
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@pts/ui/collapsible'
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@pts/ui/accordion'
 import type { ActivityFeedProps } from '@/components/activity/activity-feed'
 import { useActivityCount } from '@/lib/activity/use-activity-feed'
-import { cn } from '@/lib/utils'
 
 // The feed's code loads with the first open, like its entries.
 const ActivityFeed = dynamic(
@@ -80,20 +79,12 @@ export function SheetActivityDisclosure({
   className?: string
   children: ReactNode
 }) {
-  const [open, setOpen] = useState(false)
-  const headingId = useId()
-
+  // One item, closed by default; a closed panel unmounts, so the feed (and
+  // its fetch) waits for the first open.
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={setOpen}
-      render={<section className={cn('flex flex-col', className)} />}
-    >
-      <h3 className='text-sm font-semibold tracking-tight'>
-        <CollapsibleTrigger
-          id={headingId}
-          className='hover:text-foreground/80 focus-visible:ring-ring/50 -mx-1 flex min-h-5 w-[calc(100%+0.5rem)] cursor-pointer items-center justify-between gap-2 rounded-sm px-1 text-left outline-none focus-visible:ring-[3px]'
-        >
+    <Accordion className={className}>
+      <AccordionItem value='activity' className='border-b-0'>
+        <AccordionTrigger className='py-0 text-sm font-semibold tracking-tight hover:no-underline'>
           <span>
             Activity
             {total !== null ? (
@@ -103,18 +94,9 @@ export function SheetActivityDisclosure({
               </span>
             ) : null}
           </span>
-          <ChevronDown
-            className={cn(
-              'text-muted-foreground size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none',
-              open ? 'rotate-0' : '-rotate-90'
-            )}
-            aria-hidden='true'
-          />
-        </CollapsibleTrigger>
-      </h3>
-      <CollapsibleContent role='region' aria-labelledby={headingId}>
-        {children}
-      </CollapsibleContent>
-    </Collapsible>
+        </AccordionTrigger>
+        <AccordionContent className='pb-0'>{children}</AccordionContent>
+      </AccordionItem>
+    </Accordion>
   )
 }

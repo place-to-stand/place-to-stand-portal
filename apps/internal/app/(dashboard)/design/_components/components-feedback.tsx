@@ -31,6 +31,12 @@ import {
 } from '@pts/ui/alert-dialog'
 import { Button } from '@pts/ui/button'
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@pts/ui/accordion'
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -379,6 +385,22 @@ export function ComponentsOverlays() {
               Proposal sent · Call booked · Intro email
             </CollapsibleContent>
           </Collapsible>
+        </Example>
+        <Example caption='Accordion (the house accordion: a sheet’s Activity)'>
+          <Accordion className='w-72'>
+            <AccordionItem value='activity'>
+              <AccordionTrigger>Activity (3)</AccordionTrigger>
+              <AccordionContent className='text-muted-foreground'>
+                Logged 1.5h · Moved to In progress · Created
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value='older'>
+              <AccordionTrigger>Older updates</AccordionTrigger>
+              <AccordionContent className='text-muted-foreground'>
+                Proposal sent · Call booked
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </Example>
       </Specimen>
       <Specimen label='Command palette' className='block'>
