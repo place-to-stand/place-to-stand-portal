@@ -9,7 +9,11 @@ RuleTester.describe = describe
 RuleTester.it = it
 
 const tester = new RuleTester({
-  languageOptions: { parser: tseslint.parser, ecmaVersion: 'latest', sourceType: 'module' },
+  languageOptions: {
+    parser: tseslint.parser,
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+  },
 })
 
 const imports = `import { sql } from 'drizzle-orm'

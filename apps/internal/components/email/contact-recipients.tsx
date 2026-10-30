@@ -152,7 +152,6 @@ export function ContactRecipients({
             variant='outline'
             onClick={addExtra}
             disabled={disabled || !draft.trim()}
-            className='h-8'
             aria-label='Add recipient'
           >
             <Plus className='h-3.5 w-3.5' />

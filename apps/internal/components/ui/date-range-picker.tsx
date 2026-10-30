@@ -85,7 +85,6 @@ export function DateRangePicker({
           aria-haspopup='dialog'
           aria-expanded={open}
           aria-label={`${ariaLabel}: ${presetLabel ? `${presetLabel}, ` : ''}${datesLabel}`}
-          title={datesLabel}
           disabled={disabled}
           className={cn(fieldTriggerClasses, 'w-56', className)}
         >

@@ -143,7 +143,7 @@ const cases: Case[] = [
     element: (
       <Popover open onOpenChange={noop}>
         <PopoverTrigger asChild><Button>t</Button></PopoverTrigger>
-        <PopoverContent align='start' className='w-64'>hello</PopoverContent>
+        <PopoverContent className='w-64'>hello</PopoverContent>
       </Popover>
     ),
   },
@@ -308,7 +308,7 @@ const cases: Case[] = [
     element: (
       <TiptapDropdownMenu open>
         <TiptapDropdownMenuTrigger asChild><button type='button'>H</button></TiptapDropdownMenuTrigger>
-        <TiptapDropdownMenuContent align='start'>
+        <TiptapDropdownMenuContent>
           <TiptapDropdownMenuItem asChild><button type='button'>H1</button></TiptapDropdownMenuItem>
         </TiptapDropdownMenuContent>
       </TiptapDropdownMenu>

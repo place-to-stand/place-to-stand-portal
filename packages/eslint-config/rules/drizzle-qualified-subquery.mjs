@@ -43,7 +43,10 @@ export default {
       ImportDeclaration(node) {
         if (!SCHEMA_SOURCE.test(String(node.source.value))) return
         for (const spec of node.specifiers) {
-          if (spec.type === 'ImportSpecifier' || spec.type === 'ImportNamespaceSpecifier') {
+          if (
+            spec.type === 'ImportSpecifier' ||
+            spec.type === 'ImportNamespaceSpecifier'
+          ) {
             schemaImports.add(spec.local.name)
           }
         }
@@ -76,7 +79,9 @@ export default {
             continue
           }
           const tableName =
-            tableNode.type === 'Identifier' ? tableNode.name : tableNode.property.name
+            tableNode.type === 'Identifier'
+              ? tableNode.name
+              : tableNode.property.name
           const column = expr.property.name
           context.report({
             node: expr,

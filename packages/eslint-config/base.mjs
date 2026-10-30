@@ -29,6 +29,9 @@ export function common() {
         // Money: an outer column in a correlated subquery binds to the inner
         // table (three past bugs). See rules/drizzle-qualified-subquery.mjs.
         'pts/drizzle-qualified-subquery': 'error',
+        // House rule 10: every date a person reads (pages, emails, PDFs) is
+        // formatted by @pts/ui/dates.
+        'pts/dates-through-ui': 'error',
       },
     },
   ]

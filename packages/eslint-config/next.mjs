@@ -17,6 +17,18 @@ import nextTypescript from 'eslint-config-next/typescript'
 
 import { IGNORES, common } from './base.mjs'
 
+export const HOUSE_RULES = {
+  'pts/no-radix': 'error', // rule 1
+  'pts/no-align-start': 'error', // rule 4
+  'pts/save-not-gated-on-dirty': 'error', // rule 6
+  'pts/no-title-tooltip': 'error', // rule 11
+  'pts/no-size-override': 'error', // rule 12
+  'pts/toast-copy': 'error', // rule 14
+  'pts/grid-phone-column': 'error', // rule 15
+  'pts/ellipsis-character': 'error', // copy: "…"
+  'pts/filter-select': 'error', // list filters are FilterSelect
+}
+
 function entityIconNames(dir, registry) {
   return [
     ...readFileSync(join(dir, registry), 'utf8').matchAll(/iconName: '(\w+)'/g),
@@ -68,6 +80,11 @@ export function nextApp({ dir, entityRegistry } = {}) {
     ...(entityRegistry
       ? [{ files: [entityRegistry], rules: { 'no-restricted-syntax': 'off' } }]
       : []),
+    {
+      // The design system's house rules (docs/design-system/README.md,
+      // "House rules (verified in code)"); each message quotes its rule.
+      rules: HOUSE_RULES,
+    },
     IGNORES,
   ]
 }

@@ -94,7 +94,7 @@ export function ListDropdownMenu({
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="start">
+      <DropdownMenuContent>
         <Card>
           <CardBody>
             <ButtonGroup>

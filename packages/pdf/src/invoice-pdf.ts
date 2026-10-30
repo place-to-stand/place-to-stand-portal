@@ -7,6 +7,7 @@
  * VOID shown as a stamp beside the number rather than a watermark.
  */
 
+import { formatCalendarDate } from '@pts/ui/dates'
 import { formatCurrency } from '@pts/ui/numbers'
 import { jsPDF } from 'jspdf'
 
@@ -30,28 +31,12 @@ const MARGIN_BOTTOM = 48 * PX
 const FOOTER_SPACE = 48 * PX
 
 /** Date-only column ("2026-09-01") → "September 1, 2026". */
-const formatDate = (date: string | null): string | null => {
-  if (!date) return null
-  const d = new Date(date + 'T00:00:00')
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
+const formatDate = (date: string | null): string | null =>
+  formatCalendarDate(date, { year: 'numeric', month: 'long', day: 'numeric' })
 
-/** Timestamp (paid_at) → "Sep 3, 2026", pinned to the business's timezone. */
-const formatStampDate = (timestamp: string | null): string | null => {
-  if (!timestamp) return null
-  const d = new Date(timestamp)
-  if (isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'America/Los_Angeles',
-  })
-}
+/** Timestamp (paid_at) → "Sep 3, 2026", pinned to the company timezone. */
+const formatStampDate = (timestamp: string | null): string | null =>
+  formatCalendarDate(timestamp)
 
 const formatTaxRate = (rate: number) =>
   (rate * 100).toFixed(2).replace(/\.?0+$/, '')

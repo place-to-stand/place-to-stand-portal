@@ -234,11 +234,11 @@ export function AvatarUploadField({
 
   return (
     <div className='flex items-start gap-4'>
-      <Avatar className='h-16 w-16'>
+      <Avatar size='xl'>
         {remoteImage ? (
           <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Photo'} />
         ) : null}
-        <AvatarFallback className='text-base font-semibold uppercase'>
+        <AvatarFallback className='font-semibold uppercase'>
           {initials}
         </AvatarFallback>
       </Avatar>

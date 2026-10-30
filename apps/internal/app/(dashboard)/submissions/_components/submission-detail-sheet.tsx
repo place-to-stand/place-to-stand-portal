@@ -75,7 +75,7 @@ function Kv({ label, value, wide = false }: KvProps) {
   )
 }
 
-const KV_GRID = 'grid gap-x-4 gap-y-3 sm:grid-cols-2'
+const KV_GRID = 'grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2'
 
 /** "42s" under a minute, "3m 12s" above it. */
 function formatDuration(ms: number): string {
