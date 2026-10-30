@@ -2,7 +2,7 @@ import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { asc, eq, and, sql } from 'drizzle-orm'
+import { asc, desc, eq, and, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
@@ -64,6 +64,32 @@ export async function listAllActiveClients(
     .from(companies)
     .where(isClientCompany())
     .orderBy(asc(clientNameSql))
+
+  return rows.map(row => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug ?? row.id,
+  }))
+}
+
+/**
+ * Every live company for the People company filter: clients first, then the
+ * rest, each by name.
+ */
+export async function listCompanyFilterOptions(
+  user: AppUser
+): Promise<ClientOption[]> {
+  assertCrmAccess(user)
+
+  const rows = await db
+    .select({
+      id: companies.id,
+      name: companies.name,
+      slug: companies.slug,
+    })
+    .from(companies)
+    .where(isNull(companies.deletedAt))
+    .orderBy(desc(isClientCompany()), asc(companies.name))
 
   return rows.map(row => ({
     id: row.id,

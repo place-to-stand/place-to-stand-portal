@@ -6,7 +6,7 @@ import { requireCrmUser } from '@/lib/auth/session'
 import { isAdminRole } from '@/lib/auth/roles'
 import {
   listContactsForSettings,
-  listAllActiveClients,
+  listCompanyFilterOptions,
 } from '@/lib/queries/contacts'
 import { parseContactsSearchParams } from '@/lib/settings/contacts/filters'
 import { serverEnv } from '@/lib/env.server'
@@ -48,7 +48,7 @@ export default async function ContactsPage({
     'active'
   )
 
-  const [{ items, totalCount, unfilteredTotalCount }, allClients] =
+  const [{ items, totalCount, unfilteredTotalCount }, companyOptions] =
     await Promise.all([
       listContactsForSettings(user, {
         status: 'active',
@@ -59,7 +59,7 @@ export default async function ContactsPage({
         limit: pageSize,
         sort,
       }),
-      listAllActiveClients(user),
+      listCompanyFilterOptions(user),
     ])
 
   const contactsForTable = items.map(mapContactToTableRow)
@@ -98,7 +98,7 @@ export default async function ContactsPage({
           basePath='/people'
           search={search}
           companyId={companyId}
-          clients={allClients}
+          companies={companyOptions}
           signIn={isAdmin ? signIn : undefined}
           showSignInFilter={isAdmin}
         />

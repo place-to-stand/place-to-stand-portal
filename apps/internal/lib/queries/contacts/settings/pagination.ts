@@ -41,7 +41,8 @@ export function buildSearchCondition(
 }
 
 /**
- * Linked-client filter: keeps contacts with a live link to the given client.
+ * Company filter: keeps contacts with a live link to the given company (for
+ * a client, portal access in `portal` mode).
  * Mirrors the Linked Clients cell semantics (archived clients don't count).
  * Raw identifiers for the same dequalification reason as
  * `linkedClientsCountSql` below.
@@ -65,12 +66,20 @@ export function buildClientCondition(
     )`
   }
 
-  return sql`exists (
+  // A client: who can see it in the portal. Any other company has no portal,
+  // so: who works there.
+  return sql`(exists (
     select 1
     from client_portal_access cpa
     where cpa.contact_id = contacts.id
       and cpa.company_id = ${companyId}
-  )`
+  ) or (not company_is_client(${companyId}::uuid) and exists (
+    select 1
+    from memberships m
+    where m.contact_id = contacts.id
+      and m.company_id = ${companyId}
+      and m.ended_at is null
+  )))`
 }
 
 /**

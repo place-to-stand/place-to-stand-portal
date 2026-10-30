@@ -15,10 +15,10 @@ import {
 
 type ContactsFiltersProps = {
   search?: string
-  /** Validated linked-client filter value (`?companyId=<uuid>`). */
+  /** Validated company filter value (`?companyId=<uuid>`). */
   companyId?: string
-  /** Active clients for the linked-client filter options. */
-  clients: ClientOption[]
+  /** Every live company, clients first, for the company filter. */
+  companies: ClientOption[]
   /** Base path to push filter changes to — '/people' or '/people/archive'. */
   basePath: string
   /** Who can sign in (`?signIn=`); admins only. */
@@ -29,7 +29,7 @@ type ContactsFiltersProps = {
 export function ContactsFilters({
   search,
   companyId,
-  clients,
+  companies,
   basePath,
   signIn,
   showSignInFilter = false,
@@ -62,10 +62,10 @@ export function ContactsFilters({
       <FilterSelect
         value={companyId}
         onChange={value => update({ companyId: value })}
-        placeholder='All clients'
-        options={clients.map(client => ({
-          value: client.id,
-          label: client.name,
+        placeholder='All companies'
+        options={companies.map(company => ({
+          value: company.id,
+          label: company.name,
         }))}
       />
       {showSignInFilter ? (
