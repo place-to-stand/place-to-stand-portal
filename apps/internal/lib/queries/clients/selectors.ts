@@ -53,7 +53,6 @@ export const clientGroupByColumns = [
   companies.slug,
   companies.notes,
   companies.state,
-  companies.id,
   companies.createdBy,
   clientSinceSql,
   companies.updatedAt,

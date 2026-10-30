@@ -1,16 +1,7 @@
-import {
-  clientEndedAtSql,
-  clientSinceSql,
-  isClientCompany,
-} from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
-import { clientNameSql } from '@pts/db/names'
-import {
-  currentOriginationContactIdSql,
-  currentOriginationUserIdSql,
-} from '@/lib/queries/clients/commission-terms'
+import { clientFields } from '@/lib/queries/clients/selectors'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
@@ -65,23 +56,7 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
   // The billing form self-fetches its reference data (contacts/admins) —
   // it only needs the row (snake_case `DbClient` plus its closer split).
   const rows = await db
-    .select({
-      id: companies.id,
-      companyId: companies.id,
-      slug: companies.slug,
-      notes: companies.notes,
-      state: companies.state,
-      createdBy: companies.createdBy,
-      createdAt: clientSinceSql,
-      updatedAt: companies.updatedAt,
-      deletedAt: clientEndedAtSql,
-      // Billing type and commission live on the terms; these are the
-      // newest terms'.
-      name: clientNameSql,
-      billingType: currentBillingTypeSql(),
-      originationContactId: currentOriginationContactIdSql(),
-      originationUserId: currentOriginationUserIdSql(),
-    })
+    .select(clientFields)
     .from(companies)
     .where(
       and(isClientCompany(), eq(companies.id, id))

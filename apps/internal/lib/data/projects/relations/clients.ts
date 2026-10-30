@@ -1,16 +1,8 @@
-import {
-  clientEndedAtSql,
-  clientSinceSql,
-  isClientCompany,
-} from '@pts/db/client-state'
-import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
+import { isClientCompany } from '@pts/db/client-state'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
-import {
-  currentOriginationContactIdSql,
-  currentOriginationUserIdSql,
-} from '@/lib/queries/clients/commission-terms'
+import { clientFields } from '@/lib/queries/clients/selectors'
 import { db } from '@/lib/db'
 import {
   clientPortalAccess,
@@ -67,21 +59,7 @@ export async function loadClientRows(
   }
 
   return db
-    .select({
-      id: companiesTable.id,
-      name: clientNameSql,
-      slug: companiesTable.slug,
-      notes: companiesTable.notes,
-      state: companiesTable.state,
-      originationContactId: currentOriginationContactIdSql(),
-      originationUserId: currentOriginationUserIdSql(),
-      billingType: currentBillingTypeSql(),
-      companyId: companiesTable.id,
-      createdBy: companiesTable.createdBy,
-      createdAt: clientSinceSql,
-      updatedAt: companiesTable.updatedAt,
-      deletedAt: clientEndedAtSql,
-    })
+    .select(clientFields)
     .from(companiesTable)
     .where(
       and(inArray(companiesTable.id, companyIds), isClientCompany())
