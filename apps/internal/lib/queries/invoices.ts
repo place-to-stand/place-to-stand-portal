@@ -321,7 +321,10 @@ export async function listInvoices(
   }
 }
 
-/** Active hour blocks per invoice, oldest first, for the list's hours cell. */
+/**
+ * Active hour blocks per invoice, oldest first, for the list's hours cell and
+ * the invoice sheet's hour block rows (with the line that created each).
+ */
 async function fetchHourBlocksByInvoice(
   invoiceIds: string[]
 ): Promise<Map<string, InvoiceHourBlockSummary[]>> {
@@ -332,6 +335,8 @@ async function fetchHourBlocksByInvoice(
       id: hourBlocks.id,
       invoiceId: invoiceLineItems.invoiceId,
       hoursPurchased: hourBlocks.hoursPurchased,
+      description: invoiceLineItems.description,
+      amount: invoiceLineItems.amount,
     })
     .from(hourBlocks)
     // A block's invoice is the one its creating line belongs to.
@@ -354,6 +359,8 @@ async function fetchHourBlocksByInvoice(
     blocks.push({
       id: row.id,
       hours_purchased: Number(row.hoursPurchased),
+      description: row.description,
+      amount: Number(row.amount),
     })
     byInvoice.set(row.invoiceId, blocks)
   }

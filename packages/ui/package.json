@@ -28,6 +28,7 @@
     "./hooks/use-mobile": "./src/hooks/use-mobile.ts",
     "./input": "./src/input.tsx",
     "./label": "./src/label.tsx",
+    "./numbers": "./src/numbers.ts",
     "./popover": "./src/popover.tsx",
     "./progress": "./src/progress.tsx",
     "./row-action-button": "./src/row-action-button.tsx",

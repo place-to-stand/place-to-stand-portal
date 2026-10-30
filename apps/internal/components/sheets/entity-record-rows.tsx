@@ -9,7 +9,9 @@ import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { cn } from '@/lib/utils'
 
 /**
  * One preview row per entity, with the entity's registry icon (ENTITY_ICONS),
@@ -227,6 +229,49 @@ export function InvoiceRecordRow({
           {actions}
         </>
       }
+      className={className}
+    />
+  )
+}
+
+/**
+ * An hour block: its name (the invoice line that bought it, else "Hour
+ * block"), with hours and amount on the detail line. The icon carries the
+ * hour block colour.
+ */
+export function HourBlockRecordRow({
+  hourBlock,
+  note,
+  actions,
+  openable = true,
+  className,
+}: RowExtras & {
+  hourBlock: {
+    id: string
+    name?: string | null
+    hours: number
+    amount?: number | null
+  }
+}) {
+  const { open } = useSheetParams()
+  const title = hourBlock.name || 'Hour block'
+  const details = [
+    formatHours(hourBlock.hours),
+    hourBlock.amount == null ? null : formatCurrency(hourBlock.amount),
+  ].filter(Boolean)
+  return (
+    <SheetRecordRow
+      leading={
+        <ENTITY_ICONS.hourBlock
+          className={cn(ENTITY_ACCENTS.hourBlock.icon, 'size-4')}
+          aria-hidden
+        />
+      }
+      title={title}
+      description={note ?? details.join(' · ')}
+      onOpen={openable ? () => open('hour-block', hourBlock.id) : undefined}
+      openLabel={`Open hour block ${title}`}
+      actions={actions}
       className={className}
     />
   )

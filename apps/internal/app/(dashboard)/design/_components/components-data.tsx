@@ -16,6 +16,7 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import {
   CompanyRecordRow,
   ContactRecordRow,
+  HourBlockRecordRow,
   InvoiceRecordRow,
   LeadRecordRow,
   ProjectRecordRow,
@@ -151,6 +152,15 @@ export function ComponentsRecordRows() {
               status: 'PAID',
               total: 4800,
               issuedDate: '2026-09-23',
+            }}
+            openable={false}
+          />
+          <HourBlockRecordRow
+            hourBlock={{
+              id: 'design-hour-block',
+              name: 'Prepaid hours',
+              hours: 40,
+              amount: 4800,
             }}
             openable={false}
           />
