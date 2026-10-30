@@ -31,7 +31,10 @@ import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/companies/billing/bill
 import { US_STATES } from '@/lib/companies/billing/us-states'
 import type { ClientSheetFormValues } from '@/lib/companies/billing/client-sheet-schema'
 import { cn } from '@/lib/utils'
-import { thisOrNextMonthOptions } from '@/lib/billing/months'
+import {
+  monthNameFromNow,
+  thisOrNextMonthOptions,
+} from '@/lib/billing/months'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 
 import { ClientClosersEditor } from './client-closers-editor'
@@ -121,6 +124,12 @@ export function ClientBillingFields({
   })
   const fieldDisabledReason = isPending ? pendingReason : null
   const monthOptions = thisOrNextMonthOptions()
+  const thisMonth = monthNameFromNow(0)
+  const nextMonth = monthNameFromNow(1)
+  const savedTypeLabel =
+    CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
+      option => option.value === initialBillingType
+    )?.label ?? 'on its current type'
 
   return (
     <>
@@ -237,10 +246,8 @@ export function ClientBillingFields({
                   options={monthOptions}
                   note={
                     {
-                      current_month:
-                        "This month's close re-derives under the new billing type.",
-                      next_month:
-                        'Invoices use the new type right away; the Monthly Close switches this client at the boundary.',
+                      current_month: `${thisMonth}’s close uses the new type.`,
+                      next_month: `${thisMonth} stays ${savedTypeLabel}; the new type starts in ${nextMonth}.`,
                     }[field.value]
                   }
                   disabled={isPending}
@@ -320,10 +327,8 @@ export function ClientBillingFields({
                   options={monthOptions}
                   note={
                     {
-                      current_month:
-                        "This month's close pays commissions under the new assignment.",
-                      next_month:
-                        'Earlier months keep paying the previous closers and originator.',
+                      current_month: `${thisMonth}’s close pays the new people.`,
+                      next_month: `${thisMonth} still pays the current people; the new ones start in ${nextMonth}.`,
                     }[field.value]
                   }
                   disabled={isPending}
