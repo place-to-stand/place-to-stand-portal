@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react'
 import { Star } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   Table,
@@ -20,7 +19,6 @@ import {
   ContactRecordRow,
   LeadRecordRow,
 } from '@/components/sheets/entity-record-rows'
-import { LinkedRecordCard } from '@/components/sheets/linked-record-card'
 import {
   SheetRecordList,
   SheetRecordRow,
@@ -143,20 +141,6 @@ export function ComponentsRecordRows() {
             title='Alan Turing'
             description='SheetRecordRow with an avatar in place of the icon'
           />
-          <LinkedRecordCard
-            icon={ENTITY_ICONS.user}
-            title='ada@acme.com'
-            description='Sign-in · Sales'
-            details={[
-              { label: 'Last sign-in', value: 'Sep 23, 2026' },
-              { label: 'Status', value: 'Active' },
-            ]}
-            action={
-              <Button type='button' variant='outline' size='sm'>
-                Open sign-in
-              </Button>
-            }
-          />
           <div className='rounded-lg border'>
             <RecordRowButton
               title='Ship pricing page'
@@ -166,7 +150,7 @@ export function ComponentsRecordRows() {
                   variant='outline'
                   className={getProjectStatusToken('ACTIVE')}
                 >
-                  In progress
+                  {getProjectStatusLabel('ACTIVE')}
                 </Badge>
               }
               onClick={() => undefined}

@@ -18,9 +18,8 @@ type LinkedRecordCardProps = {
 }
 
 /**
- * A bordered card describing a record this sheet's entity is linked to (a
- * contact's portal user, a user's contact), with the action that follows the
- * link or creates it. Both sides of a link use this so they read as a pair.
+ * A bordered card describing a record this sheet's entity is linked to (an
+ * hour block's invoice), with the action that follows the link or creates it.
  * Detail labels match the template sheets' `dl` fields.
  */
 export function LinkedRecordCard({

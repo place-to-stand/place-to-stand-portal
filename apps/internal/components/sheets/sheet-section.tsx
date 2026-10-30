@@ -8,7 +8,7 @@ type SheetSectionProps = {
   title: string
   /** One line under the title — the place for copy that used to hang off each field. */
   description?: string
-  /** Right-aligned slot on the title row (a "Link contact" button, a count). */
+  /** Right-aligned slot on the title row (a "Link repository" button, a picker, a count). */
   action?: ReactNode
   children: ReactNode
   className?: string
