@@ -55,7 +55,6 @@ import {
   companyNameSchema,
   normalizeWebAddress,
   saveCompanySchema,
-  type SaveCompanyInput,
 } from '@/lib/companies/schema'
 import { db } from '@/lib/db'
 import {
@@ -695,45 +694,6 @@ export function companySaveErrorMessage(error: unknown): string | null {
 }
 
 /**
- * Saves the company's details and people on their own (one transaction).
- * The company sheet saves through `saveCompanySheet`, which also writes
- * billing and portal access in the same transaction.
- */
-export async function saveCompany(
-  actor: AppUser,
-  input: SaveCompanyInput
-): Promise<CompanyActionResult> {
-  assertCrmAccess(actor)
-
-  const parsed = saveCompanySchema.safeParse(input)
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: parsed.error.issues[0]?.message ?? 'Invalid company details.',
-    }
-  }
-
-  const planned = await planCompanyWrite(actor, parsed.data)
-  if (!planned.ok) return planned
-  const { plan } = planned
-  if (plan.existing && plan.unchanged) {
-    return { ok: true, id: plan.existing.id }
-  }
-
-  let companyId: string
-  try {
-    companyId = await db.transaction(tx => writeCompany(tx, actor, plan))
-  } catch (error) {
-    const message = companySaveErrorMessage(error)
-    if (!message) console.error('Failed to save company', error)
-    return { ok: false, error: message ?? 'Unable to save the company.' }
-  }
-
-  await logCompanyWrite(actor, plan, companyId)
-  return { ok: true, id: companyId }
-}
-
-/**
  * Billed now, archived or not: SALES can't archive or restore it (restoring
  * an archived client would put it back into the open month's close).
  */
@@ -1024,16 +984,4 @@ export async function fillCompanyWebsiteIfBlank(
     })
   if (options.defer) options.defer(log)
   else await log()
-}
-
-/** The company a client is: itself (a client is a company you bill). */
-export async function getClientCompanyId(
-  companyId: string
-): Promise<string | null> {
-  const [row] = await db
-    .select({ id: companies.id })
-    .from(companies)
-    .where(and(eq(companies.id, companyId), wasClientCompany()))
-    .limit(1)
-  return row?.id ?? null
 }

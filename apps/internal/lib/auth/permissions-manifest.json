@@ -134,13 +134,6 @@
   },
   {
     "type": "action",
-    "name": "saveCompany",
-    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
     "name": "saveCompanySheet",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "capability",
