@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { archiveCompanyDescription } from '../_lib/archive-copy'
+import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
 import { FormFeedback } from '@/components/sheets/form-feedback'
@@ -116,15 +117,18 @@ export function CompanySheet({
   })
 
   // Seed the form once per loaded record, and never over unsaved edits (a
-  // refetch while dirty waits until the form is clean again).
+  // refetch while dirty waits until the form is clean again). The version it
+  // was seeded from goes back with Save, so a save made since is caught.
   const seededFor = useRef<string | null>(null)
+  const seededUpdatedAt = useRef<string | null>(null)
   const isDirty = form.formState.isDirty || billingDirty
   useEffect(() => {
     if (!data) return
     const key = company ? `${company.id}:${company.updatedAt}` : 'new'
     if (seededFor.current === key) return
-    if (seededFor.current !== null && form.formState.isDirty) return
+    if (seededFor.current !== null && isDirty) return
     seededFor.current = key
+    seededUpdatedAt.current = company?.updatedAt ?? null
     form.reset({
       name: company?.name ?? initialName ?? '',
       website: company?.website ?? '',
@@ -178,7 +182,9 @@ export function CompanySheet({
   const canManageClients = roleCan(role, 'clients.manage')
 
   const clientCompanyId = company?.clients[0]?.id ?? null
-  const formerClientId = clientCompanyId ? null : (company?.formerClientId ?? null)
+  const formerClientId = clientCompanyId
+    ? null
+    : (company?.formerClientId ?? null)
   // A former client keeps its Projects tab only while it has projects.
   const { data: formerWork } = useQuery({
     queryKey: ['companyClientWork', formerClientId],
@@ -218,8 +224,9 @@ export function CompanySheet({
         }
         billing = collected
       }
-      // Portal switches show while the company is (or is becoming) billed.
-      const sendPortal = canManageClients && Boolean(handle?.billingOn())
+      // Portal switches show while the company is (or is becoming) billed,
+      // and on a former client.
+      const sendPortal = canManageClients && Boolean(handle?.portalShown())
 
       startTransition(async () => {
         const result = await saveCompanySheet({
@@ -253,6 +260,10 @@ export function CompanySheet({
             ? values.portalAccessIds.filter(
                 id => !values.removedContactIds.includes(id)
               )
+            : undefined,
+          // The version this sheet loaded: a save made since refuses this one.
+          expectedUpdatedAt: isEditing
+            ? (seededUpdatedAt.current ?? undefined)
             : undefined,
         })
 
@@ -367,6 +378,9 @@ export function CompanySheet({
   )
 
   const fieldsDisabled = isPending || isArchived
+  // Same rule as the server: a billed company stops billing before archiving.
+  const archiveRefusal =
+    !isArchived && clientCompanyId ? ARCHIVE_BILLED_REFUSAL : null
 
   return (
     <>
@@ -410,7 +424,10 @@ export function CompanySheet({
                 >
                   <CompanyBillingProvider
                     key={company?.id ?? 'new'}
-                    companyId={isAdmin ? clientCompanyId : null}
+                    companyId={
+                      isAdmin ? (clientCompanyId ?? formerClientId) : null
+                    }
+                    billed={Boolean(clientCompanyId)}
                     wasClient={Boolean(isAdmin && company?.formerClientId)}
                     billingEndsOn={company?.billingEndsOn ?? null}
                     open={open && isAdmin}
@@ -533,8 +550,12 @@ export function CompanySheet({
                 canUndo={canUndo}
                 canRedo={canRedo}
                 isEditing={isEditing}
-                archiveDisabled={isPending || !isEditing}
-                archiveDisabledReason={isPending ? PENDING_REASON : null}
+                archiveDisabled={
+                  isPending || !isEditing || Boolean(archiveRefusal)
+                }
+                archiveDisabledReason={
+                  isPending ? PENDING_REASON : archiveRefusal
+                }
                 onRequestArchive={() => setArchiveOpen(true)}
                 archiveAriaLabel={
                   isArchived ? 'Restore company' : 'Archive company'
@@ -553,7 +574,7 @@ export function CompanySheet({
             ? `${company?.name ?? 'This company'} comes back to the Companies list.`
             : archiveCompanyDescription(
                 company?.name,
-                company?.clients[0]?.name
+                Boolean(company?.formerClientId)
               )
         }
         confirmLabel={isArchived ? 'Restore company' : 'Archive company'}

@@ -61,16 +61,14 @@ import {
   PortalAccessRefusal,
 } from '@/lib/queries/clients/settings/client-contacts'
 import {
+  CompanySaveRefusal,
   companySaveErrorMessage,
   logCompanyWrite,
   planCompanyWrite,
   writeCompany,
   type CompanyWritePlan,
 } from '@/lib/queries/companies'
-import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
+import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import { listCompanyMembers } from '@/lib/queries/memberships'
 
 type BillingFields = ReturnType<typeof companyBillingFieldsSchema.parse>
@@ -100,6 +98,10 @@ type BillingPlan =
 type PortalPlan = { grant: string[]; revoke: string[] }
 
 const SLUG_RETRY_LIMIT = 3
+
+/** Another save landed on the company after this sheet loaded it. */
+export const STALE_COMPANY_MESSAGE =
+  'Someone else saved this company. Reload to see their changes.'
 
 /**
  * The company sheet's Save: one server action, one transaction. The company
@@ -159,19 +161,28 @@ export async function saveCompanySheet(
   }
 
   let billingPlan = billing.plan
-  let committed: { companyId: string; accessChanges: ContactClientLinkChange[] }
+  let committed: { companyId: string }
   let attempt = 0
   for (;;) {
     try {
       committed = await db.transaction(async tx => {
-        if (billingPlan.kind !== 'none') {
-          // One billing change per company at a time: start, stop and
-          // restart for the same company queue here.
-          if (plan.existing) {
-            await tx.execute(
-              sql`select id from companies where id = ${plan.existing.id} for update`
-            )
+        if (plan.existing) {
+          // One save per company at a time: saves (and billing starts,
+          // stops and restarts) for the same company queue here, and one
+          // made since this sheet loaded the company refuses this one.
+          const [locked] = await tx
+            .select({ updatedAt: companies.updatedAt })
+            .from(companies)
+            .where(eq(companies.id, plan.existing.id))
+            .for('update')
+          if (
+            values.expectedUpdatedAt !== undefined &&
+            locked?.updatedAt !== values.expectedUpdatedAt
+          ) {
+            throw new CompanySaveRefusal(STALE_COMPANY_MESSAGE)
           }
+        }
+        if (billingPlan.kind !== 'none') {
           // Re-checked inside the transaction: the month could be closed
           // between planning and commit.
           const changesThisMonth =
@@ -187,7 +198,6 @@ export async function saveCompanySheet(
           }
         }
         const companyId = await writeCompany(tx, actor, plan)
-        let accessChanges: ContactClientLinkChange[] = []
 
         switch (billingPlan.kind) {
           case 'start':
@@ -207,7 +217,8 @@ export async function saveCompanySheet(
             await applyClientUpdateInTx(tx, billingPlan.update, actor.id)
             break
           case 'stop':
-            accessChanges = await stopClientBillingInTx(tx, {
+            // Portal switches stay as they are: access ends with billing.
+            await stopClientBillingInTx(tx, {
               companyId,
               effective: billingPlan.effective,
             })
@@ -229,7 +240,21 @@ export async function saveCompanySheet(
         if (portal.changes) {
           await applyPortalAccessInTx(tx, companyId, portal.changes)
         }
-        return { companyId, accessChanges }
+        // Any change to the company, its billing, people or portal access
+        // moves its updated_at, so a sheet still open on the old version
+        // can't save over it.
+        const touched =
+          !plan.unchanged ||
+          billingPlan.kind !== 'none' ||
+          signIns.length > 0 ||
+          Boolean(portal.changes?.grant.length || portal.changes?.revoke.length)
+        if (plan.existing && touched) {
+          await tx
+            .update(companies)
+            .set({ updatedAt: new Date().toISOString() })
+            .where(eq(companies.id, companyId))
+        }
+        return { companyId }
       })
       break
     } catch (error) {
@@ -394,7 +419,16 @@ async function planBilling(
       if (intent.fields) {
         const fieldError = await checkFields(intent.fields)
         if (fieldError) return { error: fieldError }
-        const result = await planUpdate(intent.fields)
+        // Restarting after a gap: changed terms start with the restart's
+        // first billed month (cancelling a stop keeps the months chosen).
+        const fields = stopping
+          ? intent.fields
+          : {
+              ...intent.fields,
+              billingEffective: intent.effective,
+              commissionEffective: intent.effective,
+            }
+        const result = await planUpdate(fields)
         if ('error' in result) return result
         update = result.update
       }
@@ -424,18 +458,13 @@ async function planPortalAccess(
 ): Promise<
   { changes: PortalPlan | null; signIns: SignInRequest[] } | { error: string }
 > {
-  // Stopping billing switches everyone's access off.
+  // A stop leaves the switches as they are (access ends with billing).
   if (wantedIds === undefined || billing.kind === 'stop') {
     return { changes: null, signIns: [] }
   }
   const billedAfter =
     billing.kind === 'start' || billing.kind === 'restart' || billingOpenBefore
   const wanted = new Set(wantedIds)
-  if (!billedAfter && wanted.size) {
-    return {
-      error: 'Bill this company before giving its people portal access.',
-    }
-  }
 
   const leaving = new Set(
     plan.moves.filter(move => !move.joins).map(move => move.contactId)
@@ -476,6 +505,13 @@ async function planPortalAccess(
   const grant = members.filter(
     member => wanted.has(member.contactId) && !member.portalAccess
   )
+  // A former client's switches can go off (so a restart doesn't give that
+  // access back), but only a billed company gives anyone access.
+  if (!billedAfter && grant.length) {
+    return {
+      error: 'Bill this company before giving its people portal access.',
+    }
+  }
   const revoke = members.filter(
     member => !wanted.has(member.contactId) && member.portalAccess
   )
@@ -500,7 +536,7 @@ async function logAfterCommit(
   billing: BillingPlan,
   portal: { changes: PortalPlan | null },
   signIns: PreparedSignIn[],
-  committed: { companyId: string; accessChanges: ContactClientLinkChange[] }
+  committed: { companyId: string }
 ) {
   const { companyId } = committed
   await logCompanyWrite(actor, plan, companyId)
@@ -549,7 +585,6 @@ async function logAfterCommit(
   await afterSignInsCommitted(actor, signIns, companyId)
 
   await logContactClientLinkChanges(actor, [
-    ...committed.accessChanges,
     ...(portal.changes?.grant ?? []).map(contactId => ({
       contactId,
       clientCompanyId: companyId,

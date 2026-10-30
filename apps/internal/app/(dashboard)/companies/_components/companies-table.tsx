@@ -262,7 +262,7 @@ export function CompaniesTable({
         title='Archive company?'
         description={archiveCompanyDescription(
           archiveTarget?.name,
-          archiveTarget?.clientName
+          Boolean(archiveTarget?.formerClient)
         )}
         confirmLabel='Archive company'
         confirmVariant='destructive'

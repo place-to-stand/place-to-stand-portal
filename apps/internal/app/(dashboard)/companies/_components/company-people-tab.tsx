@@ -23,13 +23,17 @@ type CompanyPeopleTabProps = Omit<
 
 /**
  * The People tab: the list, plus each person's Portal switch while the
- * company is (or is becoming) billed. Turning it on for someone without a
- * sign-in gives them one on Save.
+ * company is (or is becoming) billed, and on a former client, whose
+ * switches show as they are (access returns with billing). Turning it on
+ * for someone without a sign-in gives them one on Save.
  */
 export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
   const billing = useCompanyBilling()
+  const formerClient = billing.mode === 'former' && !billing.billingOn
   const showPortal =
-    portal !== null && billing.status === 'ready' && billing.billingOn
+    portal !== null &&
+    billing.status === 'ready' &&
+    (billing.billingOn || formerClient)
 
   const access = new Set(portal?.ids ?? [])
   const portalAccessFor = showPortal
@@ -88,11 +92,25 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
     </p>
   ) : null
 
+  const formerNote =
+    showPortal && formerClient ? (
+      <p className='text-muted-foreground text-xs'>
+        Portal access returns if billing restarts.
+      </p>
+    ) : null
+
   return (
     <CompanyPeopleSection
       {...props}
       portalAccessFor={portalAccessFor}
-      footer={inviteNote}
+      footer={
+        formerNote || inviteNote ? (
+          <>
+            {formerNote}
+            {inviteNote}
+          </>
+        ) : null
+      }
     />
   )
 }

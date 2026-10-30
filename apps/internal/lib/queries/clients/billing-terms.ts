@@ -13,22 +13,26 @@ import { currentMonthStartUtc } from '@/lib/billing/months'
 export { currentMonthStartUtc, nextMonthStartUtc } from '@/lib/billing/months'
 
 /**
- * Inserts a client's first billing term, effective the first of the creation
- * month. Must run in the same transaction as the client insert — a client
- * without a terms row is invisible to every monthly close.
+ * Inserts a client's first billing term, effective its first billed month
+ * (the billing period's `starts_on`), so a client starting next month has no
+ * term in a month it isn't billed. Must run in the same transaction as the
+ * billing start — a client without a terms row is invisible to every
+ * monthly close.
  */
 export async function insertInitialBillingTerm(
   tx: DbOrTransaction,
   params: {
     companyId: string
     billingType: ClientBillingTypeValue
+    /** The first billed month ('yyyy-MM-01'). */
+    effectiveFrom: string
     createdBy: string | null
   }
 ): Promise<void> {
   await tx.insert(billingTerms).values({
     companyId: params.companyId,
     billingType: params.billingType,
-    effectiveFrom: currentMonthStartUtc(),
+    effectiveFrom: params.effectiveFrom,
     createdBy: params.createdBy,
   })
 }

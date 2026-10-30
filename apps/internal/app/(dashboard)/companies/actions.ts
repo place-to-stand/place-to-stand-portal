@@ -3,14 +3,18 @@ import { wasClientCompany } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, gte, isNull, lt, sql } from 'drizzle-orm'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 
 import { requireCrmUser, requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { companies } from '@/lib/db/schema'
+import { companies, projects, timeLogs } from '@/lib/db/schema'
 import { fetchProjectsForClient, type ClientProject } from '@/lib/data/clients'
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import {
+  currentBillingTypeSql,
+  currentMonthStartUtc,
+  nextMonthStartUtc,
+} from '@/lib/queries/clients/billing-terms'
 import { createUpdateDraft, listClientUpdates } from '@/lib/updates'
 import type { ClientUpdateSummary } from './_components/company-updates-section'
 import { saveCompanySheet as saveCompanySheetMutation } from '@/lib/companies/save-company-sheet'
@@ -114,6 +118,12 @@ export type CompanyClientWork = {
   updates: ClientUpdateSummary[]
   /** Prepaid hours for the current era; null for net 30. */
   hours: { purchased: number; used: number; remaining: number } | null
+  /**
+   * Net 30: hours logged on its client projects this month, which a stop
+   * before this month would leave unbilled. Null for prepaid (blocks count
+   * in the month bought, billed or not).
+   */
+  hoursLoggedThisMonth: number | null
 }
 
 /** A client company's work for its Projects and Billing tabs (admins). */
@@ -133,10 +143,12 @@ export async function loadCompanyClientWork(
     .limit(1)
   if (!client) return null
 
-  const [projectRows, updates, totals] = await Promise.all([
+  const net30 = client.billingType === 'net_30'
+  const [projectRows, updates, totals, loggedThisMonth] = await Promise.all([
     fetchProjectsForClient(user, companyId),
     listClientUpdates({ companyId, limit: 5 }),
     getClientHoursTotals(db, [companyId]),
+    net30 ? sumHoursLoggedThisMonth(companyId) : null,
   ])
   const balance = clientHoursTotalsFor(totals, companyId)
 
@@ -158,7 +170,28 @@ export async function loadCompanyClientWork(
             remaining: balance.remaining,
           }
         : null,
+    hoursLoggedThisMonth: loggedThisMonth,
   }
+}
+
+/** Hours logged this month (UTC) on a company's client projects. */
+async function sumHoursLoggedThisMonth(companyId: string): Promise<number> {
+  const [row] = await db
+    .select({ hours: sql<string | null>`sum(${timeLogs.hours})` })
+    .from(timeLogs)
+    .innerJoin(projects, eq(projects.id, timeLogs.projectId))
+    .where(
+      and(
+        eq(projects.companyId, companyId),
+        eq(projects.type, 'CLIENT'),
+        isNull(projects.deletedAt),
+        isNull(timeLogs.deletedAt),
+        gte(timeLogs.loggedOn, currentMonthStartUtc()),
+        lt(timeLogs.loggedOn, nextMonthStartUtc())
+      )
+    )
+  const hours = Number(row?.hours ?? 0)
+  return Number.isFinite(hours) ? hours : 0
 }
 
 export type DraftUpdateResult =

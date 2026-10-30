@@ -17,6 +17,8 @@ import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
+import { TriangleAlert } from 'lucide-react'
+import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 
 import { loadCompanyClientWork } from '../actions'
 import {
@@ -29,10 +31,7 @@ import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
-import {
-  monthLabelFromNow,
-  thisOrNextMonthOptions,
-} from '@/lib/billing/months'
+import { monthLabelFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
 
 export function CompanyLeadsSection({
   leads,
@@ -86,7 +85,8 @@ export function CompanyBillingTab({
         year: 'numeric',
       })
     : null
-  const stopping = mode === 'live' && !billingOn
+  const isClient = mode === 'live' || mode === 'ending'
+  const stopping = isClient && !billingOn
   // Starting next month still makes it a client on save, portal included.
   const portalNow =
     effective === 'next_month' ? ' Their people can use the portal now.' : ''
@@ -97,16 +97,20 @@ export function CompanyBillingTab({
         : 'Not billed. Switch on and save to make this company a client.'
       : mode === 'former'
         ? billingOn
-          ? `Saving restarts billing with its previous setup.${portalNow}`
+          ? 'Saving restarts billing with these terms, any changes from its first month billed. Its people with Portal on get portal access back.'
           : 'Billing stopped. Switch on and save to restart it.'
-        : mode === 'ending'
-          ? billingOn
-            ? 'Saving keeps billing this company.'
-            : `Billing stops after ${endsLabel}. Switch on and save to keep billing.`
+        : mode === 'ending' && billingOn
+          ? billing.keepBilling
+            ? 'Saving cancels the stop and keeps billing this company.'
+            : `Billing stops after ${endsLabel}.`
           : billingOn
             ? null
-            : 'Saving stops billing: its people lose portal access. Its projects, invoices and history stay.'
-  const isClient = mode === 'live' || mode === 'ending'
+            : 'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
+  // A stop before this month leaves this month's net 30 time unbilled.
+  const unbilledHours =
+    stopping && effective === 'current_month'
+      ? (work?.hoursLoggedThisMonth ?? 0)
+      : 0
   const choice = stopping
     ? {
         title: 'Last month billed',
@@ -149,6 +153,20 @@ export function CompanyBillingTab({
             {line}
           </p>
         ) : null}
+        {mode === 'ending' && billingOn ? (
+          <div>
+            <Button
+              type='button'
+              size='sm'
+              variant={billing.keepBilling ? 'secondary' : 'outline'}
+              aria-pressed={billing.keepBilling}
+              disabled={disabled}
+              onClick={() => billing.setKeepBilling(!billing.keepBilling)}
+            >
+              Keep billing
+            </Button>
+          </div>
+        ) : null}
         {choice ? (
           <EffectiveMonthSelect
             id='company-billing-effective'
@@ -159,6 +177,17 @@ export function CompanyBillingTab({
             disabled={disabled}
             disabledReason={disabled ? PENDING_REASON : null}
           />
+        ) : null}
+        {unbilledHours > 0 ? (
+          <Alert variant='warning'>
+            <TriangleAlert />
+            <AlertContent>
+              <AlertDescription>
+                {formatHourCount(unbilledHours)} hrs logged this month won’t be
+                billed.
+              </AlertDescription>
+            </AlertContent>
+          </Alert>
         ) : null}
       </SheetSection>
       {isClient && billingOn && work?.hours ? (
@@ -186,13 +215,15 @@ export function CompanyBillingTab({
           </dl>
         </SheetSection>
       ) : null}
-      {billingOn && mode !== 'former' ? <CompanyBillingFields /> : null}
+      {billingOn ? <CompanyBillingFields /> : null}
     </>
   )
 }
 
-const formatHours = (value: number) =>
-  `${Number.isInteger(value) ? value : value.toFixed(1)}h`
+const formatHourCount = (value: number) =>
+  Number.isInteger(value) ? String(value) : value.toFixed(1)
+
+const formatHours = (value: number) => `${formatHourCount(value)}h`
 
 /**
  * The Projects tab (clients, and former clients with projects): the

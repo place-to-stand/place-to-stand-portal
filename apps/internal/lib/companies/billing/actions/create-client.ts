@@ -38,20 +38,23 @@ export async function startClientBillingInTx(
     .update(companies)
     .set({ slug: input.slug, state: input.state, updatedAt: now })
     .where(eq(companies.id, companyId))
-  await startBilling(tx, {
+  const { startsOn } = await startBilling(tx, {
     companyId,
     effective: input.effective,
     actorId: input.actorId,
   })
+  // Terms start with billing: the first billed month, not today's.
   await insertInitialBillingTerm(tx, {
     companyId: companyId,
     billingType: input.billingType,
+    effectiveFrom: startsOn,
     createdBy: input.actorId,
   })
   // Same atomicity for the commission split (PRD 007): the client's first
   // month must resolve its closers/origination.
   await insertInitialCommissionTerm(tx, {
     companyId: companyId,
+    effectiveFrom: startsOn,
     closers: input.closers,
     originationUserId: input.originationUserId,
     originationContactId: input.originationContactId,

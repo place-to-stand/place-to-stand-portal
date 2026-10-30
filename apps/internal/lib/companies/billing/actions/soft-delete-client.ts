@@ -4,19 +4,18 @@ import {
 } from '@/lib/companies/billing/periods'
 
 import type { DbTx } from '@/lib/db'
-import { type ContactClientLinkChange } from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
 
 /**
  * Stops a client's billing inside the caller's transaction (this month or
- * after it) and switches off its people's portal access, so a restart
- * doesn't silently bring it back. Returns the access trail to log once the
- * transaction committed.
+ * after it). Portal access is left alone: the `client_portal_access` view
+ * only lets people in while billing is open, so access ends when billing
+ * does (at the end of this month for a stop after it), and a restart gives
+ * it back to exactly the people whose portal switch is on. Archiving the
+ * company is what switches those off.
  */
 export async function stopClientBillingInTx(
   tx: DbTx,
   input: { companyId: string; effective: BillingEffective }
-): Promise<ContactClientLinkChange[]> {
+): Promise<void> {
   await stopBilling(tx, input)
-  return revokeCompanyPortalAccess(tx, input.companyId, input.companyId)
 }

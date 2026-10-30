@@ -1,4 +1,3 @@
-import { billedInMonth } from '@pts/db/client-state'
 import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -69,12 +68,12 @@ export async function fetchHoursSnapshot(
     isNull(timeLogs.deletedAt),
   ]
 
-  // Counted the way the monthly close counts them: blocks billed in the
-  // month, for a client billed that month and prepaid as of it.
+  // Counted the way the monthly close counts them: blocks with this billing
+  // month, for a client prepaid as of it, whether or not it is billed that
+  // month (a block counts in the month it was bought).
   const prepaidFilters = [
     eq(hourBlocks.billingMonth, startDate),
     isNull(hourBlocks.deletedAt),
-    billedInMonth(startDate),
     sql`${billingTypeAsOfSql(startDate)} = 'prepaid'`,
   ]
 
