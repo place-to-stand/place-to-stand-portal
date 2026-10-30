@@ -512,7 +512,7 @@
   },
   {
     "type": "action",
-    "name": "saveContact",
+    "name": "savePersonSheetAction",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "capability",
     "capability": "leads.manage"
@@ -547,7 +547,7 @@
   },
   {
     "type": "action",
-    "name": "getContactPortalAccount",
+    "name": "getPersonSignIn",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "admin",
     "capability": null
@@ -558,20 +558,6 @@
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "capability",
     "capability": "leads.manage"
-  },
-  {
-    "type": "action",
-    "name": "savePersonAvatar",
-    "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
-    "name": "savePersonSignInAction",
-    "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "admin",
-    "capability": null
   },
   {
     "type": "action",
@@ -1277,6 +1263,13 @@
     "type": "route",
     "name": "GET /api/cron/abandon-stale-submissions",
     "file": "apps/internal/app/api/cron/abandon-stale-submissions/route.ts",
+    "kind": "token",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/cron/apply-role-terms",
+    "file": "apps/internal/app/api/cron/apply-role-terms/route.ts",
     "kind": "token",
     "capability": null
   },

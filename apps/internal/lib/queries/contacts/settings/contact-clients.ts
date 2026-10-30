@@ -9,6 +9,10 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, clientPortalAccess, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
+import {
+  canSeePortalAccess,
+  withoutPortalAccess,
+} from '@/lib/settings/contacts/portal-visibility'
 
 import {
   listContactMemberships,
@@ -116,8 +120,12 @@ export async function getContactSheetData(
       .where(eq(contacts.id, contactId))
       .limit(1),
   ])
+  const memberships = byContact.get(contactId) ?? []
   return {
-    memberships: byContact.get(contactId) ?? [],
+    // Portal access is for people who manage clients only.
+    memberships: canSeePortalAccess(user.role)
+      ? memberships
+      : memberships.map(withoutPortalAccess),
     avatarUrl: person?.avatarUrl ?? null,
   }
 }

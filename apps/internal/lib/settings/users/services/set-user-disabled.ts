@@ -76,6 +76,22 @@ export async function setPortalUserDisabled(
   return {}
 }
 
+/**
+ * Blocks (or unblocks) sign-in at Supabase Auth. Returns an error message,
+ * or null. The person sheet calls it before its transaction and undoes it
+ * if the transaction fails.
+ */
+export async function setAuthBanned(
+  userId: string,
+  banned: boolean
+): Promise<string | null> {
+  return setAuthBan(
+    getSupabaseServiceClient(),
+    userId,
+    banned ? DISABLED_BAN_DURATION : CLEAR_BAN_DURATION
+  )
+}
+
 async function setDisabledFlag(
   userId: string,
   disabledAt: string | null

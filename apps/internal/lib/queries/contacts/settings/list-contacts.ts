@@ -19,7 +19,7 @@ import {
   DEFAULT_CONTACTS_SORT,
   type SignInFilter,
 } from '@/lib/settings/contacts/filters'
-import { isAdminRole } from '@/lib/auth/roles'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import {
   listContactMemberships,
   type ContactMembership,
@@ -72,7 +72,8 @@ function buildBaseConditions(
   status: StatusFilter,
   searchQuery: string,
   clientId: string | null | undefined,
-  signIn?: SignInFilter | null
+  signIn?: SignInFilter | null,
+  clientMatch: 'portal' | 'member' = 'portal'
 ): SQL[] {
   const conditions: SQL[] = [buildStatusCondition(status)]
 
@@ -81,7 +82,7 @@ function buildBaseConditions(
     conditions.push(searchCondition)
   }
 
-  const clientCondition = buildClientCondition(clientId)
+  const clientCondition = buildClientCondition(clientId, clientMatch)
   if (clientCondition) {
     conditions.push(clientCondition)
   }
@@ -261,7 +262,12 @@ export async function listContactsForSettings(
   const limit = resolvePaginationLimit(input.limit)
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
-  const sort = input.sort ?? DEFAULT_CONTACTS_SORT
+  const seesAccess = canSeePortalAccess(user.role)
+  // Sorting by portal access would reveal it.
+  const sort =
+    input.sort && (seesAccess || input.sort.field !== 'clients')
+      ? input.sort
+      : DEFAULT_CONTACTS_SORT
   const descriptor = CONTACT_SORT_DESCRIPTORS[sort.field]
 
   const statusCondition = buildStatusCondition(normalizedStatus)
@@ -270,7 +276,9 @@ export async function listContactsForSettings(
     searchQuery,
     input.clientId,
     // Sign-ins are admin-only information.
-    isAdminRole(user.role) ? input.signIn : null
+    seesAccess ? input.signIn : null,
+    // Without portal access to go on, a client filter means "at the client".
+    seesAccess ? 'portal' : 'member'
   )
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
 
@@ -330,10 +338,19 @@ export async function listContactsForSettings(
       resolveCount([statusCondition]),
     ])
 
+  // Sign-ins and portal access are for people who manage clients only.
   const mappedItems = mapContactMetrics(
     normalizedRows,
     clientsMap,
     membershipsMap
+  ).map(item =>
+    seesAccess
+      ? item
+      : {
+          ...item,
+          signInRole: null,
+          metrics: { totalClients: 0, clients: [] },
+        }
   )
 
   const pageInfo: PageInfo = useOffset

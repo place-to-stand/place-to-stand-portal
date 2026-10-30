@@ -3,6 +3,7 @@ import { cliListQuerySchema } from '@/lib/cli/schemas/listing'
 import { serializeContact } from '@/lib/cli/serializers/contact'
 import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
 import { listContactMemberships } from '@/lib/queries/memberships'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 
 export const GET = withCliAuth(async ({ user, request }) => {
   const query = cliListQuerySchema.parse(
@@ -19,7 +20,9 @@ export const GET = withCliAuth(async ({ user, request }) => {
   )
   return jsonOk(
     result.items.map(contact =>
-      serializeContact(contact, memberships.get(contact.id))
+      serializeContact(contact, memberships.get(contact.id), {
+        seesPortalAccess: canSeePortalAccess(user.role),
+      })
     ),
     {
       meta: { totalCount: result.totalCount },

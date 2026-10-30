@@ -27,6 +27,7 @@ import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cel
 
 import { LinkedClientsCell } from './linked-clients-cell'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import { cn } from '@/lib/utils'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -74,7 +75,9 @@ export function ContactsTableSection({
   pendingDestroyId,
   emptyMessage,
 }: ContactsTableSectionProps) {
-  const { isAdmin } = useViewerAccess()
+  const { isAdmin, role } = useViewerAccess()
+  // Sign-ins and portal access are for people who manage clients.
+  const seesAccess = canSeePortalAccess(role)
   // Contacts tables paginate by offset — `page` is the pagination key
   // cleared on sort changes (not cursor/dir).
   const { update, getParam } = useListParams({
@@ -122,19 +125,21 @@ export function ContactsTableSection({
             >
               Phone
             </SortableTableHead>
-            {isAdmin ? (
+            {seesAccess ? (
               <TableHead className='w-24 text-center'>Sign-in</TableHead>
             ) : null}
-            <SortableTableHead
-              field='clients'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className='w-28'
-              align='center'
-            >
-              Portal access
-            </SortableTableHead>
+            {seesAccess ? (
+              <SortableTableHead
+                field='clients'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-28'
+                align='center'
+              >
+                Portal access
+              </SortableTableHead>
+            ) : null}
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -270,7 +275,7 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
-                {isAdmin ? (
+                {seesAccess ? (
                   <TableCell label='Sign-in' className='text-sm md:text-center'>
                     {contact.signInRole ? (
                       <Badge variant='outline' className='text-xs font-normal'>
@@ -281,12 +286,14 @@ export function ContactsTableSection({
                     )}
                   </TableCell>
                 ) : null}
-                <TableCell
-                  label='Portal access'
-                  className='text-sm md:text-center'
-                >
-                  <LinkedClientsCell clients={contact.metrics.clients} />
-                </TableCell>
+                {seesAccess ? (
+                  <TableCell
+                    label='Portal access'
+                    className='text-sm md:text-center'
+                  >
+                    <LinkedClientsCell clients={contact.metrics.clients} />
+                  </TableCell>
+                ) : null}
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
                     {showPreview ? (
@@ -331,7 +338,7 @@ export function ContactsTableSection({
           })}
           {contacts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className='p-4'>
+              <TableCell colSpan={seesAccess ? 7 : 5} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>

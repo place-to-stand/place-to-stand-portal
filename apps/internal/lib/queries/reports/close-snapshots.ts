@@ -229,3 +229,17 @@ export async function hasActiveSnapshotForDate(date: string): Promise<boolean> {
 
   return Boolean(row)
 }
+
+/** Every month with an active close, as month starts ('yyyy-MM-01'). */
+export async function listClosedMonthStarts(): Promise<string[]> {
+  const rows = await db
+    .select({
+      year: monthlyCloseSnapshots.year,
+      month: monthlyCloseSnapshots.month,
+    })
+    .from(monthlyCloseSnapshots)
+    .where(isNull(monthlyCloseSnapshots.deletedAt))
+  return rows.map(
+    row => `${row.year}-${String(row.month).padStart(2, '0')}-01`
+  )
+}

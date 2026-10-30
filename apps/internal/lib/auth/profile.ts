@@ -35,8 +35,8 @@ export async function ensureUserProfile(
   const nextEmail = user.email ?? ''
   const metadataAvatar = user.user_metadata?.avatar_url as string | undefined
 
-  // Accounts are provisioned by an admin — createPortalUser and
-  // findOrCreatePortalUser both insert the `users` row explicitly. Authenticating
+  // Accounts are provisioned by an admin — the person sheet's Save
+  // (savePersonSheet) inserts the `users` row explicitly. Authenticating
   // is not enough to earn one: without this guard any Google account that
   // completes an OAuth flow would self-provision a row here.
   if (!existing) {

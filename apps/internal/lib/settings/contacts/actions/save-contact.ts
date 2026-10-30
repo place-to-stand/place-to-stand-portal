@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -7,6 +9,8 @@ import {
 } from '@/lib/activity/events/contacts'
 import { roleCan } from '@/lib/auth/capabilities'
 import { assertCrmAccess } from '@/lib/auth/permissions'
+import { isAdminRole } from '@/lib/auth/roles'
+import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
 import type { AppUser } from '@/lib/auth/session'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import {
@@ -36,6 +40,8 @@ import {
   type ContactMutationResult,
 } from './types'
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
 type DesiredMembership = {
   companyId: string
   title: string | null | undefined
@@ -47,6 +53,43 @@ type CurrentMembership = {
   title: string | null
   portalAccess: boolean
   clientId: string | null
+}
+
+type MembershipPlan = ReturnType<typeof planMembershipChanges>
+
+/** The person's saved fields, as read before a save. */
+export type ExistingContact = {
+  id: string
+  email: string | null
+  name: string
+  phone: string | null
+  linkedinUrl: string | null
+  userId: string | null
+  avatarUrl: string | null
+  deletedAt: string | null
+}
+
+/**
+ * Everything a person save writes, worked out (and permission-checked)
+ * before the transaction, so the writes themselves can share one
+ * transaction with the rest of the sheet (photo, sign-in).
+ */
+export type ContactSavePlan = {
+  mode: 'create' | 'update'
+  /** The person's id; on create, chosen up front so the photo can use it. */
+  contactId: string
+  values: {
+    email: string | null
+    name: string
+    phone: string | null
+    linkedinUrl: string | null
+  }
+  existing: ExistingContact | null
+  membership: MembershipPlan
+  currentById: Map<string, CurrentMembership>
+  changedFields: string[]
+  before: Record<string, unknown>
+  after: Record<string, unknown>
 }
 
 /**
@@ -88,7 +131,27 @@ async function loadCurrentMemberships(
     )
 }
 
-function isEmailConflict(error: unknown) {
+export async function loadExistingContact(
+  contactId: string
+): Promise<ExistingContact | null> {
+  const [existing] = await db
+    .select({
+      id: contacts.id,
+      email: contacts.email,
+      name: contacts.name,
+      phone: contacts.phone,
+      linkedinUrl: contacts.linkedinUrl,
+      userId: contacts.userId,
+      avatarUrl: contacts.avatarUrl,
+      deletedAt: contacts.deletedAt,
+    })
+    .from(contacts)
+    .where(eq(contacts.id, contactId))
+    .limit(1)
+  return existing ?? null
+}
+
+export function isEmailConflict(error: unknown) {
   return (
     error instanceof Error &&
     String(error.message + String(error.cause ?? '')).includes(
@@ -97,295 +160,309 @@ function isEmailConflict(error: unknown) {
   )
 }
 
+/**
+ * Validates a person save and works out what it changes. No writes
+ * (except the shorthand's find-or-create company, which the sheet never
+ * sends).
+ */
+export async function prepareContactSave(
+  user: AppUser,
+  input: ContactInput,
+  existing: ExistingContact | null
+): Promise<{ error: string } | { plan: ContactSavePlan }> {
+  const parsed = contactSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid person data.' }
+  }
+  try {
+    assertCrmAccess(user)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'CRM access required.',
+    }
+  }
+
+  const { email, name, phone } = parsed.data
+  const canManageAccess = roleCan(user.role, 'clients.manage')
+
+  // The one-company shorthand (CLI, MCP, create-from-picker).
+  let shorthandCompanyId: string | null = null
+  try {
+    shorthandCompanyId = await resolveShorthandCompany(
+      user,
+      parsed.data.companyId,
+      parsed.data.companyName
+    )
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : 'Unable to save the company.',
+    }
+  }
+  const desired: DesiredMembership[] | null = parsed.data.companies
+    ? parsed.data.companies.map(entry => ({
+        companyId: entry.companyId,
+        title: entry.title,
+      }))
+    : null
+  const shorthand = {
+    shorthandCompanyId,
+    shorthandTitle: parsed.data.jobTitle,
+  }
+
+  if (!existing) {
+    const plan = planMembershipChanges([], desired, shorthand)
+    const joinError = await clientJoinError(canManageAccess, plan.join)
+    if (joinError) return { error: joinError }
+    const linkedinUrl = parsed.data.linkedinUrl ?? null
+    return {
+      plan: {
+        mode: 'create',
+        contactId: randomUUID(),
+        values: { email, name, phone: phone ?? null, linkedinUrl },
+        existing: null,
+        membership: plan,
+        currentById: new Map(),
+        changedFields: [],
+        before: {},
+        after: {},
+      },
+    }
+  }
+
+  // Someone who can sign in is edited by admins only: their email is their
+  // login and their companies decide what they can see.
+  if (existing.userId && !isAdminRole(user.role)) {
+    return { error: PERSON_WITH_SIGN_IN_ADMIN_ONLY }
+  }
+
+  const next = {
+    email,
+    name,
+    phone: phone ?? null,
+    linkedinUrl:
+      parsed.data.linkedinUrl === undefined
+        ? existing.linkedinUrl
+        : parsed.data.linkedinUrl,
+  }
+  const labels: Record<keyof typeof next, string> = {
+    email: 'email',
+    name: 'name',
+    phone: 'phone',
+    linkedinUrl: 'LinkedIn',
+  }
+  const changedFields: string[] = []
+  const before: Record<string, unknown> = {}
+  const after: Record<string, unknown> = {}
+  for (const key of Object.keys(next) as (keyof typeof next)[]) {
+    if (existing[key] !== next[key]) {
+      changedFields.push(labels[key])
+      before[key] = existing[key]
+      after[key] = next[key]
+    }
+  }
+
+  const current = await loadCurrentMemberships(existing.id)
+  const currentById = new Map(current.map(m => [m.companyId, m]))
+  const plan = planMembershipChanges(current, desired, shorthand)
+
+  // Leaving a client's company drops being its primary contact (its
+  // invoice recipient) and portal access, so it's admin-only, as on the
+  // company sheet.
+  if (!canManageAccess && (await clientIdsByCompany(plan.leave)).size > 0) {
+    return {
+      error:
+        'That company is a client, so only an admin can remove someone from it.',
+    }
+  }
+  // Joining a client's company makes them one of the people it bills, so
+  // it's admin-only too, matching the company sheet.
+  const joinError = await clientJoinError(canManageAccess, plan.join)
+  if (joinError) return { error: joinError }
+  // A client contact's email is where invoices go, so only an admin can
+  // change it. (Someone with a sign-in is admin-only altogether.)
+  if (
+    !canManageAccess &&
+    existing.email !== email &&
+    current.some(m => m.clientId)
+  ) {
+    return {
+      error:
+        'This person is at a client, so only an admin can change their email.',
+    }
+  }
+  // Portal access is set only in the company's People tab. Leaving a
+  // company whose client they can see ends it, so that's admin-only.
+  if (
+    !canManageAccess &&
+    plan.leave.some(companyId => currentById.get(companyId)?.portalAccess)
+  ) {
+    return {
+      error:
+        'Only an admin can remove someone with portal access from a company.',
+    }
+  }
+
+  if (plan.join.length || plan.leave.length) changedFields.push('companies')
+  if (plan.titles.length) changedFields.push('title')
+
+  return {
+    plan: {
+      mode: 'update',
+      contactId: existing.id,
+      values: next,
+      existing,
+      membership: plan,
+      currentById,
+      changedFields,
+      before,
+      after,
+    },
+  }
+}
+
+/** Writes a prepared person save inside the caller's transaction. */
+export async function writeContactSave(
+  tx: Tx,
+  user: AppUser,
+  plan: ContactSavePlan
+): Promise<void> {
+  const id = plan.contactId
+  if (plan.mode === 'create') {
+    await tx.insert(contacts).values({
+      id,
+      ...plan.values,
+      createdBy: user.id,
+    })
+  } else {
+    await tx
+      .update(contacts)
+      .set({ ...plan.values, updatedAt: new Date().toISOString() })
+      .where(eq(contacts.id, id))
+  }
+
+  for (const companyId of plan.membership.leave) {
+    await leaveCompany(tx, id, companyId)
+  }
+  for (const join of plan.membership.join) {
+    const company = await getLinkableCompany(join.companyId, tx)
+    if (!company) throw new Error('That company no longer exists.')
+    await joinCompany(tx, id, join.companyId, { title: join.title })
+  }
+  for (const change of plan.membership.titles) {
+    await setMembershipTitle(tx, id, change.companyId, change.title)
+  }
+}
+
+/** The activity rows for a committed person save. */
+export async function logContactSave(
+  user: AppUser,
+  plan: ContactSavePlan
+): Promise<void> {
+  const { contactId: id, values, membership, currentById } = plan
+  if (plan.mode === 'create') {
+    const event = contactCreatedEvent({ email: values.email, name: values.name })
+    await logActivity({
+      actorId: user.id,
+      actorRole: user.role,
+      verb: event.verb,
+      summary: event.summary,
+      targetType: 'CONTACT',
+      targetId: id,
+      metadata: event.metadata,
+    })
+    return
+  }
+
+  // Access trail on the client, as on the company sheet.
+  const accessChanges: ContactClientLinkChange[] = []
+  for (const companyId of membership.leave) {
+    const left = currentById.get(companyId)
+    if (left?.portalAccess && left.clientId) {
+      accessChanges.push({
+        contactId: id,
+        clientId: left.clientId,
+        action: 'unlinked',
+      })
+    }
+  }
+  await logContactClientLinkChanges(user, accessChanges)
+
+  if (plan.changedFields.length === 0) return
+  const event = contactUpdatedEvent({
+    email: values.email,
+    name: values.name,
+    changedFields: plan.changedFields,
+    details: {
+      before: {
+        ...plan.before,
+        ...(membership.leave.length
+          ? {
+              leftCompanies: membership.leave.map(
+                companyId => currentById.get(companyId)?.companyName
+              ),
+            }
+          : {}),
+      },
+      after: {
+        ...plan.after,
+        ...(membership.join.length
+          ? { joinedCompanies: membership.join.map(join => join.companyId) }
+          : {}),
+      },
+    },
+  })
+  await logActivity({
+    actorId: user.id,
+    actorRole: user.role,
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'CONTACT',
+    targetId: id,
+    metadata: event.metadata,
+  })
+}
+
+/**
+ * A person save on its own (no photo or sign-in): prepare, one
+ * transaction, then the activity rows.
+ */
 export async function saveContactMutation(
   context: ContactMutationContext,
   input: ContactInput
 ): Promise<ContactMutationResult> {
-  const parsed = contactSchema.safeParse(input)
-
-  if (!parsed.success) {
-    return buildMutationResult({
-      error: parsed.error.issues[0]?.message ?? 'Invalid person data.',
-    })
-  }
-
-  const isUpdate = Boolean(parsed.data.id)
-
+  const isUpdate = Boolean(input.id)
   return trackSettingsServerInteraction(
     {
       entity: 'contact',
       mode: isUpdate ? 'edit' : 'create',
-      targetId: parsed.data.id,
+      targetId: input.id ?? undefined,
     },
     async () => {
       const { user } = context
-      try {
-        assertCrmAccess(user)
-      } catch (error) {
-        if (error instanceof Error) {
-          return buildMutationResult({ error: error.message })
-        }
-        return buildMutationResult({ error: 'CRM access required.' })
+      const existing = input.id ? await loadExistingContact(input.id) : null
+      if (isUpdate && !existing) {
+        return buildMutationResult({ error: 'Person not found.' })
       }
-
-      const { id, email, name, phone } = parsed.data
-      const canManageAccess = roleCan(user.role, 'clients.manage')
-
-      // The one-company shorthand (CLI, MCP, create-from-picker).
-      let shorthandCompanyId: string | null = null
+      const prepared = await prepareContactSave(user, input, existing)
+      if ('error' in prepared) {
+        return buildMutationResult({ error: prepared.error })
+      }
+      const { plan } = prepared
       try {
-        shorthandCompanyId = await resolveShorthandCompany(
-          user,
-          parsed.data.companyId,
-          parsed.data.companyName
-        )
+        await db.transaction(tx => writeContactSave(tx, user, plan))
       } catch (error) {
+        console.error('Failed to save contact', error)
         return buildMutationResult({
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Unable to save the company.',
+          error: isEmailConflict(error)
+            ? 'A person with this email already exists.'
+            : isUpdate
+              ? 'Unable to update person.'
+              : 'Unable to create person.',
         })
       }
-      const desired: DesiredMembership[] | null = parsed.data.companies
-        ? parsed.data.companies.map(entry => ({
-            companyId: entry.companyId,
-            title: entry.title,
-          }))
-        : null
-
-      if (isUpdate && id) {
-        const [existing] = await db
-          .select({
-            id: contacts.id,
-            email: contacts.email,
-            name: contacts.name,
-            phone: contacts.phone,
-            linkedinUrl: contacts.linkedinUrl,
-            userId: contacts.userId,
-          })
-          .from(contacts)
-          .where(eq(contacts.id, id))
-          .limit(1)
-
-        if (!existing) {
-          return buildMutationResult({ error: 'Person not found.' })
-        }
-
-        const next = {
-          email,
-          name,
-          phone: phone ?? null,
-          linkedinUrl:
-            parsed.data.linkedinUrl === undefined
-              ? existing.linkedinUrl
-              : parsed.data.linkedinUrl,
-        }
-        const labels: Record<keyof typeof next, string> = {
-          email: 'email',
-          name: 'name',
-          phone: 'phone',
-          linkedinUrl: 'LinkedIn',
-        }
-        const changedFields: string[] = []
-        const before: Record<string, unknown> = {}
-        const after: Record<string, unknown> = {}
-        for (const key of Object.keys(next) as (keyof typeof next)[]) {
-          if (existing[key] !== next[key]) {
-            changedFields.push(labels[key])
-            before[key] = existing[key]
-            after[key] = next[key]
-          }
-        }
-
-        const current = await loadCurrentMemberships(id)
-        const currentById = new Map(current.map(m => [m.companyId, m]))
-        const plan = planMembershipChanges(current, desired, {
-          shorthandCompanyId,
-          shorthandTitle: parsed.data.jobTitle,
-        })
-
-        // Leaving a client's company drops being its primary contact (its
-        // invoice recipient) and portal access, so it's admin-only, as on
-        // the company sheet.
-        if (
-          !canManageAccess &&
-          (await clientIdsByCompany(plan.leave)).size > 0
-        ) {
-          return buildMutationResult({
-            error:
-              'That company is a client, so only an admin can remove someone from it.',
-          })
-        }
-        // Joining a client's company makes them one of the people it bills,
-        // so it's admin-only too, matching the company sheet.
-        const joinError = await clientJoinError(canManageAccess, plan.join)
-        if (joinError) return buildMutationResult({ error: joinError })
-        // A portal user's email is their sign-in, and a client contact's is
-        // where invoices go, so only an admin can change it.
-        if (
-          !canManageAccess &&
-          existing.email !== email &&
-          (existing.userId || current.some(m => m.clientId))
-        ) {
-          return buildMutationResult({
-            error: existing.userId
-              ? 'This person is a portal user, so only an admin can change their email.'
-              : 'This person is at a client, so only an admin can change their email.',
-          })
-        }
-        // Portal access is set only in the company's People tab. Leaving
-        // a company whose client they can see ends it, so that's admin-only.
-        if (
-          !canManageAccess &&
-          plan.leave.some(companyId => currentById.get(companyId)?.portalAccess)
-        ) {
-          return buildMutationResult({
-            error:
-              'Only an admin can remove someone with portal access from a company.',
-          })
-        }
-
-        if (plan.join.length || plan.leave.length)
-          changedFields.push('companies')
-        if (plan.titles.length) changedFields.push('title')
-
-        const accessChanges: ContactClientLinkChange[] = []
-        try {
-          await db.transaction(async tx => {
-            await tx
-              .update(contacts)
-              .set({ ...next, updatedAt: new Date().toISOString() })
-              .where(eq(contacts.id, id))
-
-            for (const companyId of plan.leave) {
-              await leaveCompany(tx, id, companyId)
-            }
-            for (const join of plan.join) {
-              const company = await getLinkableCompany(join.companyId, tx)
-              if (!company) throw new Error('That company no longer exists.')
-              await joinCompany(tx, id, join.companyId, { title: join.title })
-            }
-            for (const change of plan.titles) {
-              await setMembershipTitle(tx, id, change.companyId, change.title)
-            }
-          })
-        } catch (error) {
-          console.error('Failed to update contact', error)
-          if (isEmailConflict(error)) {
-            return buildMutationResult({
-              error: 'A person with this email already exists.',
-            })
-          }
-          return buildMutationResult({ error: 'Unable to update person.' })
-        }
-
-        // Access trail on the client, as on the company sheet.
-        for (const companyId of plan.leave) {
-          const left = currentById.get(companyId)
-          if (left?.portalAccess && left.clientId) {
-            accessChanges.push({
-              contactId: id,
-              clientId: left.clientId,
-              action: 'unlinked',
-            })
-          }
-        }
-        await logContactClientLinkChanges(user, accessChanges)
-
-        if (changedFields.length > 0) {
-          const event = contactUpdatedEvent({
-            email,
-            name,
-            changedFields,
-            details: {
-              before: {
-                ...before,
-                ...(plan.leave.length
-                  ? {
-                      leftCompanies: plan.leave.map(
-                        companyId => currentById.get(companyId)?.companyName
-                      ),
-                    }
-                  : {}),
-              },
-              after: {
-                ...after,
-                ...(plan.join.length
-                  ? { joinedCompanies: plan.join.map(join => join.companyId) }
-                  : {}),
-              },
-            },
-          })
-
-          await logActivity({
-            actorId: user.id,
-            actorRole: user.role,
-            verb: event.verb,
-            summary: event.summary,
-            targetType: 'CONTACT',
-            targetId: id,
-            metadata: event.metadata,
-          })
-        }
-
-        return buildMutationResult({})
-      }
-
-      // Create.
-      const plan = planMembershipChanges([], desired, {
-        shorthandCompanyId,
-        shorthandTitle: parsed.data.jobTitle,
-      })
-      const createJoinError = await clientJoinError(canManageAccess, plan.join)
-      if (createJoinError)
-        return buildMutationResult({ error: createJoinError })
-
-      let newContactId: string
-      try {
-        newContactId = await db.transaction(async tx => {
-          const [created] = await tx
-            .insert(contacts)
-            .values({
-              email,
-              name,
-              phone,
-              linkedinUrl: parsed.data.linkedinUrl ?? null,
-              createdBy: user.id,
-            })
-            .returning({ id: contacts.id })
-          const contactId = created?.id ?? ''
-          for (const join of plan.join) {
-            const company = await getLinkableCompany(join.companyId, tx)
-            if (!company) throw new Error('That company no longer exists.')
-            await joinCompany(tx, contactId, join.companyId, {
-              title: join.title,
-            })
-          }
-          return contactId
-        })
-      } catch (error) {
-        console.error('Failed to create contact', error)
-        if (isEmailConflict(error)) {
-          return buildMutationResult({
-            error: 'A person with this email already exists.',
-          })
-        }
-        return buildMutationResult({ error: 'Unable to create person.' })
-      }
-
-      const event = contactCreatedEvent({ email, name })
-      await logActivity({
-        actorId: user.id,
-        actorRole: user.role,
-        verb: event.verb,
-        summary: event.summary,
-        targetType: 'CONTACT',
-        targetId: newContactId,
-        metadata: event.metadata,
-      })
-
-      return buildMutationResult({ id: newContactId })
+      await logContactSave(user, plan)
+      return buildMutationResult(isUpdate ? {} : { id: plan.contactId })
     }
   )
 }
