@@ -18,7 +18,7 @@ import type { LeadStatusValue } from '@/lib/leads/constants'
 import { LEAD_WON_NEEDS_COMPANY_MESSAGE } from '@/lib/leads/won-rule'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
-import { companySheetHref } from '@/lib/sheets/hrefs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
@@ -145,14 +145,14 @@ export function LeadsWorkspace({
   // make it a client there (the same step the lead sheet takes on save).
   const { role } = useViewerAccess()
   const canManageClients = roleCan(role, 'clients.manage')
+  const { open: openSheet } = useSheetParams()
   const handleLeadClosedWon = useCallback(
     (lead: LeadRecord) => {
       if (!lead.companyId) return
-      router.push(companySheetHref(lead.companyId, 'billing'), {
-        scroll: false,
-      })
+      // Open it here, over the board, rather than leaving for /companies.
+      openSheet('company', lead.companyId, { tab: 'billing' })
     },
-    [router]
+    [openSheet]
   )
 
   const handleSheetSuccess = useCallback(() => {
