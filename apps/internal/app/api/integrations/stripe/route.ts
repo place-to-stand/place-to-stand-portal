@@ -22,6 +22,35 @@ import { notifyInvoicePaid } from '@/lib/notifications/google-chat'
  * even when the invoice is already PAID — this ensures retried webhooks
  * can recover from a previous incomplete execution.
  */
+/**
+ * True when Stripe collected at least the invoice total (in cents, USD).
+ * Logs and returns false otherwise, so a payment for a stale or tampered
+ * amount never marks the invoice paid.
+ */
+function coversInvoiceTotal(
+  invoice: { id: string; total: string | number | null },
+  received: { amount: number | null; currency: string | null; source: string }
+): boolean {
+  const totalCents = Math.round(Number(invoice.total) * 100)
+  const ok =
+    received.amount !== null &&
+    received.currency?.toLowerCase() === 'usd' &&
+    received.amount >= totalCents
+  if (!ok) {
+    console.error(
+      '[stripe-webhook] Payment does not cover the invoice total; not marking paid',
+      {
+        invoiceId: invoice.id,
+        source: received.source,
+        totalCents,
+        received: received.amount,
+        currency: received.currency,
+      }
+    )
+  }
+  return ok
+}
+
 async function markInvoicePaid(
   invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceByStripeSession>>>,
   paymentIntentId: string | null
@@ -123,6 +152,16 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true, received: true })
         }
 
+        if (
+          !coversInvoiceTotal(invoice, {
+            amount: paymentIntent.amount_received,
+            currency: paymentIntent.currency,
+            source: paymentIntent.id,
+          })
+        ) {
+          return NextResponse.json({ ok: true, received: true })
+        }
+
         await markInvoicePaid(invoice, paymentIntent.id)
         break
       }
@@ -155,6 +194,16 @@ export async function POST(request: Request) {
           typeof session.payment_intent === 'string'
             ? session.payment_intent
             : session.payment_intent?.id ?? null
+
+        if (
+          !coversInvoiceTotal(invoice, {
+            amount: session.amount_total,
+            currency: session.currency,
+            source: session.id,
+          })
+        ) {
+          return NextResponse.json({ ok: true, received: true })
+        }
 
         await markInvoicePaid(invoice, paymentIntentId)
         break

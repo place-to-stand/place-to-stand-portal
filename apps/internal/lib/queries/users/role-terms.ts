@@ -4,6 +4,22 @@ import { and, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { userRoleTerms, users } from '@/lib/db/schema'
+import {
+  currentMonthStartUtc,
+  nextMonthStartUtc,
+} from '@/lib/queries/clients/billing-terms'
+import { hasActiveSnapshotForDate } from '@/lib/queries/reports/close-snapshots'
+
+/**
+ * The month a new sign-in's first role term starts: this month, unless it
+ * is already closed (a closed month's roles are fixed), then next month.
+ */
+export async function firstRoleTermStart(): Promise<string> {
+  const thisMonth = currentMonthStartUtc()
+  return (await hasActiveSnapshotForDate(thisMonth))
+    ? nextMonthStartUtc()
+    : thisMonth
+}
 
 /**
  * The sign-in's role in force for the month of `periodStart`: its newest

@@ -25,6 +25,7 @@ export async function ensureUserProfile(
       email: usersTable.email,
       fullName: personNameSql,
       avatarUrl: personAvatarSql,
+      deletedAt: usersTable.deletedAt,
     })
     .from(usersTable)
     .where(eq(usersTable.id, user.id))
@@ -60,18 +61,20 @@ export async function ensureUserProfile(
       ? metadataAvatar
       : null
 
-  const shouldUpdate =
-    existing.email !== nextEmail ||
-    seedAvatar !== null
+  // An archived sign-in stays archived: signing in never restores it (only
+  // an admin does), so its email isn't synced either.
+  const syncEmail = !existing.deletedAt && existing.email !== nextEmail
+
+  const shouldUpdate = syncEmail || seedAvatar !== null
 
   if (!shouldUpdate) {
     return 'ok'
   }
 
-  if (existing.email !== nextEmail) {
+  if (syncEmail) {
     await db
       .update(usersTable)
-      .set({ email: nextEmail, deletedAt: null })
+      .set({ email: nextEmail })
       .where(eq(usersTable.id, user.id))
   }
   // The photo is the person's (contacts.avatar_url, 0112).

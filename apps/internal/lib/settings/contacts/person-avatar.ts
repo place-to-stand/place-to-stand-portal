@@ -4,17 +4,9 @@ import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import {
   AVATAR_BUCKET,
   deleteAvatarObject,
+  isStagedUploadOf,
   moveAvatarToPersonFolder,
 } from '@/lib/storage/avatar'
-
-const STAGED_UPLOAD =
-  /^avatars\/pending\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.[a-z0-9]+$/i
-
-/** A path the upload route staged for this actor (generateAvatarPath). */
-function isStagedUploadOf(path: string, actorId: string) {
-  const match = path.match(STAGED_UPLOAD)
-  return Boolean(match && match[1] === actorId)
-}
 
 /**
  * A photo change claimed for a Save: the staged upload moved into the

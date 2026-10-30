@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { allowAuthEmail } from "@/lib/auth/throttle";
+import { isSafeRedirectPath } from "@/lib/auth/safe-redirect";
 
 import { ensureUserProfile } from "@/lib/auth/profile";
 import { db } from "@/lib/db";
@@ -23,21 +24,9 @@ const schema = z.object({
   redirectTo: z
     .string()
     .optional()
-    .transform((value) => {
-      if (!value) {
-        return null;
-      }
-
-      if (!value.startsWith("/")) {
-        return null;
-      }
-
-      if (value.startsWith("//")) {
-        return null;
-      }
-
-      return value;
-    }),
+    .transform((value) =>
+      value && isSafeRedirectPath(value) ? value : null
+    ),
 });
 
 export type SignInState = {
@@ -175,7 +164,9 @@ export async function sendMagicLink(input: {
     const params = new URLSearchParams({
       token_hash: tokenHash,
       type: "magiclink",
-      ...(input.redirectTo ? { redirect_to: input.redirectTo } : {}),
+      ...(input.redirectTo && isSafeRedirectPath(input.redirectTo)
+        ? { redirect_to: input.redirectTo }
+        : {}),
     });
 
     await sendMagicLinkEmail(email, `${origin}/auth/confirm?${params}`);

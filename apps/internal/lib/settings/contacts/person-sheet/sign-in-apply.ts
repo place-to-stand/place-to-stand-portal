@@ -26,6 +26,7 @@ import {
   deleteAuthUser,
   sendSignInInvite,
   setAuthBanned,
+  takeOverExistingAuthUser,
 } from '@/lib/settings/users/services'
 import {
   applyRoleInForce,
@@ -74,6 +75,10 @@ export async function runSignInAuth(
         sql`SELECT id FROM auth.users WHERE lower(email) = lower(${create.email}) LIMIT 1`
       )
       if (!authRow?.id) return 'Unable to find the existing sign-in.'
+      // Whoever registered it may know its password: reset it and end its
+      // sessions before it is linked to this person.
+      const takeOverError = await takeOverExistingAuthUser(authRow.id)
+      if (takeOverError) return takeOverError
       plan.userId = authRow.id
       create.source = 'auth'
     } else {

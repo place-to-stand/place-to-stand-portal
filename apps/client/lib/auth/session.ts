@@ -3,7 +3,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { users } from '@pts/db/schema'
@@ -47,7 +47,10 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
         id: users.id,
         email: users.email,
         fullName: personNameSql,
-        role: users.role,
+        // The role in force this month: a scheduled role change counts from
+        // its month even before the internal portal's cron writes it to
+        // users.role.
+        role: sql<AppUser['role']>`coalesce(user_role_as_of(${users.id}, date_trunc('month', timezone('utc', now()))::date), ${users.role})`,
         avatarUrl: personAvatarSql,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,

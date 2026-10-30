@@ -45,6 +45,13 @@ export async function GET(request: Request) {
     )
   }
 
+  if (!z.string().uuid().safeParse(projectId).success) {
+    return NextResponse.json(
+      { ok: false, error: 'Invalid projectId' },
+      { status: 400 }
+    )
+  }
+
   const [project] = await db
     .select({ id: projects.id, companyId: projects.companyId })
     .from(projects)
