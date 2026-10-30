@@ -6,6 +6,7 @@ import {
   type RenderedEmail,
 } from '@pts/email'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCurrency } from '@pts/ui/numbers'
 
 import { invoiceEmailedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
@@ -72,11 +73,6 @@ export type InvoiceEmailInput = {
   message: string
 }
 
-const usd = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
-
 async function loadEmailableInvoice(
   invoiceId: string
 ): Promise<SendableInvoice & { invoiceNumber: string }> {
@@ -127,7 +123,7 @@ export async function buildInvoiceEmailDraft(
   const addressed = defaultRecipients(contacts)
   const greeting = firstName(addressed[0]?.name) ?? 'there'
   const signOff = firstName(user.full_name) ?? 'Place To Stand'
-  const amount = usd.format(Number(invoice.total))
+  const amount = formatCurrency(invoice.total)
   const isResend = invoice.status !== 'DRAFT'
 
   const opening = isResend
@@ -169,7 +165,7 @@ function emailFacts(
   return {
     clientName: invoice.clientName ?? 'Client',
     invoiceNumber: invoice.invoiceNumber,
-    amountDue: usd.format(Number(invoice.total)),
+    amountDue: formatCurrency(invoice.total),
     // A draft is issued the moment it sends, so the email says today.
     issuedDate: formatCalendarDate(invoice.issuedDate ?? todayIsoDate()) ?? '',
     viewUrl: `${resolvePortalOrigin()}/share/invoices/${shareToken}`,

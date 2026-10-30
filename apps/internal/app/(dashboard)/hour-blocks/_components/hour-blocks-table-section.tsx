@@ -13,6 +13,7 @@ import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
 import { companySheetHref, invoiceHref } from '@/lib/sheets/hrefs'
 import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
@@ -48,8 +49,6 @@ export type HourBlocksTableSectionProps = {
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
 }
-
-const toHours = (value: number) => `${value.toLocaleString()}h`
 
 const formatTimestamp = (value: string) =>
   formatCalendarDate(value) ?? <EmptyValue />
@@ -141,7 +140,7 @@ export function HourBlocksTableSection({
                         'h-4 w-4 shrink-0'
                       )}
                     />
-                    {toHours(block.hours_purchased)}
+                    {formatHours(block.hours_purchased)}
                     {block.notes ? (
                       <Tooltip>
                         <TooltipTrigger asChild>

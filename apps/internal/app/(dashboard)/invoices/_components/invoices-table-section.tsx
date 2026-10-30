@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCurrency } from '@pts/ui/numbers'
 import { Check, Copy, ExternalLink, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
@@ -58,17 +59,6 @@ export type InvoicesTableSectionProps = {
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
-}
-
-const formatCurrency = (value: string) => {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(Number(value))
-  } catch {
-    return value
-  }
 }
 
 const formatDate = (value: string | null) =>

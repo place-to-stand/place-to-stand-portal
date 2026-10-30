@@ -34,6 +34,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
+import { formatCurrency } from '@pts/ui/numbers'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { FormFeedback } from '@/components/sheets/form-feedback'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
@@ -79,13 +80,6 @@ type Props = {
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
 }
-
-const formatCurrency = (amount: number): string =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(amount)
 
 export function InvoiceSheet({
   open,

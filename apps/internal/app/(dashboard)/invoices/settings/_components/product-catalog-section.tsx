@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@pts/ui/dialog'
 import { Input } from '@pts/ui/input'
+import { formatCurrency } from '@pts/ui/numbers'
 import { Label } from '@pts/ui/label'
 import { Switch } from '@pts/ui/switch'
 import {
@@ -82,7 +83,7 @@ function ProductRow({
   return (
     <TableRow>
       <TableCell className='truncate font-medium'>{item.name}</TableCell>
-      <TableCell label='Price'>${item.unit_price}</TableCell>
+      <TableCell label='Price'>{formatCurrency(item.unit_price)}</TableCell>
       <TableCell label='Unit' className='truncate'>
         {item.unit_label}
       </TableCell>
