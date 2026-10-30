@@ -7,6 +7,7 @@ import {
   type ProjectStatusValue,
 } from '@/lib/constants'
 import type { DbClient, DbProject, ProjectTypeValue } from '@/lib/types'
+import type { IntegrationProvider } from '@/lib/types/integrations'
 
 type ProjectRow = DbProject
 export type ClientRow = Pick<DbClient, 'id' | 'name' | 'deleted_at'>
@@ -161,18 +162,29 @@ export type ProjectSavePayload = {
   slug: string | null
   ownerId: string | null
   memberIds?: string[]
+  /** Saved with the project, in the same transaction (`saveProject`). */
+  repoLinks?: {
+    add: Array<{
+      repoFullName: string
+      source?: 'oauth' | 'app'
+      sourceId?: string
+    }>
+    remove: string[]
+  }
+  integrationLinks?: {
+    add: Array<{ provider: IntegrationProvider; externalId: string }>
+    remove: string[]
+  }
 }
 
 type CreatePayloadArgs = {
   values: ProjectSheetFormValues
   project: ProjectWithClient | null
-  isEditing: boolean
 }
 
 export const createProjectSavePayload = ({
   values,
   project,
-  isEditing,
 }: CreatePayloadArgs): ProjectSavePayload => {
   const trimmedClientId = values.clientId?.trim() ?? ''
   const normalizedClientId =
@@ -187,7 +199,8 @@ export const createProjectSavePayload = ({
     status: values.status,
     startsOn: values.startsOn ? values.startsOn : null,
     endsOn: values.endsOn ? values.endsOn : null,
-    slug: isEditing ? (values.slug?.trim() ? values.slug.trim() : null) : null,
+    // Blank on create = generated from the name; edit requires one.
+    slug: values.slug?.trim() ? values.slug.trim() : null,
     ownerId: trimmedOwnerId ? trimmedOwnerId : null,
     memberIds: values.memberIds,
   }

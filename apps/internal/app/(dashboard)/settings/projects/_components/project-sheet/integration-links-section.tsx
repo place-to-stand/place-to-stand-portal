@@ -31,8 +31,8 @@ import {
 } from '@/lib/types/integrations'
 
 /**
- * A link chosen in the picker but not yet saved. Mirrors the shape the
- * sheet state hook sends to `POST /api/projects/[id]/integration-links`.
+ * A link chosen in the picker but not yet saved. Save sends it with the
+ * project to `saveProject`, which links it in the same transaction.
  */
 export type PendingIntegrationLink = {
   provider: IntegrationProvider

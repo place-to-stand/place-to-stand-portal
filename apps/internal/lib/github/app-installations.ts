@@ -29,6 +29,13 @@ export async function getActiveInstallationForProject(
 
   if (!project?.clientId) return null
 
+  return getActiveInstallationForCompany(project.clientId)
+}
+
+/** The active GitHub App installation for a client company, if any. */
+export async function getActiveInstallationForCompany(
+  companyId: string
+): Promise<ActiveAppInstallation | null> {
   const [installation] = await db
     .select({
       id: githubAppInstallations.id,
@@ -40,7 +47,7 @@ export async function getActiveInstallationForProject(
     .from(githubAppInstallations)
     .where(
       and(
-        eq(githubAppInstallations.companyId, project.clientId),
+        eq(githubAppInstallations.companyId, companyId),
         eq(githubAppInstallations.status, 'ACTIVE'),
         isNull(githubAppInstallations.deletedAt)
       )

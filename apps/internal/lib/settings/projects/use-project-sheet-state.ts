@@ -34,6 +34,7 @@ import {
   sortClientsByName,
   type ClientRow,
   type ContractorUserSummary,
+  type ProjectSavePayload,
   type ProjectSheetFormValues,
   type ProjectWithClient,
 } from './project-sheet-form'
@@ -76,8 +77,9 @@ export type PendingIntegrationLink = {
 }
 
 /**
- * Link edits the sheet accumulates and applies after the project row saves.
- * Only ids are needed to unlink; pending entries carry what the POST needs.
+ * Link edits the sheet accumulates; Save sends them with the project to
+ * `saveProject`, which writes everything in one transaction. Only ids are
+ * needed to unlink; pending entries carry what the link needs.
  */
 export type ProjectSheetLinkChanges = {
   pendingRepos: PendingRepo[]
@@ -193,113 +195,6 @@ export function useProjectSheetState({
     resetKey: project?.id ?? null,
   })
 
-  const linkPendingRepos = useCallback(
-    async (projectId: string, pendingRepos: PendingRepo[]) => {
-      if (pendingRepos.length === 0) return
-
-      const linkPromises = pendingRepos.map(repo =>
-        fetch(`/api/projects/${projectId}/github-repos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            repoFullName: repo.repoFullName,
-            ...(repo.source === 'app'
-              ? { githubAppInstallationId: repo.sourceId }
-              : repo.source === 'oauth'
-                ? { connectionId: repo.sourceId }
-                : {}),
-          }),
-        })
-      )
-
-      try {
-        await Promise.all(linkPromises)
-      } catch {
-        // Log but don't fail the save - repos can be linked manually later
-        console.error('Failed to link some repositories')
-      }
-    },
-    []
-  )
-
-  const unlinkRemovedRepos = useCallback(
-    async (projectId: string, removedRepoIds: string[]) => {
-      if (removedRepoIds.length === 0) return
-
-      const unlinkPromises = removedRepoIds.map(repoId =>
-        fetch(`/api/projects/${projectId}/github-repos/${repoId}`, {
-          method: 'DELETE',
-        })
-      )
-
-      try {
-        await Promise.all(unlinkPromises)
-      } catch {
-        // Log but don't fail the save - repos can be unlinked manually later
-        console.error('Failed to unlink some repositories')
-      }
-    },
-    []
-  )
-
-  const linkPendingIntegrations = useCallback(
-    async (projectId: string, pending: PendingIntegrationLink[]) => {
-      if (pending.length === 0) return
-
-      const results = await Promise.allSettled(
-        pending.map(link =>
-          fetch(`/api/projects/${projectId}/integration-links`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              provider: link.provider,
-              externalId: link.externalId,
-            }),
-          }).then(res => {
-            if (!res.ok) throw new Error(`${link.externalName}: ${res.status}`)
-          })
-        )
-      )
-
-      const failed = results.filter(result => result.status === 'rejected')
-      if (failed.length > 0) {
-        console.error('Failed to link some hosting projects', failed)
-        toast({
-          title: 'Unable to link some hosting projects',
-          description: 'Open the project again to retry linking them.',
-          variant: 'destructive',
-        })
-      }
-    },
-    [toast]
-  )
-
-  const unlinkRemovedIntegrations = useCallback(
-    async (projectId: string, removedIds: string[]) => {
-      if (removedIds.length === 0) return
-
-      const results = await Promise.allSettled(
-        removedIds.map(linkId =>
-          fetch(`/api/projects/${projectId}/integration-links/${linkId}`, {
-            method: 'DELETE',
-          }).then(res => {
-            if (!res.ok) throw new Error(`${linkId}: ${res.status}`)
-          })
-        )
-      )
-
-      if (results.some(result => result.status === 'rejected')) {
-        console.error('Failed to unlink some hosting projects')
-        toast({
-          title: 'Unable to unlink some hosting projects',
-          description: 'Open the project again to retry removing them.',
-          variant: 'destructive',
-        })
-      }
-    },
-    [toast]
-  )
-
   const handleSubmit = useCallback(
     (values: ProjectSheetFormValues, changes: ProjectSheetLinkChanges) => {
       const {
@@ -317,11 +212,26 @@ export function useProjectSheetState({
           return
         }
 
-        const payload = createProjectSavePayload({
-          values,
-          project,
-          isEditing,
-        })
+        // One server call saves the row, members and every link change in
+        // one transaction: nothing is written unless all of it is.
+        const payload: ProjectSavePayload = {
+          ...createProjectSavePayload({ values, project }),
+          repoLinks: {
+            add: pendingRepos.map(repo => ({
+              repoFullName: repo.repoFullName,
+              source: repo.source,
+              sourceId: repo.sourceId,
+            })),
+            remove: removedRepoIds,
+          },
+          integrationLinks: {
+            add: pendingIntegrationLinks.map(link => ({
+              provider: link.provider,
+              externalId: link.externalId,
+            })),
+            remove: removedIntegrationLinkIds,
+          },
+        }
 
         if (payload.slug && payload.slug.length < 3) {
           setFeedback('Slug must be at least 3 characters when provided.')
@@ -357,22 +267,8 @@ export function useProjectSheetState({
             return
           }
 
-          // Link pending repos and unlink removed repos after successful save
           const targetProjectId = result.projectId ?? payload.id
           if (targetProjectId) {
-            await Promise.all([
-              pendingRepos.length > 0
-                ? linkPendingRepos(targetProjectId, pendingRepos)
-                : Promise.resolve(),
-              removedRepoIds.length > 0
-                ? unlinkRemovedRepos(targetProjectId, removedRepoIds)
-                : Promise.resolve(),
-              linkPendingIntegrations(targetProjectId, pendingIntegrationLinks),
-              unlinkRemovedIntegrations(
-                targetProjectId,
-                removedIntegrationLinkIds
-              ),
-            ])
             // The sheet stays mounted between opens, so the links section's
             // query never remounts — invalidate it or the next open shows
             // the pre-save list.
@@ -429,11 +325,7 @@ export function useProjectSheetState({
       applyServerFieldErrors,
       form,
       isEditing,
-      linkPendingRepos,
-      linkPendingIntegrations,
-      unlinkRemovedIntegrations,
       queryClient,
-      unlinkRemovedRepos,
       onComplete,
       onOpenChange,
       project,

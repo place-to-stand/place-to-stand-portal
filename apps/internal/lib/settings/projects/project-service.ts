@@ -44,6 +44,37 @@ export const projectSchema = z
      * are (the sheet sends it only once it has loaded the current list).
      */
     memberIds: z.array(z.string().uuid()).max(100).optional(),
+    /** GitHub repos to link (as picked) and link ids to remove. */
+    repoLinks: z
+      .object({
+        add: z
+          .array(
+            z.object({
+              repoFullName: z
+                .string()
+                .regex(/^[^/]+\/[^/]+$/, 'Invalid repo (expected owner/repo)'),
+              source: z.enum(['oauth', 'app']).optional(),
+              sourceId: z.string().uuid().optional(),
+            })
+          )
+          .max(50),
+        remove: z.array(z.string().uuid()).max(100),
+      })
+      .optional(),
+    /** Vercel / Supabase projects to link and link ids to remove. */
+    integrationLinks: z
+      .object({
+        add: z
+          .array(
+            z.object({
+              provider: z.enum(['VERCEL', 'SUPABASE']),
+              externalId: z.string().trim().min(1),
+            })
+          )
+          .max(50),
+        remove: z.array(z.string().uuid()).max(100),
+      })
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.startsOn && data.endsOn) {
