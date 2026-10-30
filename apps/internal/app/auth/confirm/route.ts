@@ -1,5 +1,6 @@
 // permission: public — sign-in callback
 import { canUseInternalPortal } from '@/lib/auth/roles'
+import { safeRedirectPath } from '@/lib/auth/safe-redirect'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { eq } from 'drizzle-orm'
@@ -79,10 +80,9 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // Relative paths only. Without this, `?redirect_to=//evil.com` resolves to an
-  // absolute off-site URL — the same guard the sibling callback route already applies.
-  const safePath =
-    redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/'
+  // Relative paths only. Without this, `?redirect_to=//evil.com` (or
+  // `/\\evil.com`) resolves to an absolute off-site URL.
+  const safePath = safeRedirectPath(redirectTo)
 
   // Password recovery lands on the reset form, which is the only page that can
   // spend the session usefully. A caller may name a more specific target — the
