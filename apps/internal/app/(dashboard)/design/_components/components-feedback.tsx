@@ -73,6 +73,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
+import { ToastCard } from '@/components/ui/toast-card'
 import { useToast } from '@/components/ui/use-toast'
 
 import { DesignSection, Example, Specimen } from './specimen'
@@ -210,25 +211,50 @@ export function ComponentsFeedback() {
           </AlertAction>
         </Alert>
       </Specimen>
-      <Specimen label='Toast' note='components/ui/use-toast'>
-        <Button
-          variant='outline'
-          onClick={() => toast({ title: 'Invoice sent' })}
-        >
-          Success toast
-        </Button>
-        <Button
-          variant='outline'
-          onClick={() =>
-            toast({
-              title: 'Unable to save invoice',
-              description: 'The billing email is missing.',
-              variant: 'destructive',
-            })
-          }
-        >
-          Failure toast
-        </Button>
+      <Specimen
+        label='Toast'
+        note='components/ui/use-toast; each kind shown as it appears'
+        className='block space-y-2'
+      >
+        <ToastCard title='Invoice sent' onDismiss={() => {}} />
+        <ToastCard
+          variant='destructive'
+          title='Unable to save invoice'
+          description='The billing email is missing.'
+          onDismiss={() => {}}
+        />
+        <ToastCard
+          variant='warning'
+          title='Closed month affected'
+          description='September is closed: reopen it to include this change.'
+          onDismiss={() => {}}
+        />
+        <ToastCard
+          variant='info'
+          title='Copied'
+          description='The share link is on your clipboard.'
+          onDismiss={() => {}}
+        />
+        <div className='flex flex-wrap gap-2 pt-2'>
+          <Button
+            variant='outline'
+            onClick={() => toast({ title: 'Invoice sent' })}
+          >
+            Success toast
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() =>
+              toast({
+                title: 'Unable to save invoice',
+                description: 'The billing email is missing.',
+                variant: 'destructive',
+              })
+            }
+          >
+            Failure toast
+          </Button>
+        </div>
       </Specimen>
       <Specimen
         label='FormFeedback'

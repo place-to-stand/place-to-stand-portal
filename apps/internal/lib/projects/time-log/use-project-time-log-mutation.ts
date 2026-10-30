@@ -185,7 +185,7 @@ export function useProjectTimeLogMutation(
         toast({
           title: 'Closed month',
           description: data.warning,
-          variant: 'destructive',
+          variant: 'warning',
         })
       }
       router.refresh()

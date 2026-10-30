@@ -139,7 +139,11 @@ export function useHourBlocksTableState({
             'The hour block is hidden from active tracking but remains in history.',
         })
         if (result.warning) {
-          toast({ title: 'Closed month affected', description: result.warning })
+          toast({
+            title: 'Closed month affected',
+            description: result.warning,
+            variant: 'warning',
+          })
         }
         router.refresh()
       } finally {
@@ -173,7 +177,11 @@ export function useHourBlocksTableState({
           description: 'The hour block is active again.',
         })
         if (result.warning) {
-          toast({ title: 'Closed month affected', description: result.warning })
+          toast({
+            title: 'Closed month affected',
+            description: result.warning,
+            variant: 'warning',
+          })
         }
         router.refresh()
       } finally {

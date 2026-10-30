@@ -124,7 +124,7 @@ export function useProjectTimeLogHistory(
         toast({
           title: 'Closed month',
           description: data.warning,
-          variant: 'destructive',
+          variant: 'warning',
         })
       }
       setPendingDelete(null)

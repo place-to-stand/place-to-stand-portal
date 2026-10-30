@@ -276,7 +276,11 @@ export function useHourBlockSheetState({
             'It will be hidden from active tracking but remains available historically.',
         })
         if (result.warning) {
-          toast({ title: 'Closed month affected', description: result.warning })
+          toast({
+            title: 'Closed month affected',
+            description: result.warning,
+            variant: 'warning',
+          })
         }
 
         onOpenChange(false)

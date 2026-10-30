@@ -9,8 +9,17 @@ import { cn } from './cn'
  * under it on narrow screens. The icon and the action are each one text line
  * tall, so both centre on the first line of text however the text wraps.
  */
+/**
+ * A leading icon one text line tall: it centres on the first line of text
+ * however the text wraps. Alerts and toasts share it.
+ */
+const firstLineIcon = '[&>svg]:h-[1lh] [&>svg]:w-4 [&>svg]:shrink-0'
+
 const alertVariants = cva(
-  'relative flex w-full flex-wrap items-start gap-x-3 gap-y-2 rounded-lg border px-3.5 py-2.5 text-sm leading-snug [&>svg]:h-[1lh] [&>svg]:w-4 [&>svg]:shrink-0',
+  cn(
+    'relative flex w-full flex-wrap items-start gap-x-3 gap-y-2 rounded-lg border px-3.5 py-2.5 text-sm leading-snug',
+    firstLineIcon
+  ),
   {
     variants: {
       variant: {
@@ -91,4 +100,5 @@ export {
   AlertDescription,
   AlertTitle,
   alertVariants,
+  firstLineIcon,
 }

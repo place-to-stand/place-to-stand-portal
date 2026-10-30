@@ -1,5 +1,6 @@
 import { Archive, Link2, Plus, Save } from 'lucide-react'
 
+import { ToastCard } from '@/components/ui/toast-card'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -256,21 +257,11 @@ function ToastMock({
   destructive?: boolean
 }) {
   return (
-    <div
-      className={
-        destructive
-          ? 'border-destructive/40 bg-destructive/5 rounded-lg border px-3 py-2'
-          : 'bg-popover rounded-lg border px-3 py-2 shadow-sm'
-      }
-    >
-      <p
-        className={destructive ? 'text-destructive font-medium' : 'font-medium'}
-      >
-        {title}
-      </p>
-      {description ? (
-        <p className='text-muted-foreground text-xs'>{description}</p>
-      ) : null}
-    </div>
+    <ToastCard
+      title={title}
+      description={description}
+      variant={destructive ? 'destructive' : 'success'}
+      className='shadow-none'
+    />
   )
 }

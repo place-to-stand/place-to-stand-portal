@@ -45,7 +45,7 @@ export function useTimeLogRowActions() {
         toast({
           title: 'Closed month',
           description: data.warning,
-          variant: 'destructive',
+          variant: 'warning',
         })
       }
       setPendingArchive(null)
