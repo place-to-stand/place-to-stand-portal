@@ -45,13 +45,9 @@ export const boardTaskHref = (
   taskId: string
 ) => `${projectBoardHref(clientSegment, projectSlug)}?task=${taskId}`
 
-export const leadHref = (
-  id: string,
-  options?: { archived?: boolean; convert?: boolean }
-) => {
+export const leadHref = (id: string, options?: { archived?: boolean }) => {
   const base = options?.archived ? '/leads/archive' : '/leads'
-  const convert = options?.convert ? '&leadMode=convert' : ''
-  return `${base}?lead=${id}${convert}`
+  return `${base}?lead=${id}`
 }
 
 /** Resolves server-side, so the link keeps working after archive/restore. */

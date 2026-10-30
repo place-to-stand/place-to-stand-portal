@@ -368,7 +368,7 @@ Sep 2026.
 
 **Sheet deep links (`lib/sheets/`):**
 
-Every entity sheet is addressed by one query param — `?client=<uuid>`, `?task=new`, `?lead=<uuid>&leadMode=convert` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
+Every entity sheet is addressed by one query param — `?client=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
 
 Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never hand-roll sheet URL writes:
 - Value is a UUID or `new` (create sheet). UUID-guard before any DB cast.
