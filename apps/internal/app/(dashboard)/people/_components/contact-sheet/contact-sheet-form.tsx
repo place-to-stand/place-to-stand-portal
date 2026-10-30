@@ -339,10 +339,10 @@ export function ContactSheetForm({
         canUndo={canUndo}
         canRedo={canRedo}
         isEditing={isEditing}
-        deleteDisabled={deleteDisabled}
-        deleteDisabledReason={deleteDisabledReason}
-        onRequestDelete={onRequestDelete}
-        deleteAriaLabel='Archive person'
+        archiveDisabled={deleteDisabled}
+        archiveDisabledReason={deleteDisabledReason}
+        onRequestArchive={onRequestDelete}
+        archiveAriaLabel='Archive person'
       />
     </Form>
   )

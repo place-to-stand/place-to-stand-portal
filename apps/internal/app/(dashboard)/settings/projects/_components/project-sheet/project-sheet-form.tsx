@@ -569,10 +569,10 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
         canUndo={canUndo}
         canRedo={canRedo}
         isEditing={isEditing}
-        deleteDisabled={deleteButton.disabled}
-        deleteDisabledReason={deleteButton.reason}
-        onRequestDelete={onRequestDelete}
-        deleteAriaLabel='Archive project'
+        archiveDisabled={deleteButton.disabled}
+        archiveDisabledReason={deleteButton.reason}
+        onRequestArchive={onRequestDelete}
+        archiveAriaLabel='Archive project'
       />
     </Form>
   )

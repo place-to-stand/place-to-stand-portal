@@ -590,10 +590,10 @@ export function InvoiceSheet({
                         canUndo={canUndo}
                         canRedo={canRedo}
                         isEditing={isEditing}
-                        deleteDisabled={deleteButton.disabled}
-                        deleteDisabledReason={deleteButton.reason}
-                        onRequestDelete={handleRequestDelete}
-                        deleteAriaLabel='Archive invoice'
+                        archiveDisabled={deleteButton.disabled}
+                        archiveDisabledReason={deleteButton.reason}
+                        onRequestArchive={handleRequestDelete}
+                        archiveAriaLabel='Archive invoice'
                       />
                     </div>
                   ) : null}

@@ -232,10 +232,10 @@ export function HourBlockSheet({
               canUndo={canUndo}
               canRedo={canRedo}
               isEditing={isEditing}
-              deleteDisabled={deleteButton.disabled}
-              deleteDisabledReason={deleteButton.reason}
-              onRequestDelete={handleRequestDelete}
-              deleteAriaLabel='Archive hour block'
+              archiveDisabled={deleteButton.disabled}
+              archiveDisabledReason={deleteButton.reason}
+              onRequestArchive={handleRequestDelete}
+              archiveAriaLabel='Archive hour block'
             />
           </Form>
         </SheetContent>

@@ -95,10 +95,10 @@ export function LeadSheet(props: LeadSheetProps) {
                     canUndo={canUndo}
                     canRedo={canRedo}
                     isEditing={isEditing}
-                    deleteDisabled={submitDisabled}
-                    deleteDisabledReason={archiveDisabledReason}
-                    onRequestDelete={() => setArchiveDialogOpen(true)}
-                    deleteAriaLabel='Archive lead'
+                    archiveDisabled={submitDisabled}
+                    archiveDisabledReason={archiveDisabledReason}
+                    onRequestArchive={() => setArchiveDialogOpen(true)}
+                    archiveAriaLabel='Archive lead'
                   />
                 </div>
               </div>

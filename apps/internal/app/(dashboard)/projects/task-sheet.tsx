@@ -480,7 +480,7 @@ export function TaskSheet(props: TaskSheetProps) {
               {/* Footer — always at bottom, outside scroll area */}
               <SheetFormFooter
                 formId={TASK_FORM_ID}
-                deleteAriaLabel='Archive task'
+                archiveAriaLabel='Archive task'
                 saveLabel={saveLabel}
                 submitDisabled={submitDisabled}
                 submitDisabledReason={submitDisabledReason}
@@ -489,9 +489,9 @@ export function TaskSheet(props: TaskSheetProps) {
                 canUndo={canUndo}
                 canRedo={canRedo}
                 isEditing={isEditing}
-                deleteDisabled={deleteDisabled}
-                deleteDisabledReason={deleteDisabledReason}
-                onRequestDelete={handleRequestDelete}
+                archiveDisabled={deleteDisabled}
+                archiveDisabledReason={deleteDisabledReason}
+                onRequestArchive={handleRequestDelete}
               />
             </div>
 
