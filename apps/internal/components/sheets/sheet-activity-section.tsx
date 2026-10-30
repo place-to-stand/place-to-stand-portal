@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import {
@@ -48,9 +48,40 @@ export function SheetActivitySection({
   emptyState = 'No activity recorded yet.',
   className,
 }: SheetActivitySectionProps) {
+  const total = useActivityCount({ targetType, targetId, projectId, companyId })
+
+  return (
+    <SheetActivityDisclosure total={total} className={className}>
+      <ActivityFeed
+        className='pt-4'
+        targetType={targetType}
+        targetId={targetId}
+        projectId={projectId}
+        companyId={companyId}
+        pageSize={20}
+        emptyState={emptyState}
+      />
+    </SheetActivityDisclosure>
+  )
+}
+
+/**
+ * The collapsed shell on its own: the "Activity (n)" toggle and a region that
+ * mounts its children only while open. `SheetActivitySection` fills it with
+ * the feed; the /design specimen fills it with sample rows.
+ */
+export function SheetActivityDisclosure({
+  total,
+  className,
+  children,
+}: {
+  /** Shown as "Activity (n)"; null shows "Activity" alone. */
+  total: number | null
+  className?: string
+  children: ReactNode
+}) {
   const [open, setOpen] = useState(false)
   const headingId = useId()
-  const total = useActivityCount({ targetType, targetId, projectId, companyId })
 
   return (
     <Collapsible
@@ -82,15 +113,7 @@ export function SheetActivitySection({
         </CollapsibleTrigger>
       </h3>
       <CollapsibleContent role='region' aria-labelledby={headingId}>
-        <ActivityFeed
-          className='pt-4'
-          targetType={targetType}
-          targetId={targetId}
-          projectId={projectId}
-          companyId={companyId}
-          pageSize={20}
-          emptyState={emptyState}
-        />
+        {children}
       </CollapsibleContent>
     </Collapsible>
   )
