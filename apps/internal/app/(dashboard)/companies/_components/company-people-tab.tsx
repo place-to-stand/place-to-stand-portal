@@ -8,7 +8,7 @@ import { CompanyPeopleSection } from './company-people-section'
 
 type CompanyPeopleTabProps = Omit<
   Parameters<typeof CompanyPeopleSection>[0],
-  'portalAccessFor'
+  'portalAccessFor' | 'footer'
 > & {
   /**
    * Portal access switches (people who can manage clients only), staged in
@@ -65,5 +65,34 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
       }
     : null
 
-  return <CompanyPeopleSection {...props} portalAccessFor={portalAccessFor} />
+  // Saved people switched on who have no sign-in get one, and an invite
+  // email, on Save. (Someone joining on Save might already have a sign-in,
+  // so they aren't named here.)
+  const removed = new Set(props.removedIds)
+  const invitees = showPortal
+    ? props.contacts.filter(
+        contact =>
+          access.has(contact.id) &&
+          !contact.portalAccess &&
+          !contact.hasPortalLogin &&
+          !removed.has(contact.id)
+      )
+    : []
+  const inviteNote = invitees.length ? (
+    <p className='text-muted-foreground text-xs'>
+      Saving emails a portal invite to{' '}
+      {new Intl.ListFormat('en', { type: 'conjunction' }).format(
+        invitees.map(contact => contact.name)
+      )}
+      .
+    </p>
+  ) : null
+
+  return (
+    <CompanyPeopleSection
+      {...props}
+      portalAccessFor={portalAccessFor}
+      footer={inviteNote}
+    />
+  )
 }
