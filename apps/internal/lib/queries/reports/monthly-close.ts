@@ -42,15 +42,15 @@ import type { MonthCursor } from '@/lib/data/reports/types'
 
 /**
  * Billing type is resolved AS OF the report period (PRD 002 D4) — the newest
- * `client_billing_terms.effective_from` <= period start wins, so editing a
+ * `billing_terms.effective_from` <= period start wins, so editing a
  * client's billing type never rewrites already-rendered historical months.
  * NULL resolution (no term at or before the period) fails both comparisons
  * and excludes the client from that month.
  *
- * Closers and origination resolve the same way from `client_commission_terms`
- * (PRD 007; closer rows hang off the resolved term): the commission joins below match on the as-of assignment, never
- * on the live `clients.*` cache columns, so reassigning a closer today leaves
- * every closed month exactly as it was paid.
+ * Closers and origination resolve the same way from `commission_terms`
+ * (PRD 007; closer rows hang off the resolved term): the commission joins
+ * below match on the as-of assignment, never on the newest term, so
+ * reassigning a closer today leaves every closed month exactly as it was paid.
  */
 function isPrepaidAsOf(periodStart: string) {
   return sql`${billingTypeAsOfSql(periodStart)} = 'prepaid'`

@@ -959,7 +959,7 @@ export const commissionTerms = pgTable(
     /** First day of the month this commission split takes effect (month-start CHECK). */
     effectiveFrom: date('effective_from').notNull(),
     // Closers (20%, split by percentage) are child rows in
-    // `client_commission_term_closers`. No rows means no closer for the
+    // `commission_term_closers`. No rows means no closer for the
     // period: the share is not paid and is reported under House (estimated).
     /** Origination (10%): at most ONE of user / contact per the mutex CHECK. */
     originationUserId: uuid('origination_user_id'),
