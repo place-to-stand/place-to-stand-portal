@@ -16,7 +16,6 @@ import {
   type CloserShare,
 } from '@/lib/companies/billing/closers'
 
-import { currentMonthStartUtc } from './billing-terms'
 
 type DbOrTransaction = typeof db | DbTx
 
@@ -60,14 +59,16 @@ async function insertTermClosers(
 }
 
 /**
- * Inserts a client's first commission term, effective the first of the
- * creation month. Must run in the same transaction as the client insert so
- * the client's first month resolves its closers/origination.
+ * Inserts a client's first commission term, effective its first billed month
+ * (the billing period's `starts_on`). Must run in the same transaction as the
+ * billing start so the client's first month resolves its closers/origination.
  */
 export async function insertInitialCommissionTerm(
   tx: DbOrTransaction,
   params: CommissionAssignment & {
     companyId: string
+    /** The first billed month ('yyyy-MM-01'). */
+    effectiveFrom: string
     createdBy: string | null
   }
 ): Promise<void> {
@@ -75,7 +76,7 @@ export async function insertInitialCommissionTerm(
     .insert(commissionTerms)
     .values({
       companyId: params.companyId,
-      effectiveFrom: currentMonthStartUtc(),
+      effectiveFrom: params.effectiveFrom,
       originationUserId: params.originationUserId,
       originationContactId: params.originationContactId,
       createdBy: params.createdBy,

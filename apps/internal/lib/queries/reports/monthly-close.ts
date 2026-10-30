@@ -52,6 +52,19 @@ import type { MonthCursor } from '@/lib/data/reports/types'
  * below match on the as-of assignment, never on the newest term, so
  * reassigning a closer today leaves every closed month exactly as it was paid.
  */
+/*
+ * Which months count which client work (the close's billing rule):
+ *
+ * - Prepaid hour blocks count in their billing month (the month bought),
+ *   whether or not the company is billed that month: the money came in. So
+ *   the hour-block queries (Billing In prepaid, and origination and closer
+ *   commission on blocks) do not filter on `billedInMonth`.
+ * - Net 30 time counts only in months the company is billed
+ *   (`billedInMonth`): hours logged in a month it isn't billed are never
+ *   invoiced.
+ * - Payroll counts all client work by the month it was worked (see
+ *   `fetchEmployeePayroll`).
+ */
 function isPrepaidAsOf(periodStart: string) {
   return sql`${billingTypeAsOfSql(periodStart)} = 'prepaid'`
 }
@@ -201,7 +214,7 @@ export async function fetchBillableWorkHours(
  * Fetches origination commission rows on a BILLING basis — the same
  * population we count for "Billing In":
  *
- *   Prepaid → hour_blocks.hours_purchased (when the block is billed)
+ *   Prepaid → hour_blocks.hours_purchased (in the block's billing month)
  *   Net_30  → time_logs.hours on net_30 client projects (when work is logged)
  *
  * Payroll and Closer stay on a work-basis (time_logs on client projects);
@@ -242,7 +255,6 @@ export async function fetchOriginationCommissions(
           and(
             isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
-            billedInMonth(startDate),
             liveDuring(users.deletedAt, startDate),
             gte(hourBlocks.billingMonth, startDate),
             lte(hourBlocks.billingMonth, endDate)
@@ -278,7 +290,6 @@ export async function fetchOriginationCommissions(
           and(
             isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
-            billedInMonth(startDate),
             liveDuring(contacts.deletedAt, startDate),
             gte(hourBlocks.billingMonth, startDate),
             lte(hourBlocks.billingMonth, endDate)
@@ -516,7 +527,6 @@ export async function fetchCloserCommissions(
         and(
           isPrepaidAsOf(startDate),
           isNull(hourBlocks.deletedAt),
-          billedInMonth(startDate),
           payableCloser,
           gte(hourBlocks.billingMonth, startDate),
           lte(hourBlocks.billingMonth, endDate)
@@ -608,7 +618,6 @@ export async function fetchPrepaidBilling(
       and(
         isPrepaidAsOf(startDate),
         isNull(hourBlocks.deletedAt),
-        billedInMonth(startDate),
         gte(hourBlocks.billingMonth, startDate),
         lte(hourBlocks.billingMonth, endDate)
       )
