@@ -1,6 +1,6 @@
 // permission: public — verified by Stripe signature
 import { NextResponse } from 'next/server'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
@@ -13,6 +13,10 @@ import { invoicePaidEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { createHourBlocksFromInvoice } from '@/lib/data/invoices'
 import { notifyInvoicePaid } from '@/lib/notifications/google-chat'
+import {
+  checkoutPaymentOutcome,
+  coversTotal,
+} from '@/lib/invoices/stripe-checkout-payment'
 
 /**
  * Mark an invoice as paid, log activity, and create hour blocks.
@@ -32,10 +36,7 @@ function coversInvoiceTotal(
   received: { amount: number | null; currency: string | null; source: string }
 ): boolean {
   const totalCents = Math.round(Number(invoice.total) * 100)
-  const ok =
-    received.amount !== null &&
-    received.currency?.toLowerCase() === 'usd' &&
-    received.amount >= totalCents
+  const ok = coversTotal(invoice.total, received)
   if (!ok) {
     console.error(
       '[stripe-webhook] Payment does not cover the invoice total; not marking paid',
@@ -55,18 +56,22 @@ async function markInvoicePaid(
   invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceByStripeSession>>>,
   paymentIntentId: string | null
 ) {
-  // Only update status if not already paid
-  if (invoice.status !== 'PAID') {
-    await db
-      .update(invoices)
-      .set({
-        status: 'PAID',
-        stripePaymentIntentId: paymentIntentId,
-        paidAt: sql`timezone('utc'::text, now())`,
-        updatedAt: sql`timezone('utc'::text, now())`,
-      })
-      .where(eq(invoices.id, invoice.id))
-
+  // Only the delivery that flips the status logs and notifies: the update is
+  // conditional, so a replayed or concurrent event finds it already paid.
+  const flipped =
+    invoice.status === 'PAID'
+      ? []
+      : await db
+          .update(invoices)
+          .set({
+            status: 'PAID',
+            stripePaymentIntentId: paymentIntentId,
+            paidAt: sql`timezone('utc'::text, now())`,
+            updatedAt: sql`timezone('utc'::text, now())`,
+          })
+          .where(and(eq(invoices.id, invoice.id), ne(invoices.status, 'PAID')))
+          .returning({ id: invoices.id })
+  if (flipped.length > 0) {
     // Awaited before the response goes out: a fire-and-forget promise here
     // can be cut off when the serverless function terminates.
     const paidEvent = invoicePaidEvent({
@@ -166,8 +171,12 @@ export async function POST(request: Request) {
         break
       }
 
-      // Checkout Session flow (legacy / Embedded Checkout)
-      case 'checkout.session.completed': {
+      // Checkout Session flow (legacy / Embedded Checkout). A completed
+      // session is paid only when payment_status is 'paid'; delayed methods
+      // settle later with the async_payment events.
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
+      case 'checkout.session.async_payment_failed': {
         const session = event.data.object
 
         const invoiceId =
@@ -190,10 +199,41 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true, received: true })
         }
 
+        const outcome = checkoutPaymentOutcome(
+          event.type,
+          session.payment_status
+        )
+
+        if (outcome === 'awaiting') {
+          console.warn(
+            '[stripe-webhook] Checkout completed but not paid yet; waiting for the async payment',
+            { invoiceId: invoice.id, session: session.id }
+          )
+          return NextResponse.json({ ok: true, received: true })
+        }
+
+        if (outcome === 'failed') {
+          console.warn('[stripe-webhook] Delayed payment failed', {
+            invoiceId: invoice.id,
+            session: session.id,
+          })
+          // Let the client start a new checkout; the invoice stays unpaid.
+          if (invoice.status !== 'PAID') {
+            await db
+              .update(invoices)
+              .set({
+                stripeCheckoutSessionId: null,
+                updatedAt: sql`timezone('utc'::text, now())`,
+              })
+              .where(eq(invoices.stripeCheckoutSessionId, session.id))
+          }
+          return NextResponse.json({ ok: true, received: true })
+        }
+
         const paymentIntentId =
           typeof session.payment_intent === 'string'
             ? session.payment_intent
-            : session.payment_intent?.id ?? null
+            : (session.payment_intent?.id ?? null)
 
         if (
           !coversInvoiceTotal(invoice, {
