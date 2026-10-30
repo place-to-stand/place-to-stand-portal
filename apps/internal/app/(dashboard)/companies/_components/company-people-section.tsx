@@ -51,7 +51,7 @@ type CompanyPeopleSectionProps = {
   onAdd: (contact: ContactLink) => void
   onRemove: (contactId: string) => void
   onUndoRemove: (contactId: string) => void
-  /** A client company (admins): each saved person's portal access switch. */
+  /** A billed company (admins only): each person's portal access switch. */
   portalAccessFor?: ((contactId: string) => ReactNode) | null
 }
 
@@ -220,6 +220,7 @@ export function CompanyPeopleSection({
                 }
                 actions={
                   <>
+                    {portalAccessFor?.(contact.id)}
                     {titleInput(contact)}
                     {star(contact)}
                     {removeButton(contact)}

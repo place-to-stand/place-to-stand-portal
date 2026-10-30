@@ -7,16 +7,11 @@ import { formatCalendarDate } from '@pts/ui/dates'
 
 import { logActivity } from '@/lib/activity/logger'
 import { clientUpdatedEvent } from '@/lib/activity/events'
-import type { UserRole } from '@/lib/auth/session'
+import type { AppUser, UserRole } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
-import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import {
   currentMonthStartUtc,
@@ -54,7 +49,7 @@ import {
   getLinkableCompany,
 } from '@/lib/queries/companies'
 
-type UpdateClientPayload = {
+export type UpdateClientPayload = {
   id: string
   name: string
   providedSlug: string | null
@@ -79,7 +74,7 @@ type UpdateClientPayload = {
   label?: string | null
 }
 
-class ClosedMonthError extends Error {
+export class ClosedMonthError extends Error {
   constructor(effectiveFrom: string) {
     const label = formatCalendarDate(effectiveFrom, {
       month: 'long',
@@ -92,7 +87,7 @@ class ClosedMonthError extends Error {
   }
 }
 
-type ExistingClientRecord = {
+export type ExistingClientRecord = {
   id: string
   name: string
   slug: string | null
@@ -105,11 +100,37 @@ type ExistingClientRecord = {
   companyId: string | null
 }
 
-export async function updateClient(
-  context: ClientMutationContext,
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/** A checked billing edit, ready to write in a transaction. */
+export type ClientUpdatePlan = {
+  id: string
+  name: string
+  notes: string | null
+  state: string | null
+  slugToUpdate: string | null
+  billingType: ClientBillingTypeValue
+  /** Set when the billing type changes: the month the new term starts. */
+  billingEffectiveFrom: string | null
+  commission: {
+    closers: CloserShare[]
+    originationUserId: string | null
+    originationContactId: string | null
+  }
+  /** Set when closers or origination change: the month the new term starts. */
+  commissionEffectiveFrom: string | null
+  existingClient: ExistingClientRecord
+  companyId: string | null | undefined
+}
+
+/**
+ * Checks a billing edit (partner roles, slug) and works out which terms it
+ * writes, before any write.
+ */
+export async function planClientUpdate(
+  user: AppUser,
   payload: UpdateClientPayload
-): Promise<ClientMutationResult> {
-  const { user } = context
+): Promise<{ plan: ClientUpdatePlan } | { error: string }> {
   assertAdmin(user)
   const {
     id,
@@ -119,7 +140,6 @@ export async function updateClient(
     billingEffective,
     commissionEffective,
     state,
-    website,
     originationContactId,
     originationUserId,
     closers,
@@ -128,33 +148,24 @@ export async function updateClient(
   } = payload
 
   if (companyId && !(await getLinkableCompany(companyId))) {
-    return buildMutationResult({ error: 'That company no longer exists.' })
+    return { error: 'That company no longer exists.' }
   }
 
   const partnerRoleError = await assertClientPartnerUserRoles({
     originationUserId,
     closers,
   })
-  if (partnerRoleError) {
-    return buildMutationResult(partnerRoleError)
-  }
+  if (partnerRoleError) return partnerRoleError
 
   const slugToUpdate = providedSlug ? toClientSlug(providedSlug) : null
 
   if (slugToUpdate && slugToUpdate.length < 3) {
-    return buildMutationResult({ error: 'Slug must be at least 3 characters.' })
+    return { error: 'Slug must be at least 3 characters.' }
   }
 
   if (slugToUpdate) {
-    const exists = await clientSlugExists(slugToUpdate, {
-      excludeId: id,
-    })
-
-    if (exists) {
-      return buildMutationResult({
-        error: 'Another client already uses this slug.',
-      })
-    }
+    const exists = await clientSlugExists(slugToUpdate, { excludeId: id })
+    if (exists) return { error: 'Another client already uses this slug.' }
   }
 
   let existingClient: ExistingClientRecord | undefined = undefined
@@ -183,12 +194,10 @@ export async function updateClient(
       : undefined
   } catch (error) {
     console.error('Failed to load client for update', error)
-    return buildMutationResult({ error: 'Unable to update client.' })
+    return { error: 'Unable to update client.' }
   }
 
-  if (!existingClient) {
-    return buildMutationResult({ error: 'Client not found.' })
-  }
+  if (!existingClient) return { error: 'Client not found.' }
 
   const billingTypeChanged = existingClient.billingType !== billingType
   const billingEffectiveFrom = billingTypeChanged
@@ -200,14 +209,10 @@ export async function updateClient(
   // Closers + origination are one logical "commission split" (PRD 007): any
   // change to either writes one effective-dated term so closed months keep
   // resolving to the assignment they were paid under.
-  const nextAssignment = {
-    closers,
-    originationUserId,
-    originationContactId,
-  }
+  const commission = { closers, originationUserId, originationContactId }
   const commissionChanged = !commissionAssignmentsEqual(
     existingClient,
-    nextAssignment
+    commission
   )
   const commissionEffectiveFrom = commissionChanged
     ? commissionEffective === 'current_month'
@@ -215,56 +220,108 @@ export async function updateClient(
       : nextMonthStartUtc()
     : null
 
+  return {
+    plan: {
+      id,
+      name,
+      notes,
+      state,
+      slugToUpdate,
+      billingType,
+      billingEffectiveFrom,
+      commission,
+      commissionEffectiveFrom,
+      existingClient,
+      companyId,
+    },
+  }
+}
+
+/**
+ * Writes a planned billing edit inside the caller's transaction. A change
+ * dated into a month whose books are closed throws `ClosedMonthError`.
+ */
+export async function applyClientUpdateInTx(
+  tx: DbTransaction,
+  plan: ClientUpdatePlan,
+  actorId: string
+): Promise<void> {
+  const { id } = plan
+  if (plan.billingEffectiveFrom) {
+    // Guard inside the transaction — a check-then-write outside it would
+    // let a concurrent close slip between the check and the term upsert.
+    if (await isMonthClosed(plan.billingEffectiveFrom)) {
+      throw new ClosedMonthError(plan.billingEffectiveFrom)
+    }
+    await upsertBillingTerm(tx, {
+      clientId: id,
+      billingType: plan.billingType,
+      effectiveFrom: plan.billingEffectiveFrom,
+      createdBy: actorId,
+    })
+  }
+
+  if (plan.commissionEffectiveFrom) {
+    if (await isMonthClosed(plan.commissionEffectiveFrom)) {
+      throw new ClosedMonthError(plan.commissionEffectiveFrom)
+    }
+    await upsertCommissionTerm(tx, {
+      clientId: id,
+      effectiveFrom: plan.commissionEffectiveFrom,
+      ...plan.commission,
+      createdBy: actorId,
+    })
+  }
+
+  // Billing type and commission are stored only as terms (above): displays
+  // read the newest term, and effective_from controls report resolution.
+  await tx
+    .update(companies)
+    .set({
+      slug: plan.slugToUpdate,
+      state: plan.state,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(companies.id, id))
+}
+
+/** A billing edit's activity row, written once its transaction committed. */
+export async function logClientUpdate(
+  user: AppUser,
+  plan: ClientUpdatePlan
+): Promise<void> {
+  await recordUpdateActivity({
+    userContext: { id: user.id, role: user.role },
+    existingClient: plan.existingClient,
+    updatedValues: {
+      name: plan.name,
+      notes: plan.notes,
+      slugToUpdate: plan.slugToUpdate,
+      billingType: plan.billingType,
+      billingEffectiveFrom: plan.billingEffectiveFrom,
+      commissionEffectiveFrom: plan.commissionEffectiveFrom,
+      ...plan.commission,
+      companyId:
+        plan.companyId === undefined
+          ? plan.existingClient.companyId
+          : plan.companyId,
+    },
+  })
+}
+
+export async function updateClient(
+  context: ClientMutationContext,
+  payload: UpdateClientPayload
+): Promise<ClientMutationResult> {
+  const { user } = context
+  const planned = await planClientUpdate(user, payload)
+  if ('error' in planned) return buildMutationResult(planned)
+  const { plan } = planned
+
   // A client is its company (0111): it can't move to another one, so a
   // stray companyId is ignored and nobody's portal access is touched here.
-  void companyId
-  const leftCompanyId: string | null = null
-  let accessChanges: ContactClientLinkChange[] = []
-
   try {
-    await db.transaction(async tx => {
-      if (billingTypeChanged && billingEffectiveFrom) {
-        // Guard inside the transaction — a check-then-write outside it would
-        // let a concurrent close slip between the check and the term upsert.
-        if (await isMonthClosed(billingEffectiveFrom)) {
-          throw new ClosedMonthError(billingEffectiveFrom)
-        }
-
-        await upsertBillingTerm(tx, {
-          clientId: id,
-          billingType,
-          effectiveFrom: billingEffectiveFrom,
-          createdBy: user.id,
-        })
-      }
-
-      if (commissionChanged && commissionEffectiveFrom) {
-        if (await isMonthClosed(commissionEffectiveFrom)) {
-          throw new ClosedMonthError(commissionEffectiveFrom)
-        }
-
-        await upsertCommissionTerm(tx, {
-          clientId: id,
-          effectiveFrom: commissionEffectiveFrom,
-          ...nextAssignment,
-          createdBy: user.id,
-        })
-      }
-
-      // Billing type and commission are stored only as terms (above):
-      // displays read the newest term, and effective_from controls report
-      // resolution.
-      await tx
-        .update(companies)
-        .set({ slug: slugToUpdate, state, updatedAt: new Date().toISOString() })
-        .where(eq(companies.id, id))
-
-      // Portal access is a flag on the old company's memberships: switch it
-      // off so linking a client there later doesn't silently grant it.
-      if (leftCompanyId) {
-        accessChanges = await revokeCompanyPortalAccess(tx, leftCompanyId, id)
-      }
-    })
+    await db.transaction(tx => applyClientUpdateInTx(tx, plan, user.id))
   } catch (error) {
     if (error instanceof ClosedMonthError) {
       return buildMutationResult({ error: error.message })
@@ -276,32 +333,16 @@ export async function updateClient(
     })
   }
 
-  await logContactClientLinkChanges(user, accessChanges)
-
+  const { website, companyId } = payload
   if (website) {
     const websiteCompanyId =
-      companyId === undefined ? await getClientCompanyId(id) : companyId
+      companyId === undefined ? await getClientCompanyId(plan.id) : companyId
     if (websiteCompanyId) {
       await fillCompanyWebsiteIfBlank(user, websiteCompanyId, website)
     }
   }
 
-  await recordUpdateActivity({
-    userContext: { id: user.id, role: user.role },
-    existingClient,
-    updatedValues: {
-      name,
-      notes,
-      slugToUpdate,
-      billingType,
-      billingEffectiveFrom,
-      commissionEffectiveFrom,
-      originationContactId,
-      originationUserId,
-      closers,
-      companyId: companyId === undefined ? existingClient.companyId : companyId,
-    },
-  })
+  await logClientUpdate(user, plan)
 
   return buildMutationResult({})
 }

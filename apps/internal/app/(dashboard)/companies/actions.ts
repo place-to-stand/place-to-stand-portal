@@ -14,6 +14,8 @@ import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { createUpdateDraft, listClientUpdates } from '@/lib/updates'
 import type { ClientUpdateSummary } from './_components/company-updates-section'
 import type { SaveCompanyInput } from '@/lib/companies/schema'
+import { saveCompanySheet as saveCompanySheetMutation } from '@/lib/companies/save-company-sheet'
+import type { SaveCompanySheetInput } from '@/lib/companies/sheet-save-schema'
 import type {
   CompanyActionResult,
   CompanyDetail,
@@ -32,6 +34,7 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 // refresh the client and project lists that show client names.
 const COMPANY_ROUTES = [
   '/companies',
+  '/invoices',
   '/companies/archive',
   '/companies/activity',
   '/people',
@@ -76,6 +79,19 @@ export async function saveCompany(
 ): Promise<CompanyActionResult> {
   const user = await requireCrmUser()
   const result = await saveCompanyQuery(user, input)
+  if (result.ok) revalidateCompanyRoutes()
+  return result
+}
+
+/**
+ * The company sheet's Save: the company, its people, billing and portal
+ * access in one transaction (see `saveCompanySheet`).
+ */
+export async function saveCompanySheet(
+  input: SaveCompanySheetInput
+): Promise<CompanyActionResult> {
+  const user = await requireCrmUser()
+  const result = await saveCompanySheetMutation(user, input)
   if (result.ok) revalidateCompanyRoutes()
   return result
 }

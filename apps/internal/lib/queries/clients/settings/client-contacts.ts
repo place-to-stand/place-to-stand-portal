@@ -210,6 +210,34 @@ export async function getClientSheetContactData(
   return { allContacts, linkedContacts, allAdminUsers }
 }
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+/** A person who can't be given portal access (no sign-in, or not a member). */
+export class PortalAccessRefusal extends Error {}
+
+/**
+ * Switches portal access on and off for members of a client company inside
+ * the caller's transaction. Granting needs a sign-in (`contacts.user_id`) and
+ * a current membership; a person without either throws
+ * `PortalAccessRefusal`, rolling the save back.
+ */
+export async function applyPortalAccessInTx(
+  tx: DbTransaction,
+  companyId: string,
+  changes: { grant: string[]; revoke: string[] }
+): Promise<void> {
+  for (const contactId of changes.grant) {
+    if (!(await setPortalAccess(tx, contactId, companyId, true))) {
+      throw new PortalAccessRefusal(
+        'Someone given portal access has no sign-in or left this company. Reload and try again.'
+      )
+    }
+  }
+  for (const contactId of changes.revoke) {
+    await setPortalAccess(tx, contactId, companyId, false)
+  }
+}
+
 /**
  * Saves the People tab's Portal switches: which of the company's
  * people can see this client in the client portal (those with a portal
@@ -308,14 +336,12 @@ export async function syncClientContacts(
   if (!changes.length) return { ok: true }
 
   try {
-    await db.transaction(async tx => {
-      for (const member of toGrant) {
-        await setPortalAccess(tx, member.contactId, companyId, true)
-      }
-      for (const member of toRevoke) {
-        await setPortalAccess(tx, member.contactId, companyId, false)
-      }
-    })
+    await db.transaction(tx =>
+      applyPortalAccessInTx(tx, companyId, {
+        grant: toGrant.map(m => m.contactId),
+        revoke: toRevoke.map(m => m.contactId),
+      })
+    )
   } catch (error) {
     console.error('Failed to update portal access', error)
     return { ok: false, error: 'Failed to update portal access.' }

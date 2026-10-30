@@ -74,3 +74,18 @@ test('sales sees no billing or sign-in controls on a company', async ({
   await expect(sheet.getByRole('tab', { name: 'Billing' })).toHaveCount(0)
   await expect(sheet.getByText('Bill this company')).toHaveCount(0)
 })
+
+test('sales sees no portal switches on a client company’s people', async ({ page }) => {
+  await page.goto('/companies')
+  const clientRow = page
+    .locator('tbody tr')
+    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
+    .first()
+  test.skip((await clientRow.count()) === 0, 'no client company to open')
+  await clientRow.click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet).toBeVisible()
+  await sheet.getByRole('tab', { name: 'People' }).click()
+  await expect(sheet.getByRole('switch', { name: /^Portal access for / })).toHaveCount(0)
+  await expect(sheet.getByText('Portal', { exact: true })).toHaveCount(0)
+})

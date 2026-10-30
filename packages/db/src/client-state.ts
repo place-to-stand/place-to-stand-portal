@@ -55,3 +55,16 @@ end)`
 
 /** True for a company billed before but not now. */
 export const isFormerClientSql = sql<boolean>`(${wasClientCompany()} and not company_is_client(${companies.id}))`
+
+/**
+ * The last month billed when a stop is scheduled ("bill through the end of
+ * this month"): the latest stretch's end while billing is still open. Null
+ * while billing runs on, and for a company not billed now.
+ */
+export const billingEndsOnSql = sql<string | null>`(case
+  when company_billing_open(${companies.id}) then (
+    select cbp.ends_on::text from client_billing_periods cbp
+    where cbp.company_id = ${companies.id} and cbp.deleted_at is null
+    order by cbp.starts_on desc limit 1)
+  else null
+end)`

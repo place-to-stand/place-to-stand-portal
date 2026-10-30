@@ -1,21 +1,14 @@
-import type { TransitionStartFunction } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 
-import type { useToast } from '@/components/ui/use-toast'
-import type { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import type { CompanyBillingFields } from '@/lib/companies/sheet-save-schema'
 
 import type { ClientRow } from '../client-sheet-utils'
 import type { CloserKind } from '../closers'
 import type { ClientSheetFormValues } from '../client-sheet-schema'
 
-type ToastFn = ReturnType<typeof useToast>['toast']
-type UnsavedChangesDialog = ReturnType<
-  typeof useUnsavedChangesWarning
->['dialog']
-
 export type ClientContactOption = {
   id: string
-  /** The contact's company; portal access is picked from the client's. */
+  /** The contact's company, when known. */
   companyId?: string | null
   name: string | null
   email: string | null
@@ -56,144 +49,33 @@ export type CloserDraft = CloserCandidate & {
   shareText: string
 }
 
-export type UseClientSheetStateArgs = {
+export type UseClientBillingFormArgs = {
+  /** The sheet is open: loads the pickers' people and resets on reopen. */
   open: boolean
-  onOpenChange: (open: boolean) => void
-  onComplete: () => void
-  onArchived?: () => void
-  /** Name prefill for the create sheet (create-from-picker). */
-  initialName?: string
-  /** Company prefill for the create sheet ("Create client" on a company). */
-  initialCompanyId?: string
-  /** Fires once with the new client after a successful create (not on edit). */
-  onCreated?: (client: { id: string; name: string; slug: string }) => void
+  /** The company's live client; null for a blank form (start billing). */
   client: ClientRow | null
-  /** Embedded in another sheet that shows its own success toast. */
-  quietSuccess?: boolean
-  /** All available contacts for the contact picker (optional - will be fetched if not provided) */
-  allContacts?: ClientContactOption[]
-  /** Contacts linked to the client (optional - will be fetched if not provided) */
-  clientContacts?: ClientContactOption[]
-  /** All admin users for origination + closer pickers (optional - will be fetched if not provided) */
-  allAdminUsers?: PartnerUserOption[]
-}
-
-export type BaseFormState = {
-  hasUnsavedChanges: boolean
-  form: UseFormReturn<ClientSheetFormValues>
-  /** A save is in flight — the only flag allowed to render as "Saving...". */
-  isSaving: boolean
-  /** The save transition, shared with the deletion state. */
-  startSave: TransitionStartFunction
-  submitDisabled: boolean
-  submitDisabledReason: string | null
-  unsavedChangesDialog: UnsavedChangesDialog
-  handleSheetOpenChange: (open: boolean) => void
-  handleFormSubmit: (values: ClientSheetFormValues) => void
-  // Contacts
-  availableContacts: ClientContactOption[]
-  selectedContacts: ClientContactOption[]
-  isContactPickerOpen: boolean
-  contactsAddButtonDisabled: boolean
-  contactsAddButtonDisabledReason: string | null
-  isLoadingContacts: boolean
-  handleContactPickerOpenChange: (open: boolean) => void
-  handleAddContact: (contact: ClientContactOption) => void
-  handleCreateOriginationContact: (query: string) => void
-  handleCreateCloserContact: (query: string) => void
-  handleRemoveContact: (contact: ClientContactOption) => void
-  // Origination
-  selectedOriginationUser: PartnerUserOption | null
-  selectedOriginationContact: OriginationContactOption | null
-  availableOriginationUsers: PartnerUserOption[]
-  availableOriginationContacts: OriginationContactOption[]
-  isOriginationPickerOpen: boolean
-  originationPickerDisabled: boolean
-  originationPickerDisabledReason: string | null
-  handleOriginationPickerOpenChange: (open: boolean) => void
-  handleSelectOriginationUser: (user: PartnerUserOption) => void
-  handleSelectOriginationContact: (contact: OriginationContactOption) => void
-  handleClearOrigination: () => void
-  // Closers
-  closers: CloserDraft[]
-  availableCloserUsers: CloserCandidate[]
-  availableCloserContacts: CloserCandidate[]
-  /** Sum of the typed shares; null while one isn't a number. */
-  closerShareTotal: number | null
-  isCloserPickerOpen: boolean
-  closerPickerDisabled: boolean
-  closerPickerDisabledReason: string | null
-  closerError: string | null
-  /** True when closers or origination differ from the saved assignment. */
-  commissionDirty: boolean
-  handleCloserPickerOpenChange: (open: boolean) => void
-  handleAddCloser: (candidate: CloserCandidate) => void
-  handleRemoveCloser: (key: string) => void
-  handleCloserShareChange: (key: string, shareText: string) => void
-}
-
-export type DeletionState = {
-  isDeleteDialogOpen: boolean
-  deleteDisabled: boolean
-  deleteDisabledReason: string | null
-  handleRequestDelete: () => void
-  handleCancelDelete: () => void
-  handleConfirmDelete: () => void
-}
-
-export type ClientSheetFormStateArgs = UseClientSheetStateArgs & {
-  isEditing: boolean
-  setFeedback: (value: string | null) => void
-  toast: ToastFn
-  allContacts?: ClientContactOption[]
-  clientContacts?: ClientContactOption[]
-  allAdminUsers?: PartnerUserOption[]
-}
-
-export type ClientDeletionStateArgs = {
-  client: ClientRow | null
+  /** The company sheet is saving: pickers and fields lock. */
   isPending: boolean
-  startTransition: TransitionStartFunction
-  setFeedback: (value: string | null) => void
-  onOpenChange: (open: boolean) => void
-  onComplete: () => void
-  onArchived?: () => void
-  toast: ToastFn
 }
 
-export type UseClientSheetStateReturn = {
+/**
+ * The Billing tab's form: billing type and state, origination and closers.
+ * It never saves itself: the company sheet's Save reads it with
+ * `collectFields` and writes it in the same transaction as the company.
+ */
+export type UseClientBillingFormReturn = {
   form: UseFormReturn<ClientSheetFormValues>
-  /** Fields, portal access or commission differ from what was loaded. */
+  /** Fields or commission differ from what was loaded. */
   hasUnsavedChanges: boolean
-  isEditing: boolean
-  feedback: string | null
   isPending: boolean
-  submitDisabled: boolean
-  submitDisabledReason: string | null
-  deleteDisabled: boolean
-  deleteDisabledReason: string | null
-  clientDisplayName: string
-  sheetDescription: string
   pendingReason: string
-  isDeleteDialogOpen: boolean
-  unsavedChangesDialog: UnsavedChangesDialog
-  handleSheetOpenChange: (open: boolean) => void
-  handleFormSubmit: (values: ClientSheetFormValues) => void
-  handleRequestDelete: () => void
-  handleCancelDelete: () => void
-  handleConfirmDelete: () => void
-  // Contacts
-  availableContacts: ClientContactOption[]
-  selectedContacts: ClientContactOption[]
-  isContactPickerOpen: boolean
-  contactsAddButtonDisabled: boolean
-  contactsAddButtonDisabledReason: string | null
-  isLoadingContacts: boolean
-  handleContactPickerOpenChange: (open: boolean) => void
-  handleAddContact: (contact: ClientContactOption) => void
+  /**
+   * The fields for the save, or null (with the error shown in the form)
+   * when the closer split doesn't add up.
+   */
+  collectFields: () => CompanyBillingFields | null
   handleCreateOriginationContact: (query: string) => void
   handleCreateCloserContact: (query: string) => void
-  handleRemoveContact: (contact: ClientContactOption) => void
   // Origination
   selectedOriginationUser: PartnerUserOption | null
   selectedOriginationContact: OriginationContactOption | null
