@@ -14,13 +14,13 @@ import {
   type CompanyLeadsFilter,
   type CompanyTypeFilter,
 } from '@/lib/companies/filters'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ClientBadge } from '@/components/clients/client-badge'
 
-// The Client state's colour, as on the Client badge.
+// Clients show as the list's Client badge; former clients have no badge.
 const TYPE_OPTIONS = COMPANY_TYPE_VALUES.map(value => ({
   value,
   label: COMPANY_TYPE_LABELS[value],
-  badgeClassName: `${ENTITY_ACCENTS.client.cardStatic} ${ENTITY_ACCENTS.client.icon}`,
+  badge: value === 'client' ? <ClientBadge /> : undefined,
 }))
 const LEADS_OPTIONS = COMPANY_LEADS_VALUES.map(value => ({
   value,

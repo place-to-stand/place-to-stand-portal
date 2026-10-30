@@ -45,6 +45,7 @@ import { PersonAvatar, UserAvatar } from '@/components/ui/user-avatar'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
+import { getProjectStatusToken } from '@/lib/constants'
 
 import { DesignSection, Example, Specimen } from './specimen'
 
@@ -214,9 +215,7 @@ export function ComponentsRecordRows() {
             <RecordRowButton
               title='Ship pricing page'
               subtitle='Website rebuild · Due Sep 30, 2026'
-              trailing={
-                <ProjectStatusBadge status='ACTIVE' />
-              }
+              trailing={<ProjectStatusBadge status='ACTIVE' />}
               onClick={() => undefined}
               className='rounded-t-lg'
             />
@@ -234,9 +233,21 @@ export function ComponentsRecordRows() {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Active' },
-  { value: 'ON_HOLD', label: 'On hold' },
-  { value: 'COMPLETED', label: 'Completed' },
+  {
+    value: 'ACTIVE',
+    label: 'Active',
+    badgeClassName: getProjectStatusToken('ACTIVE'),
+  },
+  {
+    value: 'ON_HOLD',
+    label: 'On hold',
+    badgeClassName: getProjectStatusToken('ON_HOLD'),
+  },
+  {
+    value: 'COMPLETED',
+    label: 'Completed',
+    badgeClassName: getProjectStatusToken('COMPLETED'),
+  },
 ]
 
 type SampleProject = {

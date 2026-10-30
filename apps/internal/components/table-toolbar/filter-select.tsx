@@ -94,6 +94,7 @@ function SingleFilterSelect({
       items={options.map(option => ({
         value: option.value,
         label: option.label,
+        render: optionBadge(option),
       }))}
       value={value ?? null}
       onChange={next => onChange(next || undefined)}

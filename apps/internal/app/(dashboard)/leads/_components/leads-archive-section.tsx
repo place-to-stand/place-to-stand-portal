@@ -29,7 +29,11 @@ import { useListParams } from '@/hooks/use-list-params'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import type { ArchivedLead } from '@/lib/data/leads'
 import type { LeadAssigneeOption } from '@/lib/leads/types'
-import { LEAD_STATUS_LABELS, LEAD_STATUS_VALUES } from '@/lib/leads/constants'
+import {
+  getLeadStatusToken,
+  LEAD_STATUS_LABELS,
+  LEAD_STATUS_VALUES,
+} from '@/lib/leads/constants'
 import { parseSortParam } from '@/lib/pagination/sort'
 import { restoreLead } from '../_actions'
 import { filterArchivedLeads, isLeadStatus } from '../_lib/archive-filters'
@@ -154,7 +158,12 @@ export function LeadsArchiveSection({
   const statusOptions = useMemo(() => {
     const present = new Set(leads.map(lead => lead.status))
     return LEAD_STATUS_VALUES.filter(value => present.has(value)).map(
-      value => ({ value, label: LEAD_STATUS_LABELS[value] })
+      value => ({
+        value,
+        label: LEAD_STATUS_LABELS[value],
+        // The list's Last status badge.
+        badgeClassName: getLeadStatusToken(value),
+      })
     )
   }, [leads])
 
