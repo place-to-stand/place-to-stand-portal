@@ -44,9 +44,12 @@ async function signInLink(email: string) {
 
 export default async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0].use.baseURL ?? 'http://localhost:3003'
-  const host = new URL(baseURL).hostname
-  if (host !== '127.0.0.1' && host !== 'localhost') {
-    throw new Error(`E2E only runs against a local app (got ${host})`)
+  // Both apps must be local: tests sign in and (with E2E_WRITES) change data.
+  for (const url of [baseURL, process.env.E2E_PORTAL_URL ?? 'http://localhost:3011']) {
+    const host = new URL(url).hostname
+    if (host !== '127.0.0.1' && host !== 'localhost') {
+      throw new Error(`E2E only runs against local apps (got ${host})`)
+    }
   }
   mkdirSync(path.join(__dirname, '.auth'), { recursive: true })
   const browser = await chromium.launch({ channel: 'chrome' })
