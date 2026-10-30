@@ -19,12 +19,10 @@ type ProjectsTableSectionProps = {
   onEdit: (project: ProjectWithClient) => void
   onRequestDelete: (project: ProjectWithClient) => void
   onRestore: (project: ProjectWithClient) => void
-  onRequestDestroy: (project: ProjectWithClient) => void
   isPending: boolean
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   emptyMessage: string
 }
 
@@ -42,12 +40,10 @@ export function ProjectsTableSection({
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   isPending,
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   emptyMessage,
 }: ProjectsTableSectionProps) {
   const { update, getParam } = useListParams({
@@ -98,11 +94,9 @@ export function ProjectsTableSection({
               pendingReason={pendingReason}
               pendingDeleteId={pendingDeleteId}
               pendingRestoreId={pendingRestoreId}
-              pendingDestroyId={pendingDestroyId}
               onEdit={onEdit}
               onRequestDelete={onRequestDelete}
               onRestore={onRestore}
-              onRequestDestroy={onRequestDestroy}
             />
           ))}
           {projects.length === 0 ? (

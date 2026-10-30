@@ -777,13 +777,6 @@
     "capability": "projects.manage"
   },
   {
-    "type": "action",
-    "name": "destroyProject",
-    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
-    "kind": "capability",
-    "capability": "projects.manage"
-  },
-  {
     "type": "page",
     "name": "/settings/projects",
     "file": "apps/internal/app/(dashboard)/settings/projects/page.tsx",

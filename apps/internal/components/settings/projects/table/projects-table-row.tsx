@@ -24,11 +24,9 @@ type ProjectsTableRowProps = {
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   onEdit: (project: ProjectWithClient) => void
   onRequestDelete: (project: ProjectWithClient) => void
   onRestore: (project: ProjectWithClient) => void
-  onRequestDestroy: (project: ProjectWithClient) => void
 }
 
 export function ProjectsTableRow({
@@ -38,40 +36,27 @@ export function ProjectsTableRow({
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
 }: ProjectsTableRowProps) {
   const ownerDisplay = resolveProjectOwnerDisplay(project)
   const isDeleting = isPending && pendingDeleteId === project.id
   const isRestoring = isPending && pendingRestoreId === project.id
-  const isDestroying = isPending && pendingDestroyId === project.id
 
   const deleteDisabled =
-    isDeleting || isRestoring || isDestroying || Boolean(project.deleted_at)
+    isDeleting || isRestoring || Boolean(project.deleted_at)
   const deleteDisabledReason = deleteDisabled
     ? project.deleted_at
       ? 'Project already archived.'
       : pendingReason
     : null
 
-  const restoreDisabled =
-    isRestoring || isDeleting || isDestroying || !project.deleted_at
+  const restoreDisabled = isRestoring || isDeleting || !project.deleted_at
   const restoreDisabledReason = restoreDisabled ? pendingReason : null
-
-  const destroyDisabled =
-    isDestroying || isDeleting || isRestoring || !project.deleted_at
-  const destroyDisabledReason = destroyDisabled
-    ? !project.deleted_at
-      ? 'Archive the project before permanently deleting.'
-      : pendingReason
-    : null
 
   const showArchive = mode === 'active'
   const showRestore = mode === 'archive'
-  const showDestroy = mode === 'archive'
 
   const isArchived = Boolean(project.deleted_at)
 
@@ -129,15 +114,6 @@ export function ProjectsTableRow({
               onClick={() => onRequestDelete(project)}
               disabled={deleteDisabled}
               disabledReason={deleteDisabledReason}
-            />
-          ) : null}
-          {showDestroy ? (
-            <RecordRowAction
-              kind='destroy'
-              entity='project'
-              onClick={() => onRequestDestroy(project)}
-              disabled={destroyDisabled}
-              disabledReason={destroyDisabledReason}
             />
           ) : null}
         </RecordRowActions>

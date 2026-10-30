@@ -67,10 +67,8 @@ export function ProjectsManagementSection({
     sheetOpen,
     selectedProject,
     deleteTarget,
-    destroyTarget,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     isPending,
     openEdit,
     handleSheetOpenChange,
@@ -79,9 +77,6 @@ export function ProjectsManagementSection({
     cancelDelete,
     confirmDelete,
     restoreProject,
-    requestDestroy,
-    cancelDestroy,
-    confirmDestroy,
   } = controller
 
   const pendingReason = PENDING_REASON
@@ -114,12 +109,9 @@ export function ProjectsManagementSection({
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <ProjectLifecycleDialogs
           deleteTarget={deleteTarget}
-          destroyTarget={destroyTarget}
           isPending={isPending}
           onCancelDelete={cancelDelete}
           onConfirmDelete={confirmDelete}
-          onCancelDestroy={cancelDestroy}
-          onConfirmDestroy={confirmDestroy}
         />
         {filters}
         <ProjectsTableSection
@@ -128,12 +120,10 @@ export function ProjectsManagementSection({
           onEdit={openEdit}
           onRequestDelete={requestDelete}
           onRestore={restoreProject}
-          onRequestDestroy={requestDestroy}
           isPending={isPending}
           pendingReason={pendingReason}
           pendingDeleteId={pendingDeleteId}
           pendingRestoreId={pendingRestoreId}
-          pendingDestroyId={pendingDestroyId}
           emptyMessage={emptyMessage}
         />
         <PaginationControls
