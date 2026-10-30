@@ -13,6 +13,11 @@ CREATE OR REPLACE VIEW "client_portal_access" AS
     JOIN contacts c ON c.id = m.contact_id AND c.deleted_at IS NULL AND c.user_id IS NOT NULL
     JOIN users u ON u.id = c.user_id AND u.deleted_at IS NULL AND u.disabled_at IS NULL
   WHERE m.ended_at IS NULL AND m.portal_access;
+DROP FUNCTION "user_role_as_of"(uuid, date);
+DROP FUNCTION "company_billing_ended_at"(uuid);
+DROP FUNCTION "company_billing_ends_on"(uuid);
+DROP FUNCTION "company_client_since"(uuid);
+DROP FUNCTION "company_was_client"(uuid);
 DROP FUNCTION "company_is_client"(uuid);
 DROP FUNCTION "company_billing_open"(uuid);
 DROP FUNCTION "company_billed_in"(uuid, date);

@@ -59,6 +59,11 @@ export function ProjectMembersField({
     staleTime: 0,
   })
 
+  // Registered so resetField below reaches it: the field has no input of its
+  // own, and resetField skips fields that were never registered.
+  useEffect(() => {
+    form.register('memberIds')
+  }, [form])
   const memberIds = useWatch({ control: form.control, name: 'memberIds' })
 
   // Seed the field as its default (so loading doesn't mark the sheet dirty)

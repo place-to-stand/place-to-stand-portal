@@ -1,4 +1,10 @@
-import { expect, test, type Locator, type Page, type Request } from '@playwright/test'
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Request,
+} from '@playwright/test'
 
 /**
  * The company sheet writes only on Save, and Save is one server action (one
@@ -39,8 +45,14 @@ async function startCompany(page: Page, name: string) {
 
   await sheet.getByRole('tab', { name: 'People' }).click()
   await sheet.getByRole('button', { name: 'Add person' }).first().click()
-  const person = page.getByRole('option').filter({ hasNotText: /^Create/ }).first()
-  const personName = ((await person.textContent()) ?? '').trim()
+  const person = page
+    .getByRole('option')
+    .filter({ hasNotText: /^Create/ })
+    .first()
+  // The option's first line is the name; the email and company follow it.
+  const personName = (
+    (await person.locator('span.font-medium').first().textContent()) ?? ''
+  ).trim()
   await person.click()
   await expect(sheet.getByText('Joins on save')).toBeVisible()
   return { sheet, personName }
@@ -62,7 +74,9 @@ async function cleanUp(page: Page, name: string) {
   if ((await toggle.getAttribute('aria-checked')) === 'true') {
     await toggle.click()
     await sheet.getByRole('combobox', { name: 'Billing stops' }).click()
-    await page.getByRole('option', { name: 'Stop now (not billed this month)' }).click()
+    await page
+      .getByRole('option', { name: 'Stop now (not billed this month)' })
+      .click()
     await sheet.getByRole('button', { name: 'Save changes' }).click()
     await expect(sheet).toBeHidden()
     await openCompany(page, name)
@@ -73,13 +87,17 @@ async function cleanUp(page: Page, name: string) {
   await expect(reopened).toBeHidden()
 }
 
-test('creating a company with a person and billing is one Save', async ({ page }) => {
+test('creating a company with a person and billing is one Save', async ({
+  page,
+}) => {
   const name = `E2E one-save company ${Date.now()}`
   const { sheet, personName } = await startCompany(page, name)
 
   await sheet.getByRole('tab', { name: 'Billing' }).click()
   await sheet.getByRole('switch', { name: 'Bill this company' }).click()
-  await expect(sheet.getByText('Saving makes this company a client.')).toBeVisible()
+  await expect(
+    sheet.getByText('Saving makes this company a client.')
+  ).toBeVisible()
 
   const actions = await saveAndCountActions(
     page,
@@ -91,13 +109,17 @@ test('creating a company with a person and billing is one Save', async ({ page }
   const saved = await openCompany(page, name)
   await expect(saved.getByText('Client', { exact: true }).first()).toBeVisible()
   await saved.getByRole('tab', { name: 'People' }).click()
-  await expect(saved.getByText(personName, { exact: true }).first()).toBeVisible()
+  await expect(
+    saved.getByText(personName, { exact: true }).first()
+  ).toBeVisible()
   await page.keyboard.press('Escape')
 
   await cleanUp(page, name)
 })
 
-test('billing through the end of the month, then restarting, keeps a client', async ({ page }) => {
+test('billing through the end of the month, then restarting, keeps a client', async ({
+  page,
+}) => {
   const name = `E2E stop-restart ${Date.now()}`
   const { sheet } = await startCompany(page, name)
   await sheet.getByRole('tab', { name: 'Billing' }).click()
@@ -119,7 +141,9 @@ test('billing through the end of the month, then restarting, keeps a client', as
   billing = await openCompany(page, name)
   await billing.getByRole('tab', { name: 'Billing' }).click()
   await expect(billing.getByText(/^Billing stops after /)).toBeVisible()
-  await expect(billing.getByText('Client', { exact: true }).first()).toBeVisible()
+  await expect(
+    billing.getByText('Client', { exact: true }).first()
+  ).toBeVisible()
 
   // Restart: the scheduled stop is cancelled.
   await billing.getByRole('switch', { name: 'Bill this company' }).click()

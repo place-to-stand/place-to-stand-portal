@@ -3,7 +3,11 @@ import { sql, type SQL } from 'drizzle-orm'
 import { companies } from './schema'
 
 /**
- * Client state, in one place. A client is a company you bill: billing lives in
+ * Client state, in one place. Every read goes through a SQL function that
+ * takes the company id (0113), never an inline subquery: drizzle may write
+ * the outer column unqualified, which inside a subquery would bind to the
+ * subquery's own `id`.
+ * A client is a company you bill: billing lives in
  * `client_billing_periods` (one row per stretch of billing, by month), read
  * through two SQL functions defined in migration 0113 that the portal view
  * also uses:
@@ -27,7 +31,7 @@ export const billingOpenSql = (): SQL =>
 
 /** A company ever billed: a client or a former client. */
 export const wasClientCompany = (): SQL =>
-  sql`exists (select 1 from client_billing_periods cbp where cbp.company_id = ${companies.id} and cbp.deleted_at is null)`
+  sql`company_was_client(${companies.id})`
 
 /** A company billed in the month of `month` (any date in it). */
 export const billedInMonth = (month: string): SQL =>
@@ -36,22 +40,16 @@ export const billedInMonth = (month: string): SQL =>
 /** The first month it was billed; null for a company never billed. */
 export const clientSinceSql = sql<
   string | null
->`(select min(cbp.starts_on)::text from client_billing_periods cbp where cbp.company_id = ${companies.id} and cbp.deleted_at is null)`
+>`company_client_since(${companies.id})::text`
 
 /**
  * When it stopped being a client: the month after billing last ended, or
  * when it was archived. Null while it is a client, and for a company never
  * billed and not archived.
  */
-export const clientEndedAtSql = sql<string | null>`(case
-  when company_is_client(${companies.id}) then null
-  else coalesce(
-    (select (max(cbp.ends_on) + interval '1 month')::timestamptz::text
-       from client_billing_periods cbp
-       where cbp.company_id = ${companies.id} and cbp.deleted_at is null
-       having bool_and(cbp.ends_on is not null)),
-    ${companies.deletedAt})
-end)`
+export const clientEndedAtSql = sql<
+  string | null
+>`coalesce(company_billing_ended_at(${companies.id}), case when company_is_client(${companies.id}) then null else ${companies.deletedAt} end)`
 
 /** True for a company billed before but not now. */
 export const isFormerClientSql = sql<boolean>`(${wasClientCompany()} and not company_is_client(${companies.id}))`
@@ -61,10 +59,6 @@ export const isFormerClientSql = sql<boolean>`(${wasClientCompany()} and not com
  * this month"): the latest stretch's end while billing is still open. Null
  * while billing runs on, and for a company not billed now.
  */
-export const billingEndsOnSql = sql<string | null>`(case
-  when company_billing_open(${companies.id}) then (
-    select cbp.ends_on::text from client_billing_periods cbp
-    where cbp.company_id = ${companies.id} and cbp.deleted_at is null
-    order by cbp.starts_on desc limit 1)
-  else null
-end)`
+export const billingEndsOnSql = sql<
+  string | null
+>`company_billing_ends_on(${companies.id})::text`

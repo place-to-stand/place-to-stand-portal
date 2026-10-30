@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
 import { expect, test } from '@playwright/test'
 
 import {
@@ -53,9 +56,15 @@ test('the design system page renders every entity with passing contrast', async 
   await page.goto('/design#entities')
   await expectHealthy(page)
   const section = page.locator('#entities')
-  // One row per registry entity (13), each with a light and a dark contrast badge.
+  // One row per registry entity, each with a light and a dark contrast badge.
+  const entityCount = (
+    readFileSync(
+      path.join(__dirname, '../../apps/internal/lib/entity-accents.ts'),
+      'utf8'
+    ).match(/^ {4}iconName: '/gm) ?? []
+  ).length
   const badges = section.locator('[title^="Icon on card"]')
-  await expect(badges).toHaveCount(26)
+  await expect(badges).toHaveCount(entityCount * 2)
   await expect(badges.filter({ hasText: 'fails' })).toHaveCount(0)
   await expect(section.getByText('Time log').first()).toBeVisible()
   await expect(section.getByText(/^Hourglass/).first()).toBeVisible()

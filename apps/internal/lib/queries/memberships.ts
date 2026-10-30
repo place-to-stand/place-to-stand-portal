@@ -48,7 +48,7 @@ const ref = (value: AnyPgColumn | SQL): SQL =>
  * main company, CLI/MCP).
  */
 const activeCompanyCondition = (co: string) =>
-  `${co}.deleted_at is null and (company_billing_open(${co}.id) or not exists (select 1 from client_billing_periods cbp where cbp.company_id = ${co}.id and cbp.deleted_at is null))`
+  `${co}.deleted_at is null and (company_billing_open(${co}.id) or not company_was_client(${co}.id))`
 
 /** SQL predicate for an active company, by table alias. */
 export const activeCompanySql = (alias: string) =>

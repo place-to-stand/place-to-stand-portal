@@ -233,13 +233,20 @@ export function useContactSheetState({
       setSignInAccount(account)
       setRoleMonths(months)
       if (account) {
-        form.resetField('signIn', {
-          defaultValue: {
-            enabled: !account.disabledAt && !account.deletedAt,
-            role: account.role,
-            effectiveFrom: currentMonthStart(),
+        // The saved state of the Sign-in fields. A whole-form reset (keeping
+        // anything already edited): the Sign-in controls mount only once the
+        // account is known, and resetField skips fields not yet registered.
+        form.reset(
+          {
+            ...form.getValues(),
+            signIn: {
+              enabled: !account.disabledAt && !account.deletedAt,
+              role: account.role,
+              effectiveFrom: currentMonthStart(),
+            },
           },
-        })
+          { keepDirtyValues: true }
+        )
       }
     } catch (error) {
       console.error('Failed to load sign-in:', error)
@@ -247,12 +254,15 @@ export function useContactSheetState({
     }
   }, [form, signInUserId])
 
+  // Reload whenever the form is reset (the effect above runs on the same
+  // inputs), so a refreshed person never leaves the Sign-in fields at their
+  // blank defaults.
   useEffect(() => {
     if (!open || !signInUserId) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSignInAccount(undefined)
     void loadSignIn()
-  }, [open, signInUserId, loadSignIn])
+  }, [open, contact, initialName, initialCompanyId, signInUserId, loadSignIn])
 
   const contactDisplayName = contact?.name || contact?.email || 'this person'
   const sheetTitle = isEditing ? 'Edit person' : 'Create person'

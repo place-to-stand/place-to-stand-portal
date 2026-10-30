@@ -58,6 +58,9 @@ test('lead: a lead without a company can’t be saved as Won', async ({
     .first()
     .click()
   await expect(sheet.getByRole('combobox', { name: 'Company' })).toBeVisible()
+  // Picking a person fills in their company: clear it, so the lead has none.
+  const clearCompany = sheet.getByRole('button', { name: /^Clear company$/i })
+  if (await clearCompany.count()) await clearCompany.click()
 
   await sheet.getByRole('combobox', { name: 'Status' }).click()
   await page.getByRole('option', { name: 'Closed won' }).click()

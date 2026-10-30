@@ -11,10 +11,7 @@ import { userRoleTerms, users } from '@/lib/db/schema'
  * so every sign-in resolves for every month the close covers.
  */
 export function roleAsOfSql(periodStart: string, userId: SQL | typeof users.id = users.id) {
-  return sql<string | null>`(select urt.role from user_role_terms urt
-    where urt.user_id = ${userId} and urt.deleted_at is null
-      and urt.effective_from <= ${periodStart}::date
-    order by urt.effective_from desc limit 1)`
+  return sql<string | null>`user_role_as_of(${userId}, ${periodStart}::date)`
 }
 
 /**

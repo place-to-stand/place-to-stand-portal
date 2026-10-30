@@ -10,7 +10,7 @@
   scripts/rehearse-rollout.sh ~/Backups/pts-portal/prod-<timestamp>.dump
   ```
 
-- **One money question needs you before release** (decision 1 below). The monthly close filters clients by whether they are billed **today**, not in the month being reported. This predates the PR, but "stop billing" is now one switch, so it will come up.
+- **Every decision is answered and built** (below): the close counts clients by the months they were billed, and every closed month is unchanged.
 - **0112 scope (settled by Jason):** the 38 "who did this" foreign keys stay on `users`, the sign-in.
 
 ## What landed tonight (all pushed to PR #279)
@@ -42,7 +42,7 @@
   - people at two companies keep both;
   - every closed-month snapshot is unchanged once ids are mapped;
   - hours bought, hours logged and invoice totals per client are unchanged.
-- **September 2026 close:** $5,200 billing in and $4,462.50 payouts, identical before and after, on the local copy and the rehearsal app.
+- **September 2026 close:** $15,850 billing in and $14,657.50 payouts, identical before and after and equal to its snapshot. (An earlier version of this report gave $5,200 / $4,462.50: that was October to date, not September.)
 - **Undo:** run on a second copy after the whole batch. 0112-undo, then 0111-undo, then the §5 blocks for 0110, 0109, 0108 and 0105–0107. It returns the copy to exactly its own 0104 state (schema, constraints, indexes and every table's data) in under a second. Option B goes back to the 0104 shape; going all the way back to production's current code is still Option A (restore the backup).
 - **Browser suite on a throwaway app over the migrated copy:** 72 pass; the 2 skips are lists with fewer than two rows. The data-changing tests (make, stop and restart billing; the lead warning and its fix) ran only there.
 - **Found in production data:**
@@ -64,51 +64,40 @@
 
 The earlier audit decisions (`audit-decisions.md` in the project files) aren't reachable from this machine. I treated every decision recorded in the repo docs and this week's thread as made.
 
-## Decisions for Jason
+## Decided and built (Oct 30)
 
-1. **What does the monthly close count when a client stops or restarts billing?** Today, billing, origination and closer rows filter on the client's state now. A client stopped on Oct 15 drops out of any month not yet closed, and archiving a company does the same.
-   - (a) Filter by the period instead: `client_since` before the period end, and `client_ended_at` empty or after the period start.
-   - (b) Keep it as is.
+Jason answered every decision with the recommendation; all of it is built in this PR.
 
-   **Recommend (a).** Ship it with a check that every closed month's totals are unchanged. (I didn't change money logic overnight.)
-2. **Settled: the 38 "who did this" foreign keys stay on `users`** (the sign-in that acted). Jason, Oct 30. Not a follow-up.
-3. **Stop and restart billing history.**
-   - (a) Add billing periods: stop and restart each take an effective month, and restart opens the terms.
-   - (b) Keep one since/ended interval.
+| # | Decision | What it does now |
+| --- | --- | --- |
+| 1, 3 | The close counts by period; billing periods | `client_billing_periods` (0113) holds each stretch of billing by month. The close counts a client in every month a stretch covers. Start, stop and restart each take "this month" or "next month" ("Bill through the end of this month" / "Stop now"). On the production copy every month's full report is byte-identical before and after, and every closed month still matches its snapshot. |
+| 2 | The 38 "who did this" keys stay on `users` | Settled. |
+| 4 | One Save, one transaction | Every sheet (company, person, lead, task, project, invoice, hour block) saves through one server action in one `db.transaction`; activity logs after commit. Supabase Auth steps run before the transaction and are undone if it fails. |
+| 5 | Admins edit people with a sign-in; staff company by flag | Sales see those people read-only; `companies.is_staff` marks the staff company; only admins remove people from it. |
+| 6 | Hide portal and sign-in fields from Sales | Sheets, the People list, MCP and CLI leave them out for anyone without `clients.manage`. Billing and portal-access events are hidden from them in every activity feed. |
+| 7 | Portal switch creates the sign-in | Turning Portal on for a person without a sign-in creates their Client sign-in on Save; the invite goes out after commit. |
+| 8 | Won needs a company | Refused without one (sheet, board drag, CLI, MCP); an admin saving a lead as Won lands on the company's Billing tab. |
+| 9 | ⌘K | A Companies group with a Client badge replaces Clients. |
+| 10 | New company in one pass | Create and edit show the same sheet (all four tabs); the rule now covers every sheet. |
+| 11 | Old client ids | `archive_sales_tools.client_id_map` is kept for good. |
+| 12 | Cascades | `hour_blocks`, `client_updates` → company and `time_logs`, `task_comments` → sign-in are RESTRICT. |
 
-   **Recommend (a)**, together with decision 1.
-4. **One transaction per sheet Save.** The company sheet saves the company, then billing, then portal access, in separate server actions. A failure part-way leaves a half-saved company. **Recommend** one `saveCompanySheet` action. The person sheet's sign-in steps have the same shape; they should log activity too (they currently don't).
-5. **Who can edit staff and sign-in people?** Sales can rename an admin or a portal person and remove staff from the Place To Stand company (which is found by name). **Recommend:** people with a sign-in are editable by admins only, and the staff company is identified by a flag, not its name.
-6. **Can Sales see portal-access and sign-in fields?** They can read them (not change them) on companies, people and through MCP. **Recommend** hiding them unless the viewer can manage clients.
-7. **How does someone get portal access?**
-   - (a) Turning Portal on in a company's People tab creates the Client sign-in on Save.
-   - (b) Keep it two steps.
+**Role in one place.** `user_role_terms` (0113) keeps each sign-in's role by month, seeded from Oct 2025; payroll counts Admin hours by the role in force for the month (Sales hours aren't tracked). An admin picks the month a role change takes effect (closed months can't be rewritten); a future change applies at sign-in and by a daily cron (`/api/cron/apply-role-terms`, uses the existing `CRON_SECRET`). Role changes are logged. The staff title is a free-text job title; becoming staff joins the Place To Stand company, becoming a Client leaves it. Archived people stay in the months they worked (payroll, closers, originators).
 
-   **Recommend (a).** Today a Client sign-in without the Portal switch lands on "You haven't been added to a client yet".
-8. **Won leads.**
-   - (a) A lead needs a company before Won.
-   - (b) Billing a won lead's company creates it from the lead.
+**Structure.**
+- One SQL definition of client state: `company_is_client`, `company_billing_open`, `company_billed_in` (0113), behind `@pts/db/client-state`; the portal view uses it. `client_since` / `client_ended_at` are gone (0114).
+- `clientId` is now `companyId` across the code (a field that meant "the company, while it is a client" is `clientCompanyId`). The CLI and MCP keep `clientId`. Closed-month snapshots and old activity rows keep their stored `clientId` and are read either way.
+- Billing events are COMPANY activity (rows moved by 0113, undo restores them).
+- `ensureClientCompany` guards project, hour-block and invoice saves.
 
-   **Recommend (a).** Moving a lead to Won should open the company's Billing tab.
-9. **⌘K.** **Recommend** replacing the Clients group with Companies, showing a Client badge.
-10. **New company in one pass.** The create sheet has only Details, so you create, close and reopen. **Recommend** showing all four tabs on create; this depends on decision 4.
-11. **Old client ids.** The map is "for one release", but a few old activity rows' metadata still hold client ids. **Recommend** keeping `archive_sales_tools.client_id_map` permanently; it's tiny.
-12. **Cascades.** `hour_blocks` and `client_updates` cascade-delete with their company, and time logs and comments cascade with their sign-in. Nothing in the app hard-deletes either today. **Recommend** changing these to RESTRICT as a safeguard.
+**Sheet rules** (in `docs/design-system/components/sheet.md`, /design › Patterns, CLAUDE.md, AGENTS.md and the skill): one Save, one transaction; only Save writes; instant actions are their own records or act outside the app (comments, lead updates, logging time, invoice email/send/revert/void, acknowledging a submission, drafting a client update, planning, password reset); sending an invoice is blocked while it has unsaved edits; uploads go to staging and are claimed on Save; create and edit show the same sheet; related records stack.
 
-## What you're not seeing about the structure
-
-- **Three definitions of "is a client".**
-  - `isClientCompany()`: billed and not archived.
-  - `clientEndedAtSql`: ended or archived.
-  - The portal view: billed, now also not archived.
-
-  They agree today only because archiving revokes portal access. Pick one SQL definition and build everything on it.
-- **"Client" naming is everywhere.** `clientId` means a company id about 570 times; `lib/settings/clients` holds billing; activity writes `targetType: 'CLIENT'` with a company id beside `COMPANY` events, so a company's feed needs both. The next developer will look for a `clients` table. Fold `lib/settings/clients` into `lib/companies/billing` and rename `clientId` → `companyId` in one mechanical pass.
-- **Role lives in two places:** `users.role` and the staff membership title ("Partner" / "Sales"). Changing one doesn't change the other. Payroll in the close also keys on the current role, so changing a partner's role mid-month moves their hours.
-- **Billed rows can point at any company.** Foreign keys now go to `companies`, so "the billed party is a client" is enforced only by the app. A CLIENT project can be saved on a company with no slug. Add an `ensureClientCompany` check in project, hour-block and invoice saves.
-- **Stale generated types.** `lib/supabase/types.ts` still describes `clients`, `users.full_name` and `users.avatar_url`. `AppUser` is built from it, and the `DbClient` / `DbUser` twins in `lib/types.ts` carry old names. Regenerate them or delete them in favour of Drizzle types.
-- **The queries layer holds business logic.** `lib/queries/companies.ts` (850+ lines) mixes permission checks, transactions and mutations.
-- **Release risk:** it's a hard cut-over. Old code fails the moment the batch commits, so the window must include promoting both apps. Re-run `scripts/rehearse-rollout.sh` on the day: two guards depend on that day's data (0108's "term in force this month" and 0109's contact email uniqueness).
+**For Jason to know.**
+- The client portal picks up a future-dated role change after the daily cron or the person's next internal-portal request.
+- `user_metadata.role` is no longer written to Supabase Auth; nothing in the app reads it.
+- `list_users` (MCP/CLI) still returns roles to Sales, for assigning work.
+- Stopping billing still ends the company's portal access at once, even when billed through the month.
+- Re-linking a previously unlinked GitHub repo restores the old link instead of failing.
 
 ## How to rerun
 

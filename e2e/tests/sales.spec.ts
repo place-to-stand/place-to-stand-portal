@@ -47,7 +47,8 @@ test('sales sees a person with a sign-in read-only, without sign-in or portal fi
     page.getByRole('columnheader', { name: 'Portal access' })
   ).toHaveCount(0)
 
-  await page.locator('tbody tr').first().click()
+  // The name cell: the row's middle can be the company link.
+  await page.locator('tbody tr').first().getByRole('cell').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(
@@ -56,7 +57,7 @@ test('sales sees a person with a sign-in read-only, without sign-in or portal fi
   await expect(sheet.getByPlaceholder('John Doe')).toBeDisabled()
   await expect(sheet.getByPlaceholder('contact@example.com')).toBeDisabled()
   // No Sign-in section, role or portal access.
-  await expect(sheet.getByText('Can sign in')).toHaveCount(0)
+  await expect(sheet.getByText('Can sign in', { exact: true })).toHaveCount(0)
   await expect(sheet.getByText('Role', { exact: true })).toHaveCount(0)
   await expect(sheet.getByText('Portal access')).toHaveCount(0)
   await expect(
@@ -75,7 +76,9 @@ test('sales sees no billing or sign-in controls on a company', async ({
   await expect(sheet.getByText('Bill this company')).toHaveCount(0)
 })
 
-test('sales sees no portal switches on a client company’s people', async ({ page }) => {
+test('sales sees no portal switches on a client company’s people', async ({
+  page,
+}) => {
   await page.goto('/companies')
   const clientRow = page
     .locator('tbody tr')
@@ -86,6 +89,8 @@ test('sales sees no portal switches on a client company’s people', async ({ pa
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await sheet.getByRole('tab', { name: 'People' }).click()
-  await expect(sheet.getByRole('switch', { name: /^Portal access for / })).toHaveCount(0)
+  await expect(
+    sheet.getByRole('switch', { name: /^Portal access for / })
+  ).toHaveCount(0)
   await expect(sheet.getByText('Portal', { exact: true })).toHaveCount(0)
 })

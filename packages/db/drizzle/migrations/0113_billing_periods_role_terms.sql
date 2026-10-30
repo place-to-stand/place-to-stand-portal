@@ -88,6 +88,40 @@ LANGUAGE sql STABLE AS $$
   SELECT company_billing_open(p_company)
     AND EXISTS (SELECT 1 FROM companies c WHERE c.id = p_company AND c.deleted_at IS NULL)
 $$;--> statement-breakpoint
+-- Read helpers take the company or sign-in id as an argument, so no query
+-- has to correlate a subquery with an outer column.
+CREATE FUNCTION "company_was_client"(p_company uuid) RETURNS boolean
+LANGUAGE sql STABLE AS $$
+  SELECT EXISTS (SELECT 1 FROM client_billing_periods p WHERE p.company_id = p_company AND p.deleted_at IS NULL)
+$$;--> statement-breakpoint
+CREATE FUNCTION "company_client_since"(p_company uuid) RETURNS date
+LANGUAGE sql STABLE AS $$
+  SELECT min(p.starts_on) FROM client_billing_periods p WHERE p.company_id = p_company AND p.deleted_at IS NULL
+$$;--> statement-breakpoint
+-- While billing is open: the last month it is billed (null = no stop set).
+CREATE FUNCTION "company_billing_ends_on"(p_company uuid) RETURNS date
+LANGUAGE sql STABLE AS $$
+  SELECT CASE WHEN company_billing_open(p_company) THEN (
+    SELECT p.ends_on FROM client_billing_periods p
+    WHERE p.company_id = p_company AND p.deleted_at IS NULL
+    ORDER BY p.starts_on DESC LIMIT 1) END
+$$;--> statement-breakpoint
+-- Once billing has ended: the first month no longer billed.
+CREATE FUNCTION "company_billing_ended_at"(p_company uuid) RETURNS timestamptz
+LANGUAGE sql STABLE AS $$
+  SELECT CASE WHEN company_billing_open(p_company) THEN NULL ELSE (
+    SELECT (max(p.ends_on) + interval '1 month')::timestamptz FROM client_billing_periods p
+    WHERE p.company_id = p_company AND p.deleted_at IS NULL
+    HAVING bool_and(p.ends_on IS NOT NULL)) END
+$$;--> statement-breakpoint
+-- A sign-in's role in force for the month of p_month.
+CREATE FUNCTION "user_role_as_of"(p_user uuid, p_month date) RETURNS user_role
+LANGUAGE sql STABLE AS $$
+  SELECT t.role FROM user_role_terms t
+  WHERE t.user_id = p_user AND t.deleted_at IS NULL
+    AND t.effective_from <= date_trunc('month', p_month)::date
+  ORDER BY t.effective_from DESC LIMIT 1
+$$;--> statement-breakpoint
 -- The portal reads client state through the same definition.
 CREATE OR REPLACE VIEW "client_portal_access" AS
   SELECT co.id AS company_id,

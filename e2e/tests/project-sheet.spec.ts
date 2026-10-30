@@ -38,9 +38,16 @@ test('project: create with a member in one save', async ({ page }) => {
     (await sheet.getByText('No sales staff yet.').count()) > 0,
     'needs at least one sales user'
   )
+  // The Project type list must be gone, so its options aren't picked up.
+  await expect(page.getByRole('listbox')).toHaveCount(0)
   await sheet.getByRole('button', { name: 'Add member' }).first().click()
-  const firstCandidate = page.getByRole('option').first()
-  const memberName = ((await firstCandidate.textContent()) ?? '').trim()
+  const firstCandidate = page.locator('[cmdk-item]').first()
+  await expect(firstCandidate).toBeVisible()
+  // The option's first line is the name.
+  const memberName = (
+    (await firstCandidate.locator('span.font-medium').first().textContent()) ??
+    ''
+  ).trim()
   await firstCandidate.click()
   await expect(
     sheet.getByRole('button', { name: `Remove ${memberName}` })
