@@ -239,28 +239,32 @@ const SheetContent = React.forwardRef<
     React.useEffect(() => {
       const popup = popupNode
       if (!popup) return
-      const focusFirst = () => {
-        const field = firstSheetField(popup)
-        if (!field) return false
-        const active = document.activeElement
-        if (active === popup || active === document.body || !active) {
-          focusField(field)
-        }
-        return true
+      // Until you click or type: a sheet whose form swaps in after its data
+      // loads drops the focused field, so focus falls back to the popup.
+      let interacted = false
+      const markInteracted = () => {
+        interacted = true
       }
-      // After the open's own focus move, then whenever fields appear.
-      const frame = window.requestAnimationFrame(() => {
-        if (focusFirst()) observer.disconnect()
-      })
-      const observer = new MutationObserver(() => {
-        if (focusFirst()) observer.disconnect()
-      })
+      popup.addEventListener('pointerdown', markInteracted, true)
+      popup.addEventListener('keydown', markInteracted, true)
+      const focusFirst = () => {
+        if (interacted) return
+        const active = document.activeElement
+        if (active && active !== popup && active !== document.body) return
+        const field = firstSheetField(popup)
+        if (field) focusField(field)
+      }
+      // After the open's own focus move, then whenever the content changes.
+      const frame = window.requestAnimationFrame(focusFirst)
+      const observer = new MutationObserver(focusFirst)
       observer.observe(popup, { childList: true, subtree: true })
       const stop = window.setTimeout(() => observer.disconnect(), 5000)
       return () => {
         window.cancelAnimationFrame(frame)
         observer.disconnect()
         window.clearTimeout(stop)
+        popup.removeEventListener('pointerdown', markInteracted, true)
+        popup.removeEventListener('keydown', markInteracted, true)
       }
     }, [popupNode])
 
