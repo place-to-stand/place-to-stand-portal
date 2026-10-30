@@ -64,6 +64,8 @@ type EntityAccent = {
   icon: string
   /** A soft fill behind the icon or a row. */
   tint: string
+  /** A quiet band behind a group row (a list's client header): half the tint. */
+  band: string
   /** A filled badge (activity verbs): soft fill, accent text. */
   badge: string
 }
@@ -96,6 +98,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-lead/35',
       icon: 'text-entity-lead',
       tint: 'bg-entity-lead/10',
+      band: 'bg-entity-lead/5',
       badge: 'border-transparent bg-entity-lead/15 text-entity-lead',
     },
   },
@@ -112,6 +115,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-company/35',
       icon: 'text-entity-company',
       tint: 'bg-entity-company/10',
+      band: 'bg-entity-company/5',
       badge: 'border-transparent bg-entity-company/15 text-entity-company',
     },
   },
@@ -128,6 +132,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-person/35',
       icon: 'text-entity-person',
       tint: 'bg-entity-person/10',
+      band: 'bg-entity-person/5',
       badge: 'border-transparent bg-entity-person/15 text-entity-person',
     },
   },
@@ -144,6 +149,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-sign-in/35',
       icon: 'text-entity-sign-in',
       tint: 'bg-entity-sign-in/10',
+      band: 'bg-entity-sign-in/5',
       badge: 'border-transparent bg-entity-sign-in/15 text-entity-sign-in',
     },
   },
@@ -160,6 +166,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-project/35',
       icon: 'text-entity-project',
       tint: 'bg-entity-project/10',
+      band: 'bg-entity-project/5',
       badge: 'border-transparent bg-entity-project/15 text-entity-project',
     },
   },
@@ -176,6 +183,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-task/35',
       icon: 'text-entity-task',
       tint: 'bg-entity-task/10',
+      band: 'bg-entity-task/5',
       badge: 'border-transparent bg-entity-task/15 text-entity-task',
     },
   },
@@ -192,6 +200,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-time-log/35',
       icon: 'text-entity-time-log',
       tint: 'bg-entity-time-log/10',
+      band: 'bg-entity-time-log/5',
       badge: 'border-transparent bg-entity-time-log/15 text-entity-time-log',
     },
   },
@@ -208,6 +217,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-client/35',
       icon: 'text-entity-client',
       tint: 'bg-entity-client/10',
+      band: 'bg-entity-client/5',
       badge: 'border-transparent bg-entity-client/15 text-entity-client',
     },
   },
@@ -224,6 +234,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-invoice/35',
       icon: 'text-entity-invoice',
       tint: 'bg-entity-invoice/10',
+      band: 'bg-entity-invoice/5',
       badge: 'border-transparent bg-entity-invoice/15 text-entity-invoice',
     },
   },
@@ -240,6 +251,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-hour-block/35',
       icon: 'text-entity-hour-block',
       tint: 'bg-entity-hour-block/10',
+      band: 'bg-entity-hour-block/5',
       badge:
         'border-transparent bg-entity-hour-block/15 text-entity-hour-block',
     },
@@ -257,6 +269,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-submission/35',
       icon: 'text-entity-submission',
       tint: 'bg-entity-submission/10',
+      band: 'bg-entity-submission/5',
       badge:
         'border-transparent bg-entity-submission/15 text-entity-submission',
     },
@@ -274,6 +287,7 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
       cardStatic: 'border-entity-template/35',
       icon: 'text-entity-template',
       tint: 'bg-entity-template/10',
+      band: 'bg-entity-template/5',
       badge: 'border-transparent bg-entity-template/15 text-entity-template',
     },
   },

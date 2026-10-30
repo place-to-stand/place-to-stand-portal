@@ -33,7 +33,7 @@ Both portals share `packages/ui` and its theme. The client portal layers a few t
 
 Each kind of record has one icon and one colour everywhere it appears: sidebar, sheet header rule, card border, list icon, badge, activity feed. Both live only in the registry, `apps/internal/lib/entity-accents.ts` (`ENTITIES`, with `ENTITY_ICONS` and `ENTITY_ACCENTS` derived from it); the colour values are the `--entity-*` tokens in `theme.css`. `/design#entities` renders the registry with live contrast numbers.
 
-- **Use** `<ENTITY_ICONS.company />` and `ENTITY_ACCENTS.company.icon | card | cardStatic | tint | badge | sheetHeader`. Never import an entity's icon from `lucide-react`, and never write a `text-entity-*` / `bg-entity-*` / `border-entity-*` class outside the registry: eslint fails on both. Need the same glyph for something else (a timestamp)? Pick another one (`CalendarClock`).
+- **Use** `<ENTITY_ICONS.company />` and `ENTITY_ACCENTS.company.icon | card | cardStatic | tint | band | badge | sheetHeader`. `band` is half the tint, for a group row that should read as a quiet band (the Projects list's client rows). Never import an entity's icon from `lucide-react`, and never write a `text-entity-*` / `bg-entity-*` / `border-entity-*` class outside the registry: eslint fails on both. Need the same glyph for something else (a timestamp)? Pick another one (`CalendarClock`).
 - **Add an entity** by adding it to `ENTITIES` and its `--entity-<token>` to `theme.css` (`:root`, `.dark` and `.email-paper`), then `npm run design-tokens` and a usage note. `scripts/check-entities.mjs` (run by `npm run lint`) fails on a missing icon or token, a shared icon, or under 3:1 icon-on-card contrast in either theme.
 - **Palette B, grouped by job: sales warm, work blue, money green.** Each theme gets its own step: darker in light, lighter in dark.
 
@@ -44,11 +44,11 @@ Each kind of record has one icon and one colour everywhere it appears: sidebar, 
 |  | Person | `UserRound` | rose-600, 4.5:1 | rose-400, 6.3:1 |
 |  | Sign-in | `KeyRound` | rose-800, 7.9:1 | rose-300, 9.3:1 |
 | Work | Project | `FolderKanban` | blue-600, 5.3:1 | blue-400, 6.8:1 |
-|  | Task | `ListTodo` | sky-700, 5.9:1 | sky-300, 10.8:1 |
-|  | Time log | `Clock` | indigo-500, 4.6:1 | indigo-300, 8.9:1 |
-| Money | Client (a company state) | `Briefcase` | lime-700, 5.0:1 | lime-400, 11.7:1 |
+|  | Task | `ListTodo` | indigo-500, 4.6:1 | indigo-300, 8.9:1 |
+|  | Time log | `Clock` | sky-700, 5.9:1 | sky-300, 10.8:1 |
+| Money | Client (a company state) | `Briefcase` | green-800, 7.1:1 | green-500, 8.1:1 |
 |  | Invoice | `Receipt` | teal-700, 5.4:1 | teal-300, 12.2:1 |
-|  | Hour block | `Hourglass` | green-800, 7.1:1 | green-500, 8.1:1 |
+|  | Hour block | `Hourglass` | lime-700, 5.0:1 | lime-400, 11.7:1 |
 | Admin | Submission | `Inbox` | slate-500, 4.8:1 | slate-400, 6.8:1 |
 |  | Template | `LayoutTemplate` | stone-600, 7.6:1 | stone-300, 12.0:1 |
 
@@ -61,7 +61,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 ## Content fundamentals
 
 - **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Create lead", "Save changes", "Project archived". Title Case is only for the brand name.
-- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role. Icons and colours follow the entity (see **Entities** below): a company is `Building2`, a person (with or without a sign-in) is `UserRound`, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in lime, with money (lime keeps it apart from the emerald `success` token). "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
+- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role. Icons and colours follow the entity (see **Entities** below): a company is `Building2`, a person (with or without a sign-in) is `UserRound`, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in green, with money. "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
 - **Name the entity.** Copy names the record type it acts on, using the entity names: person, company, lead, project, task, invoice, hour block, time log, plus client for a company you bill and sign-in for a person who can sign in. Never "user", "account" or "login", and never a vague stand-in (record, item, entry, member) when an entity is meant: "Can sign in" and "No portal access", not "Create user" or "No portal account".
 - **Create vs Add vs Link.** "Create <thing>" makes a new record (page buttons, create sheets, a picker's pinned Create row). "Add <thing>" puts an existing record on a list (Add person, Add member). There is no "Link" between a company and a client: a client is a company you bill ("Bill this company" on its Billing tab). Exception: on the lead sheet, the Tasks and Updates sections use "Add task" and "Add update" for new records added to that lead.
 - **The name.** The wordmark reads **Place To Stand**, with a capital T, as `BrandLogo` renders it. The favicon abbreviation is **PTS**. Some older page metadata still says "Place to Stand Portal". Use the wordmark casing in new copy.

@@ -333,7 +333,7 @@ export function SampleProjectList({
                 {/* A group row: one cell across, the shared height. */}
                 <TableCell
                   colSpan={6}
-                  className={cn(ENTITY_ACCENTS.client.tint, 'max-md:px-3')}
+                  className={cn(ENTITY_ACCENTS.client.band, 'max-md:px-3')}
                 >
                   <span className='flex items-center gap-2 text-sm font-semibold'>
                     <ENTITY_ICONS.client

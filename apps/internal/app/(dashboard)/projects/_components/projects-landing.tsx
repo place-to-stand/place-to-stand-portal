@@ -569,7 +569,7 @@ export function ProjectsLanding({
           colSpan={6}
           className={cn(
             // The shared cell sets the height: same as the project rows.
-            ENTITY_ACCENTS.client.tint,
+            ENTITY_ACCENTS.client.band,
             'max-md:px-3 max-md:py-2.5'
           )}
         >
