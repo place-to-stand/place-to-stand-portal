@@ -27,7 +27,9 @@ import { Textarea } from '@pts/ui/textarea'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
+import { EmptyState } from '@pts/ui/empty-state'
 import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { SheetActivityDisclosure } from '@/components/sheets/sheet-activity-section'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
@@ -94,7 +96,7 @@ export function ComponentsSheets() {
     >
       <Specimen
         label='Entity sheet'
-        note='SheetFormHeader · SheetTabs · SheetSection · SheetFormFooter'
+        note='SheetFormHeader · SheetTabs · SheetSection · SheetActivitySection (collapsed, last) · SheetFormFooter'
       >
         {VARIANTS.map(option => {
           const Icon = option.icon
@@ -294,6 +296,17 @@ function SampleEntitySheet({
                             />
                           </SheetRecordList>
                         </SheetSection>
+                        {/* The bottom of a sheet: comments or updates, then
+                            the collapsed Activity, always last. */}
+                        <SheetSection title='Comments'>
+                          <EmptyState message='No comments yet.' />
+                        </SheetSection>
+                        <SheetActivityDisclosure total={2}>
+                          <ul className='text-muted-foreground space-y-2 pt-4 text-sm'>
+                            <li>Ada Lovelace updated the website · Today</li>
+                            <li>Grace Hopper created this {shown.noun} · Mon</li>
+                          </ul>
+                        </SheetActivityDisclosure>
                       </>
                     ),
                   },

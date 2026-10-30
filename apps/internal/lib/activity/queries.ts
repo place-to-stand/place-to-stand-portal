@@ -3,6 +3,7 @@ import 'server-only'
 
 import {
   and,
+  count,
   desc,
   eq,
   gte,
@@ -138,22 +139,18 @@ async function canReadActivityFor(
 }
 
 /**
- * Access control lives here, not in the callers (this project has NO RLS):
- * admins see everything; SALES (CRM staff) may read lead and contact activity
- * only (`canReadActivity`). Requested filters narrow the result set.
+ * The WHERE clause every per-record reader shares: the requested filters,
+ * narrowed to the projects the user can work and, for anyone who can't manage
+ * clients, with billing events removed. Throws when the user may not read
+ * this activity at all.
  */
-export async function fetchActivityLogs(
+async function scopedActivityWhere(
   user: AppUser,
   filters: ActivityQueryFilters
-): Promise<ActivityQueryResult> {
+) {
   if (!user || !(await canReadActivityFor(user, filters))) {
     throw new ForbiddenError('Not allowed to read this activity')
   }
-
-  const limit = Math.min(
-    Math.max(filters.limit ?? DEFAULT_PAGE_SIZE, 1),
-    MAX_PAGE_SIZE
-  )
 
   // A member reading a task's history sees only the events from projects
   // they can work: a task moved in from elsewhere keeps its past there.
@@ -173,6 +170,28 @@ export async function fetchActivityLogs(
     projectScope,
     billingScope(user),
   ])
+
+  return { whereClause, visibleProjectIds }
+}
+
+/**
+ * Access control lives here, not in the callers (this project has NO RLS):
+ * admins see everything; SALES (CRM staff) may read lead and contact activity
+ * only (`canReadActivity`). Requested filters narrow the result set.
+ */
+export async function fetchActivityLogs(
+  user: AppUser,
+  filters: ActivityQueryFilters
+): Promise<ActivityQueryResult> {
+  const { whereClause, visibleProjectIds } = await scopedActivityWhere(
+    user,
+    filters
+  )
+
+  const limit = Math.min(
+    Math.max(filters.limit ?? DEFAULT_PAGE_SIZE, 1),
+    MAX_PAGE_SIZE
+  )
 
   const baseQuery = db
     .select({
@@ -207,6 +226,23 @@ export async function fetchActivityLogs(
     hasMore,
     nextCursor,
   }
+}
+
+/**
+ * How many rows `fetchActivityLogs` would page through for these filters,
+ * under the same access rules: the count on a sheet's collapsed Activity
+ * header. One `count(*)` on the target index, no actor join, no references.
+ */
+export async function countActivityLogs(
+  user: AppUser,
+  filters: Omit<ActivityQueryFilters, 'cursor' | 'limit'>
+): Promise<number> {
+  const { whereClause } = await scopedActivityWhere(user, filters)
+
+  const baseQuery = db.select({ value: count() }).from(activityLogs)
+  const [row] = await (whereClause ? baseQuery.where(whereClause) : baseQuery)
+
+  return Number(row?.value ?? 0)
 }
 
 /**

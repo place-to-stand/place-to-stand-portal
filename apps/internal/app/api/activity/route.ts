@@ -2,7 +2,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-import { fetchActivityLogs } from '@/lib/activity/queries'
+import {
+  countActivityLogs,
+  fetchActivityLogs,
+} from '@/lib/activity/queries'
 import {
   ACTIVITY_TARGET_TYPES,
   type ActivityTargetType,
@@ -89,6 +92,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // `count=1` answers how many rows the feed holds (a sheet's collapsed
+    // Activity header) without loading them.
+    if (params.get('count') === '1') {
+      const total = await countActivityLogs(user, {
+        targetType,
+        targetId: targetId ?? undefined,
+        projectId: projectId ?? undefined,
+        companyId: companyId ?? undefined,
+      })
+
+      return NextResponse.json({ count: total })
+    }
+
     const result = await fetchActivityLogs(user, {
       targetType,
       targetId: targetId ?? undefined,
