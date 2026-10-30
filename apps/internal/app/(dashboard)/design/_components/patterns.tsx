@@ -86,40 +86,36 @@ export function PatternsHouseRules() {
       />
 
       <DoDont
-        rule='Nothing pops over a sheet except a destructive confirm'
-        why='Edit inline, in a sheet section. The only thing allowed on top of a sheet is a ConfirmDialog for an action that destroys or can’t be undone; a related record opens as its own sheet.'
+        rule='Related records stack'
+        why='Opening a person, company, lead or task from inside a sheet opens its own sheet on top; closing it goes back to the sheet underneath, where you were. Small focused tasks (link a repo, email an invoice, log time) can use a dialog.'
         doExample={
           <MiniSheet tabs={['People']}>
             <div className='space-y-2 p-3'>
-              <div className='flex items-center justify-between'>
-                <span className='font-semibold'>People</span>
-                <Button size='xs' variant='outline'>
-                  <Plus />
-                  Add person
-                </Button>
-              </div>
-              <div className='bg-muted/40 rounded-md border px-3 py-2'>
+              <span className='font-semibold'>People</span>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
+                <span className='text-muted-foreground text-xs'>
+                  Opens on top
+                </span>
               </div>
             </div>
           </MiniSheet>
         }
-        doCaption='Add and edit inside the section; open a record as a sheet.'
+        doCaption='Click a person: their sheet stacks on top; Close returns to the company.'
         dontExample={
           <MiniSheet tabs={['People']}>
-            <div className='relative p-3'>
-              <div className='text-muted-foreground opacity-40'>
+            <div className='space-y-2 p-3'>
+              <span className='font-semibold'>People</span>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
+                <span className='text-muted-foreground text-xs'>
+                  Leaves this page
+                </span>
               </div>
-              <div className='bg-popover absolute inset-x-6 top-2 rounded-lg border p-3 shadow-lg'>
-                <p className='font-medium'>Edit person</p>
-                <Input className='mt-2' defaultValue='Ada' aria-label='Name' />
-              </div>
-              <div className='h-16' />
             </div>
           </MiniSheet>
         }
-        dontCaption='A dialog or popover editing a record over the sheet.'
+        dontCaption='Navigating away or replacing the sheet, so you lose your place.'
       />
 
       <DoDont

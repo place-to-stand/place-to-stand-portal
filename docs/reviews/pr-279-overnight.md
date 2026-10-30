@@ -11,7 +11,7 @@
   ```
 
 - **One money question needs you before release** (decision 1 below). The monthly close filters clients by whether they are billed **today**, not in the month being reported. This predates the PR, but "stop billing" is now one switch, so it will come up.
-- **I narrowed the 0112 scope.** I did not move the 38 foreign keys that point at `users` (decision 2).
+- **0112 scope (settled by Jason):** the 38 "who did this" foreign keys stay on `users`, the sign-in.
 
 ## What landed tonight (all pushed to PR #279)
 
@@ -71,12 +71,7 @@ The earlier audit decisions (`audit-decisions.md` in the project files) aren't r
    - (b) Keep it as is.
 
    **Recommend (a).** Ship it with a check that every closed month's totals are unchanged. (I didn't change money logic overnight.)
-2. **The 38 foreign keys that still point at `users`.**
-   - (a) Leave them all.
-   - (b) Move only the person-meaning ones (commission origination and closers, assignee, owner) to contacts after the release.
-   - (c) Move them all.
-
-   **Recommend (b).** Commission can name one human two ways today (user or contact). The close pays staff and outside originators differently and keys payouts by user id in snapshots, so it needs its own migration and rehearsal.
+2. **Settled: the 38 "who did this" foreign keys stay on `users`** (the sign-in that acted). Jason, Oct 30. Not a follow-up.
 3. **Stop and restart billing history.**
    - (a) Add billing periods: stop and restart each take an effective month, and restart opens the terms.
    - (b) Keep one since/ended interval.
@@ -94,7 +89,7 @@ The earlier audit decisions (`audit-decisions.md` in the project files) aren't r
    - (a) A lead needs a company before Won.
    - (b) Billing a won lead's company creates it from the lead.
 
-   **Recommend (a).** Moving a lead to Won should swap the lead sheet for the company's Billing tab, rather than opening a sheet over a sheet.
+   **Recommend (a).** Moving a lead to Won should open the company's Billing tab.
 9. **⌘K.** **Recommend** replacing the Clients group with Companies, showing a Client badge.
 10. **New company in one pass.** The create sheet has only Details, so you create, close and reopen. **Recommend** showing all four tabs on create; this depends on decision 4.
 11. **Old client ids.** The map is "for one release", but a few old activity rows' metadata still hold client ids. **Recommend** keeping `archive_sales_tools.client_id_map` permanently; it's tiny.
@@ -120,3 +115,9 @@ The earlier audit decisions (`audit-decisions.md` in the project files) aren't r
 - Rehearsal on a production dump (local only): `scripts/rehearse-rollout.sh <dump>`.
 - Data comparison alone: `node scripts/compare-rollout.mjs --before <local url> --after <local url>`.
 - Browser suite (local apps only): `npm run test:e2e`. Add `E2E_PROD_COPY=1` on a production copy, `E2E_WRITES=1` on a throwaway database, and `E2E_BASE_URL` / `E2E_PORTAL_URL` for other local ports.
+
+## Settled since (Oct 30)
+
+- **Sheets stack.** Opening a related record from inside a sheet opens its own sheet on top; closing goes back. Written into `docs/design-system/components/sheet.md` and /design › Patterns.
+- **There is no "no dialogs over sheets" rule.** Dialogs for small focused tasks over a sheet are fine, so the four (GitHub repo link, integration link, invoice email, log time from a task) stay as they are; that follow-up is dropped. The lead's "Add update" form, already made inline, stays inline.
+- **The 38 "who did this" foreign keys stay on `users`.**

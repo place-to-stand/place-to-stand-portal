@@ -15,7 +15,7 @@ production; it ships with the rest of the unreleased batch (0089–0109).
 - `contacts` is the person (UI: People): name, email, phone, LinkedIn, photo (`avatar_url`), companies through `memberships`.
 - `users` is only the sign-in: auth id, sign-in email (always the person's email), role, `disabled_at`, `deleted_at`, onboarding. Name and photo are read from the person (`personNameSql`, `personAvatarSql`). Each sign-in has exactly one person (`contacts.user_id`).
 - Staff (Admin, Sales) are people at the **Place To Stand** company.
-- Still on `users` (a decision for later): the 38 foreign keys that record who acted or owns something (created_by, author, assignee, owner, time logs, commission closers and origination).
+- Staying on `users` (decided Oct 30): the 38 foreign keys that record which sign-in acted or owns something (created_by, author, assignee, owner, time logs, commission closers and origination).
 
 The sections below record how it got there: 0109 first kept `clients` as a billing record; 0111 then folded it into companies.
 
@@ -118,4 +118,4 @@ Still named "client" on purpose: the client portal, `client_portal_access`, `cli
 - `users.avatar_url` is gone: a photo is the person's. Read it with `personAvatarSql` / `personAvatarOf()` from `@pts/db/names` (as names use `personNameSql`). Profile and person photo uploads write `contacts.avatar_url` only; deleting a sign-in leaves the photo.
 - The user services lost their photo handling (no caller passed one).
 - `users` keeps id, email, role, `disabled_at`, `deleted_at`, onboarding and timestamps.
-- Not done, for Jason: the 38 foreign keys that point at `users` (created_by, author, actor, assignee, owner, time logs, commission origination and closers). See the overnight report for the options.
+- The 38 foreign keys that point at `users` (created_by, author, actor, assignee, owner, time logs, commission) stay there: they record which sign-in acted (decided Oct 30).

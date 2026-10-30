@@ -368,7 +368,7 @@ export function ComponentsDialogs() {
     <DesignSection
       id='dialogs'
       title='Dialogs'
-      when='Rare. ConfirmDialog confirms a destructive or irreversible action, and is the only thing allowed over a sheet. Records are edited in sheets, never in dialogs.'
+      when='Rare. ConfirmDialog confirms a destructive or irreversible action; Dialog holds a small one-step form (link a repo, email an invoice, log time), even over a sheet. Records are edited in sheets, never in dialogs.'
     >
       <Specimen label='ConfirmDialog, AlertDialog, Dialog' note='@pts/ui'>
         <Button variant='destructive' onClick={() => setConfirmOpen(true)}>

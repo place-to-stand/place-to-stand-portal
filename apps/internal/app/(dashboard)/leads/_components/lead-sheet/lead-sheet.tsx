@@ -111,7 +111,7 @@ export function LeadSheet(props: LeadSheetProps) {
                   canConvert={canConvert}
                   onConvertToClient={() => {
                     // A client is made on its company's Billing tab: swap the
-                    // lead for the company (no sheet over a sheet).
+                    // lead sheet for the company's sheet.
                     if (lead.companyId) {
                       router.push(companySheetHref(lead.companyId, 'billing'), {
                         scroll: false,
