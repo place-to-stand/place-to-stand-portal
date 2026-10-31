@@ -2,6 +2,8 @@
 
 import { Input } from '@pts/ui/input'
 
+import { RECORD_ROW_INPUT_CLASS } from './sheet-record-row'
+
 /**
  * A contact's title at a company, edited on a sheet row's fields line (the
  * person sheet's Companies list and the company sheet's People list), inside
@@ -27,7 +29,8 @@ export function MembershipTitleInput({
       aria-label={ariaLabel}
       disabled={disabled}
       maxLength={160}
-      className='h-8 w-full min-w-0'
+      placeholder='Add title'
+      className={RECORD_ROW_INPUT_CLASS}
     />
   )
 }

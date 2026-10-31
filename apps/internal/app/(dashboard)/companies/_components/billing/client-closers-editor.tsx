@@ -6,6 +6,7 @@ import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
+  RECORD_ROW_INPUT_CLASS,
   RecordRowField,
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
@@ -90,7 +91,7 @@ export function ClientClosersEditor({
                   fields={
                     isSplit ? (
                       <RecordRowField label='Share'>
-                        <div className='relative w-20 shrink-0'>
+                        <div className='relative -ml-2 w-20 shrink-0'>
                           <Input
                             value={closer.shareText}
                             onChange={event =>
@@ -100,7 +101,10 @@ export function ClientClosersEditor({
                             aria-label={`${closer.name} share`}
                             aria-invalid={hasError || undefined}
                             disabled={locked}
-                            className='h-8 pr-6 text-right tabular-nums'
+                            className={cn(
+                              RECORD_ROW_INPUT_CLASS,
+                              'pr-6 text-right tabular-nums'
+                            )}
                           />
                           <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-sm'>
                             %
