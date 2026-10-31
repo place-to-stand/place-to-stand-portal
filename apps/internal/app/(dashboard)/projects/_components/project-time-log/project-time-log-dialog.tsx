@@ -138,16 +138,6 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
       </Dialog>
 
       <ConfirmDialog
-        open={Boolean(state.taskRemovalCandidate)}
-        title='Remove linked task?'
-        description='The task will no longer be linked to this time log.'
-        confirmLabel='Remove'
-        confirmVariant='destructive'
-        confirmDisabled={state.isMutating}
-        onCancel={state.cancelTaskRemoval}
-        onConfirm={state.confirmTaskRemoval}
-      />
-      <ConfirmDialog
         open={state.overageDialog.isOpen}
         title='Hours exceed client balance'
         description={state.overageDialog.description}

@@ -11,14 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { integrationStatusQueryKey } from '@/components/integrations/token-integration-card'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
-import { toast } from '@/components/ui/use-toast'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
@@ -79,10 +77,6 @@ export function IntegrationLinksSection({
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [unlinkConfirm, setUnlinkConfirm] =
-    useState<ProjectIntegrationLink | null>(null)
-  const [pendingRemoveConfirm, setPendingRemoveConfirm] =
-    useState<PendingIntegrationLink | null>(null)
 
   const statusQuery = useQuery({
     queryKey: integrationStatusQueryKey(provider),
@@ -173,36 +167,23 @@ export function IntegrationLinksSection({
         ownerName: option.ownerName,
       },
     ])
-    toast({
-      title: `${config.label} project added`,
-      description: `${option.externalName} will be linked when you save.`,
-    })
     handleDialogOpenChange(false)
   }
 
-  const handleRemovePending = () => {
-    if (!pendingRemoveConfirm) return
+  // Removing marks the row (Pending removal, with Undo) or drops an unsaved
+  // one; Save applies it. No confirm and no toast: Undo is the safety net.
+  const handleRemovePending = (removed: PendingIntegrationLink) =>
     onPendingLinksChange(
       pendingLinks.filter(
         link =>
           !(
-            link.provider === provider &&
-            link.externalId === pendingRemoveConfirm.externalId
+            link.provider === provider && link.externalId === removed.externalId
           )
       )
     )
-    setPendingRemoveConfirm(null)
-  }
 
-  const handleUnlink = () => {
-    if (!unlinkConfirm) return
-    onRemovedLinkIdsChange(new Set([...removedLinkIds, unlinkConfirm.id]))
-    setUnlinkConfirm(null)
-    toast({
-      title: `${config.label} project marked for removal`,
-      description: 'The change will be applied when you save.',
-    })
-  }
+  const handleUnlink = (link: { id: string }) =>
+    onRemovedLinkIdsChange(new Set([...removedLinkIds, link.id]))
 
   const heading = `${config.label} projects`
 
@@ -296,7 +277,7 @@ export function IntegrationLinksSection({
               label={`Remove ${link.externalName}`}
               icon={<Trash2 />}
               className='text-muted-foreground hover:text-destructive shrink-0'
-              onClick={() => setUnlinkConfirm(link)}
+              onClick={() => handleUnlink(link)}
               disabled={disabled}
             />
           </div>
@@ -320,7 +301,7 @@ export function IntegrationLinksSection({
               label={`Remove ${link.externalName}`}
               icon={<Trash2 />}
               className='text-muted-foreground hover:text-destructive shrink-0'
-              onClick={() => setPendingRemoveConfirm(link)}
+              onClick={() => handleRemovePending(link)}
               disabled={disabled}
             />
           </div>
@@ -403,28 +384,6 @@ export function IntegrationLinksSection({
           </div>
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={!!pendingRemoveConfirm}
-        title={`Remove ${config.projectNoun}?`}
-        description={`Remove ${pendingRemoveConfirm?.externalName} from the list?`}
-        confirmLabel='Remove'
-        cancelLabel='Cancel'
-        confirmVariant='destructive'
-        onConfirm={handleRemovePending}
-        onCancel={() => setPendingRemoveConfirm(null)}
-      />
-
-      <ConfirmDialog
-        open={!!unlinkConfirm}
-        title={`Remove ${config.projectNoun}?`}
-        description={`Remove ${unlinkConfirm?.externalName}? The change will be applied when you save.`}
-        confirmLabel='Remove'
-        cancelLabel='Cancel'
-        confirmVariant='destructive'
-        onConfirm={handleUnlink}
-        onCancel={() => setUnlinkConfirm(null)}
-      />
     </>
   )
 }

@@ -1,13 +1,12 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useCallback, useMemo, useRef, type ChangeEvent } from 'react'
 import { FileText, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
 import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-state'
 
@@ -65,7 +64,6 @@ export function TaskAttachmentsField({
   maxFileSize,
 }: TaskAttachmentsFieldProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const [pendingRemoval, setPendingRemoval] = useState<string | null>(null)
 
   const acceptValue = useMemo(
     () => acceptedMimeTypes.join(','),
@@ -88,17 +86,6 @@ export function TaskAttachmentsField({
     },
     [onSelectFiles]
   )
-
-  const handleConfirmRemove = useCallback(() => {
-    if (pendingRemoval) {
-      onRemove(pendingRemoval)
-    }
-    setPendingRemoval(null)
-  }, [onRemove, pendingRemoval])
-
-  const handleCancelRemove = useCallback(() => {
-    setPendingRemoval(null)
-  }, [])
 
   const renderAttachmentRow = useCallback(
     (attachment: AttachmentItem) => {
@@ -151,7 +138,7 @@ export function TaskAttachmentsField({
               size='icon'
               variant='ghost'
               className='text-muted-foreground hover:text-destructive'
-              onClick={() => setPendingRemoval(attachment.key)}
+              onClick={() => onRemove(attachment.key)}
               aria-label={`Remove ${attachment.name}`}
               disabled={removalDisabled}
             >
@@ -161,7 +148,7 @@ export function TaskAttachmentsField({
         </li>
       )
     },
-    [disabled, disabledReason, isUploading]
+    [disabled, disabledReason, isUploading, onRemove]
   )
 
   const addReason = disabled
@@ -215,15 +202,6 @@ export function TaskAttachmentsField({
         hidden
         onChange={handleFileChange}
         disabled={disabled}
-      />
-      <ConfirmDialog
-        open={pendingRemoval !== null}
-        title='Remove attachment?'
-        description='This attachment will be removed after you save your changes.'
-        confirmLabel='Remove'
-        confirmVariant='destructive'
-        onCancel={handleCancelRemove}
-        onConfirm={handleConfirmRemove}
       />
     </div>
   )

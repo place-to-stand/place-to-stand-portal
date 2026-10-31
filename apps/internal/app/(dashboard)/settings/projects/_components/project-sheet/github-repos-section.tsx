@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from '@pts/ui/dialog'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
@@ -88,11 +87,6 @@ export function GitHubReposSection({
   const [availableRepos, setAvailableRepos] = useState<RepoOption[]>([])
   const [loadingRepos, setLoadingRepos] = useState(false)
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<GitHubRepoLink | null>(
-    null
-  )
-  const [pendingDeleteConfirm, setPendingDeleteConfirm] =
-    useState<PendingRepo | null>(null)
   const initialRepoCountRef = useRef<number | null>(null)
 
   const isCreateMode = !projectId
@@ -242,34 +236,17 @@ export function GitHubReposSection({
     ])
     setDialogOpen(false)
     setSelectedRepo(null)
-    toast({
-      title: 'Repository added',
-      description: `${selectedRepo} will be linked when you save.`,
-    })
   }
 
-  const handleRemovePending = () => {
-    if (!pendingDeleteConfirm) return
+  // Removing marks the row (Pending removal, with Undo) or drops an unsaved
+  // one; Save applies it. No confirm and no toast: Undo is the safety net.
+  const handleRemovePending = (repo: PendingRepo) =>
     onPendingReposChange(
-      pendingRepos.filter(
-        r => r.repoFullName !== pendingDeleteConfirm.repoFullName
-      )
+      pendingRepos.filter(r => r.repoFullName !== repo.repoFullName)
     )
-    setPendingDeleteConfirm(null)
-    toast({ title: 'Repository removed' })
-  }
 
-  const handleUnlink = () => {
-    if (!deleteConfirm) return
-
-    // Mark repo for removal on save (don't immediately delete)
-    onRemovedRepoIdsChange(new Set([...removedRepoIds, deleteConfirm.id]))
-    setDeleteConfirm(null)
-    toast({
-      title: 'Repository marked for removal',
-      description: 'Changes will be applied when you save.',
-    })
-  }
+  const handleUnlink = (repo: GitHubRepoLink) =>
+    onRemovedRepoIdsChange(new Set([...removedRepoIds, repo.id]))
 
   if (!isGitHubConnected) {
     return (
@@ -387,7 +364,7 @@ export function GitHubReposSection({
               label='Remove repository'
               icon={<Trash2 />}
               className='text-muted-foreground hover:text-destructive shrink-0'
-              onClick={() => setDeleteConfirm(repo)}
+              onClick={() => handleUnlink(repo)}
               disabled={disabled}
             />
           </div>
@@ -418,7 +395,7 @@ export function GitHubReposSection({
               label='Remove repository'
               icon={<Trash2 />}
               className='text-muted-foreground hover:text-destructive shrink-0'
-              onClick={() => setPendingDeleteConfirm(repo)}
+              onClick={() => handleRemovePending(repo)}
               disabled={disabled}
             />
           </div>
@@ -493,30 +470,6 @@ export function GitHubReposSection({
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Remove Pending Confirmation (create mode) */}
-      <ConfirmDialog
-        open={!!pendingDeleteConfirm}
-        title='Remove repository?'
-        description={`Remove ${pendingDeleteConfirm?.repoFullName} from the list?`}
-        confirmLabel='Remove'
-        cancelLabel='Cancel'
-        confirmVariant='destructive'
-        onConfirm={handleRemovePending}
-        onCancel={() => setPendingDeleteConfirm(null)}
-      />
-
-      {/* Unlink Confirmation (edit mode) */}
-      <ConfirmDialog
-        open={!!deleteConfirm}
-        title='Remove repository?'
-        description={`Remove ${deleteConfirm?.repoFullName}? The change will be applied when you save.`}
-        confirmLabel='Remove'
-        cancelLabel='Cancel'
-        confirmVariant='destructive'
-        onConfirm={handleUnlink}
-        onCancel={() => setDeleteConfirm(null)}
-      />
     </>
   )
 }
