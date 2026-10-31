@@ -83,7 +83,7 @@ export function LeadSheetFormFields({
         name='contact'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Person</FormLabel>
+            <FormLabel entity='contact'>Person</FormLabel>
             <FormControl>
               <ContactLinkPicker
                 value={field.value ?? null}
@@ -111,7 +111,7 @@ export function LeadSheetFormFields({
         name='company'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Company</FormLabel>
+            <FormLabel entity='company'>Company</FormLabel>
             <FormControl>
               <CompanyLinkPicker
                 value={field.value ?? null}
@@ -229,7 +229,7 @@ export function LeadSheetFormFields({
           name='assigneeId'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Assignee</FormLabel>
+              <FormLabel entity='contact'>Assignee</FormLabel>
               <FormControl>
                 <SearchableCombobox
                   items={assigneeItems}

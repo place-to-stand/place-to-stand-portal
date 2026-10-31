@@ -14,6 +14,7 @@ import {
 } from '@/components/sheets/sheet-record-row'
 import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project-sheet-state'
 
@@ -103,6 +104,7 @@ export function ProjectMembersField({
   return (
     <SheetSection
       title='Members'
+      icon={ENTITY_ICONS.contact}
       description='Admins see every project. Sales staff see only the projects they are members of.'
       action={
         canAdd ? (

@@ -3,6 +3,7 @@ import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { EntityFieldLabel } from '@/components/ui/entity-label-icon'
 import { Input } from '@pts/ui/input'
 import { type SearchableComboboxItem } from '@/components/ui/searchable-combobox'
 import { Textarea } from '@pts/ui/textarea'
@@ -150,9 +151,9 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         errorMessage={formErrors.user}
       />
       <div className='space-y-2 sm:col-span-2'>
-        <label htmlFor='time-log-task' className='text-sm font-medium'>
+        <EntityFieldLabel entity='task' htmlFor='time-log-task'>
           Link to tasks (optional)
-        </label>
+        </EntityFieldLabel>
         <TaskSelector
           availableTasks={availableTasks}
           onAddTask={onAddTask}
