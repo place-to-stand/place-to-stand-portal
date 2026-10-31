@@ -69,10 +69,7 @@ export function ClientClosersEditor({
   const locked = isPending || disabled
   const lockedReason = isPending ? pendingReason : disabledReason
   // Removed closers stay as Pending removal, with Undo, until Save.
-  const removals = usePendingRemovals<CloserCandidate>(
-    closerKey,
-    closers.map(closerKey)
-  )
+  const removals = usePendingRemovals<CloserDraft>(closerKey, closers)
   const pendingRemovals = removals.pending
 
   return (
@@ -113,7 +110,7 @@ export function ClientClosersEditor({
       isEmpty={closers.length === 0 && pendingRemovals.length === 0}
       emptyMessage='No closer.'
     >
-      {closers.map(closer => {
+      {removals.rows.map(({ item: closer, pending }) => {
         const key = closerKey(closer)
         return (
           <SheetRecordRow
@@ -121,6 +118,11 @@ export function ClientClosersEditor({
             // A closer is a person, staff or not, like the originator.
             icon={ENTITY_ICONS.contact}
             title={closer.name}
+            pendingRemoval={
+              pending
+                ? { disabled: locked, onUndo: () => onAdd(closer) }
+                : undefined
+            }
             description={
               closer.email && closer.email !== closer.name ? closer.email : null
             }
@@ -165,14 +167,6 @@ export function ClientClosersEditor({
           />
         )
       })}
-      {pendingRemovals.map(closer => (
-        <SheetRecordRow
-          key={`removed-${closerKey(closer)}`}
-          icon={ENTITY_ICONS.contact}
-          title={closer.name}
-          pendingRemoval={{ disabled: locked, onUndo: () => onAdd(closer) }}
-        />
-      ))}
     </EntityList>
   )
 }

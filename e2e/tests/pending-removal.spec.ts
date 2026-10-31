@@ -39,14 +39,26 @@ test('removing a project member leaves Pending removal with Undo', async ({
     .catch(() => false)
   test.skip(!hasOption, 'no sales staff to add')
   await option.click()
+  // A second member, when there is one, so order can be checked.
+  if (await add.isEnabled()) {
+    await add.click()
+    const second = page.getByRole('option').first()
+    if (await second.isVisible().catch(() => false)) await second.click()
+    else await page.keyboard.press('Escape')
+  }
+  const cardTitles = () =>
+    members.locator('.font-medium.truncate').allTextContents()
+  const before = await cardTitles()
 
   const remove = members.getByRole('button', { name: /^Remove / }).first()
   await expect(remove).toBeVisible()
   await remove.click()
-  // The card stays, dimmed, with Undo.
+  // The card stays where it was, dimmed, with Undo.
   await expect(members.getByText('Pending removal')).toBeVisible()
+  expect(await cardTitles()).toEqual(before)
   await members.getByRole('button', { name: /^Undo removing/ }).click()
   await expect(members.getByText('Pending removal')).toHaveCount(0)
+  expect(await cardTitles()).toEqual(before)
   await expect(
     members.getByRole('button', { name: /^Remove / }).first()
   ).toBeVisible()

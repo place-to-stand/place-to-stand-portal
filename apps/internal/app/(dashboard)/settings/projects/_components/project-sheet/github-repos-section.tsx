@@ -330,46 +330,67 @@ export function GitHubReposSection({
         }
       >
         {/* Linked repos (edit mode) */}
-        {displayRepos.map(repo => (
-          <div
-            key={repo.id}
-            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
-          >
-            <div className='flex min-w-0 flex-col gap-1'>
-              <div className='flex items-center gap-2 text-sm'>
+        {(isCreateMode ? [] : repos).map(repo =>
+          removedRepoIds.has(repo.id) ? (
+            <SheetRecordRow
+              key={repo.id}
+              leading={
                 <SimpleIcon
                   icon={siGithub}
                   className='text-muted-foreground h-4 w-4 shrink-0'
                 />
-                <a
-                  href={`https://github.com/${repo.repoFullName}`}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='truncate-link hover:underline'
-                >
-                  {repo.repoFullName}
-                  <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
-                </a>
-              </div>
-              <div className='text-muted-foreground flex items-center gap-2 pl-6 text-xs'>
-                <span>{repo.defaultBranch}</span>
-                {repo.githubAppInstallationId && (
-                  <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
-                    App
-                  </span>
-                )}
-              </div>
-            </div>
-            <RowActionButton
-              type='button'
-              label='Remove repository'
-              icon={<Trash2 />}
-              className='text-muted-foreground hover:text-destructive shrink-0'
-              onClick={() => handleUnlink(repo)}
-              disabled={disabled}
+              }
+              title={repo.repoFullName}
+              pendingRemoval={{
+                disabled,
+                onUndo: () => {
+                  const next = new Set(removedRepoIds)
+                  next.delete(repo.id)
+                  onRemovedRepoIdsChange(next)
+                },
+              }}
             />
-          </div>
-        ))}
+          ) : (
+            <div
+              key={repo.id}
+              className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
+            >
+              <div className='flex min-w-0 flex-col gap-1'>
+                <div className='flex items-center gap-2 text-sm'>
+                  <SimpleIcon
+                    icon={siGithub}
+                    className='text-muted-foreground h-4 w-4 shrink-0'
+                  />
+                  <a
+                    href={`https://github.com/${repo.repoFullName}`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='truncate-link hover:underline'
+                  >
+                    {repo.repoFullName}
+                    <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
+                  </a>
+                </div>
+                <div className='text-muted-foreground flex items-center gap-2 pl-6 text-xs'>
+                  <span>{repo.defaultBranch}</span>
+                  {repo.githubAppInstallationId && (
+                    <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
+                      App
+                    </span>
+                  )}
+                </div>
+              </div>
+              <RowActionButton
+                type='button'
+                label='Remove repository'
+                icon={<Trash2 />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
+                onClick={() => handleUnlink(repo)}
+                disabled={disabled}
+              />
+            </div>
+          )
+        )}
         {/* Pending repos (both modes) */}
         {pendingRepos.map(repo => (
           <div
@@ -402,26 +423,6 @@ export function GitHubReposSection({
           </div>
         ))}
         {/* Removed repos (edit mode) */}
-        {removedRepos.map(repo => (
-          <SheetRecordRow
-            key={`removed-${repo.id}`}
-            leading={
-              <SimpleIcon
-                icon={siGithub}
-                className='text-muted-foreground h-4 w-4 shrink-0'
-              />
-            }
-            title={repo.repoFullName}
-            pendingRemoval={{
-              disabled,
-              onUndo: () => {
-                const next = new Set(removedRepoIds)
-                next.delete(repo.id)
-                onRemovedRepoIdsChange(next)
-              },
-            }}
-          />
-        ))}
       </EntityList>
 
       {/* Link Dialog */}

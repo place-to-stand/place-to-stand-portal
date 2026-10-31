@@ -11,7 +11,6 @@ import type { TimeLogFormErrors } from '@/lib/projects/time-log/types'
 
 import { SelectedTaskList } from './selected-task-list'
 import { EntityList } from '@/components/sheets/entity-list'
-import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { FIELD_STACK_CLASS } from '@/components/ui/form'
@@ -95,7 +94,7 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
   // Unlinked tasks stay as Pending removal, with Undo, until the log saves.
   const taskRemovals = usePendingRemovals<TaskWithRelations>(
     taskKey,
-    selectedTasks.map(taskKey)
+    selectedTasks
   )
 
   return (
@@ -191,25 +190,15 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         emptyMessage='No tasks linked. Hours apply to project if left empty.'
       >
         <SelectedTaskList
-          tasks={selectedTasks}
+          rows={taskRemovals.rows}
           isActionDisabled={isMutating}
           disabledReason={isMutating ? 'Logging time…' : null}
           onRemove={task => {
             taskRemovals.markRemoved(task)
             requestTaskRemoval(task)
           }}
+          onUndo={task => onAddTask(task.id)}
         />
-        {taskRemovals.pending.map(task => (
-          <SheetRecordRow
-            key={`removed-${task.id}`}
-            icon={ENTITY_ICONS.task}
-            title={task.title}
-            pendingRemoval={{
-              disabled: isMutating,
-              onUndo: () => onAddTask(task.id),
-            }}
-          />
-        ))}
       </EntityList>
       <div className={cn(FIELD_STACK_CLASS, 'sm:col-span-2')}>
         <Label htmlFor='time-log-note'>Notes</Label>

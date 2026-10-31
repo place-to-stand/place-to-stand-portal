@@ -67,10 +67,10 @@ export function ContactCompaniesSection({
     )
 
   // Removed companies stay as Pending removal, with Undo, until Save.
-  const removals = usePendingRemovals<ContactCompanyEntry>(
-    companyEntryKey,
-    companies.map(companyEntryKey)
-  )
+  const removals = usePendingRemovals<ContactCompanyEntry>(companyEntryKey, [
+    ...companies.filter(entry => !entry.archived),
+    ...companies.filter(entry => entry.archived),
+  ])
 
   return (
     <EntityList
@@ -112,10 +112,7 @@ export function ContactCompaniesSection({
         ) : undefined
       }
     >
-      {[
-        ...companies.filter(entry => !entry.archived),
-        ...companies.filter(entry => entry.archived),
-      ].map(entry => {
+      {removals.rows.map(({ item: entry, pending }) => {
         const name = entry.companyName || 'this company'
         // A client's primary contact is its invoice recipient: leaving
         // it is for people who manage clients (the server agrees).
@@ -128,6 +125,14 @@ export function ContactCompaniesSection({
           <CompanyRecordRow
             key={entry.companyId}
             company={{ id: entry.companyId, name: entry.companyName }}
+            pendingRemoval={
+              pending
+                ? {
+                    disabled,
+                    onUndo: () => onChange([...companies, entry]),
+                  }
+                : undefined
+            }
             className={entry.archived ? 'opacity-60' : undefined}
             titleAddon={
               entry.clientCompanyId && !entry.archived ? <ClientBadge /> : null
@@ -206,16 +211,6 @@ export function ContactCompaniesSection({
           />
         )
       })}
-      {removals.pending.map(entry => (
-        <CompanyRecordRow
-          key={`removed-${entry.companyId}`}
-          company={{ id: entry.companyId, name: entry.companyName }}
-          pendingRemoval={{
-            disabled,
-            onUndo: () => onChange([...companies, entry]),
-          }}
-        />
-      ))}
     </EntityList>
   )
 }

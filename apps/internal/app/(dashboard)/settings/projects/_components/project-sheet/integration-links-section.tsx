@@ -249,40 +249,61 @@ export function IntegrationLinksSection({
             : `No ${config.label} ${config.projectNoun}s linked.`
         }
       >
-        {activeLinks.map(link => (
-          <div key={link.id} className={rowClasses}>
-            <div className='flex min-w-0 flex-col gap-1'>
-              <div className='flex items-center gap-2 text-sm'>
+        {links.map(link =>
+          removedLinkIds.has(link.id) ? (
+            <SheetRecordRow
+              key={link.id}
+              leading={
                 <IntegrationProviderIcon
                   provider={provider}
                   className='text-muted-foreground h-4 w-4'
                 />
-                <a
-                  href={link.url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='truncate-link hover:underline'
-                >
-                  {link.externalName}
-                  <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
-                </a>
-              </div>
-              {link.ownerName ? (
-                <div className='text-muted-foreground pl-6 text-xs'>
-                  {link.ownerName}
-                </div>
-              ) : null}
-            </div>
-            <RowActionButton
-              type='button'
-              label={`Remove ${link.externalName}`}
-              icon={<Trash2 />}
-              className='text-muted-foreground hover:text-destructive shrink-0'
-              onClick={() => handleUnlink(link)}
-              disabled={disabled}
+              }
+              title={formatIntegrationLinkLabel(link)}
+              pendingRemoval={{
+                disabled,
+                onUndo: () => {
+                  const next = new Set(removedLinkIds)
+                  next.delete(link.id)
+                  onRemovedLinkIdsChange(next)
+                },
+              }}
             />
-          </div>
-        ))}
+          ) : (
+            <div key={link.id} className={rowClasses}>
+              <div className='flex min-w-0 flex-col gap-1'>
+                <div className='flex items-center gap-2 text-sm'>
+                  <IntegrationProviderIcon
+                    provider={provider}
+                    className='text-muted-foreground h-4 w-4'
+                  />
+                  <a
+                    href={link.url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='truncate-link hover:underline'
+                  >
+                    {link.externalName}
+                    <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
+                  </a>
+                </div>
+                {link.ownerName ? (
+                  <div className='text-muted-foreground pl-6 text-xs'>
+                    {link.ownerName}
+                  </div>
+                ) : null}
+              </div>
+              <RowActionButton
+                type='button'
+                label={`Remove ${link.externalName}`}
+                icon={<Trash2 />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
+                onClick={() => handleUnlink(link)}
+                disabled={disabled}
+              />
+            </div>
+          )
+        )}
         {ownPending.map(link => (
           <div key={`pending-${link.externalId}`} className={rowClasses}>
             <div className='flex min-w-0 flex-col gap-1'>
@@ -306,26 +327,6 @@ export function IntegrationLinksSection({
               disabled={disabled}
             />
           </div>
-        ))}
-        {removedLinks.map(link => (
-          <SheetRecordRow
-            key={`removed-${link.id}`}
-            leading={
-              <IntegrationProviderIcon
-                provider={provider}
-                className='text-muted-foreground h-4 w-4'
-              />
-            }
-            title={formatIntegrationLinkLabel(link)}
-            pendingRemoval={{
-              disabled,
-              onUndo: () => {
-                const next = new Set(removedLinkIds)
-                next.delete(link.id)
-                onRemovedLinkIdsChange(next)
-              },
-            }}
-          />
         ))}
       </EntityList>
 

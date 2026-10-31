@@ -87,10 +87,7 @@ export function ProjectMembersField({
 
   const setMembers = (next: string[]) =>
     form.setValue('memberIds', next, { shouldDirty: true })
-  const removals = usePendingRemovals<MemberCandidate>(
-    memberKey,
-    memberIds ?? []
-  )
+  const removals = usePendingRemovals<MemberCandidate>(memberKey, members)
 
   // The + and the empty state open the same picker.
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -137,7 +134,7 @@ export function ProjectMembersField({
         ) : undefined
       }
     >
-      {members.map(member => {
+      {removals.rows.map(({ item: member, pending }) => {
         const name = member.fullName ?? member.email
         return (
           <SheetRecordRow
@@ -145,6 +142,14 @@ export function ProjectMembersField({
             icon={ENTITY_ICONS.contact}
             title={name}
             description={member.fullName ? member.email : null}
+            pendingRemoval={
+              pending
+                ? {
+                    disabled,
+                    onUndo: () => setMembers([...(memberIds ?? []), member.id]),
+                  }
+                : undefined
+            }
             actions={
               <RowActionButton
                 type='button'
@@ -161,17 +166,6 @@ export function ProjectMembersField({
           />
         )
       })}
-      {removals.pending.map(member => (
-        <SheetRecordRow
-          key={`removed-${member.id}`}
-          icon={ENTITY_ICONS.contact}
-          title={member.fullName ?? member.email}
-          pendingRemoval={{
-            disabled,
-            onUndo: () => setMembers([...(memberIds ?? []), member.id]),
-          }}
-        />
-      ))}
     </EntityList>
   )
 }
