@@ -427,6 +427,38 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           </div>
 
           <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+            {isAdmin ? (
+              <FormField
+                control={form.control}
+                name='ownerId'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel entity='contact'>Project owner</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={fieldState.owner.disabled}
+                        reason={fieldState.owner.reason}
+                      >
+                        <SearchableCombobox
+                          name={field.name}
+                          value={field.value ?? ''}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          items={ownerOptions}
+                          clearLabel='owner'
+                          placeholder='Unassigned'
+                          searchPlaceholder='Search people…'
+                          emptyMessage='No teammates found.'
+                          disabled={fieldState.owner.disabled}
+                          onClear={() => field.onChange('')}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
             <FormField
               control={form.control}
               name='status'
@@ -482,38 +514,6 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 )
               }}
             />
-            {isAdmin ? (
-              <FormField
-                control={form.control}
-                name='ownerId'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel entity='contact'>Project owner</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip
-                        disabled={fieldState.owner.disabled}
-                        reason={fieldState.owner.reason}
-                      >
-                        <SearchableCombobox
-                          name={field.name}
-                          value={field.value ?? ''}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          items={ownerOptions}
-                          clearLabel='owner'
-                          placeholder='Unassigned'
-                          searchPlaceholder='Search people…'
-                          emptyMessage='No teammates found.'
-                          disabled={fieldState.owner.disabled}
-                          onClear={() => field.onChange('')}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : null}
           </div>
 
           {isAdmin ? (
