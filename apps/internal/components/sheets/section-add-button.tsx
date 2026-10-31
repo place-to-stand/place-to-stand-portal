@@ -14,6 +14,11 @@ type SectionAddButtonProps = Omit<
   label: string
   /** Disables the button and explains why in a tooltip. */
   disabledReason?: string | null
+  /**
+   * Just the + (a ghost icon button, like the task sheet's Time logs and
+   * Attachments): the label becomes its accessible name.
+   */
+  iconOnly?: boolean
 }
 
 /**
@@ -24,6 +29,7 @@ type SectionAddButtonProps = Omit<
 export function SectionAddButton({
   label,
   disabledReason = null,
+  iconOnly = false,
   disabled,
   ...props
 }: SectionAddButtonProps) {
@@ -36,13 +42,14 @@ export function SectionAddButton({
     >
       <Button
         type='button'
-        variant='outline'
+        variant={iconOnly ? 'ghost' : 'outline'}
         size='xs'
         disabled={isDisabled}
+        aria-label={iconOnly ? label : undefined}
         {...props}
       >
-        <Plus />
-        {label}
+        <Plus className={iconOnly ? 'h-4 w-4' : undefined} />
+        {iconOnly ? null : label}
       </Button>
     </DisabledFieldTooltip>
   )

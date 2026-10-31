@@ -188,13 +188,17 @@ export function CompanyPeopleSection({
       title='People'
       action={
         !canAdd ? (
-          <SectionAddButton label='Add person' disabledReason={lockedReason} />
+          <SectionAddButton
+            label='Add person'
+            iconOnly
+            disabledReason={lockedReason}
+          />
         ) : (
           <ContactLinkPicker
             value={null}
             onChange={contact => (contact ? onAdd(contact) : undefined)}
             excludeIds={listedIds.filter(id => !removed.has(id))}
-            trigger={<SectionAddButton label='Add person' />}
+            trigger={<SectionAddButton label='Add person' iconOnly />}
             open={pickerOpen}
             onOpenChange={setPickerOpen}
           />
