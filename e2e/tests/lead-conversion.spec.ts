@@ -79,7 +79,7 @@ test('lead: a converted Won lead moved back keeps its conversion', async ({
       page.getByRole('dialog').getByText('Converted', { exact: true })
     ).toBeVisible()
   } finally {
-    // Put it back to Won (saving Won opens the company's Billing tab next).
+    // Put it back to Won (saving Won opens the company's sheet at its billing next).
     await setStatus(page, url, 'Closed won')
   }
 })

@@ -85,7 +85,15 @@ test('sales sees no billing or sign-in controls on a company', async ({
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab', { name: 'Billing' })).toHaveCount(0)
+  // The Client column is read-only: where it stands, no billing controls.
+  await expect(
+    sheet.getByRole('heading', { name: 'Client', exact: true })
+  ).toBeVisible()
   await expect(sheet.getByText('Bill this company')).toHaveCount(0)
+  await expect(
+    sheet.getByRole('button', { name: /^(Make a client|Restart billing)$/ })
+  ).toHaveCount(0)
+  await expect(sheet.getByRole('switch', { name: /Bill/ })).toHaveCount(0)
 })
 
 test('sales sees no portal switches on a client company’s people', async ({

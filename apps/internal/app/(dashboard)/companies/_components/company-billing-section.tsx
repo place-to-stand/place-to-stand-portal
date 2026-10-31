@@ -25,7 +25,7 @@ import type {
   CompanyBillingIntent,
 } from '@/lib/companies/sheet-save-schema'
 
-/** What the company sheet's Save reads from its Billing tab. */
+/** What the company sheet's Save reads from its billing section. */
 export type CompanyBillingHandle = {
   /**
    * The billing change for this save, or null when the tab's fields are
@@ -80,7 +80,7 @@ const BillingContext = createContext<BillingContextValue>({
   isPending: false,
 })
 
-/** The company's billing state, for its Billing tab and People rows. */
+/** The company's billing state, for its billing section and People rows. */
 export const useCompanyBilling = () => useContext(BillingContext)
 
 type CompanyBillingProviderProps = {
@@ -137,7 +137,7 @@ const billingModeOf = (props: {
       : 'new'
 
 /**
- * A company's billing lives in its sheet: the Billing tab's "Bill this
+ * A company's billing lives in its sheet: the Client column's "Bill this
  * company" switch, when that takes effect, and the billing fields. This
  * provider holds that state; the sheet's Save collects it (`collect`) and
  * writes it in the same transaction as the company.
@@ -310,7 +310,7 @@ function BillingStateProvider({
   )
 }
 
-/** The Billing tab's form: billing type and state, then commission. */
+/** The billing section's form: billing type and state, then commission. */
 export function CompanyBillingFields() {
   const billing = useCompanyBilling()
 

@@ -10,27 +10,24 @@ import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 
 import { DesignSection, DoDont } from './specimen'
 
-/** A miniature sheet frame for the do/don't examples (layout only). */
+/**
+ * A miniature sheet frame for the do/don't examples (layout only). `parts`
+ * names what the sheet shows: one section, or a two-column sheet's columns
+ * (the company's Company and Client).
+ */
 function MiniSheet({
-  tabs,
+  parts,
   children,
 }: {
-  tabs: string[]
+  parts: string[]
   children: React.ReactNode
 }) {
   return (
     <div className='bg-background w-full overflow-hidden rounded-lg border text-sm shadow-sm'>
-      <div className='flex gap-4 border-b px-3 pt-2'>
-        {tabs.map((tab, index) => (
-          <span
-            key={tab}
-            className={
-              index === 0
-                ? 'border-foreground border-b-2 pb-1.5 font-medium'
-                : 'text-muted-foreground pb-1.5'
-            }
-          >
-            {tab}
+      <div className='text-muted-foreground flex divide-x border-b text-xs'>
+        {parts.map(part => (
+          <span key={part} className='flex-1 px-3 py-1.5'>
+            {part}
           </span>
         ))}
       </div>
@@ -48,9 +45,9 @@ export function PatternsHouseRules() {
     >
       <DoDont
         rule='One Save per sheet'
-        why='All tabs of a sheet stay mounted and save together. Save is always enabled (only a save in flight or a real validation failure disables it) and a successful save closes the sheet.'
+        why='Everything in a sheet, both columns of a two-column sheet included, saves together. Save is always enabled (only a save in flight or a real validation failure disables it) and a successful save closes the sheet.'
         doExample={
-          <MiniSheet tabs={['Details', 'People', 'Billing']}>
+          <MiniSheet parts={['Company', 'Client']}>
             <div className='space-y-2 p-3'>
               <Input defaultValue='Acme Industries' aria-label='Name' />
             </div>
@@ -66,9 +63,9 @@ export function PatternsHouseRules() {
             </SheetFooterBar>
           </MiniSheet>
         }
-        doCaption='One footer, one Save, for every tab.'
+        doCaption='One footer, one Save, for both columns.'
         dontExample={
-          <MiniSheet tabs={['Details', 'People', 'Billing']}>
+          <MiniSheet parts={['Company', 'Client']}>
             <div className='flex items-center gap-2 p-3'>
               <Input defaultValue='Acme Industries' aria-label='Name' />
               <Button size='sm' variant='outline'>
@@ -83,14 +80,14 @@ export function PatternsHouseRules() {
             </div>
           </MiniSheet>
         }
-        dontCaption='A Save per tab, or a Save that waits for changes.'
+        dontCaption='A Save per section, or a Save that waits for changes.'
       />
 
       <DoDont
         rule='Related records stack'
         why='Opening a person, company, lead or task from inside a sheet opens its own sheet on top; closing it goes back to the sheet underneath, where you were. Small focused tasks (link a repo, email an invoice, log time) can use a dialog.'
         doExample={
-          <MiniSheet tabs={['People']}>
+          <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
               <span className='font-semibold'>People</span>
               <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
@@ -104,7 +101,7 @@ export function PatternsHouseRules() {
         }
         doCaption='Click a person: their sheet stacks on top; Close returns to the company.'
         dontExample={
-          <MiniSheet tabs={['People']}>
+          <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
               <span className='font-semibold'>People</span>
               <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
@@ -123,7 +120,7 @@ export function PatternsHouseRules() {
         rule='One Save, one transaction'
         why='Every control in a sheet changes the form; Save writes the record and everything with it (people, billing, sign-in, links) at once, or nothing. Comments, lead updates, logging time, invoice send and void, and planning are their own actions and save on their own click.'
         doExample={
-          <MiniSheet tabs={['People']}>
+          <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
               <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
@@ -137,7 +134,7 @@ export function PatternsHouseRules() {
         }
         doCaption='Flip the portal switch, then Save: the company, its people and their access commit together.'
         dontExample={
-          <MiniSheet tabs={['People']}>
+          <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
               <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
@@ -156,23 +153,23 @@ export function PatternsHouseRules() {
 
       <DoDont
         rule='Create and edit are the same sheet'
-        why='A new record shows every tab and field it will have. What needs the new record (its people, billing, sign-in) is filled in now and saved with it. Only history, dates, archive and share links wait until it exists.'
+        why='A new record shows every section and field it will have. What needs the new record (its people, billing, sign-in) is filled in now and saved with it. Only history, dates, archive and share links wait until it exists.'
         doExample={
-          <MiniSheet tabs={['Details', 'People', 'Projects', 'Billing']}>
+          <MiniSheet parts={['Company', 'Client']}>
             <div className='text-muted-foreground p-3'>
-              New company: all four tabs.
+              New company: both columns, Make a client included.
             </div>
           </MiniSheet>
         }
         doCaption='Create a company with its people and billing in one pass.'
         dontExample={
-          <MiniSheet tabs={['Details']}>
+          <MiniSheet parts={['Company']}>
             <div className='text-muted-foreground p-3'>
-              Save, close and reopen to add people.
+              Save, close and reopen to make it a client.
             </div>
           </MiniSheet>
         }
-        dontCaption='A create sheet that hides tabs until the record exists.'
+        dontCaption='A create sheet that hides parts until the record exists.'
       />
 
       <DoDont

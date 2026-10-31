@@ -126,7 +126,7 @@ export type CompanyClientWork = {
   hoursLoggedThisMonth: number | null
 }
 
-/** A client company's work for its Projects and Billing tabs (admins). */
+/** A client company's work for its Client column and Updates (admins). */
 export async function loadCompanyClientWork(
   companyId: string
 ): Promise<CompanyClientWork | null> {
@@ -137,7 +137,7 @@ export async function loadCompanyClientWork(
     .select({ slug: companies.slug, billingType: currentBillingTypeSql() })
     .from(companies)
     .where(
-      // Former clients too: their Projects tab keeps the history.
+      // Former clients too: their Projects keep the history.
       and(wasClientCompany(), eq(companies.id, companyId))
     )
     .limit(1)

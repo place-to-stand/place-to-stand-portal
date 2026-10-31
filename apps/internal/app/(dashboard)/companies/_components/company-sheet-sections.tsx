@@ -34,6 +34,7 @@ import { formatHours } from '@pts/ui/numbers'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 import { monthLabelFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
+import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/companies/billing/billing-types'
 
 export function CompanyLeadsSection({
   leads,
@@ -60,13 +61,19 @@ export function CompanyLeadsSection({
   )
 }
 
+/** What making a company a client does, in one line. */
+const NOT_A_CLIENT =
+  'Not a client. A client is billed, has projects and can use the portal.'
+
 /**
- * The Billing tab (admins). "Bill this company" makes it a client when
- * switched on and saved, and stops billing when switched off; when that
- * takes effect and the billing fields sit right under it. Everything saves
- * with the sheet's Save.
+ * The Client column's billing (admins). A company that isn't billed shows a
+ * "Not a client" panel; Make a client (or Restart billing, for a former
+ * client) switches "Bill this company" on, which makes it a client on Save.
+ * Switched off, a client stops billing on Save. When that takes effect and
+ * the billing fields sit right under it. Everything saves with the sheet's
+ * Save.
  */
-export function CompanyBillingTab({
+export function CompanyBillingSection({
   companyId,
   disabled,
 }: {
@@ -98,22 +105,24 @@ export function CompanyBillingTab({
   const line =
     mode === 'new'
       ? billingOn
-        ? onSave(`Saving makes this company a client.${portalNow}`)
-        : state('Not billed. Switch on and save to make this company a client.')
+        ? onSave(`This company becomes a client when you save.${portalNow}`)
+        : null // the Not a client panel shows instead
       : mode === 'former'
         ? billingOn
           ? onSave(
-              'Saving restarts billing with these terms, any changes from its first month billed. Its people with Portal on get portal access back.'
+              'Billing restarts with these terms when you save, with any changes from its first month billed. Its people with Portal on get portal access back.'
             )
-          : state('Billing stopped. Switch on and save to restart it.')
+          : null // the former client panel shows instead
         : mode === 'ending' && billingOn
           ? billing.keepBilling
-            ? onSave('Saving cancels the stop and keeps billing this company.')
+            ? onSave(
+                'The stop is cancelled and billing continues when you save.'
+              )
             : state(`Billing stops after ${endsLabel}.`)
           : billingOn
             ? null
             : onSave(
-                'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
+                'Billing stops when you save. Their people lose portal access when billing ends; projects, invoices and history stay.'
               )
   // A stop before this month leaves this month's net 30 time unbilled.
   const unbilledHours =
@@ -139,6 +148,36 @@ export function CompanyBillingTab({
     : billingOn && (mode === 'new' || mode === 'former')
       ? { title: 'First month billed', options: thisOrNextMonthOptions() }
       : null
+
+  // Not billed (never, or not any more): the panel, until Make a client.
+  if (!billingOn && (mode === 'new' || mode === 'former')) {
+    const lastType = CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
+      option => option.value === billing.client?.billing_type
+    )?.label
+    return (
+      <SheetSection title='Client'>
+        <EmptyState
+          message={
+            mode === 'new'
+              ? NOT_A_CLIENT
+              : `Former client${lastType ? `, last billed ${lastType}` : ''}. Billing stopped.`
+          }
+          action={
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              disabled={disabled || billing.status !== 'ready'}
+              onClick={() => billing.setBillingOn(true)}
+            >
+              <ENTITY_ICONS.client />
+              {mode === 'new' ? 'Make a client' : 'Restart billing'}
+            </Button>
+          }
+        />
+      </SheetSection>
+    )
+  }
 
   return (
     <>
@@ -187,8 +226,7 @@ export function CompanyBillingTab({
             <TriangleAlert />
             <AlertContent>
               <AlertDescription>
-                {formatHours(unbilledHours)} logged this month won’t be
-                billed.
+                {formatHours(unbilledHours)} logged this month won’t be billed.
               </AlertDescription>
             </AlertContent>
           </Alert>
@@ -225,10 +263,55 @@ export function CompanyBillingTab({
 }
 
 /**
- * The Projects tab (clients, and former clients with projects): the
- * company's projects and its latest updates. Hidden on the create sheet.
+ * The Client column for someone who can't manage clients (Sales): where the
+ * company stands, read-only. Billing, projects and portal access stay with
+ * admins.
  */
-export function CompanyProjectsTab({
+export function CompanyClientReadOnly({
+  isClient,
+  wasClient,
+}: {
+  isClient: boolean
+  wasClient: boolean
+}) {
+  return (
+    <SheetSection title='Client' action={isClient ? <ClientBadge /> : null}>
+      {isClient ? (
+        <p className='text-muted-foreground text-sm'>
+          Only an admin can change a client’s billing.
+        </p>
+      ) : (
+        <EmptyState
+          message={
+            wasClient
+              ? 'Former client. Only an admin can restart billing.'
+              : `${NOT_A_CLIENT} Only an admin can make a company a client.`
+          }
+        />
+      )}
+    </SheetSection>
+  )
+}
+
+/**
+ * The company's latest client updates (clients and former clients), on the
+ * Company column under Leads.
+ */
+export function CompanyClientUpdates({ companyId }: { companyId: string }) {
+  const { data: work } = useQuery({
+    queryKey: ['companyClientWork', companyId],
+    queryFn: () => loadCompanyClientWork(companyId),
+    staleTime: 0,
+  })
+  if (!work) return <Skeleton className='h-24 w-full' />
+  return <ClientUpdatesSection companyId={companyId} updates={work.updates} />
+}
+
+/**
+ * The Client column's Projects (clients, and former clients with projects),
+ * as record rows, with Create project on a current client.
+ */
+export function CompanyProjectsSection({
   companyId,
   canCreate,
 }: {
@@ -244,53 +327,54 @@ export function CompanyProjectsTab({
   })
 
   if (isLoading || !work) {
-    return <Skeleton className='h-24 w-full' />
+    return (
+      <SheetSection title='Projects'>
+        <Skeleton className='h-24 w-full' />
+      </SheetSection>
+    )
   }
 
   return (
-    <>
-      <SheetSection
-        title='Projects'
-        action={
-          <div className='flex items-center gap-3'>
-            <span className='text-muted-foreground text-xs'>
-              {work.projects.length}
-            </span>
-            {canCreate ? (
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() =>
-                  openNew('project', { projectCompanyId: companyId })
-                }
-              >
-                <ENTITY_ICONS.project />
-                Create project
-              </Button>
-            ) : null}
-          </div>
-        }
-      >
-        {work.projects.length === 0 ? (
-          <EmptyState message='No projects yet.' />
-        ) : (
-          <SheetRecordList>
-            {work.projects.map(project => (
-              <ProjectRecordRow
-                key={project.id}
-                project={project}
-                href={
-                  work.clientSlug && project.slug
-                    ? projectBoardHref(work.clientSlug, project.slug)
-                    : null
-                }
-              />
-            ))}
-          </SheetRecordList>
-        )}
-      </SheetSection>
-      <ClientUpdatesSection companyId={companyId} updates={work.updates} />
-    </>
+    <SheetSection
+      title='Projects'
+      action={
+        <div className='flex items-center gap-3'>
+          <span className='text-muted-foreground text-xs'>
+            {work.projects.length}
+          </span>
+          {canCreate ? (
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() =>
+                openNew('project', { projectCompanyId: companyId })
+              }
+            >
+              <ENTITY_ICONS.project />
+              Create project
+            </Button>
+          ) : null}
+        </div>
+      }
+    >
+      {work.projects.length === 0 ? (
+        <EmptyState message='No projects yet.' />
+      ) : (
+        <SheetRecordList>
+          {work.projects.map(project => (
+            <ProjectRecordRow
+              key={project.id}
+              project={project}
+              href={
+                work.clientSlug && project.slug
+                  ? projectBoardHref(work.clientSlug, project.slug)
+                  : null
+              }
+            />
+          ))}
+        </SheetRecordList>
+      )}
+    </SheetSection>
   )
 }

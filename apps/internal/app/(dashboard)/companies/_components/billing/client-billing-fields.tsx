@@ -31,10 +31,7 @@ import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/companies/billing/bill
 import { US_STATES } from '@/lib/companies/billing/us-states'
 import type { ClientSheetFormValues } from '@/lib/companies/billing/client-sheet-schema'
 import { cn } from '@/lib/utils'
-import {
-  monthNameFromNow,
-  thisOrNextMonthOptions,
-} from '@/lib/billing/months'
+import { monthNameFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 
 import { ClientClosersEditor } from './client-closers-editor'
@@ -81,7 +78,7 @@ export type ClientBillingFieldsProps = {
 /**
  * A client's billing: billing type and state, commission, and portal access.
  * Shown in the company sheet (a client is its company's billing record) and
- * on the company's Billing tab. Renders inside the caller's `<Form>`.
+ * on the company's billing (its sheet's Client column). Renders inside the caller's `<Form>`.
  */
 export function ClientBillingFields({
   form,

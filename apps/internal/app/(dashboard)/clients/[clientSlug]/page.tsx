@@ -11,7 +11,7 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 /**
  * Old bookmarks only: there is no client page. A client is a company you
- * bill, so `/clients/<slug or id>` opens that company on its Projects tab
+ * bill, so `/clients/<slug or id>` opens that company at its Projects
  * (ids from before 0111 resolve through the archive map).
  */
 export default async function ClientDetailPage({

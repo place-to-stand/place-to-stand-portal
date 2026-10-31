@@ -1722,6 +1722,13 @@
     "capability": null
   },
   {
+    "type": "route",
+    "name": "GET /auth/sign-out",
+    "file": "apps/internal/app/auth/sign-out/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
     "type": "page",
     "name": "/",
     "file": "apps/internal/app/page.tsx",
