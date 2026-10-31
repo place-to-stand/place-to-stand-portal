@@ -1,13 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Plus } from 'lucide-react'
-
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
-import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { LandingProject } from '@/lib/data/projects'
 
@@ -16,15 +9,19 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import type { ProjectStatusValue } from '@/lib/constants'
 
+import { ProjectsAddButton } from './projects-add-button'
 import { ProjectsLanding } from './projects-landing'
-import type { ClientHoursData, LandingUnfilteredCounts } from './projects-landing'
+import type {
+  ClientHoursData,
+  LandingUnfilteredCounts,
+} from './projects-landing'
 import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
 
 export type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
   landingClients: Array<{ id: string; name: string; slug: string | null }>
-  clients: ClientRow[]
+  clients: ClientPickerRow[]
   /** Owner picker options for the table's avatar cell. */
   admins: AdminUserForOwner[]
   currentUserId: string
@@ -37,6 +34,11 @@ export type ProjectsLandingAdminSectionProps = {
   filtersActive: boolean
   unfilteredCounts: LandingUnfilteredCounts
   clientHoursMap?: Record<string, ClientHoursData>
+  /**
+   * Project members (non-admins): read-only list and no tabs. "Create project"
+   * opens the same sheet, which offers only what their role can create.
+   */
+  memberView?: boolean
 }
 
 export function ProjectsLandingAdminSection({
@@ -52,23 +54,14 @@ export function ProjectsLandingAdminSection({
   filtersActive,
   unfilteredCounts,
   clientHoursMap = {},
+  memberView = false,
 }: ProjectsLandingAdminSectionProps) {
-  const sortedClients = useMemo(() => sortClientsByName(clients), [clients])
-
-  // This section only ever *creates* projects (row clicks go to the project
-  // workspace), so it opens `?project=new` and lets the global SheetHost
-  // render the sheet instead of owning a second instance.
-  const { openCreate } = useSheetParamSelection('project')
-
-  const createDisabled = sortedClients.length === 0
-  const createDisabledReason = createDisabled
-    ? 'Add a client before creating a project.'
-    : null
-
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/projects')}
-      tabs={PROJECTS_TABS}
+      // Members get the same tab bar with just the main tab, so the page
+      // reads like everyone else's (Archive and Activity are admin-only).
+      tabs={memberView ? PROJECTS_TABS.slice(0, 1) : PROJECTS_TABS}
       activeTab='projects'
       count={
         // R2/03.E5: the implicit default status view must not read as
@@ -82,21 +75,8 @@ export function ProjectsLandingAdminSection({
           : { label: 'projects', total: filteredProjectCount }
       }
       primaryAction={
-        <DisabledFieldTooltip
-          disabled={createDisabled}
-          reason={createDisabledReason}
-        >
-          <Button
-            type='button'
-            size='sm'
-            onClick={openCreate}
-            disabled={createDisabled}
-            className='gap-2'
-          >
-            <Plus className='h-4 w-4' />
-            Add project
-          </Button>
-        </DisabledFieldTooltip>
+        // Everyone gets the same sheet; it offers only what the role can use.
+        <ProjectsAddButton clients={clients} allowWithoutClients={memberView} />
       }
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
@@ -109,6 +89,7 @@ export function ProjectsLandingAdminSection({
           clientHoursMap={clientHoursMap}
           unfilteredCounts={unfilteredCounts}
           filtersActive={filtersActive}
+          readOnly={memberView}
         />
       </section>
     </PageShell>

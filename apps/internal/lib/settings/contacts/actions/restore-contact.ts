@@ -1,11 +1,13 @@
 import { eq } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
+import { roleCan } from '@/lib/auth/capabilities'
 import { contactRestoredEvent } from '@/lib/activity/events/contacts'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
+import { primaryAtClientSql } from '@/lib/queries/memberships'
 import {
   restoreContactSchema,
   type RestoreContactInput,
@@ -45,7 +47,13 @@ export async function restoreContactMutation(
       }
 
       let existingContact:
-        | { id: string; email: string; name: string | null }
+        | {
+            id: string
+            email: string | null
+            name: string | null
+            userId: string | null
+            primaryAtClient: boolean
+          }
         | undefined
 
       try {
@@ -54,6 +62,8 @@ export async function restoreContactMutation(
             id: contacts.id,
             email: contacts.email,
             name: contacts.name,
+            userId: contacts.userId,
+            primaryAtClient: primaryAtClientSql(contacts.id),
           })
           .from(contacts)
           .where(eq(contacts.id, parsed.data.id))
@@ -62,23 +72,45 @@ export async function restoreContactMutation(
         existingContact = rows[0]
       } catch (error) {
         console.error('Failed to load contact for restore', error)
-        return buildMutationResult({ error: 'Unable to restore contact.' })
+        return buildMutationResult({ error: 'Unable to restore person.' })
       }
 
       if (!existingContact) {
-        return buildMutationResult({ error: 'Contact not found.' })
+        return buildMutationResult({ error: 'Person not found.' })
+      }
+
+      // Someone who can sign in is admin-only, as when archiving them.
+      if (existingContact.userId && !roleCan(user.role, 'clients.manage')) {
+        return buildMutationResult({
+          error: 'This person can sign in. Ask an admin to restore them.',
+        })
+      }
+      // A client's primary contact, as when archiving them.
+      if (
+        existingContact.primaryAtClient &&
+        !roleCan(user.role, 'clients.manage')
+      ) {
+        return buildMutationResult({
+          error:
+            'This person is a client’s primary contact, so only an admin can restore them.',
+        })
       }
 
       try {
         await db
           .update(contacts)
-          .set({ deletedAt: null })
+          .set({
+            deletedAt: null,
+            updatedAt: new Date().toISOString(),
+          })
           .where(eq(contacts.id, parsed.data.id))
       } catch (error) {
         console.error('Failed to restore contact', error)
         return buildMutationResult({
           error:
-            error instanceof Error ? error.message : 'Unable to restore contact.',
+            error instanceof Error
+              ? error.message
+              : 'Unable to restore person.',
         })
       }
 

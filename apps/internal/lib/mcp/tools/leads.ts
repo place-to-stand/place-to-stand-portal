@@ -34,7 +34,6 @@ export function registerLeadTools(server: McpServer) {
     title: 'List leads',
     description:
       'List sales pipeline leads, most recently updated first. Filter by stage, owner or text. Notes are plain-text previews; get_lead returns the full lead and its timeline.',
-    access: 'crm',
     effect: 'read',
     input: {
       status: z.enum(LEAD_STATUS_VALUES).optional(),
@@ -73,7 +72,6 @@ export function registerLeadTools(server: McpServer) {
     name: 'get_lead',
     title: 'Get lead',
     description: `One lead with its full notes and its ${RECENT_UPDATES} most recent timeline entries (calls, emails, texts, meetings).`,
-    access: 'crm',
     effect: 'read',
     input: { leadId },
     run: async ({ leadId }, { user }) => {
@@ -93,7 +91,6 @@ export function registerLeadTools(server: McpServer) {
     title: 'Create lead',
     description:
       'Add a lead to the sales pipeline, as the connected user. Starts in NEW_OPPORTUNITIES unless status is given.',
-    access: 'crm',
     effect: 'write',
     input: cliCreateLeadFields,
     run: async (args, { user }) => ({
@@ -106,7 +103,6 @@ export function registerLeadTools(server: McpServer) {
     title: 'Update lead',
     description:
       'Edit a lead or move it to another stage. Omitted fields keep their value; null clears one. Does not convert a lead to a client. No tool archives or deletes a lead: move it to CLOSED_LOST or UNQUALIFIED, or archive it in the portal.',
-    access: 'crm',
     effect: 'idempotent-write',
     input: { leadId, ...cliUpdateLeadFields },
     run: async ({ leadId, ...changes }, { user }) => {
@@ -123,7 +119,6 @@ export function registerLeadTools(server: McpServer) {
     title: 'Log lead update',
     description:
       "Log a call, email, text, meeting or note on a lead's timeline, as the connected user.",
-    access: 'crm',
     effect: 'write',
     input: { leadId, ...cliCreateLeadUpdateFields },
     run: async ({ leadId, ...update }, { user }) => ({

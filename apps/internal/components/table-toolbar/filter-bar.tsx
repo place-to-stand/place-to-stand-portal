@@ -17,6 +17,11 @@ type FilterBarProps = {
   /** Whether Reset shows: any filter or the search differs from its default. */
   showReset?: boolean
   onReset?: () => void
+  /**
+   * Read-only summary pinned to the row's right end (a filtered total).
+   * Wraps onto its own line below md.
+   */
+  aside?: ReactNode
   className?: string
 }
 
@@ -36,6 +41,7 @@ export function FilterBar({
   activeFilterCount = 0,
   showReset = false,
   onReset,
+  aside,
   className,
 }: FilterBarProps) {
   const hasFilters = Children.toArray(children).length > 0
@@ -60,6 +66,9 @@ export function FilterBar({
           <ResetFiltersButton show={showReset} onReset={onReset} />
         ) : null}
       </div>
+      {aside ? (
+        <div className='ml-auto shrink-0 text-sm max-md:w-full'>{aside}</div>
+      ) : null}
     </div>
   )
 }

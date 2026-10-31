@@ -1,50 +1,92 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
 import { useToast } from '@/components/ui/use-toast'
+import { currentMonthStartUtc } from '@/lib/billing/months'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import {
-  saveContact,
+  savePersonSheetAction,
   softDeleteContact,
-  promoteContactToUser,
   getContactSheetData,
-  syncContactClients,
-} from '@/app/(dashboard)/contacts/actions'
+  getPersonSignIn,
+} from '@/app/(dashboard)/people/actions'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
+import type { RoleMonthOption } from '@/lib/settings/users/role-months'
+import { USER_ROLES } from '@/lib/settings/users/user-validation'
 import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
-import type { ContactClientOption } from '@/app/(dashboard)/contacts/_components/contact-sheet/contact-client-picker'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
-import { subscribeSheetCreated } from '@/lib/sheets/created'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 /** The record handed to `onCreated` (and to a host picker underneath). */
 export type CreatedContact = ContactSheetInput
 
 const contactFormSchema = z.object({
-  email: z.string().email({ message: 'Valid email is required' }),
+  email: z.union([
+    z.string().trim().email({ message: 'Enter a valid email' }),
+    z.literal(''),
+  ]),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z.string().max(40).optional(),
+  linkedinUrl: z.string().max(255).optional(),
+  /** Every company they belong to, staged until Save. */
+  companies: z.array(
+    z.object({
+      companyId: z.string().uuid(),
+      companyName: z.string(),
+      title: z.string().max(160),
+      /** Set on the company sheet; shown read-only here. */
+      isPrimary: z.boolean(),
+      portalAccess: z.boolean(),
+      clientCompanyId: z.string().nullable(),
+      clientName: z.string().nullable(),
+      /** Billed before, not now: its portal access returns if billing restarts. */
+      formerClient: z.boolean().optional(),
+      billingType: z.enum(['prepaid', 'net_30']).nullable().optional(),
+      /** The agency's own company: its people are staff (Access: no client portal). */
+      isStaff: z.boolean().optional(),
+      /** The company or its client is archived: shown muted, kept on save. */
+      archived: z.boolean().optional(),
+    })
+  ),
+  /** Their photo: a staged upload's path, saved with the sheet. */
+  avatarPath: z.string().trim().max(255).nullable().optional(),
+  avatarRemoved: z.boolean().optional(),
+  /** Their sign-in (admins only): can they sign in, and as what. */
+  signIn: z
+    .object({
+      enabled: z.boolean(),
+      role: z.enum(USER_ROLES),
+      /** The month a role change starts (month start). */
+      effectiveFrom: z.string(),
+    })
+    .optional(),
 })
+
+export type ContactCompanyEntry = z.infer<
+  typeof contactFormSchema
+>['companies'][number]
 
 export type ContactFormData = z.infer<typeof contactFormSchema>
 
 /** Minimal contact data needed for the sheet form */
 export type ContactSheetInput = {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   userId: string | null
+  // Sales profile. Optional so older callers (pickers handing back a
+  // just-created contact) still type-check; the sheet treats missing as empty.
+  jobTitle?: string | null
+  linkedinUrl?: string | null
+  companyId?: string | null
+  companyName?: string | null
 }
 
 export type UseContactSheetStateOptions = {
@@ -55,15 +97,9 @@ export type UseContactSheetStateOptions = {
   onCreated?: (contact: CreatedContact) => void
   /** Name prefill for the create sheet (create-from-picker). */
   initialName?: string
+  /** Company prefill for the create sheet (only the id; the picker names it). */
+  initialCompanyId?: string
   contact?: ContactsTableContact | ContactSheetInput | null
-  /** All available clients for the client picker (fetched when not provided) */
-  allClients?: ContactClientOption[]
-}
-
-function hasMetrics(
-  c: ContactsTableContact | ContactSheetInput | null | undefined
-): c is ContactsTableContact {
-  return Boolean(c && 'metrics' in c && c.metrics)
 }
 
 export function useContactSheetState({
@@ -72,43 +108,39 @@ export function useContactSheetState({
   onComplete,
   onCreated,
   initialName,
+  initialCompanyId,
   contact,
-  allClients: allClientsProp,
 }: UseContactSheetStateOptions) {
-  const [isPending, startTransition] = useTransition()
-  const [feedback, setFeedback] = useState<string | null>(null)
+  const [isTransitionPending, startTransition] = useTransition()
+  const isPending = isTransitionPending
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isPromoteDialogOpen, setIsPromoteDialogOpen] = useState(false)
-  const [isClientPickerOpen, setIsClientPickerOpen] = useState(false)
-
-  // Client data state - can come from props or be fetched
-  const [fetchedAllClients, setFetchedAllClients] = useState<
-    ContactClientOption[]
-  >([])
-  const [selectedClients, setSelectedClients] = useState<ContactClientOption[]>(
-    []
-  )
-  const [initialClients, setInitialClients] = useState<ContactClientOption[]>(
-    []
-  )
-  const [isLoadingClients, setIsLoadingClients] = useState(false)
-  // Clients created from inside the picker this session — the fetched list
-  // predates them, so they're merged in to stay re-selectable after removal.
-  const [createdClients, setCreatedClients] = useState<ContactClientOption[]>(
-    []
-  )
-  const { openNew } = useSheetParams()
+  // An edit's Companies list arrives after the sheet opens. Until it has,
+  // a save leaves their companies alone rather than sending an empty list.
+  const [companiesLoaded, setCompaniesLoaded] = useState(false)
+  const [companiesLoadFailed, setCompaniesLoadFailed] = useState(false)
+  // The person's `updated_at` as loaded: Save sends it back, and the server
+  // refuses if someone else saved them since.
+  const [loadedUpdatedAt, setLoadedUpdatedAt] = useState<string | null>(null)
+  // Their live sign-in's role as saved (null: they can't sign in). Shown
+  // read-only in Access to people who can't change sign-ins.
+  const [savedSignInRole, setSavedSignInRole] = useState<
+    'ADMIN' | 'SALES' | 'CLIENT' | null
+  >(null)
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
-
-  // Use provided allClients or fetched ones
-  const baseClients = allClientsProp ?? fetchedAllClients
-  const allClients = useMemo(() => {
-    if (createdClients.length === 0) return baseClients
-    const known = new Set(baseClients.map(c => c.id))
-    return [...baseClients, ...createdClients.filter(c => !known.has(c.id))]
-  }, [baseClients, createdClients])
+  // Sign-ins and portal access are for people who manage clients
+  // (admins). undefined = loading (or none to load).
+  const { role: viewerRole } = useViewerAccess()
+  const canManageSignIn = canSeePortalAccess(viewerRole)
+  const signInUserId = canManageSignIn ? (contact?.userId ?? null) : null
+  const [signInAccount, setSignInAccount] = useState<
+    PortalAccountSummary | null | undefined
+  >(undefined)
+  const [roleMonths, setRoleMonths] = useState<RoleMonthOption[]>([])
+  // Someone who can sign in is edited by admins only (the server agrees).
+  const readOnly = isEditing && !canManageSignIn && Boolean(contact?.userId)
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false)
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
@@ -116,13 +148,12 @@ export function useContactSheetState({
       email: '',
       name: '',
       phone: '',
+      linkedinUrl: '',
+      companies: [],
     },
   })
 
-  // Track the contact ID to detect changes
-  const prevContactIdRef = useRef<string | null | undefined>(null)
-
-  // Initialize form and fetch client data when sheet opens
+  // Initialize the form and load the contact's clients when the sheet opens
   useEffect(() => {
     if (!open) {
       return
@@ -130,103 +161,166 @@ export function useContactSheetState({
 
     const contactId = contact?.id
 
-    // Reset form - intentional setState during effect to sync UI with prop changes
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFeedback(null)
     form.reset({
+      avatarPath: null,
+      avatarRemoved: false,
+      // No sign-in yet: off, and Client if they turn it on. Shown on create
+      // too, so a new person can get a sign-in in the same Save.
+      signIn: canManageSignIn
+        ? {
+            enabled: false,
+            role: 'CLIENT',
+            effectiveFrom: currentMonthStartUtc(),
+          }
+        : undefined,
       email: contact?.email ?? '',
       name: contact?.name ?? initialName ?? '',
       phone: contact?.phone ?? '',
+      linkedinUrl: contact?.linkedinUrl ?? '',
+      // A create from a company (e.g. the lead sheet) starts there; the
+      // picker names it.
+      companies:
+        !contact && initialCompanyId
+          ? [
+              {
+                companyId: initialCompanyId,
+                companyName: '',
+                title: '',
+                isPrimary: false,
+                portalAccess: false,
+                clientCompanyId: null,
+                clientName: null,
+              },
+            ]
+          : [],
     })
 
-    // If we have metrics (from ContactsTableContact), use them directly
-    if (hasMetrics(contact)) {
-      const clients = contact.metrics.clients.map(c => ({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-      }))
-      setSelectedClients(clients)
-      setInitialClients(clients)
-
-      // If we already have allClients from props, we're done
-      if (allClientsProp && allClientsProp.length > 0) {
-        return
-      }
-    } else {
-      // No metrics - reset to empty
-      setSelectedClients([])
-      setInitialClients([])
+    // Reset state - intentional setState during effect to sync UI with prop changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCompaniesLoaded(!contactId)
+    setCompaniesLoadFailed(false)
+    setLoadedUpdatedAt(null)
+    setSavedSignInRole(
+      contact && 'signInRole' in contact ? (contact.signInRole ?? null) : null
+    )
+    if (!contactId) {
+      return
     }
 
-    // Fetch client data if not provided via props or if contact changed
-    const shouldFetch =
-      !allClientsProp ||
-      allClientsProp.length === 0 ||
-      (isEditing &&
-        !hasMetrics(contact) &&
-        prevContactIdRef.current !== contactId)
-
-    if (shouldFetch) {
-      setIsLoadingClients(true)
-      getContactSheetData(contactId || undefined)
-        .then(data => {
-          setFetchedAllClients(data.allClients)
-          if (contactId && data.linkedClients.length > 0) {
-            setSelectedClients(data.linkedClients)
-            setInitialClients(data.linkedClients)
+    let cancelled = false
+    getContactSheetData(contactId)
+      .then(data => {
+        if (cancelled) return
+        setCompaniesLoaded(true)
+        if (data.person) {
+          setLoadedUpdatedAt(data.person.updatedAt)
+          setSavedSignInRole(data.person.signInRole)
+          // The sheet opened with the list's copy of their details, which
+          // can be older than this read: show the saved ones (the version
+          // Save checks against), unless already edited.
+          const saved = {
+            name: data.person.name,
+            email: data.person.email ?? '',
+            phone: data.person.phone ?? '',
+            linkedinUrl: data.person.linkedinUrl ?? '',
           }
+          for (const key of Object.keys(saved) as (keyof typeof saved)[]) {
+            const untouched =
+              (form.getValues(key) ?? '') ===
+              (form.formState.defaultValues?.[key] ?? '')
+            if (untouched) form.resetField(key, { defaultValue: saved[key] })
+          }
+        }
+        form.resetField('avatarPath', { defaultValue: data.avatarUrl })
+        // Loaded after the reset: becomes the saved state, not an edit.
+        form.resetField('companies', {
+          defaultValue: data.memberships.map(membership => ({
+            companyId: membership.companyId,
+            companyName: membership.companyName,
+            title: membership.title ?? '',
+            isPrimary: membership.isPrimary,
+            portalAccess: membership.portalAccess,
+            clientCompanyId: membership.clientCompanyId,
+            clientName: membership.clientName,
+            formerClient: membership.formerClient,
+            billingType: membership.billingType,
+            isStaff: membership.isStaff,
+            archived: membership.archived,
+          })),
         })
-        .catch(err => {
-          console.error('Failed to fetch contact sheet data:', err)
-        })
-        .finally(() => {
-          setIsLoadingClients(false)
-        })
+      })
+      .catch(err => {
+        console.error('Failed to fetch contact sheet data:', err)
+        if (!cancelled) setCompaniesLoadFailed(true)
+      })
+
+    return () => {
+      cancelled = true
     }
+  }, [open, contact, form, initialName, initialCompanyId, canManageSignIn])
 
-    prevContactIdRef.current = contactId
-  }, [open, contact, form, allClientsProp, isEditing, initialName])
-
-  // Check if client links have changed
-  const clientsHaveChanged = useMemo(() => {
-    const initialIds = new Set(initialClients.map(c => c.id))
-    const selectedIds = new Set(selectedClients.map(c => c.id))
-
-    if (initialIds.size !== selectedIds.size) return true
-    for (const id of initialIds) {
-      if (!selectedIds.has(id)) return true
+  // Their sign-in, loaded after the reset like the companies: it becomes
+  // the saved state of the Sign-in fields, not an edit.
+  const loadSignIn = useCallback(async () => {
+    if (!signInUserId) return
+    try {
+      const { account, roleMonths: months } =
+        await getPersonSignIn(signInUserId)
+      setSignInAccount(account)
+      setRoleMonths(months)
+      if (account) {
+        // The saved state of the Sign-in fields. A whole-form reset (keeping
+        // anything already edited): the Sign-in controls mount only once the
+        // account is known, and resetField skips fields not yet registered.
+        form.reset(
+          {
+            ...form.getValues(),
+            signIn: {
+              enabled: !account.disabledAt && !account.deletedAt,
+              role: account.role,
+              effectiveFrom: currentMonthStartUtc(),
+            },
+          },
+          { keepDirtyValues: true }
+        )
+      }
+    } catch (error) {
+      console.error('Failed to load sign-in:', error)
+      setSignInAccount(null)
     }
-    return false
-  }, [initialClients, selectedClients])
+  }, [form, signInUserId])
 
-  // Compute available clients (all clients minus selected ones)
-  const availableClients = useMemo(() => {
-    const selectedIds = new Set(selectedClients.map(c => c.id))
-    return allClients.filter(c => !selectedIds.has(c.id))
-  }, [allClients, selectedClients])
+  // Reload whenever the form is reset (the effect above runs on the same
+  // inputs), so a refreshed person never leaves the Sign-in fields at their
+  // blank defaults.
+  useEffect(() => {
+    if (!open || !signInUserId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSignInAccount(undefined)
+    void loadSignIn()
+  }, [open, contact, initialName, initialCompanyId, signInUserId, loadSignIn])
 
-  const contactDisplayName = contact?.name || contact?.email || 'this contact'
-  const sheetTitle = isEditing ? 'Edit Contact' : 'Add Contact'
-  const sheetDescription = isEditing
-    ? `Update the details for ${contactDisplayName}.`
-    : 'Add a new contact to your organization.'
-
-  // hasChanges is true if form is dirty OR client links have changed from initial state
-  const hasChanges = form.formState.isDirty || clientsHaveChanged
+  const contactDisplayName = contact?.name || contact?.email || 'this person'
+  const sheetTitle = isEditing ? 'Edit person' : 'Create person'
 
   // Unsaved changes warning
   const { requestConfirmation, dialog: unsavedChangesDialog } =
-    useUnsavedChangesWarning({ isDirty: hasChanges })
+    useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
 
-  const submitDisabled = isPending
-  const submitDisabledReason = isPending ? PENDING_REASON : null
+  const submitDisabled = isPending || isAvatarUploading || readOnly
+  const submitDisabledReason = isPending
+    ? PENDING_REASON
+    : isAvatarUploading
+      ? 'Wait for the photo to finish uploading.'
+      : readOnly
+        ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
+        : null
 
   const deleteDisabled = isPending || !isEditing
   const deleteDisabledReason = isPending
     ? PENDING_REASON
     : !isEditing
-      ? 'Cannot archive a new contact.'
+      ? 'Cannot archive a new person.'
       : null
 
   const handleSheetOpenChange = useCallback(
@@ -245,62 +339,71 @@ export function useContactSheetState({
 
   const handleFormSubmit = useCallback(
     (data: ContactFormData) => {
-      setFeedback(null)
       startTransition(async () => {
-        // Save contact data
-        const result = await saveContact({
+        // One Save: the person, their companies, photo and sign-in in one
+        // request (one transaction on the server).
+        const dirty = form.formState.dirtyFields
+        const result = await savePersonSheetAction({
           id: contact?.id || undefined,
+          loadedUpdatedAt: contact?.id
+            ? (loadedUpdatedAt ?? undefined)
+            : undefined,
           email: data.email,
           name: data.name,
           phone: data.phone || null,
+          linkedinUrl: data.linkedinUrl?.trim() || null,
+          companies: companiesLoaded
+            ? data.companies.map(entry => ({
+                companyId: entry.companyId,
+                title: entry.title.trim() || null,
+                // Portal switches are for people who manage clients; anyone
+                // else's save never names portal access.
+                ...(canManageSignIn
+                  ? { portalAccess: entry.portalAccess }
+                  : {}),
+              }))
+            : undefined,
+          avatar:
+            dirty.avatarPath || dirty.avatarRemoved
+              ? {
+                  path: data.avatarPath ?? null,
+                  removed: Boolean(data.avatarRemoved),
+                }
+              : undefined,
+          signIn:
+            canManageSignIn && data.signIn && dirty.signIn
+              ? {
+                  enabled: data.signIn.enabled,
+                  role: data.signIn.role,
+                  effectiveFrom: data.signIn.effectiveFrom,
+                }
+              : undefined,
         })
 
         if (result.error) {
-          setFeedback(result.error)
           toast({
             title: isEditing
-              ? 'Unable to update contact'
-              : 'Unable to create contact',
+              ? 'Unable to save person'
+              : 'Unable to create person',
             description: result.error,
             variant: 'destructive',
           })
           return
         }
 
-        const contactId = contact?.id || result.id
-
-        // Sync client links if editing and clients changed
-        if (contactId && clientsHaveChanged) {
-          const clientIds = selectedClients.map(c => c.id)
-          const syncResult = await syncContactClients(contactId, clientIds)
-
-          if (!syncResult.ok) {
-            setFeedback(syncResult.error ?? 'Unable to update client links.')
-            toast({
-              title: 'Unable to update client links',
-              description:
-                'The contact was saved, but its client links were not.',
-              variant: 'destructive',
-            })
-            // Still complete since the contact was saved
-          }
-        }
-
         toast({
-          title: isEditing ? 'Contact updated' : 'Contact created',
-          description: isEditing
-            ? `${data.name || data.email} has been updated.`
-            : `${data.name || data.email} has been created.`,
+          title: isEditing ? 'Person saved' : 'Person created',
+          description: result.warning ?? (data.name || data.email),
         })
 
         // Call onCreated with the new contact ID if this was a create operation
         if (!isEditing && result.id && onCreated) {
           onCreated({
             id: result.id,
-            email: data.email,
+            email: data.email || null,
             name: data.name,
             phone: data.phone || null,
-            // Just created, so never promoted yet.
+            // The new person; a sign-in made in the same Save isn't needed by pickers.
             userId: null,
           })
         }
@@ -310,9 +413,11 @@ export function useContactSheetState({
     },
     [
       contact?.id,
+      companiesLoaded,
+      loadedUpdatedAt,
+      form,
+      canManageSignIn,
       isEditing,
-      clientsHaveChanged,
-      selectedClients,
       toast,
       onComplete,
       onCreated,
@@ -333,56 +438,12 @@ export function useContactSheetState({
     setIsDeleteDialogOpen(false)
   }, [isPending])
 
-  // The portal user this contact was promoted to (`contacts.user_id`).
+  // Their sign-in, if they have one (`contacts.user_id`).
   const portalUserId = contact?.userId ?? null
-  const hasPortalAccess = Boolean(portalUserId)
-
-  const promoteDisabled = isPending || !isEditing || hasPortalAccess
-  const promoteDisabledReason = isPending
-    ? PENDING_REASON
-    : !isEditing
-      ? 'Save the contact first.'
-      : hasPortalAccess
-        ? 'This contact already has portal access.'
-        : null
-
-  const handleRequestPromote = useCallback(() => {
-    if (promoteDisabled) return
-    setIsPromoteDialogOpen(true)
-  }, [promoteDisabled])
-
-  const handleConfirmPromote = useCallback(() => {
-    const contactId = contact?.id
-    if (!contactId || isPending) {
-      setIsPromoteDialogOpen(false)
-      return
-    }
-
-    setIsPromoteDialogOpen(false)
-    startTransition(async () => {
-      const result = await promoteContactToUser(contactId)
-
-      if (result.error) {
-        setFeedback(result.error)
-        toast({
-          title: 'Unable to create portal account',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Portal account created',
-        description: `A portal invite has been sent to ${contact?.name || contact?.email || 'the contact'}.`,
-      })
-      onComplete()
-    })
-  }, [contact, isPending, toast, onComplete])
 
   const handleConfirmDelete = useCallback(() => {
     const contactId = contact?.id
-    const displayName = contact?.name || contact?.email || 'this contact'
+    const displayName = contact?.name || contact?.email || 'this person'
 
     if (!contactId || isPending) {
       setIsDeleteDialogOpen(false)
@@ -394,9 +455,8 @@ export function useContactSheetState({
       const result = await softDeleteContact({ id: contactId })
 
       if (result.error) {
-        setFeedback(result.error)
         toast({
-          title: 'Unable to archive contact',
+          title: 'Unable to archive person',
           description: result.error,
           variant: 'destructive',
         })
@@ -404,87 +464,38 @@ export function useContactSheetState({
       }
 
       toast({
-        title: 'Contact archived',
+        title: 'Person archived',
         description: `${displayName} has been archived.`,
       })
       onComplete()
     })
   }, [contact, isPending, toast, onComplete])
 
-  // Client picker handlers - these only update local state; links are synced on save
-  const handleAddClient = useCallback((client: ContactClientOption) => {
-    setSelectedClients(prev => [...prev, client])
-    setIsClientPickerOpen(false)
-  }, [])
-
-  // Create-from-picker: stack the client create sheet on top of this one
-  // (`?contact=…&client=new`); the wrapper announces the saved record below.
-  const handleCreateClient = useCallback(
-    (query: string) => {
-      setIsClientPickerOpen(false)
-      openNew('client', query ? { clientName: query } : undefined)
-    },
-    [openNew]
-  )
-
-  useEffect(() => {
-    if (!open) return
-    return subscribeSheetCreated('client', record => {
-      setCreatedClients(prev =>
-        prev.some(c => c.id === record.id) ? prev : [...prev, record]
-      )
-      handleAddClient(record)
-    })
-  }, [open, handleAddClient])
-
-  const handleRemoveClient = useCallback((client: ContactClientOption) => {
-    setSelectedClients(prev => prev.filter(c => c.id !== client.id))
-  }, [])
-
-  // Never disabled for an empty list: the picker's create row is the escape
-  // hatch when every client is linked (or none exist yet).
-  const addClientButtonDisabled = isPending || isLoadingClients
-  const addClientButtonDisabledReason = isPending
-    ? PENDING_REASON
-    : isLoadingClients
-      ? 'Loading clients...'
-      : null
-
   return {
     form,
-    feedback,
     isPending,
     isEditing,
+    companiesLoadFailed,
     pendingReason: PENDING_REASON,
     sheetTitle,
-    sheetDescription,
     contactDisplayName,
     submitDisabled,
     submitDisabledReason,
     deleteDisabled,
     deleteDisabledReason,
     isDeleteDialogOpen,
-    isPromoteDialogOpen,
-    setIsPromoteDialogOpen,
-    isClientPickerOpen,
-    setIsClientPickerOpen,
-    selectedClients,
-    availableClients,
-    addClientButtonDisabled,
-    addClientButtonDisabledReason,
     portalUserId,
-    promoteDisabled,
-    promoteDisabledReason,
     unsavedChangesDialog,
     handleSheetOpenChange,
     handleFormSubmit,
     handleRequestDelete,
     handleCancelDelete,
     handleConfirmDelete,
-    handleRequestPromote,
-    handleConfirmPromote,
-    handleAddClient,
-    handleCreateClient,
-    handleRemoveClient,
+    signInAccount,
+    savedSignInRole,
+    roleMonths,
+    canManageSignIn,
+    readOnly,
+    setIsAvatarUploading,
   }
 }

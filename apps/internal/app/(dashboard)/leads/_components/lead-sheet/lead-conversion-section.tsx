@@ -1,27 +1,24 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
-import Link from 'next/link'
-import {
-  Building2,
-  CheckCircle,
-  FolderKanban,
-  UserPlus,
-  UserRound,
-  type LucideIcon,
-} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CheckCircle } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
-import { getProjectStatusLabel, getProjectStatusToken } from '@/lib/constants'
+import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
+import {
+  CompanyRecordRow,
+  ContactRecordRow,
+  ProjectRecordRow,
+} from '@/components/sheets/entity-record-rows'
+import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
-import {
-  clientDetailHref,
-  contactSheetHref,
-  projectBoardHref,
-} from '@/lib/sheets/hrefs'
+import { projectBoardHref } from '@/lib/sheets/hrefs'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
 const MAX_PROJECTS = 4
@@ -58,7 +55,9 @@ export function LeadConversionSection({
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <UserPlus className='text-muted-foreground h-4 w-4' />
+          <ENTITY_ICONS.client
+            className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4')}
+          />
           <span className='text-sm font-medium'>Client</span>
         </div>
         <Button
@@ -67,12 +66,12 @@ export function LeadConversionSection({
           size='sm'
           onClick={onConvertToClient}
         >
-          <UserPlus className='h-3 w-3' />
-          Convert
+          <ENTITY_ICONS.client className='h-3 w-3' />
+          Bill this company
         </Button>
       </div>
       <p className='text-muted-foreground text-sm'>
-        Not converted to a client yet.
+        Not a client yet: billing is set up on the lead’s company.
       </p>
     </div>
   )
@@ -146,101 +145,51 @@ function ConvertedSummary({
 
 function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
   const { client, contact, projects } = summary
-  const clientHref = clientDetailHref(client)
+  const { open: openSheet } = useSheetParams()
   const clientSegment = client.slug ?? client.id
   const hiddenProjectCount = projects.length - MAX_PROJECTS
 
   return (
     <div className='space-y-2'>
-      <ul className='bg-card divide-y overflow-hidden rounded-md border'>
-        <RecordRow
-          icon={Building2}
-          label='Client'
-          name={client.name}
-          href={client.archived ? null : clientHref}
-          trailing={
+      <SheetRecordList>
+        <CompanyRecordRow
+          company={{ id: client.companyId, name: client.name }}
+          titleAddon={
+            client.archived ? null : (
+              <CompanyBillingMark billingType={client.billingType} />
+            )
+          }
+          openable={!client.archived}
+          actions={
             client.archived ? (
-              <Badge variant='outline' className='text-xs'>
-                Archived
-              </Badge>
+              <span className='pr-1.5'>
+                <Badge variant='outline'>Archived</Badge>
+              </span>
             ) : null
           }
         />
-        {contact && (
-          <RecordRow
-            icon={UserRound}
-            label='Contact'
-            name={contact.name}
-            href={contactSheetHref(contact.id)}
-          />
-        )}
+        {contact && <ContactRecordRow contact={contact} />}
         {projects.slice(0, MAX_PROJECTS).map(project => (
-          <RecordRow
+          <ProjectRecordRow
             key={project.id}
-            icon={FolderKanban}
-            label='Project'
-            name={project.name}
+            project={project}
             href={projectBoardHref(clientSegment, project.slug ?? project.id)}
-            trailing={
-              <Badge
-                variant='outline'
-                className={cn('text-xs', getProjectStatusToken(project.status))}
-              >
-                {getProjectStatusLabel(project.status)}
-              </Badge>
-            }
           />
         ))}
-      </ul>
+      </SheetRecordList>
       {hiddenProjectCount > 0 && !client.archived && (
-        <Link
-          href={clientHref}
-          className='text-muted-foreground hover:text-foreground block text-xs'
+        <button
+          type='button'
+          onClick={() => {
+            setSheetSectionTarget('company', client.companyId, 'projects')
+            openSheet('company', client.companyId)
+          }}
+          className='text-muted-foreground hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 block rounded-sm text-xs outline-none hover:underline focus-visible:ring-[3px]'
         >
           +{hiddenProjectCount} more{' '}
           {hiddenProjectCount === 1 ? 'project' : 'projects'}
-        </Link>
+        </button>
       )}
     </div>
-  )
-}
-
-function RecordRow({
-  icon: Icon,
-  label,
-  name,
-  href,
-  trailing,
-}: {
-  icon: LucideIcon
-  label: string
-  name: string
-  href: string | null
-  trailing?: ReactNode
-}) {
-  const content = (
-    <>
-      <Icon className='text-muted-foreground size-4 shrink-0' aria-hidden />
-      <div className='min-w-0 flex-1'>
-        <p className='text-muted-foreground text-xs'>{label}</p>
-        <p className='truncate text-sm font-medium'>{name}</p>
-      </div>
-      {trailing}
-    </>
-  )
-
-  return (
-    <li>
-      {href ? (
-        <Link
-          href={href}
-          className='hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-ring/50 flex items-center gap-3 px-3 py-2 transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
-        >
-          {content}
-        </Link>
-      ) : (
-        <div className='flex items-center gap-3 px-3 py-2'>{content}</div>
-      )}
-    </li>
   )
 }

@@ -8,19 +8,18 @@ import {
 import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
 
 export const leadFormSchema = z.object({
-  contactName: z.string().trim().min(1, 'Contact name is required').max(160),
-  contactEmail: z
-    .union([z.string().trim().email('Enter a valid email address'), z.literal('')])
-    .transform(val => (val === '' ? null : val))
-    .optional()
-    .nullable(),
-  contactPhone: z.string().trim().max(40).optional().nullable(),
-  companyName: z.string().trim().max(160).optional().nullable(),
-  companyWebsite: z
-    .union([z.string().trim().url('Enter a valid URL'), z.literal('')])
-    .transform(val => (val === '' ? null : val))
-    .optional()
-    .nullable(),
+  /** The lead's contact, chosen (or created) with the contact picker. */
+  contact: z
+    .object({
+      id: z.string().uuid(),
+      name: z.string(),
+      email: z.string().nullable(),
+      phone: z.string().nullable(),
+    })
+    .nullable()
+    .refine(value => Boolean(value), 'Pick or create a person'),
+  /** The linked company, chosen with the company picker. */
+  company: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
   sourceType: z.enum(LEAD_SOURCE_TYPES).optional().nullable(),
   sourceDetail: z.string().trim().max(160).optional().nullable(),
   status: z.enum(LEAD_STATUS_VALUES),
@@ -35,7 +34,8 @@ export type LeadSheetProps = {
   onOpenChange: (open: boolean) => void
   lead: LeadRecord | null
   initialStatus?: LeadStatusValue | null
-  initialAction?: string | null
+  /** An error to show on the Company field when the sheet opens. */
+  initialCompanyError?: string | null
   assignees: LeadAssigneeOption[]
   canManage?: boolean
   senderName?: string
@@ -43,5 +43,5 @@ export type LeadSheetProps = {
   /** Called with the new lead's ID after successful creation (not editing) */
   onCreated?: (leadId: string) => void
   /** Pre-fill form fields when creating a new lead (ignored when editing) */
-  initialValues?: Partial<Pick<LeadFormValues, 'contactName' | 'contactEmail' | 'companyName' | 'notes'>>
+  initialValues?: Partial<Pick<LeadFormValues, 'notes'>>
 }

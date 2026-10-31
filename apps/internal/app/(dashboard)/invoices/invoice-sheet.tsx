@@ -19,8 +19,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { AlertTriangle, GripVertical, Plus, Trash2 } from 'lucide-react'
+import { GripVertical, Trash2, TriangleAlert } from 'lucide-react'
 
+import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -31,11 +32,20 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FIELD_STACK_CLASS,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Label } from '@pts/ui/label'
+import { formatCurrency } from '@pts/ui/numbers'
+import {
+  SHEET_SIDE_COLUMN_CLASS,
+  Sheet,
+  SheetContent,
+} from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { EntityList } from '@/components/sheets/entity-list'
+import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -47,7 +57,7 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { computeLineItemAmount } from '@/lib/invoices/invoice-form'
 import { invoiceShareHref } from '@/lib/invoices/links'
 import type {
-  ClientRow,
+  InvoiceClient,
   InvoiceFormValues,
   InvoiceWithClient,
   ProductCatalogItemRow,
@@ -64,6 +74,7 @@ import { InvoiceEmailDialog } from './_components/invoice-email-dialog'
 import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-column'
 import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
 import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
+import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 
 const INVOICE_FORM_ID = 'invoice-form'
 
@@ -72,17 +83,10 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
 }
-
-const formatCurrency = (amount: number): string =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(amount)
 
 export function InvoiceSheet({
   open,
@@ -96,7 +100,6 @@ export function InvoiceSheet({
   const {
     form,
     fieldArray,
-    feedback,
     isEditing,
     isReadOnly,
     isPending,
@@ -132,6 +135,10 @@ export function InvoiceSheet({
   const router = useRouter()
   const { toast } = useToast()
   const [voidDialogOpen, setVoidDialogOpen] = useState(false)
+  // "Mark as sent" and "Revert to draft" confirm first, like Void.
+  const [statusConfirm, setStatusConfirm] = useState<'send' | 'unsend' | null>(
+    null
+  )
   const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [actionPending, setActionPending] = useState(false)
   // Status actions (send/revert/void) refresh the row and reset the form,
@@ -176,7 +183,7 @@ export function InvoiceSheet({
     }
   }, [open, isPending])
 
-  const watchedClientId = useWatch({ control: form.control, name: 'clientId' })
+  const watchedClientId = useWatch({ control: form.control, name: 'companyId' })
   const selectedClientBillingType = useMemo(() => {
     if (!watchedClientId) return null
     const option = clientOptions.find(c => c.value === watchedClientId)
@@ -207,6 +214,8 @@ export function InvoiceSheet({
     () => fieldArray.fields.map(f => f.id),
     [fieldArray.fields]
   )
+  // Rows added in this sheet ease in; the ones it opened with don't.
+  const addedLineItemIds = useAddedIds(lineItemIds)
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -250,8 +259,8 @@ export function InvoiceSheet({
         toast({
           title: 'Invoice marked as sent',
           description: copied
-            ? 'The client link is copied to your clipboard.'
-            : 'Copy the client link from the top of this panel.',
+            ? 'The public link is copied to your clipboard.'
+            : 'Copy the public link from the top of this panel.',
         })
         router.refresh()
       }
@@ -355,11 +364,12 @@ export function InvoiceSheet({
 
   // ── Titles ────────────────────────────────────────────────────────────
 
-  const sheetTitle = isReadOnly
-    ? `Invoice ${invoice?.invoice_number ?? 'details'}`
-    : isEditing
-      ? 'Edit invoice'
-      : 'Add invoice'
+  // The invoice's name is its number; a draft may not have one yet.
+  const sheetTitle = isEditing
+    ? invoice?.invoice_number
+      ? `Invoice ${invoice.invoice_number}`
+      : 'Draft invoice'
+    : 'Create invoice'
 
   const combinedPending = isPending || actionPending
 
@@ -368,7 +378,7 @@ export function InvoiceSheet({
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='wide'
+          columns={2}
           className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
         >
           <Form {...form}>
@@ -399,15 +409,15 @@ export function InvoiceSheet({
                 <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
                   {/* Scrollable form body */}
                   <div className='flex-1 p-6 lg:overflow-y-auto'>
-                    <div className='flex flex-col gap-5'>
+                    <div className='flex flex-col gap-6'>
                       {/* ───── Header Fields ───── */}
                       <div className='grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2'>
                         <FormField
                           control={form.control}
-                          name='clientId'
+                          name='companyId'
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Client</FormLabel>
+                              <FormLabel entity='client'>Client</FormLabel>
                               <FormControl>
                                 <DisabledFieldTooltip
                                   disabled={clientField.disabled}
@@ -420,7 +430,7 @@ export function InvoiceSheet({
                                     onChange={field.onChange}
                                     onBlur={field.onBlur}
                                     items={clientOptions}
-                                    searchPlaceholder='Search clients...'
+                                    searchPlaceholder='Search clients…'
                                     emptyMessage='No clients found.'
                                     disabled={
                                       clientField.disabled || isReadOnly
@@ -466,27 +476,23 @@ export function InvoiceSheet({
                         )}
                       />
 
-                      <Separator />
-
                       {/* ───── Line Items ───── */}
-                      <div className='space-y-3'>
-                        <div className='flex items-center justify-between'>
-                          <h3 className='text-sm font-medium'>Line items</h3>
-                          {!isReadOnly ? (
-                            <Button
-                              type='button'
-                              variant='ghost'
-                              size='sm'
-                              onClick={handleAddLineItem}
-                              disabled={standardField.disabled}
-                              className='gap-1 text-xs'
-                            >
-                              <Plus className='h-3 w-3' />
-                              Add item
-                            </Button>
-                          ) : null}
-                        </div>
-
+                      {/* Never empty: an invoice keeps at least one line. */}
+                      <EntityList
+                        title='Line items'
+                        add={
+                          !isReadOnly
+                            ? {
+                                label: 'Add line item',
+                                onAdd: handleAddLineItem,
+                                disabled: standardField.disabled,
+                              }
+                            : undefined
+                        }
+                        isEmpty={false}
+                        emptyMessage=''
+                        className={SHEET_BLOCK_CLASS}
+                      >
                         <FormMessage>
                           {form.formState.errors.lineItems?.message}
                         </FormMessage>
@@ -501,29 +507,33 @@ export function InvoiceSheet({
                             strategy={verticalListSortingStrategy}
                           >
                             {fieldArray.fields.map((field, index) => (
-                              <SortableLineItemRow
+                              <RevealOnAdd
                                 key={field.id}
-                                id={field.id}
-                                index={index}
-                                form={form}
-                                productCatalogOptions={productCatalogOptions}
-                                catalogItemMap={catalogItemMap}
-                                onProductSelect={handleProductSelect}
-                                onRemove={handleRemoveLineItem}
-                                canRemove={fieldArray.fields.length > 1}
-                                disabled={standardField.disabled || isReadOnly}
-                                isReadOnly={isReadOnly}
-                                isNet30={
-                                  invoice?.billing_type === 'net_30' ||
-                                  selectedClientBillingType === 'net_30'
-                                }
-                              />
+                                animate={addedLineItemIds.has(field.id)}
+                              >
+                                <SortableLineItemRow
+                                  id={field.id}
+                                  index={index}
+                                  form={form}
+                                  productCatalogOptions={productCatalogOptions}
+                                  catalogItemMap={catalogItemMap}
+                                  onProductSelect={handleProductSelect}
+                                  onRemove={handleRemoveLineItem}
+                                  canRemove={fieldArray.fields.length > 1}
+                                  disabled={
+                                    standardField.disabled || isReadOnly
+                                  }
+                                  isReadOnly={isReadOnly}
+                                  isNet30={
+                                    invoice?.billing_type === 'net_30' ||
+                                    selectedClientBillingType === 'net_30'
+                                  }
+                                />
+                              </RevealOnAdd>
                             ))}
                           </SortableContext>
                         </DndContext>
-                      </div>
-
-                      <Separator />
+                      </EntityList>
 
                       {/* ───── Tax Rate (read-only, driven by client state) ───── */}
                       <div className='grid grid-cols-1 items-center gap-4 sm:grid-cols-2'>
@@ -562,13 +572,6 @@ export function InvoiceSheet({
                           <span>{formatCurrency(totals.total)}</span>
                         </div>
                       </div>
-
-                      {/* ───── Feedback ───── */}
-                      {feedback ? (
-                        <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-                          {feedback}
-                        </p>
-                      ) : null}
                     </div>
                   </div>
 
@@ -586,10 +589,10 @@ export function InvoiceSheet({
                         canUndo={canUndo}
                         canRedo={canRedo}
                         isEditing={isEditing}
-                        deleteDisabled={deleteButton.disabled}
-                        deleteDisabledReason={deleteButton.reason}
-                        onRequestDelete={handleRequestDelete}
-                        deleteAriaLabel='Archive invoice'
+                        archiveDisabled={deleteButton.disabled}
+                        archiveDisabledReason={deleteButton.reason}
+                        onRequestArchive={handleRequestDelete}
+                        archiveAriaLabel='Archive invoice'
                       />
                     </div>
                   ) : null}
@@ -602,15 +605,21 @@ export function InvoiceSheet({
                   <InvoiceSheetRightColumn
                     invoice={invoice}
                     isPending={combinedPending}
-                    onEmailInvoice={() =>
-                      runGuarded(() => setEmailDialogOpen(true))
+                    hasUnsavedChanges={form.formState.isDirty}
+                    onEmailInvoice={() => setEmailDialogOpen(true)}
+                    onSendInvoice={() => setStatusConfirm('send')}
+                    onUnsendInvoice={() =>
+                      runGuarded(() => setStatusConfirm('unsend'))
                     }
-                    onSendInvoice={() => runGuarded(handleSendInvoice)}
-                    onUnsendInvoice={() => runGuarded(handleUnsendInvoice)}
                     onVoidInvoice={() => runGuarded(handleRequestVoid)}
                   />
                 ) : (
-                  <div className='bg-muted/20 flex-shrink-0 max-lg:border-t lg:w-96'>
+                  <div
+                    className={cn(
+                      'bg-muted/20 flex-shrink-0 max-lg:border-t',
+                      SHEET_SIDE_COLUMN_CLASS
+                    )}
+                  >
                     <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
                       <p className='text-muted-foreground text-sm'>
                         Save the invoice to access sharing, status actions, and
@@ -640,6 +649,28 @@ export function InvoiceSheet({
           onSent={handleEmailSent}
         />
       ) : null}
+      <ConfirmDialog
+        open={statusConfirm !== null}
+        title={
+          statusConfirm === 'unsend' ? 'Revert to draft?' : 'Mark as sent?'
+        }
+        description={
+          statusConfirm === 'unsend'
+            ? 'The invoice goes back to draft and its share link stops working until it is sent again.'
+            : 'The invoice is marked sent without emailing it, and its share link goes live. Use this when you delivered it another way.'
+        }
+        confirmLabel={
+          statusConfirm === 'unsend' ? 'Revert to draft' : 'Mark as sent'
+        }
+        confirmDisabled={combinedPending}
+        onCancel={() => setStatusConfirm(null)}
+        onConfirm={() => {
+          const action = statusConfirm
+          setStatusConfirm(null)
+          if (action === 'send') void handleSendInvoice()
+          if (action === 'unsend') void handleUnsendInvoice()
+        }}
+      />
       <InvoiceVoidDialog
         open={voidDialogOpen}
         confirmDisabled={combinedPending}
@@ -758,7 +789,7 @@ function LineItemRow({
       {dragHandleProps && !isReadOnly ? (
         <button
           type='button'
-          className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-l-lg border-r transition-colors'
+          className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-l-lg transition-colors'
           {...dragHandleProps}
         >
           <GripVertical className='h-4 w-4' />
@@ -783,7 +814,7 @@ function LineItemRow({
                       onChange={value => onProductSelect(index, value)}
                       onBlur={field.onBlur}
                       groups={productGroups}
-                      searchPlaceholder='Search items...'
+                      searchPlaceholder='Search items…'
                       emptyMessage='No items found.'
                       disabled={disabled}
                     />
@@ -829,7 +860,7 @@ function LineItemRow({
         ) : null}
 
         {/* Quantity + Unit Price + Amount */}
-        <div className='grid grid-cols-3 gap-3'>
+        <div className='grid grid-cols-3 items-start gap-3'>
           <FormField
             control={form.control}
             name={`lineItems.${index}.quantity`}
@@ -857,8 +888,8 @@ function LineItemRow({
             )}
           />
           {isCatalogItem ? (
-            <div className='space-y-1.5'>
-              <label className='text-xs font-medium'>Unit price</label>
+            <div className={FIELD_STACK_CLASS}>
+              <Label className='text-xs'>Unit price</Label>
               <div
                 className={cn(
                   'flex h-9 items-center rounded-md border px-3 text-sm',
@@ -896,8 +927,8 @@ function LineItemRow({
               )}
             />
           )}
-          <div className='space-y-1.5'>
-            <label className='text-xs font-medium'>Amount</label>
+          <div className={FIELD_STACK_CLASS}>
+            <Label className='text-xs'>Amount</Label>
             <div
               className={cn(
                 'flex h-9 items-center rounded-md border px-3 text-sm',
@@ -918,11 +949,15 @@ function LineItemRow({
 
         {/* Min quantity advisory warning */}
         {showMinQuantityWarning ? (
-          <div className='border-warning/30 bg-warning/10 text-warning flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs'>
-            <AlertTriangle className='h-3 w-3 shrink-0' />
-            Recommended minimum: {minQuantity}{' '}
-            {selectedProduct?.unitLabel ?? 'units'}.
-          </div>
+          <Alert variant='warning' className='py-1.5 text-xs'>
+            <TriangleAlert />
+            <AlertContent>
+              <AlertDescription>
+                Recommended minimum: {minQuantity}{' '}
+                {selectedProduct?.unitLabel ?? 'units'}.
+              </AlertDescription>
+            </AlertContent>
+          </Alert>
         ) : null}
       </div>
     </div>

@@ -1,4 +1,5 @@
 import type { ActivityLogWithActor } from './types'
+import { formatHours } from '@pts/ui/numbers'
 
 /**
  * Normalised view of what an activity log actually changed.
@@ -84,17 +85,19 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
   closerUserId: { label: 'Closer', kind: 'user' },
   closers: { label: 'Closers', kind: 'text' },
   originationUserId: { label: 'Originated by', kind: 'user' },
-  originationContactId: { label: 'Originating contact', kind: 'contact' },
+  originationContactId: { label: 'Originating person', kind: 'contact' },
   projectId: { label: 'Project', kind: 'project' },
+  companyId: { label: 'Client', kind: 'client' },
+  // Rows logged before the clientId → companyId rename.
   clientId: { label: 'Client', kind: 'client' },
   clientName: { label: 'Client', kind: 'text' },
   invoiceNumber: { label: 'Invoice', kind: 'text' },
   hoursPurchased: { label: 'Hours purchased', kind: 'hours' },
   taxRate: { label: 'Tax rate', kind: 'text' },
   disabled: { label: 'Access', kind: 'access' },
-  contactName: { label: 'Contact name', kind: 'text' },
-  contactEmail: { label: 'Contact email', kind: 'text' },
-  contactPhone: { label: 'Contact phone', kind: 'text' },
+  contactName: { label: 'Person name', kind: 'text' },
+  contactEmail: { label: 'Person email', kind: 'text' },
+  contactPhone: { label: 'Person phone', kind: 'text' },
   companyName: { label: 'Company', kind: 'text' },
   companyWebsite: { label: 'Website', kind: 'text' },
   sourceType: { label: 'Source', kind: 'enum' },
@@ -117,7 +120,10 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
 }
 
 /** Membership keys: `user` lists hold user ids the feed resolves, `text` lists are shown verbatim. */
-const MEMBERSHIP_SPECS: Record<string, { label: string; kind: 'user' | 'text' }> = {
+const MEMBERSHIP_SPECS: Record<
+  string,
+  { label: string; kind: 'user' | 'text' }
+> = {
   assignees: { label: 'Assignees', kind: 'user' },
   contractors: { label: 'Contractors', kind: 'user' },
   members: { label: 'Members', kind: 'user' },
@@ -140,9 +146,7 @@ export function getActivityChanges(log: ActivityLogWithActor): ActivityChanges {
   }
 }
 
-function collectFieldChanges(
-  metadata: Record<string, unknown>
-): FieldChange[] {
+function collectFieldChanges(metadata: Record<string, unknown>): FieldChange[] {
   const changes: FieldChange[] = []
   const details = toRecord(metadata.details)
 
@@ -194,13 +198,15 @@ function buildFieldChange(
 }
 
 /**
- * Hour-block writers record both `clientId` and `clientName`; the name row is
+ * Hour-block writers record both `companyId` and `clientName`; the name row is
  * the readable one, so drop the id row when both are present.
  */
 function dedupeClientRows(changes: FieldChange[]): FieldChange[] {
   const hasClientName = changes.some(change => change.key === 'clientName')
   return hasClientName
-    ? changes.filter(change => change.key !== 'clientId')
+    ? changes.filter(
+        change => change.key !== 'companyId' && change.key !== 'clientId'
+      )
     : changes
 }
 
@@ -281,7 +287,7 @@ function collectFacts(
   push(
     'Stale after',
     typeof metadata.staleAfterHours === 'number'
-      ? `${metadata.staleAfterHours}h`
+      ? formatHours(metadata.staleAfterHours)
       : null
   )
   push('Form', metadata.formType)

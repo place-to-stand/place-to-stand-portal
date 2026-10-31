@@ -20,7 +20,12 @@ export type CliLead = {
   email: string | null
   phone: string | null
   company: string | null
+  /** The company's website (read from the company). */
   website: string | null
+  /** The linked company record, when the company name matched one. */
+  companyId: string | null
+  /** The lead's contact record; name, email and phone are its details. */
+  contactId: string
   /** Editor HTML, as stored. Empty string when the lead has no notes. */
   notes: string
   rank: string
@@ -48,6 +53,8 @@ export function serializeLead(lead: CliLeadRow): CliLead {
     phone: lead.contactPhone,
     company: lead.companyName,
     website: lead.companyWebsite,
+    companyId: lead.companyId,
+    contactId: lead.contactId,
     notes: extractLeadNotes(lead.notes),
     rank: lead.rank,
     currentStageEnteredAt: isoTimestamp(lead.currentStageEnteredAt),

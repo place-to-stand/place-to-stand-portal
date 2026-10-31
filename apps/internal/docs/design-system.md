@@ -13,7 +13,6 @@ Each primary object type is assigned a distinct color from the Tailwind CSS pale
 | **Project** | Emerald | `emerald` | `#10b981` |
 | **Client** | Blue | `blue` | `#3b82f6` |
 | **Contact** | Cyan | `cyan` | `#06b6d4` |
-| **Suggestion** | Fuchsia | `fuchsia` | `#d946ef` |
 | **Invoice** | Orange | `orange` | `#f97316` |
 | **Hour Block** | Teal | `teal` | `#14b8a6` |
 | **User** | Rose | `rose` | `#f43f5e` |

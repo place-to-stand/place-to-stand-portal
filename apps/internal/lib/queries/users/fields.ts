@@ -1,14 +1,19 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { sql } from 'drizzle-orm'
 
 import { users } from '@/lib/db/schema'
 
-export type SelectUser = typeof users.$inferSelect
+/** A sign-in row plus the person's name and photo (from their contact). */
+export type SelectUser = typeof users.$inferSelect & {
+  fullName: string | null
+  avatarUrl: string | null
+}
 
 export const userFields = {
   id: users.id,
   email: users.email,
-  fullName: users.fullName,
-  avatarUrl: users.avatarUrl,
+  fullName: personNameSql,
+  avatarUrl: personAvatarSql,
   role: users.role,
   createdAt: users.createdAt,
   updatedAt: users.updatedAt,
@@ -18,6 +23,6 @@ export const userFields = {
 }
 
 export const userSortExpression = sql<string>`
-  coalesce(nullif(${users.fullName}, ''), ${users.email}, '')
+  coalesce(nullif(${personNameSql}, ''), ${users.email}, '')
 `
 

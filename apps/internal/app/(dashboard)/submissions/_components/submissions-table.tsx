@@ -2,22 +2,17 @@
 
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import {
-  Archive,
-  Check,
-  Mail,
-  RefreshCw,
-  ThumbsDown,
-  ThumbsUp,
-  Trash2,
-} from 'lucide-react'
+import { Mail, ThumbsDown, ThumbsUp } from 'lucide-react'
 
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import {
@@ -56,7 +51,6 @@ import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
   archiveSubmission,
-  destroySubmission,
   restoreSubmission,
 } from '../actions'
 
@@ -111,14 +105,6 @@ const EMPTY_STATE_COPY: Record<SubmissionsTableMode, string> = {
   archive: 'No archived submissions.',
 }
 
-function describeSubmission(submission: FormSubmissionRecord): string {
-  return (
-    submission.contactName ||
-    submission.contactEmail ||
-    'this anonymous submission'
-  )
-}
-
 type SubmissionsTableProps = {
   submissions: FormSubmissionRecord[]
   totalCount: number
@@ -168,8 +154,6 @@ export function SubmissionsTable({
       ? deepLinkedSubmission
       : null)
   const [archiveTarget, setArchiveTarget] =
-    useState<FormSubmissionRecord | null>(null)
-  const [destroyTarget, setDestroyTarget] =
     useState<FormSubmissionRecord | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [, startTransition] = useTransition()
@@ -341,42 +325,15 @@ export function SubmissionsTable({
     [runRowAction]
   )
 
-  const handleDestroyConfirm = useCallback(() => {
-    if (!destroyTarget) {
-      return
-    }
-
-    const target = destroyTarget
-    setDestroyTarget(null)
-    runRowAction(
-      target,
-      () => destroySubmission({ id: target.id }),
-      'Unable to permanently delete submission',
-      true
-    )
-  }, [destroyTarget, runRowAction])
-
   return (
     <div className='space-y-4'>
       {deepLinkNotFound && submissionParam ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked submission could not be found. It may have been
-            permanently deleted.
-          </span>
-          <Button
-            variant='ghost'
-            size='sm'
-            onClick={() =>
-              updateParams({ submission: undefined }, { scroll: false })
-            }
-          >
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice
+          entity='submission'
+          onDismiss={() =>
+            updateParams({ submission: undefined }, { scroll: false })
+          }
+        />
       ) : null}
       <div className='overflow-hidden rounded-lg border'>
         {/* Fixed layout: the predictable columns (relative time, a badge,
@@ -406,6 +363,9 @@ export function SubmissionsTable({
                 onSortChange={next => updateListParams({ sort: next })}
                 className='w-40'
               >
+                {/* The rows' unread-dot slot (8px dot + 8px gap), so
+                    "Received" lines up with the times below it. */}
+                <span aria-hidden className='inline-block w-4' />
                 Received
               </SortableTableHead>
               <TableHead className='w-24'>Form</TableHead>
@@ -523,7 +483,7 @@ export function SubmissionsTable({
                       className={columnClasses.companyCell}
                       title={submission.contactCompany ?? undefined}
                     >
-                      {submission.contactCompany ?? '—'}
+                      {submission.contactCompany ?? <EmptyValue />}
                     </TableCell>
                     <TableCell>
                       {/* Single line so rows keep a uniform height: the
@@ -587,61 +547,39 @@ export function SubmissionsTable({
                         label='Archived'
                         className='text-muted-foreground text-sm whitespace-nowrap'
                       >
-                        {submission.deletedAt
-                          ? formatRelativeTime(submission.deletedAt)
-                          : '—'}
+                        {submission.deletedAt ? (
+                          formatRelativeTime(submission.deletedAt)
+                        ) : (
+                          <EmptyValue />
+                        )}
                       </TableCell>
                     ) : null}
                     <TableCell className='text-right max-md:ml-auto'>
-                      <div className='flex justify-end gap-2'>
+                      <RecordRowActions>
                         {unacknowledged ? (
-                          <RowActionButton
-                            label='Acknowledge submission'
-                            icon={<Check />}
-                            variant='outline'
+                          <RecordRowAction
+                            kind='acknowledge'
+                            entity='submission'
                             disabled={pendingId === submission.id}
-                            onClick={event => {
-                              event.stopPropagation()
-                              handleAcknowledge(submission)
-                            }}
+                            onClick={() => handleAcknowledge(submission)}
                           />
                         ) : null}
                         {mode === 'active' ? (
-                          <RowActionButton
-                            label='Archive submission'
-                            icon={<Archive />}
-                            variant='destructive'
+                          <RecordRowAction
+                            kind='archive'
+                            entity='submission'
                             disabled={pendingId === submission.id}
-                            onClick={event => {
-                              event.stopPropagation()
-                              setArchiveTarget(submission)
-                            }}
+                            onClick={() => setArchiveTarget(submission)}
                           />
                         ) : (
-                          <>
-                            <RowActionButton
-                              label='Restore submission'
-                              icon={<RefreshCw />}
-                              variant='outline'
-                              disabled={pendingId === submission.id}
-                              onClick={event => {
-                                event.stopPropagation()
-                                handleRestore(submission)
-                              }}
-                            />
-                            <RowActionButton
-                              label='Permanently delete submission'
-                              icon={<Trash2 />}
-                              variant='destructive'
-                              disabled={pendingId === submission.id}
-                              onClick={event => {
-                                event.stopPropagation()
-                                setDestroyTarget(submission)
-                              }}
-                            />
-                          </>
+                          <RecordRowAction
+                            kind='restore'
+                            entity='submission'
+                            disabled={pendingId === submission.id}
+                            onClick={() => handleRestore(submission)}
+                          />
                         )}
-                      </div>
+                      </RecordRowActions>
                     </TableCell>
                   </TableRow>
                 )
@@ -667,21 +605,6 @@ export function SubmissionsTable({
         confirmDisabled={pendingId !== null}
         onCancel={() => setArchiveTarget(null)}
         onConfirm={handleArchiveConfirm}
-      />
-
-      <ConfirmDialog
-        open={destroyTarget !== null}
-        title='Permanently delete submission?'
-        description={
-          destroyTarget
-            ? `Permanently deleting the submission from ${describeSubmission(destroyTarget)} removes it and its history. This action cannot be undone.`
-            : 'Permanently deleting this submission removes it and its history. This action cannot be undone.'
-        }
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={pendingId !== null}
-        onCancel={() => setDestroyTarget(null)}
-        onConfirm={handleDestroyConfirm}
       />
 
       <SubmissionDetailSheet

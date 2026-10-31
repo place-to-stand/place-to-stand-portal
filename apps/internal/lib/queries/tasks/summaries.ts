@@ -1,16 +1,12 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { eq } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
-import {
-  clients,
-  projects,
-  taskAssignees,
-  tasks,
-} from '@/lib/db/schema'
+import { companies, projects, taskAssignees, tasks } from '@/lib/db/schema'
 
 type TaskSummarySelection = {
   task: {
@@ -27,7 +23,7 @@ type TaskSummarySelection = {
     id: string
     name: string | null
     slug: string | null
-    clientId: string | null
+    companyId: string | null
   } | null
   client: {
     id: string
@@ -65,9 +61,9 @@ export type TaskSummaryRow = {
 
 export async function getTaskSummaryForUser(
   user: AppUser,
-  taskId: string,
+  taskId: string
 ): Promise<TaskSummaryRow | null> {
-  await ensureTaskAccess(user, taskId)
+  await ensureTaskWorkAccess(user, taskId)
 
   const rows = (await db
     .select({
@@ -85,17 +81,17 @@ export async function getTaskSummaryForUser(
         id: projects.id,
         name: projects.name,
         slug: projects.slug,
-        clientId: projects.clientId,
+        companyId: projects.companyId,
       },
       client: {
-        id: clients.id,
-        name: clients.name,
-        slug: clients.slug,
+        id: companies.id,
+        name: clientNameSql,
+        slug: companies.slug,
       },
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
-    .leftJoin(clients, eq(clients.id, projects.clientId))
+    .leftJoin(companies, eq(companies.id, projects.companyId))
     .where(eq(tasks.id, taskId))
     .limit(1)) as TaskSummarySelection[]
 

@@ -45,7 +45,7 @@ export async function restoreProject(
         | {
             id: string
             name: string
-            clientId: string | null
+            companyId: string | null
             deletedAt: string | null
           }
         | undefined
@@ -55,7 +55,7 @@ export async function restoreProject(
           .select({
             id: projects.id,
             name: projects.name,
-            clientId: projects.clientId,
+            companyId: projects.companyId,
             deletedAt: projects.deletedAt,
           })
           .from(projects)
@@ -101,7 +101,7 @@ export async function restoreProject(
         targetType: 'PROJECT',
         targetId: existingProject.id,
         targetProjectId: existingProject.id,
-        targetClientId: existingProject.clientId,
+        targetCompanyId: existingProject.companyId,
         metadata: event.metadata,
       })
 

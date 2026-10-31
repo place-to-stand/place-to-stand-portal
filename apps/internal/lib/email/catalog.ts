@@ -97,7 +97,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
         'A one-time sign-in link. The link itself comes from Supabase; only the wrapper email is ours.',
       triggers: ['"Email me a sign-in link" on either sign-in page'],
       recipient:
-        'The address entered on the sign-in form, only if an account exists',
+        'The address entered on the sign-in form, only if a user exists',
       from,
       replyTo,
       delivery: `Admin: ${INTERNAL_SDK_DELIVERY}. Client: ${CLIENT_HTTP_DELIVERY}.`,
@@ -121,7 +121,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       description:
         'Recovery link for the forgot-password flow. Replaces the stock Supabase reset email, which was getting flagged as phishing.',
       triggers: ['Forgot-password form on either portal'],
-      recipient: 'The address entered on the form, only if an account exists',
+      recipient: 'The address entered on the form, only if a user exists',
       from,
       replyTo,
       delivery: `Admin: ${INTERNAL_SDK_DELIVERY}. Client: ${CLIENT_HTTP_DELIVERY}.`,
@@ -160,15 +160,15 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
     },
     {
       id: 'portal-invite',
-      overview: 'Sent when a contact is given client portal access.',
+      overview: 'Sent when a person is given client portal access.',
       group: 'accounts',
       status: 'active',
       name: 'Client portal invite',
       description:
-        'Welcomes a new client portal user with a one-time sign-in link. Sent from the internal portal, but lands with client contacts.',
+        'Welcomes a new client portal user with a one-time sign-in link. Sent from the internal portal, but lands with people at the client.',
       triggers: [
-        'Promoting a contact to a portal user',
-        'Creating a CLIENT-role user under Settings → Users',
+        'Promoting a person to a portal user',
+        'Turning on “Can sign in” with the Client role on a person',
       ],
       recipient: 'The new portal user',
       from,
@@ -197,7 +197,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       name: 'Admin invite',
       description:
         'Gives a new admin a temporary password. They are forced through a password reset on first sign-in.',
-      triggers: ['Creating an ADMIN-role user under Settings → Users'],
+      triggers: ['Turning on “Can sign in” with the Admin or Sales role on a person'],
       recipient: 'The new admin user',
       from,
       replyTo,
@@ -231,7 +231,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
         'Send test on the same page (to the signed-in admin only, subject prefixed [Test])',
       ],
       recipient:
-        'The client’s linked contacts, with other staff cc’d — both editable before sending',
+        'The client’s linked people, with other staff cc’d — both editable before sending',
       from: 'The signed-in admin’s Gmail address',
       replyTo: 'The signed-in admin’s Gmail address',
       delivery:

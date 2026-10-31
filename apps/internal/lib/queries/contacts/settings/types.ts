@@ -1,13 +1,15 @@
+import type { SignInFilter } from '@/lib/settings/contacts/filters'
 import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { ContactSortField } from '@/lib/settings/contacts/filters'
 
-import type { SelectContact } from '../selectors'
+import type { ContactProfile, SelectContact } from '../selectors'
 
 export type LinkedClient = {
   id: string
   name: string
   slug: string
+  companyId: string
 }
 
 type ContactListMetrics = {
@@ -15,9 +17,25 @@ type ContactListMetrics = {
   clients: LinkedClient[]
 }
 
-export type ContactsSettingsListItem = SelectContact & {
-  metrics: ContactListMetrics
+/** A company the contact belongs to (main company first). */
+export type ContactCompanyItem = {
+  id: string
+  name: string
+  /** The company has a live client. */
+  isClient: boolean
+  /** Billed now: prepaid or net 30 (people who manage clients), else null. */
+  billingType: 'prepaid' | 'net_30' | null
 }
+
+export type ContactsSettingsListItem = SelectContact &
+  ContactProfile & {
+    companies: ContactCompanyItem[]
+    metrics: ContactListMetrics
+    /** They have a photo (contacts.avatar_url). */
+    userHasPhoto?: boolean
+    /** Their sign-in's role while they can sign in; null otherwise. */
+    signInRole?: 'ADMIN' | 'SALES' | 'CLIENT' | null
+  }
 
 export type ContactsSettingsResult = {
   items: ContactsSettingsListItem[]
@@ -32,7 +50,9 @@ export type ListContactsForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
   /** Only contacts with a live link to this client (validated UUID). */
-  clientId?: string | null
+  companyId?: string | null
+  /** Who can sign in; only honoured for admins. */
+  signIn?: SignInFilter | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null

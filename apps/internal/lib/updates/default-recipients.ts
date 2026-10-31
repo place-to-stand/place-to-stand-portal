@@ -6,9 +6,10 @@ import type { StaffMember } from './staff'
 import type { ClientUpdateRecipients } from './types'
 
 /**
- * Everyone linked to the client, primary contacts first. This is a starting
- * point the composer shows as editable checkboxes, not a rule — the review
- * step is where the list gets curated.
+ * The client's primary contact and anyone with portal access, primary
+ * first. Other people at the company are offered in the composer but not
+ * pre-selected, so an update never goes to someone just because they work
+ * there. A starting point, not a rule: the review step curates the list.
  */
 export function recipientsFromContacts(
   contacts: ClientContactRow[],
@@ -16,7 +17,11 @@ export function recipientsFromContacts(
   /** The sender — already gets the message in Sent, so not cc'd to themselves. */
   senderId: string
 ): ClientUpdateRecipients {
-  const to = uniqueEmails(contacts.map(contact => contact.email))
+  const to = uniqueEmails(
+    contacts
+      .filter(contact => contact.isPrimary || contact.hasPortalAccess)
+      .flatMap(contact => (contact.email ? [contact.email] : []))
+  )
   const cc = uniqueEmails(
     staff.filter(member => member.id !== senderId).map(member => member.email)
   ).filter(email => !to.includes(email))

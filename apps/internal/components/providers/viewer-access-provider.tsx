@@ -7,7 +7,9 @@ import { isAdminRole } from '@/lib/auth/roles'
 
 type ViewerAccess = {
   role: UserRole | null
-  /** Admin-only controls (conversion, portal accounts, hard deletes…). */
+  /** The signed-in user (defaults such as "assign to me"). */
+  userId: string | null
+  /** Admin-only controls (conversion, portal accounts…). */
   isAdmin: boolean
 }
 
@@ -16,19 +18,22 @@ type ViewerAccess = {
 // enforces every rule; this only keeps the UI honest.
 const ViewerAccessContext = createContext<ViewerAccess>({
   role: null,
+  userId: null,
   isAdmin: false,
 })
 
 export function ViewerAccessProvider({
   role,
+  userId,
   children,
 }: {
   role: UserRole
+  userId: string
   children: ReactNode
 }) {
   const value = useMemo(
-    () => ({ role, isAdmin: isAdminRole(role) }),
-    [role]
+    () => ({ role, userId, isAdmin: isAdminRole(role) }),
+    [role, userId]
   )
 
   return (

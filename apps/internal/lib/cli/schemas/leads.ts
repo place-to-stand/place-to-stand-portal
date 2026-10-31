@@ -17,6 +17,11 @@ const assigneeRefSchema = z
 
 const optionalText = (max: number) => z.string().trim().max(max)
 
+/** The company owns its website; leads keep only a legacy copy. */
+const websiteSchema = optionalText(255).describe(
+  "Deprecated: sets the linked company's website when it has none (an existing company website is never overwritten). Edit the company to change it."
+)
+
 /** Plain text or minimal markdown; converted to editor HTML on the way in. */
 const richTextSchema = (max: number) =>
   z
@@ -37,7 +42,7 @@ export const cliCreateLeadFields = {
   email: optionalText(160).nullish(),
   phone: optionalText(40).nullish(),
   company: optionalText(160).nullish(),
-  website: optionalText(255).nullish(),
+  website: websiteSchema.nullish(),
   notes: richTextSchema(20_000).nullish(),
 }
 
@@ -58,7 +63,7 @@ export const cliUpdateLeadFields = {
   email: optionalText(160).nullable().optional(),
   phone: optionalText(40).nullable().optional(),
   company: optionalText(160).nullable().optional(),
-  website: optionalText(255).nullable().optional(),
+  website: websiteSchema.nullable().optional(),
   notes: richTextSchema(20_000)
     .describe('Replaces the existing notes. Plain text or minimal markdown.')
     .nullable()

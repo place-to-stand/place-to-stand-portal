@@ -2,13 +2,16 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { RefreshCw, Trash2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { formatRelativeTime } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
+import { EmptyValue } from '@/components/table/empty-value'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
@@ -27,19 +30,19 @@ import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import type { ArchivedLead } from '@/lib/data/leads'
 import type { LeadAssigneeOption } from '@/lib/leads/types'
 import {
+  getLeadStatusToken,
   LEAD_STATUS_LABELS,
   LEAD_STATUS_VALUES,
-  type LeadStatusValue,
 } from '@/lib/leads/constants'
 import { parseSortParam } from '@/lib/pagination/sort'
-import { restoreLead, destroyLead } from '../_actions'
+import { restoreLead } from '../_actions'
+import { filterArchivedLeads, isLeadStatus } from '../_lib/archive-filters'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
-import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { LeadSheet } from './lead-sheet'
 
 type LeadsArchiveSectionProps = {
@@ -59,13 +62,6 @@ const DEFAULT_LEAD_ARCHIVE_SORT = {
   direction: 'desc',
 } as const
 
-function isLeadStatus(value: string | undefined): value is LeadStatusValue {
-  return (
-    typeof value === 'string' &&
-    (LEAD_STATUS_VALUES as readonly string[]).includes(value)
-  )
-}
-
 function isLeadArchiveSortValue(value: string): boolean {
   const [field, direction] = value.split(':')
   return (
@@ -82,8 +78,6 @@ export function LeadsArchiveSection({
 }: LeadsArchiveSectionProps) {
   const router = useRouter()
   const { toast } = useToast()
-  // Permanent delete is admin-only; SALES staff can archive and restore.
-  const { isAdmin } = useViewerAccess()
   const { update, getParam, hasActiveFilters, reset } = useListParams({
     basePath: '/leads/archive',
     resetKeys: [],
@@ -94,8 +88,6 @@ export function LeadsArchiveSection({
   })
   const [isPending, startTransition] = useTransition()
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
-  const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
-  const [destroyTarget, setDestroyTarget] = useState<ArchivedLead | null>(null)
   // `?lead=` drives selection so archived leads are deep-linkable too.
   const { selectedId, select, clear } = useSheetParamSelection('lead')
 
@@ -149,47 +141,6 @@ export function LeadsArchiveSection({
     })
   }
 
-  const handleRequestDestroy = (lead: ArchivedLead) => {
-    setDestroyTarget(lead)
-  }
-
-  const handleCancelDestroy = () => {
-    setDestroyTarget(null)
-  }
-
-  const handleConfirmDestroy = () => {
-    if (!destroyTarget) return
-
-    const lead = destroyTarget
-    setPendingDestroyId(lead.id)
-    setDestroyTarget(null)
-
-    startTransition(async () => {
-      const result = await destroyLead({ leadId: lead.id })
-      setPendingDestroyId(null)
-
-      if (!result.success) {
-        toast({
-          title: 'Unable to permanently delete lead',
-          description: result.error,
-          variant: 'destructive',
-        })
-        return
-      }
-
-      toast({
-        title: 'Lead permanently deleted',
-        description: `${lead.contactName} has been permanently removed.`,
-      })
-      // Drop a `?lead=` pointing at the destroyed row so the refresh doesn't
-      // resolve it into a not-found notice.
-      if (selectedId === lead.id) {
-        clear()
-      }
-      router.refresh()
-    })
-  }
-
   const rawStatus = getParam('status')
   const statusFilter = isLeadStatus(rawStatus) ? rawStatus : undefined
   const searchQuery = getParam('q')?.trim() || undefined
@@ -207,23 +158,20 @@ export function LeadsArchiveSection({
   const statusOptions = useMemo(() => {
     const present = new Set(leads.map(lead => lead.status))
     return LEAD_STATUS_VALUES.filter(value => present.has(value)).map(
-      value => ({ value, label: LEAD_STATUS_LABELS[value] })
+      value => ({
+        value,
+        label: LEAD_STATUS_LABELS[value],
+        // The list's Last status badge.
+        badgeClassName: getLeadStatusToken(value),
+      })
     )
   }, [leads])
 
   const visibleLeads = useMemo(() => {
-    let filtered = statusFilter
-      ? leads.filter(lead => lead.status === statusFilter)
-      : leads
-    // In-memory `?q=` search over the fields the table shows (PRD 004 §03).
-    if (searchQuery) {
-      const needle = searchQuery.toLowerCase()
-      filtered = filtered.filter(lead =>
-        [lead.contactName, lead.companyName, lead.contactEmail].some(field =>
-          field?.toLowerCase().includes(needle)
-        )
-      )
-    }
+    const filtered = filterArchivedLeads(leads, {
+      status: statusFilter,
+      q: searchQuery,
+    })
     const factor = sort.direction === 'asc' ? 1 : -1
     return [...filtered].sort((a, b) => {
       if (sort.field === 'name') {
@@ -238,25 +186,15 @@ export function LeadsArchiveSection({
     })
   }, [leads, searchQuery, sort.direction, sort.field, statusFilter])
 
-  if (leads.length === 0) {
-    return <EmptyState message='No archived leads.' />
-  }
+  const emptyMessage =
+    leads.length === 0
+      ? 'No archived leads.'
+      : 'No leads match the current filters.'
 
   return (
     <>
       {leadNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked lead could not be found. It may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clear}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
       {sheetLead ? (
         <LeadSheet
@@ -269,20 +207,6 @@ export function LeadsArchiveSection({
           onSuccess={handleSheetSuccess}
         />
       ) : null}
-      <ConfirmDialog
-        open={Boolean(destroyTarget)}
-        title='Permanently delete lead?'
-        description={
-          destroyTarget
-            ? `Permanently deleting ${destroyTarget.contactName} removes this lead and all associated data. This action cannot be undone.`
-            : 'Permanently deleting this lead removes it. This action cannot be undone.'
-        }
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={handleCancelDestroy}
-        onConfirm={handleConfirmDestroy}
-      />
       <FilterBar
         search={
           <SearchInput
@@ -302,7 +226,7 @@ export function LeadsArchiveSection({
           options={statusOptions}
         />
       </FilterBar>
-      <div className='rounded-lg border'>
+      <div className='overflow-hidden rounded-lg border'>
         <Table
           density='compact'
           layout='fixed'
@@ -318,11 +242,11 @@ export function LeadsArchiveSection({
                 onSortChange={next => update({ sort: next })}
                 className='w-[20%]'
               >
-                Contact
+                Person
               </SortableTableHead>
               <TableHead className='w-[16%]'>Company</TableHead>
-              <TableHead className='w-[22%]'>Email</TableHead>
-              <TableHead className='w-[16%]'>Last status</TableHead>
+              <TableHead className='w-[18%]'>Email</TableHead>
+              <TableHead className='w-[20%]'>Last status</TableHead>
               <SortableTableHead
                 field='archived'
                 sort={sortParam}
@@ -332,16 +256,12 @@ export function LeadsArchiveSection({
               >
                 Archived
               </SortableTableHead>
-              <TableHead className='w-28 text-right'>Actions</TableHead>
+              <TableHead className='w-24 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {visibleLeads.map(lead => {
               const isRestoring = isPending && pendingRestoreId === lead.id
-              const isDestroying = isPending && pendingDestroyId === lead.id
-              const rowDisabled = isRestoring || isDestroying
-
-              const statusLabel = LEAD_STATUS_LABELS[lead.status] ?? lead.status
 
               return (
                 <TableRow
@@ -351,7 +271,10 @@ export function LeadsArchiveSection({
                   })}
                   className={cn(CLICKABLE_ROW_CLASS, ARCHIVED_ROW_CLASS)}
                 >
-                  <TableCell className='truncate font-medium'>
+                  <TableCell
+                    className='truncate font-medium'
+                    title={lead.contactName}
+                  >
                     {lead.contactName}
                   </TableCell>
                   <TableCell
@@ -359,29 +282,27 @@ export function LeadsArchiveSection({
                       'truncate',
                       !lead.companyName && 'max-md:hidden'
                     )}
+                    title={lead.companyName ?? undefined}
                   >
-                    {lead.companyName ?? (
-                      <span className='text-muted-foreground/40'>—</span>
-                    )}
+                    {lead.companyName ?? <EmptyValue />}
                   </TableCell>
                   <TableCell
                     className={cn(
                       'truncate',
                       !lead.contactEmail && 'max-md:hidden'
                     )}
+                    title={lead.contactEmail ?? undefined}
                   >
                     {lead.contactEmail ? (
                       <span className='text-muted-foreground text-sm'>
                         {lead.contactEmail}
                       </span>
                     ) : (
-                      <span className='text-muted-foreground/40'>—</span>
+                      <EmptyValue />
                     )}
                   </TableCell>
-                  <TableCell label='Last status' className='truncate'>
-                    <span className='text-muted-foreground text-sm'>
-                      {statusLabel}
-                    </span>
+                  <TableCell label='Last status'>
+                    <LeadStatusBadge status={lead.status} />
                   </TableCell>
                   <TableCell label='Archived'>
                     <span className='text-muted-foreground text-sm'>
@@ -389,24 +310,14 @@ export function LeadsArchiveSection({
                     </span>
                   </TableCell>
                   <TableCell className='text-right max-md:ml-auto'>
-                    <div className='flex justify-end gap-2'>
-                      <RowActionButton
-                        label='Restore lead'
-                        icon={<RefreshCw />}
-                        variant='outline'
+                    <RecordRowActions>
+                      <RecordRowAction
+                        kind='restore'
+                        entity='lead'
                         onClick={() => handleRestore(lead)}
-                        disabled={rowDisabled}
+                        disabled={isRestoring}
                       />
-                      {isAdmin ? (
-                        <RowActionButton
-                          label='Permanently delete lead'
-                          icon={<Trash2 />}
-                          variant='destructive'
-                          onClick={() => handleRequestDestroy(lead)}
-                          disabled={rowDisabled}
-                        />
-                      ) : null}
-                    </div>
+                    </RecordRowActions>
                   </TableCell>
                 </TableRow>
               )
@@ -414,7 +325,7 @@ export function LeadsArchiveSection({
             {visibleLeads.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className='p-4'>
-                  <EmptyState message='No archived leads match the current filters.' />
+                  <EmptyState message={emptyMessage} />
                 </TableCell>
               </TableRow>
             ) : null}

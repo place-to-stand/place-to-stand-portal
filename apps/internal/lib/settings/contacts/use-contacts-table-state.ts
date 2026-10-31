@@ -1,28 +1,35 @@
 'use client'
 
+import type { ContactProfile } from '@/lib/queries/contacts/selectors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { useToast } from '@/components/ui/use-toast'
 import {
-  destroyContact,
   restoreContact,
   softDeleteContact,
-} from '@/app/(dashboard)/contacts/actions'
+} from '@/app/(dashboard)/people/actions'
 import type { LinkedClient } from '@/lib/queries/contacts'
+import type { ContactCompanyItem } from '@/lib/queries/contacts/settings/types'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 
 import type { ContactSheetInput } from './use-contact-sheet-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
-export type ContactsTableContact = {
+export type ContactsTableContact = ContactProfile & {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   userId: string | null
+  /** They have a photo (shown beside their name). */
+  userHasPhoto?: boolean
+  /** Their sign-in's role while they can sign in. */
+  signInRole?: 'ADMIN' | 'SALES' | 'CLIENT' | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  /** Every company they belong to, main company first. */
+  companies: ContactCompanyItem[]
   metrics: {
     totalClients: number
     clients: LinkedClient[]
@@ -74,12 +81,8 @@ export function useContactsTableState({
   const [deleteTarget, setDeleteTarget] = useState<ContactsTableContact | null>(
     null
   )
-  const [destroyTarget, setDestroyTarget] = useState<ContactsTableContact | null>(
-    null
-  )
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
-  const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
@@ -142,7 +145,7 @@ export function useContactsTableState({
 
         if (result.error) {
           toast({
-            title: 'Unable to archive contact',
+            title: 'Unable to archive person',
             description: result.error,
             variant: 'destructive',
           })
@@ -150,7 +153,7 @@ export function useContactsTableState({
         }
 
         toast({
-          title: 'Contact archived',
+          title: 'Person archived',
           description: `${contact.name || contact.email} has been archived.`,
         })
         clearIfSelected(contact.id)
@@ -173,7 +176,7 @@ export function useContactsTableState({
 
         if (result.error) {
           toast({
-            title: 'Unable to restore contact',
+            title: 'Unable to restore person',
             description: result.error,
             variant: 'destructive',
           })
@@ -181,7 +184,7 @@ export function useContactsTableState({
         }
 
         toast({
-          title: 'Contact restored',
+          title: 'Person restored',
           description: `${contact.name || contact.email} is active again.`,
         })
         clearIfSelected(contact.id)
@@ -192,67 +195,14 @@ export function useContactsTableState({
     })
   }
 
-  const handleRequestDestroy = (contact: ContactsTableContact) => {
-    if (!contact.deletedAt || isPending) {
-      return
-    }
-
-    setDestroyTarget(contact)
-  }
-
-  const handleCancelDestroy = () => {
-    if (isPending) {
-      return
-    }
-
-    setDestroyTarget(null)
-  }
-
-  const handleConfirmDestroy = () => {
-    if (!destroyTarget || !destroyTarget.deletedAt) {
-      setDestroyTarget(null)
-      return
-    }
-
-    const contact = destroyTarget
-    setDestroyTarget(null)
-    setPendingDestroyId(contact.id)
-
-    startTransition(async () => {
-      try {
-        const result = await destroyContact({ id: contact.id })
-
-        if (result.error) {
-          toast({
-            title: 'Unable to permanently delete contact',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Contact permanently deleted',
-          description: `${contact.name || contact.email} has been removed.`,
-        })
-        clearIfSelected(contact.id)
-        router.refresh()
-      } finally {
-        setPendingDestroyId(null)
-      }
-    })
-  }
-
   return {
     sheetOpen,
     selectedContact: sheetOpen ? resolvedContact : lastContact,
     deleteTarget,
-    destroyTarget,
     isPending,
     pendingReason,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     openCreate,
     openEdit,
     clearSelection: clear,
@@ -262,8 +212,5 @@ export function useContactsTableState({
     handleCancelDelete,
     handleConfirmDelete,
     handleRestore,
-    handleRequestDestroy,
-    handleCancelDestroy,
-    handleConfirmDestroy,
   }
 }

@@ -17,7 +17,10 @@ export async function DELETE(
 ) {
   const user = await getCurrentUser()
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    )
   }
 
   const { linkId } = await params
@@ -28,7 +31,9 @@ export async function DELETE(
       projectId: githubRepoLinks.projectId,
     })
     .from(githubRepoLinks)
-    .where(and(eq(githubRepoLinks.id, linkId), isNull(githubRepoLinks.deletedAt)))
+    .where(
+      and(eq(githubRepoLinks.id, linkId), isNull(githubRepoLinks.deletedAt))
+    )
     .limit(1)
 
   if (!link) {
@@ -36,16 +41,16 @@ export async function DELETE(
   }
 
   const [project] = await db
-    .select({ id: projects.id, clientId: projects.clientId })
+    .select({ id: projects.id, companyId: projects.companyId })
     .from(projects)
     .where(and(eq(projects.id, link.projectId), isNull(projects.deletedAt)))
     .limit(1)
 
-  if (!project || !project.clientId) {
+  if (!project || !project.companyId) {
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
   }
 
-  await ensureClientAccess(user, project.clientId)
+  await ensureClientAccess(user, project.companyId)
 
   await db
     .update(githubRepoLinks)

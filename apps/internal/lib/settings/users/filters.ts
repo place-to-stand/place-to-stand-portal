@@ -1,22 +1,10 @@
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { userRole } from '@/lib/db/schema'
 import type { UserRoleValue } from '@/lib/types'
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 
 export const USER_ROLE_VALUES = userRole.enumValues
 
-export const USER_ROLE_LABELS: Record<UserRoleValue, string> = {
-  ADMIN: 'Admin',
-  SALES: 'Sales',
-  CLIENT: 'Client',
-}
 
-/** Badge tones for the role column, same palette recipe as billing types. */
-export const USER_ROLE_BADGE_CLASSES: Record<UserRoleValue, string> = {
-  ADMIN: BADGE_TINTS.violet,
-  SALES: BADGE_TINTS.emerald,
-  CLIENT: BADGE_TINTS.sky,
-}
 
 export function isUserRole(value: string | undefined): value is UserRoleValue {
   return (
@@ -36,11 +24,6 @@ export type UserAccessFilter = (typeof USER_ACCESS_VALUES)[number]
  */
 export const DEFAULT_USER_ACCESS: UserAccessFilter = 'enabled'
 
-export const USER_ACCESS_LABELS: Record<UserAccessFilter, string> = {
-  all: 'All access',
-  enabled: 'Enabled',
-  disabled: 'Disabled',
-}
 
 export function isUserAccess(
   value: string | undefined
@@ -53,7 +36,7 @@ export function isUserAccess(
 
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
 // matching descriptor (order expr + cursor encode/compare) in the query.
-const USER_SORT_FIELDS = ['name', 'created'] as const
+const USER_SORT_FIELDS = ['name', 'role', 'created'] as const
 export type UserSortField = (typeof USER_SORT_FIELDS)[number]
 
 export const DEFAULT_USERS_SORT = {

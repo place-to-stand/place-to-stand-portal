@@ -1,4 +1,8 @@
-import type { DbUser, ProjectWithRelations, TaskWithRelations } from '@/lib/types'
+import type {
+  DbUser,
+  ProjectWithRelations,
+  TaskWithRelations,
+} from '@/lib/types'
 
 import type { ProjectTimeLogDialogParams } from './types'
 
@@ -22,7 +26,7 @@ export function buildProjectTimeLogDialogParams(
     projectId: project.id,
     projectName: project.name,
     projectType: project.type,
-    clientId: project.client?.id ?? null,
+    companyId: project.client?.id ?? null,
     clientName: project.client?.name ?? null,
     clientBillingType: project.client?.billing_type ?? null,
     clientRemainingHours: project.burndown.totalClientRemainingHours,

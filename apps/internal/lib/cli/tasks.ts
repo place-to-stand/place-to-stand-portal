@@ -23,13 +23,9 @@ import { serializeTask, type CliTask } from './serializers/task'
 export type CreateTaskInput = z.output<typeof cliCreateTaskSchema>
 export type UpdateTaskInput = z.output<typeof cliUpdateTaskSchema>
 
-/**
- * A write that landed. `warning` carries a follow-up step that failed after
- * the row was written, so the caller must not retry.
- */
+/** A write that landed, in full. */
 export type TaskWriteOutcome = {
   task: CliTask
-  warning?: string
 }
 
 /**
@@ -142,36 +138,31 @@ export async function updateTaskFromInput(
 }
 
 /**
- * Honours the partial-failure contract of `SaveTaskResult`: a result carrying
- * `taskId` means the row was written even when an `error` rides along, so it
- * must not surface as a failure that invites a retry — a retried create would
- * duplicate the task. Those come back as success with a `warning` instead.
+ * A save is all or nothing (`SaveTaskResult`): an error means no row was
+ * written, so the caller may fix the input and retry.
  */
 async function finishTaskWrite(
   user: AppUser,
   result: SaveTaskResult
 ): Promise<TaskWriteOutcome> {
-  if (!result.taskId) {
-    // No row was written. `saveTaskForActor` returns prose for these, and they
-    // are all caller-fixable (bad project, missing task, invalid payload).
+  if (result.error !== undefined) {
+    // `saveTaskForActor` returns prose for these, and they are all
+    // caller-fixable (bad project, missing task, invalid payload).
     if (result.error === 'Task not found.') {
       throw new NotFoundError(result.error)
     }
 
-    throw new BadRequestError(result.error ?? 'Unable to save task.')
+    throw new BadRequestError(result.error)
   }
 
   await revalidateProjectTaskViews()
 
-  return {
-    task: await loadSerializedTask(user, result.taskId),
-    warning: result.error,
-  }
+  return { task: await loadSerializedTask(user, result.taskId) }
 }
 
 /** A task write as the CLI's HTTP response. */
 export function respondToTaskWrite(outcome: TaskWriteOutcome, status: number) {
-  return jsonOk(outcome.task, { status, warning: outcome.warning })
+  return jsonOk(outcome.task, { status })
 }
 
 /**

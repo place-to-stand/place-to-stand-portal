@@ -3,13 +3,14 @@
 import { useMemo, useState, useTransition } from 'react'
 import { ChevronDown, UserRoundPlus } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
+import { Avatar, AvatarFallback } from '@pts/ui/avatar'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   buildOwnerOptions,
   type AdminUserForOwner,
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { cn } from '@/lib/utils'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 export type ProjectOwnerSummary = {
   id: string
@@ -23,13 +24,8 @@ export type ProjectOwnerCellProps = {
   admins: AdminUserForOwner[]
   /** Throw on failure so the cell can roll back its optimistic owner. */
   onOwnerChange: (projectId: string, ownerId: string | null) => Promise<void>
-}
-
-function getInitials(name: string | null): string {
-  if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+  /** Show the owner without the picker (viewers who can't change it). */
+  readOnly?: boolean
 }
 
 /**
@@ -43,6 +39,7 @@ export function ProjectOwnerCell({
   owner,
   admins,
   onOwnerChange,
+  readOnly = false,
 }: ProjectOwnerCellProps) {
   const [isPending, startTransition] = useTransition()
   const [optimisticOwnerId, setOptimisticOwnerId] = useState<string | null>(
@@ -106,13 +103,24 @@ export function ProjectOwnerCell({
     ? `Change owner (currently ${displayOwner.full_name ?? 'unnamed'})`
     : 'Assign owner'
 
+  if (readOnly) {
+    return displayOwner ? (
+      <div
+        className='flex w-fit p-0.5'
+        title={displayOwner.full_name ?? 'Owner'}
+      >
+        <OwnerAvatar owner={displayOwner} />
+      </div>
+    ) : null
+  }
+
   return (
     <SearchableCombobox
       items={ownerOptions}
       value={optimisticOwnerId ?? ''}
       onChange={handleChange}
-      searchPlaceholder='Search team members...'
-      emptyMessage='No team members found.'
+      searchPlaceholder='Search people…'
+      emptyMessage='No people found.'
       className='w-fit'
       trigger={
         <button
@@ -138,17 +146,7 @@ export function ProjectOwnerCell({
           )}
         >
           {displayOwner ? (
-            <Avatar size='sm'>
-              {displayOwner.avatar_url && (
-                <AvatarImage
-                  src={`/api/storage/user-avatar/${displayOwner.id}`}
-                  alt={displayOwner.full_name ?? 'Owner'}
-                />
-              )}
-              <AvatarFallback>
-                {getInitials(displayOwner.full_name)}
-              </AvatarFallback>
-            </Avatar>
+            <OwnerAvatar owner={displayOwner} />
           ) : (
             <Avatar size='sm' className='border border-dashed'>
               <AvatarFallback className='bg-transparent'>
@@ -159,6 +157,17 @@ export function ProjectOwnerCell({
           <ChevronDown className='text-foreground/70 h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 pointer-coarse:opacity-100' />
         </button>
       }
+    />
+  )
+}
+
+function OwnerAvatar({ owner }: { owner: ProjectOwnerSummary }) {
+  return (
+    <UserAvatar
+      userId={owner.id}
+      name={owner.full_name}
+      hasPhoto={Boolean(owner.avatar_url)}
+      alt={owner.full_name ?? 'Owner'}
     />
   )
 }

@@ -1,9 +1,13 @@
+import { BALANCE_TONE_CLASS, balanceTone } from '@/lib/billing/balance-tone'
+import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
-import { CalendarRange, Clock, UserCog, Users } from 'lucide-react'
+import { CalendarRange, UserCog, Users } from 'lucide-react'
 
 import type { ClientHoursTotals } from '@pts/db/hours'
 
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type SidebarCardProps = {
   icon: ReactNode
@@ -55,7 +59,10 @@ export function HoursCard({ hours }: { hours: ClientHoursTotals }) {
     ['Purchased', hours.purchased],
   ]
   return (
-    <SidebarCard icon={<Clock className={iconClass} />} title='Hours'>
+    <SidebarCard
+      icon={<ENTITY_ICONS.timeLog className={iconClass} />}
+      title='Hours'
+    >
       <dl className='space-y-1.5'>
         {rows.map(([label, value], index) => (
           <div
@@ -64,9 +71,11 @@ export function HoursCard({ hours }: { hours: ClientHoursTotals }) {
           >
             <dt className='text-muted-foreground'>{label}</dt>
             <dd
-              className={
-                index === 0 ? 'font-semibold tabular-nums' : 'tabular-nums'
-              }
+              className={cn(
+                'tabular-nums',
+                index === 0 &&
+                  cn('font-semibold', BALANCE_TONE_CLASS[balanceTone(value)])
+              )}
             >
               {formatHours(value)}
             </dd>
@@ -89,10 +98,6 @@ export function RecipientsCard({ children }: { children: ReactNode }) {
       {children}
     </SidebarCard>
   )
-}
-
-function formatHours(value: number): string {
-  return `${Math.round(value * 100) / 100} h`
 }
 
 export function StaffCard({ children }: { children: ReactNode }) {

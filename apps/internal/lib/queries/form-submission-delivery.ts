@@ -1,7 +1,7 @@
 import { and, asc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { formSubmissions, leads } from '@/lib/db/schema'
+import { contacts, formSubmissions, leads } from '@/lib/db/schema'
 import {
   EMAIL_LEASE_MINUTES,
   RETRY_MAX_AGE_HOURS,
@@ -223,9 +223,10 @@ export async function findActiveLeadIdByEmail(
   const [row] = await db
     .select({ id: leads.id })
     .from(leads)
+    .innerJoin(contacts, eq(contacts.id, leads.contactId))
     .where(
       and(
-        sql`lower(${leads.contactEmail}) = lower(${email})`,
+        sql`lower(${contacts.email}) = lower(${email})`,
         isNull(leads.deletedAt)
       )
     )

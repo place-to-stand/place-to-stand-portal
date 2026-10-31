@@ -13,12 +13,7 @@ import {
 } from './alert-dialog'
 
 type ButtonVariant =
-  | 'default'
-  | 'destructive'
-  | 'outline'
-  | 'secondary'
-  | 'ghost'
-  | 'link'
+  'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
 
 type ConfirmDialogProps = {
   open: boolean
@@ -51,6 +46,29 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  // While it fades out, keep showing what it opened with: a caller that
+  // derives the copy from state it clears on close would otherwise flash
+  // another action's words (Revert to draft turning into Mark as sent).
+  const live = {
+    title,
+    description,
+    confirmLabel,
+    cancelLabel,
+    confirmVariant,
+  }
+  const [shown, setShown] = React.useState(live)
+  if (
+    open &&
+    (shown.title !== title ||
+      shown.description !== description ||
+      shown.confirmLabel !== confirmLabel ||
+      shown.cancelLabel !== cancelLabel ||
+      shown.confirmVariant !== confirmVariant)
+  ) {
+    setShown(live)
+  }
+  const content = open ? live : shown
+
   return (
     <AlertDialog
       open={open}
@@ -62,22 +80,24 @@ export function ConfirmDialog({
     >
       <AlertDialogContent onBackdropClick={onCancel}>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          {description ? (
-            <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogTitle>{content.title}</AlertDialogTitle>
+          {content.description ? (
+            <AlertDialogDescription>
+              {content.description}
+            </AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <Button type='button' variant='outline' onClick={onCancel}>
-            {cancelLabel}
+            {content.cancelLabel}
           </Button>
           <Button
             type='button'
-            variant={confirmVariant}
+            variant={content.confirmVariant}
             onClick={onConfirm}
             disabled={confirmDisabled}
           >
-            {confirmLabel}
+            {content.confirmLabel}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -19,12 +19,10 @@ type ProjectsTableSectionProps = {
   onEdit: (project: ProjectWithClient) => void
   onRequestDelete: (project: ProjectWithClient) => void
   onRestore: (project: ProjectWithClient) => void
-  onRequestDestroy: (project: ProjectWithClient) => void
   isPending: boolean
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   emptyMessage: string
 }
 
@@ -42,17 +40,15 @@ export function ProjectsTableSection({
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   isPending,
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   emptyMessage,
 }: ProjectsTableSectionProps) {
   const { update, getParam } = useListParams({
     basePath: '/projects/archive',
-    resetKeys: ['cursor', 'dir'],
+    resetKeys: ['page'],
   })
   const rawSort = getParam('sort')
   const sort = rawSort && isProjectSortValue(rawSort) ? rawSort : undefined
@@ -63,7 +59,7 @@ export function ProjectsTableSection({
         density='compact'
         layout='fixed'
         stack
-        className='md:min-w-[48rem]'
+        className='md:min-w-[40rem]'
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
@@ -72,12 +68,11 @@ export function ProjectsTableSection({
               sort={sort}
               defaultSort='name:asc'
               onSortChange={next => update({ sort: next })}
-              className='w-[32%]'
+              className='w-[40%]'
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[20%]'>Owner</TableHead>
-            <TableHead className='w-[14%]'>Status</TableHead>
+            <TableHead className='w-[25%]'>Owner</TableHead>
             <SortableTableHead
               field='created'
               sort={sort}
@@ -86,7 +81,7 @@ export function ProjectsTableSection({
             >
               Timeline
             </SortableTableHead>
-            <TableHead className='w-32 text-right'>Actions</TableHead>
+            <TableHead className='w-24 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -99,16 +94,14 @@ export function ProjectsTableSection({
               pendingReason={pendingReason}
               pendingDeleteId={pendingDeleteId}
               pendingRestoreId={pendingRestoreId}
-              pendingDestroyId={pendingDestroyId}
               onEdit={onEdit}
               onRequestDelete={onRequestDelete}
               onRestore={onRestore}
-              onRequestDestroy={onRequestDestroy}
             />
           ))}
           {projects.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className='p-4'>
+              <TableCell colSpan={4} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>

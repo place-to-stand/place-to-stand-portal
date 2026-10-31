@@ -5,8 +5,8 @@ import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskUpdatedEvent } from '@/lib/activity/events'
-import { requireUser } from '@/lib/auth/session'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { requireStaffUser } from '@/lib/auth/session'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -24,7 +24,7 @@ export async function changeTaskDueDate(input: {
   taskId: string
   dueOn: string | null
 }): Promise<ActionResult> {
-  const user = await requireUser()
+  const user = await requireStaffUser()
   const parsed = z
     .object({
       taskId: z.string().uuid(),
@@ -39,7 +39,7 @@ export async function changeTaskDueDate(input: {
   const { taskId, dueOn } = parsed.data
 
   try {
-    await ensureTaskAccess(user, taskId)
+    await ensureTaskWorkAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Task not found.' }
@@ -59,7 +59,7 @@ export async function changeTaskDueDate(input: {
       title: tasks.title,
       dueOn: tasks.dueOn,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(tasks.projectId, projects.id))
@@ -79,10 +79,7 @@ export async function changeTaskDueDate(input: {
     return {}
   }
 
-  await db
-    .update(tasks)
-    .set({ dueOn: nextDueOn })
-    .where(eq(tasks.id, taskId))
+  await db.update(tasks).set({ dueOn: nextDueOn }).where(eq(tasks.id, taskId))
 
   const event = taskUpdatedEvent({
     title: task.title ?? 'Task',
@@ -101,7 +98,7 @@ export async function changeTaskDueDate(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: task.projectId,
-    targetClientId: task.clientId ?? null,
+    targetCompanyId: task.companyId ?? null,
     metadata: event.metadata,
   })
 

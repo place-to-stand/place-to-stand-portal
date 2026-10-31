@@ -60,12 +60,6 @@ export function integrationProviderFromSlug(
   return match ?? null
 }
 
-export function isIntegrationProvider(
-  value: unknown
-): value is IntegrationProvider {
-  return value === 'VERCEL' || value === 'SUPABASE'
-}
-
 /** A project the staff member's token can see, as offered by the picker. */
 export type ExternalProjectOption = {
   provider: IntegrationProvider

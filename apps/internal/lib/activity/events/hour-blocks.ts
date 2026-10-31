@@ -1,6 +1,7 @@
 import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
+import { formatHours } from '@pts/ui/numbers'
 
-import { formatHours, joinWithCommas, toMetadata } from './shared'
+import { joinWithCommas, toMetadata } from './shared'
 
 export const hourBlockCreatedEvent = (args: {
   clientName?: string | null
@@ -9,8 +10,8 @@ export const hourBlockCreatedEvent = (args: {
 }): ActivityEvent => ({
   verb: ActivityVerbs.HOUR_BLOCK_CREATED,
   summary: args.clientName
-    ? `Recorded ${formatHours(args.hoursPurchased)} purchased hours for ${args.clientName}`
-    : `Recorded ${formatHours(args.hoursPurchased)} purchased hours`,
+    ? `Recorded ${formatHours(args.hoursPurchased)} of purchased hours for ${args.clientName}`
+    : `Recorded ${formatHours(args.hoursPurchased)} of purchased hours`,
   metadata: toMetadata({
     hoursPurchased: args.hoursPurchased,
     invoiceNumber: args.invoiceNumber ?? null,
@@ -29,7 +30,7 @@ export const hourBlocksCreatedFromInvoiceEvent = (args: {
   hourBlockIds: string[]
 }): ActivityEvent => ({
   verb: ActivityVerbs.HOUR_BLOCK_CREATED,
-  summary: `Created ${args.count} hour block${args.count === 1 ? '' : 's'} (${formatHours(args.totalHours)}h)${
+  summary: `Created ${args.count} hour block${args.count === 1 ? '' : 's'} (${formatHours(args.totalHours)})${
     args.invoiceNumber ? ` from invoice ${args.invoiceNumber}` : ' from a paid invoice'
   }`,
   metadata: toMetadata({
@@ -79,13 +80,4 @@ export const hourBlockRestoredEvent = (args: {
   summary: args.clientName
     ? `Restored hour block for ${args.clientName}`
     : 'Restored hour block',
-})
-
-export const hourBlockDeletedEvent = (args: {
-  clientName?: string | null
-}): ActivityEvent => ({
-  verb: ActivityVerbs.HOUR_BLOCK_DELETED,
-  summary: args.clientName
-    ? `Permanently deleted hour block for ${args.clientName}`
-    : 'Permanently deleted hour block',
 })

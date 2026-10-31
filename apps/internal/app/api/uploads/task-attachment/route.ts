@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import {
   deleteAttachmentObject,
@@ -35,7 +35,7 @@ const deletePayloadSchema = z.object({
  * by `ensureTaskAttachmentBucket`) enforce what the client claims here.
  */
 export async function POST(request: Request) {
-  const actor = await requireUser()
+  const actor = await requireStaffUser()
   const payload = await request.json().catch(() => null)
   const parsed = uploadPayloadSchema.safeParse(payload)
 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const actor = await requireUser()
+  const actor = await requireStaffUser()
   const payload = await request.json().catch(() => null)
   const parsed = deletePayloadSchema.safeParse(payload)
 

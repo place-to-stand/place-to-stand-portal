@@ -40,7 +40,7 @@ import {
   createInvoiceSavePayload,
   invoiceFormSchema,
   INVOICE_FORM_FIELDS,
-  type ClientRow,
+  type InvoiceClient,
   type InvoiceFormValues,
   type InvoiceLineItemFormValues,
   type InvoiceWithClient,
@@ -79,7 +79,7 @@ export type UseInvoiceSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
 }
@@ -87,7 +87,6 @@ export type UseInvoiceSheetStateArgs = {
 export type UseInvoiceSheetStateReturn = {
   form: UseFormReturn<InvoiceFormValues>
   fieldArray: UseFieldArrayReturn<InvoiceFormValues, 'lineItems', 'id'>
-  feedback: string | null
   isEditing: boolean
   isReadOnly: boolean
   isPending: boolean
@@ -110,7 +109,6 @@ export type UseInvoiceSheetStateReturn = {
   handleRemoveLineItem: (index: number) => void
   handleMoveLineItem: (fromIndex: number, toIndex: number) => void
   handleProductSelect: (index: number, productId: string) => void
-  setFeedback: (value: string | null) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +128,6 @@ export function useInvoiceSheetState({
   const invoiceStatus = invoice?.status ?? null
   const readOnly = !isInvoiceEditable(invoiceStatus)
 
-  const [feedback, setFeedback] = useState<string | null>(null)
   // `isLoading` is the open-time fetch of line items: it blocks submit (you
   // can't save a half-loaded form) but is not a save, so it never reaches the
   // button label. The save transition and the quiet one come from
@@ -169,7 +166,6 @@ export function useInvoiceSheetState({
     (data: InvoiceWithLineItems | null) => {
       form.reset(buildInvoiceFormDefaults(data))
       form.clearErrors()
-      setFeedback(null)
     },
     [form]
   )
@@ -246,13 +242,12 @@ export function useInvoiceSheetState({
       }
 
       // Mark the pre-filled client (if any) so auto-fill skips hydration
-      loadedClientIdRef.current = prefillData?.clientId ?? null
+      loadedClientIdRef.current = prefillData?.companyId ?? null
 
       startResetTransition(() => {
         if (prefillData) {
           form.reset(prefillData)
           form.clearErrors()
-          setFeedback(null)
         } else {
           const defaults = buildInvoiceFormDefaults(null)
           // Default the first line item to the first active catalog product
@@ -262,7 +257,6 @@ export function useInvoiceSheetState({
           }
           form.reset(defaults)
           form.clearErrors()
-          setFeedback(null)
         }
       })
       return
@@ -274,11 +268,15 @@ export function useInvoiceSheetState({
       try {
         const fullInvoice = await getInvoiceDetails(invoice.id)
         // Mark the loaded client so auto-fill skips hydration
-        loadedClientIdRef.current = fullInvoice?.client_id ?? null
+        loadedClientIdRef.current = fullInvoice?.company_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
         resetFormState(fullInvoice)
       } catch {
-        setFeedback('Unable to load invoice details.')
+        toast({
+          title: 'Unable to load invoice',
+          description: 'Close the sheet and open it again.',
+          variant: 'destructive',
+        })
       }
     })
   }, [
@@ -289,13 +287,14 @@ export function useInvoiceSheetState({
     productCatalog,
     startLoadTransition,
     startResetTransition,
+    toast,
   ])
 
   // ---------------------------------------------------------------------------
   // Auto-fill: due date + tax rate based on selected client
   // ---------------------------------------------------------------------------
 
-  const watchedClientId = useWatch({ control: form.control, name: 'clientId' })
+  const watchedClientId = useWatch({ control: form.control, name: 'companyId' })
 
   // Build a map of state → tax rate for lookup
   const taxRateMap = useMemo(() => {
@@ -372,7 +371,6 @@ export function useInvoiceSheetState({
       if (readOnly) return
 
       startSave(async () => {
-        setFeedback(null)
         form.clearErrors()
 
         const payload = createInvoiceSavePayload(
@@ -385,7 +383,7 @@ export function useInvoiceSheetState({
           mode: isEditing ? 'edit' : 'create',
           targetId: payload.id ?? null,
           metadata: {
-            clientId: payload.clientId ?? null,
+            companyId: payload.companyId ?? null,
           },
         })
 
@@ -399,7 +397,6 @@ export function useInvoiceSheetState({
               status: 'error',
               error: result.error,
             })
-            setFeedback(result.error)
             toast({
               title: 'Unable to save invoice',
               description: result.error,
@@ -414,10 +411,7 @@ export function useInvoiceSheetState({
           })
 
           toast({
-            title: isEditing ? 'Invoice updated' : 'Invoice created',
-            description: isEditing
-              ? 'Changes saved.'
-              : 'The invoice is ready to send.',
+            title: isEditing ? 'Invoice saved' : 'Invoice created',
           })
 
           resetFormState(null)
@@ -428,7 +422,6 @@ export function useInvoiceSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('We could not save this invoice. Please try again.')
           toast({
             title: 'Unable to save invoice',
             description:
@@ -475,7 +468,6 @@ export function useInvoiceSheetState({
 
     setIsDeleteDialogOpen(false)
     startSave(async () => {
-      setFeedback(null)
       form.clearErrors()
 
       const interaction = startSettingsInteraction({
@@ -483,7 +475,7 @@ export function useInvoiceSheetState({
         mode: 'delete',
         targetId: invoice.id,
         metadata: {
-          clientId: invoice.client_id ?? null,
+          companyId: invoice.company_id ?? null,
         },
       })
 
@@ -496,7 +488,6 @@ export function useInvoiceSheetState({
             targetId: invoice.id,
             error: result.error,
           })
-          setFeedback(result.error)
           toast({
             title: 'Unable to archive invoice',
             description: result.error,
@@ -524,7 +515,6 @@ export function useInvoiceSheetState({
           targetId: invoice.id,
           error: error instanceof Error ? error.message : 'Unknown error',
         })
-        setFeedback('We could not archive this invoice. Please try again.')
         toast({
           title: 'Unable to archive invoice',
           description:
@@ -642,7 +632,6 @@ export function useInvoiceSheetState({
   return {
     form,
     fieldArray,
-    feedback,
     isEditing,
     isReadOnly: readOnly,
     isPending,
@@ -665,6 +654,5 @@ export function useInvoiceSheetState({
     handleRemoveLineItem,
     handleMoveLineItem,
     handleProductSelect,
-    setFeedback,
   }
 }

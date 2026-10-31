@@ -54,6 +54,18 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      // Contacts are called People; old links (and their ?contact= sheet
+      // params, which Next carries over) keep working.
+      { source: '/contacts', destination: '/people', permanent: false },
+      {
+        source: '/contacts/:path*',
+        destination: '/people/:path*',
+        permanent: false,
+      },
+    ]
+  },
   async rewrites() {
     // PostHog reverse proxy to avoid ad blockers
     // The relay path must match the api_host in instrumentation-client.ts

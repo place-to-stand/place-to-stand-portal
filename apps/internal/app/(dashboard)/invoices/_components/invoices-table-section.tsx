@@ -3,23 +3,19 @@
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
-import {
-  Archive,
-  Building2,
-  Check,
-  Copy,
-  ExternalLink,
-  Mail,
-  RefreshCw,
-  Trash2,
-} from 'lucide-react'
+import { formatCurrency } from '@pts/ui/numbers'
+import { Check, Copy, ExternalLink, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { isInvoiceSortValue } from '@/lib/invoices/filters'
@@ -32,6 +28,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { invoiceShareHref } from '@/lib/invoices/links'
@@ -44,6 +41,7 @@ import {
 import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
 import { InvoiceStatusBadge } from './invoice-status-badge'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 type InvoicesTableMode = 'active' | 'archive'
 
@@ -54,41 +52,17 @@ export type InvoicesTableSectionProps = {
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   onEdit: (invoice: InvoiceWithClient) => void
   onRequestDelete: (invoice: InvoiceWithClient) => void
   onRestore: (invoice: InvoiceWithClient) => void
-  onRequestDestroy: (invoice: InvoiceWithClient) => void
   onRefresh: () => void
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
 }
 
-const formatCurrency = (value: string) => {
-  try {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(Number(value))
-  } catch {
-    return value
-  }
-}
-
 const formatDate = (value: string | null) =>
   formatCalendarDate(value) ?? '\u2014'
-
-function BillingTypeBadge() {
-  return (
-    <Badge
-      variant='outline'
-      className={cn(BADGE_TINTS.amber, 'px-1.5 py-0 text-[10px] leading-4')}
-    >
-      Net 30
-    </Badge>
-  )
-}
 
 /**
  * A draft has no public link yet, so its cell is the way to send it; from
@@ -176,11 +150,9 @@ export function InvoicesTableSection({
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   onRefresh,
   emptyMessage,
   basePath,
@@ -248,16 +220,13 @@ export function InvoicesTableSection({
             const isArchived = Boolean(invoice.deleted_at)
             const isDeleting = isPending && pendingDeleteId === invoice.id
             const isRestoring = isPending && pendingRestoreId === invoice.id
-            const isDestroying = isPending && pendingDestroyId === invoice.id
-            const isBusy = isDeleting || isRestoring || isDestroying
+            const isBusy = isDeleting || isRestoring
 
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
-            const showDestroy = mode === 'archive'
 
             const archiveDisabled = isBusy || isArchived
             const restoreDisabled = isBusy || !isArchived
-            const destroyDisabled = isBusy || !isArchived
 
             const archiveDisabledReason = archiveDisabled
               ? isArchived
@@ -271,12 +240,6 @@ export function InvoicesTableSection({
                 : 'Invoice is already active.'
               : null
 
-            const destroyDisabledReason = destroyDisabled
-              ? !isArchived
-                ? 'Archive the invoice before permanently deleting.'
-                : pendingReason
-              : null
-
             return (
               <TableRow
                 key={invoice.id}
@@ -288,25 +251,35 @@ export function InvoicesTableSection({
               >
                 <TableCell className='text-sm font-medium'>
                   <div className='flex items-center gap-2'>
+                    <ENTITY_ICONS.invoice
+                      aria-hidden
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        ENTITY_ACCENTS.invoice.icon
+                      )}
+                    />
                     {invoice.invoice_number ? (
                       invoice.invoice_number
                     ) : (
-                      <Badge variant='secondary' className='text-xs'>
-                        Draft
-                      </Badge>
+                      <Badge variant='secondary'>Draft</Badge>
                     )}
                     {invoice.billing_type === 'net_30' ? (
-                      <BillingTypeBadge />
+                      <BillingTypeBadge billingType='net_30' />
                     ) : null}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
+                    <ENTITY_ICONS.client
+                      className={cn(
+                        ENTITY_ACCENTS.client.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
                     {client ? (
-                      client.slug ? (
+                      client.company_id ? (
                         <Link
-                          href={`/clients/${client.slug}`}
+                          href={companySheetHref(client.company_id)}
                           className='hover:text-foreground truncate-link hover:underline'
                         >
                           {client.name}
@@ -315,7 +288,7 @@ export function InvoicesTableSection({
                         <span className='truncate'>{client.name}</span>
                       )
                     ) : (
-                      <span>Unassigned</span>
+                      <EmptyValue />
                     )}
                   </div>
                   {client?.deleted_at ? (
@@ -344,50 +317,26 @@ export function InvoicesTableSection({
                   <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
-                  <div className='flex justify-end gap-2'>
+                  <RecordRowActions>
                     {showArchive ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='archive'
+                        entity='invoice'
+                        onClick={() => onRequestDelete(invoice)}
                         disabled={archiveDisabled}
-                        reason={archiveDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Archive invoice'
-                          icon={<Archive />}
-                          variant='destructive'
-                          onClick={() => onRequestDelete(invoice)}
-                          disabled={archiveDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={archiveDisabledReason}
+                      />
                     ) : null}
                     {showRestore ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='restore'
+                        entity='invoice'
+                        onClick={() => onRestore(invoice)}
                         disabled={restoreDisabled}
-                        reason={restoreDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Restore invoice'
-                          icon={<RefreshCw />}
-                          variant='outline'
-                          onClick={() => onRestore(invoice)}
-                          disabled={restoreDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={restoreDisabledReason}
+                      />
                     ) : null}
-                    {showDestroy ? (
-                      <DisabledFieldTooltip
-                        disabled={destroyDisabled}
-                        reason={destroyDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Permanently delete invoice'
-                          icon={<Trash2 />}
-                          variant='destructive'
-                          onClick={() => onRequestDestroy(invoice)}
-                          disabled={destroyDisabled}
-                        />
-                      </DisabledFieldTooltip>
-                    ) : null}
-                  </div>
+                  </RecordRowActions>
                 </TableCell>
               </TableRow>
             )

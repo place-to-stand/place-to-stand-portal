@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { WIDGET_FRAME_CLASS } from '@/components/dashboard/widget-card'
 
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 
@@ -36,10 +37,7 @@ export function MyTasksWidget({
 
   return (
     <section
-      className={cn(
-        'bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm',
-        className
-      )}
+      className={cn(WIDGET_FRAME_CLASS, className)}
       aria-labelledby='my-tasks-heading'
     >
       <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>

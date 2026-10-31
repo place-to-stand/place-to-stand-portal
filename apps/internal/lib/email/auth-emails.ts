@@ -1,38 +1,49 @@
-import "server-only";
+import 'server-only'
 
 import {
   magicLinkEmail,
   passwordChangedEmail,
   passwordResetEmail,
   type RenderedEmail,
-} from "@pts/email";
+} from '@pts/email'
 
-import { serverEnv } from "@/lib/env.server";
-import { sendEmail } from "@/lib/email/send";
+import { serverEnv } from '@/lib/env.server'
+import { sendEmail } from '@/lib/email/send'
 
 /**
  * Matches `otp_expiry` in `supabase/config.toml` (3600s). The templates state
  * the window in words, so a drift here makes the mail lie about how long the
  * recipient has.
  */
-const LINK_EXPIRY_MINUTES = 60;
+const LINK_EXPIRY_MINUTES = 60
 
-/** How the internal portal refers to itself in mail — not the client portal. */
-const DESTINATION = "the Place To Stand internal portal";
+/** How each portal is named in mail. */
+const DESTINATIONS = {
+  internal: 'the Place To Stand internal portal',
+  client: 'the Place To Stand client portal',
+} as const
+const DESTINATION = DESTINATIONS.internal
+
+/** Which portal the link opens: an admin can reset a client's password here. */
+export type AuthEmailPortal = keyof typeof DESTINATIONS
 
 type AuthEmailTemplate = (args: {
-  actionLink: string;
-  destination: string;
-  expiresInMinutes: number;
-  replyTo: string;
-}) => RenderedEmail;
+  actionLink: string
+  destination: string
+  expiresInMinutes: number
+  replyTo: string
+}) => RenderedEmail
 
-export async function sendPasswordResetEmail(to: string, actionLink: string) {
-  await send(to, actionLink, passwordResetEmail);
+export async function sendPasswordResetEmail(
+  to: string,
+  actionLink: string,
+  portal: AuthEmailPortal = 'internal'
+) {
+  await send(to, actionLink, passwordResetEmail, DESTINATIONS[portal])
 }
 
 export async function sendMagicLinkEmail(to: string, actionLink: string) {
-  await send(to, actionLink, magicLinkEmail);
+  await send(to, actionLink, magicLinkEmail)
 }
 
 /**
@@ -49,23 +60,24 @@ export async function sendPasswordChangedEmail(to: string) {
       destination: DESTINATION,
       replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
     })
-  );
+  )
 }
 
 async function send(
   to: string,
   actionLink: string,
-  template: AuthEmailTemplate
+  template: AuthEmailTemplate,
+  destination: string = DESTINATION
 ) {
   await deliver(
     to,
     template({
       actionLink,
-      destination: DESTINATION,
+      destination,
       expiresInMinutes: LINK_EXPIRY_MINUTES,
       replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
     })
-  );
+  )
 }
 
 async function deliver(to: string, email: RenderedEmail) {
@@ -76,5 +88,5 @@ async function deliver(to: string, email: RenderedEmail) {
     subject: email.subject,
     text: email.text,
     html: email.html,
-  });
+  })
 }

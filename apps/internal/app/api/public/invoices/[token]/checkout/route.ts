@@ -1,3 +1,4 @@
+// permission: public — unguessable share token
 import { NextResponse } from 'next/server'
 import { and, eq, isNull } from 'drizzle-orm'
 
@@ -49,7 +50,10 @@ export async function POST(
       )
     }
 
-    // If a payment intent already exists, try to reuse it
+    const totalCents = Math.round(Number(invoice.total) * 100)
+
+    // If a payment intent already exists, try to reuse it — only when it
+    // still charges this invoice's total (an edit may have changed it).
     if (invoice.stripePaymentIntentId) {
       try {
         const existingIntent = await getStripe().paymentIntents.retrieve(
@@ -59,7 +63,9 @@ export async function POST(
           (existingIntent.status === 'requires_payment_method' ||
             existingIntent.status === 'requires_confirmation') &&
           existingIntent.payment_method_types?.length === 1 &&
-          existingIntent.payment_method_types[0] === 'card'
+          existingIntent.payment_method_types[0] === 'card' &&
+          existingIntent.amount === totalCents &&
+          existingIntent.currency === 'usd'
 
         if (isReusable) {
           return NextResponse.json({
@@ -82,7 +88,6 @@ export async function POST(
       }
     }
 
-    const totalCents = Math.round(Number(invoice.total) * 100)
     const invoiceLabel = invoice.invoiceNumber
       ? `Invoice ${invoice.invoiceNumber}`
       : 'Invoice Payment'

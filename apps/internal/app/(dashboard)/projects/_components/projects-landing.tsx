@@ -4,26 +4,21 @@ import Link from 'next/link'
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Archive,
-  Building2,
-  Clock,
-  FolderKanban,
-  Pencil,
-  UserRound,
-  Users,
-} from 'lucide-react'
+import { CalendarClock, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Progress } from '@pts/ui/progress'
+import { formatHours } from '@pts/ui/numbers'
 import {
   Table,
   TableBody,
@@ -33,6 +28,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
@@ -56,6 +52,8 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
 // column in all three section tables; grouping semantics stay unchanged —
@@ -68,15 +66,6 @@ function isProjectSortValue(value: string): boolean {
     (PROJECT_SORT_FIELDS as readonly string[]).includes(field) &&
     (direction === 'asc' || direction === 'desc')
   )
-}
-
-const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 0,
-})
-
-function formatHours(hours: number): string {
-  return HOURS_FORMATTER.format(hours)
 }
 
 function SimpleIcon({
@@ -113,7 +102,12 @@ export type ClientHoursData =
     }
 
 type ClientProjectSection = {
-  client: { id: string; name: string; slug: string | null }
+  client: {
+    id: string
+    name: string
+    slug: string | null
+    company_id: string | null
+  }
   projects: LandingProject[]
 }
 
@@ -137,6 +131,8 @@ type ProjectsLandingProps = {
   unfilteredCounts: LandingUnfilteredCounts
   /** True when the URL deviates from the clean landing (status or search). */
   filtersActive: boolean
+  /** Project members: view and open projects, no status, owner or row edits. */
+  readOnly?: boolean
 }
 
 type SectionConfig = {
@@ -180,6 +176,7 @@ export function ProjectsLanding({
   clientHoursMap = {},
   unfilteredCounts,
   filtersActive,
+  readOnly = false,
 }: ProjectsLandingProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -298,19 +295,20 @@ export function ProjectsLanding({
         return
       }
 
-      if (!project.client_id || !project.client) {
+      if (!project.company_id || !project.client) {
         return
       }
 
-      const existing = clientMap.get(project.client_id)
+      const existing = clientMap.get(project.company_id)
       if (existing) {
         existing.projects.push(project)
       } else {
-        clientMap.set(project.client_id, {
+        clientMap.set(project.company_id, {
           client: {
             id: project.client.id,
             name: project.client.name,
             slug: project.client.slug,
+            company_id: project.client.company_id ?? null,
           },
           projects: [project],
         })
@@ -415,8 +413,12 @@ export function ProjectsLanding({
               </span>
             )}
             <Link href={href} className='flex min-w-0 items-center gap-2 py-1'>
-              <FolderKanban className='h-4 w-4 shrink-0 text-emerald-500' />
-              <span className='truncate font-medium'>{project.name}</span>
+              <ENTITY_ICONS.project
+                className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
+              />
+              <span className='truncate font-medium' title={project.name}>
+                {project.name}
+              </span>
             </Link>
           </div>
         </TableCell>
@@ -425,6 +427,7 @@ export function ProjectsLanding({
             projectId={project.id}
             status={project.status}
             onStatusChange={handleProjectStatusChange}
+            disabled={readOnly}
           />
         </TableCell>
         <TableCell>
@@ -441,6 +444,7 @@ export function ProjectsLanding({
             owner={project.owner}
             admins={admins}
             onOwnerChange={handleProjectOwnerChange}
+            readOnly={readOnly}
           />
         </TableCell>
         <TableCell
@@ -468,32 +472,28 @@ export function ProjectsLanding({
                 </Tooltip>
               ))
             ) : (
-              <span className='text-muted-foreground/40'>—</span>
+              <EmptyValue />
             )}
           </div>
         </TableCell>
         <TableCell className='text-right max-md:ml-auto'>
-          <div className='flex justify-end gap-2'>
-            <RowActionButton
-              label='Edit project'
-              icon={<Pencil />}
-              variant='outline'
-              onClick={() => openProjectSheet(project.id)}
-              disabled={isArchivePending}
-            />
-            <DisabledFieldTooltip
-              disabled={isArchivePending}
-              reason={isArchivePending ? PENDING_REASON : null}
-            >
-              <RowActionButton
-                label='Archive project'
-                icon={<Archive />}
-                variant='destructive'
-                onClick={() => handleRequestDelete(project)}
+          {readOnly ? null : (
+            <RecordRowActions>
+              <RecordRowAction
+                kind='edit'
+                entity='project'
+                onClick={() => openProjectSheet(project.id)}
                 disabled={isArchivePending}
               />
-            </DisabledFieldTooltip>
-          </div>
+              <RecordRowAction
+                kind='archive'
+                entity='project'
+                onClick={() => handleRequestDelete(project)}
+                disabled={isArchivePending}
+                disabledReason={isArchivePending ? PENDING_REASON : null}
+              />
+            </RecordRowActions>
+          )}
         </TableCell>
       </TableRow>
     )
@@ -508,8 +508,9 @@ export function ProjectsLanding({
     actions: 'w-24',
   }
 
-  const renderProjectTable = (items: LandingProject[]) => (
-    <div className='rounded-lg border'>
+  /** One header for every section table; `rows` is the table body. */
+  const renderProjectTable = (rows: ReactNode) => (
+    <div className='overflow-hidden rounded-lg border'>
       <Table
         density='compact'
         layout='fixed'
@@ -538,7 +539,7 @@ export function ProjectsLanding({
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>{items.map(project => renderProjectRow(project))}</TableBody>
+        <TableBody>{rows}</TableBody>
       </Table>
     </div>
   )
@@ -547,6 +548,7 @@ export function ProjectsLanding({
     id: string
     name: string
     slug: string | null
+    company_id: string | null
   }) => {
     const hours = clientHoursMap[client.id]
 
@@ -557,23 +559,42 @@ export function ProjectsLanding({
       >
         <TableCell
           colSpan={6}
-          className='bg-blue-100 py-2.5 align-middle max-md:px-3 max-md:py-2.5 dark:bg-blue-500/8'
+          className={cn(
+            // The shared cell sets the height: same as the project rows.
+            ENTITY_ACCENTS.client.band,
+            'max-md:px-3 max-md:py-2.5'
+          )}
         >
           <div className='flex items-center gap-4'>
-            <Link
-              href={
-                client.slug
-                  ? `/clients/${client.slug}`
-                  : `/clients/${client.id}`
-              }
-              className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
-            >
-              <Building2 className='h-4 w-4 shrink-0 text-blue-500/80' />
-              <span className='text-sm font-semibold'>{client.name}</span>
-            </Link>
+            {readOnly ? (
+              // Client pages are admin-only, so members get the name alone.
+              <span className='flex w-fit shrink items-center gap-2 opacity-65'>
+                <ENTITY_ICONS.client
+                  className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4 shrink-0')}
+                />
+                <span className='text-sm font-semibold'>{client.name}</span>
+              </span>
+            ) : client.company_id ? (
+              <Link
+                href={companySheetHref(client.company_id)}
+                className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
+              >
+                <ENTITY_ICONS.client
+                  className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4 shrink-0')}
+                />
+                <span className='text-sm font-semibold'>{client.name}</span>
+              </Link>
+            ) : (
+              <span className='flex w-fit shrink items-center gap-2 opacity-65'>
+                <ENTITY_ICONS.client
+                  className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4 shrink-0')}
+                />
+                <span className='text-sm font-semibold'>{client.name}</span>
+              </span>
+            )}
             {hours && hours.billingType === 'prepaid' && (
               <div className='flex items-center gap-1 text-xs'>
-                <Clock
+                <ENTITY_ICONS.hourBlock
                   className={cn(
                     'h-3 w-3',
                     hours.hoursRemaining > 0
@@ -592,13 +613,13 @@ export function ProjectsLanding({
                         : 'text-destructive font-medium'
                   )}
                 >
-                  {formatHours(hours.hoursRemaining)}h remaining
+                  {formatHours(hours.hoursRemaining)} remaining
                 </span>
               </div>
             )}
             {hours && hours.billingType === 'net_30' && (
               <div className='flex items-center gap-1 text-xs'>
-                <Clock className='text-muted-foreground h-3 w-3' />
+                <CalendarClock className='text-muted-foreground h-3 w-3' />
                 <span className='text-muted-foreground font-medium'>
                   Net 30
                 </span>
@@ -611,56 +632,23 @@ export function ProjectsLanding({
   }
 
   const clientSectionContent =
-    clientSections.length > 0 ? (
-      <div className='rounded-lg border'>
-        <Table
-          density='compact'
-          layout='fixed'
-          stack
-          className='md:min-w-[50rem]'
-        >
-          <TableHeader>
-            <TableRow className='bg-muted/40'>
-              <SortableTableHead
-                field='name'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={next => update({ sort: next })}
-                className={tableColumnWidths.project}
-              >
-                Project
-              </SortableTableHead>
-              <TableHead className={tableColumnWidths.status}>Status</TableHead>
-              <TableHead className={tableColumnWidths.progress}>
-                Progress
-              </TableHead>
-              <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
-              <TableHead className={tableColumnWidths.links}>Links</TableHead>
-              <TableHead className={`${tableColumnWidths.actions} text-right`}>
-                Actions
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {clientSections.flatMap(({ client, projects: clientProjects }) => [
-              renderClientSeparatorRow(client),
-              ...clientProjects.map((project, index) =>
-                renderProjectRow(project, {
-                  indent: true,
-                  isLast: index === clientProjects.length - 1,
-                })
-              ),
-            ])}
-          </TableBody>
-        </Table>
-      </div>
-    ) : (
-      renderSectionEmptyState(
-        unfilteredCounts.clientCount > 0
-          ? 'No client projects match the current filters.'
-          : 'No client projects yet.'
-      )
-    )
+    clientSections.length > 0
+      ? renderProjectTable(
+          clientSections.flatMap(({ client, projects: clientProjects }) => [
+            renderClientSeparatorRow(client),
+            ...clientProjects.map((project, index) =>
+              renderProjectRow(project, {
+                indent: true,
+                isLast: index === clientProjects.length - 1,
+              })
+            ),
+          ])
+        )
+      : renderSectionEmptyState(
+          unfilteredCounts.clientCount > 0
+            ? 'No client projects match the current filters.'
+            : 'No client projects yet.'
+        )
 
   const getInternalEmptyMessage = () => {
     if (unfilteredCounts.internalCount > 0) {
@@ -684,34 +672,33 @@ export function ProjectsLanding({
       count: internalProjects.length,
       content:
         internalProjects.length > 0
-          ? renderProjectTable(internalProjects)
+          ? renderProjectTable(
+              internalProjects.map(project => renderProjectRow(project))
+            )
           : renderSectionEmptyState(getInternalEmptyMessage()),
     },
     {
       key: 'personal',
       title: 'Personal projects',
-      icon: UserRound,
+      icon: ENTITY_ICONS.contact,
       count: personalProjects.length,
       content:
         personalProjects.length > 0
-          ? renderProjectTable(personalProjects)
+          ? renderProjectTable(
+              personalProjects.map(project => renderProjectRow(project))
+            )
           : renderSectionEmptyState(getPersonalEmptyMessage()),
     },
   ]
 
   return (
     <div className='space-y-12'>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={Boolean(deleteTarget)}
-        title='Archive project?'
-        description={
-          deleteTarget
-            ? `Archiving ${deleteTarget.name} hides it from active views but keeps the history intact.`
-            : 'Archiving this project hides it from active views but keeps the history intact.'
-        }
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={isArchivePending}
+        entity='project'
+        name={deleteTarget?.name ?? 'this project'}
+        list='active projects'
+        pending={isArchivePending}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />

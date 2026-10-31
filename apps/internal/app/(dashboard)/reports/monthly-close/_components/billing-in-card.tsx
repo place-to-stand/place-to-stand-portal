@@ -1,7 +1,8 @@
+import { EmptyState } from '@pts/ui/empty-state'
 import type { Net30Data, PrepaidBillingData } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
-import { formatHours, formatMoney } from './format'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
 import { TreeBranch } from './tree-branch'
 
 type BillingInCardProps = {
@@ -23,7 +24,7 @@ function Group({
   hours: number
   amount: number
   rows: Array<{
-    clientId: string
+    companyId: string
     clientName: string
     totalHours: number
     amount: number
@@ -44,15 +45,15 @@ function Group({
           <span className='text-muted-foreground'> · {basis}</span>
         </span>
         <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
-          {formatHours(hours)} hrs
+          {formatHours(hours)}
         </span>
         <span className='w-24 text-right font-semibold tabular-nums'>
-          {formatMoney(amount)}
+          {formatCurrency(amount)}
         </span>
       </div>
       {rows.map((row, index) => (
         <div
-          key={row.clientId}
+          key={row.companyId}
           className='flex items-center gap-3 px-5 py-1.5 text-sm'
         >
           <span className='flex min-w-0 flex-1 items-center gap-2'>
@@ -63,7 +64,7 @@ function Group({
             {formatHours(row.totalHours)}
           </span>
           <span className='w-24 text-right tabular-nums'>
-            {formatMoney(row.amount)}
+            {formatCurrency(row.amount)}
           </span>
         </div>
       ))}
@@ -84,13 +85,13 @@ export function BillingInCard({ prepaid, net30, total }: BillingInCardProps) {
           Billing in
         </h2>
         <span className='text-base font-semibold tabular-nums'>
-          {formatMoney(total)}
+          {formatCurrency(total)}
         </span>
       </div>
       {empty ? (
-        <p className='text-muted-foreground px-5 py-8 text-center text-sm'>
-          No billing this month.
-        </p>
+        <div className='p-5'>
+          <EmptyState message='No billing this month.' />
+        </div>
       ) : (
         <div className='flex flex-col pb-3'>
           <Group

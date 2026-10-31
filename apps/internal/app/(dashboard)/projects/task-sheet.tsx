@@ -1,5 +1,7 @@
 'use client'
 
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
+import { EntityList } from '@/components/sheets/entity-list'
 import {
   useCallback,
   useEffect,
@@ -12,7 +14,7 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { ClipboardList, HelpCircle } from 'lucide-react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import {
   Tooltip,
@@ -21,6 +23,7 @@ import {
   TooltipTrigger,
 } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 
 import type {
@@ -33,7 +36,10 @@ import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { ProjectTimeLogDialog } from './_components/project-time-log/project-time-log-dialog'
-import { TimeLogSection } from './_components/task-sheet/time-log-section'
+import {
+  TimeLogSection,
+  TimeLogSectionPlaceholder,
+} from './_components/task-sheet/time-log-section'
 import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -41,8 +47,7 @@ import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
-import { TaskActivityPanel } from './_components/task-sheet/task-activity-panel'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
+import { SheetActivitySection } from '@/components/sheets/sheet-activity-section'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 
@@ -70,9 +75,9 @@ type TaskSheetProps = {
 }
 
 export function TaskSheet(props: TaskSheetProps) {
+  const { isAdmin } = useViewerAccess()
   const {
     form,
-    feedback,
     isPending,
     isDeleteDialogOpen,
     assigneeItems,
@@ -96,6 +101,7 @@ export function TaskSheet(props: TaskSheetProps) {
     attachments,
     handleAttachmentUpload,
     handleAttachmentRemove,
+    handleAttachmentUndoRemove,
     isUploadingAttachments,
     acceptedAttachmentTypes,
     maxAttachmentSize,
@@ -145,16 +151,17 @@ export function TaskSheet(props: TaskSheetProps) {
 
   // Planning panel is collapsed by default; user expands it on demand.
   const [isPlanningOpen, setIsPlanningOpen] = useState(false)
-  // Deferred mount: the panel creates a planning session when it mounts, so
-  // it only mounts on first expand — after that it stays mounted so the
-  // collapse animation has content to slide away.
+  // Deferred mount: the panel's reads (session, revisions, deployments) only
+  // run once the user expands it — after that it stays mounted so the
+  // collapse animation has content to slide away. Opening it never writes;
+  // the session is created by Start planning.
   const [hasPlanningMounted, setHasPlanningMounted] = useState(false)
   const planningTaskId = props.task?.id ?? null
   const [prevPlanningTaskId, setPrevPlanningTaskId] = useState(planningTaskId)
 
   // The board reuses one TaskSheet instance across tasks — reset planning
-  // state on task switch so a hidden mounted panel can't create planning
-  // sessions for tasks the user never expanded planning on. Adjust-during-
+  // state on task switch so a hidden mounted panel doesn't load planning for
+  // tasks the user never expanded planning on. Adjust-during-
   // render (not an effect) so React restarts the render immediately.
   if (prevPlanningTaskId !== planningTaskId) {
     setPrevPlanningTaskId(planningTaskId)
@@ -345,8 +352,12 @@ export function TaskSheet(props: TaskSheetProps) {
 
   const taskPanelProjectId = props.task?.project_id ?? null
   const taskPanelClientId = taskProject?.client?.id ?? null
+  // Project members (non-admins) don't see time logs or planning.
   const canDeploy = Boolean(
-    props.task && taskProject?.githubRepos && taskProject.githubRepos.length > 0
+    isAdmin &&
+    props.task &&
+    taskProject?.githubRepos &&
+    taskProject.githubRepos.length > 0
   )
 
   return (
@@ -355,21 +366,25 @@ export function TaskSheet(props: TaskSheetProps) {
         <SheetContent
           hideCloseButton
           skipMountAnimation={skipMountAnimation}
-          size='2xl'
+          columns={1}
           className={cn(
             'flex w-full flex-col gap-0 overflow-hidden p-0',
-            // Widen for the planning rail (36px) and, when expanded, the
-            // 560px planning panel.
+            // The one exception to the two widths: the expanded planning
+            // panel (560px) widens the sheet beside the 720px task column
+            // and the 36px rail, and gives it back when it collapses.
             props.task &&
-              (canDeploy && isPlanningOpen
-                ? 'sm:max-w-[1268px]'
-                : 'sm:max-w-[708px]')
+              canDeploy &&
+              isPlanningOpen &&
+              'sm:max-w-[1316px] lg:w-[1316px] lg:max-w-[calc(100vw-2rem)]'
           )}
           // Inline so it wins over the primitive's transition classes: the
           // sheet edge glides in sync with the panel's width transition.
           style={
             props.task
-              ? { transition: 'max-width 300ms ease-in-out' }
+              ? {
+                  transition:
+                    'max-width 300ms ease-in-out, width 300ms ease-in-out',
+                }
               : undefined
           }
         >
@@ -379,7 +394,15 @@ export function TaskSheet(props: TaskSheetProps) {
           {/* Two-column body */}
           <div className='relative flex flex-1 overflow-hidden'>
             {/* Left column: task content */}
-            <div className='flex h-full w-full min-w-0 flex-col sm:w-[672px] sm:shrink-0'>
+            <div
+              className={cn(
+                'flex h-full w-full min-w-0 flex-col',
+                // Fills the sheet; held at 720px beside open planning.
+                isPlanningOpen && canDeploy
+                  ? 'sm:w-[720px] sm:shrink-0'
+                  : 'flex-1'
+              )}
+            >
               {/* Scrollable area */}
               <div
                 // pb-6 matches the px-6 the sections inside use, so the gap
@@ -393,7 +416,6 @@ export function TaskSheet(props: TaskSheetProps) {
                 <TaskSheetForm
                   form={form}
                   onSubmit={handleFormSubmit}
-                  feedback={feedback}
                   isPending={isPending}
                   canManage={props.canManage}
                   assigneeItems={assigneeItems}
@@ -407,6 +429,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   attachments={attachments}
                   onAttachmentUpload={handleAttachmentUpload}
                   onAttachmentRemove={handleAttachmentRemove}
+                  onAttachmentUndoRemove={handleAttachmentUndoRemove}
                   isUploadingAttachments={isUploadingAttachments}
                   acceptedAttachmentTypes={acceptedAttachmentTypes}
                   maxAttachmentSize={maxAttachmentSize}
@@ -415,7 +438,7 @@ export function TaskSheet(props: TaskSheetProps) {
                 />
                 {/* Time is only tracked against client work — internal and
                     personal projects have no billing target for it. */}
-                {props.task && taskProject?.type === 'CLIENT' ? (
+                {isAdmin && props.task && taskProject?.type === 'CLIENT' ? (
                   <TimeLogSection
                     taskId={props.task.id}
                     enabled={props.open}
@@ -423,45 +446,58 @@ export function TaskSheet(props: TaskSheetProps) {
                     onLogTime={handleLogTime}
                     onEditEntry={handleEditTimeLogEntry}
                   />
+                ) : isAdmin &&
+                  !props.task &&
+                  (!taskProject || taskProject.type === 'CLIENT') ? (
+                  // Create shows the same sheet: time is its own record, so
+                  // the section waits for the saved task. Shown until a
+                  // project is picked, unless that project is internal or
+                  // personal (no time is tracked there).
+                  <TimeLogSectionPlaceholder />
                 ) : null}
-                {/* pt-6 rides on top of the column's gap-6, setting the tab
-                    group apart from the time-log section above it. */}
+                {/* Sections, no inner tabs: Comments, then the collapsed
+                    Activity, always last in a sheet. */}
                 {props.task && taskPanelProjectId ? (
-                  <div className='px-6 pt-6'>
-                    <Tabs defaultValue='comments' className='w-full'>
-                      <TabsList className='grid w-full grid-cols-2'>
-                        <TabsTrigger value='comments'>Comments</TabsTrigger>
-                        <TabsTrigger value='activity'>Activity</TabsTrigger>
-                      </TabsList>
-                      {/* mt-2 lands on 16px in total — the Tabs root is
-                          flex gap-2, and that 8px stacks on this margin. */}
-                      <TabsContent value='comments' className='mt-2'>
-                        <TaskCommentsPanel
-                          taskId={props.task.id}
-                          projectId={taskPanelProjectId}
-                          currentUserId={props.currentUserId}
-                          currentUserName={currentUserName}
-                          canComment
-                          taskTitle={props.task.title}
-                          clientId={taskPanelClientId}
-                        />
-                      </TabsContent>
-                      <TabsContent value='activity' className='mt-2'>
-                        <TaskActivityPanel
-                          taskId={props.task.id}
-                          projectId={taskPanelProjectId}
-                          clientId={taskPanelClientId}
-                        />
-                      </TabsContent>
-                    </Tabs>
-                  </div>
+                  <>
+                    <TaskCommentsPanel
+                      className='px-6'
+                      taskId={props.task.id}
+                      projectId={taskPanelProjectId}
+                      currentUserId={props.currentUserId}
+                      currentUserName={currentUserName}
+                      canComment
+                      taskTitle={props.task.title}
+                      companyId={taskPanelClientId}
+                    />
+                    <SheetActivitySection
+                      // Remount per task so a newly opened task starts collapsed.
+                      key={props.task.id}
+                      className='px-6'
+                      targetType='TASK'
+                      targetId={props.task.id}
+                      projectId={taskPanelProjectId}
+                      companyId={taskPanelClientId}
+                    />
+                  </>
+                ) : !props.task ? (
+                  <EntityList
+                    className='px-6'
+                    title='Comments'
+                    icon={CONCEPT_ICONS.comment}
+                    add={{
+                      label: 'Add comment',
+                      disabledReason: 'Add comments after you save the task.',
+                    }}
+                    isEmpty
+                    emptyMessage='Add comments after you save the task.'
+                  />
                 ) : null}
               </div>
 
               {/* Footer — always at bottom, outside scroll area */}
               <SheetFormFooter
                 formId={TASK_FORM_ID}
-                deleteAriaLabel='Archive task'
+                archiveAriaLabel='Archive task'
                 saveLabel={saveLabel}
                 submitDisabled={submitDisabled}
                 submitDisabledReason={submitDisabledReason}
@@ -470,14 +506,14 @@ export function TaskSheet(props: TaskSheetProps) {
                 canUndo={canUndo}
                 canRedo={canRedo}
                 isEditing={isEditing}
-                deleteDisabled={deleteDisabled}
-                deleteDisabledReason={deleteDisabledReason}
-                onRequestDelete={handleRequestDelete}
+                archiveDisabled={deleteDisabled}
+                archiveDisabledReason={deleteDisabledReason}
+                onRequestArchive={handleRequestDelete}
               />
             </div>
 
             {/* Planning rail — vertical accordion tab, stays left of the panel */}
-            {props.task ? (
+            {props.task && isAdmin ? (
               canDeploy ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -529,8 +565,8 @@ export function TaskSheet(props: TaskSheetProps) {
             ) : null}
 
             {/* Planning panel — width-animated so it slides open from the rail.
-                Mounted on first expand only (opening a session writes rows),
-                then kept mounted so the collapse can animate. */}
+                Mounted on first expand only (it loads planning data), then
+                kept mounted so the collapse can animate. */}
             {canDeploy ? (
               <div
                 // `inert` (not just aria-hidden) — the mounted-but-collapsed
@@ -563,14 +599,14 @@ export function TaskSheet(props: TaskSheetProps) {
       {/* Params are built lazily inside this branch (W4): the lead overlay's
           init payload doesn't guarantee the full ProjectWithRelations shape,
           and it never renders the section (create-only). */}
-      {props.task && taskProject ? (
+      {isAdmin && props.task && taskProject ? (
         <ProjectTimeLogDialog
           open={isTimeLogDialogOpen}
           onOpenChange={handleTimeLogDialogOpenChange}
           {...buildProjectTimeLogDialogParams(taskProject, {
             tasks: taskProject.tasks,
             currentUserId: props.currentUserId,
-            admins: props.admins,
+            admins: props.admins.filter(user => user.role === 'ADMIN'),
           })}
           mode={timeLogDialogMode}
           timeLogEntry={editingTimeLogEntry}
@@ -580,13 +616,12 @@ export function TaskSheet(props: TaskSheetProps) {
           onMutationSuccess={handleTimeLogMutationSuccess}
         />
       ) : null}
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={isDeleteDialogOpen}
-        title='Archive task?'
-        description='Archiving this task removes it from the project board. Proceed?'
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='task'
+        name={props.task?.title || 'this task'}
+        list='the project board'
+        pending={isPending}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />

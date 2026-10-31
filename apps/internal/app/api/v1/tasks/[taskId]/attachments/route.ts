@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { z } from 'zod'
 
-import { getCurrentAdmin } from '@/lib/auth/session'
+import { getCurrentStaff } from '@/lib/auth/session'
 import { HttpError } from '@/lib/errors/http'
 import { listTaskAttachments } from '@/lib/queries/task-attachments'
 
@@ -14,7 +14,7 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext<'/api/v1/tasks/[taskId]/attachments'>
 ) {
-  const user = await getCurrentAdmin()
+  const user = await getCurrentStaff()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -1,63 +1,71 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { contactClients, contacts } from '@/lib/db/schema'
+import { companies, contacts, memberships } from '@/lib/db/schema'
 
 export type ClientContactSummary = {
   id: string
   name: string | null
-  email: string
-  /** The client's primary contact — addressed by default on invoice emails. */
+  email: string | null
+  /** The company's primary contact — addressed by default on invoice emails. */
   isPrimary: boolean
 }
 
 /**
- * Live contacts linked to each client, keyed by client id — one grouped
- * query for the clients landing Contacts column. `contact_clients` has no
- * soft-delete column (links are hard-deleted on unlink), so only the
- * contact's own `deleted_at` is filtered.
+ * Who has portal access to each client (company members with access),
+ * keyed by client id — one grouped query for the clients landing's Portal
+ * access column. `isPrimary` marks the company's primary contact.
  */
 export async function fetchContactSummariesByClient(
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, ClientContactSummary[]>> {
   const result = new Map<string, ClientContactSummary[]>()
-  if (clientIds.length === 0) {
+  if (companyIds.length === 0) {
     return result
   }
 
   const rows = await db
     .select({
-      clientId: contactClients.clientId,
+      companyId: companies.id,
       id: contacts.id,
       name: contacts.name,
       email: contacts.email,
-      isPrimary: contactClients.isPrimary,
+      isPrimary: memberships.isPrimary,
     })
-    .from(contactClients)
-    .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
+    .from(companies)
+    .innerJoin(memberships, eq(memberships.companyId, companies.id))
+    .innerJoin(contacts, eq(contacts.id, memberships.contactId))
     .where(
       and(
-        inArray(contactClients.clientId, clientIds),
-        isNull(contacts.deletedAt)
+        wasClientCompany(),
+        and(
+          inArray(companies.id, companyIds),
+          isNull(memberships.endedAt),
+          eq(memberships.portalAccess, true),
+          // Access needs a portal login.
+          isNotNull(contacts.userId),
+          isNull(contacts.deletedAt)
+        )
       )
     )
     .orderBy(
-      desc(contactClients.isPrimary),
+      desc(memberships.isPrimary),
       asc(contacts.name),
       asc(contacts.email)
     )
 
   for (const row of rows) {
-    const existing = result.get(row.clientId) ?? []
+    const existing = result.get(row.companyId) ?? []
     existing.push({
       id: row.id,
       name: row.name,
       email: row.email,
       isPrimary: row.isPrimary,
     })
-    result.set(row.clientId, existing)
+    result.set(row.companyId, existing)
   }
 
   return result

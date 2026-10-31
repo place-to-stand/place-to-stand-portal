@@ -1,0 +1,626 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import { Star } from 'lucide-react'
+
+import { RowActionButton } from '@pts/ui/row-action-button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@pts/ui/table'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import {
+  CompanyRecordRow,
+  ContactRecordRow,
+  HourBlockRecordRow,
+  InvoiceRecordRow,
+  LeadRecordRow,
+  ProjectRecordRow,
+} from '@/components/sheets/entity-record-rows'
+import {
+  RecordRowField,
+  SheetRecordList,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
+import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
+import { PortalAccessControl } from '@/components/clients/portal-access-control'
+import { EmptyValue } from '@/components/table/empty-value'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { FilterBar } from '@/components/table-toolbar/filter-bar'
+import { FilterSelect } from '@/components/table-toolbar/filter-select'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
+import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
+import type { CalendarDateRange } from '@/lib/dates/calendar-date'
+import { currentMonthRange } from '@/lib/time-logs/filters'
+import { SearchInput } from '@/components/table-toolbar/search-input'
+import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
+import { PaginationControls } from '@/components/ui/pagination-controls'
+import { RecordRowButton } from '@/components/ui/record-row-button'
+import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
+import { PersonAvatar, UserAvatar } from '@/components/ui/user-avatar'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
+import { getProjectStatusToken } from '@/lib/constants'
+
+import { DesignSection, Example, Specimen } from './specimen'
+
+const AVATAR_SIZES = ['xs', 'sm', 'md', 'lg'] as const
+
+export function ComponentsAvatars() {
+  return (
+    <DesignSection
+      id='avatars'
+      title='Avatars'
+      when='A person is their photo, falling back to initials. Pick a size; the initials scale with it. In dense table cells, PersonAvatar shows just the face and names it in a tooltip.'
+    >
+      <Specimen
+        label='UserAvatar and PersonAvatar'
+        note='components/ui/user-avatar'
+        className='grid grid-cols-1 gap-6 sm:grid-cols-2'
+      >
+        <Example caption="UserAvatar size='xs' | 'sm' | 'md' | 'lg'">
+          {AVATAR_SIZES.map(size => (
+            <UserAvatar
+              key={size}
+              name='Ada Lovelace'
+              hasPhoto={false}
+              size={size}
+            />
+          ))}
+        </Example>
+        <Example caption='PersonAvatar: a stack in a table cell (hover)'>
+          <span className='flex -space-x-1.5 [&>span]:rounded-full [&>span]:ring-2 [&>span]:ring-[var(--card)]'>
+            {['Ada Lovelace', 'Grace Hopper', 'Alan Turing'].map(name => (
+              <PersonAvatar key={name} name={name} hasPhoto={false} />
+            ))}
+          </span>
+        </Example>
+      </Specimen>
+    </DesignSection>
+  )
+}
+
+export function ComponentsRecordRows() {
+  const [starred, setStarred] = useState(true)
+  const [title, setTitle] = useState('CTO')
+  const [portal, setPortal] = useState(true)
+  return (
+    <DesignSection
+      id='record-rows'
+      title='Record rows'
+      when='A record inside a sheet list or widget: the entity’s icon, its name, one muted detail line and trailing actions. Every list of people, companies or leads uses the same row so they read the same everywhere. A row that holds form fields (title, portal access, a closer’s share) keeps that first line and puts the fields on a second line inside the card, each with its label on the left.'
+    >
+      <Specimen
+        label='Entity preview rows'
+        note='components/sheets/entity-record-rows (clicks off here; in the app a row opens its sheet)'
+        className='grid grid-cols-1 gap-6 lg:grid-cols-2'
+      >
+        <SheetRecordList>
+          <ContactRecordRow
+            contact={{
+              id: 'design-ada',
+              name: 'Ada Lovelace',
+              email: 'ada@acme.com',
+              jobTitle: 'Head of product',
+            }}
+            openable={false}
+            actions={
+              <RowActionButton
+                label={
+                  starred ? 'Unset primary contact' : 'Set primary contact'
+                }
+                icon={<Star className={cn(starred && 'fill-current')} />}
+                onClick={() => setStarred(value => !value)}
+              />
+            }
+          />
+          <ContactRecordRow
+            contact={{
+              id: 'design-grace',
+              name: 'Grace Hopper',
+              email: 'grace@cobalt.co',
+            }}
+            note='Pending save'
+            openable={false}
+          />
+          <ContactRecordRow
+            contact={{
+              id: 'design-linus',
+              name: 'Linus Torvalds',
+              email: 'linus@acme.com',
+            }}
+            openable={false}
+            fields={
+              <>
+                <RecordRowField label='Title' grow>
+                  <MembershipTitleInput
+                    value={title}
+                    onChange={setTitle}
+                    ariaLabel='Linus Torvalds’s title'
+                  />
+                </RecordRowField>
+                <RecordRowField label='Portal access'>
+                  <PortalAccessControl
+                    person={{
+                      id: 'design-linus',
+                      name: 'Linus Torvalds',
+                      email: 'linus@acme.com',
+                      hasSignIn: true,
+                    }}
+                    hasAccess={portal}
+                    disabled={false}
+                    disabledReason={null}
+                    onChange={setPortal}
+                    showLabel={false}
+                  />
+                </RecordRowField>
+              </>
+            }
+          />
+          <CompanyRecordRow
+            company={{ id: 'design-acme', name: 'Acme Industries' }}
+            titleAddon={<BillingTypeBadge billingType='prepaid' />}
+            openable={false}
+          />
+          <LeadRecordRow
+            lead={{
+              id: 'design-lead',
+              contactName: 'Northwind redesign',
+              status: 'PROPOSAL_SENT',
+              assigneeName: 'Jason D.',
+            }}
+            openable={false}
+          />
+          <ProjectRecordRow
+            project={{
+              id: 'design-project',
+              name: 'Website rebuild',
+              status: 'ACTIVE',
+              doneTasks: 12,
+              totalTasks: 30,
+            }}
+          />
+          <InvoiceRecordRow
+            invoice={{
+              id: 'design-invoice',
+              number: 'INV-0042',
+              status: 'PAID',
+              total: 4800,
+              issuedDate: '2026-09-23',
+            }}
+            openable={false}
+          />
+          <HourBlockRecordRow
+            hourBlock={{
+              id: 'design-hour-block',
+              name: 'Prepaid hours',
+              hours: 40,
+            }}
+            openable={false}
+          />
+          <ContactRecordRow
+            contact={{
+              id: 'design-removed',
+              name: 'Grace Hopper',
+              email: 'grace@acme.com',
+            }}
+            openable={false}
+            pendingRemoval={{ onUndo: () => undefined }}
+          />
+        </SheetRecordList>
+        <div className='space-y-4'>
+          <SheetRecordRow
+            leading={<UserAvatar name='Alan Turing' hasPhoto={false} />}
+            title='Alan Turing'
+            description='SheetRecordRow with an avatar in place of the icon'
+          />
+          <div className='rounded-lg border'>
+            <RecordRowButton
+              title='Ship pricing page'
+              subtitle='Website rebuild · Due Sep 30, 2026'
+              trailing={<ProjectStatusBadge status='ACTIVE' />}
+              onClick={() => undefined}
+              className='rounded-t-lg'
+            />
+            <RecordRowButton
+              title='Book the design review'
+              subtitle='RecordRowButton · widget lists'
+              onClick={() => undefined}
+              className='rounded-b-lg border-t'
+            />
+          </div>
+        </div>
+      </Specimen>
+    </DesignSection>
+  )
+}
+
+const STATUS_OPTIONS = [
+  {
+    value: 'ACTIVE',
+    label: 'Active',
+    badgeClassName: getProjectStatusToken('ACTIVE'),
+  },
+  {
+    value: 'ON_HOLD',
+    label: 'On hold',
+    badgeClassName: getProjectStatusToken('ON_HOLD'),
+  },
+  {
+    value: 'COMPLETED',
+    label: 'Completed',
+    badgeClassName: getProjectStatusToken('COMPLETED'),
+  },
+]
+
+type SampleProject = {
+  name: string
+  company: string
+  status: 'ACTIVE' | 'ON_HOLD' | 'COMPLETED'
+  hours: number
+  people: string[]
+  due: string | null
+}
+
+const PROJECTS: SampleProject[] = [
+  {
+    name: 'Website rebuild',
+    company: 'Acme Industries',
+    status: 'ACTIVE',
+    hours: 32.5,
+    people: ['Ada Lovelace', 'Grace Hopper'],
+    due: 'Oct 31, 2026',
+  },
+  {
+    name: 'Brand refresh and a much longer name that truncates',
+    company: 'Birchwood Labs',
+    status: 'ON_HOLD',
+    hours: 12,
+    people: [],
+    due: null,
+  },
+  {
+    name: 'App migration',
+    company: 'Cobalt & Co',
+    status: 'ACTIVE',
+    hours: 58.25,
+    people: ['Alan Turing'],
+    due: 'Dec 12, 2026',
+  },
+  {
+    name: 'Pricing page',
+    company: 'Acme Industries',
+    status: 'COMPLETED',
+    hours: 8,
+    people: ['Ada Lovelace'],
+    due: 'Aug 2, 2026',
+  },
+]
+
+/** The list page body: toolbar, a fixed-layout sortable table, pagination. */
+export function SampleProjectList({
+  density = 'default',
+}: {
+  density?: 'default' | 'compact'
+}) {
+  const [search, setSearch] = useState<string | undefined>()
+  const [statuses, setStatuses] = useState<string[]>([])
+  const [company, setCompany] = useState<string | undefined>()
+  const [range, setRange] = useState<CalendarDateRange>(currentMonthRange)
+  const isDefaultRange = range.from === currentMonthRange().from
+  const [sort, setSort] = useState<string | undefined>()
+  const [page, setPage] = useState(1)
+
+  const rows = useMemo(() => {
+    const query = search?.toLowerCase() ?? ''
+    const filtered = PROJECTS.filter(
+      row =>
+        (!query ||
+          row.name.toLowerCase().includes(query) ||
+          row.company.toLowerCase().includes(query)) &&
+        (!statuses.length || statuses.includes(row.status)) &&
+        (!company || row.company === company)
+    )
+    const [field, direction] = (sort ?? 'name:asc').split(':')
+    const sign = direction === 'desc' ? -1 : 1
+    return [...filtered].sort((a, b) =>
+      field === 'hours'
+        ? (a.hours - b.hours) * sign
+        : a.name.localeCompare(b.name) * sign
+    )
+  }, [search, statuses, company, sort])
+
+  const filterCount =
+    (statuses.length ? 1 : 0) + (company ? 1 : 0) + (isDefaultRange ? 0 : 1)
+  const filtered = Boolean(search) || filterCount > 0
+
+  return (
+    <div className='space-y-3'>
+      <FilterBar
+        search={
+          <SearchInput
+            value={search}
+            onCommit={setSearch}
+            placeholder='Search projects…'
+          />
+        }
+        activeFilterCount={filterCount}
+        showReset={filtered}
+        onReset={() => {
+          setSearch(undefined)
+          setStatuses([])
+          setCompany(undefined)
+          setRange(currentMonthRange())
+        }}
+      >
+        {/* One trigger look: single (clearable combobox), multi and date
+            range differ only in their popovers. */}
+        <FilterSelect
+          value={company}
+          onChange={setCompany}
+          placeholder='All companies'
+          options={[...new Set(PROJECTS.map(row => row.company))].map(name => ({
+            value: name,
+            label: name,
+          }))}
+        />
+        <FilterSelect
+          mode='multi'
+          values={statuses}
+          onChange={setStatuses}
+          placeholder='Status'
+          options={STATUS_OPTIONS}
+        />
+        <DateRangePicker
+          className={FILTER_TRIGGER_WIDTH}
+          value={range}
+          onChange={setRange}
+          isDefault={isDefaultRange}
+          onClear={() => setRange(currentMonthRange())}
+        />
+      </FilterBar>
+      <div className='overflow-hidden rounded-lg border'>
+        <Table
+          density={density}
+          layout='fixed'
+          stack
+          className='md:min-w-[40rem]'
+        >
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <SortableTableHead
+                field='name'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={setSort}
+                className='w-[38%]'
+              >
+                Project
+              </SortableTableHead>
+              <TableHead className='w-[22%]'>Company</TableHead>
+              <TableHead className='w-[14%]'>Status</TableHead>
+              <TableHead className='w-[10%]'>People</TableHead>
+              <SortableTableHead
+                field='hours'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={setSort}
+                className='w-[8%]'
+              >
+                Hours
+              </SortableTableHead>
+              <TableHead className='w-[8%] text-right'>
+                <span className='sr-only'>Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.length ? (
+              <TableRow className='hover:bg-transparent'>
+                {/* A group row: one cell across, the shared height. */}
+                <TableCell
+                  colSpan={6}
+                  className={cn(ENTITY_ACCENTS.client.band, 'max-md:px-3')}
+                >
+                  <span className='flex items-center gap-2 text-sm font-semibold'>
+                    <ENTITY_ICONS.client
+                      className={cn(ENTITY_ACCENTS.client.icon, 'size-4')}
+                      aria-hidden
+                    />
+                    Acme Industries
+                  </span>
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {rows.length ? (
+              rows.map(row => (
+                <TableRow key={row.name}>
+                  <TableCell>
+                    <span className='flex min-w-0 items-center gap-2'>
+                      <ENTITY_ICONS.project
+                        className={cn(
+                          ENTITY_ACCENTS.project.icon,
+                          'size-4 shrink-0'
+                        )}
+                        aria-hidden
+                      />
+                      <TruncationTooltip content={row.name}>
+                        <span className='truncate font-medium'>{row.name}</span>
+                      </TruncationTooltip>
+                    </span>
+                  </TableCell>
+                  <TableCell label='Company' className='truncate'>
+                    {row.company}
+                  </TableCell>
+                  <TableCell label='Status'>
+                    <ProjectStatusBadge status={row.status} />
+                  </TableCell>
+                  <TableCell label='People'>
+                    <LinkedRecordsHoverCell
+                      count={row.people.length}
+                      items={row.people.map(name => ({
+                        id: name,
+                        label: name,
+                        sublabel: 'Member',
+                      }))}
+                      icon={ENTITY_ICONS.contact}
+                      ariaLabel={`${row.people.length} people on ${row.name}`}
+                    />
+                  </TableCell>
+                  <TableCell label='Hours' className='tabular-nums'>
+                    {row.hours}
+                  </TableCell>
+                  <TableCell className='max-md:ml-auto'>
+                    <RecordRowActions>
+                      <RecordRowAction
+                        kind='archive'
+                        entity='project'
+                        onClick={() => undefined}
+                      />
+                    </RecordRowActions>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className='text-muted-foreground h-24 text-center'
+                >
+                  No matching projects.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <PaginationControls
+        mode='paged'
+        currentPage={page}
+        totalPages={5}
+        totalItems={118}
+        pageSize={25}
+        onPageChange={setPage}
+      />
+    </div>
+  )
+}
+
+export function ComponentsTables() {
+  return (
+    <DesignSection
+      id='tables'
+      title='Tables and toolbar'
+      when='Lists of records. Search first, then filters inline (a Filters sheet on phones). Sortable tables use layout="fixed" with a width on every header; rows stack into cards below md. A missing value is an em dash. One row height for every list, group rows included: the shared TableCell sets it (a 28px content box: 41px compact, 45px default); never pad or size a cell to change it.'
+    >
+      <Specimen
+        label='List: FilterBar, sortable fixed table, row actions, pagination'
+        note='Try the search, the three filters (one trigger look: company is single choice, status multi with badges, dates a range), the sort heads and a phone width'
+        className='block'
+      >
+        <SampleProjectList />
+      </Specimen>
+      <Specimen
+        label='LinkedRecordsHoverCell'
+        note='components/ui/linked-records-hover-cell.tsx: a count in a table cell; hovering it opens the linked records, and each row opens its record. A zero is the shared dash; a single record can be a lone icon trigger.'
+      >
+        <Example caption='count (hover)'>
+          <LinkedRecordsHoverCell
+            count={2}
+            items={[
+              { id: 'ada', label: 'Ada Lovelace', sublabel: 'Head of product' },
+              { id: 'grace', label: 'Grace Hopper', sublabel: 'Engineering' },
+            ]}
+            icon={ENTITY_ICONS.contact}
+            withIcon
+            ariaLabel='2 people'
+          />
+        </Example>
+        <Example caption='zero: the dash, no card'>
+          <LinkedRecordsHoverCell
+            count={0}
+            items={[]}
+            icon={ENTITY_ICONS.contact}
+            withIcon
+            ariaLabel='No people'
+          />
+        </Example>
+        <Example caption='one record: an icon trigger'>
+          <LinkedRecordsHoverCell
+            count={1}
+            items={[{ id: 'acme', label: 'Acme Inc.' }]}
+            icon={ENTITY_ICONS.company}
+            trigger={<ENTITY_ICONS.company className='size-4' />}
+            ariaLabel='1 company: Acme Inc.'
+          />
+        </Example>
+      </Specimen>
+      <Specimen
+        label="density='compact'"
+        note='Reports and dense sheet tables'
+        bleed
+      >
+        <Table density='compact'>
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <TableHead>Company</TableHead>
+              <TableHead>Billing</TableHead>
+              <TableHead className='text-right'>Hours left</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell>
+                <span className='flex items-center gap-2'>
+                  <ENTITY_ICONS.company
+                    className={cn(ENTITY_ACCENTS.company.icon, 'size-4')}
+                    aria-hidden
+                  />
+                  Acme Industries
+                </span>
+              </TableCell>
+              <TableCell>Prepaid</TableCell>
+              <TableCell className='text-success text-right tabular-nums'>
+                12.5
+              </TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell>
+                <span className='flex items-center gap-2'>
+                  <ENTITY_ICONS.company
+                    className={cn(ENTITY_ACCENTS.company.icon, 'size-4')}
+                    aria-hidden
+                  />
+                  Birchwood Labs
+                </span>
+              </TableCell>
+              <TableCell>
+                <EmptyValue />
+              </TableCell>
+              <TableCell className='text-destructive text-right tabular-nums'>
+                -3.0
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Specimen>
+      <Specimen label='PaginationControls: cursor mode' className='block'>
+        <PaginationControls
+          hasNextPage
+          hasPreviousPage
+          onNext={() => undefined}
+          onPrevious={() => undefined}
+        />
+      </Specimen>
+    </DesignSection>
+  )
+}

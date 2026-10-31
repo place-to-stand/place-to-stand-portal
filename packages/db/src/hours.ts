@@ -1,7 +1,17 @@
-import { and, eq, gte, inArray, isNull, or, sql, type AnyColumn, type SQL } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  or,
+  sql,
+  type AnyColumn,
+  type SQL,
+} from 'drizzle-orm'
 
 import type { DbClient } from './client'
-import { clientBillingTerms, hourBlocks, projects, timeLogs } from './schema'
+import { billingTerms, hourBlocks, projects, timeLogs } from './schema'
 
 /**
  * Prepaid hours balance for a single client.
@@ -32,12 +42,12 @@ const EMPTY_TOTALS: ClientHoursTotals = { purchased: 0, used: 0, remaining: 0 }
  */
 export function clientHoursTotalsFor(
   totals: Map<string, ClientHoursTotals>,
-  clientId: string | null | undefined
+  companyId: string | null | undefined
 ): ClientHoursTotals {
-  if (!clientId) {
+  if (!companyId) {
     return EMPTY_TOTALS
   }
-  return totals.get(clientId) ?? EMPTY_TOTALS
+  return totals.get(companyId) ?? EMPTY_TOTALS
 }
 
 /**
@@ -63,36 +73,36 @@ export function clientHoursTotalsFor(
  */
 async function fetchPrepaidEraStarts(
   db: DbClient,
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, string>> {
   const rows = await db
     .select({
-      clientId: clientBillingTerms.clientId,
-      eraStart: sql<string>`min(${clientBillingTerms.effectiveFrom})`,
+      companyId: billingTerms.companyId,
+      eraStart: sql<string>`min(${billingTerms.effectiveFrom})`,
     })
-    .from(clientBillingTerms)
+    .from(billingTerms)
     .where(
       and(
-        inArray(clientBillingTerms.clientId, clientIds),
-        eq(clientBillingTerms.billingType, 'prepaid'),
-        isNull(clientBillingTerms.deletedAt),
-        sql`${clientBillingTerms.effectiveFrom} <= CURRENT_DATE`,
-        sql`${clientBillingTerms.effectiveFrom} > COALESCE((
+        inArray(billingTerms.companyId, companyIds),
+        eq(billingTerms.billingType, 'prepaid'),
+        isNull(billingTerms.deletedAt),
+        sql`${billingTerms.effectiveFrom} <= CURRENT_DATE`,
+        sql`${billingTerms.effectiveFrom} > COALESCE((
           SELECT max(prior.effective_from)
-          FROM ${clientBillingTerms} prior
-          WHERE prior.client_id = ${clientBillingTerms.clientId}
+          FROM ${billingTerms} prior
+          WHERE prior.company_id = ${billingTerms.companyId}
             AND prior.billing_type <> 'prepaid'
             AND prior.deleted_at IS NULL
             AND prior.effective_from <= CURRENT_DATE
         ), DATE '0001-01-01')`
       )
     )
-    .groupBy(clientBillingTerms.clientId)
+    .groupBy(billingTerms.companyId)
 
   const eraByClient = new Map<string, string>()
   for (const row of rows) {
     if (row.eraStart) {
-      eraByClient.set(row.clientId, row.eraStart)
+      eraByClient.set(row.companyId, row.eraStart)
     }
   }
   return eraByClient
@@ -111,14 +121,14 @@ async function fetchPrepaidEraStarts(
 function buildEraScopedCondition(
   clientIdColumn: AnyColumn,
   dateColumn: AnyColumn,
-  clientIds: string[],
+  companyIds: string[],
   eraByClient: Map<string, string>
 ): SQL {
   const idsByEra = new Map<string | null, string[]>()
-  for (const clientId of clientIds) {
-    const era = eraByClient.get(clientId) ?? null
+  for (const companyId of companyIds) {
+    const era = eraByClient.get(companyId) ?? null
     const ids = idsByEra.get(era) ?? []
-    ids.push(clientId)
+    ids.push(companyId)
     idsByEra.set(era, ids)
   }
 
@@ -156,19 +166,19 @@ function buildEraScopedCondition(
  */
 export async function getClientHoursTotals(
   db: DbClient,
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, ClientHoursTotals>> {
   const totals = new Map<string, ClientHoursTotals>()
-  if (clientIds.length === 0) {
+  if (companyIds.length === 0) {
     return totals
   }
 
-  const eraByClient = await fetchPrepaidEraStarts(db, clientIds)
+  const eraByClient = await fetchPrepaidEraStarts(db, companyIds)
 
   const [purchasedRows, usedRows] = await Promise.all([
     db
       .select({
-        clientId: hourBlocks.clientId,
+        companyId: hourBlocks.companyId,
         purchased: sql<string>`coalesce(sum(${hourBlocks.hoursPurchased}), 0)`,
       })
       .from(hourBlocks)
@@ -176,17 +186,17 @@ export async function getClientHoursTotals(
         and(
           isNull(hourBlocks.deletedAt),
           buildEraScopedCondition(
-            hourBlocks.clientId,
+            hourBlocks.companyId,
             hourBlocks.billingMonth,
-            clientIds,
+            companyIds,
             eraByClient
           )
         )
       )
-      .groupBy(hourBlocks.clientId),
+      .groupBy(hourBlocks.companyId),
     db
       .select({
-        clientId: projects.clientId,
+        companyId: projects.companyId,
         used: sql<string>`coalesce(sum(${timeLogs.hours}), 0)`,
       })
       .from(timeLogs)
@@ -196,40 +206,108 @@ export async function getClientHoursTotals(
           isNull(timeLogs.deletedAt),
           isNull(projects.deletedAt),
           // Only client work draws down a prepaid balance. Redundant while
-          // `save-project.ts` nulls `clientId` for non-CLIENT projects, but the
+          // `save-project.ts` nulls `companyId` for non-CLIENT projects, but the
           // schema does not enforce that pairing, and the monthly-close queries
           // all carry the same guard.
           eq(projects.type, 'CLIENT'),
           buildEraScopedCondition(
-            projects.clientId,
+            projects.companyId,
             timeLogs.loggedOn,
-            clientIds,
+            companyIds,
             eraByClient
           )
         )
       )
-      .groupBy(projects.clientId),
+      .groupBy(projects.companyId),
   ])
 
   const purchasedByClient = new Map<string, number>()
   for (const row of purchasedRows) {
-    if (!row.clientId) continue
-    purchasedByClient.set(row.clientId, toHours(row.purchased))
+    if (!row.companyId) continue
+    purchasedByClient.set(row.companyId, toHours(row.purchased))
   }
 
   const usedByClient = new Map<string, number>()
   for (const row of usedRows) {
-    if (!row.clientId) continue
-    usedByClient.set(row.clientId, toHours(row.used))
+    if (!row.companyId) continue
+    usedByClient.set(row.companyId, toHours(row.used))
   }
 
-  for (const clientId of clientIds) {
-    const purchased = purchasedByClient.get(clientId) ?? 0
-    const used = usedByClient.get(clientId) ?? 0
-    totals.set(clientId, { purchased, used, remaining: purchased - used })
+  for (const companyId of companyIds) {
+    const purchased = purchasedByClient.get(companyId) ?? 0
+    const used = usedByClient.get(companyId) ?? 0
+    totals.set(companyId, { purchased, used, remaining: purchased - used })
   }
 
   return totals
+}
+
+/** Hours logged in one month, `month` as 'yyyy-MM-01'. */
+export type MonthHours = { month: string; hours: number }
+
+/**
+ * Net 30 hours by month for a set of clients, newest month first, months
+ * with hours only. A month counts exactly when the monthly close bills it
+ * (`fetchNet30Billing` in the internal portal): the client is billed that
+ * month (`company_billed_in`), its billing term in force on the first of the
+ * month is net_30, and the hours are live time logs on its live CLIENT
+ * projects, by `logged_on`. So months before the client was first billed,
+ * and prepaid months, are left out.
+ *
+ * Written as raw SQL with explicit aliases: the billing-term subquery is
+ * correlated, and drizzle would write an outer column unqualified there.
+ */
+export async function getNet30MonthlyHours(
+  db: DbClient,
+  companyIds: string[]
+): Promise<Map<string, MonthHours[]>> {
+  const byClient = new Map<string, MonthHours[]>()
+  if (companyIds.length === 0) {
+    return byClient
+  }
+
+  const ids = sql.join(
+    companyIds.map(id => sql`${id}::uuid`),
+    sql`, `
+  )
+  const rows = await db.execute<{
+    company_id: string
+    month: string
+    hours: string
+  }>(sql`
+    with monthly as (
+      select p.company_id,
+             date_trunc('month', t.logged_on)::date as month,
+             sum(t.hours) as hours
+      from time_logs t
+      join projects p on p.id = t.project_id
+      where t.deleted_at is null
+        and p.deleted_at is null
+        and p.type = 'CLIENT'
+        and p.company_id in (${ids})
+      group by p.company_id, date_trunc('month', t.logged_on)::date
+      having sum(t.hours) > 0
+    )
+    select m.company_id, m.month::text as month, m.hours::text as hours
+    from monthly m
+    where company_billed_in(m.company_id, m.month)
+      and (
+        select bt.billing_type from billing_terms bt
+        where bt.company_id = m.company_id
+          and bt.deleted_at is null
+          and bt.effective_from <= m.month
+        order by bt.effective_from desc
+        limit 1
+      ) = 'net_30'
+    order by m.company_id, m.month desc
+  `)
+
+  for (const row of rows) {
+    const months = byClient.get(row.company_id) ?? []
+    months.push({ month: row.month, hours: toHours(row.hours) })
+    byClient.set(row.company_id, months)
+  }
+  return byClient
 }
 
 /** numeric columns come back from postgres.js as strings. */

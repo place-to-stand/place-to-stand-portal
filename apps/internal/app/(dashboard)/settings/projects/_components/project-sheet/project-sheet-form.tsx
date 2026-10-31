@@ -5,6 +5,7 @@ import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { DatePicker } from '@/components/ui/date-picker'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import {
   Form,
@@ -40,7 +41,12 @@ import type {
 } from '@/lib/settings/projects/project-sheet-ui-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { creatableProjectTypes } from '@/lib/auth/capabilities'
+
+import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { GitHubReposSection, type PendingRepo } from './github-repos-section'
+import { ProjectMembersField } from './project-members-field'
 import {
   IntegrationLinksSection,
   type PendingIntegrationLink,
@@ -54,7 +60,6 @@ export type ProjectSheetFormProps = {
   fieldState: ProjectSheetFieldState
   isEditing: boolean
   isPending: boolean
-  feedback: string | null
   clientOptions: ClientOption[]
   ownerOptions: OwnerOption[]
   submitButton: SubmitButtonState
@@ -71,11 +76,17 @@ export type ProjectSheetFormProps = {
 }
 
 export function ProjectSheetForm(props: ProjectSheetFormProps) {
+  // Non-admins get a personal-board sheet: no client, owner, members or
+  // integrations (`saveProject` enforces the same rule).
+  const { isAdmin, role } = useViewerAccess()
+  const creatableTypes = creatableProjectTypes(
+    role,
+    PROJECT_TYPE_OPTIONS.map(option => option.value)
+  )
   const {
     form,
     fieldState,
     isEditing,
-    feedback,
     clientOptions,
     ownerOptions,
     submitButton,
@@ -222,67 +233,74 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
 
   useEffect(() => {
     if (projectType !== 'CLIENT') {
-      const currentClientId = form.getValues('clientId')
+      const currentClientId = form.getValues('companyId')
       if (currentClientId) {
-        form.setValue('clientId', '', { shouldDirty: true })
+        form.setValue('companyId', '', { shouldDirty: true })
       }
-      form.clearErrors('clientId')
+      form.clearErrors('companyId')
     }
   }, [form, projectType])
 
   return (
     <Form {...form}>
-      <div className='flex-1 overflow-y-auto'>
-        <form
-          id={PROJECT_FORM_ID}
-          onSubmit={handleSave}
-          className='flex flex-col gap-5 px-6 pt-6 pb-8'
+      {/* Admins get two columns: the project, then its infrastructure
+          (GitHub, Vercel, Supabase) on the right. Below lg they stack into
+          one scroll with the footer pinned to the bottom. */}
+      <form
+        id={PROJECT_FORM_ID}
+        onSubmit={handleSave}
+        className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
+      >
+        <div
+          className={cn(
+            'flex flex-1 flex-col overflow-hidden max-lg:contents',
+            isAdmin && 'lg:border-r'
+          )}
         >
-          <div
-            className={cn(
-              'grid items-start gap-4',
-              isEditing && 'sm:grid-cols-2'
-            )}
-          >
-            <FormField
-              control={form.control}
-              name='name'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={fieldState.name.disabled}
-                      reason={fieldState.name.reason}
-                    >
-                      <Input
-                        {...field}
-                        ref={node => {
-                          firstFieldRef.current = node
-                          if (typeof field.ref === 'function') {
-                            field.ref(node)
-                          } else if (field.ref) {
-                            ;(
-                              field.ref as React.MutableRefObject<HTMLInputElement | null>
-                            ).current = node
-                          }
-                        }}
-                        placeholder='Website redesign'
+          <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
+            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
                         disabled={fieldState.name.disabled}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {isEditing ? (
+                        reason={fieldState.name.reason}
+                      >
+                        <Input
+                          {...field}
+                          ref={node => {
+                            firstFieldRef.current = node
+                            if (typeof field.ref === 'function') {
+                              field.ref(node)
+                            } else if (field.ref) {
+                              ;(
+                                field.ref as React.MutableRefObject<HTMLInputElement | null>
+                              ).current = node
+                            }
+                          }}
+                          placeholder='Website redesign'
+                          disabled={fieldState.name.disabled}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name='slug'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Slug</FormLabel>
+                    {/* Create and edit show the same field; a new project
+                      takes its slug from the name when this is blank. */}
+                    <FormLabel>
+                      {isEditing ? 'Slug' : 'Slug (optional)'}
+                    </FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={fieldState.slug.disabled}
@@ -291,7 +309,11 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                         <Input
                           {...field}
                           value={field.value ?? ''}
-                          placeholder='website-redesign'
+                          placeholder={
+                            isEditing
+                              ? 'website-redesign'
+                              : 'Generated from the name'
+                          }
                           disabled={fieldState.slug.disabled}
                         />
                       </DisabledFieldTooltip>
@@ -300,253 +322,279 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                   </FormItem>
                 )}
               />
-            ) : null}
-          </div>
-          <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
-            <FormField
-              control={form.control}
-              name='projectType'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project type</FormLabel>
-                  <Select
-                    value={field.value ?? 'CLIENT'}
-                    onValueChange={field.onChange}
-                    disabled={fieldState.type.disabled}
-                  >
-                    <FormControl>
-                      <DisabledFieldTooltip
-                        disabled={fieldState.type.disabled}
-                        reason={fieldState.type.reason}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select type' />
-                        </SelectTrigger>
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <SelectContent>
-                      {PROJECT_TYPE_OPTIONS.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='clientId'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Client</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={fieldState.client.disabled}
-                      reason={fieldState.client.reason}
-                    >
-                      <SearchableCombobox
-                        name={field.name}
-                        value={field.value ?? ''}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        items={clientOptions}
-                        searchPlaceholder='Search clients...'
-                        emptyMessage='No clients found.'
-                        disabled={fieldState.client.disabled}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            <FormField
-              control={form.control}
-              name='startsOn'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Start date (optional)</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={fieldState.date.disabled}
-                      reason={fieldState.date.reason}
-                    >
-                      <Input
-                        {...field}
-                        value={field.value ?? ''}
-                        type='date'
-                        disabled={fieldState.date.disabled}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='endsOn'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>End date (optional)</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={fieldState.date.disabled}
-                      reason={fieldState.date.reason}
-                    >
-                      <Input
-                        {...field}
-                        value={field.value ?? ''}
-                        type='date'
-                        disabled={fieldState.date.disabled}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
-            <FormField
-              control={form.control}
-              name='status'
-              render={({ field }) => {
-                const selectedLabel = field.value
-                  ? getProjectStatusLabel(field.value)
-                  : null
-                const selectedToken = field.value
-                  ? getProjectStatusToken(field.value)
-                  : null
-
-                return (
+            </div>
+            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='projectType'
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>Project type</FormLabel>
                     <Select
-                      value={field.value ?? ''}
+                      value={field.value ?? 'CLIENT'}
                       onValueChange={field.onChange}
-                      disabled={fieldState.status.disabled}
+                      disabled={fieldState.type.disabled}
                     >
                       <FormControl>
                         <DisabledFieldTooltip
-                          disabled={fieldState.status.disabled}
-                          reason={fieldState.status.reason}
+                          disabled={fieldState.type.disabled}
+                          reason={fieldState.type.reason}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder='Select status'>
-                              {selectedLabel && selectedToken ? (
-                                <Badge className={cn('text-xs', selectedToken)}>
-                                  {selectedLabel}
-                                </Badge>
-                              ) : null}
-                            </SelectValue>
+                            <SelectValue placeholder='Select type' />
                           </SelectTrigger>
                         </DisabledFieldTooltip>
                       </FormControl>
                       <SelectContent>
-                        {PROJECT_STATUS_OPTIONS.map(status => {
-                          const statusToken = getProjectStatusToken(
-                            status.value
-                          )
-                          return (
-                            <SelectItem key={status.value} value={status.value}>
-                              <Badge className={cn('text-xs', statusToken)}>
-                                {status.label}
-                              </Badge>
-                            </SelectItem>
-                          )
-                        })}
+                        {PROJECT_TYPE_OPTIONS.filter(option =>
+                          creatableTypes.includes(option.value)
+                        ).map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )
-              }}
-            />
-            <FormField
-              control={form.control}
-              name='ownerId'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Project owner</FormLabel>
-                  <FormControl>
-                    <DisabledFieldTooltip
-                      disabled={fieldState.owner.disabled}
-                      reason={fieldState.owner.reason}
-                    >
-                      <SearchableCombobox
-                        name={field.name}
+                )}
+              />
+              {/* Only client projects have a client: the cell stays empty for
+                personal and internal ones, so Project type keeps its width. */}
+              {isAdmin && projectType === 'CLIENT' ? (
+                <FormField
+                  control={form.control}
+                  name='companyId'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel entity='client'>Client</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
+                          disabled={fieldState.client.disabled}
+                          reason={fieldState.client.reason}
+                        >
+                          <SearchableCombobox
+                            name={field.name}
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            items={clientOptions}
+                            searchPlaceholder='Search clients…'
+                            emptyMessage='No clients found.'
+                            disabled={fieldState.client.disabled}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+            </div>
+            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='startsOn'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start date (optional)</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={fieldState.date.disabled}
+                        reason={fieldState.date.reason}
+                      >
+                        <DatePicker
+                          clearLabel='start date'
+                          {...field}
+                          disabled={fieldState.date.disabled}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='endsOn'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End date (optional)</FormLabel>
+                    <FormControl>
+                      <DisabledFieldTooltip
+                        disabled={fieldState.date.disabled}
+                        reason={fieldState.date.reason}
+                      >
+                        <DatePicker
+                          clearLabel='end date'
+                          {...field}
+                          disabled={fieldState.date.disabled}
+                        />
+                      </DisabledFieldTooltip>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+              {isAdmin ? (
+                <FormField
+                  control={form.control}
+                  name='ownerId'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel entity='contact'>Project owner</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
+                          disabled={fieldState.owner.disabled}
+                          reason={fieldState.owner.reason}
+                        >
+                          <SearchableCombobox
+                            name={field.name}
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            items={ownerOptions}
+                            clearLabel='owner'
+                            placeholder='Unassigned'
+                            searchPlaceholder='Search people…'
+                            emptyMessage='No teammates found.'
+                            disabled={fieldState.owner.disabled}
+                            onClear={() => field.onChange('')}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+              <FormField
+                control={form.control}
+                name='status'
+                render={({ field }) => {
+                  const selectedLabel = field.value
+                    ? getProjectStatusLabel(field.value)
+                    : null
+                  const selectedToken = field.value
+                    ? getProjectStatusToken(field.value)
+                    : null
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
                         value={field.value ?? ''}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        items={ownerOptions}
-                        searchPlaceholder='Search team members...'
-                        emptyMessage='No team members found.'
-                        disabled={fieldState.owner.disabled}
-                      />
-                    </DisabledFieldTooltip>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                        onValueChange={field.onChange}
+                        disabled={fieldState.status.disabled}
+                      >
+                        <FormControl>
+                          <DisabledFieldTooltip
+                            disabled={fieldState.status.disabled}
+                            reason={fieldState.status.reason}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder='Select status'>
+                                {selectedLabel && selectedToken ? (
+                                  <Badge className={cn(selectedToken)}>
+                                    {selectedLabel}
+                                  </Badge>
+                                ) : null}
+                              </SelectValue>
+                            </SelectTrigger>
+                          </DisabledFieldTooltip>
+                        </FormControl>
+                        <SelectContent>
+                          {PROJECT_STATUS_OPTIONS.map(status => {
+                            const statusToken = getProjectStatusToken(
+                              status.value
+                            )
+                            return (
+                              <SelectItem
+                                key={status.value}
+                                value={status.value}
+                              >
+                                <Badge className={cn(statusToken)}>
+                                  {status.label}
+                                </Badge>
+                              </SelectItem>
+                            )
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
+              />
+            </div>
+
+            {isAdmin ? (
+              <ProjectMembersField
+                form={form}
+                projectId={projectId}
+                disabled={fieldState.owner.disabled}
+              />
+            ) : null}
+          </div>
+          <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
+            <SheetFormFooter
+              formId={PROJECT_FORM_ID}
+              saveLabel={submitButton.label}
+              submitDisabled={submitButton.disabled}
+              submitDisabledReason={submitButton.reason}
+              undo={undo}
+              redo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              isEditing={isEditing}
+              archiveDisabled={deleteButton.disabled}
+              archiveDisabledReason={deleteButton.reason}
+              onRequestArchive={onRequestDelete}
+              archiveAriaLabel='Archive project'
             />
           </div>
+        </div>
+        {isAdmin ? (
+          <div
+            className={cn(
+              'bg-muted/20 flex-shrink-0 max-lg:border-t lg:overflow-y-auto',
+              SHEET_SIDE_COLUMN_CLASSES.even
+            )}
+          >
+            <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+              <GitHubReposSection
+                projectId={projectId}
+                pendingRepos={pendingRepos}
+                removedRepoIds={removedRepoIds}
+                onPendingReposChange={handlePendingReposChange}
+                onRemovedRepoIdsChange={handleRemovedRepoIdsChange}
+                onDirtyChange={setReposDirty}
+              />
 
-          <GitHubReposSection
-            projectId={projectId}
-            pendingRepos={pendingRepos}
-            removedRepoIds={removedRepoIds}
-            onPendingReposChange={handlePendingReposChange}
-            onRemovedRepoIdsChange={handleRemovedRepoIdsChange}
-            onDirtyChange={setReposDirty}
-          />
+              <IntegrationLinksSection
+                provider='VERCEL'
+                projectId={projectId}
+                pendingLinks={pendingLinks}
+                removedLinkIds={removedLinkIds}
+                onPendingLinksChange={setPendingLinks}
+                onRemovedLinkIdsChange={setRemovedLinkIds}
+              />
 
-          <IntegrationLinksSection
-            provider='VERCEL'
-            projectId={projectId}
-            pendingLinks={pendingLinks}
-            removedLinkIds={removedLinkIds}
-            onPendingLinksChange={setPendingLinks}
-            onRemovedLinkIdsChange={setRemovedLinkIds}
-          />
-
-          <IntegrationLinksSection
-            provider='SUPABASE'
-            projectId={projectId}
-            pendingLinks={pendingLinks}
-            removedLinkIds={removedLinkIds}
-            onPendingLinksChange={setPendingLinks}
-            onRemovedLinkIdsChange={setRemovedLinkIds}
-          />
-
-          {feedback ? (
-            <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-              {feedback}
-            </p>
-          ) : null}
-        </form>
-      </div>
-      <SheetFormFooter
-        formId={PROJECT_FORM_ID}
-        saveLabel={submitButton.label}
-        submitDisabled={submitButton.disabled}
-        submitDisabledReason={submitButton.reason}
-        undo={undo}
-        redo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        isEditing={isEditing}
-        deleteDisabled={deleteButton.disabled}
-        deleteDisabledReason={deleteButton.reason}
-        onRequestDelete={onRequestDelete}
-        deleteAriaLabel='Click to archive this project'
-      />
+              <IntegrationLinksSection
+                provider='SUPABASE'
+                projectId={projectId}
+                pendingLinks={pendingLinks}
+                removedLinkIds={removedLinkIds}
+                onPendingLinksChange={setPendingLinks}
+                onRemovedLinkIdsChange={setRemovedLinkIds}
+              />
+            </div>
+          </div>
+        ) : null}
+      </form>
     </Form>
   )
 }

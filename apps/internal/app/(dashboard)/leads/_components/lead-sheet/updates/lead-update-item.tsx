@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { Archive, MoreHorizontal, Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,17 +12,21 @@ import {
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@pts/ui/badge'
+import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { useToast } from '@/components/ui/use-toast'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { formatCalendarDate } from '@pts/ui/dates'
-import type { LeadUpdateRecord } from '@/lib/leads/types'
 import {
-  LEAD_UPDATE_ICONS,
-  LEAD_UPDATE_LABELS,
-  LEAD_UPDATE_TOKENS,
-} from '@/lib/leads/updates'
+  LEAD_UPDATE_NOT_AUTHOR_MESSAGE,
+  canChangeLeadUpdate,
+} from '@/lib/leads/lead-update-access'
+import type { LeadUpdateRecord } from '@/lib/leads/types'
+import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
 import { cn } from '@/lib/utils'
 
+import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { deleteLeadUpdate } from '../../../_actions/updates/delete-lead-update'
 
 type LeadUpdateItemProps = {
@@ -30,6 +34,7 @@ type LeadUpdateItemProps = {
   canManage: boolean
   onEdit: (update: LeadUpdateRecord) => void
   onArchived: () => void
+  className?: string
 }
 
 export function LeadUpdateItem({
@@ -37,11 +42,11 @@ export function LeadUpdateItem({
   canManage,
   onEdit,
   onArchived,
+  className,
 }: LeadUpdateItemProps) {
-  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const Icon = LEAD_UPDATE_ICONS[update.type]
   const label = LEAD_UPDATE_LABELS[update.type]
   const authorDisplay = update.authorName ?? update.authorEmail ?? 'Unknown'
   const occurredLabel = formatCalendarDate(update.occurredAt, {
@@ -49,6 +54,11 @@ export function LeadUpdateItem({
     day: 'numeric',
     year: 'numeric',
   })
+  const actionsLabel = `Actions for ${label.toLowerCase()} logged ${occurredLabel}`
+  // Only the author or an admin may edit or archive it; the server enforces
+  // the same rule.
+  const { role, userId } = useViewerAccess()
+  const canChange = canChangeLeadUpdate({ role, userId }, update.authorId)
 
   // Same double-sanitize convention as task comments: the dialog sanitizes
   // before send, and the renderer sanitizes again before injecting. Pre-RTE
@@ -59,7 +69,6 @@ export function LeadUpdateItem({
   )
 
   const handleArchive = () => {
-    setError(null)
     startTransition(async () => {
       const result = await deleteLeadUpdate({
         id: update.id,
@@ -67,28 +76,45 @@ export function LeadUpdateItem({
       })
 
       if (result.success) {
+        toast({ title: 'Update archived' })
         onArchived()
         return
       }
 
-      setError(result.error ?? 'Unable to archive update.')
+      toast({
+        variant: 'destructive',
+        title: 'Unable to archive update',
+        description: result.error ?? 'Please try again.',
+      })
     })
   }
 
   return (
-    <div className='bg-muted/30 rounded-lg border p-3'>
+    <div className={cn('bg-muted/30 rounded-lg border p-3', className)}>
       <div className='flex items-start justify-between gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           {/* Icon + label + color together — color is never the only signal. */}
-          <Badge
-            className={cn('gap-1 text-xs', LEAD_UPDATE_TOKENS[update.type])}
-          >
-            <Icon className='h-3 w-3' aria-hidden='true' />
-            {label}
-          </Badge>
+          <LeadUpdateTypeBadge type={update.type} />
           <span className='text-muted-foreground text-xs'>{occurredLabel}</span>
         </div>
-        {canManage ? (
+        {canManage && !canChange ? (
+          // Someone else's update: the menu stays put but says why it's off.
+          <DisabledFieldTooltip
+            disabled
+            reason={LEAD_UPDATE_NOT_AUTHOR_MESSAGE}
+          >
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon-sm'
+              className='text-muted-foreground shrink-0'
+              disabled
+              aria-label={actionsLabel}
+            >
+              <MoreHorizontal className='h-4 w-4' />
+            </Button>
+          </DisabledFieldTooltip>
+        ) : canManage ? (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -98,7 +124,7 @@ export function LeadUpdateItem({
                   size='icon-sm'
                   className='text-muted-foreground hover:text-foreground shrink-0'
                   disabled={isPending}
-                  aria-label={`Actions for ${label.toLowerCase()} logged ${occurredLabel}`}
+                  aria-label={actionsLabel}
                 />
               }
             >
@@ -119,7 +145,10 @@ export function LeadUpdateItem({
         ) : null}
       </div>
       <div
-        className='text-foreground [&_a]:text-primary [&_code]:bg-muted [&_pre]:bg-muted mt-2 space-y-2 text-sm leading-relaxed [&_a]:underline [&_a]:underline-offset-4 [&_code]:rounded [&_code]:px-1 [&_code]:py-0.5 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5'
+        className={cn(
+          RICH_TEXT_HTML_CLASSES,
+          'mt-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0'
+        )}
         dangerouslySetInnerHTML={{ __html: sanitizedBody }}
       />
       <div className='text-muted-foreground mt-2 flex items-center gap-1.5 text-xs'>
@@ -136,18 +165,12 @@ export function LeadUpdateItem({
         </Avatar>
         <span>{authorDisplay}</span>
       </div>
-      {error ? (
-        <p role='alert' className='text-destructive mt-2 text-xs'>
-          {error}
-        </p>
-      ) : null}
 
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={showArchiveConfirm}
-        title='Archive this update?'
-        description={`The ${label.toLowerCase()} from ${occurredLabel} will be removed from the timeline.`}
-        confirmLabel='Archive'
-        confirmVariant='destructive'
+        entity='update'
+        name={`the ${label.toLowerCase()} from ${occurredLabel}`}
+        list='the timeline'
         onConfirm={() => {
           setShowArchiveConfirm(false)
           handleArchive()

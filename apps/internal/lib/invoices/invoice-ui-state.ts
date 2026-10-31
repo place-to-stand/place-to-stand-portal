@@ -18,10 +18,9 @@ export type DeleteButtonState = {
   reason: string | null
 }
 
-
-
-const MISSING_CLIENT_REASON =
-  'Create a client before creating invoices.'
+/** Why invoice creation is off: shared by the add button and the sheet. */
+export const INVOICE_MISSING_CLIENT_REASON =
+  'Add a client before creating an invoice.'
 const NON_EDITABLE_REASON = 'This invoice cannot be edited.'
 
 const NON_EDITABLE_STATUSES = new Set(['PAID', 'VOID'])
@@ -53,7 +52,7 @@ export const deriveClientFieldState = (
     ? isPending
       ? PENDING_REASON
       : clientOptions.length === 0
-        ? MISSING_CLIENT_REASON
+        ? INVOICE_MISSING_CLIENT_REASON
         : null
     : null
 
@@ -113,7 +112,7 @@ export const deriveSubmitButtonState = (
       ? PENDING_REASON
       : hasClients
         ? null
-        : MISSING_CLIENT_REASON
+        : INVOICE_MISSING_CLIENT_REASON
   }
 
   const label = getSubmitLabel({

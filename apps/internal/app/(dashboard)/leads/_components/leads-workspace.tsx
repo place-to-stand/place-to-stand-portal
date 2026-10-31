@@ -2,24 +2,28 @@
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
+import { PersonSelector } from '@/components/my-tasks/person-selector'
+import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import {
-  useSheetParams,
   useSheetParamSelection,
+  useSheetParams,
 } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { LEAD_WON_NEEDS_COMPANY_MESSAGE } from '@/lib/leads/won-rule'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
-import { ConvertLeadDialog } from './convert-lead-dialog'
 
 type LeadsWorkspaceProps = {
   initialColumns: LeadBoardColumnData[]
@@ -28,6 +32,9 @@ type LeadsWorkspaceProps = {
   senderName?: string
   /** True when the `?lead=` share link points at a lead that no longer exists. */
   leadNotFound?: boolean
+  /** A user id (only their leads) or `'all'`. */
+  assigneeFilter?: string
+  viewerId: string
 }
 
 export function LeadsWorkspace({
@@ -36,9 +43,10 @@ export function LeadsWorkspace({
   canManage,
   senderName,
   leadNotFound = false,
+  assigneeFilter = 'all',
+  viewerId,
 }: LeadsWorkspaceProps) {
   const router = useRouter()
-  const { getAux } = useSheetParams()
   // The `?lead=` param drives the sheet: uuid = edit, `new` = create. Local
   // selection state opens the sheet instantly while the URL catches up.
   const { selectedId, isCreating, select, openCreate, clear } =
@@ -46,18 +54,43 @@ export function LeadsWorkspace({
   const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
     null
   )
-  const [convertingLead, setConvertingLead] = useState<LeadRecord | null>(null)
+  // Set when a Won drag was refused for want of a company: the lead's sheet
+  // opens with the reason on its Company field.
+  const [companyErrorLeadId, setCompanyErrorLeadId] = useState<string | null>(
+    null
+  )
   const [, startRefresh] = useTransition()
+  // The sheet opens any lead on the board, filtered out or not.
   const leadLookup = useMemo(
     () => buildLeadLookup(initialColumns),
     [initialColumns]
   )
+  const { visibleColumns, hiddenLeads } = useMemo(
+    () =>
+      splitByAssignee(
+        initialColumns,
+        assigneeFilter === 'all' ? null : assigneeFilter
+      ),
+    [initialColumns, assigneeFilter]
+  )
+  // Lead owners (Admin and Sales), in the picker's user shape.
+  const pickerPeople = useMemo(
+    () =>
+      assignees.map(person => ({
+        id: person.id,
+        full_name: person.name,
+        email: person.email ?? '',
+        avatar_url: person.avatarUrl,
+        disabled_at: person.disabledAt,
+        deleted_at: null,
+      })),
+    [assignees]
+  )
   const totalLeads = useMemo(
-    () => initialColumns.reduce((sum, column) => sum + column.leads.length, 0),
-    [initialColumns]
+    () => visibleColumns.reduce((sum, column) => sum + column.leads.length, 0),
+    [visibleColumns]
   )
   const activeLead = selectedId ? (leadLookup.get(selectedId) ?? null) : null
-  const initialAction = getAux('leadMode') === 'convert' ? 'convert' : null
 
   const handleCreateLead = useCallback(
     (status?: LeadStatusValue) => {
@@ -78,9 +111,19 @@ export function LeadsWorkspace({
       }
 
       setInitialStatus(null)
+      setCompanyErrorLeadId(null)
       select(lead.id)
     },
     [canManage, select]
+  )
+
+  const handleWonNeedsCompany = useCallback(
+    (lead: LeadRecord) => {
+      setInitialStatus(null)
+      setCompanyErrorLeadId(lead.id)
+      select(lead.id)
+    },
+    [select]
   )
 
   const handleSheetOpenChange = useCallback(
@@ -90,6 +133,7 @@ export function LeadsWorkspace({
       }
 
       setInitialStatus(null)
+      setCompanyErrorLeadId(null)
       clear()
       startRefresh(() => {
         router.refresh()
@@ -98,15 +142,26 @@ export function LeadsWorkspace({
     [clear, router, startRefresh]
   )
 
+  // Winning a lead opens its company's billing (its sheet's Client column) next, for whoever can
+  // make it a client there (the same step the lead sheet takes on save).
+  const { role } = useViewerAccess()
+  const canManageClients = roleCan(role, 'clients.manage')
+  const { open: openSheet } = useSheetParams()
+  const handleLeadClosedWon = useCallback(
+    (lead: LeadRecord) => {
+      if (!lead.companyId) return
+      // Open it here, over the board, rather than leaving for /companies.
+      setSheetSectionTarget('company', lead.companyId, 'billing')
+      openSheet('company', lead.companyId)
+    },
+    [openSheet]
+  )
+
   const handleSheetSuccess = useCallback(() => {
     startRefresh(() => {
       router.refresh()
     })
   }, [router, startRefresh])
-
-  const handleLeadClosedWon = useCallback((lead: LeadRecord) => {
-    setConvertingLead(lead)
-  }, [])
 
   const isSheetOpen = canManage && (isCreating || Boolean(activeLead))
   // Keep the last-opened lead rendered while the close animation plays so
@@ -118,6 +173,16 @@ export function LeadsWorkspace({
   const sheetLead = isCreating ? null : (activeLead ?? lastOpenedLead)
   const boardActiveLeadId = isSheetOpen && sheetLead ? sheetLead.id : null
 
+  // The same person picker as My tasks; it writes `?assignee=`.
+  const assigneePicker = (
+    <PersonSelector
+      admins={pickerPeople}
+      selectedUserId={assigneeFilter}
+      currentUserId={viewerId}
+      allLabel='All leads'
+    />
+  )
+
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/leads')}
@@ -125,38 +190,30 @@ export function LeadsWorkspace({
       activeTab='board'
       count={{ label: 'leads', total: totalLeads }}
       primaryAction={
-        <DisabledFieldTooltip
-          disabled={!canManage}
-          reason='Admin access is required to create leads.'
-        >
-          <Button
-            type='button'
-            size='sm'
-            disabled={!canManage}
-            onClick={() => handleCreateLead()}
-            className='gap-2'
+        // Same toolbar as My tasks: the filter sits beside Create, and moves
+        // into a slide-out below md.
+        <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
+          <FilterSheetButton
+            className='md:hidden'
+            activeCount={assigneeFilter === 'all' ? 0 : 1}
           >
-            <Plus className='h-4 w-4' />
-            Add lead
-          </Button>
-        </DisabledFieldTooltip>
+            {assigneePicker}
+          </FilterSheetButton>
+          <div className='max-md:hidden md:contents'>{assigneePicker}</div>
+          <SheetCreateButton
+            entity='lead'
+            label='Create lead'
+            disabledReason={
+              canManage ? null : 'Admin access is required to create leads.'
+            }
+          />
+        </div>
       }
       // Kanban board: pin to the viewport (columns scroll internally).
       contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
       {leadNotFound && !isCreating ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked lead could not be found. It may have been permanently
-            deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clear}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
       {canManage ? (
         <LeadSheet
@@ -164,38 +221,52 @@ export function LeadsWorkspace({
           onOpenChange={handleSheetOpenChange}
           lead={sheetLead}
           initialStatus={initialStatus}
+          initialCompanyError={
+            sheetLead && sheetLead.id === companyErrorLeadId
+              ? LEAD_WON_NEEDS_COMPANY_MESSAGE
+              : null
+          }
           assignees={assignees}
           canManage={canManage}
           senderName={senderName}
-          initialAction={initialAction}
           onSuccess={handleSheetSuccess}
         />
       ) : null}
-      {convertingLead && (
-        <ConvertLeadDialog
-          lead={convertingLead}
-          open={!!convertingLead}
-          onOpenChange={(open) => {
-            if (!open) setConvertingLead(null)
-          }}
-          onSuccess={() => {
-            setConvertingLead(null)
-            startRefresh(() => {
-              router.refresh()
-            })
-          }}
-        />
-      )}
       <LeadsBoard
-        initialColumns={initialColumns}
+        initialColumns={visibleColumns}
+        hiddenLeads={hiddenLeads}
         canManage={canManage}
         onEditLead={handleEditLead}
         onCreateLead={handleCreateLead}
-        onLeadClosedWon={handleLeadClosedWon}
+        onLeadClosedWon={canManageClients ? handleLeadClosedWon : undefined}
+        onWonNeedsCompany={handleWonNeedsCompany}
         activeLeadId={boardActiveLeadId}
       />
     </PageShell>
   )
+}
+
+/**
+ * The columns to show, and the leads a filter hides (which still count when
+ * a drag works out a rank, so a reorder lands where it looks like it does).
+ */
+function splitByAssignee(
+  columns: LeadBoardColumnData[],
+  assigneeId: string | null
+) {
+  if (!assigneeId) {
+    return { visibleColumns: columns, hiddenLeads: [] as LeadRecord[] }
+  }
+  const hiddenLeads: LeadRecord[] = []
+  const visibleColumns = columns.map(column => ({
+    ...column,
+    leads: column.leads.filter(lead => {
+      if (lead.assigneeId === assigneeId) return true
+      hiddenLeads.push(lead)
+      return false
+    }),
+  }))
+  return { visibleColumns, hiddenLeads }
 }
 
 function buildLeadLookup(columns: LeadBoardColumnData[]) {

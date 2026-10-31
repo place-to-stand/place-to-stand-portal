@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, taskAttachments, tasks } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -22,7 +22,7 @@ type AttachmentSelection = {
   } | null
   project: {
     id: string
-    clientId: string | null
+    companyId: string | null
     deletedAt: string | null
   } | null
 }
@@ -36,7 +36,7 @@ export type TaskAttachmentDownloadMetadata = {
 
 export async function getTaskAttachmentForDownload(
   user: AppUser,
-  attachmentId: string,
+  attachmentId: string
 ): Promise<TaskAttachmentDownloadMetadata> {
   const rows = (await db
     .select({
@@ -52,7 +52,7 @@ export async function getTaskAttachmentForDownload(
       },
       project: {
         id: projects.id,
-        clientId: projects.clientId,
+        companyId: projects.companyId,
         deletedAt: projects.deletedAt,
       },
     })
@@ -75,7 +75,7 @@ export async function getTaskAttachmentForDownload(
     throw new NotFoundError('Attachment not found')
   }
 
-  await ensureTaskAccess(user, attachment.task.id)
+  await ensureTaskWorkAccess(user, attachment.task.id)
 
   return {
     id: attachment.id,
@@ -87,9 +87,9 @@ export async function getTaskAttachmentForDownload(
 
 export async function listTaskAttachments(
   user: AppUser,
-  taskId: string,
+  taskId: string
 ): Promise<DbTaskAttachment[]> {
-  await ensureTaskAccess(user, taskId)
+  await ensureTaskWorkAccess(user, taskId)
 
   const rows = (await db
     .select({
@@ -106,10 +106,7 @@ export async function listTaskAttachments(
     })
     .from(taskAttachments)
     .where(
-      and(
-        eq(taskAttachments.taskId, taskId),
-        isNull(taskAttachments.deletedAt),
-      ),
+      and(eq(taskAttachments.taskId, taskId), isNull(taskAttachments.deletedAt))
     )
     .orderBy(asc(taskAttachments.createdAt))) as Array<{
     id: string

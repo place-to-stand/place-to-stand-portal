@@ -1,0 +1,118 @@
+'use client'
+
+import dynamic from 'next/dynamic'
+import { type ReactNode, useState } from 'react'
+
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@pts/ui/accordion'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
+import { cn } from '@/lib/utils'
+
+import { useScrollIntoViewOnOpen } from './use-scroll-into-view-on-open'
+import type { ActivityFeedProps } from '@/components/activity/activity-feed'
+import { useActivityCount } from '@/lib/activity/use-activity-feed'
+
+// The feed's code loads with the first open, like its entries.
+const ActivityFeed = dynamic(
+  () =>
+    import('@/components/activity/activity-feed').then(
+      module => module.ActivityFeed
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className='text-muted-foreground text-sm'>Loading activity…</div>
+    ),
+  }
+)
+
+type SheetActivitySectionProps = Pick<
+  ActivityFeedProps,
+  'targetType' | 'targetId' | 'projectId' | 'companyId' | 'emptyState'
+> & {
+  className?: string
+}
+
+/**
+ * A sheet's Activity: the last section, below comments or updates, collapsed
+ * by default. The header shows the count ("Activity (12)", one cheap count
+ * request); the feed mounts, and fetches its entries, only once opened, and
+ * unmounts again when closed.
+ */
+export function SheetActivitySection({
+  targetType,
+  targetId = null,
+  projectId = null,
+  companyId = null,
+  emptyState = 'No activity recorded yet.',
+  className,
+}: SheetActivitySectionProps) {
+  const total = useActivityCount({ targetType, targetId, projectId, companyId })
+
+  return (
+    <SheetActivityDisclosure total={total} className={className}>
+      <ActivityFeed
+        targetType={targetType}
+        targetId={targetId}
+        projectId={projectId}
+        companyId={companyId}
+        pageSize={20}
+        emptyState={emptyState}
+      />
+    </SheetActivityDisclosure>
+  )
+}
+
+/**
+ * The collapsed shell on its own: the "Activity (n)" toggle and a region that
+ * mounts its children only while open. `SheetActivitySection` fills it with
+ * the feed; the /design specimen fills it with sample rows.
+ */
+export function SheetActivityDisclosure({
+  total,
+  className,
+  children,
+}: {
+  /** Shown as "Activity (n)"; null shows "Activity" alone. */
+  total: number | null
+  className?: string
+  children: ReactNode
+}) {
+  // One item, closed by default; a closed panel unmounts, so the feed (and
+  // its fetch) waits for the first open. Opening brings it to the top of the
+  // sheet, following the feed as it loads.
+  const [open, setOpen] = useState(false)
+  const ref = useScrollIntoViewOnOpen<HTMLDivElement>(open)
+  return (
+    <Accordion
+      ref={ref}
+      className={cn('scroll-mt-6', className)}
+      onValueChange={value => setOpen(value.length > 0)}
+    >
+      <AccordionItem value='activity' className='border-b-0'>
+        <AccordionTrigger className='-my-1 py-1 text-sm font-semibold tracking-tight'>
+          <span className='flex items-center gap-2'>
+            <CONCEPT_ICONS.activity
+              className='text-muted-foreground size-4 shrink-0'
+              aria-hidden
+            />
+            Activity
+            {total !== null ? (
+              <span className='text-muted-foreground font-normal'>
+                {' '}
+                ({total})
+              </span>
+            ) : null}
+          </span>
+        </AccordionTrigger>
+        {/* The gap under the header lives here, so the loading line and the
+            loaded feed sit at the same spot and nothing jumps. */}
+        <AccordionContent className='pt-4 pb-0'>{children}</AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  )
+}

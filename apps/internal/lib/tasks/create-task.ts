@@ -1,20 +1,33 @@
 import 'server-only'
 
+import { randomUUID } from 'node:crypto'
+
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { resolveNewTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
-import {
-  syncAssignees,
-  syncAttachments,
-} from '@/app/(dashboard)/projects/actions/task-helpers'
 import { taskCreatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import {
+  ensureProjectWorkAccess,
+  findAssigneesWithoutAccess,
+} from '@/lib/projects/access'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
+import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
 
+import { assigneeAccessError } from './assignee-access'
+import {
+  finishAttachmentChanges,
+  saveFailedMessage,
+  stageAttachments,
+  syncAssignees,
+  unstageAttachments,
+  writeAttachmentRows,
+  type AttachmentRowChanges,
+  type StagedAttachment,
+} from './save-task-children'
 import type { SaveTaskResult, TaskWriteContext } from './types'
 
 export async function createTaskForActor({
@@ -28,7 +41,7 @@ export async function createTaskForActor({
     input
 
   try {
-    await ensureProjectAccess(actor, projectId)
+    await ensureProjectWorkAccess(actor, projectId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Selected project is unavailable.' }
@@ -43,7 +56,7 @@ export async function createTaskForActor({
   const projectContext = await db
     .select({
       id: projects.id,
-      clientId: projects.clientId,
+      companyId: projects.companyId,
       name: projects.name,
     })
     .from(projects)
@@ -52,6 +65,16 @@ export async function createTaskForActor({
 
   if (!projectContext.length) {
     return { error: 'Selected project is unavailable.' }
+  }
+
+  const companyId = projectContext[0].companyId ?? null
+
+  const blockedAssignees = await findAssigneesWithoutAccess(
+    projectId,
+    assigneeIds
+  )
+  if (blockedAssignees.length) {
+    return { error: assigneeAccessError(blockedAssignees) }
   }
 
   let nextRank: string
@@ -63,12 +86,32 @@ export async function createTaskForActor({
     return { error: 'Unable to determine ordering for new task.' }
   }
 
-  let insertedId: string | null = null
+  // The id is minted here rather than by the insert so new uploads can move
+  // into the task's folder before the transaction opens (save-task-children).
+  const taskId = randomUUID()
 
+  let staged: StagedAttachment[]
   try {
-    const inserted = await db
-      .insert(tasks)
-      .values({
+    staged = await stageAttachments({
+      storage,
+      taskId,
+      actorId: actor.id,
+      actorRole: actor.role,
+      attachmentsInput: attachments,
+    })
+  } catch (error) {
+    console.error('Failed to stage task attachments', error)
+    return { error: 'Unable to attach files. Remove them and upload again.' }
+  }
+
+  // One transaction: the task, its assignee and its attachment rows land
+  // together or not at all, so a failed save leaves nothing behind to retry
+  // into a duplicate.
+  let attachmentChanges: AttachmentRowChanges
+  try {
+    attachmentChanges = await db.transaction(async tx => {
+      await tx.insert(tasks).values({
+        id: taskId,
         projectId,
         leadId: leadId ?? null,
         title,
@@ -83,73 +126,55 @@ export async function createTaskForActor({
         // null that the two-week window would silently drop.
         ...resolveCompletedAt(status, null),
       })
-      .returning({ id: tasks.id })
 
-    insertedId = inserted[0]?.id ?? null
+      await syncAssignees(tx, taskId, assigneeIds)
+
+      return writeAttachmentRows(tx, {
+        taskId,
+        actorId: actor.id,
+        actorRole: actor.role,
+        staged,
+        toRemove: [],
+      })
+    })
   } catch (error) {
     console.error('Failed to create task', error)
-    return {
-      error: error instanceof Error ? error.message : 'Unable to create task.',
-    }
+    const restored = await unstageAttachments(storage, staged)
+    return { error: saveFailedMessage('Unable to create task.', restored) }
   }
 
-  if (!insertedId) {
-    return { error: 'Unable to create task.' }
-  }
+  // Committed. What follows are side effects of the save, not part of it:
+  // each logs its own failure and the save still stands.
+  await notifyTaskAssigned(actor, { id: taskId, title }, assigneeIds)
 
-  // Partial-failure contract: the row exists past this point, so any error
-  // must return `taskId` alongside it — a bare error would invite a client
-  // retry that duplicates the task.
-  try {
-    await syncAssignees(insertedId, assigneeIds)
-    await syncAttachments({
-      storage,
-      taskId: insertedId,
-      actorId: actor.id,
-      actorRole: actor.role,
-      attachmentsInput: attachments,
-      activity: {
-        taskTitle: title,
-        projectId,
-        clientId: projectContext[0].clientId ?? null,
-        source,
-      },
-    })
-  } catch (assigneeError) {
-    console.error('Failed to sync task assignees', assigneeError)
-    return {
-      taskId: insertedId,
-      error: 'Task saved but assignees could not be updated.',
-    }
-  }
+  const event = taskCreatedEvent({
+    title,
+    status,
+    dueOn: dueOn ?? null,
+    assigneeIds,
+  })
 
-  try {
-    const event = taskCreatedEvent({
-      title,
-      status,
-      dueOn: dueOn ?? null,
-      assigneeIds,
-    })
+  await logActivity({
+    actorId: actor.id,
+    actorRole: actor.role,
+    source,
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'TASK',
+    targetId: taskId,
+    targetProjectId: projectId,
+    targetCompanyId: companyId,
+    metadata: event.metadata,
+  })
 
-    await logActivity({
-      actorId: actor.id,
-      actorRole: actor.role,
-      source,
-      verb: event.verb,
-      summary: event.summary,
-      targetType: 'TASK',
-      targetId: insertedId,
-      targetProjectId: projectId,
-      targetClientId: projectContext[0].clientId,
-      metadata: event.metadata,
-    })
-  } catch (activityError) {
-    console.error('Failed to log task creation activity', activityError)
-    return {
-      taskId: insertedId,
-      error: 'Task saved but activity could not be recorded.',
-    }
-  }
+  await finishAttachmentChanges({
+    storage,
+    taskId,
+    actorId: actor.id,
+    actorRole: actor.role,
+    activity: { taskTitle: title, projectId, companyId, source },
+    changes: attachmentChanges,
+  })
 
-  return { taskId: insertedId }
+  return { taskId }
 }

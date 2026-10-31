@@ -1,6 +1,11 @@
-import { and, inArray, isNull } from 'drizzle-orm'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
+import { and, inArray, isNull, sql } from 'drizzle-orm'
 
-import type { DbClient, GitHubRepoLinkSummary, ProjectOwner } from '@/lib/types'
+import type {
+  ClientCompanyView,
+  GitHubRepoLinkSummary,
+  ProjectOwner,
+} from '@/lib/types'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 
@@ -11,7 +16,7 @@ import {
   loadMemberRows,
   mapClientRows,
   mapMemberRows,
-  type ClientRow,
+  type ClientRelationRow,
   type MemberRow,
 } from './relations/clients'
 import {
@@ -30,7 +35,7 @@ import {
 
 export type ProjectRelationsFetchArgs = {
   projectIds: string[]
-  clientIds: string[]
+  companyIds: string[]
   ownerIds: string[]
   /**
    * Archived tasks grow without bound and only the project review/archive
@@ -40,7 +45,7 @@ export type ProjectRelationsFetchArgs = {
 }
 
 export type ProjectRelationsFetchResult = {
-  clients: DbClient[]
+  clients: ClientCompanyView[]
   owners: ProjectOwner[]
   members: MemberWithUser[]
   tasks: RawTaskWithRelations[]
@@ -57,14 +62,20 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
   const rows = await db
     .select({
       id: users.id,
-      full_name: users.fullName,
-      avatar_url: users.avatarUrl,
+      // Written table-qualified: drizzle drops the table name from an
+      // interpolated column here, so `${users.id}` would bind to contacts.id.
+      contact_id: sql<
+        string | null
+      >`(select c.id from contacts c where c.user_id = "users"."id" and c.deleted_at is null limit 1)`,
+      full_name: personNameSql,
+      avatar_url: personAvatarSql,
     })
     .from(users)
     .where(and(inArray(users.id, ownerIds), isNull(users.deletedAt)))
 
   return rows.map(row => ({
     id: row.id,
+    contact_id: row.contact_id,
     full_name: row.full_name,
     avatar_url: row.avatar_url,
   }))
@@ -72,14 +83,12 @@ export async function loadOwners(ownerIds: string[]): Promise<ProjectOwner[]> {
 
 export async function fetchProjectRelations({
   projectIds,
-  clientIds,
+  companyIds,
   ownerIds,
   includeArchivedTasks = false,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
-  const clientDataPromise: Promise<[ClientRow[], MemberRow[]]> = Promise.all([
-    loadClientRows(clientIds),
-    loadMemberRows(clientIds),
-  ])
+  const clientDataPromise: Promise<[ClientRelationRow[], MemberRow[]]> =
+    Promise.all([loadClientRows(companyIds), loadMemberRows(companyIds)])
 
   const taskDataPromise: Promise<[TaskRow[], TaskRow[]]> = Promise.all([
     loadTaskRows(projectIds, { archived: false }),
@@ -110,16 +119,16 @@ export async function fetchProjectRelations({
   const assigneeRows = await loadTaskAssigneeRows(allTaskIds)
   const assigneesByTask = buildAssigneeMap(assigneeRows)
 
-  const clients: DbClient[] = mapClientRows(clientRows)
+  const clients: ClientCompanyView[] = mapClientRows(clientRows)
   const members: MemberWithUser[] = mapMemberRows(memberRows)
 
   const tasks: RawTaskWithRelations[] = mapTaskRowsToRaw(
     activeTaskRows,
-    assigneesByTask,
+    assigneesByTask
   )
   const archivedTasks: RawTaskWithRelations[] = mapTaskRowsToRaw(
     archivedTaskRows,
-    assigneesByTask,
+    assigneesByTask
   )
 
   // Map GitHub repos to summary format

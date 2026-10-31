@@ -10,27 +10,18 @@ import {
 } from 'react'
 import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
-import {
-  Bot,
-  Building2,
-  CalendarDays,
-  Clock,
-  FolderKanban,
-  MessageCircle,
-  Paperclip,
-  User,
-  Users,
-} from 'lucide-react'
+import { Bot, CalendarDays, User, Users } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { formatHours } from '@pts/ui/numbers'
 
 import {
   CardAssigneeAvatars,
   type CardAssignee,
 } from '@/components/cards/card-assignee-avatars'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type {
   ProjectTypeValue,
@@ -62,16 +53,6 @@ type TaskCardProps = {
   disableDropTransition?: boolean
   context?: TaskContextDetails
 }
-
-/**
- * Hours read as a compact chip, so `3` not `3.00` and `3.5` not `3.50` —
- * the card has room for a glance, not a ledger.
- */
-const formatLoggedHours = (value: number) =>
-  `${value.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}h`
 
 function CardContent({
   task,
@@ -108,48 +89,65 @@ function CardContent({
               className={cn(
                 'text-muted-foreground text-xs',
                 context.layout === 'stacked'
-                  ? 'flex flex-col items-start gap-2'
-                  : 'flex flex-wrap items-center gap-3'
+                  ? 'flex min-w-0 flex-col items-start gap-2'
+                  : 'flex min-w-0 flex-wrap items-center gap-3'
               )}
             >
               {context.clientLabel ? (
                 context.clientHref ? (
-                  <div className='flex items-center gap-1'>
+                  <div className='flex max-w-full min-w-0 items-center gap-1'>
                     <Link
                       href={context.clientHref}
-                      className='hover:text-foreground inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                      title={context.clientLabel}
+                      className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                       onClick={event => event.stopPropagation()}
                     >
                       {renderProjectTypeIcon(
                         context?.projectType,
-                        'h-3.5 w-3.5'
+                        'h-3.5 w-3.5 shrink-0'
                       )}
-                      {context.clientLabel}
+                      <span className='truncate'>{context.clientLabel}</span>
                     </Link>
                   </div>
                 ) : (
-                  <span className='inline-flex items-center gap-1'>
-                    {renderProjectTypeIcon(context?.projectType, 'h-3.5 w-3.5')}
-                    {context.clientLabel}
+                  <span
+                    className='inline-flex max-w-full min-w-0 items-center gap-1'
+                    title={context.clientLabel}
+                  >
+                    {renderProjectTypeIcon(
+                      context?.projectType,
+                      'h-3.5 w-3.5 shrink-0'
+                    )}
+                    <span className='truncate'>{context.clientLabel}</span>
                   </span>
                 )
               ) : null}
               {context.projectLabel ? (
                 context.projectHref ? (
-                  <div className='flex items-center gap-1'>
+                  <div className='flex max-w-full min-w-0 items-center gap-1'>
                     <Link
                       href={context.projectHref}
-                      className='hover:text-foreground inline-flex items-center gap-1 underline-offset-4 transition hover:underline'
+                      title={context.projectLabel}
+                      className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                       onClick={event => event.stopPropagation()}
                     >
-                      <FolderKanban className='h-3.5 w-3.5' aria-hidden />
-                      {context.projectLabel}
+                      <ENTITY_ICONS.project
+                        className='h-3.5 w-3.5 shrink-0'
+                        aria-hidden
+                      />
+                      <span className='truncate'>{context.projectLabel}</span>
                     </Link>
                   </div>
                 ) : (
-                  <span className='inline-flex items-center gap-1'>
-                    <FolderKanban className='h-3.5 w-3.5' aria-hidden />
-                    {context.projectLabel}
+                  <span
+                    className='inline-flex max-w-full min-w-0 items-center gap-1'
+                    title={context.projectLabel}
+                  >
+                    <ENTITY_ICONS.project
+                      className='h-3.5 w-3.5 shrink-0'
+                      aria-hidden
+                    />
+                    <span className='truncate'>{context.projectLabel}</span>
                   </span>
                 )
               ) : null}
@@ -172,29 +170,22 @@ function CardContent({
             <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-xs'>
               {task.commentCount > 0 ? (
                 <span className='inline-flex items-center gap-1'>
-                  <MessageCircle className='h-3.5 w-3.5' />
+                  <CONCEPT_ICONS.comment className='h-3.5 w-3.5' />
                   {task.commentCount}
                 </span>
               ) : null}
               {attachmentCount > 0 ? (
                 <span className='inline-flex items-center gap-1'>
-                  <Paperclip className='h-3.5 w-3.5' />
+                  <CONCEPT_ICONS.attachment className='h-3.5 w-3.5' />
                   {attachmentCount}
                 </span>
               ) : null}
               {loggedHours > 0 ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className='inline-flex items-center gap-1'>
-                      <Clock className='h-3.5 w-3.5' aria-hidden />
-                      {formatLoggedHours(loggedHours)}
-                      <span className='sr-only'> logged</span>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {formatLoggedHours(loggedHours)} logged
-                  </TooltipContent>
-                </Tooltip>
+                <span className='inline-flex items-center gap-1'>
+                  <ENTITY_ICONS.timeLog className='h-3.5 w-3.5' aria-hidden />
+                  {formatHours(loggedHours)}
+                  <span className='sr-only'> logged</span>
+                </span>
               ) : null}
             </div>
           ) : null}
@@ -385,7 +376,7 @@ function renderProjectTypeIcon(
     return <User className={className} aria-hidden />
   }
 
-  return <Building2 className={className} aria-hidden />
+  return <ENTITY_ICONS.company className={className} aria-hidden />
 }
 
 const WORKER_BADGE_CONFIG: Partial<
@@ -404,10 +395,7 @@ function WorkerBadge({ status }: { status: WorkerStatusValue }) {
   const config = WORKER_BADGE_CONFIG[status]
   if (!config) return null
   return (
-    <Badge
-      variant='outline'
-      className={cn('w-fit text-[10px]', config.className)}
-    >
+    <Badge variant='outline' className={cn('w-fit', config.className)}>
       <Bot />
       {config.label}
     </Badge>

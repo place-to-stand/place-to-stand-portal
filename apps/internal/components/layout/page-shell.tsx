@@ -2,6 +2,7 @@
 
 import { Fragment, type ReactNode } from 'react'
 
+import { NotificationsBell } from '@/components/notifications/notifications-bell'
 import { cn } from '@/lib/utils'
 import type { Crumb } from '@/lib/navigation/breadcrumbs'
 import {
@@ -19,10 +20,12 @@ import { TabsNav, type TabsNavTab } from './tabs-nav'
 
 /**
  * Count labels are declared as plural nouns ('users', 'archived leads');
- * all current labels pluralize with a plain trailing s, so a count of 1
- * just drops it. An irregular noun added later needs explicit handling.
+ * they pluralize with a plain trailing s, so a count of 1 just drops it,
+ * except 'people' → 'person'.
  */
 function singularizeLabel(label: string) {
+  if (label.endsWith('people'))
+    return `${label.slice(0, -'people'.length)}person`
   return label.endsWith('s') ? label.slice(0, -1) : label
 }
 
@@ -103,13 +106,16 @@ export function PageShell({
             })}
           </BreadcrumbList>
         </Breadcrumb>
-        {headerRight ? (
-          <div className='flex min-w-0 shrink-0 items-center'>{headerRight}</div>
-        ) : null}
+        <div className='flex min-w-0 shrink-0 items-center gap-1.5'>
+          {headerRight}
+          <NotificationsBell />
+        </div>
       </header>
       <main className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4'>
         {hasToolbar ? (
-          <div className='mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          // The same space below the toolbar as the page padding above it
+          // (12px on phones, 16px from sm).
+          <div className='mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-center sm:justify-between'>
             {tabs?.length && activeTab ? (
               <TabsNav
                 tabs={tabs}
@@ -117,7 +123,8 @@ export function PageShell({
                 className='flex-1 sm:flex-none'
               />
             ) : (
-              <div />
+              // Holds the tabs' height so content starts at the same spot.
+              <div className='min-h-10' />
             )}
             <div className='flex items-center justify-end gap-3 sm:gap-6'>
               {count ? (

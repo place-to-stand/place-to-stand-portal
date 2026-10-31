@@ -16,27 +16,24 @@ import { ProjectsCard } from '@/components/projects-card'
 
 export default async function DashboardPage() {
   const user = await requireClientUser()
-  const [
-    projects,
-    hoursSummaries,
-    invoiceSummaries,
-    scope,
-  ] = await Promise.all([
-    fetchClientProjects(user),
-    fetchClientHoursSummaries(user),
-    fetchClientInvoiceSummaries(user),
-    resolvePortalScope(user),
-  ])
+  const [projects, hoursSummaries, invoiceSummaries, scope] = await Promise.all(
+    [
+      fetchClientProjects(user),
+      fetchClientHoursSummaries(user),
+      fetchClientInvoiceSummaries(user),
+      resolvePortalScope(user),
+    ]
+  )
 
-  const needsClientSelection = isAdmin(user) && scope.clientIds.length === 0
+  const needsClientSelection = isAdmin(user) && scope.companyIds.length === 0
   const clients = [...scope.scopedClients].sort((a, b) =>
     a.name.localeCompare(b.name)
   )
   const sections = clients.map(client => ({
     client,
-    hoursSummary: hoursSummaries.find(s => s.clientId === client.id),
+    hoursSummary: hoursSummaries.find(s => s.companyId === client.id),
     invoiceSummary: invoiceSummaries.get(client.id) ?? EMPTY_INVOICE_SUMMARY,
-    projects: projects.filter(p => p.clientId === client.id),
+    projects: projects.filter(p => p.companyId === client.id),
   }))
 
   return (
@@ -58,8 +55,10 @@ export default async function DashboardPage() {
         <EmptyState
           message={
             needsClientSelection
-              ? 'Select a contact above to preview the portal.'
-              : 'No account information yet.'
+              ? 'Choose a person above to see the portal as they do.'
+              : // Signed in but not added to a client yet (access is
+                // granted per client by Place To Stand).
+                "Your portal isn't set up yet. Your Place To Stand team will let you know when it's ready."
           }
         />
       ) : (
@@ -84,7 +83,7 @@ export default async function DashboardPage() {
                 min-height, not by stretching the cards. */}
             <div className='dash:grid-cols-2 grid grid-cols-1 items-start gap-6'>
               <AccountCard
-                clientId={section.client.id}
+                companyId={section.client.id}
                 hoursSummary={section.hoursSummary}
                 invoiceSummary={section.invoiceSummary}
               />

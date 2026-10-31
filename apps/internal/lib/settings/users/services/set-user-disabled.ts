@@ -22,7 +22,7 @@ export async function setPortalUserDisabled(
   assertAdmin(actor)
 
   if (actor.id === input.id) {
-    return { error: 'You cannot disable your own account.' }
+    return { error: 'You cannot disable your own user.' }
   }
 
   const adminClient = getSupabaseServiceClient()
@@ -37,7 +37,11 @@ export async function setPortalUserDisabled(
       return { error: flagError }
     }
 
-    const banError = await setAuthBan(adminClient, input.id, DISABLED_BAN_DURATION)
+    const banError = await setAuthBan(
+      adminClient,
+      input.id,
+      DISABLED_BAN_DURATION
+    )
     if (banError) {
       return { error: banError }
     }
@@ -47,8 +51,13 @@ export async function setPortalUserDisabled(
     try {
       await revokeUserOauthConnections(input.id)
     } catch (error) {
-      console.error('Failed to revoke provider connections for disabled user', error)
-      return { error: 'User disabled, but provider connections could not be revoked.' }
+      console.error(
+        'Failed to revoke provider connections for disabled user',
+        error
+      )
+      return {
+        error: 'User disabled, but provider connections could not be revoked.',
+      }
     }
 
     return {}
@@ -65,6 +74,22 @@ export async function setPortalUserDisabled(
   }
 
   return {}
+}
+
+/**
+ * Blocks (or unblocks) sign-in at Supabase Auth. Returns an error message,
+ * or null. The person sheet calls it before its transaction and undoes it
+ * if the transaction fails.
+ */
+export async function setAuthBanned(
+  userId: string,
+  banned: boolean
+): Promise<string | null> {
+  return setAuthBan(
+    getSupabaseServiceClient(),
+    userId,
+    banned ? DISABLED_BAN_DURATION : CLEAR_BAN_DURATION
+  )
 }
 
 async function setDisabledFlag(

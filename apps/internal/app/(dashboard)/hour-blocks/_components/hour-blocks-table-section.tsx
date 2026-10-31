@@ -1,16 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { Archive, Building2, Info, RefreshCw, Trash2 } from 'lucide-react'
+import { Info } from 'lucide-react'
 
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@pts/ui/dates'
-import { invoiceHref } from '@/lib/sheets/hrefs'
+import { formatHours } from '@pts/ui/numbers'
+import { companySheetHref, invoiceHref } from '@/lib/sheets/hrefs'
 import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
 import {
   Table,
@@ -21,6 +25,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
@@ -37,19 +42,16 @@ export type HourBlocksTableSectionProps = {
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   onEdit: (block: HourBlockWithClient) => void
   onRequestDelete: (block: HourBlockWithClient) => void
   onRestore: (block: HourBlockWithClient) => void
-  onRequestDestroy: (block: HourBlockWithClient) => void
   emptyMessage: string
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
 }
 
-const toHours = (value: number) => `${value.toLocaleString()}h`
-
-const formatTimestamp = (value: string) => formatCalendarDate(value) ?? '—'
+const formatTimestamp = (value: string) =>
+  formatCalendarDate(value) ?? <EmptyValue />
 
 export function HourBlocksTableSection({
   hourBlocks,
@@ -58,11 +60,9 @@ export function HourBlocksTableSection({
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
   emptyMessage,
   basePath,
 }: HourBlocksTableSectionProps) {
@@ -83,9 +83,33 @@ export function HourBlocksTableSection({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className='w-[34%]'>Client</TableHead>
-            <TableHead className='w-[18%]'>Invoice #</TableHead>
-            <TableHead className='w-[18%]'>Hours purchased</TableHead>
+            <SortableTableHead
+              field='hours'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Hours purchased
+            </SortableTableHead>
+            <SortableTableHead
+              field='client'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[34%]'
+            >
+              Client
+            </SortableTableHead>
+            <SortableTableHead
+              field='invoice'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Invoice #
+            </SortableTableHead>
             <SortableTableHead
               field='created'
               sort={sort}
@@ -95,31 +119,21 @@ export function HourBlocksTableSection({
             >
               Created on
             </SortableTableHead>
-            <TableHead className='w-32 text-right'>Actions</TableHead>
+            <TableHead className='w-24 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {hourBlocks.map(block => {
             const client = block.client
-            const invoiceNumber =
-              block.invoice_number && block.invoice_number.length > 0
-                ? block.invoice_number
-                : '—'
             const isArchived = Boolean(block.deleted_at)
             const isDeleting = isPending && pendingDeleteId === block.id
             const isRestoring = isPending && pendingRestoreId === block.id
-            const isDestroying = isPending && pendingDestroyId === block.id
 
             const showArchive = mode === 'active'
             const showRestore = mode === 'archive'
-            const showDestroy = mode === 'archive'
 
-            const archiveDisabled =
-              isDeleting || isRestoring || isDestroying || isArchived
-            const restoreDisabled =
-              isRestoring || isDeleting || isDestroying || !isArchived
-            const destroyDisabled =
-              isDestroying || isDeleting || isRestoring || !isArchived
+            const archiveDisabled = isDeleting || isRestoring || isArchived
+            const restoreDisabled = isRestoring || isDeleting || !isArchived
 
             const archiveDisabledReason = archiveDisabled
               ? isArchived
@@ -133,12 +147,6 @@ export function HourBlocksTableSection({
                 : 'Hour block is already active.'
               : null
 
-            const destroyDisabledReason = destroyDisabled
-              ? !isArchived
-                ? 'Archive the hour block before permanently deleting.'
-                : pendingReason
-              : null
-
             return (
               <TableRow
                 key={block.id}
@@ -148,34 +156,15 @@ export function HourBlocksTableSection({
                   isArchived && ARCHIVED_ROW_CLASS
                 )}
               >
-                <TableCell>
-                  <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <Building2 className='text-muted-foreground h-4 w-4 shrink-0' />
-                    <span className='truncate'>
-                      {client ? client.name : 'Unassigned'}
-                    </span>
-                  </div>
-                  {client?.deleted_at ? (
-                    <p className='text-destructive text-xs'>Client archived</p>
-                  ) : null}
-                </TableCell>
-                <TableCell label='Invoice' className='text-sm'>
-                  {block.invoice_id && block.invoice_number ? (
-                    <Link
-                      href={invoiceHref(block.invoice_id)}
-                      className='text-muted-foreground hover:text-foreground hover:underline'
-                    >
-                      {block.invoice_number}
-                    </Link>
-                  ) : (
-                    <span className='text-muted-foreground'>
-                      {invoiceNumber}
-                    </span>
-                  )}
-                </TableCell>
                 <TableCell label='Hours' className='text-sm'>
-                  <span className='inline-flex items-center gap-1.5'>
-                    {toHours(block.hours_purchased)}
+                  <span className='inline-flex items-center gap-2'>
+                    <ENTITY_ICONS.hourBlock
+                      className={cn(
+                        ENTITY_ACCENTS.hourBlock.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
+                    {formatHours(block.hours_purchased)}
                     {block.notes ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -193,6 +182,57 @@ export function HourBlocksTableSection({
                     ) : null}
                   </span>
                 </TableCell>
+                <TableCell>
+                  <div className='flex min-w-0 items-center gap-2 text-sm'>
+                    <ENTITY_ICONS.client
+                      className={cn(
+                        ENTITY_ACCENTS.client.icon,
+                        'h-4 w-4 shrink-0'
+                      )}
+                    />
+                    {client ? (
+                      // Opens the client; the row ignores clicks on links.
+                      <Link
+                        href={companySheetHref(client.company_id)}
+                        title={client.name}
+                        className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
+                      >
+                        {client.name}
+                      </Link>
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </div>
+                  {client?.deleted_at ? (
+                    <p className='text-destructive text-xs'>Client archived</p>
+                  ) : null}
+                </TableCell>
+                <TableCell label='Invoice' className='text-sm'>
+                  {block.invoice_number ? (
+                    <div className='flex min-w-0 items-center gap-2'>
+                      <ENTITY_ICONS.invoice
+                        className={cn(
+                          ENTITY_ACCENTS.invoice.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
+                      {block.invoice_id ? (
+                        <Link
+                          href={invoiceHref(block.invoice_id)}
+                          className='text-muted-foreground hover:text-foreground truncate hover:underline'
+                        >
+                          {block.invoice_number}
+                        </Link>
+                      ) : (
+                        <span className='text-muted-foreground truncate'>
+                          {block.invoice_number}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <EmptyValue />
+                  )}
+                </TableCell>
                 <TableCell
                   label='Created'
                   className='text-muted-foreground text-sm'
@@ -200,50 +240,26 @@ export function HourBlocksTableSection({
                   {formatTimestamp(block.created_at)}
                 </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
-                  <div className='flex justify-end gap-2'>
+                  <RecordRowActions>
                     {showRestore ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='restore'
+                        entity='hour block'
+                        onClick={() => onRestore(block)}
                         disabled={restoreDisabled}
-                        reason={restoreDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Restore hour block'
-                          icon={<RefreshCw />}
-                          variant='outline'
-                          onClick={() => onRestore(block)}
-                          disabled={restoreDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={restoreDisabledReason}
+                      />
                     ) : null}
                     {showArchive ? (
-                      <DisabledFieldTooltip
+                      <RecordRowAction
+                        kind='archive'
+                        entity='hour block'
+                        onClick={() => onRequestDelete(block)}
                         disabled={archiveDisabled}
-                        reason={archiveDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Archive hour block'
-                          icon={<Archive />}
-                          variant='destructive'
-                          onClick={() => onRequestDelete(block)}
-                          disabled={archiveDisabled}
-                        />
-                      </DisabledFieldTooltip>
+                        disabledReason={archiveDisabledReason}
+                      />
                     ) : null}
-                    {showDestroy ? (
-                      <DisabledFieldTooltip
-                        disabled={destroyDisabled}
-                        reason={destroyDisabledReason}
-                      >
-                        <RowActionButton
-                          label='Permanently delete hour block'
-                          icon={<Trash2 />}
-                          variant='destructive'
-                          onClick={() => onRequestDestroy(block)}
-                          disabled={destroyDisabled}
-                        />
-                      </DisabledFieldTooltip>
-                    ) : null}
-                  </div>
+                  </RecordRowActions>
                 </TableCell>
               </TableRow>
             )

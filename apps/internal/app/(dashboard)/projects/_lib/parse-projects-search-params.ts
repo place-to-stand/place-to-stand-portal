@@ -2,7 +2,6 @@ import {
   PROJECT_STATUS_ENUM_VALUES,
   type ProjectStatusValue,
 } from '@/lib/constants'
-import type { CursorDirection } from '@/lib/pagination/cursor'
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 import {
   DEFAULT_PROJECTS_SORT,
@@ -14,10 +13,9 @@ type RawParams = Record<string, string | string[] | undefined>
 
 type ParsedProjectsSearchParams = {
   searchQuery: string | null
-  cursor: string | null
+  /** 1-based page for offset paging (`?page=`). */
+  page: number
   sort: ParsedSort<ProjectSortField>
-  direction: CursorDirection
-  limit: number | undefined
 }
 
 /**
@@ -90,24 +88,20 @@ export function parseProjectsSearchParams(
   params: RawParams,
 ): ParsedProjectsSearchParams {
   const searchQuery = extractParam(params.q)
-  const cursor = extractParam(params.cursor)
+  const page = Math.max(
+    1,
+    Number.parseInt(extractParam(params.page) ?? '1', 10) || 1
+  )
   const sort = parseSortParam(
     extractParam(params.sort) ?? undefined,
     PROJECT_SORT_FIELDS,
     DEFAULT_PROJECTS_SORT
   )
-  const directionParam = extractParam(params.dir)
-  const direction: CursorDirection =
-    directionParam === 'backward' ? 'backward' : 'forward'
-  const limitRaw = extractParam(params.limit)
-  const limit = Number.parseInt(limitRaw ?? '', 10)
 
   return {
     searchQuery,
-    cursor,
+    page,
     sort,
-    direction,
-    limit: Number.isFinite(limit) ? limit : undefined,
   }
 }
 

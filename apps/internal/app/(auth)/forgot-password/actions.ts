@@ -1,9 +1,11 @@
 "use server";
+// permission: public — part of sign-in
 
 import { headers } from "next/headers";
 import { z } from "zod";
 
 import { allowAuthEmail } from "@/lib/auth/throttle";
+import { isSafeRedirectPath } from "@/lib/auth/safe-redirect";
 import { sendPasswordResetEmail } from "@/lib/email/auth-emails";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { serverEnv } from "@/lib/env.server";
@@ -13,21 +15,9 @@ const schema = z.object({
   redirect: z
     .string()
     .optional()
-    .transform((value) => {
-      if (!value) {
-        return null;
-      }
-
-      if (!value.startsWith("/")) {
-        return null;
-      }
-
-      if (value.startsWith("//")) {
-        return null;
-      }
-
-      return value;
-    }),
+    .transform((value) =>
+      value && isSafeRedirectPath(value) ? value : null
+    ),
 });
 
 export type ForgotPasswordState = {

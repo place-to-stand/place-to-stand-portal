@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
+import type { ClientPickerRow } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // Row types (snake_case, matching query layer)
@@ -10,7 +11,7 @@ type InvoiceRow = {
   id: string
   invoice_number: string | null
   status: string
-  client_id: string
+  company_id: string
   created_by: string | null
   issued_date: string | null
   due_date: string | null
@@ -47,16 +48,21 @@ export type InvoiceLineItemRow = {
   deleted_at: string | null
 }
 
-export type ClientRow = {
-  id: string
-  name: string
+/** A client in the invoice picker: billing type and state drive tax. */
+export type InvoiceClient = ClientPickerRow & {
   billing_type: string
   state: string | null
-  deleted_at: string | null
 }
 
 export type InvoiceWithClient = InvoiceRow & {
-  client: { id: string; name: string; slug: string | null; deleted_at: string | null } | null
+  client: {
+    id: string
+    name: string
+    slug: string | null
+    /** The client's company: the list links open its sheet. */
+    company_id: string
+    deleted_at: string | null
+  } | null
   /**
    * Active hour blocks linked to this invoice (created on payment, or linked
    * by hand). Only populated by the invoices list.
@@ -67,6 +73,8 @@ export type InvoiceWithClient = InvoiceRow & {
 export type InvoiceHourBlockSummary = {
   id: string
   hours_purchased: number
+  /** The invoice line that created the block. */
+  description: string
 }
 
 export type InvoiceWithLineItems = InvoiceWithClient & {
@@ -87,7 +95,7 @@ const invoiceLineItemFormSchema = z.object({
 })
 
 export const invoiceFormSchema = z.object({
-  clientId: z.string().uuid('Select a client'),
+  companyId: z.string().uuid('Select a client'),
   notes: z.string().optional().nullable(),
   taxRate: z.coerce.number().min(0).max(100).default(0),
   lineItems: z
@@ -105,7 +113,7 @@ export type InvoiceFormValues = z.infer<typeof invoiceFormSchema>
 // ---------------------------------------------------------------------------
 
 export const INVOICE_FORM_FIELDS: Array<keyof InvoiceFormValues> = [
-  'clientId',
+  'companyId',
   'notes',
   'taxRate',
   'lineItems',
@@ -125,7 +133,7 @@ export const createEmptyLineItem = (): InvoiceLineItemFormValues => ({
 })
 
 export const createLineItemFromCatalog = (
-  product: ProductCatalogItemRow,
+  product: ProductCatalogItemRow
 ): InvoiceLineItemFormValues => ({
   id: undefined,
   productCatalogItemId: product.id,
@@ -144,7 +152,7 @@ export const buildInvoiceFormDefaults = (
 ): InvoiceFormValues => {
   if (!invoice) {
     return {
-      clientId: '',
+      companyId: '',
       notes: null,
       taxRate: 0,
       lineItems: [createEmptyLineItem()],
@@ -155,7 +163,7 @@ export const buildInvoiceFormDefaults = (
   const taxRatePercent = taxRateDecimal * 100
 
   return {
-    clientId: invoice.client_id,
+    companyId: invoice.company_id,
     notes: invoice.notes ?? null,
     taxRate: taxRatePercent,
     lineItems:
@@ -189,7 +197,7 @@ type InvoiceLineItemSavePayload = {
 
 export type InvoiceSavePayload = {
   id?: string
-  clientId: string
+  companyId: string
   notes: string | null
   taxRate: number
   subtotal: number
@@ -222,7 +230,7 @@ export const createInvoiceSavePayload = (
 
   return {
     id: invoice?.id,
-    clientId: values.clientId,
+    companyId: values.companyId,
     notes:
       values.notes && values.notes.trim().length > 0
         ? values.notes.trim()

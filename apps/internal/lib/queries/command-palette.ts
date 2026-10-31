@@ -1,19 +1,24 @@
-'use server'
+import { isClientCompany } from '@pts/db/client-state'
+import { clientNameSql } from '@pts/db/names'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import 'server-only'
 
 import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, projects } from '@/lib/db/schema'
+import { companies, contacts, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 
 const RESULT_LIMIT = 8
 
-type PaletteClientResult = {
+type PaletteCompanyResult = {
   id: string
   name: string
-  slug: string | null
+  /** Billed now: shown with its billing type. */
+  isClient: boolean
+  billingType: 'prepaid' | 'net_30' | null
 }
 
 type PaletteProjectResult = {
@@ -29,11 +34,11 @@ type PaletteProjectResult = {
 type PaletteContactResult = {
   id: string
   name: string
-  email: string
+  email: string | null
 }
 
 export type PaletteSearchResult = {
-  clients: PaletteClientResult[]
+  companies: PaletteCompanyResult[]
   projects: PaletteProjectResult[]
   contacts: PaletteContactResult[]
 }
@@ -53,9 +58,10 @@ export async function searchCommandPalette(
 
   const pattern = createSearchPattern(query)
 
-  const clientCondition = and(
-    isNull(clients.deletedAt),
-    sql`${clients.name} ILIKE ${pattern}`
+  // Every live company; clients carry a badge (a client is a company you bill).
+  const companyCondition = and(
+    isNull(companies.deletedAt),
+    sql`${companies.name} ILIKE ${pattern}`
   )
 
   // R3: PERSONAL projects visible only to their creator.
@@ -70,7 +76,7 @@ export async function searchCommandPalette(
     or(
       sql`${projects.name} ILIKE ${pattern}`,
       sql`${projects.slug} ILIKE ${pattern}`,
-      sql`${clients.name} ILIKE ${pattern}`
+      sql`${clientNameSql} ILIKE ${pattern}`
     )
   )
 
@@ -84,12 +90,19 @@ export async function searchCommandPalette(
     )
   )
 
-  const [clientRows, projectRows, contactRows] = await Promise.all([
+  const [companyRows, projectRows, contactRows] = await Promise.all([
     db
-      .select({ id: clients.id, name: clients.name, slug: clients.slug })
-      .from(clients)
-      .where(clientCondition)
-      .orderBy(asc(clients.name))
+      .select({
+        id: companies.id,
+        name: companies.name,
+        isClient: sql<boolean>`${isClientCompany()}`,
+        billingType: sql<
+          'prepaid' | 'net_30' | null
+        >`case when ${isClientCompany()} then ${currentBillingTypeSql()} end`,
+      })
+      .from(companies)
+      .where(companyCondition)
+      .orderBy(asc(sql`lower(${companies.name})`))
       .limit(RESULT_LIMIT),
     db
       .select({
@@ -97,13 +110,13 @@ export async function searchCommandPalette(
         name: projects.name,
         slug: projects.slug,
         type: projects.type,
-        clientName: clients.name,
-        clientSlug: clients.slug,
+        clientName: clientNameSql,
+        clientSlug: companies.slug,
       })
       .from(projects)
-      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .leftJoin(companies, eq(projects.companyId, companies.id))
       .where(projectCondition)
-      .orderBy(asc(clients.name), asc(projects.name))
+      .orderBy(asc(clientNameSql), asc(projects.name))
       .limit(RESULT_LIMIT),
     db
       .select({ id: contacts.id, name: contacts.name, email: contacts.email })
@@ -139,7 +152,7 @@ export async function searchCommandPalette(
   }
 
   return {
-    clients: clientRows,
+    companies: companyRows,
     projects: projectResults,
     contacts: contactRows,
   }

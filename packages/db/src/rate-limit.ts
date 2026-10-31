@@ -81,3 +81,58 @@ export function clientIpFromHeaders(headers: Headers): string {
   const first = forwarded?.split(',')[0]?.trim()
   return first || headers.get('x-real-ip') || 'unknown'
 }
+
+export type AttemptLimitOptions = {
+  /** Bucket namespace. Keys become `<kind>:<subject>` and `<kind>-ip:<ip>`. */
+  kind: string
+  /** Normalised subject being limited, usually an email address. */
+  subject: string
+  /** Client IP, from `clientIpFromHeaders`. */
+  ip: string
+  perSubjectLimit: number
+  perIpLimit: number
+  windowSeconds: number
+}
+
+export type AttemptLimitResult = {
+  allowed: boolean
+  subjectHits: number
+  ipHits: number
+}
+
+/**
+ * Two fixed-window counters for one attempt: one on the subject (stops
+ * hammering one account or inbox) and one on the caller's IP (stops spraying
+ * many subjects from one place). Both are always consumed, so neither can be
+ * probed for free. Database errors propagate, so callers fail closed.
+ */
+export async function consumeAttemptLimits(
+  db: DbClient,
+  {
+    kind,
+    subject,
+    ip,
+    perSubjectLimit,
+    perIpLimit,
+    windowSeconds,
+  }: AttemptLimitOptions
+): Promise<AttemptLimitResult> {
+  const [bySubject, byIp] = await Promise.all([
+    consumeRateLimit(db, {
+      key: `${kind}:${subject}`,
+      limit: perSubjectLimit,
+      windowSeconds,
+    }),
+    consumeRateLimit(db, {
+      key: `${kind}-ip:${ip}`,
+      limit: perIpLimit,
+      windowSeconds,
+    }),
+  ])
+
+  return {
+    allowed: bySubject.allowed && byIp.allowed,
+    subjectHits: bySubject.count,
+    ipHits: byIp.count,
+  }
+}

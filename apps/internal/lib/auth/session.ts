@@ -1,3 +1,4 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -11,9 +12,20 @@ import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
+import { roleCan } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
+import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { roleAsOfSql } from '@/lib/queries/users/role-terms'
+import { applyDueRoleTerms } from '@/lib/settings/users/services/role'
 
-export type AppUser = Database['public']['Tables']['users']['Row']
+/**
+ * The signed-in person: their sign-in row plus their name and photo, which
+ * live on the person (contacts) since 0109 and 0112.
+ */
+export type AppUser = Database['public']['Tables']['users']['Row'] & {
+  full_name: string | null
+  avatar_url: string | null
+}
 export type UserRole = Database['public']['Enums']['user_role']
 
 export const getSession = cache(async (): Promise<Session | null> => {
@@ -61,6 +73,14 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
       return null
     }
 
+    // A scheduled role change has come into force: apply it before
+    // trusting the role (the daily cron does the same for everyone).
+    if (profile.roleInForce && profile.roleInForce !== profile.role) {
+      await applyDueRoleTerms(authUserId)
+      const updated = await fetchUserProfileUncached(authUserId)
+      return updated ? mapProfileToAppUser(updated) : null
+    }
+
     // Sync profile if Supabase auth email differs from database email
     // This handles cases where email change confirmation bypassed our /auth/confirm route
     const authEmail = data.claims.email ?? ''
@@ -87,6 +107,16 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
 })
 
 /**
+ * The signed-in ADMIN or SALES user, or null. For API routes on the task-board
+ * surfaces opened to project members; pair with the guards in
+ * `lib/projects/access.ts`.
+ */
+export const getCurrentStaff = async (): Promise<AppUser | null> => {
+  const user = await getCurrentUser()
+  return roleCan(user?.role, 'portal.sign_in') ? user : null
+}
+
+/**
  * The signed-in user when they are an ADMIN, else null. For API routes that
  * answer 401 themselves rather than redirecting: the internal portal also
  * admits SALES (CRM staff), so "has a session" no longer means "is an admin".
@@ -105,19 +135,28 @@ type UserProfile = {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  disabledAt: string | null
+  onboardingCompletedAt: string | null
 }
 
-async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+async function fetchUserProfile(
+  userId: string
+): Promise<(UserProfile & { roleInForce: string | null }) | null> {
   const profileRows = await db
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
       role: users.role,
-      avatarUrl: users.avatarUrl,
+      // A role change dated this month or earlier that users.role hasn't
+      // caught up with yet (see applyDueRoleTerms).
+      roleInForce: roleAsOfSql(currentMonthStartUtc()),
+      avatarUrl: personAvatarSql,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
+      disabledAt: users.disabledAt,
+      onboardingCompletedAt: users.onboardingCompletedAt,
     })
     .from(users)
     .where(
@@ -140,12 +179,14 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
       role: users.role,
-      avatarUrl: users.avatarUrl,
+      avatarUrl: personAvatarSql,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
+      disabledAt: users.disabledAt,
+      onboardingCompletedAt: users.onboardingCompletedAt,
     })
     .from(users)
     .where(
@@ -169,9 +210,21 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
  * disabled/deleted filtering without a request-scoped session to read from.
  */
 export async function loadAppUserById(userId: string): Promise<AppUser | null> {
-  const profile = await fetchUserProfileUncached(userId)
+  const profile = await fetchUserProfile(userId)
 
-  return profile ? mapProfileToAppUser(profile) : null
+  if (!profile) {
+    return null
+  }
+
+  // Same as getCurrentUser: a scheduled role change that has come into
+  // force is applied before the role is trusted.
+  if (profile.roleInForce && profile.roleInForce !== profile.role) {
+    await applyDueRoleTerms(userId)
+    const updated = await fetchUserProfileUncached(userId)
+    return updated ? mapProfileToAppUser(updated) : null
+  }
+
+  return mapProfileToAppUser(profile)
 }
 
 function mapProfileToAppUser(profile: UserProfile): AppUser {
@@ -184,6 +237,8 @@ function mapProfileToAppUser(profile: UserProfile): AppUser {
     created_at: profile.createdAt,
     updated_at: profile.updatedAt,
     deleted_at: profile.deletedAt ?? null,
+    disabled_at: profile.disabledAt ?? null,
+    onboarding_completed_at: profile.onboardingCompletedAt ?? null,
   }
 }
 
@@ -209,7 +264,8 @@ export const requireUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
   // Admin-only by default. SALES staff get only the CRM pages, which call
@@ -235,15 +291,24 @@ export const requireCrmUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
-  if (user.role !== 'ADMIN' && user.role !== 'SALES') {
+  if (!roleCan(user.role, 'portal.sign_in')) {
     redirect(serverEnv.CLIENT_PORTAL_URL)
   }
 
   return user
 }
+
+/**
+ * Guard for the task-board surfaces opened to project members (boards, task
+ * sheet, My tasks): admits ADMIN and SALES. It does NOT check project access;
+ * pair it with `ensureProjectWorkAccess` / `ensureTaskWorkAccess` or a query
+ * scoped by `listWorkableProjectIds`.
+ */
+export const requireStaffUser = requireCrmUser
 
 export const requireRole = async (allowed: UserRole | UserRole[]) => {
   const user = await requireUser()

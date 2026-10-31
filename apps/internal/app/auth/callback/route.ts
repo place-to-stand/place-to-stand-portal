@@ -1,4 +1,6 @@
+// permission: public — sign-in callback
 import { canUseInternalPortal } from "@/lib/auth/roles";
+import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
@@ -65,10 +67,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Only allow relative redirects to prevent open redirect attacks
-  const safePath =
-    redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-      ? redirectTo
-      : "/";
+  const safePath = safeRedirectPath(redirectTo);
 
   return NextResponse.redirect(new URL(safePath, request.url));
 }

@@ -1,7 +1,9 @@
 'use server'
+import { isClientCompany } from '@pts/db/client-state'
 
+import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -9,14 +11,14 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceRestoredEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { invoices, clients } from '@/lib/db/schema'
+import { companies, invoices } from '@/lib/db/schema'
 
 import { restoreSchema } from './schemas'
 import type { ActionResult, RestoreInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
 export async function restoreInvoice(
-  input: RestoreInput,
+  input: RestoreInput
 ): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
@@ -24,12 +26,12 @@ export async function restoreInvoice(
       mode: 'restore',
       targetId: input.id,
     },
-    async () => performRestoreInvoice(input),
+    async () => performRestoreInvoice(input)
   )
 }
 
 async function performRestoreInvoice(
-  input: RestoreInput,
+  input: RestoreInput
 ): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
@@ -45,7 +47,7 @@ async function performRestoreInvoice(
   const existingRows = await db
     .select({
       id: invoices.id,
-      clientId: invoices.clientId,
+      companyId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
       deletedAt: invoices.deletedAt,
     })
@@ -64,9 +66,9 @@ async function performRestoreInvoice(
   }
 
   const clientRows = await db
-    .select({ name: clients.name })
-    .from(clients)
-    .where(and(eq(clients.id, existing.clientId), isNull(clients.deletedAt)))
+    .select({ name: clientNameSql })
+    .from(companies)
+    .where(and(isClientCompany(), eq(companies.id, existing.companyId)))
     .limit(1)
 
   const clientName = clientRows[0]?.name ?? null
@@ -81,9 +83,7 @@ async function performRestoreInvoice(
 
     return {
       error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to restore invoice.',
+        error instanceof Error ? error.message : 'Unable to restore invoice.',
     }
   }
 
@@ -99,7 +99,7 @@ async function performRestoreInvoice(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: existing.id,
-    targetClientId: existing.clientId,
+    targetCompanyId: existing.companyId,
     metadata: event.metadata,
   })
 

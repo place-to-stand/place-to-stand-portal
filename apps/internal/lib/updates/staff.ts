@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNull } from 'drizzle-orm'
@@ -14,7 +15,7 @@ export type StaffMember = {
 /** Active admins — the people who get cc'd on client updates by default. */
 export async function fetchActiveStaff(): Promise<StaffMember[]> {
   const rows = await db
-    .select({ id: users.id, fullName: users.fullName, email: users.email })
+    .select({ id: users.id, fullName: personNameSql, email: users.email })
     .from(users)
     .where(
       and(
@@ -23,7 +24,7 @@ export async function fetchActiveStaff(): Promise<StaffMember[]> {
         isNull(users.disabledAt)
       )
     )
-    .orderBy(asc(users.fullName), asc(users.email))
+    .orderBy(asc(personNameSql), asc(users.email))
 
   return rows.map(row => ({
     id: row.id,

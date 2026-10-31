@@ -1,10 +1,10 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import {
-  clientMembers,
-  clients,
+import { companies,
+  clientPortalAccess,
   contacts,
   projects,
   taskAssignees,
@@ -19,7 +19,7 @@ export type UserAssignedClient = {
 export type UserLinkedContact = {
   id: string
   name: string
-  email: string
+  email: string | null
 }
 
 export type UserAssignmentSummary = {
@@ -30,7 +30,7 @@ export type UserAssignmentSummary = {
   /**
    * The live contact this user was promoted from (`contacts.user_id` is
    * unique, so at most one). Null for admins and for portal users created
-   * straight from Settings → Users. Portal preview is keyed by contact.
+   * straight from the person sheet. Portal preview is keyed by contact.
    */
   contact: UserLinkedContact | null
 }
@@ -48,7 +48,7 @@ const emptySummary = (): UserAssignmentSummary => ({
 /**
  * Per-user assignment summary for the settings users table and the archive
  * confirmation copy — four grouped queries regardless of page size.
- * Clients are live `client_members` rows on live clients; projects are live
+ * Clients are the live clients each login sees through `client_portal_access`; projects are live
  * projects the user owns (`projects.owner_id`); tasks are live
  * `task_assignees` rows. The client list backs the users-table hover card,
  * so its count is the list length; projects and tasks are plain counts for
@@ -64,23 +64,18 @@ export async function buildAssignmentsForUsers(
 
   const [clientRows, projectCounts, taskCounts, contactRows] =
     await Promise.all([
+      // Clients each login can see in the portal (live clients only).
       db
         .select({
-          userId: clientMembers.userId,
-          id: clients.id,
-          name: clients.name,
-          slug: clients.slug,
+          userId: sql<string>`${clientPortalAccess.userId}`,
+          id: companies.id,
+          name: clientNameSql,
+          slug: companies.slug,
         })
-        .from(clientMembers)
-        .innerJoin(clients, eq(clientMembers.clientId, clients.id))
-        .where(
-          and(
-            inArray(clientMembers.userId, userIds),
-            isNull(clientMembers.deletedAt),
-            isNull(clients.deletedAt)
-          )
-        )
-        .orderBy(asc(clients.name)),
+        .from(clientPortalAccess)
+        .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
+        .where(inArray(clientPortalAccess.userId, userIds))
+        .orderBy(asc(clientNameSql)),
       db
         .select({
           userId: projects.ownerId,

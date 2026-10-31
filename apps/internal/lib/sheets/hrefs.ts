@@ -9,14 +9,12 @@
  */
 
 import { BOARD_VIEW_SEGMENTS } from '@/lib/projects/board/board-constants'
+import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 
-import { NEW_SHEET_VALUE } from './entities'
+export const contactSheetHref = (id: string) => `/people?contact=${id}`
 
-export const clientSheetHref = (id: string) => `/clients?client=${id}`
-
-export const contactSheetHref = (id: string) => `/contacts?contact=${id}`
-
-export const userSheetHref = (id: string) => `/settings/users?user=${id}`
+/** A company's sheet. (Old `&tab=` links still open it; the param is ignored.) */
+export const companySheetHref = (id: string) => `/companies?company=${id}`
 
 export const invoiceHref = (id: string) => `/invoices?invoice=${id}`
 
@@ -25,10 +23,6 @@ export const hourBlockHref = (id: string) => `/hour-blocks?hour-block=${id}`
 /** Hour blocks list searched by invoice number (the search matches it). */
 export const hourBlocksForInvoiceHref = (invoiceNumber: string) =>
   `/hour-blocks?q=${encodeURIComponent(invoiceNumber)}`
-
-/** Client detail page; slugs are canonical but the page also resolves ids. */
-export const clientDetailHref = (client: { slug: string | null; id: string }) =>
-  `/clients/${client.slug ?? client.id}`
 
 /** The client-update composer — a full page, not a sheet. */
 export const updateComposerHref = (id: string) => `/updates/${id}`
@@ -48,19 +42,14 @@ export const boardTaskHref = (
   taskId: string
 ) => `${projectBoardHref(clientSegment, projectSlug)}?task=${taskId}`
 
-export const leadHref = (
-  id: string,
-  options?: { archived?: boolean; convert?: boolean }
-) => {
+export const leadHref = (id: string, options?: { archived?: boolean }) => {
   const base = options?.archived ? '/leads/archive' : '/leads'
-  const convert = options?.convert ? '&leadMode=convert' : ''
-  return `${base}?lead=${id}${convert}`
+  return `${base}?lead=${id}`
 }
 
 /** Resolves server-side, so the link keeps working after archive/restore. */
 export const submissionHref = (id: string) => `/submissions?submission=${id}`
 
-export const newLeadHref = () => `/leads?lead=${NEW_SHEET_VALUE}`
 /**
  * Rebuilds a page's query string for a server-side `redirect()`. Redirects
  * must carry the whole query across — the sheet stack and any filters live
@@ -85,3 +74,23 @@ export type MyTasksView = 'board' | 'calendar'
 
 export const myTaskHref = (taskId: string, view: MyTasksView = 'board') =>
   `/my/tasks/${view}?task=${taskId}`
+
+/**
+ * A project's board (tasks tab) from its slug, type and client slug: the
+ * link time-log lists use. Null when the project can't be addressed.
+ */
+export const projectTasksHref = (project: {
+  projectSlug: string | null
+  projectType: string
+  clientSlug: string | null
+}) => {
+  if (!project.projectSlug) return null
+  if (project.projectType === 'INTERNAL') {
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${project.projectSlug}/tasks`
+  }
+  if (project.projectType === 'PERSONAL') {
+    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${project.projectSlug}/tasks`
+  }
+  if (!project.clientSlug) return null
+  return `/projects/${project.clientSlug}/${project.projectSlug}/tasks`
+}

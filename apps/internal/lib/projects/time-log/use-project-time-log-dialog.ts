@@ -20,6 +20,7 @@ import type {
   TimeLogEntry,
   TimeLogFormErrors,
 } from './types'
+import { requestTimeLogArchiveChange } from './time-log-archive-request'
 import { TIME_LOGS_QUERY_KEY } from './types'
 
 export type UseProjectTimeLogDialogOptions = ProjectTimeLogDialogParams & {
@@ -73,9 +74,6 @@ export type ProjectTimeLogDialogState = {
   requestTaskRemoval: (
     task: ProjectTimeLogDialogParams['tasks'][number]
   ) => void
-  taskRemovalCandidate: ProjectTimeLogDialogParams['tasks'][number] | null
-  confirmTaskRemoval: () => void
-  cancelTaskRemoval: () => void
   overageDialog: {
     isOpen: boolean
     description: string
@@ -105,7 +103,7 @@ export function useProjectTimeLogDialog(
     projectId,
     projectName,
     projectType,
-    clientId,
+    companyId,
     clientName,
     clientBillingType,
     clientRemainingHours,
@@ -167,9 +165,6 @@ export function useProjectTimeLogDialog(
     onTaskPickerOpenChange,
     onAddTask,
     requestTaskRemoval: rawRequestTaskRemoval,
-    confirmTaskRemoval,
-    cancelTaskRemoval: rawCancelTaskRemoval,
-    taskRemovalCandidate,
     initializeSelection,
     resetSelection,
   } = useTimeLogTaskSelection(tasks, { pinnedTaskIds: initialLinkedTaskIds })
@@ -221,7 +216,7 @@ export function useProjectTimeLogDialog(
   const successToast = isEditMode
     ? {
         title: 'Time log updated',
-        description: 'The entry now reflects your changes.',
+        description: 'The time log now reflects your changes.',
       }
     : undefined
 
@@ -334,7 +329,7 @@ export function useProjectTimeLogDialog(
     project: {
       id: projectId,
       name: projectName,
-      clientId,
+      companyId,
     },
     formValues: {
       hoursInput,
@@ -364,34 +359,7 @@ export function useProjectTimeLogDialog(
         throw new Error('Missing time log identifier for delete.')
       }
 
-      const response = await fetch(
-        `/api/projects/${projectId}/time-logs/${timeLogEntry.id}`,
-        { method: 'DELETE' }
-      )
-
-      let payload: unknown = null
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
-
-      if (!response.ok) {
-        const message =
-          typeof payload === 'object' && payload && 'error' in payload
-            ? String((payload as { error?: unknown }).error ?? '').trim()
-            : ''
-
-        throw new Error(message || 'Unable to delete time log.')
-      }
-
-      // PRD 002 section 05: closed-month warning riding the API response.
-      const warning =
-        typeof payload === 'object' && payload && 'warning' in payload
-          ? String((payload as { warning?: unknown }).warning ?? '').trim()
-          : ''
-
-      return { warning: warning || null }
+      return requestTimeLogArchiveChange(projectId, timeLogEntry.id, 'archive')
     },
     onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })
@@ -400,14 +368,14 @@ export function useProjectTimeLogDialog(
       handleSuccessReset()
       handleClose()
       toast({
-        title: 'Time entry removed',
+        title: 'Time log archived',
         description: 'The log no longer counts toward the burndown total.',
       })
       if (data?.warning) {
         toast({
           title: 'Closed month',
           description: data.warning,
-          variant: 'destructive',
+          variant: 'warning',
         })
       }
       router.refresh()
@@ -445,13 +413,6 @@ export function useProjectTimeLogDialog(
     },
     [isMutating, rawRequestTaskRemoval]
   )
-
-  const cancelTaskRemoval = useCallback(() => {
-    if (isMutating) {
-      return
-    }
-    rawCancelTaskRemoval()
-  }, [isMutating, rawCancelTaskRemoval])
 
   const runMutation = useCallback(() => {
     timeLogMutation.mutate()
@@ -729,9 +690,6 @@ export function useProjectTimeLogDialog(
     taskPickerButtonDisabled,
     taskPickerReason,
     requestTaskRemoval,
-    taskRemovalCandidate,
-    confirmTaskRemoval,
-    cancelTaskRemoval,
     overageDialog: guardedOverageDialog,
     discardDialog,
     deleteDialog,

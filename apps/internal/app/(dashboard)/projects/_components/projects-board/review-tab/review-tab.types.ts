@@ -1,1 +1,1 @@
-export type ReviewActionKind = 'accept' | 'unaccept' | 'restore' | 'destroy'
+export type ReviewActionKind = 'accept' | 'unaccept' | 'restore'

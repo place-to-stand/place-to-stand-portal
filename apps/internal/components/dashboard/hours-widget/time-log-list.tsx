@@ -1,14 +1,16 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import Link from 'next/link'
-import { Building2, FolderKanban, Loader2, User, Users } from 'lucide-react'
+import { Loader2, User, Users } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
-import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
+import { formatHours } from '@pts/ui/numbers'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
+import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 
-import { formatHours } from './month-cursor'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TimeLogListProps = {
   items: DashboardTimeLogEntry[]
@@ -33,11 +35,7 @@ export function TimeLogList({
   const remaining = Math.max(0, totalCount - items.length)
 
   if (!items.length) {
-    return (
-      <p className='text-muted-foreground pt-3 text-xs'>
-        No time logged this month.
-      </p>
-    )
+    return <EmptyState className='mt-3' message='No time logged this month.' />
   }
 
   return (
@@ -115,7 +113,7 @@ function TimeLogRow({
   // A log can span several tasks; the first names the row and the rest
   // collapse into a count so the primary line stays one line.
   const [firstTask, ...otherTasks] = entry.taskTitles
-  const label = firstTask ?? entry.note ?? 'Untitled entry'
+  const label = firstTask ?? entry.note ?? 'Untitled time log'
   const dateLabel = formatCalendarDate(entry.loggedOn, {
     month: 'short',
     day: 'numeric',
@@ -181,7 +179,7 @@ function TimeLogRow({
                 {entry.clientName
                   ? null
                   : renderProjectTypeIcon(entry.projectType)}
-                <FolderKanban className='size-3 shrink-0' aria-hidden />
+                <ENTITY_ICONS.project className='size-3 shrink-0' aria-hidden />
                 <span className='truncate-link'>{entry.projectName}</span>
               </Link>
             ) : (
@@ -189,7 +187,7 @@ function TimeLogRow({
                 {entry.clientName
                   ? null
                   : renderProjectTypeIcon(entry.projectType)}
-                <FolderKanban className='size-3 shrink-0' aria-hidden />
+                <ENTITY_ICONS.project className='size-3 shrink-0' aria-hidden />
                 <span className='truncate'>{entry.projectName}</span>
               </span>
             )}
@@ -205,7 +203,6 @@ function TimeLogRow({
             <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
           ) : null}
           {formatHours(entry.hours)}
-          <span className='text-muted-foreground text-xs font-normal'>h</span>
         </span>
       </div>
     </li>
@@ -213,33 +210,17 @@ function TimeLogRow({
 }
 
 function getProjectHref(entry: DashboardTimeLogEntry) {
-  if (!entry.projectSlug) {
-    return null
-  }
-
   // The tasks tab is a project's default view -- same target the My Tasks
   // widget uses, so both widgets land in the same place.
-  if (entry.projectType === 'INTERNAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${entry.projectSlug}/tasks`
-  }
-
-  if (entry.projectType === 'PERSONAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${entry.projectSlug}/tasks`
-  }
-
-  if (!entry.clientSlug) {
-    return null
-  }
-
-  return `/projects/${entry.clientSlug}/${entry.projectSlug}/tasks`
+  return projectTasksHref(entry)
 }
 
 function getClientHref(entry: DashboardTimeLogEntry) {
-  if (!entry.clientSlug) {
+  if (!entry.companyId) {
     return null
   }
 
-  return `/clients/${entry.clientSlug}`
+  return companySheetHref(entry.companyId)
 }
 
 function renderProjectTypeIcon(projectType: string) {
@@ -254,8 +235,8 @@ function renderProjectTypeIcon(projectType: string) {
   }
 
   if (projectType === 'CLIENT') {
-    return <Building2 className={className} aria-hidden />
+    return <ENTITY_ICONS.company className={className} aria-hidden />
   }
 
-  return <FolderKanban className={className} aria-hidden />
+  return <ENTITY_ICONS.project className={className} aria-hidden />
 }

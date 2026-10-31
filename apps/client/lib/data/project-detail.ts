@@ -13,7 +13,7 @@ export type ProjectDetail = {
   name: string
   status: string
   slug: string | null
-  clientId: string | null
+  companyId: string | null
 }
 
 /**
@@ -31,7 +31,7 @@ export const fetchProjectDetail = cache(
         name: projects.name,
         status: projects.status,
         slug: projects.slug,
-        clientId: projects.clientId,
+        companyId: projects.companyId,
       })
       .from(projects)
       .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
@@ -39,13 +39,13 @@ export const fetchProjectDetail = cache(
 
     if (!project) return null
 
-    // INTERNAL and PERSONAL projects carry no client_id. They are never surfaced
+    // INTERNAL and PERSONAL projects carry no company_id. They are never surfaced
     // in the client portal, so refuse them outright — including for admins,
     // whose preview should show exactly what a client would see.
-    if (!project.clientId) return null
+    if (!project.companyId) return null
 
-    const { clientIds } = await resolvePortalScope(user)
-    if (!clientIds.includes(project.clientId)) return null
+    const { companyIds } = await resolvePortalScope(user)
+    if (!companyIds.includes(project.companyId)) return null
 
     return project
   }

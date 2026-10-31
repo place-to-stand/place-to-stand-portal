@@ -2,61 +2,39 @@
 
 import type { ReactNode } from 'react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import type { LeadRecord } from '@/lib/leads/types'
-
-import { ConvertLeadDialog } from '../convert-lead-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 
 type LeadSheetDialogsProps = {
-  lead: LeadRecord | null
   // Archive dialog
   isArchiveDialogOpen: boolean
+  /** The lead's name (its contact's), for the confirmation. */
+  leadName?: string | null
   isArchiving: boolean
   onArchiveCancel: () => void
   onArchiveConfirm: () => void
-  // Convert dialog
-  isConvertDialogOpen: boolean
-  onConvertOpenChange: (open: boolean) => void
-  // General success callback
-  onSuccess: () => void
   // Unsaved changes dialog
   unsavedChangesDialog: ReactNode
 }
 
 export function LeadSheetDialogs({
-  lead,
   isArchiveDialogOpen,
+  leadName,
   isArchiving,
   onArchiveCancel,
   onArchiveConfirm,
-  isConvertDialogOpen,
-  onConvertOpenChange,
-  onSuccess,
   unsavedChangesDialog,
 }: LeadSheetDialogsProps) {
-  const { isAdmin } = useViewerAccess()
-
   return (
     <>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={isArchiveDialogOpen}
-        title='Archive this lead?'
-        description='Archiving removes the lead from the board without permanently deleting history.'
-        confirmLabel={isArchiving ? 'Archiving...' : 'Archive'}
-        confirmVariant='destructive'
-        confirmDisabled={isArchiving}
+        entity='lead'
+        name={leadName || 'this lead'}
+        list='the board'
+        pending={isArchiving}
         onCancel={onArchiveCancel}
         onConfirm={onArchiveConfirm}
       />
-      {lead && isAdmin && (
-        <ConvertLeadDialog
-          lead={lead}
-          open={isConvertDialogOpen}
-          onOpenChange={onConvertOpenChange}
-          onSuccess={onSuccess}
-        />
-      )}
       {unsavedChangesDialog}
     </>
   )

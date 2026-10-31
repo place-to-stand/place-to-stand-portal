@@ -5,5 +5,4 @@ export { acceptTask } from './actions/accept-task'
 export { acceptDoneTasks } from './actions/accept-done-tasks'
 export { unacceptTask } from './actions/unaccept-task'
 export { restoreTask } from './actions/restore-task'
-export { destroyTask } from './actions/destroy-task'
 

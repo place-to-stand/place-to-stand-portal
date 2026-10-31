@@ -1,6 +1,7 @@
 import { ArrowRight, Minus, Plus } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
 import { ActivityRichTextDiff } from '@/components/activity/activity-rich-text-diff'
 import {
   humanizeEnum,
@@ -9,7 +10,6 @@ import {
   type MembershipChange,
 } from '@/lib/activity/changes'
 import { formatFact } from '@/lib/activity/format-fact'
-import { formatHours } from '@/lib/activity/events/shared'
 import type { ActivityReferences } from '@/lib/activity/types'
 import { formatCalendarDate } from '@pts/ui/dates'
 import {
@@ -25,11 +25,6 @@ type ActivityChangeListProps = {
   targetType: string
   references?: ActivityReferences
 }
-
-const MONEY = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
 
 const LONG_FORM_KINDS = new Set(['richText', 'longText'])
 
@@ -162,7 +157,6 @@ function ValueChip({
       <Badge
         variant='secondary'
         className={cn(
-          'h-5 px-1.5 text-[10px]',
           isTask && getTaskStatusToken(value),
           muted && 'opacity-60'
         )}
@@ -239,11 +233,11 @@ function formatValue(
       return typeof value === 'string' ? humanizeEnum(value) : String(value)
     case 'user':
       return typeof value === 'string'
-        ? (references?.users[value]?.name ?? 'Unknown user')
+        ? (references?.users[value]?.name ?? 'Unknown person')
         : String(value)
     case 'contact':
       return typeof value === 'string'
-        ? (references?.contacts[value] ?? 'Unknown contact')
+        ? (references?.contacts[value] ?? 'Unknown person')
         : String(value)
     case 'project':
       return typeof value === 'string'
@@ -251,11 +245,11 @@ function formatValue(
         : String(value)
     case 'money': {
       const amount = Number(value)
-      return Number.isFinite(amount) ? MONEY.format(amount) : String(value)
+      return Number.isFinite(amount) ? formatCurrency(amount) : String(value)
     }
     case 'hours': {
       const hours = Number(value)
-      return Number.isFinite(hours) ? `${formatHours(hours)}h` : String(value)
+      return Number.isFinite(hours) ? formatHours(hours) : String(value)
     }
     case 'boolean':
       return value ? 'Yes' : 'No'
@@ -283,7 +277,7 @@ function MembershipChips({
   resolveNames: boolean
 }) {
   const nameFor = (id: string) =>
-    resolveNames ? (references?.users[id]?.name ?? 'Unknown user') : id
+    resolveNames ? (references?.users[id]?.name ?? 'Unknown person') : id
 
   return (
     <span className='inline-flex flex-wrap items-center gap-1'>

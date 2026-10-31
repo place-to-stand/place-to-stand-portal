@@ -1,158 +1,41 @@
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { and, eq, isNull } from 'drizzle-orm'
+import { wasClientCompany } from '@pts/db/client-state'
+import { and, eq, or } from 'drizzle-orm'
+import { notFound, redirect } from 'next/navigation'
 
-import { PageShell } from '@/components/layout/page-shell'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { contacts, users } from '@/lib/db/schema'
-import {
-  fetchClientCycleDirectory,
-  fetchProjectsForClient,
-  resolveClientIdentifier,
-} from '@/lib/data/clients'
-import { fetchContactsForClient } from '@/lib/queries/clients/contacts'
-import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
-import { listClientUpdates } from '@/lib/updates'
+import { companies } from '@/lib/db/schema'
+import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
+import { companySheetHref } from '@/lib/sheets/hrefs'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 
-import { ClientRecordCycle } from '../_components/client-record-cycle'
-import { ClientDetail } from './_components/client-detail'
-
-export async function generateMetadata({
-  params,
-}: PageProps<'/clients/[clientSlug]'>): Promise<Metadata> {
-  const { clientSlug } = await params
-
-  try {
-    const user = await requireUser()
-    const client = await resolveClientIdentifier(user, clientSlug)
-
-    return {
-      title: `${client.name} | Clients`,
-    }
-  } catch {
-    return {
-      title: 'Client not found',
-    }
-  }
-}
-
+/**
+ * Old bookmarks only: there is no client page. A client is a company you
+ * bill, so `/clients/<slug or id>` opens that company at its Projects
+ * (ids from before 0111 resolve through the archive map).
+ */
 export default async function ClientDetailPage({
   params,
 }: PageProps<'/clients/[clientSlug]'>) {
+  await requireUser()
   const { clientSlug } = await params
-  const user = await requireUser()
+  const id = UUID_PATTERN.test(clientSlug)
+    ? await companyIdForLegacyClientId(clientSlug)
+    : null
 
-  let client
-  try {
-    client = await resolveClientIdentifier(user, clientSlug)
-  } catch {
-    notFound()
-  }
+  const [company] = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(
+      and(
+        wasClientCompany(),
+        id
+          ? or(eq(companies.slug, clientSlug), eq(companies.id, id))
+          : eq(companies.slug, clientSlug)
+      )
+    )
+    .limit(1)
 
-  // Build origination lookups. Origination may be either a contact
-  // (external referrer) or an admin user (internal partner). Closers arrive
-  // resolved on the client (`client.closers`).
-  const originationContactPromise = client.originationContactId
-    ? db
-        .select({
-          id: contacts.id,
-          name: contacts.name,
-          email: contacts.email,
-        })
-        .from(contacts)
-        .where(
-          and(
-            eq(contacts.id, client.originationContactId),
-            isNull(contacts.deletedAt)
-          )
-        )
-        .limit(1)
-        .then(rows => rows[0] ?? null)
-    : Promise.resolve(null)
-
-  const originationUserPromise = client.originationUserId
-    ? db
-        .select({
-          id: users.id,
-          fullName: users.fullName,
-          email: users.email,
-          avatarUrl: users.avatarUrl,
-        })
-        .from(users)
-        .where(
-          and(
-            eq(users.id, client.originationUserId),
-            isNull(users.deletedAt)
-          )
-        )
-        .limit(1)
-        .then(rows => rows[0] ?? null)
-    : Promise.resolve(null)
-
-  const [
-    cycleClients,
-    projects,
-    clientContacts,
-    recentUpdates,
-    originationContact,
-    originationUser,
-  ] = await Promise.all([
-    fetchClientCycleDirectory(user),
-    fetchProjectsForClient(user, client.resolvedId),
-    fetchContactsForClient(client.resolvedId),
-    listClientUpdates({ clientId: client.resolvedId, limit: 3 }),
-    originationContactPromise,
-    originationUserPromise,
-  ])
-
-  return (
-    <PageShell
-      breadcrumbs={[...crumbsForNav('/clients'), { label: client.name }]}
-      contentClassName='space-y-6'
-    >
-      <ClientRecordCycle
-        clients={cycleClients}
-        selectedClientId={client.resolvedId}
-      />
-      <ClientDetail
-        client={client}
-        projects={projects}
-        contacts={clientContacts}
-        updates={recentUpdates.map(update => ({
-          id: update.id,
-          subject: update.subject,
-          status: update.status,
-          sentAt: update.sentAt,
-          createdAt: update.createdAt,
-        }))}
-        clientRow={mapClientDetailToRow(client)}
-        originationContact={originationContact}
-        originationUser={originationUser}
-        closers={client.closers}
-      />
-    </PageShell>
-  )
-}
-
-function mapClientDetailToRow(
-  client: Awaited<ReturnType<typeof resolveClientIdentifier>>
-): ClientRow {
-  return {
-    id: client.resolvedId,
-    name: client.name,
-    slug: client.slug,
-    notes: client.notes,
-    website: client.website,
-    state: client.state ?? null,
-    origination_contact_id: client.originationContactId,
-    origination_user_id: client.originationUserId,
-    billing_type: client.billingType,
-    created_by: null,
-    created_at: client.createdAt,
-    updated_at: client.updatedAt,
-    deleted_at: client.deletedAt,
-    closers: client.closers,
-  }
+  if (!company) notFound()
+  redirect(companySheetHref(company.id))
 }

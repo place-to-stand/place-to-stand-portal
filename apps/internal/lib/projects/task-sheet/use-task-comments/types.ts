@@ -5,7 +5,7 @@ export type UseTaskCommentsOptions = {
   currentUserId: string
   canComment: boolean
   taskTitle?: string | null
-  clientId?: string | null
+  companyId?: string | null
   /**
    * Display name for the optimistic comment's byline. Only used until the
    * refetch lands; falls back to the author on a cached comment by this user.
@@ -22,6 +22,9 @@ export type UseTaskCommentsState = {
   composer: {
     value: string
     onChange: (value: string) => void
+    isOpen: boolean
+    open: () => void
+    close: () => void
     submit: () => void
     disabled: boolean
     isSubmitting: boolean

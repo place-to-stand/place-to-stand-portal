@@ -26,13 +26,13 @@ import type { PtsStaffGitHubAccount } from '@/lib/data/staff-github-access'
  */
 export function GitHubRepoSection({
   projectId,
-  clientId,
+  companyId,
   hasInstallation,
   links,
   staffAccounts,
 }: {
   projectId: string
-  clientId: string
+  companyId: string
   hasInstallation: boolean
   links: ProjectGitHubLink[]
   staffAccounts: PtsStaffGitHubAccount[]
@@ -54,7 +54,7 @@ export function GitHubRepoSection({
           {needsConnection && (
             <Button type='button' size='xs' asChild>
               <a
-                href={`/api/github/install?clientId=${clientId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
+                href={`/api/github/install?companyId=${companyId}&projectId=${projectId}&returnTo=/projects/${projectId}`}
               >
                 <GitHubMark />
                 Authorize agent

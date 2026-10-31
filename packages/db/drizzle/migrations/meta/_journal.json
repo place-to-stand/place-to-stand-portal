@@ -624,6 +624,195 @@
       "when": 1792469967312,
       "tag": "0088_add_mcp_activity_source",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1793246200467,
+      "tag": "0089_sales_tools",
+      "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1793246213446,
+      "tag": "0090_backfill_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1793248597917,
+      "tag": "0091_one_champion_per_company",
+      "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1793288278440,
+      "tag": "0092_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 93,
+      "version": "7",
+      "when": 1793288627683,
+      "tag": "0093_drop_company_owner",
+      "breakpoints": true
+    },
+    {
+      "idx": 94,
+      "version": "7",
+      "when": 1793289172875,
+      "tag": "0094_contact_email_optional",
+      "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1793290634459,
+      "tag": "0095_client_company_primary_contact_lead_contact",
+      "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1793290667162,
+      "tag": "0096_backfill_contacts_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1793290758189,
+      "tag": "0097_drop_champion_company_client_primary_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1793293650416,
+      "tag": "0098_drop_lead_email_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1793296085077,
+      "tag": "0099_client_label",
+      "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1793296804678,
+      "tag": "0100_contacts_company_from_clients",
+      "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1793299048815,
+      "tag": "0101_company_website_from_leads",
+      "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1793299859917,
+      "tag": "0102_company_website_from_clients",
+      "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1793304567486,
+      "tag": "0103_single_task_assignee",
+      "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1793307130587,
+      "tag": "0104_client_company_one_to_one",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1793309949692,
+      "tag": "0105_memberships_and_portal_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1793309950415,
+      "tag": "0106_lead_contact_required",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1793309951215,
+      "tag": "0107_archive_and_drop_copied_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1793323586748,
+      "tag": "0108_drop_duplicated_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "7",
+      "when": 1793327002124,
+      "tag": "0109_one_company_one_person",
+      "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1793330803353,
+      "tag": "0110_person_avatar",
+      "breakpoints": true
+    },
+    {
+      "idx": 111,
+      "version": "7",
+      "when": 1793336702142,
+      "tag": "0111_clients_into_companies",
+      "breakpoints": true
+    },
+    {
+      "idx": 112,
+      "version": "7",
+      "when": 1793337866517,
+      "tag": "0112_thin_sign_in",
+      "breakpoints": true
+    },
+    {
+      "idx": 113,
+      "version": "7",
+      "when": 1793365869269,
+      "tag": "0113_billing_periods_role_terms",
+      "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1793366599851,
+      "tag": "0114_drop_client_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1793374799265,
+      "tag": "0115_harden_functions",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,3 @@
-'use server'
-
 import 'server-only'
 
 import { eq } from 'drizzle-orm'
@@ -19,7 +17,7 @@ export type LogActivityOptions = {
   summary: string
   targetType: ActivityTargetType | string
   targetId?: string | null
-  targetClientId?: string | null
+  targetCompanyId?: string | null
   targetProjectId?: string | null
   contextRoute?: string | null
   metadata?: Json
@@ -42,7 +40,7 @@ export async function logActivity(options: LogActivityOptions) {
       summary: options.summary,
       targetType: options.targetType,
       targetId: options.targetId ?? null,
-      targetClientId: options.targetClientId ?? null,
+      targetCompanyId: options.targetCompanyId ?? null,
       targetProjectId: options.targetProjectId ?? null,
       contextRoute: options.contextRoute ?? null,
       metadata: withAgent(normalizeMetadata(options.metadata)),

@@ -1,13 +1,14 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { contacts, contactClients } from '@/lib/db/schema'
+import { companies, contacts, memberships } from '@/lib/db/schema'
 
 export type ClientContactRow = {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   createdBy: string | null
@@ -16,15 +17,18 @@ export type ClientContactRow = {
   updatedAt: string
   deletedAt: string | null
   isPrimary: boolean
+  /** Can see the client in the portal (a row in client_portal_access). */
+  hasPortalAccess: boolean
 }
 
 /**
- * Contacts linked to a client through `contact_clients`, primary first then
- * by email. Shared by the client detail page and the update composer so both
- * agree on who a client's people are.
+ * A client's people: everyone at its company (the old client links became
+ * company memberships), primary first then by email. Shared by the client
+ * detail page, invoice emails and the update composer so all agree on who
+ * a client's people are. Portal access is separate.
  */
 export async function fetchContactsForClient(
-  clientId: string
+  companyId: string
 ): Promise<ClientContactRow[]> {
   return db
     .select({
@@ -37,12 +41,25 @@ export async function fetchContactsForClient(
       createdAt: contacts.createdAt,
       updatedAt: contacts.updatedAt,
       deletedAt: contacts.deletedAt,
-      isPrimary: contactClients.isPrimary,
+      isPrimary: memberships.isPrimary,
+      // Read from the one source of portal access.
+      hasPortalAccess: sql<boolean>`exists (
+        select 1 from client_portal_access a
+        where a.company_id = "companies"."id" and a.contact_id = "contacts"."id"
+      )`,
     })
-    .from(contactClients)
-    .innerJoin(contacts, eq(contactClients.contactId, contacts.id))
+    .from(companies)
+    .innerJoin(memberships, eq(memberships.companyId, companies.id))
+    .innerJoin(contacts, eq(contacts.id, memberships.contactId))
     .where(
-      and(eq(contactClients.clientId, clientId), isNull(contacts.deletedAt))
+      and(
+        wasClientCompany(),
+        and(
+          eq(companies.id, companyId),
+          isNull(memberships.endedAt),
+          isNull(contacts.deletedAt)
+        )
+      )
     )
-    .orderBy(desc(contactClients.isPrimary), contacts.email)
+    .orderBy(desc(memberships.isPrimary), asc(contacts.email))
 }

@@ -1,10 +1,11 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import {
-  clients,
+  companies,
   hourBlocks,
   invoiceLineItems,
   invoices,
@@ -27,14 +28,14 @@ export async function createHourBlocksFromInvoice(
   const [invoice] = await db
     .select({
       id: invoices.id,
-      clientId: invoices.clientId,
+      companyId: invoices.companyId,
       billingType: invoices.billingType,
       invoiceNumber: invoices.invoiceNumber,
       createdBy: invoices.createdBy,
-      clientName: clients.name,
+      clientName: clientNameSql,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.id, invoiceId))
     .limit(1)
 
@@ -76,7 +77,7 @@ export async function createHourBlocksFromInvoice(
   // Attribute webhook-created blocks to the first month they can be billed
   // in — clamped forward past a pending prepaid cutover, since no UI warning
   // can reach this path (PRD 002 D13).
-  const billingMonth = await resolveHourBlockBillingMonth(invoice.clientId)
+  const billingMonth = await resolveHourBlockBillingMonth(invoice.companyId)
 
   const inserted: Array<{ id: string; hoursPurchased: number }> = []
 
@@ -89,9 +90,9 @@ export async function createHourBlocksFromInvoice(
     const rows = await db
       .insert(hourBlocks)
       .values({
-        clientId: invoice.clientId,
+        companyId: invoice.companyId,
         hoursPurchased,
-        invoiceId: invoice.id,
+        // The invoice is read through the line.
         invoiceLineItemId: item.id,
         createdBy: invoice.createdBy,
         billingMonth,
@@ -125,7 +126,7 @@ export async function createHourBlocksFromInvoice(
     summary: event.summary,
     targetType: 'HOUR_BLOCK',
     targetId: inserted[0]?.id ?? null,
-    targetClientId: invoice.clientId,
+    targetCompanyId: invoice.companyId,
     metadata: event.metadata,
   })
 }

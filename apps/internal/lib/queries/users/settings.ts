@@ -1,3 +1,4 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNotNull, isNull, sql, type SQL } from 'drizzle-orm'
@@ -58,10 +59,21 @@ type UserSortDescriptor = {
   orderDesc: SQL
 }
 
+const userRoleRank = sql`CASE ${users.role}
+  WHEN 'ADMIN' THEN 0
+  WHEN 'SALES' THEN 1
+  ELSE 2
+END`
+
 const USER_SORT_DESCRIPTORS: Record<UserSortField, UserSortDescriptor> = {
   name: {
     orderAsc: sql`${userSortExpression} ASC`,
     orderDesc: sql`${userSortExpression} DESC`,
+  },
+  // Admin, Sales, Client (reversed descending), then name within a role.
+  role: {
+    orderAsc: sql`${userRoleRank} ASC, ${userSortExpression} ASC`,
+    orderDesc: sql`${userRoleRank} DESC, ${userSortExpression} ASC`,
   },
   created: {
     orderAsc: sql`${users.createdAt} ASC`,
@@ -140,8 +152,8 @@ export async function listUsersForSettings(
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
-      avatarUrl: users.avatarUrl,
+      fullName: personNameSql,
+      avatarUrl: personAvatarSql,
       role: users.role,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,

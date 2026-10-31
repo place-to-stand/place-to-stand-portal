@@ -21,10 +21,10 @@ type TaskRow = { id: string; title: string }
  */
 export async function scaffoldItems(
   user: AppUser,
-  clientId: string,
+  companyId: string,
   window: UpdateWindow
 ): Promise<ClientUpdateItem[]> {
-  const projects = await fetchProjectsForClient(user, clientId)
+  const projects = await fetchProjectsForClient(user, companyId)
   const projectIds = projects.map(project => project.id)
   if (projectIds.length === 0) return []
 

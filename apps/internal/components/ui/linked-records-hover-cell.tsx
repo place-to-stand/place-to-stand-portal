@@ -9,14 +9,18 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
+import { EmptyValue } from '@/components/table/empty-value'
 import { cn } from '@/lib/utils'
+import { entityIconAccent } from '@/lib/entity-accents'
 
 export type LinkedRecordItem = {
   id: string
   label: string
   sublabel?: string | null
-  /** Omit to render the row as plain text instead of a link. */
+  /** Omit (with `onSelect`) to render the row as plain text. */
   href?: string
+  /** For rows that open in place, e.g. a sheet over the current page. */
+  onSelect?: () => void
   /** Rendered after the label, e.g. a status Badge. */
   trailing?: ReactNode
 }
@@ -25,12 +29,22 @@ type LinkedRecordsHoverCellProps = {
   count: number
   /** Text after the number, e.g. ' active'. */
   label?: string
-  /** Zero-state text; defaults to `0` followed by `label`. */
+  /** Zero-state text; defaults to the shared dash (`EmptyValue`). */
   zeroLabel?: string
   /** Replaces the `count + label` trigger text, e.g. `(4 total)`. */
   triggerLabel?: string
+  /**
+   * Replaces the text trigger with custom content, e.g. a lone icon for a
+   * single linked record (pair with `ariaLabel`).
+   */
+  trigger?: ReactNode
   items: LinkedRecordItem[]
   icon: LucideIcon
+  /**
+   * The icon's tint: the record's entity accent (`ENTITY_ACCENTS.*.icon`).
+   * Defaults to muted.
+   */
+  iconClassName?: string
   /** Screen-reader name for the bare-number trigger, e.g. "3 clients". */
   ariaLabel?: string
   /** Controlled open state for coordinated cards (see useCoordinatedHoverCards). */
@@ -41,10 +55,17 @@ type LinkedRecordsHoverCellProps = {
   /** Width overrides for the card; defaults to `w-auto min-w-56`. */
   contentClassName?: string
   align?: 'start' | 'center' | 'end'
+  /**
+   * Shows the row icon before the count, as list columns do (Projects on
+   * Clients, Contacts on Companies). A zero then shows only a dash.
+   */
+  withIcon?: boolean
 }
 
 const TRIGGER_CLASS =
   'cursor-pointer border-b border-dotted border-current transition hover:border-solid outline-none focus-visible:rounded-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+const ICON_TRIGGER_CLASS =
+  'text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center rounded-sm transition outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 const ROW_CLASS = 'flex items-center gap-2 px-3 py-2 text-sm'
 
 /**
@@ -58,32 +79,40 @@ export function LinkedRecordsHoverCell({
   label,
   zeroLabel,
   triggerLabel,
+  trigger,
   items,
   icon: Icon,
+  iconClassName,
   ariaLabel,
   open,
   onOpenChange,
   triggerClassName,
   contentClassName,
   align = 'start',
+  withIcon = false,
 }: LinkedRecordsHoverCellProps) {
+  // A zero is a dash with no icon, like every count column.
   if (count === 0) {
-    return (
-      <span className='text-muted-foreground/50'>
-        {zeroLabel ?? `0${label ?? ''}`}
-      </span>
+    return zeroLabel ? (
+      <span className='text-muted-foreground/50'>{zeroLabel}</span>
+    ) : (
+      <EmptyValue />
     )
   }
 
-  return (
+  const card = (
     <HoverCard open={open} onOpenChange={onOpenChange}>
       <HoverCardTrigger asChild>
         <button
           type='button'
           aria-label={ariaLabel}
-          className={cn(TRIGGER_CLASS, triggerClassName ?? 'text-foreground')}
+          className={
+            trigger
+              ? cn(ICON_TRIGGER_CLASS, triggerClassName)
+              : cn(TRIGGER_CLASS, triggerClassName ?? 'text-foreground')
+          }
         >
-          {triggerLabel ?? `${count}${label ?? ''}`}
+          {trigger ?? triggerLabel ?? `${count}${label ?? ''}`}
         </button>
       </HoverCardTrigger>
       <HoverCardContent
@@ -93,25 +122,51 @@ export function LinkedRecordsHoverCell({
         <ul className='max-h-80 overflow-y-auto py-1'>
           {items.map(item => (
             <li key={item.id}>
-              <LinkedRecordRow item={item} icon={Icon} />
+              <LinkedRecordRow
+                item={item}
+                icon={Icon}
+                iconClassName={iconClassName}
+              />
             </li>
           ))}
         </ul>
       </HoverCardContent>
     </HoverCard>
   )
+
+  return withIcon ? (
+    <span className='inline-flex items-center gap-2'>
+      <Icon
+        className={cn(
+          iconClassName ?? entityIconAccent(Icon) ?? 'text-muted-foreground',
+          'h-4 w-4 shrink-0'
+        )}
+        aria-hidden
+      />
+      {card}
+    </span>
+  ) : (
+    card
+  )
 }
 
 function LinkedRecordRow({
   item,
   icon: Icon,
+  iconClassName,
 }: {
   item: LinkedRecordItem
   icon: LucideIcon
+  iconClassName?: string
 }) {
   const content = (
     <>
-      <Icon className='text-muted-foreground h-4 w-4 shrink-0' />
+      <Icon
+        className={cn(
+          iconClassName ?? entityIconAccent(Icon) ?? 'text-muted-foreground',
+          'h-4 w-4 shrink-0'
+        )}
+      />
       <span className='min-w-0 flex-1'>
         <span className='block truncate'>{item.label}</span>
         {item.sublabel ? (
@@ -120,9 +175,28 @@ function LinkedRecordRow({
           </span>
         ) : null}
       </span>
-      {item.trailing}
+      {/* A clear gap before the trailing mark (star, status badge); long
+          names truncate before it rather than touch it. */}
+      {item.trailing ? (
+        <span className='ml-2 flex shrink-0 items-center'>{item.trailing}</span>
+      ) : null}
     </>
   )
+
+  if (item.onSelect) {
+    return (
+      <button
+        type='button'
+        onClick={item.onSelect}
+        className={cn(
+          ROW_CLASS,
+          'hover:bg-accent w-full cursor-pointer text-left transition-colors'
+        )}
+      >
+        {content}
+      </button>
+    )
+  }
 
   if (!item.href) {
     return <div className={ROW_CLASS}>{content}</div>

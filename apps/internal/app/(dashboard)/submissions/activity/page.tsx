@@ -4,7 +4,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
-import { SubmissionsActivitySection } from '../_components/submissions-activity-section'
+import { ActivitySection } from '@/components/activity/activity-section'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
@@ -21,7 +21,11 @@ export default async function SubmissionsActivityPage() {
       activeTab='activity'
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <SubmissionsActivitySection />
+        <ActivitySection
+          targetType='SUBMISSION'
+          emptyState='No recent submission activity.'
+          description='Audit submission acknowledgement changes, archives, restores, and deletions in one place.'
+        />
       </section>
     </PageShell>
   )

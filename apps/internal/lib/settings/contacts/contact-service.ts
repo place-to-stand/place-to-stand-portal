@@ -1,8 +1,15 @@
 import { z } from 'zod'
 
+import { linkedinUrlSchema } from '@/lib/companies/schema'
+
 export const contactSchema = z.object({
   id: z.string().uuid().optional(),
-  email: z.string().email('Valid email is required'),
+  /** Optional: a contact can be just a name. Blank is stored as null. */
+  email: z
+    .union([z.string().trim().email('Enter a valid email'), z.literal('')])
+    .optional()
+    .nullable()
+    .transform(value => (value ? value : null)),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z
     .string()
@@ -10,6 +17,63 @@ export const contactSchema = z.object({
     .optional()
     .nullable()
     .transform(value => (value?.trim() ? value.trim() : null)),
+  linkedinUrl: linkedinUrlSchema.optional(),
+  /**
+   * Every company the person belongs to (the sheet's Companies list), with
+   * their title at each, and (admins only) portal access to each one that
+   * is a client. When present it is the full set:
+   * missing companies are left (history kept), new ones joined. Omitted
+   * keeps their companies as they are.
+   */
+  companies: z
+    .array(
+      z.object({
+        companyId: z.string().uuid(),
+        // Omitted keeps their title; blank clears it.
+        title: z
+          .string()
+          .max(160)
+          .nullable()
+          .optional()
+          .transform(value =>
+            value === undefined
+              ? undefined
+              : value?.trim()
+                ? value.trim()
+                : null
+          ),
+        /**
+         * Portal access to this company (a client). Omitted leaves it as it
+         * is; only someone who can manage clients may send it.
+         */
+        portalAccess: z.boolean().optional(),
+      })
+    )
+    .max(50)
+    .optional(),
+  /**
+   * Shorthand for one company (CLI, MCP, create-from-picker): joins it if
+   * they aren't a member yet, keeping their other companies. `companyId`
+   * wins over `companyName` (matched case-insensitively, created when new).
+   */
+  companyId: z.string().uuid().nullable().optional(),
+  companyName: z
+    .string()
+    .max(160)
+    .optional()
+    .nullable()
+    .transform(value =>
+      value === undefined ? undefined : value?.trim() ? value.trim() : null
+    ),
+  /** Their title at that one company (with `companyId`/`companyName`). */
+  jobTitle: z
+    .string()
+    .max(160)
+    .optional()
+    .nullable()
+    .transform(value =>
+      value === undefined ? undefined : value?.trim() ? value.trim() : null
+    ),
 })
 
 const contactIdentifierSchema = {
@@ -18,12 +82,10 @@ const contactIdentifierSchema = {
 
 export const deleteContactSchema = z.object(contactIdentifierSchema)
 export const restoreContactSchema = z.object(contactIdentifierSchema)
-export const destroyContactSchema = z.object(contactIdentifierSchema)
 
-export type ContactInput = z.infer<typeof contactSchema>
+export type ContactInput = z.input<typeof contactSchema>
 export type DeleteContactInput = z.infer<typeof deleteContactSchema>
 export type RestoreContactInput = z.infer<typeof restoreContactSchema>
-export type DestroyContactInput = z.infer<typeof destroyContactSchema>
 
 export type ContactActionResult = {
   error?: string

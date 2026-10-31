@@ -1,3 +1,4 @@
+// permission: public — unguessable share token
 import { NextResponse } from 'next/server'
 
 import { generateInvoicePdf } from '@pts/pdf'

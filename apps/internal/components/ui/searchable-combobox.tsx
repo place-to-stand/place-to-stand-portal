@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
+import { CheckIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
-import { Button } from '@pts/ui/button'
+import { getInitials } from '@/lib/users/initials'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Command,
@@ -14,7 +14,11 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  useRevealSelected,
 } from '@/components/ui/command'
+import { CommandCreateRows } from '@/components/ui/command-create-rows'
+import { FieldClearButton } from '@/components/ui/field-clear-button'
+import { FieldTrigger } from '@/components/ui/field-trigger'
 
 export type SearchableComboboxItem = {
   value: string
@@ -24,7 +28,24 @@ export type SearchableComboboxItem = {
   disabled?: boolean
   avatarUrl?: string | null
   userId?: string
+  /**
+   * A person's avatar for an option that isn't a sign-in (a contact): their
+   * photo (`personPhotoSrc`), else initials of the label (or `initials`).
+   * Sign-ins pass `userId` instead. A person picker gives every option one,
+   * never a generic person icon.
+   */
+  avatar?: { src: string | null; initials?: string }
+  /**
+   * A one-off glyph for an option that differs from the rest ("Unassigned").
+   * A picker whose options are all one entity shows no icon: its field label
+   * carries the entity's icon (`FormLabel entity`).
+   */
   icon?: React.ComponentType<{ className?: string }>
+  /**
+   * Shown in place of the label, in the list row and in the trigger when
+   * picked (a status badge). Search still matches `label`.
+   */
+  render?: React.ReactNode
 }
 
 export type SearchableComboboxGroup = {
@@ -58,12 +79,38 @@ type SearchableComboboxProps = {
    * disabled state; the popover behaves identically either way.
    */
   trigger?: React.ReactElement
+  /** Controlled open state (e.g. an empty state that opens the picker). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  /**
+   * Adds the pinned "Create …" row (`CommandCreateRows`); fires with the typed
+   * search text. Pair with `createEntityLabel` ("company").
+   */
+  onCreate?: (query: string) => void
+  createEntityLabel?: string
+  /**
+   * Shows a clear (×) button inside the field while a value is selected.
+   * Fires instead of opening the list.
+   */
+  onClear?: () => void
+  /**
+   * What the clear button empties, for its tooltip: "assignee" → "Clear
+   * assignee". Defaults to `ariaLabel`. Set one of them with `onClear`.
+   */
+  clearLabel?: string
+  /**
+   * A button beside the field, outside it (e.g. "open this record"). The
+   * field shrinks to make room; the clear button stays inside the field.
+   */
+  trailingAction?: React.ReactNode
+  /**
+   * Rows above the options inside the list (e.g. My tasks' "Show" toggles),
+   * as cmdk `CommandGroup`s so they share the list's keyboard navigation.
+   */
+  listHeader?: React.ReactNode
 }
 
-const baseTriggerClasses =
-  'border-input data-[placeholder=true]:text-muted-foreground [&_svg]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-left text-sm font-normal shadow-xs transition-[color,box-shadow] outline-hidden focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'
-
-const itemWrapperClasses = 'flex flex-col text-sm leading-tight'
+const itemWrapperClasses = 'flex min-w-0 flex-1 flex-col text-sm leading-tight'
 
 export const SearchableCombobox = React.forwardRef<
   HTMLButtonElement,
@@ -90,10 +137,27 @@ export const SearchableCombobox = React.forwardRef<
       ariaDescribedBy,
       ariaInvalid,
       trigger,
+      onCreate,
+      createEntityLabel = 'record',
+      onClear,
+      clearLabel,
+      open: openProp,
+      onOpenChange,
+      trailingAction,
+      listHeader,
     },
     forwardedRef
   ) => {
-    const [open, setOpen] = React.useState(false)
+    const [openState, setOpenState] = React.useState(false)
+    const open = openProp ?? openState
+    const setOpen = React.useCallback(
+      (next: boolean) => {
+        setOpenState(next)
+        onOpenChange?.(next)
+      },
+      [onOpenChange]
+    )
+    const [query, setQuery] = React.useState('')
     const triggerRef = React.useRef<HTMLButtonElement | null>(null)
     const [contentWidth, setContentWidth] = React.useState<number>()
     // Natural width of the popup measured once per open, while every option
@@ -101,7 +165,14 @@ export const SearchableCombobox = React.forwardRef<
     // filtering hides the widest options.
     const [lockedWidth, setLockedWidth] = React.useState<number>()
     const contentRef = React.useCallback((node: HTMLDivElement | null) => {
-      setLockedWidth(node ? node.offsetWidth : undefined)
+      if (!node) {
+        setLockedWidth(undefined)
+        return
+      }
+      // The list fills in after mount; measure once it has.
+      requestAnimationFrame(() =>
+        setLockedWidth(Math.ceil(parseFloat(getComputedStyle(node).width)))
+      )
     }, [])
 
     const mergedRef = React.useMemo(() => {
@@ -159,6 +230,7 @@ export const SearchableCombobox = React.forwardRef<
       }
 
       setOpen(next)
+      if (!next) setQuery('')
 
       if (!next && onBlur) {
         onBlur()
@@ -172,13 +244,55 @@ export const SearchableCombobox = React.forwardRef<
 
       onChange(nextValue)
       setOpen(false)
+      // The next open starts a fresh search (an "add" picker opens again).
+      setQuery('')
 
       if (onBlur) {
         onBlur()
       }
     }
 
+    const renderItem = (item: SearchableComboboxItem, key: string) => {
+      return (
+        <CommandItem
+          key={key}
+          value={commandValueOf(item)}
+          onSelect={() => handleSelect(item.value)}
+          disabled={item.disabled}
+          className='pr-3'
+        >
+          {renderLeading(item, 'row')}
+          <div className={cn(itemWrapperClasses, itemClassName)}>
+            {item.render ? (
+              <span className='flex min-w-0'>{item.render}</span>
+            ) : (
+              <span className='truncate font-medium whitespace-nowrap'>
+                {item.label}
+              </span>
+            )}
+            {item.description ? (
+              <span className='text-muted-foreground truncate text-xs whitespace-nowrap'>
+                {item.description}
+              </span>
+            ) : null}
+          </div>
+          {/* The selected option is marked on the right, so no row reserves
+              an empty column for it. */}
+          {selectedItem?.value === item.value ? (
+            <CheckIcon className='ml-2 size-4 shrink-0' />
+          ) : null}
+        </CommandItem>
+      )
+    }
+
     const resolvedPlaceholder = placeholder ?? searchPlaceholder
+
+    // Opening shows the selected option in view and highlighted; typing a
+    // search goes back to highlighting the top match.
+    const selectedCommandValue = selectedItem
+      ? commandValueOf(selectedItem)
+      : undefined
+    const revealSelected = useRevealSelected(selectedCommandValue)
 
     const stopScrollPropagation = React.useCallback(
       (event: React.SyntheticEvent) => {
@@ -191,7 +305,9 @@ export const SearchableCombobox = React.forwardRef<
       const maxHeight = 'min(320px, var(--available-height))'
       return {
         maxHeight,
-        overflowY: 'auto',
+        // The list scrolls itself; a second scrollbar here would eat into
+        // the width measured for the options.
+        overflowY: 'hidden',
         overscrollBehavior: 'contain',
         // Min-width (not width): the popover never shrinks below the
         // trigger but grows to fit no-wrap options (My Tasks person list).
@@ -200,209 +316,179 @@ export const SearchableCombobox = React.forwardRef<
       }
     }, [contentWidth, lockedWidth])
 
-    const selectedTextClasses = 'font-medium'
-    const placeholderTextClasses = 'text-muted-foreground'
+    // A value that isn't among the options (an archived company in an old
+    // link) still shows as picked, and can still be cleared.
+    const unmatched = Boolean(value) && !selectedItem
+    const showClear = Boolean(
+      onClear && (selectedItem || unmatched) && !disabled
+    )
 
     return (
-      <div className={cn('w-full min-w-0', className)}>
-        <input type='hidden' name={name} value={value ?? ''} />
-        <Popover open={open} onOpenChange={handleOpenChange} modal>
-          <PopoverTrigger asChild>
-            {trigger ?? (
-              <Button
-                ref={mergedRef}
-                type='button'
-                variant='outline'
-                role='combobox'
-                aria-expanded={open}
-                aria-haspopup='listbox'
-                aria-label={ariaLabel}
-                aria-labelledby={ariaLabelledBy}
-                aria-describedby={ariaDescribedBy}
-                aria-invalid={ariaInvalid ? true : undefined}
-                disabled={disabled}
-                data-placeholder={selectedItem ? undefined : true}
-                id={id}
-                className={cn(baseTriggerClasses, triggerClassName)}
-              >
-                <div className='flex min-w-0 flex-1 items-center gap-2'>
-                  {selectedItem?.userId ? (
-                    <Avatar size='xs'>
-                      {selectedItem.avatarUrl && (
-                        <AvatarImage
-                          src={`/api/storage/user-avatar/${selectedItem.userId}`}
-                        />
-                      )}
-                      <AvatarFallback>
-                        {selectedItem.label.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : selectedItem?.icon ? (
-                    <Avatar size='xs'>
-                      <AvatarFallback className='bg-muted'>
-                        <selectedItem.icon className='text-muted-foreground h-3 w-3' />
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : null}
-                  <span
-                    className={cn(
-                      'min-w-0 truncate',
-                      selectedItem
-                        ? selectedTextClasses
-                        : placeholderTextClasses
-                    )}
-                  >
-                    {selectedItem?.label ?? resolvedPlaceholder}
-                  </span>
-                </div>
-                <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
-              </Button>
-            )}
-          </PopoverTrigger>
-          <PopoverContent
-            ref={contentRef}
-            className='w-full max-w-full overflow-hidden p-0'
-            sideOffset={8}
-            style={contentStyle}
-          >
-            <Command className='max-h-80'>
-              <CommandInput
-                placeholder={searchPlaceholder ?? resolvedPlaceholder}
-                className='h-9'
-              />
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
-              <CommandList
-                className='max-h-[min(60vh,260px)] overflow-y-auto overscroll-contain'
-                onWheel={stopScrollPropagation}
-                onTouchMove={stopScrollPropagation}
-              >
-                {resolvedGroups.length > 0 ? (
-                  resolvedGroups.map(group => (
-                    <CommandGroup key={group.label} heading={group.label}>
-                      {group.items.map(item => {
-                        const searchValue = [
-                          item.label,
-                          ...(item.keywords ?? []),
-                        ]
-                          .join(' ')
-                          .trim()
-
-                        return (
-                          <CommandItem
-                            key={`${group.label}-${item.value}`}
-                            value={
-                              searchValue.length > 0 ? searchValue : item.value
-                            }
-                            onSelect={() => handleSelect(item.value)}
-                            disabled={item.disabled}
-                            className='pr-3'
-                          >
-                            <CheckIcon
-                              className={cn(
-                                'mr-2 size-4',
-                                selectedItem?.value === item.value
-                                  ? 'opacity-100'
-                                  : 'opacity-0'
-                              )}
-                            />
-                            {item.userId ? (
-                              <Avatar size='xs' className='mr-2'>
-                                {item.avatarUrl && (
-                                  <AvatarImage
-                                    src={`/api/storage/user-avatar/${item.userId}`}
-                                  />
-                                )}
-                                <AvatarFallback>
-                                  {item.label.slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                            ) : item.icon ? (
-                              <Avatar size='xs' className='mr-2'>
-                                <AvatarFallback className='bg-muted'>
-                                  <item.icon className='text-muted-foreground h-3 w-3' />
-                                </AvatarFallback>
-                              </Avatar>
-                            ) : null}
-                            <div
-                              className={cn(itemWrapperClasses, itemClassName)}
-                            >
-                              <span className='font-medium'>{item.label}</span>
-                              {item.description ? (
-                                <span className='text-muted-foreground text-xs'>
-                                  {item.description}
-                                </span>
-                              ) : null}
-                            </div>
-                          </CommandItem>
-                        )
-                      })}
+      <div
+        className={cn(
+          // A custom trigger (an "Add …" button) keeps its own width.
+          trigger
+            ? 'inline-flex min-w-0 items-center gap-1'
+            : // Field to its Open/Create buttons: half the form grid's column gap.
+              'flex w-full min-w-0 items-center gap-2',
+          className
+        )}
+      >
+        <div className='relative min-w-0 flex-1'>
+          <input type='hidden' name={name} value={value ?? ''} />
+          <Popover open={open} onOpenChange={handleOpenChange} modal>
+            <PopoverTrigger asChild>
+              {trigger ?? (
+                <FieldTrigger
+                  ref={mergedRef}
+                  role='combobox'
+                  aria-expanded={open}
+                  aria-haspopup='listbox'
+                  aria-label={ariaLabel}
+                  aria-labelledby={ariaLabelledBy}
+                  aria-describedby={ariaDescribedBy}
+                  aria-invalid={ariaInvalid ? true : undefined}
+                  disabled={disabled}
+                  id={id}
+                  placeholder={!selectedItem && !unmatched}
+                  clearable={showClear}
+                  className={triggerClassName}
+                  labelTitle={
+                    selectedItem?.label ??
+                    (unmatched ? 'Not in this list' : resolvedPlaceholder)
+                  }
+                  leading={
+                    selectedItem ? renderLeading(selectedItem, 'trigger') : null
+                  }
+                  label={
+                    selectedItem
+                      ? (selectedItem.render ?? selectedItem.label)
+                      : unmatched
+                        ? 'Not in this list'
+                        : resolvedPlaceholder
+                  }
+                />
+              )}
+            </PopoverTrigger>
+            <PopoverContent
+              ref={contentRef}
+              // Never narrower than the trigger; grows to fit an option on one line,
+              // up to a cap, past which options truncate with a tooltip.
+              className='w-max max-w-[min(28rem,90vw)] overflow-hidden p-0'
+              // A custom trigger is an "Add …" button at the right of a section
+              // heading: the list hangs from its right edge, just below it,
+              // inside the content column. A field opens under its left edge.
+              align={trigger ? 'end' : 'start'}
+              sideOffset={trigger ? 4 : 8}
+              style={contentStyle}
+            >
+              <Command className='max-h-80' defaultValue={selectedCommandValue}>
+                <CommandInput
+                  placeholder={searchPlaceholder ?? resolvedPlaceholder}
+                  className='h-9'
+                  value={query}
+                  onValueChange={setQuery}
+                />
+                {onCreate ? null : <CommandEmpty>{emptyMessage}</CommandEmpty>}
+                <CommandList
+                  ref={revealSelected}
+                  className='max-h-[min(60vh,260px)] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain'
+                  onWheel={stopScrollPropagation}
+                  onTouchMove={stopScrollPropagation}
+                >
+                  {listHeader}
+                  {resolvedGroups.length > 0 ? (
+                    resolvedGroups.map(group => (
+                      <CommandGroup key={group.label} heading={group.label}>
+                        {group.items.map(item =>
+                          renderItem(item, `${group.label}-${item.value}`)
+                        )}
+                      </CommandGroup>
+                    ))
+                  ) : (
+                    <CommandGroup>
+                      {flattenedItems.map(item => renderItem(item, item.value))}
                     </CommandGroup>
-                  ))
-                ) : (
-                  <CommandGroup>
-                    {flattenedItems.map(item => {
-                      const searchValue = [item.label, ...(item.keywords ?? [])]
-                        .join(' ')
-                        .trim()
-
-                      return (
-                        <CommandItem
-                          key={item.value}
-                          value={
-                            searchValue.length > 0 ? searchValue : item.value
-                          }
-                          onSelect={() => handleSelect(item.value)}
-                          disabled={item.disabled}
-                          className='pr-3'
-                        >
-                          <CheckIcon
-                            className={cn(
-                              'mr-2 size-4',
-                              selectedItem?.value === item.value
-                                ? 'opacity-100'
-                                : 'opacity-0'
-                            )}
-                          />
-                          {item.userId ? (
-                            <Avatar size='xs' className='mr-2'>
-                              {item.avatarUrl && (
-                                <AvatarImage
-                                  src={`/api/storage/user-avatar/${item.userId}`}
-                                />
-                              )}
-                              <AvatarFallback>
-                                {item.label.slice(0, 2).toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : item.icon ? (
-                            <Avatar size='xs' className='mr-2'>
-                              <AvatarFallback className='bg-muted'>
-                                <item.icon className='text-muted-foreground h-3 w-3' />
-                              </AvatarFallback>
-                            </Avatar>
-                          ) : null}
-                          <div
-                            className={cn(itemWrapperClasses, itemClassName)}
-                          >
-                            <span className='font-medium'>{item.label}</span>
-                            {item.description ? (
-                              <span className='text-muted-foreground text-xs'>
-                                {item.description}
-                              </span>
-                            ) : null}
-                          </div>
-                        </CommandItem>
-                      )
-                    })}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                  )}
+                  {onCreate ? (
+                    <CommandCreateRows
+                      query={query}
+                      entityLabel={createEntityLabel}
+                      emptyMessage={emptyMessage}
+                      onCreate={typed => {
+                        setOpen(false)
+                        setQuery('')
+                        onCreate(typed)
+                      }}
+                    />
+                  ) : null}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {showClear ? (
+            <FieldClearButton
+              label={(clearLabel ?? ariaLabel)?.toLowerCase()}
+              onClear={() => {
+                onClear?.()
+                onBlur?.()
+              }}
+            />
+          ) : null}
+        </div>
+        {trailingAction}
       </div>
     )
   }
 )
 
 SearchableCombobox.displayName = 'SearchableCombobox'
+
+/** The cmdk value of an option: what search matches (label + keywords). */
+function commandValueOf(item: SearchableComboboxItem): string {
+  const searchValue = [item.label, ...(item.keywords ?? [])].join(' ').trim()
+  return searchValue.length > 0 ? searchValue : item.value
+}
+
+/** An option's avatar or icon, in its list row or in the trigger. */
+function renderLeading(
+  item: SearchableComboboxItem,
+  place: 'row' | 'trigger'
+): React.ReactNode {
+  // A hairline ring keeps the circle visible on a highlighted row, whose
+  // background matches the avatar's fill.
+  const className = cn(
+    'ring-border shrink-0 ring-1',
+    place === 'row' && 'mr-2'
+  )
+  if (item.userId) {
+    return (
+      <Avatar size='xs' className={className}>
+        {item.avatarUrl && (
+          <AvatarImage src={`/api/storage/user-avatar/${item.userId}`} />
+        )}
+        <AvatarFallback>{item.label.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+    )
+  }
+  if (item.avatar) {
+    return (
+      <Avatar size='xs' className={className}>
+        {item.avatar.src ? <AvatarImage src={item.avatar.src} alt='' /> : null}
+        <AvatarFallback>
+          {item.avatar.initials ?? getInitials(item.label)}
+        </AvatarFallback>
+      </Avatar>
+    )
+  }
+  if (item.icon) {
+    return (
+      <Avatar size='xs' className={className}>
+        <AvatarFallback className='bg-muted'>
+          <item.icon className='text-muted-foreground h-3 w-3' />
+        </AvatarFallback>
+      </Avatar>
+    )
+  }
+  return null
+}

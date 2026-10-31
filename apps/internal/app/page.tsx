@@ -1,3 +1,4 @@
+// permission: public — redirects to sign-in or home
 import { redirect } from 'next/navigation'
 
 import { getCurrentUser } from '@/lib/auth/session'
@@ -7,7 +8,7 @@ export default async function IndexPage() {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    redirect('/auth/sign-out')
   }
 
   redirect(homePathForRole(user.role))

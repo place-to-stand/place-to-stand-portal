@@ -2,9 +2,9 @@
 
 import { User } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { PersonAvatar } from '@/components/ui/user-avatar'
 
 export type CardAssignee = {
   id: string
@@ -12,12 +12,10 @@ export type CardAssignee = {
   avatarUrl: string | null
 }
 
-const MAX_VISIBLE = 3
-
 /**
- * The bottom-right assignee stack shared by the board cards. Avatars only —
- * names live in the tooltip — so the stack costs the card no vertical room
- * and reads the same on every board, including a person's own My Tasks.
+ * The bottom-right assignee on the board cards: one avatar, name in the
+ * tooltip. A task has one assignee; should older data still list several,
+ * the first is shown.
  */
 export function CardAssigneeAvatars({
   assignees,
@@ -45,35 +43,16 @@ export function CardAssigneeAvatars({
     )
   }
 
-  const visible = assignees.slice(0, MAX_VISIBLE)
-  const overflow = assignees.length - visible.length
-  const names = assignees.map(assignee => assignee.name).join(', ')
-
+  const [assignee] = assignees
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className={cn('flex shrink-0 items-center -space-x-1.5', className)}
-          aria-label={`Assigned to ${names}`}
-        >
-          {visible.map(assignee => (
-            <Avatar key={assignee.id} size='xs' className='ring-card ring-2'>
-              {assignee.avatarUrl && (
-                <AvatarImage src={`/api/storage/user-avatar/${assignee.id}`} />
-              )}
-              <AvatarFallback>
-                {assignee.name.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-          {overflow > 0 ? (
-            <span className='bg-muted text-muted-foreground ring-card inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-medium ring-2'>
-              +{overflow}
-            </span>
-          ) : null}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent side='top'>{names}</TooltipContent>
-    </Tooltip>
+    <span className={cn('flex shrink-0 items-center', className)}>
+      <PersonAvatar
+        size='xs'
+        userId={assignee.id}
+        name={assignee.name}
+        ariaLabel={`Assigned to ${assignee.name}`}
+        hasPhoto={Boolean(assignee.avatarUrl)}
+      />
+    </span>
   )
 }

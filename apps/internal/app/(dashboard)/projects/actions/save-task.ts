@@ -1,6 +1,6 @@
 'use server'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
 import { saveTaskForActor } from '@/lib/tasks/save-task-core'
 import type { SaveTaskResult } from '@/lib/tasks/types'
 
@@ -19,12 +19,10 @@ export type { SaveTaskResult }
  * resolved here from the session rather than accepted as a parameter.
  */
 export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
-  const user = await requireUser()
+  const user = await requireStaffUser()
   const result = await saveTaskForActor(user, input, 'ADMIN_UI')
 
-  // A `taskId` in the result means a row was written — including the partial
-  // failures, where the task exists but a follow-up step did not finish. Those
-  // still need the cached task views refreshed.
+  // A `taskId` means the save committed; an error means nothing was written.
   if (result.taskId) {
     await revalidateProjectTaskViews()
   }

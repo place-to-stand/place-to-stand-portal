@@ -1,18 +1,25 @@
-'use server'
+import { isClientCompany } from '@pts/db/client-state'
+import { clientNameSql } from '@pts/db/names'
+import 'server-only'
 
-import { asc, eq, and, sql, inArray } from 'drizzle-orm'
+import { asc, desc, eq, and, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin, assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contactClients, contacts } from '@/lib/db/schema'
+import { companies, clientPortalAccess, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
+import {
+  canSeePortalAccess,
+  withoutPortalAccess,
+} from '@/lib/settings/contacts/portal-visibility'
 
 import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from './contact-client-link-activity'
-import { syncPortalMembershipsForLinkChanges } from './contact-client-portal-memberships'
+  listContactMemberships,
+  type ContactMembership,
+} from '@/lib/queries/memberships'
+
+import { contactProfileFields, type ContactProfile } from '../selectors'
 
 export type ClientOption = {
   id: string
@@ -20,9 +27,9 @@ export type ClientOption = {
   slug: string
 }
 
-export type ContactSheetInputRow = {
+export type ContactSheetInputRow = ContactProfile & {
   id: string
-  email: string
+  email: string | null
   name: string
   phone: string | null
   /** Portal user this contact was promoted to — drives the Portal access card. */
@@ -35,13 +42,27 @@ export type ContactDeepLinkRow = ContactSheetInputRow & {
 }
 
 export type ContactSheetData = {
-  allClients: ClientOption[]
-  linkedClients: ClientOption[]
+  /** Their current companies, main company first. */
+  memberships: ContactMembership[]
+  /** Their photo's path (contacts.avatar_url). */
+  avatarUrl: string | null
+  /**
+   * Their saved details as of this read, with the row's `updated_at`: the
+   * version the sheet sends back on Save, so a save made meanwhile by
+   * someone else is refused instead of overwritten. Null if not found.
+   */
+  person: {
+    name: string
+    email: string | null
+    phone: string | null
+    linkedinUrl: string | null
+    updatedAt: string
+    /** Their sign-in's role while they can sign in (null: they can't). */
+    signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
+  } | null
 }
 
-/**
- * Fetches all active clients for use in the contact sheet client picker.
- */
+/** Fetches all active clients (contacts client filter, MCP directory). */
 export async function listAllActiveClients(
   user: AppUser
 ): Promise<ClientOption[]> {
@@ -49,13 +70,40 @@ export async function listAllActiveClients(
 
   const rows = await db
     .select({
-      id: clients.id,
-      name: clients.name,
-      slug: clients.slug,
+      id: companies.id,
+      name: clientNameSql,
+      slug: companies.slug,
+      companyId: companies.id,
     })
-    .from(clients)
-    .where(sql`${clients.deletedAt} IS NULL`)
-    .orderBy(asc(clients.name))
+    .from(companies)
+    .where(isClientCompany())
+    .orderBy(asc(clientNameSql))
+
+  return rows.map(row => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug ?? row.id,
+  }))
+}
+
+/**
+ * Every live company for the People company filter: clients first, then the
+ * rest, each by name.
+ */
+export async function listCompanyFilterOptions(
+  user: AppUser
+): Promise<ClientOption[]> {
+  assertCrmAccess(user)
+
+  const rows = await db
+    .select({
+      id: companies.id,
+      name: companies.name,
+      slug: companies.slug,
+    })
+    .from(companies)
+    .where(isNull(companies.deletedAt))
+    .orderBy(desc(isClientCompany()), asc(companies.name))
 
   return rows.map(row => ({
     id: row.id,
@@ -75,19 +123,15 @@ export async function listContactClients(
 
   const rows = await db
     .select({
-      id: clients.id,
-      name: clients.name,
-      slug: clients.slug,
+      id: companies.id,
+      name: clientNameSql,
+      slug: companies.slug,
+      companyId: companies.id,
     })
-    .from(contactClients)
-    .innerJoin(clients, eq(contactClients.clientId, clients.id))
-    .where(
-      and(
-        eq(contactClients.contactId, contactId),
-        sql`${clients.deletedAt} IS NULL`
-      )
-    )
-    .orderBy(asc(clients.name))
+    .from(clientPortalAccess)
+    .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
+    .where(and(eq(clientPortalAccess.contactId, contactId), isClientCompany()))
+    .orderBy(asc(clientNameSql))
 
   return rows.map(row => ({
     id: row.id,
@@ -96,22 +140,55 @@ export async function listContactClients(
   }))
 }
 
-/**
- * Fetches all data needed for the contact sheet client picker.
- * If contactId is provided, also fetches the contact's linked clients.
- */
+/** The contact sheet's Companies list (title, primary, portal access). */
 export async function getContactSheetData(
   user: AppUser,
-  contactId?: string
+  contactId: string
 ): Promise<ContactSheetData> {
   assertCrmAccess(user)
 
-  const [allClients, linkedClients] = await Promise.all([
-    listAllActiveClients(user),
-    contactId ? listContactClients(user, contactId) : Promise.resolve([]),
+  const [byContact, [person]] = await Promise.all([
+    listContactMemberships([contactId], undefined, { includeArchived: true }),
+    db
+      .select({
+        avatarUrl: contacts.avatarUrl,
+        name: contacts.name,
+        email: contacts.email,
+        phone: contacts.phone,
+        linkedinUrl: contacts.linkedinUrl,
+        updatedAt: contacts.updatedAt,
+        // A role only while it is live (stripped for Sales below).
+        signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
+          select u.role from users u
+          where u.id = ${contacts.userId}
+            and u.deleted_at is null and u.disabled_at is null
+        )`,
+      })
+      .from(contacts)
+      .where(eq(contacts.id, contactId))
+      .limit(1),
   ])
-
-  return { allClients, linkedClients }
+  const memberships = byContact.get(contactId) ?? []
+  return {
+    // Portal access is for people who manage clients only.
+    memberships: canSeePortalAccess(user.role)
+      ? memberships
+      : memberships.map(withoutPortalAccess),
+    avatarUrl: person?.avatarUrl ?? null,
+    person: person
+      ? {
+          name: person.name,
+          email: person.email,
+          phone: person.phone,
+          linkedinUrl: person.linkedinUrl,
+          updatedAt: person.updatedAt,
+          // Sign-ins are admin-only information, as on the people list.
+          signInRole: canSeePortalAccess(user.role)
+            ? (person.signInRole ?? null)
+            : null,
+        }
+      : null,
+  }
 }
 
 /**
@@ -131,13 +208,14 @@ export async function getContactSheetInputById(
       name: contacts.name,
       phone: contacts.phone,
       userId: contacts.userId,
+      ...contactProfileFields,
     })
     .from(contacts)
     .where(and(eq(contacts.id, contactId), sql`${contacts.deletedAt} IS NULL`))
     .limit(1)
 
   if (!rows.length) {
-    throw new NotFoundError('Contact not found')
+    throw new NotFoundError('Person not found')
   }
 
   return rows[0]!
@@ -162,79 +240,11 @@ export async function getContactDeepLinkRowById(
       phone: contacts.phone,
       userId: contacts.userId,
       deletedAt: contacts.deletedAt,
+      ...contactProfileFields,
     })
     .from(contacts)
     .where(eq(contacts.id, contactId))
     .limit(1)
 
   return rows[0] ?? null
-}
-
-/**
- * Syncs the client links for a contact.
- * Adds new links and removes unlinked ones. `user` is the acting admin the
- * server action resolved — it is the actor on the link activity rows.
- */
-export async function syncContactClients(
-  user: AppUser,
-  contactId: string,
-  clientIds: string[]
-): Promise<{ ok: boolean; error?: string }> {
-  assertAdmin(user)
-
-  let changes: ContactClientLinkChange[] = []
-
-  try {
-    // Get current links
-    const currentLinks = await db
-      .select({ clientId: contactClients.clientId })
-      .from(contactClients)
-      .where(eq(contactClients.contactId, contactId))
-
-    const currentIds = new Set(currentLinks.map(l => l.clientId))
-    const newIds = new Set(clientIds)
-
-    // Find links to add and remove
-    const toAdd = clientIds.filter(id => !currentIds.has(id))
-    const toRemove = [...currentIds].filter(id => !newIds.has(id))
-    changes = [
-      ...toAdd.map(clientId => ({ contactId, clientId, action: 'linked' as const })),
-      ...toRemove.map(clientId => ({
-        contactId,
-        clientId,
-        action: 'unlinked' as const,
-      })),
-    ]
-
-    // Perform the updates
-    if (toAdd.length > 0) {
-      await db.insert(contactClients).values(
-        toAdd.map(clientId => ({
-          contactId,
-          clientId,
-        }))
-      )
-    }
-
-    if (toRemove.length > 0) {
-      await db
-        .delete(contactClients)
-        .where(
-          and(
-            eq(contactClients.contactId, contactId),
-            inArray(contactClients.clientId, toRemove)
-          )
-        )
-    }
-
-    // A promoted contact's portal access follows its links.
-    await syncPortalMembershipsForLinkChanges(changes)
-  } catch {
-    return { ok: false, error: 'Failed to update client links.' }
-  }
-
-  // The links are committed; a logging failure must not report the sync as failed.
-  await logContactClientLinkChanges(user, changes)
-
-  return { ok: true }
 }

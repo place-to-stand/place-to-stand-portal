@@ -1,15 +1,29 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
 import { useToast } from '@/components/ui/use-toast'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
+import {
+  LEAD_WON_NEEDS_COMPANY_MESSAGE,
+  breaksWonNeedsCompany,
+} from '@/lib/leads/won-rule'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import {
   leadFormSchema,
   type LeadFormValues,
@@ -21,50 +35,50 @@ export function useLeadSheetState({
   onOpenChange,
   lead,
   initialStatus,
-  initialAction = null,
+  initialCompanyError,
   onSuccess,
   onCreated,
   initialValues,
 }: Omit<LeadSheetProps, 'assignees' | 'canManage'>) {
+  const { open: openSheet } = useSheetParams()
   const isEditing = Boolean(lead)
   const [isSaving, startSaveTransition] = useTransition()
   const [isArchiving, startArchiveTransition] = useTransition()
-  const hasInitialAction = Boolean(lead && initialAction)
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [isConvertDialogOpen, setConvertDialogOpen] = useState(
-    () => hasInitialAction && initialAction === 'convert'
-  )
+  // Making a client is billing, so it's admin-only (`leads.convert`); it
+  // happens on the lead's company (its billing, on the company sheet).
+  const { role, userId } = useViewerAccess()
+  const canConvert =
+    roleCan(role, 'leads.convert') &&
+    lead?.status === 'CLOSED_WON' &&
+    !lead?.convertedToClientId &&
+    Boolean(lead?.companyId)
+  // Winning a lead opens its company's billing (its sheet's Client column) next, for whoever can
+  // make it a client there.
+  const canManageClients = roleCan(role, 'clients.manage')
   const { toast } = useToast()
-
-  const { setAux } = useSheetParams()
-
-  // Mirrors the convert dialog's open state into `?leadMode=convert` so the
-  // sub-state is shareable, via the router (replace) rather than raw history
-  // mutation — the Next router cache stays in sync with the URL.
-  const setActionParam = useCallback(
-    (action: string | null) => {
-      if (!lead) return
-      setAux('leadMode', action)
-    },
-    [lead, setAux]
-  )
-
-  const canConvert = lead?.status === 'CLOSED_WON' && !lead?.convertedToClientId
 
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
-      contactName: lead?.contactName ?? initialValues?.contactName ?? '',
-      contactEmail: lead?.contactEmail ?? initialValues?.contactEmail ?? '',
-      contactPhone: lead?.contactPhone ?? '',
-      companyName: lead?.companyName ?? initialValues?.companyName ?? '',
-      companyWebsite: lead?.companyWebsite ?? '',
+      contact: lead?.contactId
+        ? {
+            id: lead.contactId,
+            name: lead.contactName,
+            email: lead.contactEmail ?? null,
+            phone: lead.contactPhone ?? null,
+          }
+        : null,
+      company: lead?.companyId
+        ? { id: lead.companyId, name: lead.companyName ?? '' }
+        : null,
       sourceType: lead?.sourceType ?? null,
       sourceDetail: lead?.sourceDetail ?? '',
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
-      assigneeId: lead?.assigneeId ?? null,
+      // A new lead starts assigned to you, like a new task.
+      assigneeId: lead ? (lead.assigneeId ?? null) : userId,
       notes: lead?.notesHtml ?? initialValues?.notes ?? '',
     }),
-    [lead, initialStatus, initialValues]
+    [lead, initialStatus, initialValues, userId]
   )
 
   const form = useForm<LeadFormValues>({
@@ -72,9 +86,32 @@ export function useLeadSheetState({
     defaultValues,
   })
 
+  // Reset only when a different record (or a newer save of it) arrives. A
+  // router refresh hands over a fresh but identical `lead` object, e.g. after
+  // a sheet stacked on top saves, and must not wipe unsaved edits such as a
+  // company just picked from that sheet.
+  const resetKey = lead
+    ? `${lead.id}:${lead.updatedAt}`
+    : `new:${initialStatus ?? ''}`
+  const lastResetKey = useRef<string | null>(null)
   useEffect(() => {
+    // Closing forgets the key, so reopening always starts from the record.
+    if (!open) {
+      lastResetKey.current = null
+      return
+    }
+    if (lastResetKey.current === resetKey) return
+    lastResetKey.current = resetKey
     form.reset(defaultValues)
-  }, [defaultValues, form])
+  }, [defaultValues, form, open, resetKey])
+
+  // Shown after the reset above, which clears errors: e.g. the board refused
+  // a Won drag because the lead has no company.
+  useEffect(() => {
+    if (open && initialCompanyError) {
+      form.setError('company', { message: initialCompanyError })
+    }
+  }, [form, initialCompanyError, open])
 
   const selectedSourceType = useWatch({
     control: form.control,
@@ -95,13 +132,39 @@ export function useLeadSheetState({
 
   const handleFormSubmit = useCallback(
     (values: LeadFormValues) => {
+      // Decision 7: Won needs a company. Say so on the field before asking
+      // the server, which enforces the same rule.
+      const existingWonState = lead
+        ? { status: lead.status, companyId: lead.companyId }
+        : null
+      if (
+        breaksWonNeedsCompany(
+          { status: values.status, companyId: values.company?.id },
+          existingWonState
+        )
+      ) {
+        form.setError('company', { message: LEAD_WON_NEEDS_COMPANY_MESSAGE })
+        return
+      }
+
       startSaveTransition(async () => {
+        const { company, contact, ...fields } = values
         const result = await saveLead({
           id: lead?.id,
-          ...values,
+          ...fields,
+          // The server copies the contact's details onto the lead.
+          contactId: contact?.id,
+          contactName: contact?.name ?? '',
+          contactEmail: contact?.email ?? null,
+          contactPhone: contact?.phone ?? null,
+          companyId: company?.id ?? null,
+          companyName: company?.name ?? null,
         })
 
         if (!result.success) {
+          if (result.error === LEAD_WON_NEEDS_COMPANY_MESSAGE) {
+            form.setError('company', { message: result.error })
+          }
           toast({
             variant: 'destructive',
             title: 'Unable to save lead',
@@ -111,19 +174,14 @@ export function useLeadSheetState({
         }
 
         toast({
-          title: isEditing ? 'Lead updated' : 'Lead created',
-          description: isEditing
-            ? 'Changes saved.'
-            : 'Your new lead has been added to the pipeline.',
+          title: isEditing ? 'Lead saved' : 'Lead created',
+          description: contact?.name || undefined,
         })
 
         form.reset({
           ...values,
-          contactName: values.contactName ?? '',
-          contactEmail: values.contactEmail ?? '',
-          contactPhone: values.contactPhone ?? '',
-          companyName: values.companyName ?? '',
-          companyWebsite: values.companyWebsite ?? '',
+          contact: values.contact ?? null,
+          company: values.company ?? null,
           sourceType: values.sourceType ?? null,
           sourceDetail: values.sourceDetail ?? '',
           status: values.status,
@@ -137,9 +195,29 @@ export function useLeadSheetState({
         if (!isEditing && result.leadId) {
           onCreated?.(result.leadId)
         }
+
+        // Just won: billing the company is the next step, so open its
+        // billing where we are, in place of the lead sheet that just
+        // closed (an empty aux value drops `lead` in the same write).
+        const justWon =
+          values.status === 'CLOSED_WON' && lead?.status !== 'CLOSED_WON'
+        if (justWon && company && canManageClients) {
+          setSheetSectionTarget('company', company.id, 'billing')
+          openSheet('company', company.id, { lead: '' })
+        }
       })
     },
-    [form, isEditing, lead?.id, onOpenChange, onSuccess, onCreated, toast]
+    [
+      canManageClients,
+      form,
+      isEditing,
+      lead,
+      onOpenChange,
+      onSuccess,
+      onCreated,
+      openSheet,
+      toast,
+    ]
   )
 
   const handleSaveShortcut = useCallback(
@@ -234,9 +312,6 @@ export function useLeadSheetState({
     isArchiving,
     isArchiveDialogOpen,
     setArchiveDialogOpen,
-    isConvertDialogOpen,
-    setConvertDialogOpen,
-    setActionParam,
     canConvert,
     selectedSourceType,
     submitDisabled,

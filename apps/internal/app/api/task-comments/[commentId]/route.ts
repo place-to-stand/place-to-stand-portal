@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { getCurrentAdmin } from '@/lib/auth/session'
+import { getCurrentStaff } from '@/lib/auth/session'
 import { HttpError } from '@/lib/errors/http'
 import {
   softDeleteTaskComment,
@@ -24,7 +24,7 @@ export async function PATCH(
   request: NextRequest,
   context: RouteContext<'/api/task-comments/[commentId]'>
 ) {
-  const user = await getCurrentAdmin()
+  const user = await getCurrentStaff()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -69,7 +69,7 @@ export async function DELETE(
   _request: NextRequest,
   context: RouteContext<'/api/task-comments/[commentId]'>
 ) {
-  const user = await getCurrentAdmin()
+  const user = await getCurrentStaff()
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

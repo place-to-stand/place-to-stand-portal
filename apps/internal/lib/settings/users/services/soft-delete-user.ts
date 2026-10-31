@@ -3,10 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import {
-  clientMembers,
-  taskAssignees,
-} from '@/lib/db/schema'
+import { taskAssignees } from '@/lib/db/schema'
 import { revokeUserOauthConnections } from '@/lib/oauth/revoke-user-connections'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { softDeleteUser } from '@/lib/queries/users'
@@ -23,20 +20,9 @@ export async function softDeletePortalUser(
   const adminClient = getSupabaseServiceClient()
   const deletionTimestamp = await softDeleteUser(actor, input.id)
 
+  // Portal access needs no cleanup: it follows the person's memberships,
+  // and an archived login can't sign in to the portal.
   const associationUpdates = [
-    {
-      context: 'client assignments',
-      executor: async () =>
-        db
-          .update(clientMembers)
-          .set({ deletedAt: deletionTimestamp })
-          .where(
-            and(
-              eq(clientMembers.userId, input.id),
-              isNull(clientMembers.deletedAt),
-            ),
-          ),
-    },
     {
       context: 'task assignments',
       executor: async () =>
@@ -46,8 +32,8 @@ export async function softDeletePortalUser(
           .where(
             and(
               eq(taskAssignees.userId, input.id),
-              isNull(taskAssignees.deletedAt),
-            ),
+              isNull(taskAssignees.deletedAt)
+            )
           ),
     },
   ] as const
@@ -64,7 +50,10 @@ export async function softDeletePortalUser(
   try {
     await revokeUserOauthConnections(input.id)
   } catch (error) {
-    console.error('Failed to revoke provider connections for archived user', error)
+    console.error(
+      'Failed to revoke provider connections for archived user',
+      error
+    )
     return { error: 'Unable to revoke user provider connections.' }
   }
 

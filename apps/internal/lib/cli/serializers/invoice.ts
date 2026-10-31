@@ -9,7 +9,9 @@ export type CliInvoice = {
   id: string
   invoiceNumber: string | null
   status: string
+  /** Since 0111 the client is its company: same value as companyId. */
   clientId: string
+  companyId: string
   clientName: string | null
   issuedDate: string | null
   dueDate: string | null
@@ -28,7 +30,8 @@ export function serializeInvoice(invoice: InvoiceWithClient): CliInvoice {
     id: invoice.id,
     invoiceNumber: invoice.invoice_number,
     status: invoice.status,
-    clientId: invoice.client_id,
+    clientId: invoice.company_id,
+    companyId: invoice.company_id,
     clientName: invoice.client?.name ?? null,
     issuedDate: invoice.issued_date,
     dueDate: invoice.due_date,

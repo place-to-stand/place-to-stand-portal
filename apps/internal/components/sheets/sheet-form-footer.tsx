@@ -34,11 +34,11 @@ export type SheetFormFooterProps = {
   canUndo: boolean
   canRedo: boolean
   isEditing: boolean
-  deleteDisabled: boolean
-  deleteDisabledReason: string | null
-  onRequestDelete: () => void
+  archiveDisabled: boolean
+  archiveDisabledReason: string | null
+  onRequestArchive: () => void
   /** Accessible label for the destructive button, e.g. 'Archive task'. */
-  deleteAriaLabel: string
+  archiveAriaLabel: string
 }
 
 export function SheetFormFooter(props: SheetFormFooterProps) {
@@ -52,10 +52,10 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
     canUndo,
     canRedo,
     isEditing,
-    deleteDisabled,
-    deleteDisabledReason,
-    onRequestDelete,
-    deleteAriaLabel,
+    archiveDisabled,
+    archiveDisabledReason,
+    onRequestArchive,
+    archiveAriaLabel,
   } = props
 
   return (
@@ -95,15 +95,15 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
       </div>
       {isEditing ? (
         <DisabledFieldTooltip
-          disabled={deleteDisabled}
-          reason={deleteDisabledReason}
+          disabled={archiveDisabled}
+          reason={archiveDisabledReason}
         >
           <Button
             type='button'
             variant='destructive'
-            onClick={onRequestDelete}
-            disabled={deleteDisabled}
-            aria-label={deleteAriaLabel}
+            onClick={onRequestArchive}
+            disabled={archiveDisabled}
+            aria-label={archiveAriaLabel}
             size='icon-sm'
           >
             <Archive />

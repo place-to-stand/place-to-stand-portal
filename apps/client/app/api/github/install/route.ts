@@ -8,29 +8,32 @@ import { ensureClientAccess } from '@/lib/auth/permissions'
 import { getGitHubAppEnv } from '@/lib/env.server'
 
 /**
- * GET /api/github/install?clientId=xxx&projectId=xxx
+ * GET /api/github/install?companyId=xxx&projectId=xxx
  *
  * Generates a CSRF state token, stores it in a cookie,
  * and redirects to the GitHub App installation page.
- * Requires clientId so the callback can attribute the installation to the
+ * Requires companyId so the callback can attribute the installation to the
  * right client explicitly, rather than guessing from the caller's memberships.
  */
 export async function GET(request: Request) {
   const user = await getCurrentUser()
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    )
   }
 
   const url = new URL(request.url)
-  const clientId = url.searchParams.get('clientId')
-  if (!clientId) {
+  const companyId = url.searchParams.get('companyId')
+  if (!companyId) {
     return NextResponse.json(
-      { ok: false, error: 'clientId is required' },
+      { ok: false, error: 'companyId is required' },
       { status: 400 }
     )
   }
 
-  await ensureClientAccess(user, clientId)
+  await ensureClientAccess(user, companyId)
 
   getGitHubAppEnv() // validate env vars are present
   const state = nanoid(32)
@@ -48,7 +51,7 @@ export async function GET(request: Request) {
 
   // Store the target client so the callback attributes the installation to
   // it explicitly instead of inferring from the caller's memberships.
-  cookieStore.set('github_app_return_client', clientId, {
+  cookieStore.set('github_app_return_client', companyId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

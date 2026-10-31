@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { MessageSquareText, Plus } from 'lucide-react'
+import { MessageSquareText } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Badge } from '@pts/ui/badge'
+import { EntityList } from '@/components/sheets/entity-list'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
 
 import { LeadUpdateDialog } from './lead-update-dialog'
@@ -24,6 +25,8 @@ export function LeadUpdatesSection({
   onSuccess,
 }: LeadUpdatesSectionProps) {
   const [updates, setUpdates] = useState<LeadUpdateRecord[]>([])
+  // The updates there when the list first loaded; later ones ease in.
+  const [initialIds, setInitialIds] = useState<Set<string> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -41,7 +44,12 @@ export function LeadUpdatesSection({
           throw new Error(`Request failed: ${response.status}`)
         }
         const data = await response.json()
-        setUpdates(data.updates ?? [])
+        const next: LeadUpdateRecord[] = data.updates ?? []
+        // The first load sets what counts as already there.
+        setInitialIds(
+          previous => previous ?? new Set(next.map(update => update.id))
+        )
+        setUpdates(next)
         setLoadFailed(false)
       })
       .catch(error => {
@@ -60,14 +68,18 @@ export function LeadUpdatesSection({
     fetchUpdates()
   }, [fetchUpdates])
 
+  // The heading's X bumps this; the form closes as if Cancel was clicked.
+  const [closeRequest, setCloseRequest] = useState(0)
+
   const openLogDialog = useCallback(() => {
     setEditingUpdate(null)
     setIsDialogOpen(true)
   }, [])
 
+  // Editing happens in place: the card turns into the form where it sits.
   const openEditDialog = useCallback((update: LeadUpdateRecord) => {
+    setIsDialogOpen(false)
     setEditingUpdate(update)
-    setIsDialogOpen(true)
   }, [])
 
   const handleSaved = useCallback(() => {
@@ -76,76 +88,91 @@ export function LeadUpdatesSection({
   }, [fetchUpdates, onSuccess])
 
   return (
-    <div className='space-y-3'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2'>
-          <MessageSquareText className='text-muted-foreground h-4 w-4' />
-          <span className='text-sm font-medium'>Updates</span>
-          {updates.length > 0 && (
-            <Badge variant='secondary' className='text-xs'>
-              {updates.length}
-            </Badge>
-          )}
-        </div>
-        {canManage && (
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={openLogDialog}
-          >
-            <Plus className='h-3 w-3' />
-            Log
-          </Button>
-        )}
-      </div>
-
-      {isLoading ? (
-        <div className='space-y-2'>
-          <Skeleton className='h-16 w-full' />
-          <Skeleton className='h-16 w-full' />
-        </div>
-      ) : loadFailed ? (
-        <EmptyState
-          message='Unable to load updates.'
-          action={
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => {
-                setIsLoading(true)
-                setLoadFailed(false)
-                void fetchUpdates()
+    <>
+      <EntityList
+        title='Updates'
+        icon={MessageSquareText}
+        titleAddon={
+          updates.length > 0 ? (
+            <Badge variant='secondary'>{updates.length}</Badge>
+          ) : null
+        }
+        add={
+          canManage ? { label: 'Add update', onAdd: openLogDialog } : undefined
+        }
+        inlineForm={
+          <LeadUpdateDialog
+            leadId={lead.id}
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            update={null}
+            onSaved={handleSaved}
+            closeRequest={closeRequest}
+          />
+        }
+        inlineFormOpen={isDialogOpen}
+        onInlineFormClose={() => setCloseRequest(n => n + 1)}
+        isEmpty={updates.length === 0}
+        emptyMessage='No updates on this lead yet.'
+        status={
+          isLoading ? (
+            <div className='space-y-2'>
+              <Skeleton className='h-16 w-full' />
+              <Skeleton className='h-16 w-full' />
+            </div>
+          ) : loadFailed ? (
+            <EmptyState
+              message='Unable to load updates.'
+              action={
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => {
+                    setIsLoading(true)
+                    setLoadFailed(false)
+                    void fetchUpdates()
+                  }}
+                >
+                  Retry
+                </Button>
+              }
+            />
+          ) : undefined
+        }
+      >
+        {updates.map(update =>
+          editingUpdate?.id === update.id ? (
+            <LeadUpdateDialog
+              key={update.id}
+              leadId={lead.id}
+              open
+              onOpenChange={open => {
+                if (!open) setEditingUpdate(null)
               }}
-            >
-              Retry
-            </Button>
-          }
-        />
-      ) : updates.length === 0 ? (
-        <EmptyState message='No interactions logged yet.' />
-      ) : (
-        <div className='space-y-2'>
-          {updates.map(update => (
+              update={update}
+              onSaved={() => {
+                setEditingUpdate(null)
+                handleSaved()
+              }}
+            />
+          ) : (
             <LeadUpdateItem
               key={update.id}
+              // An update logged after the list loaded eases in.
+              className={
+                initialIds && !initialIds.has(update.id)
+                  ? 'animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out motion-reduce:animate-none'
+                  : undefined
+              }
               update={update}
               canManage={canManage}
               onEdit={openEditDialog}
               onArchived={handleSaved}
             />
-          ))}
-        </div>
-      )}
-
-      <LeadUpdateDialog
-        leadId={lead.id}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        update={editingUpdate}
-        onSaved={handleSaved}
-      />
-    </div>
+          )
+        )}
+      </EntityList>
+    </>
   )
 }

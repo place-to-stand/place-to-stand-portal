@@ -22,9 +22,13 @@ const projectRefSchema = z
   .describe('Project slug or UUID.')
 
 /** A user UUID or email address — resolved server-side, same reasoning. */
+// A task has one assignee. Still a list for compatibility: only the first
+// entry is kept (more than one is deprecated).
 const assigneeRefSchema = z
   .array(z.string().trim().min(1))
-  .describe('Assignees, as user emails or UUIDs. Replaces the current list.')
+  .describe(
+    'The assignee, as a one-item list with a user email or UUID ([] unassigns). A task has one assignee: only the first entry is kept; passing more is deprecated.'
+  )
 
 const descriptionSchema = z
   .string()

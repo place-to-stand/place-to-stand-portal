@@ -88,7 +88,6 @@ const pendingReason = PENDING_REASON
 export function EditProfileDialog({ open, onOpenChange, user }: Props) {
   const router = useRouter()
   const { toast } = useToast()
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [avatarFieldKey, setAvatarFieldKey] = useState(0)
   // Block Save while an avatar upload is in flight — submitting mid-upload
@@ -116,7 +115,6 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
       avatarRemoved: false,
     })
     startTransition(() => {
-      setFeedback(null)
       setAvatarFieldKey(key => key + 1)
     })
   }, [form, startTransition, user.avatar_url, user.full_name])
@@ -153,8 +151,6 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
 
   const onSubmit = (values: FormValues) => {
     startTransition(async () => {
-      setFeedback(null)
-
       const newEmail = values.email?.trim() || undefined
       const payload = {
         fullName: values.fullName.trim(),
@@ -169,7 +165,11 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
       const result = await updateProfile(payload)
 
       if (result.error) {
-        setFeedback(result.error)
+        toast({
+          variant: 'destructive',
+          title: 'Unable to save profile',
+          description: result.error,
+        })
         return
       }
 
@@ -180,7 +180,7 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
         })
       } else {
         toast({
-          title: 'Profile updated',
+          title: 'Profile saved',
         })
       }
 
@@ -211,7 +211,7 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
 
                   return (
                     <FormItem>
-                      <FormLabel>Avatar</FormLabel>
+                      <FormLabel>Photo</FormLabel>
                       <FormControl>
                         <AvatarUploadField
                           key={avatarFieldKey}
@@ -336,11 +336,6 @@ export function EditProfileDialog({ open, onOpenChange, user }: Props) {
                   )
                 }}
               />
-              {feedback ? (
-                <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-                  {feedback}
-                </p>
-              ) : null}
               <DialogFooter className='flex flex-wrap items-center justify-end gap-3'>
                 <Button
                   type='button'

@@ -11,7 +11,7 @@ import { NotFoundError } from '@/lib/errors/http'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { fetchContactsForClient } from '@/lib/queries/clients/contacts'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
-import { clientDetailHref } from '@/lib/sheets/hrefs'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 import { fetchClientUpdate, type ClientUpdateRow } from '@/lib/updates'
 import {
   fetchComposerTaskOptions,
@@ -43,9 +43,7 @@ export async function generateMetadata({
   const update = await loadUpdate(updateId)
 
   return {
-    title: update
-      ? `${update.subject} | Updates`
-      : 'Update not found',
+    title: update ? `${update.subject} | Updates` : 'Update not found',
   }
 }
 
@@ -63,10 +61,10 @@ export default async function UpdatePage({
     .filter((id): id is string => !!id)
   const [client, contacts, hoursByClient, taskOptions, hints, staff] =
     await Promise.all([
-      fetchClientById(user, update.clientId),
-      fetchContactsForClient(update.clientId),
-      getClientHoursTotals(db, [update.clientId]),
-      fetchComposerTaskOptions(update.clientId),
+      fetchClientById(user, update.companyId),
+      fetchContactsForClient(update.companyId),
+      getClientHoursTotals(db, [update.companyId]),
+      fetchComposerTaskOptions(update.companyId),
       fetchLatestCommentHints(taskIds),
       fetchActiveStaff(),
     ])
@@ -79,20 +77,32 @@ export default async function UpdatePage({
   return (
     <PageShell
       breadcrumbs={[
-        ...crumbsForNav('/clients'),
-        { label: client.name, href: clientDetailHref(client) },
+        ...crumbsForNav('/companies'),
+        {
+          label: client.name,
+          href: client.companyId
+            ? companySheetHref(client.companyId)
+            : undefined,
+        },
         { label: update.status === 'SENT' ? 'Sent update' : 'Draft update' },
       ]}
     >
       <UpdateComposer
         update={update}
         clientName={client.name}
-        contacts={contacts.map(contact => ({
-          id: contact.id,
-          name: contact.name,
-          email: contact.email,
-          isPrimary: contact.isPrimary,
-        }))}
+        contacts={contacts.flatMap(contact =>
+          // Only contacts with an email can receive the update.
+          contact.email
+            ? [
+                {
+                  id: contact.id,
+                  name: contact.name,
+                  email: contact.email,
+                  isPrimary: contact.isPrimary,
+                },
+              ]
+            : []
+        )}
         hours={hours}
         portalHref={portalHomeHref()}
         greetingName={greetingNameFromContacts(contacts)}

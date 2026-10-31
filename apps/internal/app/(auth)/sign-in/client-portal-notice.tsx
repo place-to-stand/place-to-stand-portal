@@ -10,7 +10,7 @@ export function ClientPortalNotice({ clientPortalUrl }: Props) {
   return (
     <div className={`space-y-2 ${authNoticeClass}`}>
       <p>
-        This account is for the client portal, which has its own sign-in page.
+        This is a client portal user. The client portal has its own sign-in page.
       </p>
       <a
         href={clientPortalUrl}

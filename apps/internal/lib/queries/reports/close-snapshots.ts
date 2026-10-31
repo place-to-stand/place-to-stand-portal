@@ -1,10 +1,10 @@
+import { clientNameSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, eq, gt, gte, isNull, lte, or, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
-import {
-  clients,
+import { db, type DbTx } from '@/lib/db'
+import { companies,
   hourBlocks,
   monthlyCloseSnapshots,
   projects,
@@ -12,8 +12,7 @@ import {
   users,
 } from '@/lib/db/schema'
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type DbOrTransaction = typeof db | DbTransaction
+type DbOrTransaction = typeof db | DbTx
 
 export type SnapshotRow = {
   id: string
@@ -37,7 +36,7 @@ export async function getActiveSnapshot(
       report: monthlyCloseSnapshots.report,
       closedAt: monthlyCloseSnapshots.closedAt,
       closedBy: monthlyCloseSnapshots.closedBy,
-      closedByName: users.fullName,
+      closedByName: personNameSql,
     })
     .from(monthlyCloseSnapshots)
     .leftJoin(users, eq(monthlyCloseSnapshots.closedBy, users.id))
@@ -155,7 +154,7 @@ export async function fetchLateRecords(
     db
       .select({
         id: timeLogs.id,
-        clientName: clients.name,
+        clientName: clientNameSql,
         hours: timeLogs.hours,
         eventDate: timeLogs.loggedOn,
         createdAt: timeLogs.createdAt,
@@ -164,7 +163,7 @@ export async function fetchLateRecords(
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .leftJoin(clients, eq(projects.clientId, clients.id))
+      .leftJoin(companies, eq(projects.companyId, companies.id))
       .where(
         and(
           gte(timeLogs.loggedOn, monthStart),
@@ -179,7 +178,7 @@ export async function fetchLateRecords(
     db
       .select({
         id: hourBlocks.id,
-        clientName: clients.name,
+        clientName: clientNameSql,
         hours: hourBlocks.hoursPurchased,
         eventDate: hourBlocks.billingMonth,
         createdAt: hourBlocks.createdAt,
@@ -187,7 +186,7 @@ export async function fetchLateRecords(
         deletedAt: hourBlocks.deletedAt,
       })
       .from(hourBlocks)
-      .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
+      .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
       .where(
         and(
           gte(hourBlocks.billingMonth, monthStart),
@@ -228,4 +227,18 @@ export async function hasActiveSnapshotForDate(date: string): Promise<boolean> {
     .limit(1)
 
   return Boolean(row)
+}
+
+/** Every month with an active close, as month starts ('yyyy-MM-01'). */
+export async function listClosedMonthStarts(): Promise<string[]> {
+  const rows = await db
+    .select({
+      year: monthlyCloseSnapshots.year,
+      month: monthlyCloseSnapshots.month,
+    })
+    .from(monthlyCloseSnapshots)
+    .where(isNull(monthlyCloseSnapshots.deletedAt))
+  return rows.map(
+    row => `${row.year}-${String(row.month).padStart(2, '0')}-01`
+  )
 }

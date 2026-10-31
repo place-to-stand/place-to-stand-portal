@@ -1,3 +1,4 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -9,6 +10,13 @@ import { db } from '@/lib/db'
 import { leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { extractLeadNotes } from '@/lib/leads/notes'
+import {
+  leadCompany,
+  leadCompanyJoin,
+  leadContact,
+  leadContactJoin,
+  leadDisplayFields,
+} from '@/lib/leads/lead-display'
 import { LEAD_BOARD_COLUMNS, type LeadStatusValue } from '@/lib/leads/constants'
 import type {
   LeadAssigneeOption,
@@ -60,6 +68,8 @@ export const fetchLeadsBoard = cache(
         contactPhone: row.contactPhone ?? null,
         companyName: row.companyName ?? null,
         companyWebsite: row.companyWebsite ?? null,
+        companyId: row.companyId ?? null,
+        contactId: row.contactId ?? null,
         notesHtml: extractLeadNotes(row.notes),
         rank: row.rank,
         createdAt: row.createdAt,
@@ -126,6 +136,8 @@ export const fetchLeadById = cache(
       contactPhone: lead.contactPhone ?? null,
       companyName: lead.companyName ?? null,
       companyWebsite: lead.companyWebsite ?? null,
+      companyId: lead.companyId ?? null,
+      contactId: lead.contactId ?? null,
       notesHtml: extractLeadNotes(lead.notes),
       rank: lead.rank,
       createdAt: lead.createdAt,
@@ -179,6 +191,8 @@ export const fetchArchivedLeads = cache(
       contactPhone: row.contactPhone ?? null,
       companyName: row.companyName ?? null,
       companyWebsite: row.companyWebsite ?? null,
+      companyId: row.companyId ?? null,
+      contactId: row.contactId ?? null,
       notesHtml: extractLeadNotes(row.notes),
       rank: row.rank,
       createdAt: row.createdAt,
@@ -224,18 +238,20 @@ async function selectLeadRows({
   const selection = {
     deletedAt: leads.deletedAt,
     id: leads.id,
-    contactName: leads.contactName,
+    contactName: leadDisplayFields.contactName,
     status: leads.status,
     sourceType: leads.sourceType,
     sourceDetail: leads.sourceDetail,
     assigneeId: leads.assigneeId,
-    assigneeName: users.fullName,
+    assigneeName: personNameSql,
     assigneeEmail: users.email,
-    assigneeAvatarUrl: users.avatarUrl,
-    contactEmail: leads.contactEmail,
-    contactPhone: leads.contactPhone,
-    companyName: leads.companyName,
-    companyWebsite: leads.companyWebsite,
+    assigneeAvatarUrl: personAvatarSql,
+    contactEmail: leadDisplayFields.contactEmail,
+    contactPhone: leadDisplayFields.contactPhone,
+    companyName: leadDisplayFields.companyName,
+    companyWebsite: leadDisplayFields.companyWebsite,
+    companyId: leads.companyId,
+    contactId: leads.contactId,
     notes: leads.notes,
     rank: includeRank ? leads.rank : sql<string>`'zzzzzzzz'`,
     createdAt: leads.createdAt,
@@ -247,7 +263,8 @@ async function selectLeadRows({
     expectedCloseDate: leads.expectedCloseDate,
     // Conversion
     convertedAt: leads.convertedAt,
-    convertedToClientId: leads.convertedToClientId,
+    // A won lead's client is its company (0111).
+  convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
     // Raw SQL on purpose: interpolating the Drizzle columns here would strip
     // the table qualification and break the correlation with the outer row.
     openTaskCount: sql<number>`(
@@ -267,6 +284,8 @@ async function selectLeadRows({
   return db
     .select(selection)
     .from(leads)
+    .innerJoin(leadContact, leadContactJoin)
+    .leftJoin(leadCompany, leadCompanyJoin)
     .leftJoin(users, eq(users.id, leads.assigneeId))
     .where(where ? and(where, deletedFilter) : deletedFilter)
     .orderBy(

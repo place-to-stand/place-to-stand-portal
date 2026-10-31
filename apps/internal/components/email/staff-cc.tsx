@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { Checkbox } from '@pts/ui/checkbox'
 import { Label } from '@pts/ui/label'
 
@@ -31,9 +32,7 @@ export function StaffCc({
     : staff
 
   if (others.length === 0) {
-    return (
-      <p className='text-muted-foreground text-sm'>No other staff to copy.</p>
-    )
+    return <EmptyState message='No other staff to copy.' />
   }
 
   const toggle = (email: string, checked: boolean) =>

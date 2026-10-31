@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -27,7 +28,7 @@ export const fetchPtsStaffGitHubAccounts = cache(
     const rows = await db
       .select({
         userId: users.id,
-        fullName: users.fullName,
+        fullName: personNameSql,
         email: users.email,
         providerMetadata: oauthConnections.providerMetadata,
       })

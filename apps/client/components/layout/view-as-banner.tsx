@@ -58,7 +58,7 @@ export function ViewAsBanner({
               size='sm'
               className='border-amber-500/40 dark:border-amber-500/40'
             >
-              {selectedContact?.name ?? 'Select a contact to preview'}
+              {selectedContact?.name ?? 'Choose a person to preview'}
               <ChevronDownIcon aria-hidden='true' />
             </Button>
           </DropdownMenuTrigger>
@@ -102,7 +102,7 @@ export function ViewAsBanner({
         )}
         {!selectedContact && (
           <span className='text-muted-foreground hidden text-xs sm:inline'>
-            Select a contact above to preview the portal.
+            Choose a person above to see the portal as they do.
           </span>
         )}
       </div>

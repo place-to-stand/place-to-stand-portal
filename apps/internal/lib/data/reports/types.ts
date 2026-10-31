@@ -47,7 +47,7 @@ export type PayrollData = {
 // originator; the data layer groups them by `${kind}:${id}` to roll totals
 // per originator across both billing types.
 export type OriginationClientDetail = {
-  clientId: string
+  companyId: string
   clientName: string
   billingType: 'prepaid' | 'net_30'
   hours: number
@@ -58,7 +58,7 @@ export type OriginationGroupRow = {
   originatorKind: OriginatorKind
   originatorId: string
   originatorName: string
-  originatorEmail: string
+  originatorEmail: string | null
   /** Only populated for `originatorKind === 'user'`. */
   originatorAvatarUrl: string | null
   originatorUpdatedAt: string | null
@@ -79,7 +79,7 @@ export type OriginationData = {
 // one client: `hours` are the CREDITED hours (client billing hours × share),
 // so `commission = hours × rate` and the section totals stay rate × hours.
 export type CloserClientDetail = {
-  clientId: string
+  companyId: string
   clientName: string
   billingType: 'prepaid' | 'net_30'
   /** Credited hours: the client's billing hours × sharePercent / 100. */
@@ -113,7 +113,7 @@ export type CloserData = {
 
 // Prepaid billing
 export type PrepaidBillingRow = {
-  clientId: string
+  companyId: string
   clientName: string
   totalHours: number
   amount: number
@@ -130,7 +130,7 @@ export type PrepaidBillingData = {
 export type SalesTaxRow = {
   invoiceId: string
   invoiceNumber: string | null
-  clientId: string
+  companyId: string
   clientName: string
   /** UTC calendar day the payment landed ("yyyy-MM-dd"). */
   paidOn: string
@@ -149,7 +149,7 @@ export type SalesTaxData = {
 
 // Net 30 billing
 export type Net30Row = {
-  clientId: string
+  companyId: string
   clientName: string
   totalHours: number
   amount: number
@@ -172,7 +172,8 @@ export type PartnerPayoutRow = {
   kind: PartnerPayoutPayeeKind
   id: string
   name: string
-  email: string
+  /** Contacts may have no email. */
+  email: string | null
   /** Only populated for `kind === 'user'`. */
   avatarUrl: string | null
   avatarUpdatedAt: string | null

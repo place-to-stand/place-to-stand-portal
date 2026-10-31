@@ -40,7 +40,6 @@ export function registerTaskTools(server: McpServer) {
     title: 'List tasks',
     description:
       'List tasks, most recently updated first. Filter by project, lead, status or assignee. Descriptions are plain-text previews; get_task returns the full task and its comments.',
-    access: 'admin',
     effect: 'read',
     input: {
       project: z
@@ -96,7 +95,6 @@ export function registerTaskTools(server: McpServer) {
     name: 'get_task',
     title: 'Get task',
     description: `One task with its full description and its ${RECENT_COMMENTS} most recent comments.`,
-    access: 'admin',
     effect: 'read',
     input: { taskId },
     run: async ({ taskId }, { user }) => {
@@ -118,7 +116,6 @@ export function registerTaskTools(server: McpServer) {
     title: 'Create task',
     description:
       'Create a task on a project board, as the connected user. project is required unless leadId is set (a lead task with no project goes to the internal Sales project).',
-    access: 'admin',
     effect: 'write',
     input: cliCreateTaskFields,
     run: async (args, { user }) => {
@@ -126,9 +123,9 @@ export function registerTaskTools(server: McpServer) {
         throw new BadRequestError('project is required unless leadId is set.')
       }
 
-      const { task, warning } = await createTaskFromInput(user, args, 'MCP')
+      const { task } = await createTaskFromInput(user, args, 'MCP')
 
-      return { task, ...(warning ? { warning } : {}) }
+      return { task }
     },
   })
 
@@ -136,8 +133,7 @@ export function registerTaskTools(server: McpServer) {
     name: 'update_task',
     title: 'Update task',
     description:
-      'Change a task: title, description, status, due date, assignees, project or lead. Omitted fields keep their value; null clears one. assigneeIds replaces the whole list. No tool archives or deletes a task: set status DONE, or archive it in the portal.',
-    access: 'admin',
+      'Change a task: title, description, status, due date, assignee, project or lead. Omitted fields keep their value; null clears one. A task has one assignee: assigneeIds takes a one-item list ([] unassigns) and only its first entry is kept. No tool archives or deletes a task: set status DONE, or archive it in the portal.',
     effect: 'idempotent-write',
     input: { taskId, ...cliUpdateTaskFields },
     run: async ({ taskId, ...changes }, { user }) => {
@@ -145,14 +141,9 @@ export function registerTaskTools(server: McpServer) {
         throw new BadRequestError('Provide at least one field to update.')
       }
 
-      const { task, warning } = await updateTaskFromInput(
-        user,
-        taskId,
-        changes,
-        'MCP'
-      )
+      const { task } = await updateTaskFromInput(user, taskId, changes, 'MCP')
 
-      return { task, ...(warning ? { warning } : {}) }
+      return { task }
     },
   })
 
@@ -161,7 +152,6 @@ export function registerTaskTools(server: McpServer) {
     title: 'Comment on task',
     description:
       'Post a comment on a task as the connected user. Clients may read task comments, so lead with the outcome and keep technical detail last.',
-    access: 'admin',
     effect: 'write',
     input: { taskId, ...cliCreateCommentFields },
     run: async ({ taskId, body }, { user }) => ({

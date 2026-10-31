@@ -1,7 +1,9 @@
 'use server'
+import { isClientCompany } from '@pts/db/client-state'
 
+import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -9,28 +11,24 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceVoidedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { invoices, clients } from '@/lib/db/schema'
+import { companies, invoices } from '@/lib/db/schema'
 
 import { voidSchema } from './schemas'
 import type { ActionResult, VoidInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
-export async function voidInvoice(
-  input: VoidInput,
-): Promise<ActionResult> {
+export async function voidInvoice(input: VoidInput): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
       entity: 'invoice',
       mode: 'void',
       targetId: input.id,
     },
-    async () => performVoidInvoice(input),
+    async () => performVoidInvoice(input)
   )
 }
 
-async function performVoidInvoice(
-  input: VoidInput,
-): Promise<ActionResult> {
+async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
 
@@ -46,7 +44,7 @@ async function performVoidInvoice(
     .select({
       id: invoices.id,
       status: invoices.status,
-      clientId: invoices.clientId,
+      companyId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
     })
     .from(invoices)
@@ -64,9 +62,9 @@ async function performVoidInvoice(
   }
 
   const clientRows = await db
-    .select({ name: clients.name })
-    .from(clients)
-    .where(and(eq(clients.id, existing.clientId), isNull(clients.deletedAt)))
+    .select({ name: clientNameSql })
+    .from(companies)
+    .where(and(isClientCompany(), eq(companies.id, existing.companyId)))
     .limit(1)
 
   const clientName = clientRows[0]?.name ?? null
@@ -83,10 +81,7 @@ async function performVoidInvoice(
     console.error('Failed to void invoice', error)
 
     return {
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to void invoice.',
+      error: error instanceof Error ? error.message : 'Unable to void invoice.',
     }
   }
 
@@ -102,7 +97,7 @@ async function performVoidInvoice(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoiceId,
-    targetClientId: existing.clientId,
+    targetCompanyId: existing.companyId,
     metadata: event.metadata,
   })
 

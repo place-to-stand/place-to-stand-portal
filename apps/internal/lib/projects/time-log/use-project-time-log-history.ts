@@ -11,6 +11,7 @@ import {
   type ProjectTimeLogHistoryDialogParams,
   type TimeLogEntry,
 } from './types'
+import { requestTimeLogArchiveChange } from './time-log-archive-request'
 
 const PAGE_SIZE = 10
 
@@ -111,47 +112,19 @@ export function useProjectTimeLogHistory(
   const isLoadingMore = isFetching && isPlaceholderData
 
   const deleteLog = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(
-        `/api/projects/${projectId}/time-logs/${id}`,
-        { method: 'DELETE' }
-      )
-
-      let payload: unknown = null
-      try {
-        payload = await response.json()
-      } catch {
-        payload = null
-      }
-
-      if (!response.ok) {
-        const message =
-          typeof payload === 'object' && payload && 'error' in payload
-            ? String((payload as { error?: unknown }).error ?? '').trim()
-            : ''
-
-        throw new Error(message || 'Unable to delete time log.')
-      }
-
-      // PRD 002 section 05: closed-month warning riding the API response.
-      const warning =
-        typeof payload === 'object' && payload && 'warning' in payload
-          ? String((payload as { warning?: unknown }).warning ?? '').trim()
-          : ''
-
-      return { warning: warning || null }
-    },
+    mutationFn: (id: string) =>
+      requestTimeLogArchiveChange(projectId, id, 'archive'),
     onSuccess: async data => {
       await queryClient.invalidateQueries({ queryKey: baseQueryKey })
       toast({
-        title: 'Time entry removed',
+        title: 'Time log archived',
         description: 'The log no longer counts toward the burndown total.',
       })
       if (data?.warning) {
         toast({
           title: 'Closed month',
           description: data.warning,
-          variant: 'destructive',
+          variant: 'warning',
         })
       }
       setPendingDelete(null)

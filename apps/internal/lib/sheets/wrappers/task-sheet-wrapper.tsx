@@ -49,7 +49,7 @@ export function TaskSheetWrapper({
       defaultProjectId={
         leadId ? data.salesProjectId : (data.task?.project_id ?? null)
       }
-      defaultAssigneeId={null}
+      defaultAssigneeId={data.currentUserId}
       defaultLeadId={leadId}
     />
   )

@@ -12,7 +12,47 @@ import {
 import type { ContactSortField } from '@/lib/settings/contacts/filters'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 
+import { mainCompanyNameSql } from '@/lib/queries/memberships'
+
 import type { ContactsSettingsListItem } from './types'
+
+/** The People list's Companies column sorts by the person's main company. */
+const mainCompanySortSql = mainCompanyNameSql(contacts.id)
+
+/**
+ * Sign-in column order: Admin, Sales, Client; no live sign-in (none,
+ * archived or disabled: the column's dash) is null.
+ */
+const SIGN_IN_RANK = { ADMIN: '1', SALES: '2', CLIENT: '3' } as const
+const signInRankSql = sql`(
+  select case u.role when 'ADMIN' then '1' when 'SALES' then '2' when 'CLIENT' then '3' end
+  from users u
+  where u.id = "contacts"."user_id"
+    and u.deleted_at is null and u.disabled_at is null
+)`
+
+/**
+ * A nullable sort key that puts empty values last in both directions; the
+ * cursor encodes null as '' (like `phone`).
+ */
+function nullsLastDescriptor(
+  expr: SQL,
+  encode: (row: ContactsSettingsListItem) => string
+): ContactSortDescriptor {
+  return {
+    encode,
+    compare: (op, value) =>
+      value === ''
+        ? sql`false`
+        : op === 'gt'
+          ? sql`(${expr} > ${value} OR ${expr} IS NULL)`
+          : sql`(${expr} < ${value} OR ${expr} IS NULL)`,
+    equals: value =>
+      value === '' ? sql`${expr} IS NULL` : sql`${expr} = ${value}`,
+    orderAsc: sql`${expr} ASC NULLS LAST`,
+    orderDesc: sql`${expr} DESC NULLS LAST`,
+  }
+}
 
 export type StatusFilter = 'active' | 'archived'
 
@@ -28,7 +68,9 @@ export function buildStatusCondition(status: StatusFilter): SQL {
   return sql`${contacts.deletedAt} IS NULL`
 }
 
-export function buildSearchCondition(search: string | null | undefined): SQL | null {
+export function buildSearchCondition(
+  search: string | null | undefined
+): SQL | null {
   const trimmed = search?.trim()
   if (!trimmed) {
     return null
@@ -39,34 +81,49 @@ export function buildSearchCondition(search: string | null | undefined): SQL | n
 }
 
 /**
- * Linked-client filter: keeps contacts with a live link to the given client.
- * Mirrors the Linked Clients cell semantics (archived clients don't count).
+ * Company filter: keeps contacts with a live link to the given company (for
+ * a client, portal access in `portal` mode).
  * Raw identifiers for the same dequalification reason as
  * `linkedClientsCountSql` below.
  */
 export function buildClientCondition(
-  clientId: string | null | undefined
+  companyId: string | null | undefined,
+  /** portal: can see the client in the portal; member: works there. */
+  match: 'portal' | 'member' = 'portal'
 ): SQL | null {
-  if (!clientId) {
+  if (!companyId) {
     return null
   }
 
-  return sql`exists (
+  if (match === 'member') {
+    return sql`exists (
+      select 1
+      from memberships m
+      where m.contact_id = contacts.id
+        and m.company_id = ${companyId}
+        and m.ended_at is null
+    )`
+  }
+
+  // A client: who can see it in the portal. Any other company has no portal,
+  // so: who works there.
+  return sql`(exists (
     select 1
-    from contact_clients cc
-    inner join clients c
-      on c.id = cc.client_id
-      and c.deleted_at is null
-    where cc.contact_id = contacts.id
-      and cc.client_id = ${clientId}
-  )`
+    from client_portal_access cpa
+    where cpa.contact_id = contacts.id
+      and cpa.company_id = ${companyId}
+  ) or (not company_is_client(${companyId}::uuid) and exists (
+    select 1
+    from memberships m
+    where m.contact_id = contacts.id
+      and m.company_id = ${companyId}
+      and m.ended_at is null
+  )))`
 }
 
 /**
- * Live linked-client count as a correlated subquery: counts only links to
- * non-archived clients so sorting (and the count the row displays) matches
- * the names shown in the Linked Clients cell, which filters archived
- * clients out.
+ * Live count of the clients a person can see in the portal, as a correlated
+ * subquery (the MCP directory reports it).
  *
  * Raw identifiers throughout: drizzle dequalifies interpolated columns when
  * a fragment is used as a selected field, which breaks references inside a
@@ -74,11 +131,8 @@ export function buildClientCondition(
  */
 export const linkedClientsCountSql = sql<number>`(
   select count(*)
-  from contact_clients cc
-  inner join clients c
-    on c.id = cc.client_id
-    and c.deleted_at is null
-  where cc.contact_id = contacts.id
+  from client_portal_access cpa
+  where cpa.contact_id = contacts.id
 )`
 
 /**
@@ -113,7 +167,7 @@ export const CONTACT_SORT_DESCRIPTORS: Record<
     orderDesc: sql`${contacts.name} DESC`,
   },
   email: {
-    encode: row => row.email,
+    encode: row => row.email ?? '',
     compare: (op, value) =>
       op === 'gt'
         ? sql`${contacts.email} > ${value}`
@@ -139,17 +193,13 @@ export const CONTACT_SORT_DESCRIPTORS: Record<
     orderAsc: sql`${contacts.phone} ASC NULLS LAST`,
     orderDesc: sql`${contacts.phone} DESC NULLS LAST`,
   },
-  clients: {
-    encode: row => String(row.metrics.totalClients),
-    compare: (op, value) =>
-      op === 'gt'
-        ? sql`${linkedClientsCountSql} > ${Number.parseInt(value, 10) || 0}`
-        : sql`${linkedClientsCountSql} < ${Number.parseInt(value, 10) || 0}`,
-    equals: value =>
-      sql`${linkedClientsCountSql} = ${Number.parseInt(value, 10) || 0}`,
-    orderAsc: sql`${linkedClientsCountSql} ASC`,
-    orderDesc: sql`${linkedClientsCountSql} DESC`,
-  },
+  companies: nullsLastDescriptor(
+    mainCompanySortSql,
+    row => row.companies[0]?.name ?? ''
+  ),
+  signIn: nullsLastDescriptor(signInRankSql, row =>
+    row.signInRole ? SIGN_IN_RANK[row.signInRole] : ''
+  ),
   created: {
     encode: row => String(row.createdAt),
     compare: (op, value) =>
@@ -162,11 +212,12 @@ export const CONTACT_SORT_DESCRIPTORS: Record<
   },
 }
 
-
 export function resolvePaginationLimit(limit: number | null | undefined) {
   return clampLimit(limit, PAGE_SIZE_LIMITS)
 }
 
-export function resolveContactDirection(direction: CursorDirection | null | undefined) {
+export function resolveContactDirection(
+  direction: CursorDirection | null | undefined
+) {
   return resolveDirection(direction)
 }

@@ -1,11 +1,12 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import type { User } from '@supabase/supabase-js'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { users as usersTable } from '@/lib/db/schema'
+import { contacts, users as usersTable } from '@/lib/db/schema'
 import { isUserAvatarPath } from '@/lib/storage/avatar'
 
 /**
@@ -22,8 +23,9 @@ export async function ensureUserProfile(
     .select({
       id: usersTable.id,
       email: usersTable.email,
-      fullName: usersTable.fullName,
-      avatarUrl: usersTable.avatarUrl,
+      fullName: personNameSql,
+      avatarUrl: personAvatarSql,
+      deletedAt: usersTable.deletedAt,
     })
     .from(usersTable)
     .where(eq(usersTable.id, user.id))
@@ -32,12 +34,10 @@ export async function ensureUserProfile(
   const existing = existingRows[0]
 
   const nextEmail = user.email ?? ''
-  const metadataFullName =
-    (user.user_metadata?.full_name as string | undefined)?.trim() || null
   const metadataAvatar = user.user_metadata?.avatar_url as string | undefined
 
-  // Accounts are provisioned by an admin — createPortalUser and
-  // findOrCreatePortalUser both insert the `users` row explicitly. Authenticating
+  // Accounts are provisioned by an admin — the person sheet's Save
+  // (savePersonSheet) inserts the `users` row explicitly. Authenticating
   // is not enough to earn one: without this guard any Google account that
   // completes an OAuth flow would self-provision a row here.
   if (!existing) {
@@ -47,7 +47,7 @@ export async function ensureUserProfile(
   // Role is never read from the auth user. `user_metadata` is writable by the
   // signed-in user themselves (supabase.auth.updateUser), so trusting a role
   // there would let any account promote itself. The `users` row is the only
-  // source of truth; admins change it in Settings → Users.
+  // source of truth; admins change it on the person sheet.
 
   // Name and avatar are seeded, never re-synced. Supabase merges the identity
   // provider's own values into `user_metadata` at every sign-in, so mirroring
@@ -56,30 +56,34 @@ export async function ensureUserProfile(
   // avatar outright. The avatar column holds a bucket object path, not a URL,
   // so a provider CDN URL is rejected here rather than 404ing later in
   // /api/storage/user-avatar/[userId].
-  const seedFullName = !existing.fullName && metadataFullName ? metadataFullName : null
   const seedAvatar =
     !existing.avatarUrl && isUserAvatarPath(metadataAvatar, user.id)
       ? metadataAvatar
       : null
 
-  const shouldUpdate =
-    existing.email !== nextEmail ||
-    seedFullName !== null ||
-    seedAvatar !== null
+  // An archived sign-in stays archived: signing in never restores it (only
+  // an admin does), so its email isn't synced either.
+  const syncEmail = !existing.deletedAt && existing.email !== nextEmail
+
+  const shouldUpdate = syncEmail || seedAvatar !== null
 
   if (!shouldUpdate) {
     return 'ok'
   }
 
-  await db
-    .update(usersTable)
-    .set({
-      email: nextEmail,
-      deletedAt: null,
-      ...(seedFullName ? { fullName: seedFullName } : {}),
-      ...(seedAvatar ? { avatarUrl: seedAvatar } : {}),
-    })
-    .where(eq(usersTable.id, user.id))
+  if (syncEmail) {
+    await db
+      .update(usersTable)
+      .set({ email: nextEmail })
+      .where(eq(usersTable.id, user.id))
+  }
+  // The photo is the person's (contacts.avatar_url, 0112).
+  if (seedAvatar) {
+    await db
+      .update(contacts)
+      .set({ avatarUrl: seedAvatar, updatedAt: new Date().toISOString() })
+      .where(and(eq(contacts.userId, user.id), isNull(contacts.deletedAt)))
+  }
 
   return 'ok'
 }

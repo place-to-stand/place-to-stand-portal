@@ -6,7 +6,10 @@ import { z } from 'zod'
 import { requireRole } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectUpdatedEvent } from '@/lib/activity/events'
-import { PROJECT_STATUS_ENUM_VALUES, type ProjectStatusValue } from '@/lib/constants'
+import {
+  PROJECT_STATUS_ENUM_VALUES,
+  type ProjectStatusValue,
+} from '@/lib/constants'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
@@ -48,7 +51,7 @@ export async function updateProjectStatus(
             id: string
             name: string
             status: ProjectStatusValue
-            clientId: string | null
+            companyId: string | null
           }
         | undefined
 
@@ -58,7 +61,7 @@ export async function updateProjectStatus(
             id: projects.id,
             name: projects.name,
             status: projects.status,
-            clientId: projects.clientId,
+            companyId: projects.companyId,
           })
           .from(projects)
           .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
@@ -110,7 +113,7 @@ export async function updateProjectStatus(
         targetType: 'PROJECT',
         targetId: projectId,
         targetProjectId: projectId,
-        targetClientId: existingProject.clientId,
+        targetCompanyId: existingProject.companyId,
         metadata: event.metadata,
       })
 

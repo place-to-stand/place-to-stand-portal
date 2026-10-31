@@ -1,32 +1,9 @@
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { PageShell } from '@/components/layout/page-shell'
 import { requireRole } from '@/lib/auth/session'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
-import { UsersAddButton } from '../_components/users-add-button'
-import { UsersActivitySection } from '../_components/users-activity-section'
-import { USERS_TABS } from '../_lib/tabs'
-
-export const metadata: Metadata = {
-  title: 'User activity | Settings',
-}
-
+/** Sign-in activity is people activity now. */
 export default async function UsersActivityPage() {
   await requireRole('ADMIN')
-
-  return (
-    <PageShell
-      breadcrumbs={[...crumbsForNav('/settings/users'), { label: 'Activity' }]}
-      tabs={USERS_TABS}
-      activeTab='activity'
-      primaryAction={
-        <UsersAddButton />
-      }
-    >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <UsersActivitySection />
-      </section>
-    </PageShell>
-  )
+  redirect('/people/activity')
 }

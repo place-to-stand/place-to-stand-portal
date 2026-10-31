@@ -23,11 +23,23 @@ const firstParam = (value: string | string[] | undefined) =>
 export default async function LeadsBoardPage({
   searchParams,
 }: PageProps<'/leads'>) {
+  // permission: leads.manage
   const user = await requireCrmUser()
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
+  // `?assignee=`: a user id, `me` (the My aging leads "See all"), or absent
+  // / `all` for everyone's leads.
+  const assigneeParam = firstParam(params.assignee)
+  const assigneeFilter =
+    assigneeParam === 'me'
+      ? user.id
+      : assigneeParam && UUID_PATTERN.test(assigneeParam)
+        ? assigneeParam
+        : 'all'
 
-  const [board, assignees] = await Promise.all([
+  // The whole board goes to the client even with `?assignee=me`: it filters
+  // what shows, while deep links and drag ranks still see every lead.
+  const [fullBoard, assignees] = await Promise.all([
     fetchLeadsBoard(user),
     fetchLeadAssignees(),
   ])
@@ -40,7 +52,7 @@ export default async function LeadsBoardPage({
     if (!UUID_PATTERN.test(leadParam)) {
       leadNotFound = true
     } else {
-      const onBoard = board.some(column =>
+      const onBoard = fullBoard.some(column =>
         column.leads.some(lead => lead.id === leadParam)
       )
       if (!onBoard) {
@@ -55,11 +67,13 @@ export default async function LeadsBoardPage({
 
   return (
     <LeadsWorkspace
-      initialColumns={board}
+      initialColumns={fullBoard}
       assignees={assignees}
       canManage
       senderName={user.full_name ?? user.email ?? ''}
       leadNotFound={leadNotFound}
+      assigneeFilter={assigneeFilter}
+      viewerId={user.id}
     />
   )
 }

@@ -23,14 +23,18 @@ import {
   finishSettingsInteraction,
   startSettingsInteraction,
 } from '@/lib/posthog/settings'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { creatableProjectTypes } from '@/lib/auth/capabilities'
 import {
+  PROJECT_TYPE_ENUM_VALUES,
   buildProjectFormDefaults,
   createProjectSavePayload,
   projectSheetFormSchema,
   PROJECT_FORM_FIELDS,
   sortClientsByName,
-  type ClientRow,
+  type ClientPickerRow,
   type ContractorUserSummary,
+  type ProjectSavePayload,
   type ProjectSheetFormValues,
   type ProjectWithClient,
 } from './project-sheet-form'
@@ -54,7 +58,9 @@ export type UseProjectSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
-  clients: ClientRow[]
+  /** Prefills the create sheet's client (a company's Projects (its sheet's Client column)). */
+  initialCompanyId?: string
+  clients: ClientPickerRow[]
   contractorDirectory?: ContractorUserSummary[]
   projectContractors?: Record<string, ContractorUserSummary[]>
 }
@@ -73,8 +79,9 @@ export type PendingIntegrationLink = {
 }
 
 /**
- * Link edits the sheet accumulates and applies after the project row saves.
- * Only ids are needed to unlink; pending entries carry what the POST needs.
+ * Link edits the sheet accumulates; Save sends them with the project to
+ * `saveProject`, which writes everything in one transaction. Only ids are
+ * needed to unlink; pending entries carry what the link needs.
  */
 export type ProjectSheetLinkChanges = {
   pendingRepos: PendingRepo[]
@@ -85,7 +92,6 @@ export type ProjectSheetLinkChanges = {
 
 export type UseProjectSheetStateReturn = {
   form: UseFormReturn<ProjectSheetFormValues>
-  feedback: string | null
   isEditing: boolean
   isPending: boolean
   projectType: ProjectSheetFormValues['projectType']
@@ -111,10 +117,19 @@ export function useProjectSheetState({
   onOpenChange,
   onComplete,
   project,
+  initialCompanyId,
   clients,
 }: UseProjectSheetStateArgs): UseProjectSheetStateReturn {
+  // New projects start on the first type the viewer may create
+  // (`saveProject` enforces the same list).
+  const { role } = useViewerAccess()
+  const newProjectType = useMemo(() => {
+    const creatable = creatableProjectTypes(role, PROJECT_TYPE_ENUM_VALUES)
+    // A prefilled client means a client project, when the viewer may make one.
+    if (initialCompanyId && creatable.includes('CLIENT')) return 'CLIENT'
+    return creatable[0] ?? 'CLIENT'
+  }, [role, initialCompanyId])
   const isEditing = Boolean(project)
-  const [feedback, setFeedback] = useState<string | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isReposDirty, setIsReposDirty] = useState(false)
   const { toast } = useToast()
@@ -133,7 +148,11 @@ export function useProjectSheetState({
 
   const form = useForm<ProjectSheetFormValues>({
     resolver,
-    defaultValues: buildProjectFormDefaults(project),
+    defaultValues: buildProjectFormDefaults(
+      project,
+      newProjectType,
+      initialCompanyId
+    ),
   })
 
   const hasUnsavedChanges = form.formState.isDirty || isReposDirty
@@ -145,13 +164,16 @@ export function useProjectSheetState({
   const requiresClientSelection = projectType === 'CLIENT'
 
   const resetFormState = useCallback(() => {
-    const defaults = buildProjectFormDefaults(project)
+    const defaults = buildProjectFormDefaults(
+      project,
+      newProjectType,
+      initialCompanyId
+    )
 
     form.reset(defaults, { keepDefaultValues: false })
     form.clearErrors()
-    setFeedback(null)
     setIsReposDirty(false)
-  }, [form, project])
+  }, [form, newProjectType, project, initialCompanyId])
 
   const handleReposDirtyChange = useCallback((isDirty: boolean) => {
     setIsReposDirty(isDirty)
@@ -183,113 +205,6 @@ export function useProjectSheetState({
     resetKey: project?.id ?? null,
   })
 
-  const linkPendingRepos = useCallback(
-    async (projectId: string, pendingRepos: PendingRepo[]) => {
-      if (pendingRepos.length === 0) return
-
-      const linkPromises = pendingRepos.map(repo =>
-        fetch(`/api/projects/${projectId}/github-repos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            repoFullName: repo.repoFullName,
-            ...(repo.source === 'app'
-              ? { githubAppInstallationId: repo.sourceId }
-              : repo.source === 'oauth'
-                ? { connectionId: repo.sourceId }
-                : {}),
-          }),
-        })
-      )
-
-      try {
-        await Promise.all(linkPromises)
-      } catch {
-        // Log but don't fail the save - repos can be linked manually later
-        console.error('Failed to link some repositories')
-      }
-    },
-    []
-  )
-
-  const unlinkRemovedRepos = useCallback(
-    async (projectId: string, removedRepoIds: string[]) => {
-      if (removedRepoIds.length === 0) return
-
-      const unlinkPromises = removedRepoIds.map(repoId =>
-        fetch(`/api/projects/${projectId}/github-repos/${repoId}`, {
-          method: 'DELETE',
-        })
-      )
-
-      try {
-        await Promise.all(unlinkPromises)
-      } catch {
-        // Log but don't fail the save - repos can be unlinked manually later
-        console.error('Failed to unlink some repositories')
-      }
-    },
-    []
-  )
-
-  const linkPendingIntegrations = useCallback(
-    async (projectId: string, pending: PendingIntegrationLink[]) => {
-      if (pending.length === 0) return
-
-      const results = await Promise.allSettled(
-        pending.map(link =>
-          fetch(`/api/projects/${projectId}/integration-links`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              provider: link.provider,
-              externalId: link.externalId,
-            }),
-          }).then(res => {
-            if (!res.ok) throw new Error(`${link.externalName}: ${res.status}`)
-          })
-        )
-      )
-
-      const failed = results.filter(result => result.status === 'rejected')
-      if (failed.length > 0) {
-        console.error('Failed to link some hosting projects', failed)
-        toast({
-          title: 'Unable to link some hosting projects',
-          description: 'Open the project again to retry linking them.',
-          variant: 'destructive',
-        })
-      }
-    },
-    [toast]
-  )
-
-  const unlinkRemovedIntegrations = useCallback(
-    async (projectId: string, removedIds: string[]) => {
-      if (removedIds.length === 0) return
-
-      const results = await Promise.allSettled(
-        removedIds.map(linkId =>
-          fetch(`/api/projects/${projectId}/integration-links/${linkId}`, {
-            method: 'DELETE',
-          }).then(res => {
-            if (!res.ok) throw new Error(`${linkId}: ${res.status}`)
-          })
-        )
-      )
-
-      if (results.some(result => result.status === 'rejected')) {
-        console.error('Failed to unlink some hosting projects')
-        toast({
-          title: 'Unable to unlink some hosting projects',
-          description: 'Open the project again to retry removing them.',
-          variant: 'destructive',
-        })
-      }
-    },
-    [toast]
-  )
-
   const handleSubmit = useCallback(
     (values: ProjectSheetFormValues, changes: ProjectSheetLinkChanges) => {
       const {
@@ -299,7 +214,6 @@ export function useProjectSheetState({
         removedIntegrationLinkIds,
       } = changes
       startSave(async () => {
-        setFeedback(null)
         form.clearErrors()
 
         if (isEditing && !values.slug?.trim()) {
@@ -307,14 +221,32 @@ export function useProjectSheetState({
           return
         }
 
-        const payload = createProjectSavePayload({
-          values,
-          project,
-          isEditing,
-        })
+        // One server call saves the row, members and every link change in
+        // one transaction: nothing is written unless all of it is.
+        const payload: ProjectSavePayload = {
+          ...createProjectSavePayload({ values, project }),
+          repoLinks: {
+            add: pendingRepos.map(repo => ({
+              repoFullName: repo.repoFullName,
+              source: repo.source,
+              sourceId: repo.sourceId,
+            })),
+            remove: removedRepoIds,
+          },
+          integrationLinks: {
+            add: pendingIntegrationLinks.map(link => ({
+              provider: link.provider,
+              externalId: link.externalId,
+            })),
+            remove: removedIntegrationLinkIds,
+          },
+        }
 
         if (payload.slug && payload.slug.length < 3) {
-          setFeedback('Slug must be at least 3 characters when provided.')
+          form.setError('slug', {
+            type: 'manual',
+            message: 'Slug must be at least 3 characters when provided.',
+          })
           return
         }
 
@@ -323,7 +255,7 @@ export function useProjectSheetState({
           mode: isEditing ? 'edit' : 'create',
           targetId: payload.id ?? null,
           metadata: {
-            clientId: payload.clientId,
+            companyId: payload.companyId,
             status: payload.status,
           },
         })
@@ -338,7 +270,6 @@ export function useProjectSheetState({
               status: 'error',
               error: result.error,
             })
-            setFeedback(result.error)
             toast({
               title: 'Unable to save project',
               description: result.error,
@@ -347,28 +278,17 @@ export function useProjectSheetState({
             return
           }
 
-          // Link pending repos and unlink removed repos after successful save
           const targetProjectId = result.projectId ?? payload.id
           if (targetProjectId) {
-            await Promise.all([
-              pendingRepos.length > 0
-                ? linkPendingRepos(targetProjectId, pendingRepos)
-                : Promise.resolve(),
-              removedRepoIds.length > 0
-                ? unlinkRemovedRepos(targetProjectId, removedRepoIds)
-                : Promise.resolve(),
-              linkPendingIntegrations(targetProjectId, pendingIntegrationLinks),
-              unlinkRemovedIntegrations(
-                targetProjectId,
-                removedIntegrationLinkIds
-              ),
-            ])
             // The sheet stays mounted between opens, so the links section's
             // query never remounts — invalidate it or the next open shows
             // the pre-save list.
-            await queryClient.invalidateQueries({
-              queryKey: ['projectIntegrationLinks', targetProjectId],
-            })
+            await Promise.all([
+              queryClient.invalidateQueries({
+                queryKey: ['projectIntegrationLinks', targetProjectId],
+              }),
+              queryClient.invalidateQueries({ queryKey: ['projectMembers'] }),
+            ])
           }
 
           finishSettingsInteraction(interaction, {
@@ -377,21 +297,20 @@ export function useProjectSheetState({
           })
 
           toast({
-            title: isEditing ? 'Project updated' : 'Project created',
-            description: isEditing
-              ? 'Changes saved successfully.'
-              : 'The project is ready to track activity.',
+            title: isEditing ? 'Project saved' : 'Project created',
+            description: payload.name,
           })
 
           form.reset({
             name: payload.name,
             projectType: payload.projectType,
-            clientId: payload.clientId ?? '',
+            companyId: payload.companyId ?? '',
             status: payload.status,
             startsOn: payload.startsOn ?? '',
             endsOn: payload.endsOn ?? '',
             slug: payload.slug ?? '',
             ownerId: payload.ownerId ?? '',
+            memberIds: payload.memberIds,
           })
 
           onOpenChange(false)
@@ -401,7 +320,6 @@ export function useProjectSheetState({
             status: 'error',
             error: error instanceof Error ? error.message : 'Unknown error',
           })
-          setFeedback('We could not save the project. Please try again.')
           toast({
             title: 'Unable to save project',
             description:
@@ -415,11 +333,7 @@ export function useProjectSheetState({
       applyServerFieldErrors,
       form,
       isEditing,
-      linkPendingRepos,
-      linkPendingIntegrations,
-      unlinkRemovedIntegrations,
       queryClient,
-      unlinkRemovedRepos,
       onComplete,
       onOpenChange,
       project,
@@ -451,14 +365,13 @@ export function useProjectSheetState({
 
     setIsDeleteDialogOpen(false)
     startSave(async () => {
-      setFeedback(null)
       form.clearErrors()
       const interaction = startSettingsInteraction({
         entity: 'project',
         mode: 'delete',
         targetId: project.id,
         metadata: {
-          clientId: project.client_id ?? null,
+          companyId: project.company_id ?? null,
         },
       })
 
@@ -471,7 +384,6 @@ export function useProjectSheetState({
             targetId: project.id,
             error: result.error,
           })
-          setFeedback(result.error)
           toast({
             title: 'Unable to archive project',
             description: result.error,
@@ -498,7 +410,6 @@ export function useProjectSheetState({
           targetId: project.id,
           error: error instanceof Error ? error.message : 'Unknown error',
         })
-        setFeedback('We could not archive this project. Please try again.')
         toast({
           title: 'Unable to archive project',
           description:
@@ -527,7 +438,6 @@ export function useProjectSheetState({
 
   return {
     form,
-    feedback,
     isEditing,
     isPending,
     projectType,

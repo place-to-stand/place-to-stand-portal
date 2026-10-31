@@ -1,10 +1,17 @@
 # Badge
 
-A small pill of status or category text: `rounded-full border px-2 py-0.5 text-xs font-medium`. From `@pts/ui/badge`.
+A small pill of status or label text. From `@pts/ui/badge`: one size for every badge in both apps, `rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide`: all caps, semibold, slightly spaced.
 
-**Consumer provides:** one or two words; optional 12px icon (`[&>svg]:size-3`, `gap-1`).
+**Two looks, and only two:**
+- **Status** (a state that changes: lead stage, project and task status, invoice state, billing type, deployment state): `variant='outline'` plus a soft tinted fill from `BADGE_TINTS` (`@pts/ui/badge-tints`) or the domain's status token (`getLeadStatusToken`, `getProjectStatusToken`, `getTaskStatusToken`, `invoiceStatusTint`). Use the domain components where they exist: `LeadStatusBadge`, `InvoiceStatusBadge`, `ProjectStatusBadge` (`components/projects/project-status-badge.tsx`), and `ProjectStatusCell` to change a project's status in place.
+- **Role** (a sign-in's role): `RoleBadge` (`components/auth/role-badge.tsx`), tinted like a status: Admin violet, Sales pink, Client cyan (`ROLE_BADGE_TINTS`, clear of the entity and billing colours). A sign-in that is switched off or archived shows grey (`neutral`) with its state: "Sales · off". No icon: a sign-in is part of the person.
 
-**Variants:** `default` (primary fill), `secondary` (quiet, the common status chip), `destructive` (white on `destructive`, 60% in dark), `outline` (border only, `text-foreground`). Rendered as a link (`asChild` with `<a>`), hover darkens the fill.
+**A company we bill** has no "Client" badge. Wherever a company shows (lists, sheet cards, ⌘K), `CompanyBillingMark` (`components/billing/company-billing-mark.tsx`) shows its billing type (`BillingTypeBadge`, Prepaid green / Net 30 amber). Billing is admin-only: Sales see nothing there, and the Companies list hides its Client column for them.
 
-**Do:** keep text sentence case ("On deck", "In progress"); let the word carry the meaning.
-**Don't:** use a badge as a button, invent new colored variants, or rely on color alone for status.
+`secondary` is a quiet neutral chip (a count, "Default"); `destructive` is for a failure state.
+
+**Rules (checked by `scripts/check-badges.mjs` in `npm run lint`):** never change a badge's case, letter spacing, weight, text size, height, vertical padding or radius at a call site; the component sets them. Colour and layout (`gap`, margins, `shrink-0`) are fine. Write the label in sentence case ("New opportunities", "Closed won"); the component shows it in caps.
+
+**Consumer provides:** one to three words; optional 12px icon (`[&>svg]:size-3`, `gap-1`).
+
+**Don't:** use a badge as a button, invent new coloured variants, or rely on colour alone for status. Count bubbles on the sidebar and the notifications bell are counters, not badges.

@@ -1,5 +1,6 @@
 'use server'
 
+import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
 import { revalidatePath } from 'next/cache'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { eq } from 'drizzle-orm'
@@ -40,7 +41,7 @@ export async function saveHourBlock(
       mode,
       targetId,
       metadata: {
-        clientId: input.clientId,
+        companyId: input.companyId,
       },
     },
     async () => performSaveHourBlock(input)
@@ -67,12 +68,16 @@ async function performSaveHourBlock(
     return { error: message, fieldErrors }
   }
 
-  const { id, clientId, hoursPurchased } = parsed.data
+  const { id, companyId, hoursPurchased } = parsed.data
   const notes =
     parsed.data.notes && parsed.data.notes.length > 0 ? parsed.data.notes : null
   const hoursPurchasedValue = hoursPurchased.toString()
 
-  const client = await getActiveClientSummary(user, clientId)
+  const notClient = await ensureClientCompany(companyId)
+  if (notClient) {
+    return { error: notClient }
+  }
+  const client = await getActiveClientSummary(user, companyId)
 
   if (!client) {
     return { error: 'Selected client could not be found.' }
@@ -86,12 +91,12 @@ async function performSaveHourBlock(
     try {
       // Attribute the block to the first month it can be billed in — clamped
       // forward past a pending prepaid cutover (PRD 002 D13).
-      const billingMonth = await resolveHourBlockBillingMonth(clientId)
+      const billingMonth = await resolveHourBlockBillingMonth(companyId)
 
       const [inserted] = await db
         .insert(hourBlocks)
         .values({
-          clientId,
+          companyId: companyId,
           hoursPurchased: hoursPurchasedValue,
           notes,
           createdBy: user.id,
@@ -115,7 +120,7 @@ async function performSaveHourBlock(
         summary: event.summary,
         targetType: 'HOUR_BLOCK',
         targetId: inserted.id,
-        targetClientId: clientId,
+        targetCompanyId: companyId,
         metadata: event.metadata,
       })
 
@@ -151,7 +156,7 @@ async function performSaveHourBlock(
       await db
         .update(hourBlocks)
         .set({
-          clientId,
+          companyId: companyId,
           hoursPurchased: hoursPurchasedValue,
           notes,
           updatedAt: nowIso,
@@ -172,11 +177,11 @@ async function performSaveHourBlock(
     const previousDetails: Record<string, unknown> = {}
     const nextDetails: Record<string, unknown> = {}
 
-    if (existingHourBlock.client_id !== clientId) {
+    if (existingHourBlock.company_id !== companyId) {
       changedFields.push('client')
-      previousDetails.clientId = existingHourBlock.client_id
+      previousDetails.companyId = existingHourBlock.company_id
       previousDetails.clientName = existingHourBlock.client?.name ?? null
-      nextDetails.clientId = clientId
+      nextDetails.companyId = companyId
       nextDetails.clientName = targetClientName
     }
 
@@ -209,7 +214,7 @@ async function performSaveHourBlock(
         summary: event.summary,
         targetType: 'HOUR_BLOCK',
         targetId: id,
-        targetClientId: clientId,
+        targetCompanyId: companyId,
         metadata: event.metadata,
       })
     }

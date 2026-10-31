@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { completePasswordReset } from '@/app/(auth)/_actions/update-password'
+import { isSafeRedirectPath } from '@/lib/auth/safe-redirect'
 import {
   authErrorClass,
   authFieldLabelClass,
@@ -74,12 +75,14 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
 
       toast({
         title: 'Password updated',
-        description: 'Thanks for securing your account.',
+        description: 'Thanks for keeping your sign-in secure.',
       })
 
       form.reset({ password: '', confirmPassword: '' })
       router.replace(
-        redirectTo && !redirectTo.startsWith('/force-reset-password')
+        redirectTo &&
+          isSafeRedirectPath(redirectTo) &&
+          !redirectTo.startsWith('/force-reset-password')
           ? redirectTo
           : '/'
       )

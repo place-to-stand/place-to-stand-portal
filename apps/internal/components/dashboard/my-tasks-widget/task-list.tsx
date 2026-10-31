@@ -1,18 +1,10 @@
 import Link from 'next/link'
-import {
-  Building2,
-  CalendarDays,
-  ChevronRight,
-  FolderKanban,
-  Loader2,
-  User,
-  Users,
-} from 'lucide-react'
+import { CalendarDays, ChevronRight, Loader2, User, Users } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
-import { myTaskHref } from '@/lib/sheets/hrefs'
+import { companySheetHref, leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
@@ -25,6 +17,7 @@ import {
 } from '@/lib/projects/task-status'
 import { cn } from '@/lib/utils'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TaskListProps = {
   items: AssignedTaskSummary[]
@@ -127,13 +120,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
             </span>
           )}
           <div className='flex min-w-0 items-center gap-1.5'>
-            <Badge
-              variant='outline'
-              className={cn(
-                'text-[10px] font-semibold tracking-wide uppercase',
-                statusToken
-              )}
-            >
+            <Badge variant='outline' className={cn(statusToken)}>
               {statusLabel}
             </Badge>
             {/*
@@ -142,6 +129,22 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
               than three floating chips.
             */}
             <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
+              {task.lead ? (
+                <>
+                  <Link
+                    href={leadHref(task.lead.id)}
+                    onClick={e => e.stopPropagation()}
+                    className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                  >
+                    <ENTITY_ICONS.lead
+                      className='size-3 shrink-0'
+                      aria-hidden
+                    />
+                    <span className='truncate-link'>{task.lead.name}</span>
+                  </Link>
+                  <MetaSeparator />
+                </>
+              ) : null}
               {clientLinkMeta.href ? (
                 <Link
                   href={clientLinkMeta.href}
@@ -164,12 +167,18 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                   onClick={e => e.stopPropagation()}
                   className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                 >
-                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <ENTITY_ICONS.project
+                    className='size-3 shrink-0'
+                    aria-hidden
+                  />
                   <span className='truncate-link'>{task.project.name}</span>
                 </Link>
               ) : (
                 <span className='inline-flex min-w-0 items-center gap-1'>
-                  <FolderKanban className='size-3 shrink-0' aria-hidden />
+                  <ENTITY_ICONS.project
+                    className='size-3 shrink-0'
+                    aria-hidden
+                  />
                   <span className='truncate'>{task.project.name}</span>
                 </span>
               )}
@@ -261,12 +270,8 @@ function getClientLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
     return { href: null }
   }
 
-  const clientSlug = client.slug
-  if (clientSlug) {
-    return { href: `/clients/${clientSlug}` }
-  }
-
-  return { href: `/clients/${client.id}` }
+  // A client is its company: open the company.
+  return { href: companySheetHref(client.id) }
 }
 
 function getClientDisplayName(task: AssignedTaskSummary): string {
@@ -297,5 +302,5 @@ function renderProjectTypeIcon(
     return <User className={className} aria-hidden />
   }
 
-  return <Building2 className={className} aria-hidden />
+  return <ENTITY_ICONS.company className={className} aria-hidden />
 }

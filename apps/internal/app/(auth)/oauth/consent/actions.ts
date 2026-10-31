@@ -1,4 +1,5 @@
 'use server'
+// permission: public — checks the signed-in user itself
 
 import { redirect } from 'next/navigation'
 import { z } from 'zod'

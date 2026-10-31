@@ -92,8 +92,8 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 ```
 ├── (auth)/           # Sign-in, forgot/force-reset password (unauthenticated)
 ├── (dashboard)/      # Protected routes
-│   ├── clients/      # Client management ([clientSlug] detail, archive, activity)
-│   ├── contacts/     # Contact management, portal user promotion (archive, activity)
+│   ├── companies/    # Companies and their billing (archive, activity); /clients/* redirects here
+│   ├── people/       # People and their sign-ins (archive, activity); /contacts/* redirects here
 │   ├── hour-blocks/  # Prepaid hour block management (archive, activity)
 │   ├── invoices/     # Invoicing (settings, archive, activity)
 │   ├── leads/        # Lead kanban board (board, archive, activity)
@@ -104,7 +104,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 │   └── submissions/  # Website form submissions
 ├── (public)/         # Publicly shared pages (e.g. share/invoices/[token])
 ├── api/              # API routes: v1/, cli/v1/, tasks/, task-comments/, my-tasks/,
-│                     #   projects/, clients/, contacts/, leads/, invoices/, dashboard/,
+│                     #   projects/, contacts/, leads/, invoices/, dashboard/,
 │                     #   activity/, planning/, uploads/, storage/, public/, auth/,
 │                     #   github/, google/,
 │                     #   integrations/ (audit-responses, contact-submissions, stripe, github, google, ...)
@@ -120,7 +120,7 @@ do not follow the bare-envelope, snake_case precedent set by `api/v1/`. Adding a
 serializer in `lib/cli/serializers/` plus a thin route; the serializers are the contract agents
 hardcode against, so adding a field is safe and renaming one is breaking.
 
-The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,review,time-logs,activity,archive}` (`/overview` was retired and redirects to `tasks`). The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
 
 **Client portal** (`apps/client/app/`):
 ```
@@ -133,18 +133,21 @@ The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,ov
 └── unauthorized/     # Access denied page
 ```
 
-Portal access is controlled via `client_members` table. Contacts promoted to portal users automatically get access to their linked clients.
+Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. It is switched on per person, by admins, on the company sheet's People section or the person sheet's Access section (same data, same Save rules: giving portal access to someone with no sign-in gives them a Client sign-in and an invite).
 
 ### Database Schema
 
 **Core tables** (`packages/db/src/schema.ts`):
-- `users` - User accounts with roles (ADMIN, SALES, CLIENT)
-- `clients` - Client records with billing types (prepaid, net_30)
-- `contacts` - Contact records (may have a `userId` for portal access)
-- `contact_clients` - Contact-to-client links
-- `contact_leads` - Contact-to-lead links
-- `client_members` - Client-to-user portal memberships (auto-synced when contacts are linked/promoted)
-- `projects` - Projects with types: CLIENT (tied to clients), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
+- `contacts` - People (UI: "People"). The person's name lives here; `contacts.user_id` links their sign-in
+- `users` - A person's sign-in: auth id, sign-in email, role (ADMIN, SALES, CLIENT), disabled/archived, onboarding. No name or photo: read them from the person with `personNameSql` / `personAvatarSql` (`@pts/db/names`). Every live user has exactly one live contact; staff are at the "Place To Stand" company
+- `companies` - Every business (UI: "Companies"). A company you bill is a client: when it is billed lives in `client_billing_periods` (one row per stretch, by month), read only through the SQL functions behind `@pts/db/client-state` (`isClientCompany()`, `wasClientCompany()`, `billedInMonth()`); `slug` and `state` serve its projects and invoices; `is_staff` marks the agency's own company. Everything billed keys on `company_id`
+- `client_billing_periods` - When each company is billed (start and last month). The monthly close counts a client in every month a period covers
+- `user_role_terms` - A sign-in's role by month; `users.role` is the role in force today. Payroll uses the role in force for the month (`user_role_as_of`)
+- `memberships` - Contact-to-company (title, primary contact, portal access); a contact can be at several companies
+- `client_portal_access` - View: who can see which client company in the client portal (`company_id`, `contact_id`, `user_id`)
+- `commission_terms` + `commission_term_closers` - The one place commission (origination, closers) is stored, by effective month
+- `billing_terms` - The one place a client's billing type (prepaid / net 30) is stored, by effective month; screens show the newest term (`currentBillingTypeSql`), reports the one in force for the period
+- `projects` - Projects with types: CLIENT (tied to a client company), PERSONAL (individual), INTERNAL (team); status: ONBOARDING → ACTIVE → ON_HOLD → COMPLETED
 - `tasks` - Tasks with workflow: ON_DECK → IN_PROGRESS → BLOCKED → DONE, then archived (soft delete via `deletedAt`, not a status value)
 - `leads` - Lead pipeline: NEW_OPPORTUNITIES → ACTIVE_OPPORTUNITIES → PROPOSAL_SENT → ON_ICE → CLOSED_WON/CLOSED_LOST/UNQUALIFIED
 - `lead_stage_history` - Lead stage transition history
@@ -159,7 +162,7 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - `planning_sessions` + `plan_threads` + `plan_revisions` + `plan_messages` - AI planning sessions
 - `form_submissions` - Website form submissions
 - `oauth_connections` - Google/GitHub OAuth connections
-- `github_app_installations` - GitHub App installs per client
+- `github_app_installations` - GitHub App installs per client company
 - `github_repo_links` - Repository links per project
 - `project_integration_links` - Vercel/Supabase projects linked to projects (external ids only; access resolved per viewer from their own token in `oauth_connections`)
 - `activity_logs` + `activity_overview_cache` - Activity audit trail
@@ -192,7 +195,7 @@ Portal access is controlled via `client_members` table. Contacts promoted to por
 - The internal portal is **admin-only by default**: `requireUser()` / `assertAdmin()` admit ADMIN only. SALES users reach just the CRM (leads, contacts), which opts in with `requireCrmUser()` / `assertCrmAccess()`; anywhere else `requireUser()` sends them to `/leads`. CLIENT-role users are rejected at sign-in and redirected to the client portal (`CLIENT_PORTAL_URL`). Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
 - Mutations and API routes still guard with `assertAdmin()`/`requireRole('ADMIN')` as defense-in-depth
 - `ensure*Access` helpers verify the target entity exists (NotFound) before mutations
-- Client-scoped access lives exclusively in `apps/client/` (via `client_members`)
+- Client-scoped access lives exclusively in `apps/client/` (via the `client_portal_access` view)
 
 **CRITICAL: No Row Level Security (RLS)**
 
@@ -228,7 +231,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 
 **Roles:**
 - `ADMIN` - Full access to the internal portal
-- `SALES` - CRM only: leads and contacts. Conversion, lead tasks, hard deletes, client links and portal accounts stay admin-only
+- `SALES` - The CRM (leads) and the directory: creates and edits companies and people, client companies included (their name, notes, people and titles), and puts people at any company from any sheet. Making a company a client and anything billing (start, stop, terms, commission), a client's primary contact, portal access, people who can sign in and the staff company stay admin-only. A membership Sales creates always starts without portal access (`setPortalAccess` refuses anyone without `clients.manage`)
 - `CLIENT` - Client-portal users only; blocked from the internal portal at sign-in (redirected to `CLIENT_PORTAL_URL`). The role still exists so the internal portal can create/manage portal users.
 
 ### State Management
@@ -257,6 +260,10 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `BRAND` or `EMAIL_COLORS`.
 
+**Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes). A sheet's list of related records (heading, +, clickable empty state, preview cards) is always `EntityList` (`apps/internal/components/sheets/entity-list.tsx`); eslint blocks importing `SectionAddButton` anywhere else.
+
+**Sheet save rule:** every sheet saves in one server action and one database transaction, and only when Save is clicked: controls inside a sheet change the form and nothing else. Instant actions are their own records or act outside the app (comments, lead updates, logging time, invoice send/void, submission acknowledge, client update drafts, planning, password reset) and save on their own click. Create and edit show the same sheet: data that needs the new record's id is collected in the form and written in the same transaction. See `docs/design-system/components/sheet.md`.
+
 **Component library:**
 - Radix UI primitives in `apps/internal/components/ui/`
 - Custom business components in `apps/internal/components/` organized by feature
@@ -271,7 +278,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 ### File Storage
 
 **Supabase Storage setup:**
-- **Bucket: `user-avatars`** - Private bucket with authenticated access (must be created manually)
+- **Bucket: `user-avatars`** - Private bucket with authenticated access (must be created manually); paths are stored on `contacts.avatar_url`
 - **Bucket: `task-attachments`** - Task files
 
 **Storage utilities:**
@@ -352,7 +359,7 @@ Sep 2026.
 - All core entities use `deletedAt` timestamps
 - Active records: `WHERE deletedAt IS NULL`
 - Archive/restore via setting/clearing `deletedAt`
-- Never hard delete records (preserve historical data)
+- Never hard delete records (preserve historical data): there is no "Delete forever" anywhere (UI, server actions, API, CLI, MCP), only archive and restore
 
 **Slug-based URLs:**
 - Projects: `[clientSlug]/[projectSlug]`
@@ -361,7 +368,7 @@ Sep 2026.
 
 **Sheet deep links (`lib/sheets/`):**
 
-Every entity sheet is addressed by one query param — `?client=<uuid>`, `?task=new`, `?lead=<uuid>&leadMode=convert` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
+Every entity sheet is addressed by one query param — `?client=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
 
 Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never hand-roll sheet URL writes:
 - Value is a UUID or `new` (create sheet). UUID-guard before any DB cast.

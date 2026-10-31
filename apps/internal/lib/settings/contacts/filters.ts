@@ -3,11 +3,13 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
 // matching descriptor (order expr + cursor encode/compare) in the query.
+// An unknown field (e.g. the retired `clients`) falls back to the default.
 const CONTACT_SORT_FIELDS = [
   'name',
+  'companies',
   'email',
   'phone',
-  'clients',
+  'signIn',
   'created',
 ] as const
 export type ContactSortField = (typeof CONTACT_SORT_FIELDS)[number]
@@ -25,6 +27,32 @@ export function isContactSortValue(value: string): boolean {
   )
 }
 
+/**
+ * People list Role filter (`?role=`), admins only: the user's role, or
+ * people with no user. (`any` = has a user; kept for old links only.)
+ */
+export const SIGN_IN_FILTER_VALUES = [
+  'any',
+  'ADMIN',
+  'SALES',
+  'CLIENT',
+  'none',
+] as const
+export type SignInFilter = (typeof SIGN_IN_FILTER_VALUES)[number]
+/** What the Role filter offers. */
+export const ROLE_FILTER_VALUES = ['ADMIN', 'SALES', 'CLIENT', 'none'] as const
+export const ROLE_FILTER_LABELS: Record<
+  (typeof ROLE_FILTER_VALUES)[number],
+  string
+> = {
+  ADMIN: 'Admin',
+  SALES: 'Sales',
+  CLIENT: 'Client',
+  none: 'No user',
+}
+export const isSignInFilter = (value: string): value is SignInFilter =>
+  (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
+
 type RawSearchParams = Record<string, string | string[] | undefined>
 
 export type ContactsSearchParams = {
@@ -32,10 +60,12 @@ export type ContactsSearchParams = {
   page: number
   search: string | undefined
   /**
-   * Linked-client filter (`?clientId=<uuid>`). Named `clientId` because
-   * `?client=` is the client sheet's deep-link param.
+   * Linked-client filter (`?companyId=<uuid>`). Named `companyId` because
+   * `?client=` is an old deep-link param (it opens the company sheet).
    */
-  clientId: string | undefined
+  companyId: string | undefined
+  /** Who can sign in (admins only; ignored for others). */
+  signIn: SignInFilter | undefined
   sort: ParsedSort<ContactSortField>
 }
 
@@ -59,7 +89,10 @@ export function parseContactsSearchParams(
 ): ContactsSearchParams {
   const pageParam = Number.parseInt(firstParam(params.page) ?? '1', 10)
   const searchParam = firstParam(params.q)?.trim()
-  const clientIdParam = firstParam(params.clientId)?.trim()
+  const clientIdParam = firstParam(params.companyId)?.trim()
+  // `?role=`; old links used `?signIn=` with the same values.
+  const signInParam =
+    (firstParam(params.role) ?? firstParam(params.signIn))?.trim() ?? ''
   const sort = parseSortParam(
     firstParam(params.sort),
     CONTACT_SORT_FIELDS,
@@ -69,9 +102,14 @@ export function parseContactsSearchParams(
   return {
     page: Math.max(1, Number.isFinite(pageParam) ? pageParam : 1),
     search: searchParam || undefined,
-    clientId:
+    companyId:
       clientIdParam && UUID_PATTERN.test(clientIdParam)
         ? clientIdParam
+        : undefined,
+    // 'any' (has a user) is no longer offered; an old link shows everyone.
+    signIn:
+      isSignInFilter(signInParam) && signInParam !== 'any'
+        ? signInParam
         : undefined,
     sort,
   }

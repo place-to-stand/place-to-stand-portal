@@ -1,27 +1,36 @@
+import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
   and,
+  asc,
   desc,
   eq,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lte,
   ne,
   sql,
+  type AnyColumn,
   type SQL,
 } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
+import type { ParsedSort } from '@/lib/pagination/sort'
+import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
+import { createSearchPattern } from '@/lib/pagination/cursor'
+import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
 import {
-  clients,
+  companies,
   hourBlocks,
   projects,
   tasks,
   timeLogTasks,
   timeLogs,
+  users,
 } from '@/lib/db/schema'
 import {
   HOURS_WIDGET_LOG_PAGE_SIZE,
@@ -60,11 +69,13 @@ export async function fetchHoursSnapshot(
     isNull(timeLogs.deletedAt),
   ]
 
-  const { startTimestamp, endTimestamp } = buildMonthTimestampRange(year, month)
+  // Counted the way the monthly close counts them: blocks with this billing
+  // month, for a client prepaid as of it, whether or not it is billed that
+  // month (a block counts in the month it was bought).
   const prepaidFilters = [
-    gte(hourBlocks.createdAt, startTimestamp),
-    sql`${hourBlocks.createdAt} < ${endTimestamp}`,
+    eq(hourBlocks.billingMonth, startDate),
     isNull(hourBlocks.deletedAt),
+    sql`${billingTypeAsOfSql(startDate)} = 'prepaid'`,
   ]
 
   // All five aggregates and the log page derive from the clamped cursor
@@ -81,7 +92,10 @@ export async function fetchHoursSnapshot(
   ] = await Promise.all([
     sumHoursWithProjectFilter({ filters: myFilters, projectType: 'CLIENT' }),
     sumHoursWithProjectFilter({ filters: baseFilters, projectType: 'CLIENT' }),
-    sumHoursWithProjectFilter({ filters: myFilters, projectType: 'NON_CLIENT' }),
+    sumHoursWithProjectFilter({
+      filters: myFilters,
+      projectType: 'NON_CLIENT',
+    }),
     sumPrepaidHours({ filters: prepaidFilters }),
     fetchMyMonthTimeLogs(user, clampedCursor, { offset: 0 }),
   ])
@@ -112,18 +126,75 @@ export async function fetchMyMonthTimeLogs(
 ): Promise<DashboardTimeLogPage> {
   const { year, month } = normalizeMonth(cursor.year, cursor.month)
   const { startDate, endDate } = buildMonthDateRange(year, month)
-  const limit = Math.max(1, options.limit ?? HOURS_WIDGET_LOG_PAGE_SIZE)
-  const offset = Math.max(0, options.offset ?? 0)
+  const page = await fetchTimeLogPage({
+    userId: user.id,
+    from: startDate,
+    to: endDate,
+    limit: options.limit ?? HOURS_WIDGET_LOG_PAGE_SIZE,
+    offset: options.offset,
+  })
+  return { items: page.items, totalCount: page.totalCount }
+}
 
-  const windowFilter = and(
-    eq(timeLogs.userId, user.id),
-    gte(timeLogs.loggedOn, startDate),
-    lte(timeLogs.loggedOn, endDate),
-    isNull(timeLogs.deletedAt),
+export type TimeLogPageFilters = {
+  userId?: string
+  clientCompanyId?: string
+  projectId?: string
+  /** Inclusive `logged_on` bounds, `YYYY-MM-DD`. */
+  from?: string
+  to?: string
+  limit: number
+  offset?: number
+  /** Archived (soft-deleted) logs instead of live ones. */
+  archived?: boolean
+  /** Matches the note, person, project, client or a linked task's title. */
+  search?: string
+  /** Defaults to newest first. */
+  sort?: ParsedSort<TimeLogSortField>
+}
+
+/**
+ * Time logs on live projects, newest first, offset-paged, with the total
+ * rows and hours across every page. Shared by the home Hours widget (my
+ * logs this month) and the Time logs page (everyone's, filtered). Callers
+ * check access: anyone else's logs are admin-only.
+ */
+export async function fetchTimeLogPage(
+  filters: TimeLogPageFilters
+): Promise<DashboardTimeLogPage & { totalHours: number }> {
+  const limit = Math.max(1, filters.limit)
+  const offset = Math.max(0, filters.offset ?? 0)
+  const searchQuery = filters.search?.trim()
+  const pattern = searchQuery ? createSearchPattern(searchQuery) : null
+
+  const where = and(
+    pattern
+      ? sql`(${timeLogs.note} ilike ${pattern}
+          or ${projects.name} ilike ${pattern}
+          or ${companies.name} ilike ${pattern}
+          or coalesce(${personNameSql}, ${users.email}) ilike ${pattern}
+          or exists (
+            select 1 from time_log_tasks tlt
+            join tasks t on t.id = tlt.task_id
+            where tlt.time_log_id = ${timeLogs.id}
+              and tlt.deleted_at is null and t.deleted_at is null
+              and t.title ilike ${pattern}
+          ))`
+      : undefined,
+    filters.userId ? eq(timeLogs.userId, filters.userId) : undefined,
+    filters.clientCompanyId
+      ? eq(projects.companyId, filters.clientCompanyId)
+      : undefined,
+    filters.projectId ? eq(timeLogs.projectId, filters.projectId) : undefined,
+    filters.from ? gte(timeLogs.loggedOn, filters.from) : undefined,
+    filters.to ? lte(timeLogs.loggedOn, filters.to) : undefined,
+    filters.archived
+      ? isNotNull(timeLogs.deletedAt)
+      : isNull(timeLogs.deletedAt),
     isNull(projects.deletedAt)
   )
 
-  const [rows, [countRow]] = await Promise.all([
+  const [rows, [totals]] = await Promise.all([
     db
       .select({
         id: timeLogs.id,
@@ -131,57 +202,105 @@ export async function fetchMyMonthTimeLogs(
         hours: timeLogs.hours,
         note: timeLogs.note,
         createdAt: timeLogs.createdAt,
+        userId: timeLogs.userId,
+        userName: sql<
+          string | null
+        >`coalesce(${personNameSql}, ${users.email})`,
+        userAvatarUrl: personAvatarSql,
         projectId: projects.id,
         projectName: projects.name,
         projectSlug: projects.slug,
         projectType: projects.type,
-        clientName: clients.name,
-        clientSlug: clients.slug,
+        clientCompanyId: companies.id,
+        clientName: clientNameSql,
+        clientSlug: companies.slug,
+        companyId: companies.id,
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .leftJoin(clients, eq(projects.clientId, clients.id))
-      .where(windowFilter)
+      .leftJoin(companies, eq(projects.companyId, companies.id))
+      .leftJoin(users, eq(users.id, timeLogs.userId))
+      .where(where)
       // createdAt breaks ties within a day; id makes the order total, so paging
       // can't show or skip a row because two logs share a timestamp.
-      .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
+      // The chosen column first; date (newest), createdAt and id break ties
+      // so paging can't show or skip a row.
+      .orderBy(
+        ...timeLogSortOrder(filters.sort),
+        desc(timeLogs.loggedOn),
+        desc(timeLogs.createdAt),
+        desc(timeLogs.id)
+      )
       .limit(limit)
       .offset(offset),
+    // numeric hours arrive as strings: sum in SQL, not JS floats.
     db
-      .select({ count: sql<number>`count(*)` })
+      .select({
+        count: sql<number>`count(*)`,
+        hours: sql<string>`coalesce(sum(${timeLogs.hours}), 0)`,
+      })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .where(windowFilter),
+      .leftJoin(companies, eq(projects.companyId, companies.id))
+      .leftJoin(users, eq(users.id, timeLogs.userId))
+      .where(where),
   ])
 
-  const totalCount = Number(countRow?.count ?? 0)
+  const totalCount = Number(totals?.count ?? 0)
+  const totalHours = parseHours(totals?.hours ?? '0')
 
   if (!rows.length) {
-    return { items: [], totalCount }
+    return { items: [], totalCount, totalHours }
   }
 
-  const taskTitlesByLog = await fetchLinkedTaskTitles(rows.map(row => row.id))
+  const tasksByLog = await fetchLinkedTasks(rows.map(row => row.id))
 
   const items: DashboardTimeLogEntry[] = rows.map(row => ({
     id: row.id,
     loggedOn: row.loggedOn,
     hours: parseHours(row.hours),
     note: row.note ?? null,
+    userId: row.userId,
+    userName: row.userName ?? null,
+    userAvatarUrl: row.userAvatarUrl ?? null,
     projectId: row.projectId,
     projectName: row.projectName ?? 'Untitled project',
     projectSlug: row.projectSlug ?? null,
     projectType: row.projectType,
+    clientCompanyId: row.clientCompanyId ?? null,
     clientName: row.clientName ?? null,
     clientSlug: row.clientSlug ?? null,
-    taskTitles: taskTitlesByLog.get(row.id) ?? [],
+    companyId: row.companyId,
+    tasks: tasksByLog.get(row.id) ?? [],
+    taskTitles: (tasksByLog.get(row.id) ?? []).map(task => task.title),
   }))
 
-  return { items, totalCount }
+  return { items, totalCount, totalHours }
 }
 
-async function fetchLinkedTaskTitles(
+/**
+ * Every live (or archived) log on a live project, no other filter: the
+ * `of N` in the Time logs page's `Showing X of N`.
+ */
+export async function countTimeLogs({
+  archived = false,
+}: { archived?: boolean } = {}): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(timeLogs)
+    .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+    .where(
+      and(
+        archived ? isNotNull(timeLogs.deletedAt) : isNull(timeLogs.deletedAt),
+        isNull(projects.deletedAt)
+      )
+    )
+  return Number(row?.count ?? 0)
+}
+
+async function fetchLinkedTasks(
   timeLogIds: string[]
-): Promise<Map<string, string[]>> {
+): Promise<Map<string, { id: string; title: string }[]>> {
   if (!timeLogIds.length) {
     return new Map()
   }
@@ -189,6 +308,7 @@ async function fetchLinkedTaskTitles(
   const rows = await db
     .select({
       timeLogId: timeLogTasks.timeLogId,
+      id: tasks.id,
       title: tasks.title,
     })
     .from(timeLogTasks)
@@ -201,13 +321,13 @@ async function fetchLinkedTaskTitles(
       )
     )
 
-  const byLog = new Map<string, string[]>()
+  const byLog = new Map<string, { id: string; title: string }[]>()
   rows.forEach(row => {
     if (!row.title) {
       return
     }
     const existing = byLog.get(row.timeLogId) ?? []
-    existing.push(row.title)
+    existing.push({ id: row.id, title: row.title })
     byLog.set(row.timeLogId, existing)
   })
 
@@ -216,9 +336,7 @@ async function fetchLinkedTaskTitles(
 
 function parseHours(value: string | null): number {
   const parsed = Number(value ?? '0')
-  return Number.isFinite(parsed)
-    ? Number(parsed.toFixed(HOURS_PRECISION))
-    : 0
+  return Number.isFinite(parsed) ? Number(parsed.toFixed(HOURS_PRECISION)) : 0
 }
 
 async function sumHoursWithProjectFilter({
@@ -234,7 +352,7 @@ async function sumHoursWithProjectFilter({
     return 0
   }
 
-  // Add project type filter by joining with projects table
+  // Filter by project type by joining with projects table
   const projectTypeCondition =
     projectType === 'CLIENT'
       ? eq(projects.type, 'CLIENT')
@@ -246,7 +364,9 @@ async function sumHoursWithProjectFilter({
     })
     .from(timeLogs)
     .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-    .where(and(...conditions, projectTypeCondition, isNull(projects.deletedAt)))) as Array<{
+    .where(
+      and(...conditions, projectTypeCondition, isNull(projects.deletedAt))
+    )) as Array<{
     totalHours: string | null
   }>
 
@@ -269,14 +389,18 @@ async function sumPrepaidHours({
     return 0
   }
 
-  // Join with clients to exclude soft-deleted clients
+  // Joined so the filters can read the block's company.
   const [row] = (await db
     .select({
-      totalHours: sql<string | null>`COALESCE(SUM(${hourBlocks.hoursPurchased}), '0')`,
+      totalHours: sql<
+        string | null
+      >`COALESCE(SUM(${hourBlocks.hoursPurchased}), '0')`,
     })
     .from(hourBlocks)
-    .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
-    .where(and(...conditions, isNull(clients.deletedAt)))) as Array<{ totalHours: string | null }>
+    .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
+    .where(and(...conditions))) as Array<{
+    totalHours: string | null
+  }>
 
   const parsed = Number(row?.totalHours ?? '0')
   const rounded = Number.isFinite(parsed)
@@ -293,16 +417,6 @@ function buildMonthDateRange(year: number, month: number) {
   return {
     startDate: start.toISOString().slice(0, 10),
     endDate: end.toISOString().slice(0, 10),
-  }
-}
-
-function buildMonthTimestampRange(year: number, month: number) {
-  const start = new Date(Date.UTC(year, month - 1, 1))
-  const nextMonth = new Date(Date.UTC(year, month, 1))
-
-  return {
-    startTimestamp: start.toISOString(),
-    endTimestamp: nextMonth.toISOString(),
   }
 }
 
@@ -392,4 +506,23 @@ function compareMonthCursor(a: MonthCursor, b: MonthCursor) {
     return 1
   }
   return 0
+}
+
+function timeLogSortOrder(sort: ParsedSort<TimeLogSortField> | undefined) {
+  if (!sort || (sort.field === 'date' && sort.direction === 'desc')) return []
+  const dir = (expression: SQL | AnyColumn) =>
+    sort.direction === 'asc' ? asc(expression) : desc(expression)
+  switch (sort.field) {
+    case 'date':
+      return [dir(timeLogs.loggedOn)]
+    case 'hours':
+      return [dir(timeLogs.hours)]
+    case 'person':
+      return [dir(sql`lower(coalesce(${personNameSql}, ${users.email}))`)]
+    case 'client':
+      // Logs without a client (internal/personal projects) sort last.
+      return [sql`${clientNameSql} is null`, dir(sql`lower(${clientNameSql})`)]
+    case 'project':
+      return [dir(sql`lower(${projects.name})`)]
+  }
 }

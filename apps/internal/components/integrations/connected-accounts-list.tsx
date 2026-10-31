@@ -154,7 +154,6 @@ export function ConnectedAccountsList({
                   variant={
                     account.status === 'ACTIVE' ? 'default' : 'secondary'
                   }
-                  className='text-xs'
                 >
                   {account.status === 'ACTIVE' ? 'Active' : account.status}
                 </Badge>

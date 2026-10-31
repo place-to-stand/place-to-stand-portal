@@ -1,6 +1,7 @@
 'use client'
 
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { useMemo } from 'react'
 
@@ -9,8 +10,11 @@ import {
   type ContractorUserSummary,
   type ProjectWithClient,
 } from '@/lib/settings/projects/use-project-sheet-state'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
-import { buildOwnerOptions, type AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
+import {
+  buildOwnerOptions,
+  type AdminUserForOwner,
+} from '@/lib/settings/projects/project-sheet-ui-state'
 
 import { ProjectSheetForm } from './_components/project-sheet/project-sheet-form'
 import { ProjectSheetDialogs } from './_components/project-sheet/project-sheet-dialogs'
@@ -21,16 +25,18 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   project: ProjectWithClient | null
-  clients: ClientRow[]
+  /** Prefills the create sheet's client. */
+  initialCompanyId?: string
+  clients: ClientPickerRow[]
   adminUsers?: AdminUserForOwner[]
   contractorDirectory?: ContractorUserSummary[]
   projectContractors?: Record<string, ContractorUserSummary[]>
 }
 
 export function ProjectSheet(props: Props) {
+  const { isAdmin } = useViewerAccess()
   const {
     form,
-    feedback,
     isEditing,
     isPending,
     requiresClientSelection,
@@ -59,7 +65,11 @@ export function ProjectSheet(props: Props) {
 
   const currentOwnerId = form.watch('ownerId')
   const ownerOptions = useMemo(
-    () => buildOwnerOptions(props.adminUsers ?? [], currentOwnerId || null),
+    () =>
+      // No "Unassigned" row in the sheet: the picker's clear button unassigns.
+      buildOwnerOptions(props.adminUsers ?? [], currentOwnerId || null).filter(
+        option => option.value !== ''
+      ),
     [currentOwnerId, props.adminUsers]
   )
 
@@ -68,19 +78,21 @@ export function ProjectSheet(props: Props) {
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='2xl'
+          // Admins see the infrastructure column (GitHub, Vercel, Supabase).
+          columns={isAdmin ? 2 : 1}
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
             entity='project'
-            title={isEditing ? 'Edit project' : 'Add project'}
+            title={
+              isEditing ? props.project?.name || 'Project' : 'Create project'
+            }
           />
           <ProjectSheetForm
             form={form}
             fieldState={fieldState}
             isEditing={isEditing}
             isPending={isPending}
-            feedback={feedback}
             clientOptions={clientOptions}
             ownerOptions={ownerOptions}
             submitButton={submitButton}
@@ -96,6 +108,7 @@ export function ProjectSheet(props: Props) {
       </Sheet>
       <ProjectSheetDialogs
         isDeleteDialogOpen={isDeleteDialogOpen}
+        projectName={props.project?.name}
         isPending={isPending}
         unsavedChangesDialog={unsavedChangesDialog}
         onCancelDelete={handleCancelDelete}

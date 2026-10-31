@@ -5,7 +5,6 @@ import type { ProjectsBoardTabsProps } from './projects-board-tabs'
 
 type NavigationProps = Pick<
   ProjectsBoardTabsProps,
-  | 'overviewHref'
   | 'boardHref'
   | 'activityHref'
   | 'reviewHref'
@@ -55,7 +54,6 @@ type ReviewProps = Pick<
   | 'onAcceptTask'
   | 'onUnacceptTask'
   | 'onRestoreTask'
-  | 'onDestroyTask'
   | 'reviewActionTaskId'
   | 'reviewActionType'
   | 'isReviewActionPending'
@@ -82,6 +80,8 @@ export type ProjectsBoardTabsSectionProps = {
 }
 
 type ProjectsBoardTabsSectionComponentProps = ProjectsBoardTabsSectionProps & {
+  /** Project members see the Tasks tab only. */
+  tasksOnly?: boolean
   projectActions: ProjectsBoardTabsProps['projectActions']
   onProjectStatusChange: ProjectsBoardTabsProps['onProjectStatusChange']
 }
@@ -94,6 +94,7 @@ export function ProjectsBoardTabsSection({
   review,
   drop,
   timeLogs,
+  tasksOnly = false,
   projectActions,
   onProjectStatusChange,
 }: ProjectsBoardTabsSectionComponentProps) {
@@ -106,6 +107,7 @@ export function ProjectsBoardTabsSection({
       {...review}
       {...drop}
       {...timeLogs}
+      tasksOnly={tasksOnly}
       projectActions={projectActions}
       onProjectStatusChange={onProjectStatusChange}
     />

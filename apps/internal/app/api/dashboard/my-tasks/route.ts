@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
+import { listWorkableProjectIds } from '@/lib/projects/access'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import { listAssignedTaskSummaries } from '@/lib/data/tasks'
 
@@ -17,7 +18,7 @@ const schema = z.object({
  * contract, which includes Done and honors hidden project types.
  */
 export async function GET(request: Request) {
-  const user = await requireUser()
+  const user = await requireStaffUser()
   const { searchParams } = new URL(request.url)
 
   const parsed = schema.safeParse({
@@ -35,9 +36,11 @@ export async function GET(request: Request) {
   try {
     const page = await listAssignedTaskSummaries({
       userId: user.id,
+      projectIds: await listWorkableProjectIds(user),
       offset: parsed.data.offset,
       limit: parsed.data.limit ?? MY_TASKS_WIDGET_PAGE_SIZE,
       includeCompletedStatuses: false,
+      order: 'due',
     })
 
     return NextResponse.json({

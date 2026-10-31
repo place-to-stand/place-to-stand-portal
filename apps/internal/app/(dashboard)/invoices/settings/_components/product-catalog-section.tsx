@@ -4,11 +4,10 @@ import { useState, useCallback, useMemo, useTransition } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Pencil, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { Checkbox } from '@pts/ui/checkbox'
 import {
   Dialog,
@@ -19,6 +18,7 @@ import {
   DialogTitle,
 } from '@pts/ui/dialog'
 import { Input } from '@pts/ui/input'
+import { formatCurrency } from '@pts/ui/numbers'
 import { Label } from '@pts/ui/label'
 import { Switch } from '@pts/ui/switch'
 import {
@@ -33,6 +33,7 @@ import {
   SortableTableHead,
   type SortValue,
 } from '@/components/table-toolbar/sortable-table-head'
+import { RecordRowAction } from '@/components/table/record-row-action'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 
@@ -82,7 +83,7 @@ function ProductRow({
   return (
     <TableRow>
       <TableCell className='truncate font-medium'>{item.name}</TableCell>
-      <TableCell label='Price'>${item.unit_price}</TableCell>
+      <TableCell label='Price'>{formatCurrency(item.unit_price)}</TableCell>
       <TableCell label='Unit' className='truncate'>
         {item.unit_label}
       </TableCell>
@@ -99,9 +100,9 @@ function ProductRow({
         />
       </TableCell>
       <TableCell className='max-md:ml-auto'>
-        <RowActionButton
-          label='Edit product'
-          icon={<Pencil />}
+        <RecordRowAction
+          kind='edit'
+          entity='product'
           onClick={() => onEdit(item)}
         />
       </TableCell>
@@ -302,7 +303,7 @@ export function ProductCatalogSection({
         <h2 className='text-lg font-semibold'>Product catalog</h2>
         <Button size='sm' onClick={openAddDialog}>
           <Plus />
-          Add product
+          Create product
         </Button>
       </div>
 
@@ -359,12 +360,12 @@ export function ProductCatalogSection({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingItem ? 'Edit product' : 'Add product'}
+              {editingItem ? 'Edit product' : 'Create product'}
             </DialogTitle>
             <DialogDescription>
               {editingItem
-                ? 'Update product catalog item details.'
-                : 'Add a new item to the product catalog.'}
+                ? 'Update the product details.'
+                : 'Create a product for the catalog.'}
             </DialogDescription>
           </DialogHeader>
 

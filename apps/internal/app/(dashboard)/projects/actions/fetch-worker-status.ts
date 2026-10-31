@@ -11,7 +11,11 @@ import { db } from '@/lib/db'
 import { tasks, taskDeployments, projects } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { getRepoLinkById } from '@/lib/data/github-repos'
-import { listIssueComments, resolveRepoLinkAuth, type GitHubComment } from '@/lib/github/client'
+import {
+  listIssueComments,
+  resolveRepoLinkAuth,
+  type GitHubComment,
+} from '@/lib/github/client'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -53,7 +57,12 @@ const WORKER_BOT_LOGIN = 'place-to-stand[bot]'
 const PR_URL_REGEX = /\*\*Pull request:\*\*\s+(https:\/\/github\.com\/\S+)/
 const PLAN_HEADING = '## Implementation Plan'
 const WORKING_PATTERNS = ['Agent working', 'Planning...', '🔄', 'Working on']
-const ERROR_PATTERNS = ['**Agent failed**', '**Budget limit**', '❌ Agent failed', '❌ Budget']
+const ERROR_PATTERNS = [
+  '**Agent failed**',
+  '**Budget limit**',
+  '❌ Agent failed',
+  '❌ Budget',
+]
 
 function classifyWorkerComment(body: string): WorkerCommentStatus {
   if (ERROR_PATTERNS.some(p => body.includes(p))) return 'error'
@@ -120,7 +129,10 @@ export async function fetchWorkerStatus(input: {
     repoAuth = await resolveRepoLinkAuth(user.id, repoLink)
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : 'Failed to resolve GitHub credentials.',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to resolve GitHub credentials.',
     }
   }
 
@@ -164,7 +176,10 @@ export async function fetchWorkerStatus(input: {
     if (allComments[i].isBot && allComments[i].status === 'working') {
       // Walk backwards to find the nearest preceding user command
       for (let j = i - 1; j >= 0; j--) {
-        if (!allComments[j].isBot && allComments[j].body.includes('@pts-worker')) {
+        if (
+          !allComments[j].isBot &&
+          allComments[j].body.includes('@pts-worker')
+        ) {
           if (!allComments[j].body.includes('/plan')) {
             allComments[i].status = 'implementing'
           }
@@ -177,9 +192,7 @@ export async function fetchWorkerStatus(input: {
   const botComments = allComments.filter(c => c.isBot)
   const prUrl = extractPrUrl(botComments)
   const latestStatus =
-    botComments.length > 0
-      ? botComments[botComments.length - 1].status
-      : null
+    botComments.length > 0 ? botComments[botComments.length - 1].status : null
 
   // Persist the latest worker status to the deployment
   if (latestStatus && latestStatus !== 'unknown') {
@@ -187,7 +200,11 @@ export async function fetchWorkerStatus(input: {
 
     await db
       .update(taskDeployments)
-      .set({ workerStatus: latestStatus, prUrl: prUrl, updatedAt: new Date().toISOString() })
+      .set({
+        workerStatus: latestStatus,
+        prUrl: prUrl,
+        updatedAt: new Date().toISOString(),
+      })
       .where(eq(taskDeployments.id, deploymentId))
 
     // This poll runs constantly; only a real transition is an event.
@@ -196,7 +213,7 @@ export async function fetchWorkerStatus(input: {
         .select({
           title: tasks.title,
           projectId: tasks.projectId,
-          clientId: projects.clientId,
+          companyId: projects.companyId,
         })
         .from(tasks)
         .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -217,7 +234,7 @@ export async function fetchWorkerStatus(input: {
         targetType: 'TASK',
         targetId: deployment.taskId,
         targetProjectId: task?.projectId ?? null,
-        targetClientId: task?.clientId ?? null,
+        targetCompanyId: task?.companyId ?? null,
         metadata: event.metadata,
       })
     }

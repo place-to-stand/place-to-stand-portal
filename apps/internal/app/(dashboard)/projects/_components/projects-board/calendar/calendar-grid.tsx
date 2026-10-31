@@ -123,7 +123,7 @@ function CalendarDayCell({
     >
       <Plus />
       <span className='sr-only'>
-        Add task for{' '}
+        Create task for{' '}
         {formatCalendarDate(day.key, {
           month: 'long',
           day: 'numeric',

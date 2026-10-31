@@ -10,11 +10,7 @@ import { extractLeadNotes } from '@/lib/leads/notes'
 
 export const saveLeadSchema = z.object({
   id: z.string().uuid().optional(),
-  contactName: z
-    .string()
-    .trim()
-    .min(1, 'Contact name is required')
-    .max(160),
+  contactName: z.string().trim().min(1, 'Person name is required').max(160),
   status: z.enum(LEAD_STATUS_VALUES).optional(),
   sourceType: z.enum(LEAD_SOURCE_TYPES).optional().nullable(),
   sourceDetail: z
@@ -26,7 +22,23 @@ export const saveLeadSchema = z.object({
   assigneeId: z.string().uuid().optional().nullable(),
   contactEmail: z.string().trim().max(160).optional().nullable(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
+  /**
+   * The lead's contact (the lead sheet's picker). Its name, email and phone
+   * are copied onto the lead. Omitted (CLI, MCP) = find or create the contact
+   * from contactName/contactEmail/contactPhone.
+   */
+  contactId: z.string().uuid().optional(),
   companyName: z.string().trim().max(160).optional().nullable(),
+  /**
+   * The linked company (the lead sheet's picker). When present it wins over
+   * `companyName`; null clears the company. Omitted (CLI, MCP) = link by name.
+   */
+  companyId: z.string().uuid().nullable().optional(),
+  /**
+   * Deprecated: the company owns its website. Still accepted (CLI, MCP) and
+   * written to the linked company when it has none, plus the lead's copy.
+   * Omitted (the lead sheet) = leave the lead's copy alone.
+   */
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   /** TipTap HTML, as the sheet's editor produces it. */
   notes: z.string().optional().nullable(),
@@ -43,8 +55,13 @@ export type NormalizedLead = {
   assigneeId: string | null
   contactEmail: string | null
   contactPhone: string | null
+  /** `undefined` = resolve the contact from the contact fields. */
+  contactId?: string
   companyName: string | null
-  companyWebsite: string | null
+  /** `undefined` = resolve the company from `companyName`. */
+  companyId?: string | null
+  /** `undefined` = not sent; keep the lead's copy. */
+  companyWebsite?: string | null
   notes: string | null
 }
 
@@ -97,12 +114,24 @@ export function diffLeadFields(
   compare('name', 'contactName', existing.contactName, next.contactName)
   compare('status', 'status', existing.status, next.status)
   compare('source', 'sourceType', existing.sourceType, next.sourceType)
-  compare('source detail', 'sourceDetail', existing.sourceDetail, next.sourceDetail)
+  compare(
+    'source detail',
+    'sourceDetail',
+    existing.sourceDetail,
+    next.sourceDetail
+  )
   compare('assignee', 'assigneeId', existing.assigneeId, next.assigneeId)
   compare('email', 'contactEmail', existing.contactEmail, next.contactEmail)
   compare('phone', 'contactPhone', existing.contactPhone, next.contactPhone)
   compare('company', 'companyName', existing.companyName, next.companyName)
-  compare('website', 'companyWebsite', existing.companyWebsite, next.companyWebsite)
+  if (next.companyWebsite !== undefined) {
+    compare(
+      'website',
+      'companyWebsite',
+      existing.companyWebsite,
+      next.companyWebsite
+    )
+  }
   compare(
     'notes',
     'notes',
@@ -125,7 +154,12 @@ export function normalizeLeadPayload(payload: SaveLeadInput): NormalizedLead {
     contactEmail: normalizeEmail(payload.contactEmail),
     contactPhone: normalizeOptionalString(payload.contactPhone, 40),
     companyName: normalizeOptionalString(payload.companyName, 160),
-    companyWebsite: normalizeOptionalString(payload.companyWebsite, 255),
+    companyId: payload.companyId,
+    contactId: payload.contactId,
+    companyWebsite:
+      payload.companyWebsite === undefined
+        ? undefined
+        : normalizeOptionalString(payload.companyWebsite, 255),
     notes: (payload.notes ?? '').trim() || null,
   }
 }

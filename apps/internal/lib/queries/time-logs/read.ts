@@ -1,3 +1,4 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
@@ -82,8 +83,8 @@ const TIME_LOG_SELECTION = {
   user: {
     id: users.id,
     email: users.email,
-    fullName: users.fullName,
-    avatarUrl: users.avatarUrl,
+    fullName: personNameSql,
+    avatarUrl: personAvatarSql,
     role: users.role,
     createdAt: users.createdAt,
     updatedAt: users.updatedAt,

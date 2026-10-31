@@ -3,7 +3,11 @@ import 'server-only'
 import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin, ensureProjectAccess } from '@/lib/auth/permissions'
+import {
+  assertCrmAccess,
+  ensureProjectAccess,
+} from '@/lib/auth/permissions'
+import { listWorkableProjectIds } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { taskAssignees, tasks } from '@/lib/db/schema'
 import type { RawTaskWithRelations } from '@/lib/data/projects/types'
@@ -61,19 +65,31 @@ async function listProjectTasksWithRelations(
 /**
  * Tasks linked to a lead, hydrated with the same counts and assignee rows the
  * project board's cards consume — the lead sheet renders the board's card.
- * Admin-asserted like `listTasksForLead` (leads are admin-only, no RLS).
- * Ordered by creation so the section reads as a chronology, not board rank.
+ * CRM staff only; SALES see just the tasks on projects they can work, with
+ * logged hours hidden. Ordered by creation so the section reads as a
+ * chronology, not board rank.
  */
 export async function listLeadTasksWithRelations(
   user: AppUser,
   leadId: string
 ): Promise<RawTaskWithRelations[]> {
-  assertAdmin(user)
+  assertCrmAccess(user)
 
-  return queryTasksWithRelations(
-    and(eq(tasks.leadId, leadId), isNull(tasks.deletedAt)),
+  const workable = await listWorkableProjectIds(user)
+  if (workable !== null && workable.length === 0) return []
+
+  const rows = await queryTasksWithRelations(
+    and(
+      eq(tasks.leadId, leadId),
+      isNull(tasks.deletedAt),
+      workable === null ? undefined : inArray(tasks.projectId, workable)
+    ),
     asc(tasks.createdAt)
   )
+
+  return workable === null
+    ? rows
+    : rows.map(row => ({ ...row, logged_hours: 0 }))
 }
 
 async function queryTasksWithRelations(
