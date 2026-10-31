@@ -47,6 +47,8 @@ const contactFormSchema = z.object({
       clientName: z.string().nullable(),
       /** Billed before, not now: its portal access returns if billing restarts. */
       formerClient: z.boolean().optional(),
+      /** The agency's own company: its people are staff (Access: no client portal). */
+      isStaff: z.boolean().optional(),
       /** The company or its client is archived: shown muted, kept on save. */
       archived: z.boolean().optional(),
     })
@@ -118,6 +120,11 @@ export function useContactSheetState({
   // The person's `updated_at` as loaded: Save sends it back, and the server
   // refuses if someone else saved them since.
   const [loadedUpdatedAt, setLoadedUpdatedAt] = useState<string | null>(null)
+  // Their live sign-in's role as saved (null: they can't sign in). Shown
+  // read-only in Access to people who can't change sign-ins.
+  const [savedSignInRole, setSavedSignInRole] = useState<
+    'ADMIN' | 'SALES' | 'CLIENT' | null
+  >(null)
 
   const { toast } = useToast()
   const isEditing = Boolean(contact?.id)
@@ -192,6 +199,9 @@ export function useContactSheetState({
     setCompaniesLoaded(!contactId)
     setCompaniesLoadFailed(false)
     setLoadedUpdatedAt(null)
+    setSavedSignInRole(
+      contact && 'signInRole' in contact ? (contact.signInRole ?? null) : null
+    )
     if (!contactId) {
       return
     }
@@ -203,6 +213,7 @@ export function useContactSheetState({
         setCompaniesLoaded(true)
         if (data.person) {
           setLoadedUpdatedAt(data.person.updatedAt)
+          setSavedSignInRole(data.person.signInRole)
           // The sheet opened with the list's copy of their details, which
           // can be older than this read: show the saved ones (the version
           // Save checks against), unless already edited.
@@ -231,6 +242,7 @@ export function useContactSheetState({
             clientCompanyId: membership.clientCompanyId,
             clientName: membership.clientName,
             formerClient: membership.formerClient,
+            isStaff: membership.isStaff,
             archived: membership.archived,
           })),
         })
@@ -478,6 +490,7 @@ export function useContactSheetState({
     handleCancelDelete,
     handleConfirmDelete,
     signInAccount,
+    savedSignInRole,
     roleMonths,
     canManageSignIn,
     readOnly,

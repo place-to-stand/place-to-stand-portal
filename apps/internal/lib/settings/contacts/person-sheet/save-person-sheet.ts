@@ -24,6 +24,7 @@ import {
 import {
   PERSON_SAVED_ELSEWHERE,
   PERSON_WITH_SIGN_IN_ADMIN_ONLY,
+  SIGN_IN_ADMIN_ONLY,
 } from '@/lib/settings/contacts/person-sheet-copy'
 
 import { SignInConflictError } from '@/lib/companies/portal-sign-ins'
@@ -108,7 +109,7 @@ async function save(
     return { error: PERSON_SAVED_ELSEWHERE }
   }
   if (signIn && !isAdmin) {
-    return { error: 'Only an admin can change someone’s sign-in.' }
+    return { error: SIGN_IN_ADMIN_ONLY }
   }
 
   const prepared = await prepareContactSave(user, contactInput, existing)

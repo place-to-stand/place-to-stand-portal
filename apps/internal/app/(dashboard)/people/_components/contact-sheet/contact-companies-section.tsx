@@ -16,14 +16,8 @@ import {
   SheetRecordList,
 } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
-import { PENDING_REASON } from '@/lib/forms/form-controls'
-import {
-  PortalAccessControl,
-  type PortalAccessPerson,
-} from '@/components/clients/portal-access-control'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sheet-state'
 
@@ -34,33 +28,25 @@ type ContactCompaniesSectionProps = {
   loadFailed?: boolean
   onChange: (companies: ContactCompanyEntry[]) => void
   /**
-   * Portal switches on client rows (people who manage clients only); null
-   * hides them.
+   * Notes which client rows have portal access (people who manage clients
+   * only). The sheet's Access section changes it, not this list.
    */
-  portal?: {
-    person: PortalAccessPerson
-    /** The Sign-in fields give them a sign-in in this Save. */
-    signInStaged: boolean
-    /** Portal access as loaded, by company id. */
-    savedAccess: Record<string, boolean>
-    disabled: boolean
-  } | null
+  showPortalAccess?: boolean
 }
 
 /**
  * The companies a person belongs to: title at each and the primary-contact
- * star (set on the company sheet, read-only here). People who manage
- * clients get a Portal switch on each client row, the same control as the
- * company sheet's People section: turning it on for someone with no sign-in gives
- * them a Client sign-in on Save. All staged until Save, like the rest of
- * the sheet. The first one is their main company in lists.
+ * star (set on the company sheet, read-only here). Portal access shows as a
+ * note on a client row; the Access section changes it. All staged until
+ * Save, like the rest of the sheet. The first one is their main company in
+ * lists.
  */
 export function ContactCompaniesSection({
   companies,
   disabled: disabledProp,
   loadFailed = false,
   onChange,
-  portal = null,
+  showPortalAccess = false,
 }: ContactCompaniesSectionProps) {
   // A failed load must not look like "no companies": block edits until reopened.
   const disabled = disabledProp || loadFailed
@@ -74,24 +60,6 @@ export function ContactCompaniesSection({
       companies.map(entry =>
         entry.companyId === companyId ? { ...entry, ...patch } : entry
       )
-    )
-
-  // A client row, or a former client's (its switch shows as it is: access
-  // returns with billing, and it can only go off).
-  const showsPortal = (entry: ContactCompanyEntry) =>
-    portal !== null &&
-    ((Boolean(entry.clientCompanyId) && !entry.archived) ||
-      Boolean(entry.formerClient))
-  const invited =
-    portal !== null &&
-    !portal.person.hasSignIn &&
-    !portal.signInStaged &&
-    companies.some(
-      entry =>
-        showsPortal(entry) &&
-        !entry.formerClient &&
-        entry.portalAccess &&
-        !portal.savedAccess[entry.companyId]
     )
 
   return (
@@ -159,12 +127,12 @@ export function ContactCompaniesSection({
                   ) : null
                 }
                 note={
-                  entry.formerClient && portal ? (
+                  entry.formerClient && showPortalAccess ? (
                     'Portal access returns if billing restarts.'
                   ) : entry.archived ? (
                     'Archived'
                   ) : entry.isPrimary ||
-                    (canManageAccess &&
+                    (showPortalAccess &&
                       entry.clientCompanyId &&
                       entry.portalAccess) ? (
                     <span className='inline-flex items-center gap-2'>
@@ -174,7 +142,7 @@ export function ContactCompaniesSection({
                           Primary contact
                         </span>
                       ) : null}
-                      {canManageAccess &&
+                      {showPortalAccess &&
                       entry.clientCompanyId &&
                       entry.portalAccess ? (
                         <span>Portal access</span>
@@ -192,33 +160,6 @@ export function ContactCompaniesSection({
                         disabled={disabled}
                       />
                     </RecordRowField>
-                    {portal && showsPortal(entry) ? (
-                      <RecordRowField label='Portal access'>
-                        <PortalAccessControl
-                          showLabel={false}
-                          person={{
-                            ...portal.person,
-                            hasSignIn: portal.signInStaged
-                              ? null
-                              : portal.person.hasSignIn,
-                          }}
-                          hasAccess={entry.portalAccess}
-                          disabled={
-                            disabled ||
-                            portal.disabled ||
-                            (Boolean(entry.formerClient) && !entry.portalAccess)
-                          }
-                          disabledReason={
-                            disabled || portal.disabled
-                              ? PENDING_REASON
-                              : 'Bill this company before giving its people portal access.'
-                          }
-                          onChange={on =>
-                            update(entry.companyId, { portalAccess: on })
-                          }
-                        />
-                      </RecordRowField>
-                    ) : null}
                   </>
                 }
                 actions={
@@ -250,11 +191,6 @@ export function ContactCompaniesSection({
           })}
         </SheetRecordList>
       )}
-      {invited ? (
-        <SaveSideEffect>
-          Saving emails a portal invite to {portal!.person.name}.
-        </SaveSideEffect>
-      ) : null}
     </SheetSection>
   )
 }

@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
+import { SegmentedControl } from '@pts/ui/segmented-control'
 import { Switch } from '@pts/ui/switch'
 import { Textarea } from '@pts/ui/textarea'
 import {
@@ -298,12 +299,38 @@ export function ComponentsPickers() {
 }
 
 export function ComponentsToggles() {
+  const [choice, setChoice] = useState('portal')
   return (
     <DesignSection
       id='toggles'
-      title='Switch and checkbox'
-      when='A switch turns a setting on or off; a checkbox picks items or agrees to something. In a sheet both apply on Save. The checked switch is emerald, set inside the component; never override it.'
+      title='Switch, checkbox and segmented control'
+      when='A switch turns a setting on or off; a checkbox picks items or agrees to something; a segmented control picks one of a few options that are a form value. In a sheet all three apply on Save. The checked switch is emerald, set inside the component; never override it.'
     >
+      <Specimen
+        label='Segmented control'
+        note='@pts/ui/segmented-control: a radio group drawn as the Tabs pill. For a form value; to change what a view shows, use Tabs.'
+        className='flex flex-col items-start gap-4'
+      >
+        <SegmentedControl
+          aria-label='Access'
+          value={choice}
+          onValueChange={setChoice}
+          options={[
+            { value: 'none', label: 'No access' },
+            { value: 'portal', label: 'Client portal' },
+            { value: 'team', label: 'Team' },
+          ]}
+        />
+        <SegmentedControl
+          aria-label='Access (disabled)'
+          value='team'
+          disabled
+          options={[
+            { value: 'none', label: 'No access' },
+            { value: 'team', label: 'Team' },
+          ]}
+        />
+      </Specimen>
       <Specimen
         label='Switch'
         className='grid grid-cols-1 gap-4 sm:grid-cols-3'

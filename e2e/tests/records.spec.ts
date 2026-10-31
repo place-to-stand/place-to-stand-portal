@@ -36,13 +36,13 @@ test('a client company shows the Client badge and its projects', async ({
   await expect(sheet.getByRole('tabpanel')).toBeVisible()
 })
 
-test('person sheet is one stacked form, sign-in included', async ({ page }) => {
+test('person sheet is one stacked form, access included', async ({ page }) => {
   await page.goto('/people')
   await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab')).toHaveCount(0)
-  await expect(sheet.getByText('Can sign in')).toBeVisible()
+  await expect(sheet.getByRole('radiogroup', { name: 'Access' })).toBeVisible()
   await expect(
     sheet.getByRole('button', { name: /^Save changes/ })
   ).toHaveCount(1)
