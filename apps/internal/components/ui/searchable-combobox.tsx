@@ -362,7 +362,11 @@ export const SearchableCombobox = React.forwardRef<
               // Never narrower than the trigger; grows to fit an option on one line,
               // up to a cap, past which options truncate with a tooltip.
               className='w-max max-w-[min(28rem,90vw)] overflow-hidden p-0'
-              sideOffset={8}
+              // A custom trigger is an "Add …" button at the right of a section
+              // heading: the list hangs from its right edge, just below it,
+              // inside the content column. A field opens under its left edge.
+              align={trigger ? 'end' : 'start'}
+              sideOffset={trigger ? 4 : 8}
               style={contentStyle}
             >
               <Command className='max-h-80' defaultValue={selectedCommandValue}>
@@ -438,7 +442,12 @@ function renderLeading(
   item: SearchableComboboxItem,
   place: 'row' | 'trigger'
 ): React.ReactNode {
-  const className = place === 'row' ? 'mr-2 shrink-0' : 'shrink-0'
+  // A hairline ring keeps the circle visible on a highlighted row, whose
+  // background matches the avatar's fill.
+  const className = cn(
+    'ring-border shrink-0 ring-1',
+    place === 'row' && 'mr-2'
+  )
   if (item.userId) {
     return (
       <Avatar size='xs' className={className}>
