@@ -1,7 +1,6 @@
 'use client'
 
 import { PENDING_REASON } from '@/lib/forms/form-controls'
-import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 
 import { PortalAccessControl } from '@/components/clients/portal-access-control'
 import { useCompanyBilling } from './company-billing-section'
@@ -84,15 +83,10 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
           !removed.has(contact.id)
       )
     : []
-  const inviteNote = invitees.length ? (
-    <SaveSideEffect>
-      Saving emails a portal invite to{' '}
-      {new Intl.ListFormat('en', { type: 'conjunction' }).format(
-        invitees.map(contact => contact.name)
-      )}
-      .
-    </SaveSideEffect>
-  ) : null
+  // Each of them gets the note beside their own switch.
+  const inviteeIds = new Set(invitees.map(contact => contact.id))
+  const portalHintFor = (contactId: string) =>
+    inviteeIds.has(contactId) ? 'Invite emailed when you save' : null
 
   const formerNote =
     showPortal && formerClient ? (
@@ -105,14 +99,8 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
     <CompanyPeopleSection
       {...props}
       portalAccessFor={portalAccessFor}
-      footer={
-        formerNote || inviteNote ? (
-          <>
-            {formerNote}
-            {inviteNote}
-          </>
-        ) : null
-      }
+      portalHintFor={portalHintFor}
+      footer={formerNote}
     />
   )
 }

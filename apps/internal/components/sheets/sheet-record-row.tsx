@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import type { LucideIcon } from 'lucide-react'
+import { TriangleAlert, type LucideIcon } from 'lucide-react'
 
 import { entityIconAccent } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
@@ -139,33 +139,48 @@ export const RECORD_ROW_INPUT_CLASS =
 export function RecordRowField({
   label,
   grow = false,
+  hint,
   children,
 }: {
   label: string
+  /**
+   * What Save does with this field, right after the control: a small caution
+   * icon and a short line ("Invite emailed when you save"). Use it in place
+   * of a separate SaveSideEffect alert for a single field's side effect.
+   */
+  hint?: ReactNode
   /** A text input: fills the value column, up to 288px. */
   grow?: boolean
   children: ReactNode
 }) {
   return (
-    // `contents`: the label and its control are the grid's two cells, and
-    // clicking the label still focuses the control.
-    <label className='contents'>
-      {/* Both cells hug their content, so only the label text and the
-          control respond to a click, not the row's empty width. */}
+    // `contents`: the label and the control are the grid's two cells. Not a
+    // <label>: only the control responds to a click (it carries its own
+    // aria-label), never the label text, the hint or the row's empty width.
+    <div className='contents'>
       <span className='text-muted-foreground justify-self-start text-sm'>
         {label}
       </span>
       <span
         className={cn(
-          'flex min-h-8 min-w-0 items-center gap-2',
+          'flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1',
           grow ? 'w-full' : 'justify-self-start',
           // Ghost inputs keep their text on the value column's edge.
           grow && 'max-w-72 [&>*:last-child]:-ml-2 [&>*:last-child]:w-full'
         )}
       >
         {children}
+        {hint ? (
+          <span className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
+            <TriangleAlert
+              className='text-warning size-3.5 shrink-0'
+              aria-hidden
+            />
+            {hint}
+          </span>
+        ) : null}
       </span>
-    </label>
+    </div>
   )
 }
 

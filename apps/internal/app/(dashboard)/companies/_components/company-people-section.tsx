@@ -63,6 +63,8 @@ type CompanyPeopleSectionProps = {
   onUndoRemove: (contactId: string) => void
   /** A billed company (admins only): each person's portal access switch. */
   portalAccessFor?: ((contactId: string) => ReactNode) | null
+  /** What Save does with a person's portal access, beside the switch. */
+  portalHintFor?: ((contactId: string) => ReactNode) | null
   /** One muted line under the list, e.g. who Save will email. */
   footer?: ReactNode
 }
@@ -89,6 +91,7 @@ export function CompanyPeopleSection({
   onRemove,
   onUndoRemove,
   portalAccessFor = null,
+  portalHintFor = null,
   footer = null,
 }: CompanyPeopleSectionProps) {
   const removed = new Set(removedIds)
@@ -139,7 +142,12 @@ export function CompanyPeopleSection({
           />
         </RecordRowField>
         {portal ? (
-          <RecordRowField label='Portal access'>{portal}</RecordRowField>
+          <RecordRowField
+            label='Portal access'
+            hint={portalHintFor?.(contact.id) ?? null}
+          >
+            {portal}
+          </RecordRowField>
         ) : null}
       </>
     )
