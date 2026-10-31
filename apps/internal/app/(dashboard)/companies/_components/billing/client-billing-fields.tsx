@@ -15,7 +15,6 @@ import { SheetSection } from '@/components/sheets/sheet-section'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -179,11 +178,6 @@ export function ClientBillingFields({
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedBillingType.description ? (
-                    <FormDescription>
-                      {selectedBillingType.description}
-                    </FormDescription>
-                  ) : null}
                   <FormMessage />
                 </FormItem>
               )
@@ -220,9 +214,6 @@ export function ClientBillingFields({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>
-                  Sets the tax rate on invoices.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

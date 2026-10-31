@@ -212,27 +212,13 @@ export function CompanyPeopleSection({
           <ContactRecordRow
             key={contact.id}
             contact={contact}
-            className='opacity-60'
-            note={
-              <span className='text-destructive'>
-                {clientName
-                  ? `Pending removal · loses portal access to ${clientName}`
-                  : 'Pending removal'}
-              </span>
-            }
-            actions={
-              <Button
-                type='button'
-                variant='ghost'
-                size='xs'
-                className='text-muted-foreground'
-                disabled={disabled}
-                onClick={() => onUndoRemove(contact.id)}
-                aria-label={`Undo removing ${contact.name}`}
-              >
-                Undo
-              </Button>
-            }
+            pendingRemoval={{
+              disabled,
+              note: clientName
+                ? `Pending removal · loses portal access to ${clientName}`
+                : undefined,
+              onUndo: () => onUndoRemove(contact.id),
+            }}
           />
         ) : (
           <ContactRecordRow

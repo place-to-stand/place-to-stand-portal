@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { InvoiceStatusBadge } from '@/app/(dashboard)/invoices/_components/invoice-status-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
@@ -30,6 +30,8 @@ type RowExtras = {
   /** False when the viewer can't open this record (non-admins and clients). */
   openable?: boolean
   className?: string
+  /** Removed in this sheet, goes on Save: shows Pending removal and Undo. */
+  pendingRemoval?: ComponentProps<typeof SheetRecordRow>['pendingRemoval']
 }
 
 export function ContactRecordRow({
@@ -40,6 +42,7 @@ export function ContactRecordRow({
   fields,
   openable = true,
   className,
+  pendingRemoval,
 }: RowExtras & {
   /** Shown after the name, e.g. the portal-account mark. */
   titleAddon?: ReactNode
@@ -73,6 +76,7 @@ export function ContactRecordRow({
       actions={actions}
       fields={fields}
       className={className}
+      pendingRemoval={pendingRemoval}
     />
   )
 }
@@ -85,6 +89,7 @@ export function CompanyRecordRow({
   fields,
   openable = true,
   className,
+  pendingRemoval,
 }: RowExtras & {
   company: { id: string; name: string }
   /** Shown after the name, e.g. the Client badge. */
@@ -110,6 +115,7 @@ export function CompanyRecordRow({
       actions={actions}
       fields={fields}
       className={className}
+      pendingRemoval={pendingRemoval}
     />
   )
 }
@@ -120,6 +126,7 @@ export function LeadRecordRow({
   actions,
   openable = true,
   className,
+  pendingRemoval,
 }: RowExtras & {
   lead: {
     id: string
@@ -145,6 +152,7 @@ export function LeadRecordRow({
         </>
       }
       className={className}
+      pendingRemoval={pendingRemoval}
     />
   )
 }
@@ -155,6 +163,7 @@ export function ProjectRecordRow({
   note,
   actions,
   className,
+  pendingRemoval,
 }: Omit<RowExtras, 'openable'> & {
   project: {
     id: string
@@ -186,6 +195,7 @@ export function ProjectRecordRow({
         </>
       }
       className={className}
+      pendingRemoval={pendingRemoval}
     />
   )
 }
@@ -196,6 +206,7 @@ export function InvoiceRecordRow({
   actions,
   openable = true,
   className,
+  pendingRemoval,
 }: RowExtras & {
   invoice: {
     id: string
@@ -231,6 +242,7 @@ export function InvoiceRecordRow({
         </>
       }
       className={className}
+      pendingRemoval={pendingRemoval}
     />
   )
 }
@@ -246,6 +258,7 @@ export function HourBlockRecordRow({
   actions,
   openable = true,
   className,
+  pendingRemoval,
 }: RowExtras & {
   hourBlock: {
     id: string
@@ -271,6 +284,7 @@ export function HourBlockRecordRow({
       openLabel={`Open hour block ${title}`}
       actions={actions}
       className={className}
+      pendingRemoval={pendingRemoval}
     />
   )
 }

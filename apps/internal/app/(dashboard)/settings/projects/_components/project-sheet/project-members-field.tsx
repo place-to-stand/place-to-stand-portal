@@ -9,6 +9,7 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { EntityList } from '@/components/sheets/entity-list'
+import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project-sheet-state'
@@ -86,6 +87,10 @@ export function ProjectMembersField({
 
   const setMembers = (next: string[]) =>
     form.setValue('memberIds', next, { shouldDirty: true })
+  const removals = usePendingRemovals<MemberCandidate>(
+    memberKey,
+    memberIds ?? []
+  )
 
   // The + and the empty state open the same picker.
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -118,7 +123,7 @@ export function ProjectMembersField({
           />
         ),
       }}
-      isEmpty={members.length === 0}
+      isEmpty={members.length === 0 && removals.pending.length === 0}
       emptyMessage={
         options.length > 0 ? 'No members yet.' : 'No sales staff yet.'
       }
@@ -147,14 +152,28 @@ export function ProjectMembersField({
                 icon={<X />}
                 className='text-muted-foreground hover:text-destructive'
                 disabled={disabled}
-                onClick={() =>
+                onClick={() => {
+                  removals.markRemoved(member)
                   setMembers((memberIds ?? []).filter(id => id !== member.id))
-                }
+                }}
               />
             }
           />
         )
       })}
+      {removals.pending.map(member => (
+        <SheetRecordRow
+          key={`removed-${member.id}`}
+          icon={ENTITY_ICONS.contact}
+          title={member.fullName ?? member.email}
+          pendingRemoval={{
+            disabled,
+            onUndo: () => setMembers([...(memberIds ?? []), member.id]),
+          }}
+        />
+      ))}
     </EntityList>
   )
 }
+
+const memberKey = (member: MemberCandidate) => member.id

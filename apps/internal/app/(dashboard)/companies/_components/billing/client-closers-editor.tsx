@@ -1,9 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
@@ -12,6 +10,7 @@ import {
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
 import { EntityList } from '@/components/sheets/entity-list'
+import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { cn } from '@/lib/utils'
 
@@ -69,12 +68,12 @@ export function ClientClosersEditor({
   const isSplit = closers.length > 1
   const locked = isPending || disabled
   const lockedReason = isPending ? pendingReason : disabledReason
-  // Removed closers, kept so Undo can put them back before Save.
-  const [removed, setRemoved] = useState<CloserCandidate[]>([])
-  const current = new Set(closers.map(closerKey))
-  const pendingRemovals = removed.filter(
-    closer => !current.has(closerKey(closer))
+  // Removed closers stay as Pending removal, with Undo, until Save.
+  const removals = usePendingRemovals<CloserCandidate>(
+    closerKey,
+    closers.map(closerKey)
   )
+  const pendingRemovals = removals.pending
 
   return (
     <EntityList
@@ -156,10 +155,7 @@ export function ClientClosersEditor({
                   icon={<X />}
                   className='text-muted-foreground hover:text-destructive shrink-0'
                   onClick={() => {
-                    setRemoved(prev => [
-                      ...prev.filter(other => closerKey(other) !== key),
-                      closer,
-                    ])
+                    removals.markRemoved(closer)
                     onRemove(key)
                   }}
                   disabled={locked}
@@ -173,24 +169,8 @@ export function ClientClosersEditor({
         <SheetRecordRow
           key={`removed-${closerKey(closer)}`}
           icon={ENTITY_ICONS.contact}
-          className='opacity-60'
           title={closer.name}
-          description={
-            <span className='text-destructive'>Pending removal</span>
-          }
-          actions={
-            <Button
-              type='button'
-              variant='ghost'
-              size='xs'
-              className='text-muted-foreground'
-              disabled={locked}
-              onClick={() => onAdd(closer)}
-              aria-label={`Undo removing ${closer.name}`}
-            >
-              Undo
-            </Button>
-          }
+          pendingRemoval={{ disabled: locked, onUndo: () => onAdd(closer) }}
         />
       ))}
     </EntityList>

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
@@ -165,27 +164,14 @@ export function ClientOriginationPicker({
       ) : pendingRemoval ? (
         <SheetRecordRow
           icon={ENTITY_ICONS.contact}
-          className='opacity-60'
           title={pendingRemoval.name}
-          description={
-            <span className='text-destructive'>Pending removal</span>
-          }
-          actions={
-            <Button
-              type='button'
-              variant='ghost'
-              size='xs'
-              className='text-muted-foreground'
-              disabled={locked}
-              onClick={() => {
-                setRemoved(null)
-                pendingRemoval.pick()
-              }}
-              aria-label={`Undo removing ${pendingRemoval.name}`}
-            >
-              Undo
-            </Button>
-          }
+          pendingRemoval={{
+            disabled: locked,
+            onUndo: () => {
+              setRemoved(null)
+              pendingRemoval.pick()
+            },
+          }}
         />
       ) : null}
     </EntityList>

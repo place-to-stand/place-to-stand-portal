@@ -207,6 +207,15 @@ export function ComponentsRecordRows() {
             }}
             openable={false}
           />
+          <ContactRecordRow
+            contact={{
+              id: 'design-removed',
+              name: 'Grace Hopper',
+              email: 'grace@acme.com',
+            }}
+            openable={false}
+            pendingRemoval={{ onUndo: () => undefined }}
+          />
         </SheetRecordList>
         <div className='space-y-4'>
           <SheetRecordRow

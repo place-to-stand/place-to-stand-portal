@@ -13,6 +13,7 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { RecordRowField } from '@/components/sheets/sheet-record-row'
 import { EntityList } from '@/components/sheets/entity-list'
+import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
@@ -65,6 +66,12 @@ export function ContactCompaniesSection({
       )
     )
 
+  // Removed companies stay as Pending removal, with Undo, until Save.
+  const removals = usePendingRemovals<ContactCompanyEntry>(
+    companyEntryKey,
+    companies.map(companyEntryKey)
+  )
+
   return (
     <EntityList
       title='Companies'
@@ -97,7 +104,7 @@ export function ContactCompaniesSection({
           />
         ),
       }}
-      isEmpty={companies.length === 0}
+      isEmpty={companies.length === 0 && removals.pending.length === 0}
       emptyMessage='Not at any company yet. Add one or create it.'
       status={
         loadFailed ? (
@@ -184,13 +191,14 @@ export function ContactCompaniesSection({
                     icon={<X />}
                     className='text-muted-foreground hover:text-destructive'
                     disabled={disabled || primaryLocked}
-                    onClick={() =>
+                    onClick={() => {
+                      removals.markRemoved(entry)
                       onChange(
                         companies.filter(
                           other => other.companyId !== entry.companyId
                         )
                       )
-                    }
+                    }}
                   />
                 </DisabledFieldTooltip>
               </>
@@ -198,6 +206,18 @@ export function ContactCompaniesSection({
           />
         )
       })}
+      {removals.pending.map(entry => (
+        <CompanyRecordRow
+          key={`removed-${entry.companyId}`}
+          company={{ id: entry.companyId, name: entry.companyName }}
+          pendingRemoval={{
+            disabled,
+            onUndo: () => onChange([...companies, entry]),
+          }}
+        />
+      ))}
     </EntityList>
   )
 }
+
+const companyEntryKey = (entry: { companyId: string }) => entry.companyId

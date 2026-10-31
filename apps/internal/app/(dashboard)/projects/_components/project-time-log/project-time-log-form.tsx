@@ -11,6 +11,8 @@ import type { TimeLogFormErrors } from '@/lib/projects/time-log/types'
 
 import { SelectedTaskList } from './selected-task-list'
 import { EntityList } from '@/components/sheets/entity-list'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
+import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { FIELD_STACK_CLASS } from '@/components/ui/form'
 import { Label } from '@pts/ui/label'
@@ -89,6 +91,12 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
     : null
 
   const SubmitIcon = isEditMode ? Pencil : PlusCircle
+
+  // Unlinked tasks stay as Pending removal, with Undo, until the log saves.
+  const taskRemovals = usePendingRemovals<TaskWithRelations>(
+    taskKey,
+    selectedTasks.map(taskKey)
+  )
 
   return (
     <form
@@ -177,15 +185,31 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
             />
           ),
         }}
-        isEmpty={selectedTasks.length === 0}
+        isEmpty={
+          selectedTasks.length === 0 && taskRemovals.pending.length === 0
+        }
         emptyMessage='No tasks linked. Hours apply to project if left empty.'
       >
         <SelectedTaskList
           tasks={selectedTasks}
           isActionDisabled={isMutating}
           disabledReason={isMutating ? 'Logging time…' : null}
-          onRemove={requestTaskRemoval}
+          onRemove={task => {
+            taskRemovals.markRemoved(task)
+            requestTaskRemoval(task)
+          }}
         />
+        {taskRemovals.pending.map(task => (
+          <SheetRecordRow
+            key={`removed-${task.id}`}
+            icon={ENTITY_ICONS.task}
+            title={task.title}
+            pendingRemoval={{
+              disabled: isMutating,
+              onUndo: () => onAddTask(task.id),
+            }}
+          />
+        ))}
       </EntityList>
       <div className={cn(FIELD_STACK_CLASS, 'sm:col-span-2')}>
         <Label htmlFor='time-log-note'>Notes</Label>
@@ -243,3 +267,5 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
     </form>
   )
 }
+
+const taskKey = (task: { id: string }) => task.id

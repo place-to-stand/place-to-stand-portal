@@ -20,6 +20,7 @@ import {
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import {
   INTEGRATION_PROVIDERS,
   formatIntegrationLinkLabel,
@@ -307,40 +308,24 @@ export function IntegrationLinksSection({
           </div>
         ))}
         {removedLinks.map(link => (
-          <div
+          <SheetRecordRow
             key={`removed-${link.id}`}
-            className={`${rowClasses} opacity-60`}
-          >
-            <div className='flex min-w-0 flex-col gap-1'>
-              <div className='flex items-center gap-2 text-sm line-through'>
-                <IntegrationProviderIcon
-                  provider={provider}
-                  className='text-muted-foreground h-4 w-4'
-                />
-                <span className='truncate'>
-                  {formatIntegrationLinkLabel(link)}
-                </span>
-              </div>
-              <div className='text-destructive pl-6 text-xs'>
-                Pending removal
-              </div>
-            </div>
-            <Button
-              type='button'
-              variant='ghost'
-              size='xs'
-              className='text-muted-foreground shrink-0'
-              onClick={() => {
+            leading={
+              <IntegrationProviderIcon
+                provider={provider}
+                className='text-muted-foreground h-4 w-4'
+              />
+            }
+            title={formatIntegrationLinkLabel(link)}
+            pendingRemoval={{
+              disabled,
+              onUndo: () => {
                 const next = new Set(removedLinkIds)
                 next.delete(link.id)
                 onRemovedLinkIdsChange(next)
-              }}
-              disabled={disabled}
-              aria-label='Undo removal'
-            >
-              Undo
-            </Button>
-          </div>
+              },
+            }}
+          />
         ))}
       </EntityList>
 

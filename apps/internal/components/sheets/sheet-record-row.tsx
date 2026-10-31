@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+
+import { Button } from '@pts/ui/button'
 import { TriangleAlert, type LucideIcon } from 'lucide-react'
 
 import { entityIconAccent } from '@/lib/entity-accents'
@@ -25,6 +27,7 @@ export function SheetRecordRow({
   href,
   openLabel,
   fields,
+  pendingRemoval,
   className,
 }: {
   icon?: LucideIcon
@@ -40,6 +43,17 @@ export function SheetRecordRow({
    * under a hairline.
    */
   fields?: ReactNode
+  /**
+   * The row was removed in this sheet and goes on Save: it dims, says
+   * "Pending removal" (or `note`), drops its fields and actions, and offers
+   * Undo. Every sheet list removes this way, never by dropping the card.
+   */
+  pendingRemoval?: {
+    onUndo: () => void
+    /** In place of "Pending removal", e.g. what removing it does. */
+    note?: ReactNode
+    disabled?: boolean
+  }
   /** Makes the row's body a button that opens the record. */
   onOpen?: () => void
   /** Makes the row's body a link instead (a record that is a page, e.g. a project board). */
@@ -48,6 +62,30 @@ export function SheetRecordRow({
   openLabel?: string
   className?: string
 }) {
+  if (pendingRemoval) {
+    description = (
+      <span className='text-destructive'>
+        {pendingRemoval.note ?? 'Pending removal'}
+      </span>
+    )
+    fields = undefined
+    onOpen = undefined
+    href = undefined
+    actions = (
+      <Button
+        type='button'
+        variant='ghost'
+        size='xs'
+        className='text-muted-foreground'
+        disabled={pendingRemoval.disabled}
+        onClick={pendingRemoval.onUndo}
+        aria-label={`Undo removing ${typeof title === 'string' ? title : 'this'}`}
+      >
+        Undo
+      </Button>
+    )
+    className = cn('opacity-60', className)
+  }
   const body = (
     <>
       {leading ? (
