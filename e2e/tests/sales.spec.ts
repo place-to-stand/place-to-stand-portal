@@ -301,7 +301,8 @@ test('sales can’t edit or archive someone else’s lead update', async ({
     leadUrl = `/leads?lead=${leadId}`
 
     // Admin logs the update.
-    await admin.getByRole('button', { name: 'Add update' }).click()
+    // The section's + (the empty box does the same).
+    await admin.getByRole('button', { name: 'Add update' }).first().click()
     const logDialog = admin
       .getByRole('dialog')
       .filter({ has: admin.getByText('Log update', { exact: true }) })
@@ -310,7 +311,8 @@ test('sales can’t edit or archive someone else’s lead update', async ({
     await admin.locator('#lead-update-body .ProseMirror').click()
     await admin.keyboard.type(marker)
     await logDialog.getByRole('button', { name: 'Log', exact: true }).click()
-    await expect(logDialog).toBeHidden()
+    // The inline form closes (it stays mounted, hidden, so check its heading).
+    await expect(admin.getByText('Log update', { exact: true })).toBeHidden()
 
     // Admin saves it once, unchanged, to capture the edit action's request.
     const adminEntry = leadUpdateEntry(admin, marker)
@@ -330,7 +332,7 @@ test('sales can’t edit or archive someone else’s lead update', async ({
     )
     await editDialog.getByRole('button', { name: 'Save', exact: true }).click()
     const captured = await editRequest
-    await expect(editDialog).toBeHidden()
+    await expect(admin.getByText('Edit update', { exact: true })).toBeHidden()
 
     // Sales: the update's actions are off.
     await page.goto(leadUrl)

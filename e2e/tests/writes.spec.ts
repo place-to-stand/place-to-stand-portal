@@ -77,14 +77,16 @@ test('lead: a person not at the company gets one caution saying Save adds them',
   const records = page.getByRole('option').filter({ hasNotText: /^Create/ })
   await sheet.getByRole('combobox', { name: 'Person' }).click()
   await records.first().click()
-  const caution = sheet.getByRole('alert').filter({ hasText: 'is not yet at' })
+  const caution = sheet
+    .getByRole('alert')
+    .filter({ hasText: /isn.t at .+ yet/ })
   for (let attempt = 1; attempt <= 3; attempt++) {
     await sheet.getByRole('combobox', { name: 'Company' }).click()
     await records.nth(attempt * 3).click()
     if (await caution.count()) break
   }
   await expect(caution).toBeVisible()
-  await expect(caution).toContainText('Saving adds')
+  await expect(caution).toContainText('when you save')
   // One alert, no button: Save does it.
   await expect(caution.getByRole('button')).toHaveCount(0)
   // Close without saving.
