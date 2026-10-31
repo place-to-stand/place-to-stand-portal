@@ -1,6 +1,7 @@
 'use client'
 
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { useMemo } from 'react'
 
@@ -33,6 +34,7 @@ type Props = {
 }
 
 export function ProjectSheet(props: Props) {
+  const { isAdmin } = useViewerAccess()
   const {
     form,
     isEditing,
@@ -76,7 +78,8 @@ export function ProjectSheet(props: Props) {
       <Sheet open={props.open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          columns={1}
+          // Admins see the infrastructure column (GitHub, Vercel, Supabase).
+          columns={isAdmin ? 2 : 1}
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
