@@ -365,10 +365,8 @@ export function SubmissionsTable({
               >
                 {/* The rows' unread-dot slot (8px dot + 8px gap), so
                     "Received" lines up with the times below it. */}
-                <span className='inline-flex items-center'>
-                  <span aria-hidden className='w-4 shrink-0' />
-                  Received
-                </span>
+                <span aria-hidden className='inline-block w-4' />
+                Received
               </SortableTableHead>
               <TableHead className='w-24'>Form</TableHead>
               <TableHead>Contact</TableHead>
