@@ -1,10 +1,10 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { FileText, Loader2, Plus, X } from 'lucide-react'
-import clsx from 'clsx'
+import { FileText, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { EntityList } from '@/components/sheets/entity-list'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
@@ -164,72 +164,49 @@ export function TaskAttachmentsField({
     [disabled, disabledReason, isUploading]
   )
 
-  const dropzoneClasses = clsx(
-    'border-border/60 bg-muted/40 relative flex items-center justify-center gap-2 rounded-md border-2 border-dashed p-6 text-sm text-muted-foreground transition w-full outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
-    disabled ? 'opacity-60' : 'hover:border-primary cursor-pointer',
-    isDragActive ? 'border-primary bg-primary/5 text-primary' : null
-  )
+  const addReason = disabled
+    ? disabledReason
+    : isUploading
+      ? 'Please wait for uploads to finish.'
+      : null
 
   return (
-    <div className='space-y-2'>
-      <div className='flex items-center justify-between gap-3'>
-        {/* Icon + heading mirrors the time-log section header. */}
-        <div className='flex items-center gap-2'>
-          <CONCEPT_ICONS.attachment className='text-muted-foreground h-4 w-4' />
-          <h3 className='text-sm font-medium'>Attachments</h3>
-        </div>
-        <DisabledFieldTooltip
-          disabled={disabled || isUploading}
-          reason={
-            disabled
-              ? disabledReason
-              : isUploading
-                ? 'Please wait for uploads to finish.'
-                : null
-          }
-        >
-          <Button
-            type='button'
-            size='xs'
-            variant='ghost'
-            onClick={openFilePicker}
-            disabled={disabled || isUploading}
-            aria-label='Add attachment'
-          >
-            {isUploading ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              <Plus className='h-4 w-4' />
-            )}
-          </Button>
-        </DisabledFieldTooltip>
-      </div>
-      {attachments.length === 0 ? (
-        <button
-          type='button'
-          className={dropzoneClasses}
-          onClick={openFilePicker}
-          disabled={disabled || isUploading}
-        >
-          <CONCEPT_ICONS.attachment className='text-muted-foreground/70 h-6 w-6' />
-          <div className='text-left'>
-            <p className='font-medium'>Drop files here or click to upload</p>
-            <p className='text-muted-foreground text-xs'>
-              Images, videos, PDFs, or ZIPs up to {maxSizeLabel}
-            </p>
+    <div>
+      <EntityList
+        title='Attachments'
+        icon={CONCEPT_ICONS.attachment}
+        add={{
+          label: 'Add attachment',
+          onAdd: openFilePicker,
+          disabled: disabled || isUploading,
+          disabledReason: addReason,
+        }}
+        isEmpty={attachments.length === 0}
+        emptyMessage='Drop files here or click to upload'
+        emptyActive={isDragActive}
+        emptyContent={
+          // The drop zone keeps its own content in the shared empty box.
+          <div className='flex items-center gap-2'>
+            <CONCEPT_ICONS.attachment className='text-muted-foreground/70 h-6 w-6' />
+            <div className='text-left'>
+              <p className='font-medium'>Drop files here or click to upload</p>
+              <p className='text-muted-foreground text-xs'>
+                Images, videos, PDFs, or ZIPs up to {maxSizeLabel}
+              </p>
+            </div>
           </div>
-        </button>
-      ) : (
+        }
+      >
         <div className='relative'>
           <ul className='space-y-2'>{attachments.map(renderAttachmentRow)}</ul>
           {isDragActive ? (
-            <div className='bg-background/95 border-border/60 text-muted-foreground absolute inset-0 flex items-center justify-center gap-3 rounded-md border-2 border-dashed text-sm'>
+            <div className='bg-background/95 text-muted-foreground border-primary absolute inset-0 flex items-center justify-center gap-3 rounded-lg border border-dashed text-sm'>
               <CONCEPT_ICONS.attachment className='text-muted-foreground/70 h-6 w-6' />
               <p className='font-medium'>Release to add files</p>
             </div>
           ) : null}
         </div>
-      )}
+      </EntityList>
       <input
         ref={fileInputRef}
         type='file'

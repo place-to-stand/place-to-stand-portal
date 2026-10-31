@@ -10,6 +10,14 @@ export type EmptyStateProps = {
   disabled?: boolean
   /** Accessible name when the visible message isn't the action itself. */
   label?: string
+  /**
+   * Richer content in place of the message, in the same box (the
+   * attachments drop zone's icon and two lines). Keep `message` as its
+   * plain-text summary.
+   */
+  children?: ReactNode
+  /** Highlights the box, e.g. while files are dragged over it. */
+  active?: boolean
   /** A button or link shown under the message (instead of `onClick`). */
   action?: ReactNode
   className?: string
@@ -28,12 +36,16 @@ export function EmptyState({
   disabled = false,
   label,
   action,
+  children,
+  active = false,
   className,
 }: EmptyStateProps) {
+  const content = children ?? message
+  const activeClass = active ? 'border-primary text-foreground' : null
   if (!onClick) {
     return (
-      <div className={cn(BASE_CLASSES, className)}>
-        <p>{message}</p>
+      <div className={cn(BASE_CLASSES, activeClass, className)}>
+        {children ?? <p>{message}</p>}
         {action}
       </div>
     )
@@ -51,10 +63,11 @@ export function EmptyState({
         disabled
           ? 'opacity-60'
           : 'hover:border-primary hover:text-foreground cursor-pointer',
+        activeClass,
         className
       )}
     >
-      {message}
+      {content}
     </button>
   )
 }

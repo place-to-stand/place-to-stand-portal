@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Pencil,
   TriangleAlert,
+  Paperclip,
 } from 'lucide-react'
 
 import {
@@ -109,6 +110,27 @@ export function ComponentsEmptyLoading() {
             message='Add the first person'
             onClick={() => undefined}
           />
+        </Example>
+        <Example
+          caption='children: richer content in the same box (attachments drop zone); active while dragging'
+          className='[&>div]:w-full'
+        >
+          <EmptyState
+            message='Drop files here or click to upload'
+            onClick={() => undefined}
+          >
+            <div className='flex items-center gap-2'>
+              <Paperclip className='text-muted-foreground/70 h-6 w-6' />
+              <div className='text-left'>
+                <p className='font-medium'>
+                  Drop files here or click to upload
+                </p>
+                <p className='text-muted-foreground text-xs'>
+                  Images, videos, PDFs, or ZIPs up to 50 MB
+                </p>
+              </div>
+            </div>
+          </EmptyState>
         </Example>
         <Example caption='with an action' className='[&>div]:w-full'>
           <EmptyState

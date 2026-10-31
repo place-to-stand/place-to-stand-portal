@@ -40,6 +40,10 @@ type EntityListProps = {
   /** One plain sentence. Clicking it runs `add.onAdd` when adding is allowed. */
   emptyMessage: string
   isEmpty: boolean
+  /** Richer content for the empty state's box (the attachments drop zone). */
+  emptyContent?: ReactNode
+  /** Highlights the empty state (files dragged over). */
+  emptyActive?: boolean
   /** Replaces the body while loading or after a failed load. */
   status?: ReactNode
   /** The rows: `SheetRecordRow`s, or any preview card. */
@@ -75,6 +79,8 @@ export function EntityList({
   add,
   emptyMessage,
   isEmpty,
+  emptyContent,
+  emptyActive,
   status,
   children,
   inlineForm,
@@ -127,7 +133,10 @@ export function EntityList({
                 message={emptyMessage}
                 label={canAdd ? add?.label : undefined}
                 onClick={canAdd ? add?.onAdd : undefined}
-              />
+                active={emptyActive}
+              >
+                {emptyContent}
+              </EmptyState>
             </InlineReveal>
           ) : (
             <SheetRecordList>{children}</SheetRecordList>
