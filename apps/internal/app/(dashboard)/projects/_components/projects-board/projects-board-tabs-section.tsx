@@ -5,7 +5,6 @@ import type { ProjectsBoardTabsProps } from './projects-board-tabs'
 
 type NavigationProps = Pick<
   ProjectsBoardTabsProps,
-  | 'overviewHref'
   | 'boardHref'
   | 'activityHref'
   | 'reviewHref'

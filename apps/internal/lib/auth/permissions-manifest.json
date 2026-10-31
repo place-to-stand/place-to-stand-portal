@@ -1499,13 +1499,6 @@
   },
   {
     "type": "route",
-    "name": "GET /api/projects/[projectId]/overview",
-    "file": "apps/internal/app/api/projects/[projectId]/overview/route.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "route",
     "name": "GET /api/projects/[projectId]/tasks",
     "file": "apps/internal/app/api/projects/[projectId]/tasks/route.ts",
     "kind": "admin",
