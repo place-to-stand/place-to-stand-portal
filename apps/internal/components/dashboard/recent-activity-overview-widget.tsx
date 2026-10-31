@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
+import { WIDGET_FRAME_CLASS } from '@/components/dashboard/widget-card'
 
 import { Badge } from '@pts/ui/badge'
 import { Tabs } from '@pts/ui/tabs'
@@ -42,10 +43,7 @@ export function RecentActivityOverviewWidget({
 
   return (
     <section
-      className={cn(
-        'bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm',
-        className
-      )}
+      className={cn(WIDGET_FRAME_CLASS, className)}
       aria-labelledby='recent-activity-overview-heading'
     >
       {/*

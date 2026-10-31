@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { WIDGET_FRAME_CLASS } from '@/components/dashboard/widget-card'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -267,10 +268,7 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
 
   return (
     <section
-      className={cn(
-        'bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm',
-        className
-      )}
+      className={cn(WIDGET_FRAME_CLASS, className)}
       aria-labelledby='hours-widget-heading'
     >
       <header className='flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5'>
