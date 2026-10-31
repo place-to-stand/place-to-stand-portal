@@ -1,5 +1,6 @@
 'use client'
 
+import { Badge } from '@pts/ui/badge'
 import { useTransition } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
@@ -305,12 +306,27 @@ function ManagedAccess({
                       disabled={Boolean(lockedReason)}
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        {/* The role reads as the badge it shows elsewhere. */}
+                        <SelectValue>
+                          {field.value ? (
+                            <Badge variant='outline'>
+                              {
+                                ROLE_LABELS[
+                                  field.value === 'CLIENT'
+                                    ? 'SALES'
+                                    : field.value
+                                ]
+                              }
+                            </Badge>
+                          ) : null}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {TEAM_ROLES.map(option => (
                           <SelectItem key={option} value={option}>
-                            {ROLE_LABELS[option]}
+                            <Badge variant='outline'>
+                              {ROLE_LABELS[option]}
+                            </Badge>
                           </SelectItem>
                         ))}
                       </SelectContent>

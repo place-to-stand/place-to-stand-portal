@@ -14,6 +14,7 @@ import {
 } from '@pts/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { InlineReveal } from '@/components/ui/inline-reveal'
+import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -23,7 +24,6 @@ import {
 import { toCalendarDate } from '@/lib/dates/calendar-date'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 import {
-  LEAD_UPDATE_LABELS,
   LEAD_UPDATE_TYPES,
   type LeadUpdateTypeValue,
 } from '@/lib/leads/updates'
@@ -206,12 +206,14 @@ export function LeadUpdateDialog({
                     }}
                   >
                     <SelectTrigger id='lead-update-type'>
-                      <SelectValue />
+                      <SelectValue>
+                        <LeadUpdateTypeBadge type={type} />
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {LEAD_UPDATE_TYPES.map(value => (
                         <SelectItem key={value} value={value}>
-                          {LEAD_UPDATE_LABELS[value]}
+                          <LeadUpdateTypeBadge type={value} />
                         </SelectItem>
                       ))}
                     </SelectContent>

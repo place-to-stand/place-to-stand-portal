@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@pts/ui/badge'
 import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -24,13 +23,10 @@ import {
   canChangeLeadUpdate,
 } from '@/lib/leads/lead-update-access'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
-import {
-  LEAD_UPDATE_ICONS,
-  LEAD_UPDATE_LABELS,
-  LEAD_UPDATE_TOKENS,
-} from '@/lib/leads/updates'
+import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
 import { cn } from '@/lib/utils'
 
+import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { deleteLeadUpdate } from '../../../_actions/updates/delete-lead-update'
 
 type LeadUpdateItemProps = {
@@ -51,7 +47,6 @@ export function LeadUpdateItem({
   const { toast } = useToast()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const Icon = LEAD_UPDATE_ICONS[update.type]
   const label = LEAD_UPDATE_LABELS[update.type]
   const authorDisplay = update.authorName ?? update.authorEmail ?? 'Unknown'
   const occurredLabel = formatCalendarDate(update.occurredAt, {
@@ -99,10 +94,7 @@ export function LeadUpdateItem({
       <div className='flex items-start justify-between gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           {/* Icon + label + color together — color is never the only signal. */}
-          <Badge className={cn('gap-1', LEAD_UPDATE_TOKENS[update.type])}>
-            <Icon className='h-3 w-3' aria-hidden='true' />
-            {label}
-          </Badge>
+          <LeadUpdateTypeBadge type={update.type} />
           <span className='text-muted-foreground text-xs'>{occurredLabel}</span>
         </div>
         {canManage && !canChange ? (
