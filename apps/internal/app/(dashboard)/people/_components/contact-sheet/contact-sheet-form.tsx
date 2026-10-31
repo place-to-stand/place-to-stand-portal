@@ -7,10 +7,7 @@ import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
-import {
-  SheetSection,
-  SHEET_BLOCK_CLASS,
-} from '@/components/sheets/sheet-section'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import { Separator } from '@pts/ui/separator'
 import {
   Form,
@@ -308,27 +305,24 @@ export function ContactSheetForm({
                 />
               </div>
             </SheetSection>
-            {/* No line around Companies: 48px sets it apart instead. */}
-            <div className={SHEET_BLOCK_CLASS}>
-              <FormField
-                control={form.control}
-                name='companies'
-                render={({ field }) => (
-                  <ContactCompaniesSection
-                    companies={field.value}
-                    disabled={locked}
-                    loadFailed={companiesLoadFailed}
-                    onChange={next => field.onChange(next)}
-                    showPortalAccess={canManageSignIn}
-                    portalReason={
-                      portalSignIn
-                        ? null
-                        : 'Choose Client portal under Access to turn this on.'
-                    }
-                  />
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name='companies'
+              render={({ field }) => (
+                <ContactCompaniesSection
+                  companies={field.value}
+                  disabled={locked}
+                  loadFailed={companiesLoadFailed}
+                  onChange={next => field.onChange(next)}
+                  showPortalAccess={canManageSignIn}
+                  portalReason={
+                    portalSignIn
+                      ? null
+                      : 'Choose Client portal under Access to turn this on.'
+                  }
+                />
+              )}
+            />
             <Separator />
             <SheetSection title='Access'>
               <ContactAccessFields

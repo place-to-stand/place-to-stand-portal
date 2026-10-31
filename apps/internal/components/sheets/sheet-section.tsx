@@ -1,6 +1,6 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import { type ReactNode, type Ref } from 'react'
 import type { LucideIcon } from 'lucide-react'
 
 import { entityIconAccent } from '@/lib/entity-accents'
@@ -14,10 +14,11 @@ import { cn } from '@/lib/utils'
 export const SHEET_BLOCK_CLASS = 'my-6'
 
 /**
- * A column of dividerless sections (company Company column): 48px apart.
- * Keep `Separator` for lines that do a job inside a block (an invoice total).
+ * A column of sections with no dividers between them (lead Tasks and
+ * Updates, company People and Leads): 24px apart, the same as one field to
+ * the next, so stacked lists read like stacked fields.
  */
-export const SHEET_SECTIONS_CLASS = 'flex flex-col gap-12'
+export const SHEET_SECTIONS_CLASS = 'flex flex-col gap-6'
 
 type SheetSectionProps = {
   /**
@@ -43,6 +44,7 @@ type SheetSectionProps = {
   action?: ReactNode
   children: ReactNode
   className?: string
+  ref?: Ref<HTMLElement>
 }
 
 /**
@@ -59,12 +61,14 @@ export function SheetSection({
   list = false,
   children,
   className,
+  ref,
 }: SheetSectionProps) {
   return (
     // A section with an action (its +) holds a list or an empty state: the
     // heading sits 8px above it, the same as a field's label above its
     // control. A section of fields keeps 16px.
     <section
+      ref={ref}
       className={cn(
         'flex flex-col',
         action || list ? 'gap-2' : 'gap-4',

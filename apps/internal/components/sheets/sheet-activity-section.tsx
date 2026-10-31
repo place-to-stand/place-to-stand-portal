@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import {
   Accordion,
@@ -10,6 +10,9 @@ import {
   AccordionTrigger,
 } from '@pts/ui/accordion'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
+import { cn } from '@/lib/utils'
+
+import { useScrollIntoViewOnOpen } from './use-scroll-into-view-on-open'
 import type { ActivityFeedProps } from '@/components/activity/activity-feed'
 import { useActivityCount } from '@/lib/activity/use-activity-feed'
 
@@ -81,9 +84,16 @@ export function SheetActivityDisclosure({
   children: ReactNode
 }) {
   // One item, closed by default; a closed panel unmounts, so the feed (and
-  // its fetch) waits for the first open.
+  // its fetch) waits for the first open. Opening brings it to the top of the
+  // sheet, again once the feed has loaded.
+  const [open, setOpen] = useState(false)
+  const ref = useScrollIntoViewOnOpen<HTMLDivElement>(open, [220, 700])
   return (
-    <Accordion className={className}>
+    <Accordion
+      ref={ref}
+      className={cn('scroll-mt-6', className)}
+      onValueChange={value => setOpen(value.length > 0)}
+    >
       <AccordionItem value='activity' className='border-b-0'>
         <AccordionTrigger className='py-0 text-sm font-semibold tracking-tight hover:no-underline'>
           <span className='flex items-center gap-2'>

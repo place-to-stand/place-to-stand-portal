@@ -18,7 +18,7 @@ The right-side panel where every entity is created and edited, on Base UI Dialog
 
 **No generic first heading.** A sheet's first group of fields has no "Details" heading: it only restates the sheet. Leave `SheetSection`'s `title` out. Headings name real groups (Billing, Commission, People). (guard: review)
 
-**Dividers between sections, except around a few boxed lists.** Sheet sections are separated by a full-width `Separator` in a `gap-6` column. A few EntityList sections drop the line and take `SHEET_BLOCK_CLASS` (48px, the same distance) instead: invoice Line items, company People and Leads, person Companies. The first group of fields never gets a line above it. A column of dividerless sections (the company's Company column, the lead's right column) uses `SHEET_SECTIONS_CLASS`, 48px apart. (guard: review)
+**Dividers between sections, except around a few boxed lists.** Sheet sections are separated by a full-width `Separator` in a `gap-6` column. A few EntityList sections drop the line: company People and Leads, person Companies, invoice Line items. Stacked sections with no line between them sit 24px apart, the same as one field to the next (`SHEET_SECTIONS_CLASS`: the company's Company column, the lead's Tasks and Updates). Invoice Line items alone takes `SHEET_BLOCK_CLASS`, 48px around it. The first group of fields never gets a line above it. (guard: review)
 
 **The activity stream is last.** Updates, Comments, and then the collapsed Activity end the sheet: on a two-column sheet they are the last sections of the right column, below projects, tasks and everything else. (guard: review)
 

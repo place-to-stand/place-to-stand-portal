@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { SectionAddButton } from './section-add-button'
 import { SheetRecordList } from './sheet-record-row'
 import { SheetSection } from './sheet-section'
+import { useScrollIntoViewOnOpen } from './use-scroll-into-view-on-open'
 
 export type EntityListAdd = {
   /** The +'s accessible name: "Add person", "Log time". */
@@ -89,6 +90,8 @@ export function EntityList({
   footer,
   className,
 }: EntityListProps) {
+  // Opening the inline form brings the section up to the top of the sheet.
+  const sectionRef = useScrollIntoViewOnOpen<HTMLElement>(inlineFormOpen)
   const canAdd = Boolean(add && !add.disabled && !add.disabledReason)
 
   let action: ReactNode = null
@@ -121,7 +124,8 @@ export function EntityList({
       description={description}
       titleAddon={titleAddon}
       action={action}
-      className={className}
+      ref={sectionRef}
+      className={cn('scroll-mt-6', className)}
     >
       {/* One child, so a closed form adds no gap of its own. */}
       <div>
