@@ -57,7 +57,7 @@ export function ContactRecordRow({
       icon={ENTITY_ICONS.contact}
       title={
         titleAddon ? (
-          <span className='flex items-center gap-1.5'>
+          <span className='flex items-center gap-3'>
             {name}
             {titleAddon}
           </span>
@@ -96,7 +96,7 @@ export function CompanyRecordRow({
       icon={ENTITY_ICONS.company}
       title={
         titleAddon ? (
-          <span className='flex items-center gap-1.5'>
+          <span className='flex items-center gap-3'>
             {company.name}
             {titleAddon}
           </span>
