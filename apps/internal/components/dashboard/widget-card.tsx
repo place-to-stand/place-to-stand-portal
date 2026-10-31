@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-/** The shared frame for home widgets: titled header, meta/action slot, body. */
+/** The shared frame for home widgets: titled header, meta/action slot, body. Same background as the card that holds list-page tables (bg-background). */
 export function WidgetCard({
   id,
   title,
@@ -24,7 +24,7 @@ export function WidgetCard({
   return (
     <section
       className={cn(
-        'bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm',
+        'bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm',
         className
       )}
       aria-labelledby={`${id}-heading`}

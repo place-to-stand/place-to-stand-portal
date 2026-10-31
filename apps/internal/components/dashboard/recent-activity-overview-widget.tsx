@@ -43,7 +43,7 @@ export function RecentActivityOverviewWidget({
   return (
     <section
       className={cn(
-        'bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm',
+        'bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm',
         className
       )}
       aria-labelledby='recent-activity-overview-heading'
