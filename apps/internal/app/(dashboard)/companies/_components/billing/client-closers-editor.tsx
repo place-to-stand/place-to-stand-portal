@@ -203,11 +203,7 @@ function CloserAddButton({
           className={hasClosers ? undefined : 'w-full justify-start'}
           disabled={disabled}
         >
-          {hasClosers ? (
-            <Plus className='h-4 w-4' />
-          ) : (
-            <ENTITY_ICONS.lead className='h-4 w-4' />
-          )}
+          {hasClosers ? <Plus className='h-4 w-4' /> : null}
           {hasClosers ? 'Add closer' : 'No closer'}
         </Button>
       }

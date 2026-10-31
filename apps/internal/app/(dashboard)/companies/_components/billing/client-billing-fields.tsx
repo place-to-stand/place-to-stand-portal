@@ -264,7 +264,9 @@ export function ClientBillingFields({
         description='Origination pays 10% and closers share 20% of this client’s revenue.'
       >
         <div className='grid gap-2'>
-          <FormLabel optional>Origination</FormLabel>
+          <FormLabel optional entity='contact'>
+            Origination
+          </FormLabel>
           <ClientOriginationPicker
             selectedUser={selectedOriginationUser}
             selectedContact={selectedOriginationContact}
@@ -285,6 +287,7 @@ export function ClientBillingFields({
         <div className='grid gap-2'>
           <FormLabel
             optional
+            entity='contact'
             data-error={Boolean(closerError)}
             className='data-[error=true]:text-destructive'
           >

@@ -18,6 +18,8 @@ export type ClientContactOption = {
   signInDisabled?: boolean
   /** Their company's primary contact (set on the company). */
   isPrimary?: boolean
+  /** They have a photo; the pickers show it, else initials. */
+  hasPhoto?: boolean
 }
 
 /** A contact available as an external origination source (IC referrer). */
@@ -25,6 +27,8 @@ export type OriginationContactOption = {
   id: string
   name: string | null
   email: string | null
+  /** They have a photo; the picker shows it, else initials. */
+  hasPhoto?: boolean
 }
 
 /** An admin user available as an internal origination partner or closer. */
@@ -34,6 +38,8 @@ export type PartnerUserOption = {
   email: string
   /** Set when the admin can no longer sign in; resolvable for display, never offered. */
   disabledAt?: string | null
+  /** Their person has a photo; the picker shows it, else initials. */
+  hasPhoto?: boolean
 }
 
 /** An admin or contact the closer picker offers. */
@@ -42,6 +48,8 @@ export type CloserCandidate = {
   id: string
   name: string
   email: string | null
+  /** They have a photo; the picker shows it, else initials. */
+  hasPhoto?: boolean
 }
 
 /** A closer row being edited; the share stays text until save. */
