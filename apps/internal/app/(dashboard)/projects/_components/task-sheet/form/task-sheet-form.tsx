@@ -11,7 +11,10 @@ import type {
   SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
 
-import { TaskSheetFormFields, type TaskSheetFormFieldsProps } from './task-sheet-form-fields'
+import {
+  TaskSheetFormFields,
+  type TaskSheetFormFieldsProps,
+} from './task-sheet-form-fields'
 
 export const TASK_FORM_ID = 'task-form'
 
@@ -31,6 +34,7 @@ type TaskSheetFormProps = {
   attachments: AttachmentItem[]
   onAttachmentUpload: (files: FileList | File[]) => void
   onAttachmentRemove: (key: string) => void
+  onAttachmentUndoRemove: (key: string) => void
   isUploadingAttachments: boolean
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
@@ -55,6 +59,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     attachments,
     onAttachmentUpload,
     onAttachmentRemove,
+    onAttachmentUndoRemove,
     isUploadingAttachments,
     acceptedAttachmentTypes,
     maxAttachmentSize,
@@ -107,6 +112,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           attachments={attachments}
           onSelectFiles={handleFileDialogSelect}
           onAttachmentRemove={onAttachmentRemove}
+          onAttachmentUndoRemove={onAttachmentUndoRemove}
           attachmentsDisabled={attachmentsDisabled}
           attachmentsDisabledReason={attachmentsDisabledReason}
           isUploadingAttachments={isUploadingAttachments}

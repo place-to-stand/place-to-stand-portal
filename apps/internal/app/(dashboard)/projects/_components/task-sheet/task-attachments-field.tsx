@@ -5,6 +5,7 @@ import { FileText, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EntityList } from '@/components/sheets/entity-list'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
@@ -18,6 +19,8 @@ type TaskAttachmentsFieldProps = {
   disabledReason: string | null
   isUploading: boolean
   isDragActive: boolean
+  /** Puts back a saved file removed in this sheet. */
+  onUndoRemove: (key: string) => void
   acceptedMimeTypes: readonly string[]
   maxFileSize: number
 }
@@ -60,6 +63,7 @@ export function TaskAttachmentsField({
   disabledReason,
   isUploading,
   isDragActive,
+  onUndoRemove,
   acceptedMimeTypes,
   maxFileSize,
 }: TaskAttachmentsFieldProps) {
@@ -89,6 +93,20 @@ export function TaskAttachmentsField({
 
   const renderAttachmentRow = useCallback(
     (attachment: AttachmentItem) => {
+      if (attachment.isRemoved) {
+        return (
+          <li key={attachment.key}>
+            <SheetRecordRow
+              leading={<FileText className='text-muted-foreground h-4 w-4' />}
+              title={truncateName(attachment.name)}
+              pendingRemoval={{
+                disabled,
+                onUndo: () => onUndoRemove(attachment.key),
+              }}
+            />
+          </li>
+        )
+      }
       const removalDisabled = disabled || isUploading
       const content = attachment.url ? (
         <a
@@ -148,7 +166,7 @@ export function TaskAttachmentsField({
         </li>
       )
     },
-    [disabled, disabledReason, isUploading, onRemove]
+    [disabled, disabledReason, isUploading, onRemove, onUndoRemove]
   )
 
   const addReason = disabled

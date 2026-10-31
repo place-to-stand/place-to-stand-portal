@@ -47,6 +47,7 @@ export type TaskSheetFormFieldsProps = {
   attachments: AttachmentItem[]
   onSelectFiles: (files: FileList | null) => void
   onAttachmentRemove: (key: string) => void
+  onAttachmentUndoRemove: (key: string) => void
   attachmentsDisabled: boolean
   attachmentsDisabledReason: string | null
   isUploadingAttachments: boolean
@@ -71,6 +72,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
     attachments,
     onSelectFiles,
     onAttachmentRemove,
+    onAttachmentUndoRemove,
     attachmentsDisabled,
     attachmentsDisabledReason,
     isUploadingAttachments,
@@ -315,6 +317,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
         attachments={attachments}
         onSelectFiles={onSelectFiles}
         onRemove={onAttachmentRemove}
+        onUndoRemove={onAttachmentUndoRemove}
         disabled={attachmentsDisabled}
         disabledReason={attachmentsDisabledReason}
         isUploading={isUploadingAttachments}

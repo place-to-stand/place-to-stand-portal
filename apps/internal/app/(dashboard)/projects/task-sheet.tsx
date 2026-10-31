@@ -101,6 +101,7 @@ export function TaskSheet(props: TaskSheetProps) {
     attachments,
     handleAttachmentUpload,
     handleAttachmentRemove,
+    handleAttachmentUndoRemove,
     isUploadingAttachments,
     acceptedAttachmentTypes,
     maxAttachmentSize,
@@ -428,6 +429,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   attachments={attachments}
                   onAttachmentUpload={handleAttachmentUpload}
                   onAttachmentRemove={handleAttachmentRemove}
+                  onAttachmentUndoRemove={handleAttachmentUndoRemove}
                   isUploadingAttachments={isUploadingAttachments}
                   acceptedAttachmentTypes={acceptedAttachmentTypes}
                   maxAttachmentSize={maxAttachmentSize}
