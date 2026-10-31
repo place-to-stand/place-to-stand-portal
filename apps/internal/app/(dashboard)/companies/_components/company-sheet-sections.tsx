@@ -18,7 +18,6 @@ import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/co
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { cn } from '@/lib/utils'
 import { TriangleAlert } from 'lucide-react'
 import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 

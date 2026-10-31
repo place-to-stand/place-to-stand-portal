@@ -77,11 +77,8 @@ export function ClientClosersEditor({
             return (
               <li key={key}>
                 <SheetRecordRow
-                  icon={
-                    closer.kind === 'user'
-                      ? ENTITY_ICONS.lead
-                      : ENTITY_ICONS.contact
-                  }
+                  // A closer is a person, staff or not, like the originator.
+                  icon={ENTITY_ICONS.contact}
                   title={closer.name}
                   description={
                     closer.email && closer.email !== closer.name
