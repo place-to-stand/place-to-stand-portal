@@ -9,7 +9,7 @@ type Role = keyof typeof ROLE_LABELS
 /** One tint per sign-in role, clear of the entity and billing colours. */
 export const ROLE_BADGE_TINTS: Record<Role, string> = {
   ADMIN: BADGE_TINTS.violet,
-  SALES: BADGE_TINTS.fuchsia,
+  SALES: BADGE_TINTS.pink,
   CLIENT: BADGE_TINTS.cyan,
 }
 

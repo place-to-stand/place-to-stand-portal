@@ -4,7 +4,7 @@ A small pill of status or label text. From `@pts/ui/badge`: one size for every b
 
 **Two looks, and only two:**
 - **Status** (a state that changes: lead stage, project and task status, invoice state, billing type, deployment state): `variant='outline'` plus a soft tinted fill from `BADGE_TINTS` (`@pts/ui/badge-tints`) or the domain's status token (`getLeadStatusToken`, `getProjectStatusToken`, `getTaskStatusToken`, `invoiceStatusTint`). Use the domain components where they exist: `LeadStatusBadge`, `InvoiceStatusBadge`, `ProjectStatusBadge` (`components/projects/project-status-badge.tsx`), and `ProjectStatusCell` to change a project's status in place.
-- **Role** (a sign-in's role): `RoleBadge` (`components/auth/role-badge.tsx`), tinted like a status: Admin violet, Sales fuchsia, Client cyan (`ROLE_BADGE_TINTS`, clear of the entity and billing colours). A sign-in that is switched off or archived shows grey (`neutral`) with its state: "Sales · off". No icon: a sign-in is part of the person.
+- **Role** (a sign-in's role): `RoleBadge` (`components/auth/role-badge.tsx`), tinted like a status: Admin violet, Sales pink, Client cyan (`ROLE_BADGE_TINTS`, clear of the entity and billing colours). A sign-in that is switched off or archived shows grey (`neutral`) with its state: "Sales · off". No icon: a sign-in is part of the person.
 
 **A company we bill** has no "Client" badge. Wherever a company shows (lists, sheet cards, ⌘K), `CompanyBillingMark` (`components/billing/company-billing-mark.tsx`) shows its billing type (`BillingTypeBadge`, Prepaid green / Net 30 amber). Billing is admin-only: Sales see nothing there, and the Companies list hides its Client column for them.
 
