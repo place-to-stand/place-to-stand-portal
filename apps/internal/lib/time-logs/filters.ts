@@ -1,6 +1,6 @@
 /**
- * Time logs page filters (`?from=&to=&companyId=&projectId=&personId=&page=`;
- * `from=all` is All time, no date bounds).
+ * Time logs page filters (`?q=&from=&to=&companyId=&projectId=&personId=&page=`).
+ * No dates is All time, the default; `from=all` (older links) is the same.
  * Not `client`/`project`: those params open the client and project sheets.
  * Client-safe.
  */
@@ -32,6 +32,8 @@ const first = (value: string | string[] | undefined) =>
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type TimeLogsListParams = {
+  q?: string
+  /** `YYYY-MM-DD`, or '' for no bound (All time). */
   from: string
   to: string
   companyId?: string
@@ -41,12 +43,12 @@ export type TimeLogsListParams = {
   sort: ParsedSort<TimeLogSortField>
   /** The raw `?sort=` when valid and not the default, for the headers. */
   sortParam?: string
-  /** True when the dates are the default (this month), not chosen. */
+  /** True when the dates are the default (All time), not chosen. */
   isDefaultRange: boolean
 }
 
-/** `?from=all`: the All time preset, no date bounds. */
-export const ALL_TIME_PARAM = 'all'
+/** `?from=all`: All time, from older links. All time is now the default. */
+const ALL_TIME_PARAM = 'all'
 
 /** First and last day of the current month, `YYYY-MM-DD`. */
 export function currentMonthRange(now = new Date()) {
@@ -56,7 +58,6 @@ export function currentMonthRange(now = new Date()) {
 export function parseTimeLogsSearchParams(
   params: RawParams
 ): TimeLogsListParams {
-  const defaults = currentMonthRange()
   // A real calendar date (2026-02-31 is not), or the default.
   const valid = (value: string | undefined) =>
     value && parseCalendarDate(value) ? value : undefined
@@ -67,15 +68,17 @@ export function parseTimeLogsSearchParams(
     const value = first(params[key])
     return value && UUID.test(value) ? value : undefined
   }
+  const q = first(params.q)?.trim()
   return {
-    from: from ?? defaults.from,
-    to: to ?? defaults.to,
+    q: q || undefined,
+    from: from ?? '',
+    to: to ?? '',
     companyId: uuid('companyId'),
     projectId: uuid('projectId'),
     personId: uuid('personId'),
     page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),
     ...parseSort(first(params.sort)),
-    isDefaultRange: !allTime && !from && !to,
+    isDefaultRange: !from && !to,
   }
 }
 

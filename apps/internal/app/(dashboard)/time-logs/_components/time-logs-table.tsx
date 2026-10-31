@@ -43,6 +43,8 @@ import { useTimeLogRowActions } from '../_lib/use-time-log-row-actions'
 type TimeLogsTableProps = {
   items: DashboardTimeLogEntry[]
   totalCount: number
+  /** Hours across every page of the filtered logs: the footer's total. */
+  totalHours: number
   currentPage: number
   pageSize: number
   /** `archive` lists archived logs: no edit, Restore instead of Archive. */
@@ -58,6 +60,7 @@ type TimeLogsTableProps = {
 export function TimeLogsTable({
   items,
   totalCount,
+  totalHours,
   currentPage,
   pageSize,
   mode = 'active',
@@ -293,6 +296,14 @@ export function TimeLogsTable({
         totalItems={totalCount}
         pageSize={pageSize}
         onPageChange={goToPage}
+        summary={
+          <>
+            <span className='text-muted-foreground'>Total: </span>
+            <span className='font-semibold tabular-nums'>
+              {formatHours(totalHours)}
+            </span>
+          </>
+        }
       />
       <ConfirmDialog
         open={actions.archiveConfirm.open}

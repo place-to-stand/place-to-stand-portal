@@ -49,11 +49,11 @@ export default async function TimeLogsPage({
           clients={clients}
           projects={projects}
           people={people}
-          totalHours={page.totalHours}
         />
         <TimeLogsTable
           items={page.items}
           totalCount={page.totalCount}
+          totalHours={page.totalHours}
           currentPage={params.page}
           pageSize={pageSize}
           sort={params.sortParam}

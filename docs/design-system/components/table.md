@@ -23,3 +23,7 @@ The data table: plain semantic markup with shadcn styling and three options, `de
 `components/ui/linked-records-hover-cell.tsx`: a count in a table cell (people on a company, projects on a client, tasks on a time log). Hovering or focusing it opens a card listing the records behind it; each row opens its record (`href`, or `onSelect` for a sheet over the page). A zero is the shared dash with no card; a single record can use a lone icon `trigger` (with `ariaLabel`). `withIcon` puts the entity icon before the count, as list columns do.
 
 **Use it** in list tables, where a row has room for one number. In a sheet, show the records themselves as cards with `EntityList` / `SheetRecordList` instead: a sheet is where you work with them, a table is where you glance. (guard: review)
+
+## Footer
+
+Every paged list ends in `PaginationControls mode='paged'` (`components/ui/pagination-controls.tsx`): rows per page on the left, "1–25 of N" and the pager on the right. A list with a list-wide figure passes it as `summary`, which sits centred between them (Time logs: "Total: 710.5h", the hours across every filtered page). Lists without such a figure leave it out; the count is not repeated there.

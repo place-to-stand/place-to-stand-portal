@@ -1,10 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
-
-import { formatHours } from '@pts/ui/numbers'
-
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
+import { SearchInput } from '@/components/table-toolbar/search-input'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
 import {
@@ -13,11 +10,7 @@ import {
 } from '@/components/ui/searchable-combobox'
 import { useListParams } from '@/hooks/use-list-params'
 import { isAllTimeRange } from '@/lib/dates/calendar-date'
-import {
-  ALL_TIME_PARAM,
-  currentMonthRange,
-  type TimeLogsListParams,
-} from '@/lib/time-logs/filters'
+import type { TimeLogsListParams } from '@/lib/time-logs/filters'
 
 type TimeLogsFiltersProps = {
   /** The list these filters drive: `/time-logs` or `/time-logs/archive`. */
@@ -26,15 +19,12 @@ type TimeLogsFiltersProps = {
   clients: SearchableComboboxItem[]
   projects: SearchableComboboxItem[]
   people: SearchableComboboxItem[]
-  /** Hours across every page of the filtered logs, shown at the row's end. */
-  totalHours: number
 }
 
 /**
- * Date range (this month by default), client, project and person, with the
- * filtered hours total at the row's right end. Changing the client clears a
- * project from another client; picking this month clears the dates back to
- * the default.
+ * Search (note, person, project, client, task), then date range (All time by
+ * default), client, project and person. Changing the client clears a project
+ * from another client. The filtered hours total sits in the table footer.
  */
 export function TimeLogsFilters({
   basePath,
@@ -42,23 +32,19 @@ export function TimeLogsFilters({
   clients,
   projects,
   people,
-  totalHours,
 }: TimeLogsFiltersProps) {
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
-    filters: { from: {}, to: {}, companyId: {}, projectId: {}, personId: {} },
+    filters: {
+      q: {},
+      from: {},
+      to: {},
+      companyId: {},
+      projectId: {},
+      personId: {},
+    },
   })
-
-  // The server picks "this month" in its own timezone. Near a month's
-  // turn that can differ from the viewer's; when it does, pin the viewer's
-  // month in the URL so the list and the picker agree.
-  const serverFrom = params.isDefaultRange ? params.from : null
-  useEffect(() => {
-    if (!serverFrom) return
-    const local = currentMonthRange()
-    if (local.from !== serverFrom) update({ from: local.from, to: local.to })
-  }, [serverFrom, update])
 
   const activeCount =
     (params.isDefaultRange ? 0 : 1) +
@@ -66,36 +52,29 @@ export function TimeLogsFilters({
 
   return (
     <FilterBar
-      search={null}
+      search={
+        <SearchInput
+          value={params.q ?? ''}
+          onCommit={value => update({ q: value })}
+          placeholder='Search time logs…'
+        />
+      }
       activeFilterCount={activeCount}
       showReset={hasActiveFilters}
       onReset={reset}
-      aside={
-        <p className='max-md:text-right'>
-          <span className='text-muted-foreground'>Total: </span>
-          <span className='font-semibold tabular-nums'>
-            {formatHours(totalHours)}
-          </span>
-        </p>
-      }
     >
       <DateRangePicker
         className={FILTER_TRIGGER_WIDTH}
         isDefault={params.isDefaultRange}
         onClear={() => update({ from: undefined, to: undefined })}
         value={{ from: params.from, to: params.to }}
-        onChange={range => {
-          const isDefault =
-            range.from === currentMonthRange().from &&
-            range.to === currentMonthRange().to
+        onChange={range =>
           update(
-            isDefault
+            isAllTimeRange(range)
               ? { from: undefined, to: undefined }
-              : isAllTimeRange(range)
-                ? { from: ALL_TIME_PARAM, to: undefined }
-                : { from: range.from, to: range.to }
+              : { from: range.from, to: range.to }
           )
-        }}
+        }
       />
       <SearchableCombobox
         className={FILTER_TRIGGER_WIDTH}

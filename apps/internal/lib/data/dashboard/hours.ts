@@ -21,6 +21,7 @@ import type { AppUser } from '@/lib/auth/session'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
+import { createSearchPattern } from '@/lib/pagination/cursor'
 import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
 import {
   companies,
@@ -146,6 +147,8 @@ export type TimeLogPageFilters = {
   offset?: number
   /** Archived (soft-deleted) logs instead of live ones. */
   archived?: boolean
+  /** Matches the note, person, project, client or a linked task's title. */
+  search?: string
   /** Defaults to newest first. */
   sort?: ParsedSort<TimeLogSortField>
 }
@@ -161,8 +164,23 @@ export async function fetchTimeLogPage(
 ): Promise<DashboardTimeLogPage & { totalHours: number }> {
   const limit = Math.max(1, filters.limit)
   const offset = Math.max(0, filters.offset ?? 0)
+  const searchQuery = filters.search?.trim()
+  const pattern = searchQuery ? createSearchPattern(searchQuery) : null
 
   const where = and(
+    pattern
+      ? sql`(${timeLogs.note} ilike ${pattern}
+          or ${projects.name} ilike ${pattern}
+          or ${companies.name} ilike ${pattern}
+          or coalesce(${personNameSql}, ${users.email}) ilike ${pattern}
+          or exists (
+            select 1 from time_log_tasks tlt
+            join tasks t on t.id = tlt.task_id
+            where tlt.time_log_id = ${timeLogs.id}
+              and tlt.deleted_at is null and t.deleted_at is null
+              and t.title ilike ${pattern}
+          ))`
+      : undefined,
     filters.userId ? eq(timeLogs.userId, filters.userId) : undefined,
     filters.clientCompanyId
       ? eq(projects.companyId, filters.clientCompanyId)
@@ -223,6 +241,8 @@ export async function fetchTimeLogPage(
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
+      .leftJoin(companies, eq(projects.companyId, companies.id))
+      .leftJoin(users, eq(users.id, timeLogs.userId))
       .where(where),
   ])
 
