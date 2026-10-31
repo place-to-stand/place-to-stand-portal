@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { ClientBadge } from '@/components/clients/client-badge'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import {
   CompanyRecordRow,
   ContactRecordRow,
@@ -168,7 +168,7 @@ export function ComponentsRecordRows() {
           />
           <CompanyRecordRow
             company={{ id: 'design-acme', name: 'Acme Industries' }}
-            titleAddon={<ClientBadge />}
+            titleAddon={<BillingTypeBadge billingType='prepaid' />}
             openable={false}
           />
           <LeadRecordRow
@@ -585,7 +585,7 @@ export function ComponentsTables() {
                     className={cn(ENTITY_ACCENTS.company.icon, 'size-4')}
                     aria-hidden
                   />
-                  Acme Industries <ClientBadge />
+                  Acme Industries
                 </span>
               </TableCell>
               <TableCell>Prepaid</TableCell>

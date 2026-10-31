@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Star } from 'lucide-react'
+import { Star } from 'lucide-react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -41,7 +41,7 @@ import {
 import { cn } from '@/lib/utils'
 import { formatHours } from '@pts/ui/numbers'
 import { BALANCE_TONE_CLASS, balanceTone } from '@/lib/billing/balance-tone'
-import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
@@ -167,18 +167,9 @@ export function CompaniesTable({
                   </div>
                 </TableCell>
                 <TableCell label='Client'>
-                  {/* Billed now: its billing type (admins) or a check. A former
-                      client gets the dash. */}
-                  {company.companyId && seesBilling && company.billingType ? (
-                    <BillingTypeBadge billingType={company.billingType} />
-                  ) : company.companyId ? (
-                    <Check
-                      className={cn(
-                        ENTITY_ACCENTS.client.icon,
-                        'inline size-4'
-                      )}
-                      aria-label='Billed now'
-                    />
+                  {/* Billed now: CompanyBillingMark. Not billed: the dash. */}
+                  {company.companyId ? (
+                    <CompanyBillingMark billingType={company.billingType} />
                   ) : (
                     <EmptyValue />
                   )}

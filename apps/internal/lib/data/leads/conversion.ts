@@ -1,4 +1,9 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
+import {
+  clientEndedAtSql,
+  isClientCompany,
+  wasClientCompany,
+} from '@pts/db/client-state'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -53,6 +58,9 @@ export async function fetchLeadConversionSummary(
         slug: companies.slug,
         companyId: companies.id,
         deletedAt: clientEndedAtSql,
+        billingType: sql<
+          'prepaid' | 'net_30' | null
+        >`case when ${isClientCompany()} then ${currentBillingTypeSql()} end`,
       })
       .from(companies)
       .where(and(wasClientCompany(), eq(companies.id, companyId)))
@@ -88,6 +96,7 @@ export async function fetchLeadConversionSummary(
       slug: client.slug,
       companyId: client.companyId,
       archived: client.deletedAt !== null,
+      billingType: client.billingType ?? null,
     },
     contact: contactRows[0] ?? null,
     projects: projectRows,

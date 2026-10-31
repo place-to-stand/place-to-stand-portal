@@ -67,6 +67,8 @@ export type LeadConversionSummary = {
     slug: string | null
     companyId: string
     archived: boolean
+    /** Billed now: its billing type; null when billing has stopped. */
+    billingType: 'prepaid' | 'net_30' | null
   }
   contact: { id: string; name: string; email: string | null } | null
   projects: Array<{

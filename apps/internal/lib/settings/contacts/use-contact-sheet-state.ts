@@ -47,6 +47,7 @@ const contactFormSchema = z.object({
       clientName: z.string().nullable(),
       /** Billed before, not now: its portal access returns if billing restarts. */
       formerClient: z.boolean().optional(),
+      billingType: z.enum(['prepaid', 'net_30']).nullable().optional(),
       /** The agency's own company: its people are staff (Access: no client portal). */
       isStaff: z.boolean().optional(),
       /** The company or its client is archived: shown muted, kept on save. */
@@ -242,6 +243,7 @@ export function useContactSheetState({
             clientCompanyId: membership.clientCompanyId,
             clientName: membership.clientName,
             formerClient: membership.formerClient,
+            billingType: membership.billingType,
             isStaff: membership.isStaff,
             archived: membership.archived,
           })),

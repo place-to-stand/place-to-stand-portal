@@ -25,8 +25,7 @@ import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
-import { ClientBadge } from '@/components/clients/client-badge'
-import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import { cn } from '@/lib/utils'
@@ -311,10 +310,7 @@ export function ContactsTableSection({
   )
 }
 
-/**
- * A company billed now, beside its name: its Prepaid / Net 30 badge for
- * people who see billing, else the Client badge.
- */
+/** A company billed now, beside its name: `CompanyBillingMark`. */
 function CompanyClientMark({
   company,
   className,
@@ -324,9 +320,10 @@ function CompanyClientMark({
   className?: string
 }) {
   if (!company?.isClient) return null
-  return company.billingType ? (
-    <BillingTypeBadge billingType={company.billingType} className={className} />
-  ) : (
-    <ClientBadge className={className} />
+  return (
+    <CompanyBillingMark
+      billingType={company.billingType}
+      className={className}
+    />
   )
 }

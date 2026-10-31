@@ -25,7 +25,7 @@ import { Separator } from '@pts/ui/separator'
 import { Switch } from '@pts/ui/switch'
 import { Textarea } from '@pts/ui/textarea'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
-import { ClientBadge } from '@/components/clients/client-badge'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -196,7 +196,7 @@ function SampleEntitySheet({
             }
             badges={
               shown.entity === 'company' ? (
-                <ClientBadge />
+                <BillingTypeBadge billingType='prepaid' />
               ) : shown.entity === 'contact' ? (
                 <Badge variant='outline'>Sales</Badge>
               ) : (

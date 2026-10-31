@@ -6,7 +6,7 @@ import { CheckCircle } from 'lucide-react'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
-import { ClientBadge } from '@/components/clients/client-badge'
+import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import {
   CompanyRecordRow,
   ContactRecordRow,
@@ -154,7 +154,11 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
       <SheetRecordList>
         <CompanyRecordRow
           company={{ id: client.companyId, name: client.name }}
-          titleAddon={client.archived ? null : <ClientBadge />}
+          titleAddon={
+            client.archived ? null : (
+              <CompanyBillingMark billingType={client.billingType} />
+            )
+          }
           openable={!client.archived}
           actions={
             client.archived ? (

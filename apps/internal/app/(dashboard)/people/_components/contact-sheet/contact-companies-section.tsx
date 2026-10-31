@@ -9,7 +9,7 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
-import { ClientBadge } from '@/components/clients/client-badge'
+import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { RecordRowField } from '@/components/sheets/sheet-record-row'
 import { EntityList } from '@/components/sheets/entity-list'
@@ -135,7 +135,9 @@ export function ContactCompaniesSection({
             }
             className={entry.archived ? 'opacity-60' : undefined}
             titleAddon={
-              entry.clientCompanyId && !entry.archived ? <ClientBadge /> : null
+              entry.clientCompanyId && !entry.archived ? (
+                <CompanyBillingMark billingType={entry.billingType} />
+              ) : null
             }
             note={
               entry.formerClient && showPortalAccess

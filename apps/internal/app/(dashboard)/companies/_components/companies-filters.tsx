@@ -14,14 +14,11 @@ import {
   type CompanyLeadsFilter,
   type CompanyTypeFilter,
 } from '@/lib/companies/filters'
-import { ClientBadge } from '@/components/clients/client-badge'
 
-// Clients show as the list's Client badge; the other two have no badge in
-// the list, so they're plain text.
+// Plain text: "Client" / "Not a client".
 const TYPE_OPTIONS = COMPANY_TYPE_VALUES.map(value => ({
   value,
   label: COMPANY_TYPE_LABELS[value],
-  badge: value === 'client' ? <ClientBadge /> : undefined,
 }))
 const LEADS_OPTIONS = COMPANY_LEADS_VALUES.map(value => ({
   value,
