@@ -6,17 +6,24 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { COMPANIES_TABS } from '../_lib/tabs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { CompaniesFilters } from './companies-filters'
+import { CompaniesPagination } from './companies-pagination'
 import { CompaniesTable } from './companies-table'
 
 export function CompaniesPageBody({
   mode,
   companies,
   totalCount,
+  filteredCount,
+  pagination,
   params,
 }: {
   mode: 'active' | 'archive'
+  /** This page's rows, already filtered and sorted. */
   companies: CompanyListItem[]
   totalCount: number
+  /** Rows matching the filters, across every page. */
+  filteredCount: number
+  pagination: { currentPage: number; totalPages: number; pageSize: number }
   params: CompaniesListParams
 }) {
   const filtered = Boolean(params.search || params.type || params.leads)
@@ -34,7 +41,7 @@ export function CompaniesPageBody({
       count={{
         label: mode === 'active' ? 'companies' : 'archived companies',
         total: totalCount,
-        filteredTotal: companies.length,
+        filteredTotal: filteredCount,
       }}
       primaryAction={
         <SheetCreateButton entity='company' label='Create company' />
@@ -59,6 +66,13 @@ export function CompaniesPageBody({
                 ? 'No companies yet.'
                 : 'No archived companies.'
           }
+        />
+        <CompaniesPagination
+          basePath={basePath}
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          totalItems={filteredCount}
+          pageSize={pagination.pageSize}
         />
       </section>
     </PageShell>

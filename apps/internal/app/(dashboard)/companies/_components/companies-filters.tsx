@@ -41,7 +41,7 @@ export function CompaniesFilters({
 }) {
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
-    resetKeys: [],
+    resetKeys: ['page'],
     filters: {
       q: {},
       type: { isValid: isCompanyType },

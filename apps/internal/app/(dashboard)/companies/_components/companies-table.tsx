@@ -98,7 +98,7 @@ export function CompaniesTable({
       router.refresh()
     })
   }
-  const { update } = useListParams({ basePath, resetKeys: [] })
+  const { update } = useListParams({ basePath, resetKeys: ['page'] })
   const sortHead = (
     field: string,
     label: string,

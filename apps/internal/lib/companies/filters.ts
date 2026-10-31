@@ -49,6 +49,8 @@ export type CompaniesListParams = {
   type?: CompanyTypeFilter
   leads?: CompanyLeadsFilter
   sort: ParsedSort<CompanySortField>
+  /** 1-based `?page=`. */
+  page: number
   /** The raw `?sort=` when valid, for the column headers. */
   sortParam?: string
 }
@@ -69,6 +71,7 @@ export function parseCompaniesSearchParams(
     type: type && isCompanyType(type) ? type : undefined,
     leads: leads && isCompanyLeads(leads) ? leads : undefined,
     sort,
+    page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),
     sortParam: sort === DEFAULT_COMPANY_SORT ? undefined : sortParam,
   }
 }
