@@ -141,16 +141,21 @@ export function CompanyBillingSection({
 
   return (
     <>
-      <SheetSection title='Client' icon={ENTITY_ICONS.client}>
-        <div className='flex items-center gap-2'>
-          <Switch
-            id='company-bill-switch'
-            checked={billingOn}
-            disabled={disabled || billing.status !== 'ready'}
-            onCheckedChange={billing.setBillingOn}
-          />
-          <Label htmlFor='company-bill-switch'>Bill this company</Label>
-        </div>
+      <SheetSection
+        title='Client'
+        icon={ENTITY_ICONS.client}
+        action={
+          <>
+            <Label htmlFor='company-bill-switch'>Bill this company</Label>
+            <Switch
+              id='company-bill-switch'
+              checked={billingOn}
+              disabled={disabled || billing.status !== 'ready'}
+              onCheckedChange={billing.setBillingOn}
+            />
+          </>
+        }
+      >
         {line?.onSave ? (
           <SaveSideEffect>{line.text}</SaveSideEffect>
         ) : line ? (
