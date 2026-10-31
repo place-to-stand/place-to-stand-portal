@@ -125,20 +125,19 @@ export function CompaniesTable({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[26%]')}
-            <TableHead className='w-[7%] text-center'>Client</TableHead>
+            {sortHead('name', 'Company', 'w-[34%]')}
+            <TableHead className='w-[12%] text-center'>Client</TableHead>
+            {sortHead('people', 'People', 'w-[9%]', 'center')}
+            {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
+            <TableHead className='w-[9%] text-center'>Projects</TableHead>
             {seesBilling ? (
               <>
-                <TableHead className='w-[11%]'>Billing type</TableHead>
                 <TableHead className='w-[10%] text-center'>
                   Origination
                 </TableHead>
                 <TableHead className='w-[10%] text-center'>Closer</TableHead>
               </>
             ) : null}
-            {sortHead('people', 'People', 'w-[9%]', 'center')}
-            {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
-            <TableHead className='w-[9%] text-center'>Projects</TableHead>
             <TableHead className='w-16 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -167,8 +166,11 @@ export function CompaniesTable({
                   </div>
                 </TableCell>
                 <TableCell label='Client' className='md:text-center'>
-                  {/* Billed now; a former client gets no check. */}
-                  {company.companyId ? (
+                  {/* Billed now: its billing type (admins) or a check. A former
+                      client gets the dash. */}
+                  {company.companyId && seesBilling && company.billingType ? (
+                    <BillingTypeBadge billingType={company.billingType} />
+                  ) : company.companyId ? (
                     <Check
                       className={cn(
                         ENTITY_ACCENTS.client.icon,
@@ -180,52 +182,6 @@ export function CompaniesTable({
                     <EmptyValue />
                   )}
                 </TableCell>
-                {seesBilling ? (
-                  <>
-                    <TableCell label='Billing type'>
-                      {company.billingType ? (
-                        <BillingTypeBadge billingType={company.billingType} />
-                      ) : (
-                        <EmptyValue />
-                      )}
-                    </TableCell>
-                    <TableCell label='Origination' className='md:text-center'>
-                      {company.origination ? (
-                        <PersonAvatar
-                          name={company.origination.name}
-                          userId={company.origination.userId ?? undefined}
-                          contactId={company.origination.contactId ?? undefined}
-                          ariaLabel={`Originated by ${company.origination.name}`}
-                        />
-                      ) : (
-                        <EmptyValue />
-                      )}
-                    </TableCell>
-                    <TableCell label='Closer' className='md:text-center'>
-                      {company.closers.length ? (
-                        <span className='inline-flex -space-x-1.5 [&>span]:rounded-full [&>span]:ring-2 [&>span]:ring-[var(--card)]'>
-                          {company.closers.map(closer => (
-                            <PersonAvatar
-                              key={`${closer.kind}:${closer.id}`}
-                              name={closer.name}
-                              userId={
-                                closer.kind === 'user' ? closer.id : undefined
-                              }
-                              contactId={
-                                closer.kind === 'contact'
-                                  ? closer.id
-                                  : undefined
-                              }
-                              ariaLabel={`Closed by ${closer.name}`}
-                            />
-                          ))}
-                        </span>
-                      ) : (
-                        <EmptyValue />
-                      )}
-                    </TableCell>
-                  </>
-                ) : null}
                 <TableCell
                   label='People'
                   className='text-sm tabular-nums md:text-center'
@@ -290,6 +246,45 @@ export function CompaniesTable({
                     }))}
                   />
                 </TableCell>
+                {seesBilling ? (
+                  <>
+                    <TableCell label='Origination' className='md:text-center'>
+                      {company.origination ? (
+                        <PersonAvatar
+                          name={company.origination.name}
+                          userId={company.origination.userId ?? undefined}
+                          contactId={company.origination.contactId ?? undefined}
+                          ariaLabel={`Originated by ${company.origination.name}`}
+                        />
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                    <TableCell label='Closer' className='md:text-center'>
+                      {company.closers.length ? (
+                        <span className='inline-flex -space-x-1.5 [&>span]:rounded-full [&>span]:ring-2 [&>span]:ring-[var(--card)]'>
+                          {company.closers.map(closer => (
+                            <PersonAvatar
+                              key={`${closer.kind}:${closer.id}`}
+                              name={closer.name}
+                              userId={
+                                closer.kind === 'user' ? closer.id : undefined
+                              }
+                              contactId={
+                                closer.kind === 'contact'
+                                  ? closer.id
+                                  : undefined
+                              }
+                              ariaLabel={`Closed by ${closer.name}`}
+                            />
+                          ))}
+                        </span>
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                  </>
+                ) : null}
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
                     {mode === 'active' ? (
