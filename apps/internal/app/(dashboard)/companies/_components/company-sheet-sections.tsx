@@ -32,7 +32,12 @@ import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
-import { monthLabelFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
+import {
+  addMonths,
+  monthLabel,
+  monthLabelFromNow,
+  thisOrNextMonthOptions,
+} from '@/lib/billing/months'
 import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/companies/billing/billing-types'
 
 export function CompanyLeadsSection({
@@ -86,6 +91,13 @@ export function CompanyBillingSection({
   const lastType = CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
     option => option.value === billing.client?.billing_type
   )?.label
+  // A former client's last billed month: billing ended the month before its
+  // ended-at (the latest billing period's close).
+  const endedAt = billing.client?.deleted_at ?? null
+  const lastBilled =
+    mode === 'former' && endedAt
+      ? monthLabel(addMonths(`${endedAt.slice(0, 7)}-01`, -1))
+      : null
   const stopping = isClient && !billingOn
   // Starting next month still makes it a client on save, portal included.
   const portalNow =
@@ -104,7 +116,9 @@ export function CompanyBillingSection({
               'Billing restarts with these terms when you save, with any changes from its first month billed. Its people with Portal on get portal access back.'
             )
           : state(
-              `Former client${lastType ? `, last billed ${lastType}` : ''}. Billing stopped.`
+              lastBilled
+                ? `Former client. Last billed ${lastBilled}${lastType ? `, ${lastType}` : ''}.`
+                : `Former client${lastType ? `, last billed ${lastType}` : ''}. Billing stopped.`
             )
         : mode === 'ending' && billingOn
           ? billing.keepBilling

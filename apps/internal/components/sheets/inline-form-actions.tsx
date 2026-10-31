@@ -8,7 +8,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 /**
  * The buttons under every form that opens in place in an EntityList (post a
  * comment, log a lead update): Cancel (outline) then the action, right
- * aligned. Adding shows a + before its label ("Post comment", "Log
+ * aligned, both small (32px). Adding shows a + before its label ("Post comment", "Log
  * update"); saving an edit says "Save". One bar, so the forms can't drift.
  */
 export function InlineFormActions({
@@ -38,6 +38,7 @@ export function InlineFormActions({
       <Button
         type='button'
         variant='outline'
+        size='sm'
         onClick={onCancel}
         disabled={pending}
       >
@@ -49,6 +50,7 @@ export function InlineFormActions({
       >
         <Button
           type={submitType}
+          size='sm'
           onClick={submitType === 'button' ? onSubmit : undefined}
           disabled={disabled || pending}
         >
