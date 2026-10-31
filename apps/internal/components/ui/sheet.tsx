@@ -106,10 +106,10 @@ const SheetOverlay = ({
 }
 
 /**
- * A sheet's width follows its layout: `columns={1}` (one column: company,
+ * A sheet's width follows its layout: `columns={1}` (one column:
  * person, task, project, hour block, submission, template, filters) is 720px,
  * which fits the full rich text toolbar on one line with room to spare;
- * `columns={2}` (a form beside a SHEET_SIDE_COLUMN_CLASS column: lead,
+ * `columns={2}` (a form beside a SHEET_SIDE_COLUMN_CLASS column: company, lead,
  * invoice) is 768px below lg and a set 1184px from lg, within the viewport.
  * Below lg a side column stacks under the form. Phones get the full screen
  * either way.
@@ -384,7 +384,7 @@ export {
  * column. Named presets only, so sheets stay consistent:
  * - `default`: a 384px side column (the invoice's status and actions).
  * - `even`: a 480px side column, for a side column people work in as much as
- *   the form (the lead's tasks and updates). The form keeps ~700px, enough
+ *   the form (the lead's tasks and updates, the company's Client column). The form keeps ~700px, enough
  *   for the full rich text toolbar on one line.
  * Below lg the side column stacks under the form, full width.
  */
