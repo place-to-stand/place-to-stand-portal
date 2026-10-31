@@ -127,9 +127,9 @@ export function CompaniesTable({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[24%]')}
+            {sortHead('name', 'Company', 'w-[20%]')}
             {sortHead('client', 'Client', 'w-[11%]')}
-            {seesBilling ? sortHead('hours', 'Hours', 'w-[16%]') : null}
+            {seesBilling ? sortHead('hours', 'Hours', 'w-[20%]') : null}
             {sortHead('people', 'People', 'w-[9%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
             {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
@@ -186,7 +186,7 @@ export function CompaniesTable({
                 {seesBilling ? (
                   <TableCell label='Hours' className='text-sm tabular-nums'>
                     {company.hours ? (
-                      <span className='inline-flex items-center gap-1.5'>
+                      <span className='inline-flex items-center gap-1.5 whitespace-nowrap'>
                         <ENTITY_ICONS.timeLog
                           className={cn(
                             ENTITY_ACCENTS.timeLog.icon,
