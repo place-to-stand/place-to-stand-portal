@@ -10,10 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import {
-  PersonAccessChoice,
-  PortalCompaniesField,
-} from '@/components/contacts/person-access-choice'
+import { PersonAccessChoice } from '@/components/contacts/person-access-choice'
 import {
   accessSummary,
   type AccessKind,
@@ -28,7 +25,7 @@ const EMAIL = 'ada@acme.com'
 export function ComponentsAccess() {
   const [kind, setKind] = useState<AccessKind>('portal')
   const [role, setRole] = useState<'ADMIN' | 'SALES'>('ADMIN')
-  const [seen, setSeen] = useState<Record<string, boolean>>({
+  const [seen] = useState<Record<string, boolean>>({
     acme: true,
     beta: true,
     cobalt: false,
@@ -63,18 +60,6 @@ export function ComponentsAccess() {
               .map(company => company.name),
           })}
         >
-          {kind === 'portal' ? (
-            <PortalCompaniesField
-              email={EMAIL}
-              companies={companies.map(company => ({
-                ...company,
-                checked: Boolean(seen[company.companyId]),
-              }))}
-              onToggle={(companyId, checked) =>
-                setSeen(current => ({ ...current, [companyId]: checked }))
-              }
-            />
-          ) : null}
           {kind === 'team' ? (
             <div className='flex flex-col gap-2 sm:max-w-xs'>
               <Label htmlFor='design-access-role' className='w-fit'>

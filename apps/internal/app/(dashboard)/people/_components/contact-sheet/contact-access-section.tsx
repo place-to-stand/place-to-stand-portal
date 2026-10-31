@@ -14,11 +14,7 @@ import {
 } from '@pts/ui/select'
 import { Skeleton } from '@pts/ui/skeleton'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
-import {
-  PersonAccessChoice,
-  PortalCompaniesField,
-  type PortalCompanyOption,
-} from '@/components/contacts/person-access-choice'
+import { PersonAccessChoice } from '@/components/contacts/person-access-choice'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   FormControl,
@@ -54,25 +50,6 @@ import type { USER_ROLES } from '@/lib/settings/users/user-validation'
 type Role = (typeof USER_ROLES)[number]
 
 const TEAM_ROLES = ['ADMIN', 'SALES'] as const satisfies readonly Role[]
-
-/** A client row they can be given portal access to (live or former client). */
-const isPortalCompany = (entry: ContactCompanyEntry) =>
-  (Boolean(entry.clientCompanyId) && !entry.archived) ||
-  Boolean(entry.formerClient)
-
-/** Their client companies as Access lists them: ticked = portal access. */
-function portalCompanies(
-  companies: readonly ContactCompanyEntry[]
-): PortalCompanyOption[] {
-  return companies.filter(isPortalCompany).map(entry => ({
-    companyId: entry.companyId,
-    name: entry.companyName || entry.clientName || 'Company',
-    checked: entry.portalAccess,
-    // A former client's access can only go off (it returns with billing).
-    disabled: Boolean(entry.formerClient) && !entry.portalAccess,
-    note: entry.formerClient ? 'Not billed now' : null,
-  }))
-}
 
 /** The client companies they see in the portal, for the sentence. */
 function seenCompanies(companies: readonly ContactCompanyEntry[]): string[] {
@@ -297,22 +274,6 @@ function ManagedAccess({
         }
         summary={summary}
       >
-        {kind === 'portal' ? (
-          <PortalCompaniesField
-            email={personEmail}
-            companies={portalCompanies(companies)}
-            disabled={Boolean(lockedReason)}
-            onToggle={(companyId, checked) =>
-              setCompanies(
-                companies.map(entry =>
-                  entry.companyId === companyId
-                    ? { ...entry, portalAccess: checked }
-                    : entry
-                )
-              )
-            }
-          />
-        ) : null}
         {kind === 'team' ? (
           <FormField
             control={form.control}

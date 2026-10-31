@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
+import { Switch } from '@pts/ui/switch'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -32,6 +33,11 @@ type ContactCompaniesSectionProps = {
    * only). The sheet's Access section changes it, not this list.
    */
   showPortalAccess?: boolean
+  /**
+   * Why the portal switches are off, if they are: portal access needs a
+   * client portal sign-in (Access).
+   */
+  portalReason?: string | null
 }
 
 /**
@@ -47,6 +53,7 @@ export function ContactCompaniesSection({
   loadFailed = false,
   onChange,
   showPortalAccess = false,
+  portalReason = null,
 }: ContactCompaniesSectionProps) {
   // A failed load must not look like "no companies": block edits until reopened.
   const disabled = disabledProp || loadFailed
@@ -127,28 +134,11 @@ export function ContactCompaniesSection({
                   ) : null
                 }
                 note={
-                  entry.formerClient && showPortalAccess ? (
-                    'Portal access returns if billing restarts.'
-                  ) : entry.archived ? (
-                    'Archived'
-                  ) : entry.isPrimary ||
-                    (showPortalAccess &&
-                      entry.clientCompanyId &&
-                      entry.portalAccess) ? (
-                    <span className='inline-flex items-center gap-2'>
-                      {entry.isPrimary ? (
-                        <span className='inline-flex items-center gap-1'>
-                          <Star className='text-warning size-3 fill-current' />
-                          Primary contact
-                        </span>
-                      ) : null}
-                      {showPortalAccess &&
-                      entry.clientCompanyId &&
-                      entry.portalAccess ? (
-                        <span>Portal access</span>
-                      ) : null}
-                    </span>
-                  ) : undefined
+                  entry.formerClient && showPortalAccess
+                    ? 'Portal access returns if billing restarts.'
+                    : entry.archived
+                      ? 'Archived'
+                      : undefined
                 }
                 fields={
                   <>
@@ -160,10 +150,37 @@ export function ContactCompaniesSection({
                         disabled={disabled}
                       />
                     </RecordRowField>
+                    {showPortalAccess &&
+                    entry.clientCompanyId &&
+                    !entry.archived ? (
+                      <RecordRowField
+                        label='Portal access'
+                        hint={!disabled && portalReason ? portalReason : null}
+                      >
+                        <Switch
+                          checked={entry.portalAccess}
+                          disabled={disabled || Boolean(portalReason)}
+                          aria-label={`Portal access at ${name}`}
+                          onCheckedChange={portalAccess =>
+                            update(entry.companyId, { portalAccess })
+                          }
+                        />
+                      </RecordRowField>
+                    ) : null}
                   </>
                 }
                 actions={
                   <>
+                    {/* Where the company sheet puts its primary star. */}
+                    {entry.isPrimary ? (
+                      <span className='flex size-8 items-center justify-center'>
+                        <Star
+                          className='text-warning size-4 fill-current'
+                          aria-hidden
+                        />
+                        <span className='sr-only'>Primary contact</span>
+                      </span>
+                    ) : null}
                     <DisabledFieldTooltip
                       disabled={!disabled && primaryLocked}
                       reason={primaryLocked ? CLIENT_PRIMARY_ADMIN_ONLY : null}

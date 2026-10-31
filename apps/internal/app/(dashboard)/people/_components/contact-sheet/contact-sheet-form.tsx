@@ -71,7 +71,8 @@ type ContactSheetFormProps = {
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
-  const letters = parts.length > 1 ? parts[0][0] + parts.at(-1)![0] : parts[0]?.slice(0, 2)
+  const letters =
+    parts.length > 1 ? parts[0][0] + parts.at(-1)![0] : parts[0]?.slice(0, 2)
   return (letters ?? '?').toUpperCase()
 }
 
@@ -101,10 +102,12 @@ export function ContactSheetForm({
   const personName =
     (form.formState.defaultValues?.name as string | undefined)?.trim() ?? ''
   // The sign-in uses the email as typed: it changes with the same Save.
-  const typedEmail =
-    (useWatch({ control: form.control, name: 'email' }) ?? '').trim()
-  const typedName =
-    (useWatch({ control: form.control, name: 'name' }) ?? '').trim()
+  const typedEmail = (
+    useWatch({ control: form.control, name: 'email' }) ?? ''
+  ).trim()
+  const typedName = (
+    useWatch({ control: form.control, name: 'name' }) ?? ''
+  ).trim()
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -143,6 +146,14 @@ export function ContactSheetForm({
       ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
       : null
 
+  // Portal access needs a client portal sign-in (the Access choice).
+  const signInEnabled = useWatch({
+    control: form.control,
+    name: 'signIn.enabled',
+  })
+  const signInRole = useWatch({ control: form.control, name: 'signIn.role' })
+  const portalSignIn = Boolean(signInEnabled) && signInRole === 'CLIENT'
+
   return (
     <Form {...form}>
       <div className='flex-1 overflow-y-auto'>
@@ -152,82 +163,47 @@ export function ContactSheetForm({
           className='flex flex-col'
         >
           <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
-          {readOnly ? (
-            <p className='text-muted-foreground text-sm'>
-              {PERSON_WITH_SIGN_IN_ADMIN_ONLY}
-            </p>
-          ) : null}
-          {/* Their photo: anyone can have one. */}
-          <FormField
-            control={form.control}
-            name='avatarPath'
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <AvatarUploadField
-                    value={field.value ?? null}
-                    onChange={next =>
-                      form.setValue('avatarPath', next, { shouldDirty: true })
-                    }
-                    onRemovalChange={removed =>
-                      form.setValue('avatarRemoved', removed, {
-                        shouldDirty: true,
-                      })
-                    }
-                    onUploadingChange={onAvatarUploadingChange}
-                    initials={initialsOf(personName || '?')}
-                    displayName={personName || null}
-                    disabled={locked}
-                    contactId={contactId}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Separator />
-          <SheetSection title='Details'>
+            {readOnly ? (
+              <p className='text-muted-foreground text-sm'>
+                {PERSON_WITH_SIGN_IN_ADMIN_ONLY}
+              </p>
+            ) : null}
+            {/* Their photo: anyone can have one. */}
             <FormField
               control={form.control}
-              name='name'
+              name='avatarPath'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full name</FormLabel>
                   <FormControl>
-                    <DisabledFieldTooltip
+                    <AvatarUploadField
+                      value={field.value ?? null}
+                      onChange={next =>
+                        form.setValue('avatarPath', next, { shouldDirty: true })
+                      }
+                      onRemovalChange={removed =>
+                        form.setValue('avatarRemoved', removed, {
+                          shouldDirty: true,
+                        })
+                      }
+                      onUploadingChange={onAvatarUploadingChange}
+                      initials={initialsOf(personName || '?')}
+                      displayName={personName || null}
                       disabled={locked}
-                      reason={fieldDisabledReason}
-                    >
-                      <Input
-                        {...field}
-                        data-autofocus
-                        ref={node => {
-                          firstFieldRef.current = node
-                          if (typeof field.ref === 'function') {
-                            field.ref(node)
-                          } else if (field.ref) {
-                            ;(
-                              field.ref as React.MutableRefObject<HTMLInputElement | null>
-                            ).current = node
-                          }
-                        }}
-                        value={field.value ?? ''}
-                        placeholder='John Doe'
-                        disabled={locked}
-                      />
-                    </DisabledFieldTooltip>
+                      contactId={contactId}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+            <Separator />
+            <SheetSection title='Details'>
               <FormField
                 control={form.control}
-                name='email'
+                name='name'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel optional>Email</FormLabel>
+                    <FormLabel>Full name</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={locked}
@@ -235,30 +211,19 @@ export function ContactSheetForm({
                       >
                         <Input
                           {...field}
-                          type='email'
-                          placeholder='contact@example.com'
-                          disabled={locked}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='phone'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel optional>Phone</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip
-                        disabled={locked}
-                        reason={fieldDisabledReason}
-                      >
-                        <PhoneInput
+                          data-autofocus
+                          ref={node => {
+                            firstFieldRef.current = node
+                            if (typeof field.ref === 'function') {
+                              field.ref(node)
+                            } else if (field.ref) {
+                              ;(
+                                field.ref as React.MutableRefObject<HTMLInputElement | null>
+                              ).current = node
+                            }
+                          }}
                           value={field.value ?? ''}
-                          onChange={field.onChange}
+                          placeholder='John Doe'
                           disabled={locked}
                         />
                       </DisabledFieldTooltip>
@@ -267,47 +232,98 @@ export function ContactSheetForm({
                   </FormItem>
                 )}
               />
-              {/* Under Email, in its column. */}
-              <FormField
-                control={form.control}
-                name='linkedinUrl'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel optional>LinkedIn</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip
-                        disabled={locked}
-                        reason={fieldDisabledReason}
-                      >
-                        <UrlInput
-                          {...field}
-                          value={field.value ?? ''}
-                          openLabel='Open LinkedIn'
-                          placeholder='linkedin.com/in/jane-doe'
+              <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+                <FormField
+                  control={form.control}
+                  name='email'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel optional>Email</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
                           disabled={locked}
-                        />
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </SheetSection>
+                          reason={fieldDisabledReason}
+                        >
+                          <Input
+                            {...field}
+                            type='email'
+                            placeholder='contact@example.com'
+                            disabled={locked}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='phone'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel optional>Phone</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
+                          disabled={locked}
+                          reason={fieldDisabledReason}
+                        >
+                          <PhoneInput
+                            value={field.value ?? ''}
+                            onChange={field.onChange}
+                            disabled={locked}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {/* Under Email, in its column. */}
+                <FormField
+                  control={form.control}
+                  name='linkedinUrl'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel optional>LinkedIn</FormLabel>
+                      <FormControl>
+                        <DisabledFieldTooltip
+                          disabled={locked}
+                          reason={fieldDisabledReason}
+                        >
+                          <UrlInput
+                            {...field}
+                            value={field.value ?? ''}
+                            openLabel='Open LinkedIn'
+                            placeholder='linkedin.com/in/jane-doe'
+                            disabled={locked}
+                          />
+                        </DisabledFieldTooltip>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </SheetSection>
             <Separator />
-          <FormField
-            control={form.control}
-            name='companies'
-            render={({ field }) => (
-              <ContactCompaniesSection
-                companies={field.value}
-                disabled={locked}
-                loadFailed={companiesLoadFailed}
-                onChange={next => field.onChange(next)}
-                showPortalAccess={canManageSignIn}
-              />
-            )}
-          />
+            <FormField
+              control={form.control}
+              name='companies'
+              render={({ field }) => (
+                <ContactCompaniesSection
+                  companies={field.value}
+                  disabled={locked}
+                  loadFailed={companiesLoadFailed}
+                  onChange={next => field.onChange(next)}
+                  showPortalAccess={canManageSignIn}
+                  portalReason={
+                    portalSignIn
+                      ? null
+                      : 'Choose Client portal under Access to turn this on.'
+                  }
+                />
+              )}
+            />
             <Separator />
             <SheetSection title='Access'>
               <ContactAccessFields
