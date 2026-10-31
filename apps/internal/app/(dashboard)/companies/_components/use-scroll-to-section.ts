@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 const SETTLE_MS = 1500
 
 /**
- * Scrolls the sheet to a section (a deep link such as `?tab=billing`). The
+ * Scrolls the sheet to a section (a lead's Won opens billing). The
  * sections above it load after the sheet opens and push it down, so it is
  * kept in view until they settle, or until the person scrolls or types.
  */

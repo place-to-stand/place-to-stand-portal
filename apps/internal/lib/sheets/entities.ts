@@ -37,8 +37,9 @@ export const isValidSheetParamValue = (value: string) =>
 type SheetEntityConfig = {
   /**
    * Aux params carrying sub-state for this entity's sheet (always prefixed
-   * with the entity param, e.g. `tab=billing`). Removed alongside the
-   * entity param on close.
+   * with the entity param, e.g. `companyName=`). Removed alongside the
+   * entity param on close. `tab` is listed only so old `?tab=` links are
+   * dropped on close: sheets have no tabs and ignore it.
    */
   auxParams: readonly string[]
   /**

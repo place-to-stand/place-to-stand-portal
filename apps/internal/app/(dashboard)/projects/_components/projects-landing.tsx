@@ -576,7 +576,7 @@ export function ProjectsLanding({
               </span>
             ) : client.company_id ? (
               <Link
-                href={companySheetHref(client.company_id, 'projects')}
+                href={companySheetHref(client.company_id)}
                 className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
               >
                 <ENTITY_ICONS.client

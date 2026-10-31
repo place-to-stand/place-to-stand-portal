@@ -23,6 +23,7 @@ import {
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import {
   leadFormSchema,
   type LeadFormValues,
@@ -201,7 +202,8 @@ export function useLeadSheetState({
         const justWon =
           values.status === 'CLOSED_WON' && lead?.status !== 'CLOSED_WON'
         if (justWon && company && canManageClients) {
-          openSheet('company', company.id, { tab: 'billing', lead: '' })
+          setSheetSectionTarget('company', company.id, 'billing')
+          openSheet('company', company.id, { lead: '' })
         }
       })
     },

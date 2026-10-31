@@ -279,7 +279,7 @@ export function InvoicesTableSection({
                     {client ? (
                       client.company_id ? (
                         <Link
-                          href={companySheetHref(client.company_id, 'billing')}
+                          href={companySheetHref(client.company_id)}
                           className='hover:text-foreground truncate-link hover:underline'
                         >
                           {client.name}

@@ -115,7 +115,7 @@ function ProjectDetailsWidget({
             <div className='ml-auto flex items-center gap-2'>
               {project.client.company_id ? (
                 <Link
-                  href={companySheetHref(project.client.company_id, 'projects')}
+                  href={companySheetHref(project.client.company_id)}
                   className='text-sm font-medium underline-offset-4 hover:underline'
                 >
                   {project.client.name}

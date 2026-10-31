@@ -17,6 +17,7 @@ import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
@@ -175,9 +176,10 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
       {hiddenProjectCount > 0 && !client.archived && (
         <button
           type='button'
-          onClick={() =>
-            openSheet('company', client.companyId, { tab: 'projects' })
-          }
+          onClick={() => {
+            setSheetSectionTarget('company', client.companyId, 'projects')
+            openSheet('company', client.companyId)
+          }}
           className='text-muted-foreground hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 block rounded-sm text-xs outline-none hover:underline focus-visible:ring-[3px]'
         >
           +{hiddenProjectCount} more{' '}

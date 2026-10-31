@@ -169,7 +169,7 @@ export function HourBlocksTableSection({
                     {client ? (
                       // Opens the client; the row ignores clicks on links.
                       <Link
-                        href={companySheetHref(client.company_id, 'billing')}
+                        href={companySheetHref(client.company_id)}
                         title={client.name}
                         className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
                       >

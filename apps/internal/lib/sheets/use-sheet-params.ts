@@ -131,7 +131,7 @@ export function useSheetParams() {
     [buildUrl, router]
   )
 
-  /** Set/remove an entity's aux param (e.g. `tab=billing`). */
+  /** Set/remove an entity's aux param (e.g. `companyName=`). */
   const setAux = useCallback(
     (aux: string, value: string | null) => {
       router.replace(
@@ -190,9 +190,7 @@ export function useSheetParamSelection(entity: SheetEntityKey) {
   return {
     selectedValue,
     selectedId:
-      selectedValue && selectedValue !== NEW_SHEET_VALUE
-        ? selectedValue
-        : null,
+      selectedValue && selectedValue !== NEW_SHEET_VALUE ? selectedValue : null,
     isCreating: selectedValue === NEW_SHEET_VALUE,
     isOpen: selectedValue !== null,
     select,

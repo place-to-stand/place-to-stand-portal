@@ -1,6 +1,7 @@
 'use client'
 
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -111,7 +112,8 @@ export function LeadSheet(props: LeadSheetProps) {
                   // A client is made on its company's billing (its sheet's Client column): stack the
                   // company's sheet on the lead, on that tab.
                   if (lead?.companyId) {
-                    openSheet('company', lead.companyId, { tab: 'billing' })
+                    setSheetSectionTarget('company', lead.companyId, 'billing')
+                    openSheet('company', lead.companyId)
                   }
                 }}
                 onSuccess={onSuccess}

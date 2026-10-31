@@ -17,9 +17,8 @@ test('company sheet: two columns, no tabs, Billing reachable by deep link', asyn
     sheet.getByRole('heading', { name: 'Client', exact: true })
   ).toBeVisible()
   await expect(sheet.getByText('Bill this company')).toBeVisible()
-  // An old `tab=billing` link opens the sheet at its billing.
+  // An old `tab=billing` link still opens the sheet (the param is ignored).
   await page.goto(`${page.url()}&tab=billing`)
-  await expect(page.locator('#company-billing')).toBeInViewport()
   await expect(
     page.getByRole('dialog').getByText('Bill this company')
   ).toBeVisible()
@@ -53,14 +52,12 @@ test('person sheet is one stacked form, access included', async ({ page }) => {
   ).toHaveCount(1)
 })
 
-test('projects list: client rows open the company at its Projects', async ({
-  page,
-}) => {
+test('projects list: client rows open the company', async ({ page }) => {
   await page.goto('/projects')
   const link = page.locator('tbody a[href*="company="]').first()
   await expect(link).toHaveAttribute(
     'href',
-    /\/companies\?company=[0-9a-f-]{36}&tab=projects/
+    /\/companies\?company=[0-9a-f-]{36}$/
   )
   await link.click()
   const sheet = page.getByRole('dialog')

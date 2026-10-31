@@ -13,11 +13,8 @@ import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 
 export const contactSheetHref = (id: string) => `/people?contact=${id}`
 
-/** A company's sheet; `tab` scrolls to a section (`people`, `projects`, `billing`; `details` is the top). The sheet has no tabs: the old tab names stay so links and bookmarks keep working. */
-export const companySheetHref = (
-  id: string,
-  tab?: 'details' | 'people' | 'projects' | 'billing'
-) => `/companies?company=${id}${tab ? `&tab=${tab}` : ''}`
+/** A company's sheet. (Old `&tab=` links still open it; the param is ignored.) */
+export const companySheetHref = (id: string) => `/companies?company=${id}`
 
 export const invoiceHref = (id: string) => `/invoices?invoice=${id}`
 

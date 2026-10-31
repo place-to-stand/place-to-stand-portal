@@ -53,8 +53,10 @@ import {
 import { CompanyDetailsFields } from './company-details-fields'
 import { CompanyPeopleTab } from './company-people-tab'
 import { ClientBadge } from '@/components/clients/client-badge'
-import { SHEET_TAB_PARAM } from '@/components/sheets/sheet-tabs'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import {
+  clearSheetSectionTarget,
+  peekSheetSectionTarget,
+} from '@/lib/sheets/sheet-section-target'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 
@@ -206,17 +208,22 @@ export function CompanySheet({
   const showProjects = isAdmin && isEditing && Boolean(projectsCompanyId)
   // Client updates sit on the Company column, for clients and former ones.
   const updatesCompanyId = clientCompanyId ?? formerClientId
-  // The sheet has no tabs: a link to one (`tab=billing`, `tab=projects`,
-  // `tab=people`; old bookmarks and the lead's Won) scrolls to that section.
-  // `tab=details` or none stays at the top.
-  const { getAux } = useSheetParams()
-  const requestedTab = open && data ? getAux(SHEET_TAB_PARAM) : null
+  // Opening the sheet at a section (a lead's Won lands on billing) is
+  // handed over in memory, not a URL param. Old `?tab=` links still open
+  // the sheet; the param is ignored and dropped on close.
+  const requestedSection =
+    open && data && companyId
+      ? peekSheetSectionTarget('company', companyId)
+      : null
+  useEffect(() => {
+    if (!open && companyId) clearSheetSectionTarget('company', companyId)
+  }, [open, companyId])
   useScrollToSection(
-    requestedTab === 'people'
+    requestedSection === 'people'
       ? COMPANY_PEOPLE_SECTION_ID
-      : requestedTab === 'billing'
+      : requestedSection === 'billing'
         ? COMPANY_BILLING_SECTION_ID
-        : requestedTab === 'projects'
+        : requestedSection === 'projects'
           ? showProjects
             ? COMPANY_PROJECTS_SECTION_ID
             : COMPANY_BILLING_SECTION_ID

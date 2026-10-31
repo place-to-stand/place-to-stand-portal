@@ -13,6 +13,7 @@ import {
   useSheetParamSelection,
   useSheetParams,
 } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
@@ -150,7 +151,8 @@ export function LeadsWorkspace({
     (lead: LeadRecord) => {
       if (!lead.companyId) return
       // Open it here, over the board, rather than leaving for /companies.
-      openSheet('company', lead.companyId, { tab: 'billing' })
+      setSheetSectionTarget('company', lead.companyId, 'billing')
+      openSheet('company', lead.companyId)
     },
     [openSheet]
   )

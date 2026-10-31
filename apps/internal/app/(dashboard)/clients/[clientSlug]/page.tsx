@@ -37,5 +37,5 @@ export default async function ClientDetailPage({
     .limit(1)
 
   if (!company) notFound()
-  redirect(companySheetHref(company.id, 'projects'))
+  redirect(companySheetHref(company.id))
 }

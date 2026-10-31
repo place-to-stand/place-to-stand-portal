@@ -13,7 +13,7 @@ import {
   CompanyClientUpdates,
 } from './company-sheet-sections'
 
-/** Deep-link targets in the Client column (`?tab=billing`, `?tab=projects`). */
+/** Scroll targets in the Client column (billing, projects). */
 export const COMPANY_BILLING_SECTION_ID = 'company-billing'
 export const COMPANY_PROJECTS_SECTION_ID = 'company-projects'
 
