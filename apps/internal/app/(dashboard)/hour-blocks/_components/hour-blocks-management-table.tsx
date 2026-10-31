@@ -73,7 +73,9 @@ export function HourBlocksManagementTable({
     clearSelection,
   } = useHourBlocksTableState({ clients, hourBlocks, deepLinkedHourBlock })
 
-  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  const hasActiveFilter = ['q', 'companyId', 'invoice', 'from', 'to'].some(
+    key => Boolean(searchParams.get(key)?.trim())
+  )
 
   const emptyMessage = hasActiveFilter
     ? 'No hour blocks match the current filters.'

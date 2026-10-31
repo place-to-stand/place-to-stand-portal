@@ -38,6 +38,7 @@ import {
 } from '@/lib/pagination/sort'
 import {
   DEFAULT_HOUR_BLOCKS_SORT,
+  type HourBlockInvoiceFilter,
   type HourBlockSortField,
 } from '@/lib/settings/hour-blocks/filters'
 
@@ -110,6 +111,11 @@ export type ListHourBlocksForSettingsInput = {
   search?: string | null
   /** Only this client's blocks. */
   companyId?: string | null
+  /** The invoice the block came from (see `HourBlockInvoiceFilter`). */
+  invoice?: HourBlockInvoiceFilter | null
+  /** Created on or after / before, `YYYY-MM-DD` (inclusive). */
+  from?: string | null
+  to?: string | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
@@ -187,6 +193,26 @@ export async function listHourBlocksForSettings(
 
   if (input.companyId) {
     baseConditions.push(eq(hourBlocks.companyId, input.companyId))
+  }
+
+  if (input.invoice) {
+    baseConditions.push(
+      input.invoice === 'none'
+        ? sql`${invoices.id} IS NULL`
+        : input.invoice === 'draft'
+          ? sql`${invoices.status} = 'DRAFT'`
+          : input.invoice === 'unpaid'
+            ? sql`${invoices.status} IN ('SENT', 'VIEWED')`
+            : sql`${invoices.status} = 'PAID'`
+    )
+  }
+
+  // Created dates are compared as calendar days.
+  if (input.from) {
+    baseConditions.push(sql`${hourBlocks.createdAt}::date >= ${input.from}`)
+  }
+  if (input.to) {
+    baseConditions.push(sql`${hourBlocks.createdAt}::date <= ${input.to}`)
   }
 
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
