@@ -32,6 +32,7 @@ import {
   ComponentsTabs,
 } from './_components/components-navigation'
 import { ComponentsSheets } from './_components/components-sheet'
+import { ComponentsStats } from './_components/components-stats'
 import { ComponentsAccess } from './_components/components-access'
 import { FoundationsColour } from './_components/foundations-colour'
 import { FoundationsEntities } from './_components/foundations-entities'
@@ -75,6 +76,7 @@ export default async function DesignPage() {
         <ComponentsRichText />
         <ComponentsAvatars />
         <ComponentsRecordRows />
+        <ComponentsStats />
         <ComponentsAccess />
         <ComponentsTables />
         <ComponentsEmptyLoading />

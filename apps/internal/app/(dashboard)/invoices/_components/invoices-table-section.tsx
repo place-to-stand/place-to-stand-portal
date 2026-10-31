@@ -8,7 +8,7 @@ import { Check, Copy, ExternalLink, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
@@ -63,14 +63,6 @@ export type InvoicesTableSectionProps = {
 
 const formatDate = (value: string | null) =>
   formatCalendarDate(value) ?? '\u2014'
-
-function BillingTypeBadge() {
-  return (
-    <Badge variant='outline' className={cn(BADGE_TINTS.amber, 'leading-4')}>
-      Net 30
-    </Badge>
-  )
-}
 
 /**
  * A draft has no public link yet, so its cell is the way to send it; from
@@ -272,7 +264,7 @@ export function InvoicesTableSection({
                       <Badge variant='secondary'>Draft</Badge>
                     )}
                     {invoice.billing_type === 'net_30' ? (
-                      <BillingTypeBadge />
+                      <BillingTypeBadge billingType='net_30' />
                     ) : null}
                   </div>
                 </TableCell>

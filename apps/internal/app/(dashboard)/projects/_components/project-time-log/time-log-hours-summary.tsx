@@ -8,6 +8,8 @@ import { cn } from '@pts/ui/cn'
 import { formatHours } from '@pts/ui/numbers'
 import { Skeleton } from '@pts/ui/skeleton'
 import { ENTITY_ICONS, entityIconAccent } from '@/lib/entity-accents'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import { StatCard } from '@/components/ui/stat-card'
 import { loadTimeLogHours } from '@/lib/projects/time-log/load-time-log-hours'
 
 export const TIME_LOG_HOURS_QUERY_KEY = 'time-log-hours' as const
@@ -40,16 +42,14 @@ export function TimeLogHoursSummary({
   })
 
   if (isClientProject && isLoading) {
-    return <Skeleton className='h-[116px] w-full rounded-lg' />
+    return <Skeleton className='h-[150px] w-full rounded-lg' />
   }
 
   if (!data) {
     return (
-      <dl className={BOX}>
-        <Row icon={ENTITY_ICONS.project} label='Project'>
-          {projectLabel}
-        </Row>
-      </dl>
+      <div className={BOX}>
+        <Line icon={ENTITY_ICONS.project}>{projectLabel}</Line>
+      </div>
     )
   }
 
@@ -57,63 +57,50 @@ export function TimeLogHoursSummary({
   const clientHours = net30 ? data.clientThisMonth : data.clientRemaining
 
   return (
-    <dl className={BOX}>
-      <Row icon={ENTITY_ICONS.client} label='Client'>
-        {data.clientName}
-      </Row>
-      <Row icon={ENTITY_ICONS.project} label='Project'>
-        {data.projectName}
-      </Row>
-      <Row label='Billing'>{net30 ? 'Net 30' : 'Prepaid'}</Row>
-      <Row label={net30 ? 'Project this month' : 'Project logged'}>
-        <span className='font-semibold tabular-nums'>
-          {formatHours(data.projectHours)}
-        </span>
-      </Row>
-      <Row label={net30 ? 'Client this month' : 'Client remaining'}>
-        <span
-          className={cn(
-            'font-semibold tabular-nums',
-            !net30 && (clientHours ?? 0) < 0 && 'text-destructive'
-          )}
-        >
-          {formatHours(clientHours ?? 0)}
-        </span>
-      </Row>
-    </dl>
+    <div className='flex flex-col gap-3'>
+      {/* The icons say client and project; the badge says how it's billed. */}
+      <div className={BOX}>
+        <Line icon={ENTITY_ICONS.client}>
+          <span className='truncate'>{data.clientName}</span>
+          <BillingTypeBadge billingType={data.billingType} />
+        </Line>
+        <Line icon={ENTITY_ICONS.project}>{data.projectName}</Line>
+      </div>
+      <div className='grid grid-cols-2 gap-3'>
+        <StatCard
+          label={net30 ? 'Project this month' : 'Project logged'}
+          value={formatHours(data.projectHours)}
+        />
+        <StatCard
+          label={net30 ? 'Client this month' : 'Client remaining'}
+          value={formatHours(clientHours ?? 0)}
+          tone={!net30 && (clientHours ?? 0) < 0 ? 'negative' : 'default'}
+        />
+      </div>
+    </div>
   )
 }
 
 const BOX =
-  'bg-muted/40 grid grid-cols-[9rem_minmax(0,1fr)] items-center gap-x-4 gap-y-1.5 rounded-lg border px-4 py-3 text-sm'
+  'bg-muted/40 flex flex-col gap-1.5 rounded-lg border px-4 py-3 text-sm'
 
-function Row({
+function Line({
   icon: Icon,
-  label,
   children,
 }: {
-  icon?: LucideIcon
-  label: string
+  icon: LucideIcon
   children: ReactNode
 }) {
   return (
-    <>
-      <dt className='text-muted-foreground flex items-center gap-2'>
-        {Icon ? (
-          <Icon
-            className={cn(
-              'size-4 shrink-0',
-              entityIconAccent(Icon) ?? 'text-muted-foreground'
-            )}
-            aria-hidden
-          />
-        ) : (
-          // The icon's width, so every label starts on the same edge.
-          <span className='size-4 shrink-0' aria-hidden />
+    <div className='flex min-w-0 items-center gap-2'>
+      <Icon
+        className={cn(
+          'size-4 shrink-0',
+          entityIconAccent(Icon) ?? 'text-muted-foreground'
         )}
-        {label}
-      </dt>
-      <dd className='min-w-0 truncate'>{children}</dd>
-    </>
+        aria-hidden
+      />
+      {children}
+    </div>
   )
 }

@@ -171,7 +171,7 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
       >
         {selectedTasks.length === 0 ? (
           <EmptyState
-            message='Hours apply to project if left empty'
+            message='No tasks linked. Hours apply to project if left empty.'
             label={taskPickerButtonDisabled ? undefined : 'Link task'}
             onClick={
               taskPickerButtonDisabled
