@@ -251,15 +251,12 @@ export function HourBlockRecordRow({
     id: string
     name?: string | null
     hours: number
-    amount?: number | null
   }
 }) {
   const { open } = useSheetParams()
   const title = hourBlock.name || 'Hour block'
-  const details = [
-    formatHours(hourBlock.hours),
-    hourBlock.amount == null ? null : formatCurrency(hourBlock.amount),
-  ].filter(Boolean)
+  // Only what the block stores: its hours. (Its price lives on the invoice.)
+  const details = [formatHours(hourBlock.hours)]
   return (
     <SheetRecordRow
       leading={

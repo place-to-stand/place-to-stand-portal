@@ -204,7 +204,6 @@ export function ComponentsRecordRows() {
               id: 'design-hour-block',
               name: 'Prepaid hours',
               hours: 40,
-              amount: 4800,
             }}
             openable={false}
           />

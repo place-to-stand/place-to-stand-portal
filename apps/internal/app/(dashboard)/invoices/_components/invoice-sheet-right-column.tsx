@@ -176,7 +176,6 @@ export function InvoiceSheetRightColumn({
                     id: block.id,
                     name: block.description,
                     hours: block.hours_purchased,
-                    amount: block.amount,
                   }}
                 />
               ))}

@@ -44,6 +44,7 @@ import type { ProjectSheetFieldState } from './project-sheet-field-state'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { creatableProjectTypes } from '@/lib/auth/capabilities'
 
+import { Separator } from '@pts/ui/separator'
 import { GitHubReposSection, type PendingRepo } from './github-repos-section'
 import { ProjectMembersField } from './project-members-field'
 import {
@@ -523,6 +524,9 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 projectId={projectId}
                 disabled={fieldState.owner.disabled}
               />
+
+              {/* Members, then the integrations group (GitHub, Vercel, Supabase). */}
+              <Separator />
 
               <GitHubReposSection
                 projectId={projectId}
