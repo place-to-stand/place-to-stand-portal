@@ -84,7 +84,7 @@ export function LeadUpdatesSection({
   }, [fetchUpdates, onSuccess])
 
   return (
-    <div className='space-y-3'>
+    <div className='space-y-2'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
           <MessageSquareText className='text-muted-foreground h-4 w-4' />

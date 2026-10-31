@@ -171,7 +171,7 @@ export function TaskAttachmentsField({
   )
 
   return (
-    <div className='space-y-1'>
+    <div className='space-y-2'>
       <div className='flex items-center justify-between gap-3'>
         {/* Icon + heading mirrors the time-log section header. */}
         <div className='flex items-center gap-2'>

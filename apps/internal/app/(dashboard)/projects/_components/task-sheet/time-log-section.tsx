@@ -40,9 +40,8 @@ export function TimeLogSection({
     // No bottom padding: it used to mirror the form's own pb-4, but the form
     // no longer has one — the scroll column's gap-6 is the single source of
     // separation between these sections now.
-    // space-y-1 matches the attachments field, so the heading sits the same
-    // distance above its content in both sections.
-    <section className='space-y-1 px-6' aria-label='Time logged on this task'>
+    // space-y-2: the heading sits 8px above its content, like a field label.
+    <section className='space-y-2 px-6' aria-label='Time logged on this task'>
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
           <ENTITY_ICONS.timeLog
@@ -148,7 +147,7 @@ function resolveLoggerName(entry: TimeLogEntry): string {
 export function TimeLogSectionPlaceholder() {
   const reason = 'Log time after you save the task.'
   return (
-    <section className='space-y-1 px-6' aria-label='Time logged on this task'>
+    <section className='space-y-2 px-6' aria-label='Time logged on this task'>
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
           <ENTITY_ICONS.timeLog

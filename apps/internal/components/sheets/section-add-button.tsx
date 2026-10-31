@@ -4,6 +4,7 @@ import type { ComponentProps } from 'react'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { cn } from '@/lib/utils'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
 type SectionAddButtonProps = Omit<
@@ -42,6 +43,8 @@ export function SectionAddButton({
         disabled={isDisabled}
         aria-label={label}
         {...props}
+        // Never makes its heading row taller than the label.
+        className={cn('-my-1', props.className)}
       >
         <Plus className='h-4 w-4' />
       </Button>

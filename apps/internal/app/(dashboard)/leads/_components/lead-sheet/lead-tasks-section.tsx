@@ -119,7 +119,7 @@ export function LeadTasksSection({
   const activeTasks = tasks.filter(t => t.status !== 'DONE')
 
   return (
-    <div className='space-y-3'>
+    <div className='space-y-2'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
           <ENTITY_ICONS.task

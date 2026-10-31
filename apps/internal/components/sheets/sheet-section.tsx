@@ -35,7 +35,12 @@ export function SheetSection({
   className,
 }: SheetSectionProps) {
   return (
-    <section className={cn('flex flex-col gap-4', className)}>
+    // A section with an action (its +) holds a list or an empty state: the
+    // heading sits 8px above it, the same as a field's label above its
+    // control. A section of fields keeps 16px.
+    <section
+      className={cn('flex flex-col', action ? 'gap-2' : 'gap-4', className)}
+    >
       <div className='flex flex-col gap-1'>
         <div className='flex min-h-5 items-center justify-between gap-2'>
           <h3 className='flex items-center gap-2 text-sm font-semibold tracking-tight'>

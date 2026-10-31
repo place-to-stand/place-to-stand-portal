@@ -156,7 +156,7 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
       <SheetSection
         title='Linked tasks'
         icon={ENTITY_ICONS.task}
-        className='gap-3 sm:col-span-2'
+        className='sm:col-span-2'
         action={
           <TaskSelector
             availableTasks={availableTasks}
