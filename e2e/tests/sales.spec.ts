@@ -295,7 +295,8 @@ test('sales can’t edit or archive someone else’s lead update', async ({
     await admin.goto('/leads')
     const card = admin.locator('[aria-roledescription="sortable"]').first()
     test.skip((await card.count()) === 0, 'no lead on the board')
-    await card.click()
+    // The title: the card's middle can be its email link.
+    await card.locator('h3').first().click()
     await expect(admin).toHaveURL(/[?&]lead=[0-9a-f-]{36}/)
     const leadId = new URL(admin.url()).searchParams.get('lead')!
     leadUrl = `/leads?lead=${leadId}`
