@@ -17,7 +17,8 @@ import { formatCalendarDate } from '@pts/ui/dates'
 import type { LeadConversionSummary, LeadRecord } from '@/lib/leads/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
 
 const MAX_PROJECTS = 4
 
@@ -53,7 +54,9 @@ export function LeadConversionSection({
     <div className='space-y-3'>
       <div className='flex items-center justify-between'>
         <div className='flex items-center gap-2'>
-          <ENTITY_ICONS.client className='text-muted-foreground h-4 w-4' />
+          <ENTITY_ICONS.client
+            className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4')}
+          />
           <span className='text-sm font-medium'>Client</span>
         </div>
         <Button

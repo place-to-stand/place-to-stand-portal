@@ -130,7 +130,12 @@ export function LeadUpdatesSection({
           }
         />
       ) : updates.length === 0 ? (
-        <EmptyState message='No updates on this lead yet.' />
+        <EmptyState
+          message='No updates on this lead yet.'
+          // Clicking it does what the + does.
+          label={canManage ? 'Add update' : undefined}
+          onClick={canManage ? openLogDialog : undefined}
+        />
       ) : (
         <div className='space-y-2'>
           {updates.map(update => (

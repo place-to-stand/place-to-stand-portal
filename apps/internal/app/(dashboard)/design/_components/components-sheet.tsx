@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MoreHorizontal, type LucideIcon } from 'lucide-react'
+import { MessageSquare, MoreHorizontal, type LucideIcon } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -288,7 +288,7 @@ function SampleEntitySheet({
                 </SheetSection>
                 {/* The bottom of a sheet: comments or updates, then
                         the collapsed Activity, always last. */}
-                <SheetSection title='Comments'>
+                <SheetSection title='Comments' icon={MessageSquare}>
                   <EmptyState message='No comments yet.' />
                 </SheetSection>
                 <SheetActivityDisclosure total={2}>

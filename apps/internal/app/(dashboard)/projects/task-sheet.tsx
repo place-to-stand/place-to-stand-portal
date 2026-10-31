@@ -12,7 +12,7 @@ import {
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ClipboardList, HelpCircle } from 'lucide-react'
+import { ClipboardList, HelpCircle, MessageSquare } from 'lucide-react'
 
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -457,7 +457,11 @@ export function TaskSheet(props: TaskSheetProps) {
                     Activity, always last in a sheet. */}
                 {props.task && taskPanelProjectId ? (
                   <>
-                    <SheetSection title='Comments' className='px-6'>
+                    <SheetSection
+                      title='Comments'
+                      icon={MessageSquare}
+                      className='px-6'
+                    >
                       <TaskCommentsPanel
                         taskId={props.task.id}
                         projectId={taskPanelProjectId}
@@ -479,7 +483,11 @@ export function TaskSheet(props: TaskSheetProps) {
                     />
                   </>
                 ) : !props.task ? (
-                  <SheetSection title='Comments' className='px-6'>
+                  <SheetSection
+                    title='Comments'
+                    icon={MessageSquare}
+                    className='px-6'
+                  >
                     <EmptyState message='Add comments after you save the task.' />
                   </SheetSection>
                 ) : null}

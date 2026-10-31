@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { type ReactNode } from 'react'
+import { History } from 'lucide-react'
 
 import {
   Accordion,
@@ -85,7 +86,11 @@ export function SheetActivityDisclosure({
     <Accordion className={className}>
       <AccordionItem value='activity' className='border-b-0'>
         <AccordionTrigger className='py-0 text-sm font-semibold tracking-tight hover:no-underline'>
-          <span>
+          <span className='flex items-center gap-2'>
+            <History
+              className='text-muted-foreground size-4 shrink-0'
+              aria-hidden
+            />
             Activity
             {total !== null ? (
               <span className='text-muted-foreground font-normal'>
