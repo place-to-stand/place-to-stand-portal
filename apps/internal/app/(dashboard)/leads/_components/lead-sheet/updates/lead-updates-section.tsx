@@ -76,9 +76,10 @@ export function LeadUpdatesSection({
     setIsDialogOpen(true)
   }, [])
 
+  // Editing happens in place: the card turns into the form where it sits.
   const openEditDialog = useCallback((update: LeadUpdateRecord) => {
+    setIsDialogOpen(false)
     setEditingUpdate(update)
-    setIsDialogOpen(true)
   }, [])
 
   const handleSaved = useCallback(() => {
@@ -104,7 +105,7 @@ export function LeadUpdatesSection({
             leadId={lead.id}
             open={isDialogOpen}
             onOpenChange={setIsDialogOpen}
-            update={editingUpdate}
+            update={null}
             onSaved={handleSaved}
             closeRequest={closeRequest}
           />
@@ -140,21 +141,37 @@ export function LeadUpdatesSection({
           ) : undefined
         }
       >
-        {updates.map(update => (
-          <LeadUpdateItem
-            key={update.id}
-            // An update logged after the list loaded eases in.
-            className={
-              initialIds && !initialIds.has(update.id)
-                ? 'animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out motion-reduce:animate-none'
-                : undefined
-            }
-            update={update}
-            canManage={canManage}
-            onEdit={openEditDialog}
-            onArchived={handleSaved}
-          />
-        ))}
+        {updates.map(update =>
+          editingUpdate?.id === update.id ? (
+            <LeadUpdateDialog
+              key={update.id}
+              leadId={lead.id}
+              open
+              onOpenChange={open => {
+                if (!open) setEditingUpdate(null)
+              }}
+              update={update}
+              onSaved={() => {
+                setEditingUpdate(null)
+                handleSaved()
+              }}
+            />
+          ) : (
+            <LeadUpdateItem
+              key={update.id}
+              // An update logged after the list loaded eases in.
+              className={
+                initialIds && !initialIds.has(update.id)
+                  ? 'animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out motion-reduce:animate-none'
+                  : undefined
+              }
+              update={update}
+              canManage={canManage}
+              onEdit={openEditDialog}
+              onArchived={handleSaved}
+            />
+          )
+        )}
       </EntityList>
     </>
   )
