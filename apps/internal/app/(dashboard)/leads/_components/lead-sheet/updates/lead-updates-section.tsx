@@ -24,6 +24,8 @@ export function LeadUpdatesSection({
   onSuccess,
 }: LeadUpdatesSectionProps) {
   const [updates, setUpdates] = useState<LeadUpdateRecord[]>([])
+  // The updates there when the list first loaded; later ones ease in.
+  const [initialIds, setInitialIds] = useState<Set<string> | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -41,7 +43,12 @@ export function LeadUpdatesSection({
           throw new Error(`Request failed: ${response.status}`)
         }
         const data = await response.json()
-        setUpdates(data.updates ?? [])
+        const next: LeadUpdateRecord[] = data.updates ?? []
+        // The first load sets what counts as already there.
+        setInitialIds(
+          previous => previous ?? new Set(next.map(update => update.id))
+        )
+        setUpdates(next)
         setLoadFailed(false)
       })
       .catch(error => {
@@ -136,6 +143,12 @@ export function LeadUpdatesSection({
           {updates.map(update => (
             <LeadUpdateItem
               key={update.id}
+              // An update logged after the list loaded eases in.
+              className={
+                initialIds && !initialIds.has(update.id)
+                  ? 'animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out motion-reduce:animate-none'
+                  : undefined
+              }
               update={update}
               canManage={canManage}
               onEdit={openEditDialog}

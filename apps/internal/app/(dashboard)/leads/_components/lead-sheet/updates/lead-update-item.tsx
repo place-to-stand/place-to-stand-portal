@@ -38,6 +38,7 @@ type LeadUpdateItemProps = {
   canManage: boolean
   onEdit: (update: LeadUpdateRecord) => void
   onArchived: () => void
+  className?: string
 }
 
 export function LeadUpdateItem({
@@ -45,6 +46,7 @@ export function LeadUpdateItem({
   canManage,
   onEdit,
   onArchived,
+  className,
 }: LeadUpdateItemProps) {
   const { toast } = useToast()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
@@ -93,7 +95,7 @@ export function LeadUpdateItem({
   }
 
   return (
-    <div className='bg-muted/30 rounded-lg border p-3'>
+    <div className={cn('bg-muted/30 rounded-lg border p-3', className)}>
       <div className='flex items-start justify-between gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           {/* Icon + label + color together — color is never the only signal. */}
@@ -105,7 +107,10 @@ export function LeadUpdateItem({
         </div>
         {canManage && !canChange ? (
           // Someone else's update: the menu stays put but says why it's off.
-          <DisabledFieldTooltip disabled reason={LEAD_UPDATE_NOT_AUTHOR_MESSAGE}>
+          <DisabledFieldTooltip
+            disabled
+            reason={LEAD_UPDATE_NOT_AUTHOR_MESSAGE}
+          >
             <Button
               type='button'
               variant='ghost'

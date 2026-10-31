@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
+import { InlineReveal } from '@/components/ui/inline-reveal'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -167,8 +168,9 @@ export function LeadUpdateDialog({
 
   return (
     <>
-      {/* Inline in the Updates section: no dialog over the lead sheet. */}
-      {open ? (
+      {/* Inline in the Updates section: no dialog over the lead sheet. It
+          eases open and closed so the list below doesn't jump. */}
+      <InlineReveal open={open}>
         <div className='bg-card space-y-4 rounded-lg border p-3'>
           <p className='text-sm font-medium'>
             {isEditing ? 'Edit update' : 'Log update'}
@@ -257,7 +259,7 @@ export function LeadUpdateDialog({
             </Button>
           </div>
         </div>
-      ) : null}
+      </InlineReveal>
 
       <ConfirmDialog
         open={showDiscardConfirm}
