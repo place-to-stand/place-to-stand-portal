@@ -108,22 +108,30 @@ export function CompanyPeopleSection({
         reason={primaryLockedReason}
         className='w-auto'
       >
-        <RowActionButton
+        {/* Labelled, like the person sheet's: a toggle that reads as one. */}
+        <Button
           type='button'
+          variant='ghost'
+          size='xs'
           disabled={disabled || Boolean(primaryLockedReason)}
           aria-pressed={isPrimary}
-          label={
+          aria-label={
             isPrimary
               ? `Remove ${contact.name} as primary contact`
               : `Make ${contact.name} the primary contact`
           }
           onClick={() => onSetPrimary(isPrimary ? null : contact.id)}
-          className={cn(
-            'text-muted-foreground',
-            isPrimary && 'text-warning hover:text-warning'
-          )}
-          icon={<Star className={cn(isPrimary && 'fill-current')} />}
-        />
+          className='text-muted-foreground gap-1.5 text-xs font-normal'
+        >
+          <Star
+            className={cn(
+              'size-4',
+              isPrimary ? 'text-warning fill-current' : 'opacity-60'
+            )}
+            aria-hidden
+          />
+          Primary contact
+        </Button>
       </DisabledFieldTooltip>
     )
   }
