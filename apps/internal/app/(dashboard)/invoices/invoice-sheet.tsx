@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { GripVertical, Trash2, TriangleAlert } from 'lucide-react'
 
 import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 import { Button } from '@pts/ui/button'
@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   SearchableCombobox,
@@ -477,17 +478,11 @@ export function InvoiceSheet({
                         title='Line items'
                         action={
                           !isReadOnly ? (
-                            <Button
-                              type='button'
-                              variant='ghost'
-                              size='sm'
+                            <SectionAddButton
+                              label='Add line item'
                               onClick={handleAddLineItem}
                               disabled={standardField.disabled}
-                              className='gap-1 text-xs'
-                            >
-                              <Plus className='h-3 w-3' />
-                              Add item
-                            </Button>
+                            />
                           ) : null
                         }
                       >

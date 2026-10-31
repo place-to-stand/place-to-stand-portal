@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { MessageSquareText, Plus } from 'lucide-react'
+import { MessageSquareText } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Badge } from '@pts/ui/badge'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
 
 import { LeadUpdateDialog } from './lead-update-dialog'
@@ -93,15 +94,7 @@ export function LeadUpdatesSection({
           )}
         </div>
         {canManage && (
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={openLogDialog}
-          >
-            <Plus className='h-3 w-3' />
-            Add update
-          </Button>
+          <SectionAddButton label='Add update' onClick={openLogDialog} />
         )}
       </div>
 

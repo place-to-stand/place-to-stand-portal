@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronDown, Plus } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import {
   Collapsible,
@@ -12,6 +11,7 @@ import {
 } from '@pts/ui/collapsible'
 import { Badge } from '@pts/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { cn } from '@/lib/utils'
 import { TaskCardStatic } from '@/app/(dashboard)/projects/task-card'
 import type { LeadRecord } from '@/lib/leads/types'
@@ -129,15 +129,7 @@ export function LeadTasksSection({
           )}
         </div>
         {canManage && (
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() => openNew('task')}
-          >
-            <Plus className='h-3 w-3' />
-            Add task
-          </Button>
+          <SectionAddButton label='Add task' onClick={() => openNew('task')} />
         )}
       </div>
 
