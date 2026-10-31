@@ -223,6 +223,10 @@ export function AvatarUploadField({
   // a successful save the object has been moved out of the pending folder, so
   // this delete is a harmless no-op.
   useEffect(() => {
+    // Mounted (again): React runs effects twice in development, and this
+    // effect re-runs when its callback changes, so the flag must reset here
+    // or every later upload looks abandoned and is deleted.
+    isUnmountedRef.current = false
     return () => {
       isUnmountedRef.current = true
       if (pendingUploadRef.current) {
