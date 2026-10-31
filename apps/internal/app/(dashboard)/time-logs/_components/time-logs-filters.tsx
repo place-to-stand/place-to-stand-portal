@@ -12,7 +12,9 @@ import {
   type SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
 import { useListParams } from '@/hooks/use-list-params'
+import { isAllTimeRange } from '@/lib/dates/calendar-date'
 import {
+  ALL_TIME_PARAM,
   currentMonthRange,
   type TimeLogsListParams,
 } from '@/lib/time-logs/filters'
@@ -89,7 +91,9 @@ export function TimeLogsFilters({
           update(
             isDefault
               ? { from: undefined, to: undefined }
-              : { from: range.from, to: range.to }
+              : isAllTimeRange(range)
+                ? { from: ALL_TIME_PARAM, to: undefined }
+                : { from: range.from, to: range.to }
           )
         }}
       />

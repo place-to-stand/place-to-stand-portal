@@ -12,7 +12,7 @@ The controls in a list's `FilterBar` (and My tasks' and Leads' toolbar pickers).
 
 **Multi choice** is `FilterSelect mode='multi'`: the same trigger (the first pick as it shows in the list, then "+N"), over a checkbox popover with Clear / Select all. `defaultValues` is the selection the list starts from (Projects: Onboarding + Active); the × shows away from it.
 
-**Date range** is `DateRangePicker` (`components/ui/date-range-picker.tsx`) at the filter width: the same trigger naming the preset ("This month") or the dates, over presets beside a calendar. Pass `isDefault` and `onClear` so it reads muted at its default and clears back to it.
+**Date range** is `DateRangePicker` (`components/ui/date-range-picker.tsx`) at the filter width: the same trigger naming the preset ("This month") or the dates, over presets beside a calendar (Today … Year to date, then All time, which has no date bounds and is `?from=all` on time logs, then Custom, which the calendar selects itself). Pass `isDefault` and `onClear` so it reads muted at its default and clears back to it.
 
 **Custom popovers keep the trigger.** My tasks' client scope is a `SearchableCombobox` with its "Show: Personal / Internal projects" toggles as a `listHeader` section at the top of the list. Any new filter with its own popover content renders `FieldTrigger` the same way.
 

@@ -1,5 +1,6 @@
 /**
- * Time logs page filters (`?from=&to=&companyId=&projectId=&personId=&page=`).
+ * Time logs page filters (`?from=&to=&companyId=&projectId=&personId=&page=`;
+ * `from=all` is All time, no date bounds).
  * Not `client`/`project`: those params open the client and project sheets.
  * Client-safe.
  */
@@ -44,6 +45,9 @@ export type TimeLogsListParams = {
   isDefaultRange: boolean
 }
 
+/** `?from=all`: the All time preset, no date bounds. */
+export const ALL_TIME_PARAM = 'all'
+
 /** First and last day of the current month, `YYYY-MM-DD`. */
 export function currentMonthRange(now = new Date()) {
   return resolveDateRangePreset('this-month', now)
@@ -56,8 +60,9 @@ export function parseTimeLogsSearchParams(
   // A real calendar date (2026-02-31 is not), or the default.
   const valid = (value: string | undefined) =>
     value && parseCalendarDate(value) ? value : undefined
-  const from = valid(first(params.from))
-  const to = valid(first(params.to))
+  const allTime = first(params.from) === ALL_TIME_PARAM
+  const from = allTime ? '' : valid(first(params.from))
+  const to = allTime ? '' : valid(first(params.to))
   const uuid = (key: string) => {
     const value = first(params[key])
     return value && UUID.test(value) ? value : undefined
@@ -70,7 +75,7 @@ export function parseTimeLogsSearchParams(
     personId: uuid('personId'),
     page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),
     ...parseSort(first(params.sort)),
-    isDefaultRange: !from && !to,
+    isDefaultRange: !allTime && !from && !to,
   }
 }
 

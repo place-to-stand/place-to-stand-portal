@@ -43,7 +43,7 @@ type DateRangePickerProps = {
 
 /**
  * Date-range filter: a combobox-style trigger opening preset shortcuts
- * (Today … Last year) beside a two-month calendar. A preset applies at once;
+ * (Today … All time) beside a two-month calendar. A preset applies at once;
  * on the calendar the first click starts a range and the second completes
  * and applies it. The trigger names the matching preset, or the dates when
  * the range is custom.
@@ -93,7 +93,7 @@ export function DateRangePicker({
           <FieldTrigger
             aria-haspopup='dialog'
             aria-expanded={open}
-            aria-label={`${ariaLabel}: ${presetLabel ? `${presetLabel}, ` : ''}${datesLabel}`}
+            aria-label={`${ariaLabel}: ${presetLabel && presetLabel !== datesLabel ? `${presetLabel}, ` : ''}${datesLabel}`}
             labelTitle={datesLabel}
             disabled={disabled}
             // At its default range the filter reads like an unset one.
@@ -175,6 +175,7 @@ export function DateRangePicker({
 
 /** "Oct 1 – Oct 31, 2026"; the year shows once when both ends share it. */
 function formatRange({ from, to }: CalendarDateRange): string {
+  if (!from && !to) return 'All time'
   if (from === to) return formatCalendarDate(from) ?? from
   const sameYear = from.slice(0, 4) === to.slice(0, 4)
   const start = sameYear

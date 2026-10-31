@@ -3,7 +3,6 @@ import {
   endOfMonth,
   endOfQuarter,
   endOfWeek,
-  endOfYear,
   format,
   isValid,
   parse,
@@ -14,7 +13,6 @@ import {
   subMonths,
   subQuarters,
   subWeeks,
-  subYears,
 } from 'date-fns'
 
 /**
@@ -73,13 +71,16 @@ export type DateRangePresetKey =
   | 'this-quarter'
   | 'last-quarter'
   | 'year-to-date'
-  | 'last-year'
+  | 'all-time'
 
 type Bounds = [Date, Date]
 
 const week = { weekStartsOn: WEEK_STARTS_ON }
 
-const PRESET_BOUNDS: Record<DateRangePresetKey, (now: Date) => Bounds> = {
+const PRESET_BOUNDS: Record<
+  Exclude<DateRangePresetKey, 'all-time'>,
+  (now: Date) => Bounds
+> = {
   today: now => [now, now],
   yesterday: now => [addDays(now, -1), addDays(now, -1)],
   'this-week': now => [startOfWeek(now, week), endOfWeek(now, week)],
@@ -99,11 +100,16 @@ const PRESET_BOUNDS: Record<DateRangePresetKey, (now: Date) => Bounds> = {
     return [startOfQuarter(prior), endOfQuarter(prior)]
   },
   'year-to-date': now => [startOfYear(now), now],
-  'last-year': now => {
-    const prior = subYears(now, 1)
-    return [startOfYear(prior), endOfYear(prior)]
-  },
 }
+
+/**
+ * "All time" has no bounds: an empty range (`from` and `to` both ''). Lists
+ * read it as no date filter.
+ */
+export const ALL_TIME_RANGE: CalendarDateRange = { from: '', to: '' }
+
+export const isAllTimeRange = (range: CalendarDateRange) =>
+  range.from === '' && range.to === ''
 
 /** Picker order. */
 export const DATE_RANGE_PRESETS: ReadonlyArray<{
@@ -120,7 +126,7 @@ export const DATE_RANGE_PRESETS: ReadonlyArray<{
   { key: 'this-quarter', label: 'This quarter' },
   { key: 'last-quarter', label: 'Last quarter' },
   { key: 'year-to-date', label: 'Year to date' },
-  { key: 'last-year', label: 'Last year' },
+  { key: 'all-time', label: 'All time' },
 ]
 
 /** A preset's inclusive range, as of `now`. */
@@ -128,6 +134,7 @@ export function resolveDateRangePreset(
   key: DateRangePresetKey,
   now: Date = new Date()
 ): CalendarDateRange {
+  if (key === 'all-time') return ALL_TIME_RANGE
   const [from, to] = PRESET_BOUNDS[key](now)
   return { from: toCalendarDate(from), to: toCalendarDate(to) }
 }
