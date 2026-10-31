@@ -136,12 +136,12 @@ export function TimeLogsTable({
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
+              {sortHead('hours', 'Hours', 'w-[10%]')}
               {sortHead('date', 'Date', 'w-[10%]')}
               {sortHead('person', 'Person', 'w-20', 'center')}
               {sortHead('client', 'Client', 'w-[24%]')}
               {sortHead('project', 'Project', 'w-[30%]')}
               <TableHead className='w-[10%] text-center'>Tasks</TableHead>
-              {sortHead('hours', 'Hours', 'w-[10%]')}
               <TableHead className='w-32 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -159,7 +159,19 @@ export function TimeLogsTable({
                         className: CLICKABLE_ROW_CLASS,
                       })}
                 >
-                  <TableCell className='text-sm tabular-nums'>
+                  {/* Hours first: it's what you scan a time log for. */}
+                  <TableCell className='text-sm font-medium tabular-nums'>
+                    <span className='inline-flex items-center gap-2'>
+                      <ENTITY_ICONS.timeLog
+                        className={cn(
+                          ENTITY_ACCENTS.timeLog.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
+                      {formatHours(item.hours)}
+                    </span>
+                  </TableCell>
+                  <TableCell label='Date' className='text-sm tabular-nums'>
                     {formatCalendarDate(item.loggedOn)}
                   </TableCell>
                   <TableCell label='Person'>
@@ -238,20 +250,6 @@ export function TimeLogsTable({
                         onSelect: () => openSheet('task', task.id),
                       }))}
                     />
-                  </TableCell>
-                  <TableCell
-                    label='Hours'
-                    className='text-sm font-medium tabular-nums'
-                  >
-                    <span className='inline-flex items-center gap-2'>
-                      <ENTITY_ICONS.timeLog
-                        className={cn(
-                          ENTITY_ACCENTS.timeLog.icon,
-                          'h-4 w-4 shrink-0'
-                        )}
-                      />
-                      {formatHours(item.hours)}
-                    </span>
                   </TableCell>
                   <TableCell className='text-right max-md:ml-auto'>
                     <RecordRowActions>
