@@ -1,26 +1,31 @@
 import { Badge } from '@pts/ui/badge'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
 
+import {
+  CLIENT_BILLING_TYPE_SELECT_OPTIONS,
+  type ClientBillingTypeValue,
+} from '@/lib/companies/billing/billing-types'
 import { cn } from '@/lib/utils'
 
-/** A client's billing type as a badge: Net 30 (amber) or Prepaid (neutral). */
+/**
+ * A client's billing type as a badge, in the billing type picker's colours
+ * (Prepaid green, Net 30 amber): one source for its label and tint.
+ */
 export function BillingTypeBadge({
   billingType,
   className,
 }: {
-  billingType: 'net_30' | 'prepaid'
+  billingType: ClientBillingTypeValue
   className?: string
 }) {
+  const option = CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
+    entry => entry.value === billingType
+  )
   return (
     <Badge
       variant='outline'
-      className={cn(
-        billingType === 'net_30' ? BADGE_TINTS.amber : BADGE_TINTS.neutral,
-        'leading-4',
-        className
-      )}
+      className={cn(option?.badgeClassName, 'leading-4', className)}
     >
-      {billingType === 'net_30' ? 'Net 30' : 'Prepaid'}
+      {option?.label ?? billingType}
     </Badge>
   )
 }
