@@ -22,7 +22,7 @@ export function HourBlockInvoiceSection({
     <>
       <Separator />
       <SheetSection
-        title='Invoice'
+        title='Linked invoice'
         description={
           invoiceId
             ? undefined

@@ -179,7 +179,13 @@ export function InvoiceSheetRightColumn({
         {invoice.hour_blocks?.length ? (
           <>
             <Separator />
-            <SheetSection title='Hour blocks'>
+            <SheetSection
+              title={
+                invoice.hour_blocks.length === 1
+                  ? 'Linked hour block'
+                  : 'Linked hour blocks'
+              }
+            >
               <SheetRecordList>
                 {invoice.hour_blocks.map(block => (
                   <HourBlockRecordRow
