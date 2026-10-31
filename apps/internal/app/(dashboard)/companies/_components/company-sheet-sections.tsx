@@ -198,13 +198,14 @@ export function CompanyBillingSection({
         ) : null}
       </SheetSection>
       {isClient && billingOn && work?.hours ? (
-        <SheetSection title='Hours'>
+        // `list`: 8px under the heading, like a field label over its input.
+        <SheetSection list title='Hours'>
           <div className='grid grid-cols-3 gap-3'>
             {(
               [
-                ['Remaining', work.hours.remaining],
                 ['Purchased', work.hours.purchased],
                 ['Used', work.hours.used],
+                ['Remaining', work.hours.remaining],
               ] as const
             ).map(([label, value]) => (
               <StatCard
