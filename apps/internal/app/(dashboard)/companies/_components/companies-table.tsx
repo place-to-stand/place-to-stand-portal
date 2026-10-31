@@ -127,16 +127,16 @@ export function CompaniesTable({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[20%]')}
+            {sortHead('name', 'Company', 'w-[30%]')}
             {sortHead('client', 'Client', 'w-[11%]')}
-            {seesBilling ? sortHead('hours', 'Hours', 'w-[20%]') : null}
-            {sortHead('people', 'People', 'w-[9%]', 'center')}
-            {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
-            {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
+            {seesBilling ? sortHead('hours', 'Hours', 'w-[18%]') : null}
+            {sortHead('people', 'People', 'w-[7%]', 'center')}
+            {sortHead('leads', 'Open leads', 'w-[9%]', 'center')}
+            {sortHead('projects', 'Projects', 'w-[8%]', 'center')}
             {seesBilling ? (
               <>
-                {sortHead('origination', 'Origination', 'w-[10%]', 'center')}
-                {sortHead('closer', 'Closer', 'w-[10%]', 'center')}
+                {sortHead('origination', 'Origination', 'w-[9%]', 'center')}
+                {sortHead('closer', 'Closer', 'w-[7%]', 'center')}
               </>
             ) : null}
             <TableHead className='w-16 text-right'>Actions</TableHead>
@@ -202,7 +202,7 @@ export function CompaniesTable({
                             ]
                           )}
                         >
-                          {formatHours(company.hours.remaining)} remaining
+                          {formatHours(company.hours.remaining)} left
                         </span>
                         <span className='text-muted-foreground'>
                           ({formatHours(company.hours.purchased)} total)
