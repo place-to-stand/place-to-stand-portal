@@ -299,7 +299,7 @@ function SampleEntitySheet({
                   <EmptyState message='No comments yet.' />
                 </SheetSection>
                 <SheetActivityDisclosure total={2}>
-                  <ul className='text-muted-foreground space-y-2 pt-4 text-sm'>
+                  <ul className='text-muted-foreground space-y-2 text-sm'>
                     <li>Ada Lovelace updated the website · Today</li>
                     <li>Grace Hopper created this {shown.noun} · Mon</li>
                   </ul>

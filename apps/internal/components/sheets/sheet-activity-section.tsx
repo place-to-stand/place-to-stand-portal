@@ -56,7 +56,6 @@ export function SheetActivitySection({
   return (
     <SheetActivityDisclosure total={total} className={className}>
       <ActivityFeed
-        className='pt-4'
         targetType={targetType}
         targetId={targetId}
         projectId={projectId}
@@ -110,7 +109,9 @@ export function SheetActivityDisclosure({
             ) : null}
           </span>
         </AccordionTrigger>
-        <AccordionContent className='pb-0'>{children}</AccordionContent>
+        {/* The gap under the header lives here, so the loading line and the
+            loaded feed sit at the same spot and nothing jumps. */}
+        <AccordionContent className='pt-4 pb-0'>{children}</AccordionContent>
       </AccordionItem>
     </Accordion>
   )
