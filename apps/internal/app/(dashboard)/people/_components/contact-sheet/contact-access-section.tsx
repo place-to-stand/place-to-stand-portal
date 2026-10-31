@@ -1,6 +1,5 @@
 'use client'
 
-import { Badge } from '@pts/ui/badge'
 import { useTransition } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
@@ -28,7 +27,6 @@ import { useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { sendPersonPasswordResetAction } from '@/app/(dashboard)/people/actions'
-import { ROLE_LABELS } from '@/lib/auth/roles'
 import { currentMonthStartUtc } from '@/lib/billing/months'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import {
@@ -47,6 +45,8 @@ import {
   type RoleMonthOption,
 } from '@/lib/settings/users/role-months'
 import type { USER_ROLES } from '@/lib/settings/users/user-validation'
+import { RoleBadge } from '@/components/auth/role-badge'
+import { ROLE_LABELS } from '@/lib/auth/roles'
 
 type Role = (typeof USER_ROLES)[number]
 
@@ -309,24 +309,18 @@ function ManagedAccess({
                         {/* The role reads as the badge it shows elsewhere. */}
                         <SelectValue>
                           {field.value ? (
-                            <Badge variant='outline'>
-                              {
-                                ROLE_LABELS[
-                                  field.value === 'CLIENT'
-                                    ? 'SALES'
-                                    : field.value
-                                ]
+                            <RoleBadge
+                              role={
+                                field.value === 'CLIENT' ? 'SALES' : field.value
                               }
-                            </Badge>
+                            />
                           ) : null}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {TEAM_ROLES.map(option => (
                           <SelectItem key={option} value={option}>
-                            <Badge variant='outline'>
-                              {ROLE_LABELS[option]}
-                            </Badge>
+                            <RoleBadge role={option} />
                           </SelectItem>
                         ))}
                       </SelectContent>

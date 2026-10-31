@@ -128,7 +128,7 @@ export function CompaniesTable({
         <TableHeader>
           <TableRow className='bg-muted/40'>
             {sortHead('name', 'Company', 'w-[30%]')}
-            {sortHead('client', 'Client', 'w-[11%]')}
+            {seesBilling ? sortHead('client', 'Client', 'w-[11%]') : null}
             {seesBilling ? sortHead('hours', 'Hours', 'w-[18%]') : null}
             {sortHead('people', 'People', 'w-[7%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[9%]', 'center')}
@@ -166,7 +166,8 @@ export function CompaniesTable({
                     </span>
                   </div>
                 </TableCell>
-                <TableCell label='Client'>
+                {seesBilling ? (
+<TableCell label='Client'>
                   {/* Billed now: CompanyBillingMark. Not billed: the dash. */}
                   {company.companyId ? (
                     <CompanyBillingMark billingType={company.billingType} />
@@ -174,6 +175,7 @@ export function CompaniesTable({
                     <EmptyValue />
                   )}
                 </TableCell>
+) : null}
                 {seesBilling ? (
                   <TableCell label='Hours' className='text-sm tabular-nums'>
                     {company.hours ? (

@@ -12,13 +12,12 @@ import {
 } from '@/lib/settings/contacts/use-contact-sheet-state'
 
 import { useWatch } from 'react-hook-form'
-import { Badge } from '@pts/ui/badge'
 import { UserAvatar } from '@/components/ui/user-avatar'
 
-import { ROLE_LABELS } from '@/lib/auth/roles'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
+import { RoleBadge } from '@/components/auth/role-badge'
 
 const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive person?'
 const ARCHIVE_CONTACT_CONFIRM_LABEL = 'Archive'
@@ -98,14 +97,16 @@ export function ContactsSheet(props: ContactsSheetProps) {
             }
             badges={
               canManageSignIn && signInAccount ? (
-                <Badge variant='outline'>
-                  {ROLE_LABELS[signInAccount.role]}
-                  {signInAccount.deletedAt
-                    ? ' · archived'
-                    : signInAccount.disabledAt
-                      ? ' · off'
-                      : ''}
-                </Badge>
+                <RoleBadge
+                  role={signInAccount.role}
+                  state={
+                    signInAccount.deletedAt
+                      ? 'archived'
+                      : signInAccount.disabledAt
+                        ? 'off'
+                        : null
+                  }
+                />
               ) : null
             }
           />

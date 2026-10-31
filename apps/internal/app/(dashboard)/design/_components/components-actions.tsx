@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Loader2, Plus, Send, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Send, Trash2 } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { RoleBadge } from '@/components/auth/role-badge'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
@@ -24,7 +25,6 @@ import {
   PROJECT_STATUS_OPTIONS,
   type ProjectStatusValue,
 } from '@/lib/constants'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
 import { LEAD_STATUS_VALUES } from '@/lib/leads/constants'
 import {
   getTaskStatusLabel,
@@ -235,23 +235,15 @@ export function ComponentsBadges() {
         label='Domain badges'
         className='grid grid-cols-1 gap-6 md:grid-cols-2'
       >
-        <Example caption='Status: CompanyBillingMark, a company billed now. Admins see its billing type; Sales see a green check'>
-          <span className='flex items-center gap-3'>
-            <BillingTypeBadge billingType='prepaid' />
-            <BillingTypeBadge billingType='net_30' />
-            <Check
-              className={cn(ENTITY_ACCENTS.client.icon, 'size-4')}
-              aria-label='Billed now'
-            />
-          </span>
+        <Example caption='Status: CompanyBillingMark, a company billed now (admins only; nothing for Sales)'>
+          <BillingTypeBadge billingType='prepaid' />
+          <BillingTypeBadge billingType='net_30' />
         </Example>
-        <Example caption='Label: sign-in role (ROLE_LABELS), no icon'>
+        <Example caption='Status: RoleBadge, a sign-in role. Grey with its state when switched off or archived'>
           {ROLES.map(role => (
-            <Badge key={role} variant='outline'>
-              {ROLE_LABELS[role]}
-            </Badge>
+            <RoleBadge key={role} role={role} />
           ))}
-          <Badge variant='outline'>{ROLE_LABELS.SALES} · off</Badge>
+          <RoleBadge role='SALES' state='off' />
         </Example>
         <Example caption='Status: LeadStatusBadge'>
           {LEAD_STATUS_VALUES.map(status => (

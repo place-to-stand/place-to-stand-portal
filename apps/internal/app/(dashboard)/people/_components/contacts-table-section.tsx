@@ -38,8 +38,7 @@ import {
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { Badge } from '@pts/ui/badge'
-import { ROLE_LABELS } from '@/lib/auth/roles'
+import { RoleBadge } from '@/components/auth/role-badge'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -138,7 +137,7 @@ export function ContactsTableSection({
                 className='w-28'
                 align='center'
               >
-                Sign-in
+                Role
               </SortableTableHead>
             ) : null}
             <TableHead className='w-32 text-right'>Actions</TableHead>
@@ -271,11 +270,9 @@ export function ContactsTableSection({
                   )}
                 </TableCell>
                 {seesAccess ? (
-                  <TableCell label='Sign-in' className='text-sm md:text-center'>
+                  <TableCell label='Role' className='text-sm md:text-center'>
                     {contact.signInRole ? (
-                      <Badge variant='outline'>
-                        {ROLE_LABELS[contact.signInRole]}
-                      </Badge>
+                      <RoleBadge role={contact.signInRole} />
                     ) : (
                       <EmptyValue />
                     )}

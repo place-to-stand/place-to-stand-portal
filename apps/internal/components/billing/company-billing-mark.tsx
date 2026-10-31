@@ -1,17 +1,12 @@
 'use client'
 
-import { Check } from 'lucide-react'
-
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { ClientBillingTypeValue } from '@/lib/companies/billing/billing-types'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
-import { cn } from '@/lib/utils'
 
 /**
- * Marks a company we bill now, wherever it shows: its Prepaid / Net 30 badge
- * for people who see billing (admins), else a green check. Render it only
- * for a client company.
+ * Marks a company we bill now, wherever it shows: its Prepaid / Net 30 badge.
+ * Billing is admin-only, so everyone else sees nothing.
  */
 export function CompanyBillingMark({
   billingType,
@@ -21,17 +16,6 @@ export function CompanyBillingMark({
   className?: string
 }) {
   const { isAdmin } = useViewerAccess()
-  if (isAdmin && billingType) {
-    return <BillingTypeBadge billingType={billingType} className={className} />
-  }
-  return (
-    <Check
-      className={cn(
-        ENTITY_ACCENTS.client.icon,
-        'inline size-4 shrink-0',
-        className
-      )}
-      aria-label='Billed now'
-    />
-  )
+  if (!isAdmin || !billingType) return null
+  return <BillingTypeBadge billingType={billingType} className={className} />
 }
