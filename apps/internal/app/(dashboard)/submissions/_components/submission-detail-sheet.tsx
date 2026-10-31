@@ -18,7 +18,11 @@ import {
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { Separator } from '@pts/ui/separator'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import {
+  SHEET_SIDE_COLUMN_CLASSES,
+  Sheet,
+  SheetContent,
+} from '@/components/ui/sheet'
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -350,7 +354,7 @@ export function SubmissionDetailSheet({
     <Sheet open={Boolean(submission)} onOpenChange={onOpenChange}>
       <SheetContent
         hideCloseButton
-        columns={1}
+        columns={2}
         className='flex w-full flex-col gap-0 overflow-hidden p-0'
       >
         <SheetFormHeader
@@ -358,423 +362,449 @@ export function SubmissionDetailSheet({
           title={`${FORM_SUBMISSION_KIND_LABELS[displaySubmission.kind]} submission`}
         />
 
-        <div className='flex-1 overflow-y-auto'>
-          <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
-            {/* Two deliberate rows — what it is, then when — instead of a
+        {/* Two columns: what the visitor sent on the left (with the
+            actions), the technical trail on the right. Below lg they stack
+            into one scroll with the footer pinned to the bottom. */}
+        <div className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'>
+          <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
+            <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
+              {/* Two deliberate rows — what it is, then when — instead of a
                 justify-between pair that wrapped into a ragged second line
                 at sheet width. */}
-            <div className='flex flex-col gap-3'>
-              <div className='flex flex-wrap items-center gap-2'>
-                <Badge
-                  variant='outline'
-                  className={cn(
-                    FORM_SUBMISSION_STATUS_TOKENS[displaySubmission.status]
-                  )}
-                >
-                  {FORM_SUBMISSION_STATUS_LABELS[displaySubmission.status]}
-                </Badge>
-                {unacknowledged ? (
-                  <Badge variant='secondary'>Unacknowledged</Badge>
-                ) : null}
-                {/* Same summary the table and the team email show, so the
+              <div className='flex flex-col gap-3'>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <Badge
+                    variant='outline'
+                    className={cn(
+                      FORM_SUBMISSION_STATUS_TOKENS[displaySubmission.status]
+                    )}
+                  >
+                    {FORM_SUBMISSION_STATUS_LABELS[displaySubmission.status]}
+                  </Badge>
+                  {unacknowledged ? (
+                    <Badge variant='secondary'>Unacknowledged</Badge>
+                  ) : null}
+                  {/* Same summary the table and the team email show, so the
                     answer to "where did this come from" is above the fold
                     instead of eight fields down in Attribution. */}
-                <Badge
-                  variant='outline'
-                  className={cn(ATTRIBUTION_CHANNEL_TOKENS[source.channel])}
-                >
-                  {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
-                </Badge>
-                {source.detail ? (
-                  <span className='text-muted-foreground text-sm'>
-                    {source.detail}
-                  </span>
-                ) : null}
-              </div>
-              {/* Each fact is its own icon-led item that never breaks
+                  <Badge
+                    variant='outline'
+                    className={cn(ATTRIBUTION_CHANNEL_TOKENS[source.channel])}
+                  >
+                    {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
+                  </Badge>
+                  {source.detail ? (
+                    <span className='text-muted-foreground text-sm'>
+                      {source.detail}
+                    </span>
+                  ) : null}
+                </div>
+                {/* Each fact is its own icon-led item that never breaks
                   internally, so a narrow sheet wraps between facts rather
                   than mid-timestamp. */}
-              <ul className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
-                <li className='flex items-center gap-1.5 whitespace-nowrap'>
-                  <CalendarClock
-                    className='size-3.5 shrink-0'
-                    aria-hidden='true'
-                  />
-                  {/* Company timezone, like the email stamps below — an
+                <ul className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
+                  <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                    <CalendarClock
+                      className='size-3.5 shrink-0'
+                      aria-hidden='true'
+                    />
+                    {/* Company timezone, like the email stamps below — an
                       ambient-TZ format here put two clocks in one sheet. */}
-                  <span>
-                    Started{' '}
-                    {formatCalendarDate(
-                      displaySubmission.startedAt,
-                      STARTED_STYLE
-                    )}
-                  </span>
-                </li>
-                {displaySubmission.durationMs !== null ? (
-                  <li className='flex items-center gap-1.5 whitespace-nowrap'>
-                    <Timer className='size-3.5 shrink-0' aria-hidden='true' />
                     <span>
-                      {formatDuration(displaySubmission.durationMs)} on page
+                      Started{' '}
+                      {formatCalendarDate(
+                        displaySubmission.startedAt,
+                        STARTED_STYLE
+                      )}
                     </span>
                   </li>
-                ) : null}
-                {mode === 'active' && warrantsAttention && acknowledged ? (
-                  <li className='flex items-center gap-1.5 whitespace-nowrap'>
-                    <Check className='size-3.5 shrink-0' aria-hidden='true' />
-                    <span>
-                      Acknowledged{' '}
-                      {override
-                        ? 'just now'
-                        : acknowledgedAt
-                          ? formatRelativeTime(acknowledgedAt)
-                          : ''}
-                    </span>
-                  </li>
-                ) : null}
-              </ul>
-            </div>
+                  {displaySubmission.durationMs !== null ? (
+                    <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                      <Timer className='size-3.5 shrink-0' aria-hidden='true' />
+                      <span>
+                        {formatDuration(displaySubmission.durationMs)} on page
+                      </span>
+                    </li>
+                  ) : null}
+                  {mode === 'active' && warrantsAttention && acknowledged ? (
+                    <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                      <Check className='size-3.5 shrink-0' aria-hidden='true' />
+                      <span>
+                        Acknowledged{' '}
+                        {override
+                          ? 'just now'
+                          : acknowledgedAt
+                            ? formatRelativeTime(acknowledgedAt)
+                            : ''}
+                      </span>
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
 
-            <Separator />
-            <SheetSection title='Contact'>
-              <dl className={KV_GRID}>
-                <Kv label='Name' value={value(displaySubmission.contactName)} />
-                <Kv
-                  label='Email'
-                  value={
-                    displaySubmission.contactEmail ? (
-                      // PW2: the natural post-triage action is emailing the
-                      // prospect — make the address actionable.
-                      <a
-                        href={`mailto:${displaySubmission.contactEmail}`}
-                        className='text-primary hover:underline'
-                      >
-                        {displaySubmission.contactEmail}
-                      </a>
-                    ) : (
-                      '—'
-                    )
-                  }
-                />
-                <Kv
-                  label='Company'
-                  value={value(displaySubmission.contactCompany)}
-                />
-                <Kv
-                  label='Website'
-                  value={value(displaySubmission.contactWebsite)}
-                />
-                {!isAudit && (
+              <Separator />
+              <SheetSection title='Contact'>
+                <dl className={KV_GRID}>
                   <Kv
-                    label='Subject'
-                    value={value(displaySubmission.subject)}
+                    label='Name'
+                    value={value(displaySubmission.contactName)}
                   />
+                  <Kv
+                    label='Email'
+                    value={
+                      displaySubmission.contactEmail ? (
+                        // PW2: the natural post-triage action is emailing the
+                        // prospect — make the address actionable.
+                        <a
+                          href={`mailto:${displaySubmission.contactEmail}`}
+                          className='text-primary hover:underline'
+                        >
+                          {displaySubmission.contactEmail}
+                        </a>
+                      ) : (
+                        '—'
+                      )
+                    }
+                  />
+                  <Kv
+                    label='Company'
+                    value={value(displaySubmission.contactCompany)}
+                  />
+                  <Kv
+                    label='Website'
+                    value={value(displaySubmission.contactWebsite)}
+                  />
+                  {!isAudit && (
+                    <Kv
+                      label='Subject'
+                      value={value(displaySubmission.subject)}
+                    />
+                  )}
+                  <Kv
+                    label='Marketing consent'
+                    value={value(displaySubmission.marketingConsent)}
+                  />
+                  <Kv
+                    label='Source'
+                    value={value(displaySubmission.sourceDetail)}
+                  />
+                </dl>
+                {displaySubmission.message && (
+                  <div className='flex flex-col gap-1'>
+                    <span className='text-muted-foreground text-xs'>
+                      Message
+                    </span>
+                    <p className='bg-muted/50 rounded-md p-3 text-sm whitespace-pre-wrap'>
+                      {displaySubmission.message}
+                    </p>
+                  </div>
                 )}
-                <Kv
-                  label='Marketing consent'
-                  value={value(displaySubmission.marketingConsent)}
-                />
-                <Kv
-                  label='Source'
-                  value={value(displaySubmission.sourceDetail)}
-                />
-              </dl>
-              {displaySubmission.message && (
-                <div className='flex flex-col gap-1'>
-                  <span className='text-muted-foreground text-xs'>Message</span>
-                  <p className='bg-muted/50 rounded-md p-3 text-sm whitespace-pre-wrap'>
-                    {displaySubmission.message}
-                  </p>
-                </div>
-              )}
-            </SheetSection>
+              </SheetSection>
 
-            {/* Only once the marketing site asked for email (PRD 008). Rows
+              {isAudit && (
+                <>
+                  <Separator />
+                  <SheetSection
+                    title='Answers'
+                    action={
+                      <span className='text-muted-foreground text-xs'>
+                        {displaySubmission.answeredCount ?? 0} of{' '}
+                        {displaySubmission.questionsTotal ?? 0} answered
+                      </span>
+                    }
+                  >
+                    {displaySubmission.responses.length === 0 ? (
+                      <EmptyState message='No answers recorded.' />
+                    ) : (
+                      <ol className='flex flex-col gap-3'>
+                        {displaySubmission.responses.map((response, index) => (
+                          <li
+                            key={`${response.questionId}-${index}`}
+                            className='flex flex-col gap-1'
+                          >
+                            <p className='text-muted-foreground text-xs'>
+                              {response.sectionId}
+                            </p>
+                            <p className='text-sm font-medium'>
+                              {response.prompt}
+                            </p>
+                            <p className='text-sm'>{formatAnswer(response)}</p>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </SheetSection>
+                </>
+              )}
+
+              {displaySubmission.result && (
+                <>
+                  <Separator />
+                  <SheetSection title='Result'>
+                    <dl className={KV_GRID}>
+                      <Kv
+                        label='Phase'
+                        value={value(displaySubmission.result.phaseName)}
+                      />
+                      <Kv
+                        label='Generated by'
+                        value={value(displaySubmission.result.generatedBy)}
+                      />
+                    </dl>
+                    <p className='text-sm'>
+                      {displaySubmission.result.summary}
+                    </p>
+                    {displaySubmission.result.recommendations.length > 0 && (
+                      <ul className='flex flex-col gap-2'>
+                        {displaySubmission.result.recommendations.map(rec => (
+                          <li
+                            key={rec.serviceId}
+                            className='rounded-md border p-3 text-sm'
+                          >
+                            <div className='flex items-center justify-between gap-2'>
+                              <span className='font-medium'>
+                                {rec.serviceName}
+                              </span>
+                              <span className='text-muted-foreground text-xs'>
+                                score {rec.score}
+                              </span>
+                            </div>
+                            {rec.reasons.length > 0 && (
+                              <ul className='text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-xs'>
+                                {rec.reasons.map((reason, index) => (
+                                  <li key={index}>{reason}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </SheetSection>
+                </>
+              )}
+
+              {hasFeedback && (
+                <>
+                  <Separator />
+                  <SheetSection title='Feedback'>
+                    <dl className={KV_GRID}>
+                      <Kv
+                        label='Helpful'
+                        value={
+                          displaySubmission.feedbackHelpful === null ? (
+                            <span className='text-muted-foreground'>—</span>
+                          ) : (
+                            <span className='inline-flex items-center gap-1.5'>
+                              {displaySubmission.feedbackHelpful ? (
+                                <ThumbsUp className='text-success size-3.5' />
+                              ) : (
+                                <ThumbsDown className='text-destructive size-3.5' />
+                              )}
+                              {displaySubmission.feedbackHelpful ? 'Yes' : 'No'}
+                            </span>
+                          )
+                        }
+                      />
+                      <Kv
+                        label='Submitted'
+                        value={
+                          displaySubmission.feedbackAt
+                            ? formatCalendarDate(
+                                displaySubmission.feedbackAt,
+                                STARTED_STYLE
+                              )
+                            : '—'
+                        }
+                      />
+                    </dl>
+                    {displaySubmission.feedbackComment && (
+                      <div className='flex flex-col gap-1'>
+                        <span className='text-muted-foreground text-xs'>
+                          Comment
+                        </span>
+                        <p className='text-sm whitespace-pre-wrap'>
+                          {displaySubmission.feedbackComment}
+                        </p>
+                      </div>
+                    )}
+                  </SheetSection>
+                </>
+              )}
+            </div>
+            <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
+              <SheetFooterBar>
+                <div className='flex items-center gap-1.5'>
+                  {mode === 'active' ? (
+                    warrantsAttention ? (
+                      unacknowledged ? (
+                        <Button
+                          type='button'
+                          size='sm'
+                          disabled={isPending}
+                          onClick={handleAcknowledge}
+                        >
+                          <Check />
+                          {isPending ? 'Acknowledging…' : 'Acknowledge'}
+                        </Button>
+                      ) : (
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='sm'
+                          disabled={isPending}
+                          onClick={handleUnacknowledge}
+                        >
+                          <Undo2 />
+                          Unacknowledge
+                        </Button>
+                      )
+                    ) : null
+                  ) : (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      disabled={isPending}
+                      onClick={handleRestore}
+                    >
+                      <RefreshCw className='h-4 w-4' />
+                      Restore
+                    </Button>
+                  )}
+                </div>
+                {mode === 'active' ? (
+                  <RowActionButton
+                    type='button'
+                    label='Archive submission'
+                    icon={<Archive />}
+                    variant='destructive'
+                    disabled={isPending}
+                    onClick={() => setArchiveConfirmOpen(true)}
+                  />
+                ) : null}
+              </SheetFooterBar>
+            </div>
+          </div>
+          <div
+            className={cn(
+              'bg-muted/20 flex-shrink-0 max-lg:border-t lg:overflow-y-auto',
+              SHEET_SIDE_COLUMN_CLASSES.even
+            )}
+          >
+            <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+              {/* Only once the marketing site asked for email (PRD 008). Rows
                 from before that cutover never requested delivery, and an
                 "Emails" block full of dashes would read as a failure. */}
-            {emailStamps ? (
-              <>
-                <Separator />
-                <SheetSection title='Emails'>
-                  <dl className={KV_GRID}>
-                    <Kv label='Team notification' value={emailStamps.team} />
-                    <Kv
-                      label='Visitor confirmation'
-                      value={emailStamps.confirmation}
-                    />
-                  </dl>
-                </SheetSection>
-              </>
-            ) : null}
+              {emailStamps ? (
+                <>
+                  <SheetSection title='Emails'>
+                    <dl className={KV_GRID}>
+                      <Kv label='Team notification' value={emailStamps.team} />
+                      <Kv
+                        label='Visitor confirmation'
+                        value={emailStamps.confirmation}
+                      />
+                    </dl>
+                  </SheetSection>
+                </>
+              ) : null}
 
-            {isAudit && (
-              <>
-                <Separator />
-                <SheetSection
-                  title='Answers'
-                  action={
-                    <span className='text-muted-foreground text-xs'>
-                      {displaySubmission.answeredCount ?? 0} of{' '}
-                      {displaySubmission.questionsTotal ?? 0} answered
-                    </span>
-                  }
-                >
-                  {displaySubmission.responses.length === 0 ? (
-                    <EmptyState message='No answers recorded.' />
-                  ) : (
-                    <ol className='flex flex-col gap-3'>
-                      {displaySubmission.responses.map((response, index) => (
-                        <li
-                          key={`${response.questionId}-${index}`}
-                          className='flex flex-col gap-1'
-                        >
-                          <p className='text-muted-foreground text-xs'>
-                            {response.sectionId}
-                          </p>
-                          <p className='text-sm font-medium'>
-                            {response.prompt}
-                          </p>
-                          <p className='text-sm'>{formatAnswer(response)}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </SheetSection>
-              </>
-            )}
-
-            {displaySubmission.result && (
-              <>
-                <Separator />
-                <SheetSection title='Result'>
-                  <dl className={KV_GRID}>
-                    <Kv
-                      label='Phase'
-                      value={value(displaySubmission.result.phaseName)}
-                    />
-                    <Kv
-                      label='Generated by'
-                      value={value(displaySubmission.result.generatedBy)}
-                    />
-                  </dl>
-                  <p className='text-sm'>{displaySubmission.result.summary}</p>
-                  {displaySubmission.result.recommendations.length > 0 && (
-                    <ul className='flex flex-col gap-2'>
-                      {displaySubmission.result.recommendations.map(rec => (
-                        <li
-                          key={rec.serviceId}
-                          className='rounded-md border p-3 text-sm'
-                        >
-                          <div className='flex items-center justify-between gap-2'>
-                            <span className='font-medium'>
-                              {rec.serviceName}
-                            </span>
-                            <span className='text-muted-foreground text-xs'>
-                              score {rec.score}
-                            </span>
-                          </div>
-                          {rec.reasons.length > 0 && (
-                            <ul className='text-muted-foreground mt-2 list-disc space-y-1 pl-4 text-xs'>
-                              {rec.reasons.map((reason, index) => (
-                                <li key={index}>{reason}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </SheetSection>
-              </>
-            )}
-
-            {hasFeedback && (
-              <>
-                <Separator />
-                <SheetSection title='Feedback'>
-                  <dl className={KV_GRID}>
-                    <Kv
-                      label='Helpful'
-                      value={
-                        displaySubmission.feedbackHelpful === null ? (
-                          <span className='text-muted-foreground'>—</span>
-                        ) : (
-                          <span className='inline-flex items-center gap-1.5'>
-                            {displaySubmission.feedbackHelpful ? (
-                              <ThumbsUp className='text-success size-3.5' />
-                            ) : (
-                              <ThumbsDown className='text-destructive size-3.5' />
-                            )}
-                            {displaySubmission.feedbackHelpful ? 'Yes' : 'No'}
-                          </span>
-                        )
-                      }
-                    />
-                    <Kv
-                      label='Submitted'
-                      value={
-                        displaySubmission.feedbackAt
-                          ? formatCalendarDate(
-                              displaySubmission.feedbackAt,
-                              STARTED_STYLE
-                            )
-                          : '—'
-                      }
-                    />
-                  </dl>
-                  {displaySubmission.feedbackComment && (
-                    <div className='flex flex-col gap-1'>
-                      <span className='text-muted-foreground text-xs'>
-                        Comment
-                      </span>
-                      <p className='text-sm whitespace-pre-wrap'>
-                        {displaySubmission.feedbackComment}
-                      </p>
-                    </div>
-                  )}
-                </SheetSection>
-              </>
-            )}
-
-            {hasAttribution && (
-              <>
-                <Separator />
-                <SheetSection title='Attribution'>
-                  <dl className={KV_GRID}>
-                    <Kv
-                      label='Source'
-                      value={value(displaySubmission.utmSource)}
-                    />
-                    <Kv
-                      label='Medium'
-                      value={value(displaySubmission.utmMedium)}
-                    />
-                    <Kv
-                      label='Campaign'
-                      value={value(displaySubmission.utmCampaign)}
-                    />
-                    <Kv label='Term' value={value(displaySubmission.utmTerm)} />
-                    <Kv
-                      label='Content'
-                      value={value(displaySubmission.utmContent)}
-                    />
-                    <Kv label='GCLID' value={value(displaySubmission.gclid)} />
-                    <Kv
-                      label='Referrer'
-                      value={value(displaySubmission.referrer)}
-                    />
-                    <Kv
-                      label='Landing path'
-                      value={value(displaySubmission.landingPath)}
-                    />
-                  </dl>
-                </SheetSection>
-              </>
-            )}
-
-            <Separator />
-            <SheetSection title='Session'>
-              <dl className={KV_GRID}>
-                <Kv
-                  label='Viewport'
-                  value={value(displaySubmission.viewport)}
-                />
-                <Kv
-                  label='Screen width'
-                  value={
-                    displaySubmission.screenWidth
-                      ? `${displaySubmission.screenWidth}px`
-                      : '—'
-                  }
-                />
-                <Kv
-                  label='Timezone'
-                  value={value(displaySubmission.timezone)}
-                />
-                <Kv
-                  label='Language'
-                  value={value(displaySubmission.language)}
-                />
-                <Kv
-                  label='User agent'
-                  value={value(displaySubmission.userAgent)}
-                  wide
-                />
-                <Kv
-                  label='Session key'
-                  value={
-                    <code className='text-xs'>
-                      {displaySubmission.sessionKey}
-                    </code>
-                  }
-                  wide
-                />
-              </dl>
-              {displaySubmission.posthogReplayUrl && (
-                <a
-                  href={displaySubmission.posthogReplayUrl}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='text-primary inline-flex w-fit items-center gap-1 text-sm hover:underline'
-                >
-                  Watch session replay
-                  <ExternalLink className='size-3' />
-                </a>
+              {hasAttribution && (
+                <>
+                  {emailStamps ? <Separator /> : null}
+                  <SheetSection title='Attribution'>
+                    <dl className={KV_GRID}>
+                      <Kv
+                        label='Source'
+                        value={value(displaySubmission.utmSource)}
+                      />
+                      <Kv
+                        label='Medium'
+                        value={value(displaySubmission.utmMedium)}
+                      />
+                      <Kv
+                        label='Campaign'
+                        value={value(displaySubmission.utmCampaign)}
+                      />
+                      <Kv
+                        label='Term'
+                        value={value(displaySubmission.utmTerm)}
+                      />
+                      <Kv
+                        label='Content'
+                        value={value(displaySubmission.utmContent)}
+                      />
+                      <Kv
+                        label='GCLID'
+                        value={value(displaySubmission.gclid)}
+                      />
+                      <Kv
+                        label='Referrer'
+                        value={value(displaySubmission.referrer)}
+                      />
+                      <Kv
+                        label='Landing path'
+                        value={value(displaySubmission.landingPath)}
+                      />
+                    </dl>
+                  </SheetSection>
+                </>
               )}
-            </SheetSection>
+
+              {emailStamps || hasAttribution ? <Separator /> : null}
+              <SheetSection title='Session'>
+                <dl className={KV_GRID}>
+                  <Kv
+                    label='Viewport'
+                    value={value(displaySubmission.viewport)}
+                  />
+                  <Kv
+                    label='Screen width'
+                    value={
+                      displaySubmission.screenWidth
+                        ? `${displaySubmission.screenWidth}px`
+                        : '—'
+                    }
+                  />
+                  <Kv
+                    label='Timezone'
+                    value={value(displaySubmission.timezone)}
+                  />
+                  <Kv
+                    label='Language'
+                    value={value(displaySubmission.language)}
+                  />
+                  <Kv
+                    label='User agent'
+                    value={value(displaySubmission.userAgent)}
+                    wide
+                  />
+                  <Kv
+                    label='Session key'
+                    value={
+                      <code className='text-xs'>
+                        {displaySubmission.sessionKey}
+                      </code>
+                    }
+                    wide
+                  />
+                </dl>
+                {displaySubmission.posthogReplayUrl && (
+                  <a
+                    href={displaySubmission.posthogReplayUrl}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-primary inline-flex w-fit items-center gap-1 text-sm hover:underline'
+                  >
+                    Watch session replay
+                    <ExternalLink className='size-3' />
+                  </a>
+                )}
+              </SheetSection>
+            </div>
           </div>
         </div>
-
-        <SheetFooterBar>
-          <div className='flex items-center gap-1.5'>
-            {mode === 'active' ? (
-              warrantsAttention ? (
-                unacknowledged ? (
-                  <Button
-                    type='button'
-                    size='sm'
-                    disabled={isPending}
-                    onClick={handleAcknowledge}
-                  >
-                    <Check />
-                    {isPending ? 'Acknowledging…' : 'Acknowledge'}
-                  </Button>
-                ) : (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    disabled={isPending}
-                    onClick={handleUnacknowledge}
-                  >
-                    <Undo2 />
-                    Unacknowledge
-                  </Button>
-                )
-              ) : null
-            ) : (
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                disabled={isPending}
-                onClick={handleRestore}
-              >
-                <RefreshCw className='h-4 w-4' />
-                Restore
-              </Button>
-            )}
-          </div>
-          {mode === 'active' ? (
-            <RowActionButton
-              type='button'
-              label='Archive submission'
-              icon={<Archive />}
-              variant='destructive'
-              disabled={isPending}
-              onClick={() => setArchiveConfirmOpen(true)}
-            />
-          ) : null}
-        </SheetFooterBar>
 
         <SubmissionArchiveDialog
           open={archiveConfirmOpen}

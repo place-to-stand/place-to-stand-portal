@@ -107,10 +107,10 @@ const SheetOverlay = ({
 
 /**
  * A sheet's width follows its layout: `columns={1}` (one column:
- * person, task, hour block, submission, template, filters) is 720px,
+ * person, task, hour block, template, filters) is 720px,
  * which fits the full rich text toolbar on one line with room to spare;
  * `columns={2}` (a form beside a SHEET_SIDE_COLUMN_CLASS column: company, lead,
- * invoice, and project for admins) is 768px below lg and a set 1184px from lg, within the viewport.
+ * invoice, submission, and project for admins) is 768px below lg and a set 1184px from lg, within the viewport.
  * Below lg a side column stacks under the form. Phones get the full screen
  * either way.
  */
