@@ -1,7 +1,4 @@
-import { ChevronsUpDown, ListPlus } from 'lucide-react'
-
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import {
   Command,
   CommandEmpty,
@@ -35,28 +32,21 @@ export function TaskSelector(props: TaskSelectorProps) {
   } = props
 
   return (
+    // The section's + opens the list, hanging from its right edge.
     <Popover open={isOpen} onOpenChange={onOpenChange} modal>
-      <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
-        <div className='w-full'>
-          <PopoverTrigger asChild>
-            <Button
-              type='button'
-              variant='outline'
-              className='w-full justify-between'
-              disabled={disabled}
-            >
-              <span className='flex items-center gap-2'>
-                <ListPlus className='h-4 w-4' />
-                {availableTasks.length > 0
-                  ? 'Add task link'
-                  : 'All tasks linked'}
-              </span>
-              <ChevronsUpDown className='h-4 w-4 opacity-50' />
-            </Button>
-          </PopoverTrigger>
-        </div>
-      </DisabledFieldTooltip>
-      <PopoverContent className='w-(--anchor-width) p-0'>
+      <PopoverTrigger asChild>
+        <SectionAddButton
+          label='Link task'
+          disabled={disabled}
+          disabledReason={
+            disabled
+              ? (disabledReason ??
+                (availableTasks.length === 0 ? 'Every task is linked.' : null))
+              : null
+          }
+        />
+      </PopoverTrigger>
+      <PopoverContent align='end' sideOffset={4} className='w-80 p-0'>
         <Command>
           <CommandInput placeholder='Search tasks…' />
           <CommandEmpty>No matching tasks.</CommandEmpty>

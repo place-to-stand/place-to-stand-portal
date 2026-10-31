@@ -3,7 +3,6 @@ import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { EntityFieldLabel } from '@/components/ui/entity-label-icon'
 import { Input } from '@pts/ui/input'
 import { type SearchableComboboxItem } from '@/components/ui/searchable-combobox'
 import { Textarea } from '@pts/ui/textarea'
@@ -11,6 +10,9 @@ import type { TaskWithRelations } from '@/lib/types'
 import type { TimeLogFormErrors } from '@/lib/projects/time-log/types'
 
 import { SelectedTaskList } from './selected-task-list'
+import { SheetSection } from '@/components/sheets/sheet-section'
+import { EmptyState } from '@pts/ui/empty-state'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { TaskSelector } from './task-selector'
 import { UserSelectField } from './user-select-field'
 
@@ -150,28 +152,42 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         fieldErrorId={fieldErrorIds.user}
         errorMessage={formErrors.user}
       />
-      <div className='space-y-2 sm:col-span-2'>
-        <EntityFieldLabel entity='task' htmlFor='time-log-task'>
-          Link to tasks (optional)
-        </EntityFieldLabel>
-        <TaskSelector
-          availableTasks={availableTasks}
-          onAddTask={onAddTask}
-          isOpen={isTaskPickerOpen}
-          onOpenChange={onTaskPickerOpenChange}
-          disabled={taskPickerButtonDisabled}
-          disabledReason={taskPickerReason}
-        />
-        <p className='text-muted-foreground text-xs'>
-          Leave empty to apply hours to the project only.
-        </p>
-        <SelectedTaskList
-          tasks={selectedTasks}
-          isActionDisabled={isMutating}
-          disabledReason={isMutating ? 'Logging time...' : null}
-          onRemove={requestTaskRemoval}
-        />
-      </div>
+      {/* Like the task sheet's Time logs: a heading with the +, the linked
+          tasks, and an empty box that does what the + does. */}
+      <SheetSection
+        title='Linked tasks'
+        icon={ENTITY_ICONS.task}
+        className='gap-3 sm:col-span-2'
+        action={
+          <TaskSelector
+            availableTasks={availableTasks}
+            onAddTask={onAddTask}
+            isOpen={isTaskPickerOpen}
+            onOpenChange={onTaskPickerOpenChange}
+            disabled={taskPickerButtonDisabled}
+            disabledReason={taskPickerReason}
+          />
+        }
+      >
+        {selectedTasks.length === 0 ? (
+          <EmptyState
+            message='No tasks linked. Hours apply to the project only.'
+            label={taskPickerButtonDisabled ? undefined : 'Link task'}
+            onClick={
+              taskPickerButtonDisabled
+                ? undefined
+                : () => onTaskPickerOpenChange(true)
+            }
+          />
+        ) : (
+          <SelectedTaskList
+            tasks={selectedTasks}
+            isActionDisabled={isMutating}
+            disabledReason={isMutating ? 'Logging time…' : null}
+            onRemove={requestTaskRemoval}
+          />
+        )}
+      </SheetSection>
       <div className='space-y-2 sm:col-span-2'>
         <label htmlFor='time-log-note' className='text-sm font-medium'>
           Notes
