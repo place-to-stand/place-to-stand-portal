@@ -38,10 +38,15 @@ import {
   type CompanyFormValues,
 } from './use-company-sheet-form'
 import {
-  CompanyBillingTab,
+  CompanyClientUpdates,
   CompanyLeadsSection,
-  CompanyProjectsTab,
 } from './company-sheet-sections'
+import {
+  COMPANY_BILLING_SECTION_ID,
+  COMPANY_PROJECTS_SECTION_ID,
+  CompanyClientColumn,
+} from './company-client-column'
+import { useScrollToSection } from './use-scroll-to-section'
 import {
   CompanyBillingProvider,
   type CompanyBillingHandle,
@@ -49,7 +54,7 @@ import {
 import { CompanyDetailsFields } from './company-details-fields'
 import { CompanyPeopleTab } from './company-people-tab'
 import { ClientBadge } from '@/components/clients/client-badge'
-import { SheetTabs, useSheetTab } from '@/components/sheets/sheet-tabs'
+import { SHEET_TAB_PARAM } from '@/components/sheets/sheet-tabs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -70,9 +75,10 @@ type CompanySheetProps = {
 }
 
 /**
- * Create and edit are the same sheet: Details (with its People), Projects and Billing
- * (the last two for admins). One Save writes all of it — the company, its
- * people, billing and portal access — in one transaction.
+ * Create and edit are the same sheet, in two columns: Company (details,
+ * People, Leads, Updates) and Client (billing or Make a client, then
+ * Projects; read-only for Sales). One Save writes all of it — the company,
+ * its people, billing and portal access — in one transaction.
  */
 export function CompanySheet({
   companyId,
@@ -86,7 +92,7 @@ export function CompanySheet({
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
   const [archiveOpen, setArchiveOpen] = useState(false)
-  // The Billing tab's state (admins); read by Save.
+  // The Client column's billing state (admins); read by Save.
   const billingRef = useRef<CompanyBillingHandle>(null)
   const [billingDirty, setBillingDirty] = useState(false)
 
@@ -186,7 +192,7 @@ export function CompanySheet({
   const formerClientId = clientCompanyId
     ? null
     : (company?.formerClientId ?? null)
-  // A former client keeps its Projects tab only while it has projects.
+  // A former client keeps its Projects only while it has projects.
   const { data: formerWork } = useQuery({
     queryKey: ['companyClientWork', formerClientId],
     queryFn: () => loadCompanyClientWork(formerClientId!),
@@ -199,24 +205,24 @@ export function CompanySheet({
       ? formerClientId
       : null)
   const showProjects = isAdmin && isEditing && Boolean(projectsCompanyId)
-  // People sit on Details (referenced often); an old `tab=people` link
-  // lands there too.
-  const tabValues = isAdmin
-    ? showProjects
-      ? ['details', 'projects', 'billing']
-      : ['details', 'billing']
-    : ['details']
-  const [tab, setTab] = useSheetTab(tabValues)
-  // A link to a company's people (`tab=people`) opens Details scrolled to
-  // the People section.
+  // Client updates sit on the Company column, for clients and former ones.
+  const updatesCompanyId = clientCompanyId ?? formerClientId
+  // The sheet has no tabs: a link to one (`tab=billing`, `tab=projects`,
+  // `tab=people`; old bookmarks and the lead's Won) scrolls to that section.
+  // `tab=details` or none stays at the top.
   const { getAux } = useSheetParams()
-  const wantsPeople = open && getAux('tab') === 'people' && Boolean(data)
-  useEffect(() => {
-    if (!wantsPeople) return
-    document
-      .getElementById(COMPANY_PEOPLE_SECTION_ID)
-      ?.scrollIntoView({ block: 'start' })
-  }, [wantsPeople])
+  const requestedTab = open && data ? getAux(SHEET_TAB_PARAM) : null
+  useScrollToSection(
+    requestedTab === 'people'
+      ? COMPANY_PEOPLE_SECTION_ID
+      : requestedTab === 'billing'
+        ? COMPANY_BILLING_SECTION_ID
+        : requestedTab === 'projects'
+          ? showProjects
+            ? COMPANY_PROJECTS_SECTION_ID
+            : COMPANY_BILLING_SECTION_ID
+          : null
+  )
 
   // What the form was seeded with (reset values), not the live query data.
   const seededTitles = form.formState.defaultValues?.titles as
@@ -230,11 +236,13 @@ export function CompanySheet({
       if (isAdmin && handle) {
         const collected = handle.collect()
         if (!collected) {
-          setTab('billing')
+          document
+            .getElementById(COMPANY_BILLING_SECTION_ID)
+            ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
           toast({
             variant: 'destructive',
             title: 'Unable to save company',
-            description: 'Check the Billing tab before saving.',
+            description: 'Check the billing before saving.',
           })
           return
         }
@@ -317,7 +325,6 @@ export function CompanySheet({
       refresh,
       seededPrimaryContactId,
       seededTitles,
-      setTab,
       toast,
     ]
   )
@@ -377,21 +384,6 @@ export function CompanySheet({
     handlePortalAccessChange,
   } = useCompanySheetForm({ form, company, companyId })
 
-  const dirtyFields = form.formState.dirtyFields
-  const detailsDirty = Boolean(
-    dirtyFields.name ||
-    dirtyFields.website ||
-    dirtyFields.linkedinUrl ||
-    dirtyFields.notes
-  )
-  const peopleDirty = Boolean(
-    dirtyFields.addedContacts ||
-    dirtyFields.removedContactIds ||
-    dirtyFields.titles ||
-    dirtyFields.primaryContactId ||
-    dirtyFields.portalAccessIds
-  )
-
   const handleOpenChange = useCallback(
     (next: boolean) => {
       if (next || isPending) return
@@ -409,8 +401,9 @@ export function CompanySheet({
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent
           hideCloseButton
-          columns={1}
-          className='flex w-full flex-col gap-0 overflow-hidden p-0'
+          // Create and edit share one layout: Company, then the Client column.
+          columns={2}
+          className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
             entity='company'
@@ -422,6 +415,7 @@ export function CompanySheet({
               />
             }
             badges={clientCompanyId ? <ClientBadge /> : null}
+            className='flex-shrink-0'
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>
@@ -435,152 +429,127 @@ export function CompanySheet({
             </div>
           ) : (
             <Form {...form}>
-              <div className='flex-1 overflow-y-auto'>
+              <CompanyBillingProvider
+                key={company?.id ?? 'new'}
+                companyId={isAdmin ? (clientCompanyId ?? formerClientId) : null}
+                billed={Boolean(clientCompanyId)}
+                wasClient={Boolean(isAdmin && company?.formerClientId)}
+                billingEndsOn={company?.billingEndsOn ?? null}
+                open={open && isAdmin}
+                isPending={fieldsDisabled}
+                handleRef={billingRef}
+                onDirtyChange={setBillingDirty}
+              >
+                {/* Two columns. Below lg they stack into one scroll (Company,
+                    then Client) with the footer pinned to the bottom. */}
                 <form
                   id={COMPANY_FORM_ID}
                   onSubmit={event => {
                     event.preventDefault()
                     handleSave()
                   }}
-                  className='flex flex-col'
+                  className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
                 >
-                  {isArchived ? (
-                    <p className='text-muted-foreground px-6 pt-4 text-sm'>
-                      {ARCHIVED_COMPANY_NOTE}
-                    </p>
-                  ) : null}
-                  <CompanyBillingProvider
-                    key={company?.id ?? 'new'}
-                    companyId={
-                      isAdmin ? (clientCompanyId ?? formerClientId) : null
-                    }
-                    billed={Boolean(clientCompanyId)}
-                    wasClient={Boolean(isAdmin && company?.formerClientId)}
-                    billingEndsOn={company?.billingEndsOn ?? null}
-                    open={open && isAdmin}
-                    isPending={fieldsDisabled}
-                    handleRef={billingRef}
-                    onDirtyChange={setBillingDirty}
-                  >
-                    <SheetTabs
-                      value={tab}
-                      onValueChange={setTab}
-                      tabs={[
-                        {
-                          value: 'details',
-                          label: 'Details',
-                          dirty: detailsDirty || peopleDirty,
-                          content: (
-                            <>
-                              <CompanyDetailsFields
-                                control={form.control}
-                                disabled={fieldsDisabled}
-                              />
-                              <Separator />
-                              <div id={COMPANY_PEOPLE_SECTION_ID}>
-                                <CompanyPeopleTab
-                                  contacts={company?.contacts ?? []}
-                                  added={addedContacts}
-                                  removedIds={removedContactIds}
-                                  movesFrom={movesFrom}
-                                  primaryContactId={primaryContactId}
-                                  clientName={company?.clients[0]?.name ?? null}
-                                  disabled={fieldsDisabled || peopleLocked}
-                                  lockedReason={
-                                    peopleLocked
-                                      ? `Only an admin can change the people at ${company?.name ?? 'this company'}.`
-                                      : null
-                                  }
-                                  primaryLockedReason={primaryLockedReason}
-                                  titles={titles}
-                                  titleDisabled={fieldsDisabled || peopleLocked}
-                                  onTitleChange={handleTitleChange}
-                                  onSetPrimary={handleSetPrimary}
-                                  onAdd={handleAddPerson}
-                                  onRemove={handleRemovePerson}
-                                  onUndoRemove={handleUndoRemovePerson}
-                                  portal={
-                                    canManageClients
-                                      ? {
-                                          ids: portalAccessIds,
-                                          onChange: handlePortalAccessChange,
-                                          disabled: fieldsDisabled,
-                                        }
-                                      : null
-                                  }
-                                />
-                              </div>
-                              <Separator />
-                              <CompanyLeadsSection
-                                leads={company?.leads ?? []}
-                              />
-                            </>
-                          ),
-                        },
-                        ...(showProjects && projectsCompanyId
-                          ? [
-                              {
-                                value: 'projects',
-                                label: 'Projects',
-                                content: (
-                                  <CompanyProjectsTab
-                                    companyId={projectsCompanyId}
-                                    canCreate={Boolean(clientCompanyId)}
-                                  />
-                                ),
-                              },
-                            ]
-                          : []),
-                        ...(isAdmin
-                          ? [
-                              {
-                                value: 'billing',
-                                label: 'Billing',
-                                dirty: billingDirty,
-                                content: (
-                                  <CompanyBillingTab
-                                    companyId={clientCompanyId}
-                                    disabled={fieldsDisabled}
-                                  />
-                                ),
-                              },
-                            ]
-                          : []),
-                      ]}
-                    />
-                  </CompanyBillingProvider>
+                  {/* Company */}
+                  <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
+                    <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto'>
+                      {isArchived ? (
+                        <p className='text-muted-foreground text-sm'>
+                          {ARCHIVED_COMPANY_NOTE}
+                        </p>
+                      ) : null}
+                      <CompanyDetailsFields
+                        control={form.control}
+                        disabled={fieldsDisabled}
+                      />
+                      <Separator />
+                      <div
+                        id={COMPANY_PEOPLE_SECTION_ID}
+                        className='scroll-mt-6'
+                      >
+                        <CompanyPeopleTab
+                          contacts={company?.contacts ?? []}
+                          added={addedContacts}
+                          removedIds={removedContactIds}
+                          movesFrom={movesFrom}
+                          primaryContactId={primaryContactId}
+                          clientName={company?.clients[0]?.name ?? null}
+                          disabled={fieldsDisabled || peopleLocked}
+                          lockedReason={
+                            peopleLocked
+                              ? `Only an admin can change the people at ${company?.name ?? 'this company'}.`
+                              : null
+                          }
+                          primaryLockedReason={primaryLockedReason}
+                          titles={titles}
+                          titleDisabled={fieldsDisabled || peopleLocked}
+                          onTitleChange={handleTitleChange}
+                          onSetPrimary={handleSetPrimary}
+                          onAdd={handleAddPerson}
+                          onRemove={handleRemovePerson}
+                          onUndoRemove={handleUndoRemovePerson}
+                          portal={
+                            canManageClients
+                              ? {
+                                  ids: portalAccessIds,
+                                  onChange: handlePortalAccessChange,
+                                  disabled: fieldsDisabled,
+                                }
+                              : null
+                          }
+                        />
+                      </div>
+                      <Separator />
+                      <CompanyLeadsSection leads={company?.leads ?? []} />
+                      {isAdmin && isEditing && updatesCompanyId ? (
+                        <CompanyClientUpdates companyId={updatesCompanyId} />
+                      ) : null}
+                    </div>
+                    <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
+                      <SheetFormFooter
+                        formId={COMPANY_FORM_ID}
+                        saveLabel={getSubmitLabel({
+                          isSaving: isPending,
+                          isEditing,
+                          createLabel: 'Create company',
+                        })}
+                        submitDisabled={submitDisabled}
+                        submitDisabledReason={
+                          isPending
+                            ? PENDING_REASON
+                            : isArchived
+                              ? ARCHIVED_COMPANY_NOTE
+                              : null
+                        }
+                        undo={undo}
+                        redo={redo}
+                        canUndo={canUndo}
+                        canRedo={canRedo}
+                        // An archived company has no archive action here.
+                        isEditing={isEditing && !isArchived}
+                        archiveDisabled={
+                          isPending || !isEditing || Boolean(archiveRefusal)
+                        }
+                        archiveDisabledReason={
+                          isPending ? PENDING_REASON : archiveRefusal
+                        }
+                        onRequestArchive={() => setArchiveOpen(true)}
+                        archiveAriaLabel='Archive company'
+                      />
+                    </div>
+                  </div>
+
+                  {/* Client */}
+                  <CompanyClientColumn
+                    canManage={isAdmin}
+                    clientCompanyId={clientCompanyId}
+                    wasClient={Boolean(company?.formerClientId)}
+                    projectsCompanyId={showProjects ? projectsCompanyId : null}
+                    isEditing={isEditing}
+                    disabled={fieldsDisabled}
+                  />
                 </form>
-              </div>
-              <SheetFormFooter
-                formId={COMPANY_FORM_ID}
-                saveLabel={getSubmitLabel({
-                  isSaving: isPending,
-                  isEditing,
-                  createLabel: 'Create company',
-                })}
-                submitDisabled={submitDisabled}
-                submitDisabledReason={
-                  isPending
-                    ? PENDING_REASON
-                    : isArchived
-                      ? ARCHIVED_COMPANY_NOTE
-                      : null
-                }
-                undo={undo}
-                redo={redo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                // An archived company has no archive action here.
-                isEditing={isEditing && !isArchived}
-                archiveDisabled={
-                  isPending || !isEditing || Boolean(archiveRefusal)
-                }
-                archiveDisabledReason={
-                  isPending ? PENDING_REASON : archiveRefusal
-                }
-                onRequestArchive={() => setArchiveOpen(true)}
-                archiveAriaLabel='Archive company'
-              />
+              </CompanyBillingProvider>
             </Form>
           )}
         </SheetContent>
