@@ -116,7 +116,7 @@ export function ComponentsSheets() {
 
       <Specimen
         label='Widths'
-        note='SheetContent columns={1} (720px: fits the full rich text toolbar) or columns={2} (1184px from lg), whose side column splits `default` (384px, invoice and project) or `even` (480px, lead and company): named splits only'
+        note='SheetContent columns={1} (720px: fits the full rich text toolbar) or columns={2} (1184px from lg), whose side column splits `default` (384px, invoice) or `even` (480px, lead, company and project): named splits only'
       >
         {SIZES.map(size => (
           <SizeSheet key={size} size={size} />

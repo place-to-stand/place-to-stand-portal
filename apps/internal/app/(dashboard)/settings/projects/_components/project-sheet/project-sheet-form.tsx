@@ -561,7 +561,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           <div
             className={cn(
               'bg-muted/20 flex-shrink-0 max-lg:border-t lg:overflow-y-auto',
-              SHEET_SIDE_COLUMN_CLASSES.default
+              SHEET_SIDE_COLUMN_CLASSES.even
             )}
           >
             <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
