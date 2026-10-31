@@ -85,9 +85,9 @@ export function SheetActivityDisclosure({
 }) {
   // One item, closed by default; a closed panel unmounts, so the feed (and
   // its fetch) waits for the first open. Opening brings it to the top of the
-  // sheet, again once the feed has loaded.
+  // sheet, following the feed as it loads.
   const [open, setOpen] = useState(false)
-  const ref = useScrollIntoViewOnOpen<HTMLDivElement>(open, [220, 700])
+  const ref = useScrollIntoViewOnOpen<HTMLDivElement>(open)
   return (
     <Accordion
       ref={ref}

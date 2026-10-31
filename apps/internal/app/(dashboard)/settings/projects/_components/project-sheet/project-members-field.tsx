@@ -96,7 +96,7 @@ export function ProjectMembersField({
   return (
     <EntityList
       title='Members'
-      description='Admins see every project. Sales staff see only the projects they are members of.'
+      description='Admins see every project. Add additional staff here.'
       add={{
         label: 'Add member',
         onAdd: () => setPickerOpen(true),
