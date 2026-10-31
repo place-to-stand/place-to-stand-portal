@@ -3,13 +3,12 @@ import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 import type { CompanyListItem } from './types'
 
 /** Companies list filters and sort (`?type=&leads=&sort=`). Client-safe. */
-// Clients now, former clients, and companies never billed. Any other
-// `?type=` (an old `prospect` link) means All.
-export const COMPANY_TYPE_VALUES = ['client', 'former', 'none'] as const
+// Clients (billed now) and everyone else. Any other `?type=` (an old
+// `prospect` or `former` link) means All.
+export const COMPANY_TYPE_VALUES = ['client', 'none'] as const
 export type CompanyTypeFilter = (typeof COMPANY_TYPE_VALUES)[number]
 export const COMPANY_TYPE_LABELS: Record<CompanyTypeFilter, string> = {
   client: 'Client',
-  former: 'Former client',
   none: 'Not a client',
 }
 
@@ -73,11 +72,7 @@ export function applyCompanyListParams(
   const filtered = rows.filter(
     row =>
       (!type ||
-        (type === 'client'
-          ? Boolean(row.companyId)
-          : type === 'former'
-            ? row.formerClient
-            : !row.companyId && !row.formerClient)) &&
+        (type === 'client' ? Boolean(row.companyId) : !row.companyId)) &&
       (!leads || (leads === 'open') === row.openLeadCount > 0)
   )
   const value = (row: CompanyListItem): string | number => {

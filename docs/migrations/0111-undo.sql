@@ -161,6 +161,12 @@ UPDATE "companies" co SET "website" = b."website"
   FROM "archive_sales_tools"."companies_0111" b
   JOIN "archive_sales_tools"."companies_after_0111" w ON w."id" = b."id"
   WHERE b."id" = co."id" AND co."website" IS NOT DISTINCT FROM w."website";
+-- Companies 0111 archived with their clients come back unless archived or
+-- restored by hand since.
+UPDATE "companies" co SET "deleted_at" = b."deleted_at"
+  FROM "archive_sales_tools"."companies_0111" b
+  JOIN "archive_sales_tools"."companies_after_0111" w ON w."id" = b."id"
+  WHERE b."id" = co."id" AND co."deleted_at" IS NOT DISTINCT FROM w."deleted_at";
 ALTER TABLE "companies" ENABLE TRIGGER USER;
 DROP INDEX "idx_companies_client";
 ALTER TABLE "companies" DROP CONSTRAINT "companies_slug_key";

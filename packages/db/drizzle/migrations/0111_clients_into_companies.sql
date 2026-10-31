@@ -132,10 +132,14 @@ UPDATE "companies" co SET
   END
 FROM ranked r JOIN per_company pc ON pc."company_id" = r."company_id"
 WHERE r."company_id" = co."id" AND r.rn = 1;--> statement-breakpoint
+-- A company whose clients were all archived was archived with them: it stays
+-- archived (from when its last client was), keeping its billing history.
+UPDATE "companies" SET "deleted_at" = "client_ended_at"
+WHERE "client_ended_at" IS NOT NULL AND "deleted_at" IS NULL;--> statement-breakpoint
 ALTER TABLE "companies" ENABLE TRIGGER USER;--> statement-breakpoint
 -- What this wrote, so a rollback can tell untouched values from later edits.
 CREATE TABLE "archive_sales_tools"."companies_after_0111" AS
-  SELECT "id", "notes", "website" FROM "companies";--> statement-breakpoint
+  SELECT "id", "notes", "website", "deleted_at" FROM "companies";--> statement-breakpoint
 ALTER TABLE "companies" ADD CONSTRAINT "companies_slug_key" UNIQUE("slug");--> statement-breakpoint
 CREATE INDEX "idx_companies_client" ON "companies" USING btree ("id") WHERE (client_since IS NOT NULL AND client_ended_at IS NULL);--> statement-breakpoint
 

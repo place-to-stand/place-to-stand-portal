@@ -174,25 +174,39 @@ test('billing through the end of the month, then restarting, keeps a client', as
   await cleanUp(page, name)
 })
 
-test('restarting a former client shows its last terms to edit', async ({
+test('restarting billing on a company billed before shows its last terms', async ({
   page,
 }) => {
-  // A former client can't be made from scratch within one month (a stretch
-  // stopped before its first billed month is removed), so this opens one the
-  // database already has and discards the change.
-  await page.goto('/companies?type=former')
+  // A company that stopped billing can't be made from scratch within one
+  // month, so this looks for one the database already has (no "former"
+  // label: it lists as Not a client) and discards the change.
+  await page.goto('/companies?type=none')
   // Company rows have several cells; the empty state is one wide cell.
   const rows = page
     .locator('tbody tr')
     .filter({ has: page.locator('td:nth-child(2)') })
-  test.skip((await rows.count()) === 0, 'no former client in this database')
-  // The name cell: other cells hold links and hover buttons.
-  await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  await expect(sheet).toBeVisible()
-  // Not billed now: the switch is off under the former-client line.
-  await expect(sheet.getByText(/^Former client/)).toBeVisible()
-  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
+  const count = Math.min(await rows.count(), 12)
+  let found = false
+  for (let i = 0; i < count && !found; i++) {
+    // The name cell: other cells hold links and hover buttons.
+    await rows.nth(i).locator('td').first().click()
+    await expect(sheet).toBeVisible()
+    await sheet.getByRole('switch', { name: 'Bill this company' }).click()
+    found = await sheet
+      .getByText(/^Billing restarts with these terms when you save/)
+      .isVisible()
+      .catch(() => false)
+    if (!found) {
+      await page.keyboard.press('Escape')
+      const discard = page
+        .getByRole('alertdialog')
+        .getByRole('button', { name: 'Discard' })
+      if (await discard.isVisible().catch(() => false)) await discard.click()
+      await expect(sheet).toBeHidden()
+    }
+  }
+  test.skip(!found, 'no company billed before in this database')
   // On: its last terms fill the form, editable in the same Save.
   await expect(
     sheet.getByRole('switch', { name: 'Bill this company' })

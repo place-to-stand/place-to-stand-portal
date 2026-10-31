@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test'
 
-// The Companies list's type filter: Client (as the list's badge), Former
-// client and Not a client. Read-only.
-test('the company type filter offers client, former and never-billed', async ({
+// The Companies list's type filter: Client (as the list's badge) and Not a
+// client. Read-only.
+test('the company type filter offers client and not a client', async ({
   page,
 }) => {
   await page.goto('/companies')
   await page.getByRole('combobox', { name: 'All companies' }).click()
   const options = page.getByRole('option')
-  await expect(options).toHaveText(['Client', 'Former client', 'Not a client'])
+  await expect(options).toHaveText(['Client', 'Not a client'])
 
   // A highlighted badge option keeps the badge's own colours.
   const clientOption = options.first()
