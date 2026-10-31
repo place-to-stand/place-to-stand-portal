@@ -1,10 +1,8 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
 import { Separator } from '@pts/ui/separator'
 import { InvoiceRecordRow } from '@/components/sheets/entity-record-rows'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
 
 /**
@@ -21,31 +19,28 @@ export function HourBlockInvoiceSection({
   return (
     <>
       <Separator />
-      <SheetSection
-        list
+      <EntityList
         title='Linked invoice'
         description={
           invoiceId
             ? undefined
             : 'Blocks created from a paid invoice link to it automatically.'
         }
+        isEmpty={!invoiceId}
+        emptyMessage='No invoice.'
       >
         {invoiceId ? (
-          <SheetRecordList>
-            <InvoiceRecordRow
-              invoice={{
-                id: invoiceId,
-                number: hourBlock.invoice_number,
-                status: hourBlock.invoice_status,
-                total: hourBlock.invoice_total,
-                issuedDate: hourBlock.invoice_issued_date,
-              }}
-            />
-          </SheetRecordList>
-        ) : (
-          <EmptyState message='No invoice.' />
-        )}
-      </SheetSection>
+          <InvoiceRecordRow
+            invoice={{
+              id: invoiceId,
+              number: hourBlock.invoice_number,
+              status: hourBlock.invoice_status,
+              total: hourBlock.invoice_total,
+              issuedDate: hourBlock.invoice_issued_date,
+            }}
+          />
+        ) : null}
+      </EntityList>
     </>
   )
 }

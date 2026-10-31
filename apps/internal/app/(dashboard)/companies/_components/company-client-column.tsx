@@ -1,8 +1,7 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
 import { Separator } from '@pts/ui/separator'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
@@ -85,15 +84,15 @@ export function CompanyClientColumn({
           <>
             <Separator />
             <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
-              <SheetSection list title='Projects'>
-                <EmptyState
-                  message={
-                    isEditing
-                      ? 'Add projects after you save the company as a client.'
-                      : 'Add projects after you save the company.'
-                  }
-                />
-              </SheetSection>
+              <EntityList
+                title='Projects'
+                isEmpty
+                emptyMessage={
+                  isEditing
+                    ? 'Add projects after you save the company as a client.'
+                    : 'Add projects after you save the company.'
+                }
+              />
             </div>
           </>
         ) : null}

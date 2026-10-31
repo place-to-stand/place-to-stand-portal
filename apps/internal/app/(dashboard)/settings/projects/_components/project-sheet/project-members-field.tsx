@@ -5,15 +5,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { X } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Skeleton } from '@pts/ui/skeleton'
-import {
-  SheetRecordList,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
+import { EntityList } from '@/components/sheets/entity-list'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project-sheet-state'
@@ -96,16 +91,17 @@ export function ProjectMembersField({
   const [pickerOpen, setPickerOpen] = useState(false)
   const canAdd = options.length > 0 && !disabled
 
-  const addButton = <SectionAddButton label='Add member' disabled={disabled} />
-
   // Same section shape as GitHub, Vercel and Supabase below: title row with
   // an add button, one boxed row per member, an empty state.
   return (
-    <SheetSection
+    <EntityList
       title='Members'
       description='Admins see every project. Sales staff see only the projects they are members of.'
-      action={
-        canAdd ? (
+      add={{
+        label: 'Add member',
+        onAdd: () => setPickerOpen(true),
+        disabled: !canAdd,
+        render: button => (
           <SearchableCombobox
             open={pickerOpen}
             onOpenChange={setPickerOpen}
@@ -118,56 +114,47 @@ export function ProjectMembersField({
             searchPlaceholder='Search people…'
             emptyMessage='No sales staff found.'
             ariaLabel='Add member'
-            trigger={addButton}
+            trigger={button}
           />
-        ) : (
-          addButton
-        )
+        ),
+      }}
+      isEmpty={members.length === 0}
+      emptyMessage={
+        options.length > 0 ? 'No members yet.' : 'No sales staff yet.'
+      }
+      status={
+        isLoading ? (
+          <Skeleton className='h-11 w-full' />
+        ) : isError ? (
+          <p className='text-destructive text-sm'>
+            Members could not be loaded. Saving won&rsquo;t change them.
+          </p>
+        ) : undefined
       }
     >
-      {isLoading ? (
-        <Skeleton className='h-11 w-full' />
-      ) : isError ? (
-        <p className='text-destructive text-sm'>
-          Members could not be loaded. Saving won&rsquo;t change them.
-        </p>
-      ) : members.length === 0 ? (
-        <EmptyState
-          message={
-            options.length > 0 ? 'No members yet.' : 'No sales staff yet.'
-          }
-          label={canAdd ? 'Add member' : undefined}
-          onClick={canAdd ? () => setPickerOpen(true) : undefined}
-        />
-      ) : (
-        <SheetRecordList>
-          {members.map(member => {
-            const name = member.fullName ?? member.email
-            return (
-              <SheetRecordRow
-                key={member.id}
-                icon={ENTITY_ICONS.contact}
-                title={name}
-                description={member.fullName ? member.email : null}
-                actions={
-                  <RowActionButton
-                    type='button'
-                    label={`Remove ${name}`}
-                    icon={<X />}
-                    className='text-muted-foreground hover:text-destructive'
-                    disabled={disabled}
-                    onClick={() =>
-                      setMembers(
-                        (memberIds ?? []).filter(id => id !== member.id)
-                      )
-                    }
-                  />
+      {members.map(member => {
+        const name = member.fullName ?? member.email
+        return (
+          <SheetRecordRow
+            key={member.id}
+            icon={ENTITY_ICONS.contact}
+            title={name}
+            description={member.fullName ? member.email : null}
+            actions={
+              <RowActionButton
+                type='button'
+                label={`Remove ${name}`}
+                icon={<X />}
+                className='text-muted-foreground hover:text-destructive'
+                disabled={disabled}
+                onClick={() =>
+                  setMembers((memberIds ?? []).filter(id => id !== member.id))
                 }
               />
-            )
-          })}
-        </SheetRecordList>
-      )}
-    </SheetSection>
+            }
+          />
+        )
+      })}
+    </EntityList>
   )
 }

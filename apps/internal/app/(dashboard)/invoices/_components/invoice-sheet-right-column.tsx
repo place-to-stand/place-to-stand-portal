@@ -5,12 +5,12 @@ import { Ban, Calendar, CheckCheck, Eye, Mail, Undo2 } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { Separator } from '@pts/ui/separator'
 
+import { EntityList } from '@/components/sheets/entity-list'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { formatCalendarDate } from '@pts/ui/dates'
 
 import { HourBlockRecordRow } from '@/components/sheets/entity-record-rows'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SHEET_SIDE_COLUMN_CLASS } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { InvoiceLinkField } from './invoice-link-field'
@@ -158,7 +158,7 @@ export function InvoiceSheetRightColumn({
         ) : null}
 
         {/* Status & Invoice Number */}
-        <SheetSection title='Details'>
+        <SheetSection>
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>Status</span>
@@ -179,28 +179,27 @@ export function InvoiceSheetRightColumn({
         {invoice.hour_blocks?.length ? (
           <>
             <Separator />
-            <SheetSection
-              list
+            <EntityList
               title={
                 invoice.hour_blocks.length === 1
                   ? 'Linked hour block'
                   : 'Linked hour blocks'
               }
+              isEmpty={false}
+              emptyMessage=''
             >
-              <SheetRecordList>
-                {invoice.hour_blocks.map(block => (
-                  <HourBlockRecordRow
-                    key={block.id}
-                    hourBlock={{
-                      id: block.id,
-                      name: block.description,
-                      hours: block.hours_purchased,
-                      amount: block.amount,
-                    }}
-                  />
-                ))}
-              </SheetRecordList>
-            </SheetSection>
+              {invoice.hour_blocks.map(block => (
+                <HourBlockRecordRow
+                  key={block.id}
+                  hourBlock={{
+                    id: block.id,
+                    name: block.description,
+                    hours: block.hours_purchased,
+                    amount: block.amount,
+                  }}
+                />
+              ))}
+            </EntityList>
           </>
         ) : null}
 

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
 import {
   Collapsible,
   CollapsibleContent,
@@ -11,7 +10,7 @@ import {
 } from '@pts/ui/collapsible'
 import { Badge } from '@pts/ui/badge'
 import { Skeleton } from '@pts/ui/skeleton'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { EntityList } from '@/components/sheets/entity-list'
 import { cn } from '@/lib/utils'
 import { TaskCardStatic } from '@/app/(dashboard)/projects/task-card'
 import type { LeadRecord } from '@/lib/leads/types'
@@ -19,7 +18,7 @@ import type { TaskWithRelations } from '@/lib/types'
 import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
-import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type AssigneeInfo = {
   id: string
@@ -119,81 +118,77 @@ export function LeadTasksSection({
   const activeTasks = tasks.filter(t => t.status !== 'DONE')
 
   return (
-    <div className='space-y-2'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2'>
-          <ENTITY_ICONS.task
-            className={cn(ENTITY_ACCENTS.task.icon, 'h-4 w-4')}
-          />
-          <span className='text-sm font-medium'>Tasks</span>
-          {tasks.length > 0 && (
-            <Badge variant='secondary'>{tasks.length}</Badge>
-          )}
-        </div>
-        {canManage && (
-          <SectionAddButton label='Add task' onClick={() => openNew('task')} />
-        )}
-      </div>
-
-      {isLoading ? (
+    <EntityList
+      title='Tasks'
+      icon={ENTITY_ICONS.task}
+      titleAddon={
+        tasks.length > 0 ? (
+          <Badge variant='secondary'>{tasks.length}</Badge>
+        ) : null
+      }
+      add={
+        canManage
+          ? {
+              label: 'Add task',
+              onAdd: () => openNew('task'),
+              disabledReason: inSalesProject
+                ? null
+                : 'Ask an admin to add you to the Sales project.',
+            }
+          : undefined
+      }
+      isEmpty={tasks.length === 0}
+      emptyMessage={
+        inSalesProject
+          ? 'No tasks linked to this lead yet.'
+          : 'Lead tasks live in the Sales project. Ask an admin to add you to it to see and create them.'
+      }
+      status={
+        isLoading ? (
+          <div className='space-y-2'>
+            <Skeleton className='h-24 w-full' />
+            <Skeleton className='h-24 w-full' />
+          </div>
+        ) : undefined
+      }
+    >
+      {activeTasks.length > 0 && (
         <div className='space-y-2'>
-          <Skeleton className='h-24 w-full' />
-          <Skeleton className='h-24 w-full' />
-        </div>
-      ) : tasks.length === 0 ? (
-        <EmptyState
-          message={
-            inSalesProject
-              ? 'No tasks linked to this lead yet.'
-              : 'Lead tasks live in the Sales project. Ask an admin to add you to it to see and create them.'
-          }
-          // Clicking it does what the + does.
-          label={canManage && inSalesProject ? 'Add task' : undefined}
-          onClick={
-            canManage && inSalesProject ? () => openNew('task') : undefined
-          }
-        />
-      ) : (
-        <div className='space-y-2'>
-          {activeTasks.length > 0 && (
-            <div className='space-y-2'>
-              {activeTasks.map(task => (
-                <TaskCardStatic
-                  key={task.id}
-                  task={task}
-                  assignees={resolveAssignees(task)}
-                  onClick={() => openTask(task)}
-                />
-              ))}
-            </div>
-          )}
-
-          {completedTasks.length > 0 && (
-            <Collapsible open={showCompleted} onOpenChange={setShowCompleted}>
-              <CollapsibleTrigger className='text-muted-foreground hover:text-foreground flex w-full cursor-pointer items-center gap-1.5 pt-2 text-xs font-medium'>
-                <ChevronDown
-                  className={cn(
-                    'h-3.5 w-3.5 transition-transform',
-                    showCompleted ? 'rotate-0' : '-rotate-90'
-                  )}
-                  aria-hidden='true'
-                />
-                Completed ({completedTasks.length})
-              </CollapsibleTrigger>
-              <CollapsibleContent className='space-y-2 pt-2'>
-                {completedTasks.map(task => (
-                  <TaskCardStatic
-                    key={task.id}
-                    task={task}
-                    assignees={resolveAssignees(task)}
-                    onClick={() => openTask(task)}
-                  />
-                ))}
-              </CollapsibleContent>
-            </Collapsible>
-          )}
+          {activeTasks.map(task => (
+            <TaskCardStatic
+              key={task.id}
+              task={task}
+              assignees={resolveAssignees(task)}
+              onClick={() => openTask(task)}
+            />
+          ))}
         </div>
       )}
-    </div>
+
+      {completedTasks.length > 0 && (
+        <Collapsible open={showCompleted} onOpenChange={setShowCompleted}>
+          <CollapsibleTrigger className='text-muted-foreground hover:text-foreground flex w-full cursor-pointer items-center gap-1.5 pt-2 text-xs font-medium'>
+            <ChevronDown
+              className={cn(
+                'h-3.5 w-3.5 transition-transform',
+                showCompleted ? 'rotate-0' : '-rotate-90'
+              )}
+              aria-hidden='true'
+            />
+            Completed ({completedTasks.length})
+          </CollapsibleTrigger>
+          <CollapsibleContent className='space-y-2 pt-2'>
+            {completedTasks.map(task => (
+              <TaskCardStatic
+                key={task.id}
+                task={task}
+                assignees={resolveAssignees(task)}
+                onClick={() => openTask(task)}
+              />
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </EntityList>
   )
 }

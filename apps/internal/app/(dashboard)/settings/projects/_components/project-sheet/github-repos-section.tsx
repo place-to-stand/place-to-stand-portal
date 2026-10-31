@@ -9,12 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
 import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'
@@ -274,27 +273,41 @@ export function GitHubReposSection({
 
   if (!isGitHubConnected) {
     return (
-      <SheetSection list title='GitHub repositories'>
-        <EmptyState
-          message='Connect your GitHub account in Settings to link repositories.'
-          action={
-            <Button variant='outline' size='sm' asChild>
-              <a href='/settings/integrations'>Go to integrations</a>
-            </Button>
-          }
-        />
-      </SheetSection>
+      <EntityList
+        title='GitHub repositories'
+        isEmpty={false}
+        emptyMessage=''
+        status={
+          <>
+            <EmptyState
+              message='Connect your GitHub account in Settings to link repositories.'
+              action={
+                <Button variant='outline' size='sm' asChild>
+                  <a href='/settings/integrations'>Go to integrations</a>
+                </Button>
+              }
+            />
+          </>
+        }
+      />
     )
   }
 
   if (loading && !isCreateMode) {
     return (
-      <SheetSection list title='GitHub repositories'>
-        <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-          <Loader2 className='h-4 w-4 animate-spin' />
-          Loading linked repos...
-        </div>
-      </SheetSection>
+      <EntityList
+        title='GitHub repositories'
+        isEmpty={false}
+        emptyMessage=''
+        status={
+          <>
+            <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+              <Loader2 className='h-4 w-4 animate-spin' />
+              Loading linked repos...
+            </div>
+          </>
+        }
+      />
     )
   }
 
@@ -325,136 +338,127 @@ export function GitHubReposSection({
       : undefined
 
   return (
-    <SheetSection
-      list
-      title='GitHub repositories'
-      action={
-        <SectionAddButton
-          label='Link repository'
-          onClick={() => handleDialogOpenChange(true)}
-          disabled={disabled}
-        />
-      }
-    >
-      {hasNoRepos ? (
-        <EmptyState
-          message={
-            isCreateMode
-              ? 'No repositories selected.'
-              : 'No repositories linked.'
-          }
-        />
-      ) : (
-        <div className='space-y-2'>
-          {/* Linked repos (edit mode) */}
-          {displayRepos.map(repo => (
-            <div
-              key={repo.id}
-              className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
-            >
-              <div className='flex min-w-0 flex-col gap-1'>
-                <div className='flex items-center gap-2 text-sm'>
-                  <SimpleIcon
-                    icon={siGithub}
-                    className='text-muted-foreground h-4 w-4 shrink-0'
-                  />
-                  <a
-                    href={`https://github.com/${repo.repoFullName}`}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='truncate-link hover:underline'
-                  >
-                    {repo.repoFullName}
-                    <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
-                  </a>
-                </div>
-                <div className='text-muted-foreground flex items-center gap-2 pl-6 text-xs'>
-                  <span>{repo.defaultBranch}</span>
-                  {repo.githubAppInstallationId && (
-                    <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
-                      App
-                    </span>
-                  )}
-                </div>
+    <>
+      <EntityList
+        title='GitHub repositories'
+        add={{
+          label: 'Link repository',
+          onAdd: () => handleDialogOpenChange(true),
+          disabled,
+        }}
+        isEmpty={hasNoRepos}
+        emptyMessage={
+          isCreateMode ? 'No repositories selected.' : 'No repositories linked.'
+        }
+      >
+        {/* Linked repos (edit mode) */}
+        {displayRepos.map(repo => (
+          <div
+            key={repo.id}
+            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
+          >
+            <div className='flex min-w-0 flex-col gap-1'>
+              <div className='flex items-center gap-2 text-sm'>
+                <SimpleIcon
+                  icon={siGithub}
+                  className='text-muted-foreground h-4 w-4 shrink-0'
+                />
+                <a
+                  href={`https://github.com/${repo.repoFullName}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='truncate-link hover:underline'
+                >
+                  {repo.repoFullName}
+                  <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
+                </a>
               </div>
-              <RowActionButton
-                type='button'
-                label='Remove repository'
-                icon={<Trash2 />}
-                className='text-muted-foreground hover:text-destructive shrink-0'
-                onClick={() => setDeleteConfirm(repo)}
-                disabled={disabled}
-              />
-            </div>
-          ))}
-          {/* Pending repos (both modes) */}
-          {pendingRepos.map(repo => (
-            <div
-              key={`pending-${repo.repoFullName}`}
-              className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
-            >
-              <div className='flex min-w-0 flex-col gap-1'>
-                <div className='flex items-center gap-2 text-sm'>
-                  <SimpleIcon
-                    icon={siGithub}
-                    className='text-muted-foreground h-4 w-4 shrink-0'
-                  />
-                  <span className='truncate'>{repo.repoFullName}</span>
-                  {repo.source === 'app' && (
-                    <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
-                      App
-                    </span>
-                  )}
-                </div>
-                <div className='text-warning pl-6 text-xs'>Pending save</div>
+              <div className='text-muted-foreground flex items-center gap-2 pl-6 text-xs'>
+                <span>{repo.defaultBranch}</span>
+                {repo.githubAppInstallationId && (
+                  <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
+                    App
+                  </span>
+                )}
               </div>
-              <RowActionButton
-                type='button'
-                label='Remove repository'
-                icon={<Trash2 />}
-                className='text-muted-foreground hover:text-destructive shrink-0'
-                onClick={() => setPendingDeleteConfirm(repo)}
-                disabled={disabled}
-              />
             </div>
-          ))}
-          {/* Removed repos (edit mode) */}
-          {removedRepos.map(repo => (
-            <div
-              key={`removed-${repo.id}`}
-              className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2 opacity-60'
-            >
-              <div className='flex min-w-0 flex-col gap-1'>
-                <div className='flex items-center gap-2 text-sm line-through'>
-                  <SimpleIcon
-                    icon={siGithub}
-                    className='text-muted-foreground h-4 w-4 shrink-0'
-                  />
-                  <span className='truncate'>{repo.repoFullName}</span>
-                </div>
-                <div className='text-destructive pl-6 text-xs'>
-                  Pending removal
-                </div>
+            <RowActionButton
+              type='button'
+              label='Remove repository'
+              icon={<Trash2 />}
+              className='text-muted-foreground hover:text-destructive shrink-0'
+              onClick={() => setDeleteConfirm(repo)}
+              disabled={disabled}
+            />
+          </div>
+        ))}
+        {/* Pending repos (both modes) */}
+        {pendingRepos.map(repo => (
+          <div
+            key={`pending-${repo.repoFullName}`}
+            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
+          >
+            <div className='flex min-w-0 flex-col gap-1'>
+              <div className='flex items-center gap-2 text-sm'>
+                <SimpleIcon
+                  icon={siGithub}
+                  className='text-muted-foreground h-4 w-4 shrink-0'
+                />
+                <span className='truncate'>{repo.repoFullName}</span>
+                {repo.source === 'app' && (
+                  <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
+                    App
+                  </span>
+                )}
               </div>
-              <Button
-                type='button'
-                variant='ghost'
-                size='xs'
-                className='text-muted-foreground shrink-0'
-                onClick={() => {
-                  const next = new Set(removedRepoIds)
-                  next.delete(repo.id)
-                  onRemovedRepoIdsChange(next)
-                }}
-                disabled={disabled}
-                aria-label='Undo removal'
-              >
-                Undo
-              </Button>
+              <div className='text-warning pl-6 text-xs'>Pending save</div>
             </div>
-          ))}
-        </div>
-      )}
+            <RowActionButton
+              type='button'
+              label='Remove repository'
+              icon={<Trash2 />}
+              className='text-muted-foreground hover:text-destructive shrink-0'
+              onClick={() => setPendingDeleteConfirm(repo)}
+              disabled={disabled}
+            />
+          </div>
+        ))}
+        {/* Removed repos (edit mode) */}
+        {removedRepos.map(repo => (
+          <div
+            key={`removed-${repo.id}`}
+            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2 opacity-60'
+          >
+            <div className='flex min-w-0 flex-col gap-1'>
+              <div className='flex items-center gap-2 text-sm line-through'>
+                <SimpleIcon
+                  icon={siGithub}
+                  className='text-muted-foreground h-4 w-4 shrink-0'
+                />
+                <span className='truncate'>{repo.repoFullName}</span>
+              </div>
+              <div className='text-destructive pl-6 text-xs'>
+                Pending removal
+              </div>
+            </div>
+            <Button
+              type='button'
+              variant='ghost'
+              size='xs'
+              className='text-muted-foreground shrink-0'
+              onClick={() => {
+                const next = new Set(removedRepoIds)
+                next.delete(repo.id)
+                onRemovedRepoIdsChange(next)
+              }}
+              disabled={disabled}
+              aria-label='Undo removal'
+            >
+              Undo
+            </Button>
+          </div>
+        ))}
+      </EntityList>
 
       {/* Link Dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
@@ -513,6 +517,6 @@ export function GitHubReposSection({
         onConfirm={handleUnlink}
         onCancel={() => setDeleteConfirm(null)}
       />
-    </SheetSection>
+    </>
   )
 }

@@ -7,7 +7,11 @@ import { entityIconAccent } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
 type SheetSectionProps = {
-  title: string
+  /**
+   * Leave it out for a sheet's first group of fields: a generic "Details"
+   * heading only restates the sheet.
+   */
+  title?: string
   /**
    * An icon before the title. An entity's registry icon shows in its colour;
    * any other (Comments, Activity) stays muted.
@@ -20,6 +24,8 @@ type SheetSectionProps = {
    * 8px above it, like a section with a +. Implied by `action`.
    */
   list?: boolean
+  /** Inline after the title (a count badge). */
+  titleAddon?: ReactNode
   /** Right-aligned slot on the title row (a "Link repository" button, a picker, a count). */
   action?: ReactNode
   children: ReactNode
@@ -36,6 +42,7 @@ export function SheetSection({
   icon: Icon,
   description,
   action,
+  titleAddon,
   list = false,
   children,
   className,
@@ -51,32 +58,35 @@ export function SheetSection({
         className
       )}
     >
-      <div className='flex flex-col gap-1'>
-        <div className='flex min-h-5 items-center justify-between gap-2'>
-          <h3 className='flex items-center gap-2 text-sm font-semibold tracking-tight'>
-            {Icon ? (
-              <Icon
-                className={cn(
-                  'size-4 shrink-0',
-                  entityIconAccent(Icon) ?? 'text-muted-foreground'
-                )}
-                aria-hidden
-              />
-            ) : null}
-            {title}
-          </h3>
-          {/* The action overlaps the row instead of growing it, so the
+      {title ? (
+        <div className='flex flex-col gap-1'>
+          <div className='flex min-h-5 items-center justify-between gap-2'>
+            <h3 className='flex items-center gap-2 text-sm font-semibold tracking-tight'>
+              {Icon ? (
+                <Icon
+                  className={cn(
+                    'size-4 shrink-0',
+                    entityIconAccent(Icon) ?? 'text-muted-foreground'
+                  )}
+                  aria-hidden
+                />
+              ) : null}
+              {title}
+              {titleAddon}
+            </h3>
+            {/* The action overlaps the row instead of growing it, so the
               heading keeps its 8px over the list either way. */}
-          {action ? (
-            <div className='-my-2 flex shrink-0 items-center gap-2'>
-              {action}
-            </div>
+            {action ? (
+              <div className='-my-2 flex shrink-0 items-center gap-2'>
+                {action}
+              </div>
+            ) : null}
+          </div>
+          {description ? (
+            <p className='text-muted-foreground text-xs'>{description}</p>
           ) : null}
         </div>
-        {description ? (
-          <p className='text-muted-foreground text-xs'>{description}</p>
-        ) : null}
-      </div>
+      ) : null}
       {children}
     </section>
   )

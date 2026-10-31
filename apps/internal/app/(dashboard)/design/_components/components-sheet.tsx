@@ -29,11 +29,10 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { EmptyState } from '@pts/ui/empty-state'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { EntityList } from '@/components/sheets/entity-list'
 import { SheetActivityDisclosure } from '@/components/sheets/sheet-activity-section'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   Sheet,
@@ -236,10 +235,7 @@ function SampleEntitySheet({
           >
             <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
               <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
-                <SheetSection
-                  title='Details'
-                  description='Everything here saves with the one Save below.'
-                >
+                <SheetSection>
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                     <div className='space-y-2'>
                       <Label htmlFor='design-sheet-name'>Name</Label>
@@ -263,30 +259,36 @@ function SampleEntitySheet({
                     <Textarea id='design-sheet-notes' rows={3} />
                   </div>
                 </SheetSection>
-                <SheetSection
+                <EntityList
                   title='People'
-                  action={<SectionAddButton label='Add person' />}
+                  add={{ label: 'Add person', onAdd: () => undefined }}
+                  isEmpty={false}
+                  emptyMessage='No people here yet.'
                 >
-                  <SheetRecordList>
-                    <ContactRecordRow
-                      contact={{
-                        id: 'design-ada',
-                        name: 'Ada Lovelace',
-                        email: 'ada@acme.com',
-                        jobTitle: 'Head of product',
-                      }}
-                      openable={false}
-                    />
-                    <ContactRecordRow
-                      contact={{
-                        id: 'design-grace',
-                        name: 'Grace Hopper',
-                        email: 'grace@acme.com',
-                      }}
-                      openable={false}
-                    />
-                  </SheetRecordList>
-                </SheetSection>
+                  <ContactRecordRow
+                    contact={{
+                      id: 'design-ada',
+                      name: 'Ada Lovelace',
+                      email: 'ada@acme.com',
+                      jobTitle: 'Head of product',
+                    }}
+                    openable={false}
+                  />
+                  <ContactRecordRow
+                    contact={{
+                      id: 'design-grace',
+                      name: 'Grace Hopper',
+                      email: 'grace@acme.com',
+                    }}
+                    openable={false}
+                  />
+                </EntityList>
+                <EntityList
+                  title='Projects'
+                  add={{ label: 'Create project', onAdd: () => undefined }}
+                  isEmpty
+                  emptyMessage='No projects yet.'
+                />
                 {/* The bottom of a sheet: comments or updates, then
                         the collapsed Activity, always last. */}
                 <SheetSection

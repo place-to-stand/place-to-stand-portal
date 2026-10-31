@@ -10,8 +10,7 @@ import type { TaskWithRelations } from '@/lib/types'
 import type { TimeLogFormErrors } from '@/lib/projects/time-log/types'
 
 import { SelectedTaskList } from './selected-task-list'
-import { SheetSection } from '@/components/sheets/sheet-section'
-import { EmptyState } from '@pts/ui/empty-state'
+import { EntityList } from '@/components/sheets/entity-list'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { FIELD_STACK_CLASS } from '@/components/ui/form'
 import { Label } from '@pts/ui/label'
@@ -153,40 +152,38 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
       />
       {/* Like the task sheet's Time logs: a heading with the +, the linked
           tasks, and an empty box that does what the + does. */}
-      <SheetSection
+      <EntityList
         title='Linked tasks'
         icon={ENTITY_ICONS.task}
         className='sm:col-span-2'
-        action={
-          <TaskSelector
-            availableTasks={availableTasks}
-            onAddTask={onAddTask}
-            isOpen={isTaskPickerOpen}
-            onOpenChange={onTaskPickerOpenChange}
-            disabled={taskPickerButtonDisabled}
-            disabledReason={taskPickerReason}
-          />
-        }
+        add={{
+          label: 'Link task',
+          onAdd: () => onTaskPickerOpenChange(true),
+          disabled: taskPickerButtonDisabled,
+          disabledReason: taskPickerButtonDisabled
+            ? (taskPickerReason ??
+              (availableTasks.length === 0 ? 'Every task is linked.' : null))
+            : null,
+          render: button => (
+            <TaskSelector
+              availableTasks={availableTasks}
+              onAddTask={onAddTask}
+              isOpen={isTaskPickerOpen}
+              onOpenChange={onTaskPickerOpenChange}
+              trigger={button}
+            />
+          ),
+        }}
+        isEmpty={selectedTasks.length === 0}
+        emptyMessage='No tasks linked. Hours apply to project if left empty.'
       >
-        {selectedTasks.length === 0 ? (
-          <EmptyState
-            message='No tasks linked. Hours apply to project if left empty.'
-            label={taskPickerButtonDisabled ? undefined : 'Link task'}
-            onClick={
-              taskPickerButtonDisabled
-                ? undefined
-                : () => onTaskPickerOpenChange(true)
-            }
-          />
-        ) : (
-          <SelectedTaskList
-            tasks={selectedTasks}
-            isActionDisabled={isMutating}
-            disabledReason={isMutating ? 'Logging time…' : null}
-            onRemove={requestTaskRemoval}
-          />
-        )}
-      </SheetSection>
+        <SelectedTaskList
+          tasks={selectedTasks}
+          isActionDisabled={isMutating}
+          disabledReason={isMutating ? 'Logging time…' : null}
+          onRemove={requestTaskRemoval}
+        />
+      </EntityList>
       <div className={cn(FIELD_STACK_CLASS, 'sm:col-span-2')}>
         <Label htmlFor='time-log-note'>Notes</Label>
         <Textarea

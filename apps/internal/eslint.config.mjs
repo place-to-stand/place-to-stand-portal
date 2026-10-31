@@ -27,6 +27,11 @@ const eslintConfig = defineConfig([
               message:
                 'Entity icons come from the registry: ENTITIES.<entity>.icon / ENTITY_ICONS in @/lib/entity-accents. For a non-entity meaning pick another glyph (e.g. CalendarClock for a timestamp).',
             },
+            {
+              name: '@/components/sheets/section-add-button',
+              message:
+                'A section +, its list and its clickable empty state come together: use EntityList (@/components/sheets/entity-list). See docs/design-system/components/entity-list.md.',
+            },
           ],
         },
       ],

@@ -125,9 +125,9 @@ export function HourBlockSheet({
                 onSubmit={form.handleSubmit((values: HourBlockFormValues) =>
                   handleSubmit(values)
                 )}
-                className='flex flex-col gap-5 px-6 pt-6 pb-8'
+                className='flex flex-col gap-6 px-6 pt-6 pb-8'
               >
-                <SheetSection title='Details'>
+                <SheetSection>
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                     <FormField
                       control={form.control}

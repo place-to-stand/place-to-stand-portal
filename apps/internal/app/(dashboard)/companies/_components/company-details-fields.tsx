@@ -25,7 +25,7 @@ export function CompanyDetailsFields({
   disabled: boolean
 }) {
   return (
-    <SheetSection title='Details'>
+    <SheetSection>
       <FormField
         control={control}
         name='name'

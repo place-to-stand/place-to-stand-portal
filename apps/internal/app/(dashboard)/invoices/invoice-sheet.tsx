@@ -32,8 +32,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FIELD_STACK_CLASS,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
+import { Label } from '@pts/ui/label'
 import { formatCurrency } from '@pts/ui/numbers'
 import {
   SHEET_SIDE_COLUMN_CLASS,
@@ -42,8 +44,7 @@ import {
 } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -471,20 +472,21 @@ export function InvoiceSheet({
                         )}
                       />
 
-                      <Separator />
-
                       {/* ───── Line Items ───── */}
-                      <SheetSection
+                      {/* Never empty: an invoice keeps at least one line. */}
+                      <EntityList
                         title='Line items'
-                        action={
-                          !isReadOnly ? (
-                            <SectionAddButton
-                              label='Add line item'
-                              onClick={handleAddLineItem}
-                              disabled={standardField.disabled}
-                            />
-                          ) : null
+                        add={
+                          !isReadOnly
+                            ? {
+                                label: 'Add line item',
+                                onAdd: handleAddLineItem,
+                                disabled: standardField.disabled,
+                              }
+                            : undefined
                         }
+                        isEmpty={false}
+                        emptyMessage=''
                       >
                         <FormMessage>
                           {form.formState.errors.lineItems?.message}
@@ -520,9 +522,7 @@ export function InvoiceSheet({
                             ))}
                           </SortableContext>
                         </DndContext>
-                      </SheetSection>
-
-                      <Separator />
+                      </EntityList>
 
                       {/* ───── Tax Rate (read-only, driven by client state) ───── */}
                       <div className='grid grid-cols-1 items-center gap-4 sm:grid-cols-2'>
@@ -778,7 +778,7 @@ function LineItemRow({
       {dragHandleProps && !isReadOnly ? (
         <button
           type='button'
-          className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-l-lg border-r transition-colors'
+          className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-l-lg transition-colors'
           {...dragHandleProps}
         >
           <GripVertical className='h-4 w-4' />
@@ -849,7 +849,7 @@ function LineItemRow({
         ) : null}
 
         {/* Quantity + Unit Price + Amount */}
-        <div className='grid grid-cols-3 gap-3'>
+        <div className='grid grid-cols-3 items-start gap-3'>
           <FormField
             control={form.control}
             name={`lineItems.${index}.quantity`}
@@ -877,8 +877,8 @@ function LineItemRow({
             )}
           />
           {isCatalogItem ? (
-            <div className='space-y-1.5'>
-              <label className='text-xs font-medium'>Unit price</label>
+            <div className={FIELD_STACK_CLASS}>
+              <Label className='text-xs'>Unit price</Label>
               <div
                 className={cn(
                   'flex h-9 items-center rounded-md border px-3 text-sm',
@@ -916,8 +916,8 @@ function LineItemRow({
               )}
             />
           )}
-          <div className='space-y-1.5'>
-            <label className='text-xs font-medium'>Amount</label>
+          <div className={FIELD_STACK_CLASS}>
+            <Label className='text-xs'>Amount</Label>
             <div
               className={cn(
                 'flex h-9 items-center rounded-md border px-3 text-sm',

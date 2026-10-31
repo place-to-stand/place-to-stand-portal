@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { EntityList } from '@/components/sheets/entity-list'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { StatCard } from '@/components/ui/stat-card'
@@ -13,7 +13,6 @@ import {
   LeadRecordRow,
   ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
@@ -42,17 +41,15 @@ export function CompanyLeadsSection({
   leads: CompanyLeadSummary[]
 }) {
   return (
-    <SheetSection title='Leads' list>
-      {leads.length === 0 ? (
-        <EmptyState message='No leads at this company.' />
-      ) : (
-        <SheetRecordList>
-          {leads.map(lead => (
-            <LeadRecordRow key={lead.id} lead={lead} />
-          ))}
-        </SheetRecordList>
-      )}
-    </SheetSection>
+    <EntityList
+      title='Leads'
+      isEmpty={leads.length === 0}
+      emptyMessage='No leads at this company.'
+    >
+      {leads.map(lead => (
+        <LeadRecordRow key={lead.id} lead={lead} />
+      ))}
+    </EntityList>
   )
 }
 
@@ -291,42 +288,40 @@ export function CompanyProjectsSection({
 
   if (isLoading || !work) {
     return (
-      <SheetSection list title='Projects'>
-        <Skeleton className='h-24 w-full' />
-      </SheetSection>
+      <EntityList
+        title='Projects'
+        isEmpty={false}
+        emptyMessage=''
+        status={<Skeleton className='h-24 w-full' />}
+      />
     )
   }
 
   return (
-    <SheetSection
+    <EntityList
       title='Projects'
-      list
-      action={
-        canCreate ? (
-          <SectionAddButton
-            label='Create project'
-            onClick={() => openNew('project', { projectCompanyId: companyId })}
-          />
-        ) : null
+      add={
+        canCreate
+          ? {
+              label: 'Create project',
+              onAdd: () => openNew('project', { projectCompanyId: companyId }),
+            }
+          : undefined
       }
+      isEmpty={work.projects.length === 0}
+      emptyMessage='No projects yet.'
     >
-      {work.projects.length === 0 ? (
-        <EmptyState message='No projects yet.' />
-      ) : (
-        <SheetRecordList>
-          {work.projects.map(project => (
-            <ProjectRecordRow
-              key={project.id}
-              project={project}
-              href={
-                work.clientSlug && project.slug
-                  ? projectBoardHref(work.clientSlug, project.slug)
-                  : null
-              }
-            />
-          ))}
-        </SheetRecordList>
-      )}
-    </SheetSection>
+      {work.projects.map(project => (
+        <ProjectRecordRow
+          key={project.id}
+          project={project}
+          href={
+            work.clientSlug && project.slug
+              ? projectBoardHref(work.clientSlug, project.slug)
+              : null
+          }
+        />
+      ))}
+    </EntityList>
   )
 }

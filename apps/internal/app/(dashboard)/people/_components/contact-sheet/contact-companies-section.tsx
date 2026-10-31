@@ -11,12 +11,8 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { CompanyRecordRow } from '@/components/sheets/entity-record-rows'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
-import {
-  RecordRowField,
-  SheetRecordList,
-} from '@/components/sheets/sheet-record-row'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { RecordRowField } from '@/components/sheets/sheet-record-row'
+import { EntityList } from '@/components/sheets/entity-list'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
@@ -70,12 +66,13 @@ export function ContactCompaniesSection({
     )
 
   return (
-    <SheetSection
+    <EntityList
       title='Companies'
-      action={
-        disabled ? (
-          <SectionAddButton label='Add company' disabled />
-        ) : (
+      add={{
+        label: 'Add company',
+        onAdd: () => setPickerOpen(true),
+        disabled,
+        render: button => (
           <CompanyLinkPicker
             value={null}
             onChange={picked => {
@@ -94,120 +91,113 @@ export function ContactCompaniesSection({
               ])
             }}
             excludeIds={companies.map(entry => entry.companyId)}
-            trigger={<SectionAddButton label='Add company' />}
+            trigger={button}
             open={pickerOpen}
             onOpenChange={setPickerOpen}
           />
-        )
+        ),
+      }}
+      isEmpty={companies.length === 0}
+      emptyMessage='Not at any company yet. Add one or create it.'
+      status={
+        loadFailed ? (
+          <EmptyState message="Couldn't load this person's companies. Close and reopen the sheet to edit them." />
+        ) : undefined
       }
     >
-      {loadFailed ? (
-        <EmptyState message="Couldn't load this person's companies. Close and reopen the sheet to edit them." />
-      ) : companies.length === 0 ? (
-        <EmptyState
-          message='Not at any company yet. Add one or create it.'
-          label={disabled ? undefined : 'Add company'}
-          onClick={disabled ? undefined : () => setPickerOpen(true)}
-        />
-      ) : (
-        <SheetRecordList>
-          {[
-            ...companies.filter(entry => !entry.archived),
-            ...companies.filter(entry => entry.archived),
-          ].map(entry => {
-            const name = entry.companyName || 'this company'
-            // A client's primary contact is its invoice recipient: leaving
-            // it is for people who manage clients (the server agrees).
-            const primaryLocked =
-              !canManageAccess &&
-              entry.isPrimary &&
-              Boolean(entry.clientCompanyId) &&
-              !entry.archived
-            return (
-              <CompanyRecordRow
-                key={entry.companyId}
-                company={{ id: entry.companyId, name: entry.companyName }}
-                className={entry.archived ? 'opacity-60' : undefined}
-                titleAddon={
-                  entry.clientCompanyId && !entry.archived ? (
-                    <ClientBadge />
-                  ) : null
-                }
-                note={
-                  entry.formerClient && showPortalAccess
-                    ? 'Portal access returns if billing restarts.'
-                    : entry.archived
-                      ? 'Archived'
-                      : undefined
-                }
-                fields={
-                  <>
-                    <RecordRowField label='Title' grow>
-                      <MembershipTitleInput
-                        value={entry.title}
-                        onChange={title => update(entry.companyId, { title })}
-                        ariaLabel={`Title at ${name}`}
-                        disabled={disabled}
-                      />
-                    </RecordRowField>
-                    {showPortalAccess &&
-                    entry.clientCompanyId &&
-                    !entry.archived ? (
-                      <RecordRowField
-                        label='Portal access'
-                        hint={!disabled && portalReason ? portalReason : null}
-                      >
-                        <Switch
-                          checked={entry.portalAccess}
-                          disabled={disabled || Boolean(portalReason)}
-                          aria-label={`Portal access at ${name}`}
-                          onCheckedChange={portalAccess =>
-                            update(entry.companyId, { portalAccess })
-                          }
-                        />
-                      </RecordRowField>
-                    ) : null}
-                  </>
-                }
-                actions={
-                  <>
-                    {/* Where the company sheet puts its primary star. */}
-                    {entry.isPrimary ? (
-                      <span className='text-muted-foreground mr-1 flex h-8 items-center gap-1.5 text-xs'>
-                        <Star
-                          className='text-warning size-4 fill-current'
-                          aria-hidden
-                        />
-                        Primary contact
-                      </span>
-                    ) : null}
-                    <DisabledFieldTooltip
-                      disabled={!disabled && primaryLocked}
-                      reason={primaryLocked ? CLIENT_PRIMARY_ADMIN_ONLY : null}
-                      className='w-auto'
-                    >
-                      <RowActionButton
-                        type='button'
-                        label={`Remove from ${name}`}
-                        icon={<X />}
-                        className='text-muted-foreground hover:text-destructive'
-                        disabled={disabled || primaryLocked}
-                        onClick={() =>
-                          onChange(
-                            companies.filter(
-                              other => other.companyId !== entry.companyId
-                            )
-                          )
-                        }
-                      />
-                    </DisabledFieldTooltip>
-                  </>
-                }
-              />
-            )
-          })}
-        </SheetRecordList>
-      )}
-    </SheetSection>
+      {[
+        ...companies.filter(entry => !entry.archived),
+        ...companies.filter(entry => entry.archived),
+      ].map(entry => {
+        const name = entry.companyName || 'this company'
+        // A client's primary contact is its invoice recipient: leaving
+        // it is for people who manage clients (the server agrees).
+        const primaryLocked =
+          !canManageAccess &&
+          entry.isPrimary &&
+          Boolean(entry.clientCompanyId) &&
+          !entry.archived
+        return (
+          <CompanyRecordRow
+            key={entry.companyId}
+            company={{ id: entry.companyId, name: entry.companyName }}
+            className={entry.archived ? 'opacity-60' : undefined}
+            titleAddon={
+              entry.clientCompanyId && !entry.archived ? <ClientBadge /> : null
+            }
+            note={
+              entry.formerClient && showPortalAccess
+                ? 'Portal access returns if billing restarts.'
+                : entry.archived
+                  ? 'Archived'
+                  : undefined
+            }
+            fields={
+              <>
+                <RecordRowField label='Title' grow>
+                  <MembershipTitleInput
+                    value={entry.title}
+                    onChange={title => update(entry.companyId, { title })}
+                    ariaLabel={`Title at ${name}`}
+                    disabled={disabled}
+                  />
+                </RecordRowField>
+                {showPortalAccess &&
+                entry.clientCompanyId &&
+                !entry.archived ? (
+                  <RecordRowField
+                    label='Portal access'
+                    hint={!disabled && portalReason ? portalReason : null}
+                  >
+                    <Switch
+                      checked={entry.portalAccess}
+                      disabled={disabled || Boolean(portalReason)}
+                      aria-label={`Portal access at ${name}`}
+                      onCheckedChange={portalAccess =>
+                        update(entry.companyId, { portalAccess })
+                      }
+                    />
+                  </RecordRowField>
+                ) : null}
+              </>
+            }
+            actions={
+              <>
+                {/* Where the company sheet puts its primary star. */}
+                {entry.isPrimary ? (
+                  <span className='text-muted-foreground mr-1 flex h-8 items-center gap-1.5 text-xs'>
+                    <Star
+                      className='text-warning size-4 fill-current'
+                      aria-hidden
+                    />
+                    Primary contact
+                  </span>
+                ) : null}
+                <DisabledFieldTooltip
+                  disabled={!disabled && primaryLocked}
+                  reason={primaryLocked ? CLIENT_PRIMARY_ADMIN_ONLY : null}
+                  className='w-auto'
+                >
+                  <RowActionButton
+                    type='button'
+                    label={`Remove from ${name}`}
+                    icon={<X />}
+                    className='text-muted-foreground hover:text-destructive'
+                    disabled={disabled || primaryLocked}
+                    onClick={() =>
+                      onChange(
+                        companies.filter(
+                          other => other.companyId !== entry.companyId
+                        )
+                      )
+                    }
+                  />
+                </DisabledFieldTooltip>
+              </>
+            }
+          />
+        )
+      })}
+    </EntityList>
   )
 }

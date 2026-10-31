@@ -10,7 +10,7 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { EntityList } from '@/components/sheets/entity-list'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -157,12 +157,24 @@ export function ComponentsButtons() {
             </Button>
           </DisabledFieldTooltip>
         </Example>
-        <Example caption='SectionAddButton: sheet section title rows'>
-          <SectionAddButton label='Add person' />
-          <SectionAddButton
-            label='Add person'
-            disabledReason='Save the company first.'
-          />
+        <Example caption='EntityList: the + only comes with its list (empty: clickable; locked: disabled with a reason)'>
+          <div className='grid w-full gap-6 sm:grid-cols-2'>
+            <EntityList
+              title='People'
+              add={{ label: 'Add person', onAdd: noop }}
+              isEmpty
+              emptyMessage='No people here yet.'
+            />
+            <EntityList
+              title='Projects'
+              add={{
+                label: 'Create project',
+                disabledReason: 'Save the company first.',
+              }}
+              isEmpty
+              emptyMessage='Add projects after you save the company.'
+            />
+          </div>
         </Example>
         <Example caption='RowActionButton: icon-only, real tooltip'>
           <RowActionButton label='Delete attachment' icon={<Trash2 />} />

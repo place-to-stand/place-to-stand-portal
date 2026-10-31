@@ -7,7 +7,7 @@ import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Badge } from '@pts/ui/badge'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { EntityList } from '@/components/sheets/entity-list'
 import type { LeadRecord, LeadUpdateRecord } from '@/lib/leads/types'
 
 import { LeadUpdateDialog } from './lead-update-dialog'
@@ -84,20 +84,7 @@ export function LeadUpdatesSection({
   }, [fetchUpdates, onSuccess])
 
   return (
-    <div className='space-y-2'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2'>
-          <MessageSquareText className='text-muted-foreground h-4 w-4' />
-          <span className='text-sm font-medium'>Updates</span>
-          {updates.length > 0 && (
-            <Badge variant='secondary'>{updates.length}</Badge>
-          )}
-        </div>
-        {canManage && (
-          <SectionAddButton label='Add update' onClick={openLogDialog} />
-        )}
-      </div>
-
+    <>
       <LeadUpdateDialog
         leadId={lead.id}
         open={isDialogOpen}
@@ -106,55 +93,62 @@ export function LeadUpdatesSection({
         onSaved={handleSaved}
       />
 
-      {isLoading ? (
-        <div className='space-y-2'>
-          <Skeleton className='h-16 w-full' />
-          <Skeleton className='h-16 w-full' />
-        </div>
-      ) : loadFailed ? (
-        <EmptyState
-          message='Unable to load updates.'
-          action={
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => {
-                setIsLoading(true)
-                setLoadFailed(false)
-                void fetchUpdates()
-              }}
-            >
-              Retry
-            </Button>
-          }
-        />
-      ) : updates.length === 0 ? (
-        <EmptyState
-          message='No updates on this lead yet.'
-          // Clicking it does what the + does.
-          label={canManage ? 'Add update' : undefined}
-          onClick={canManage ? openLogDialog : undefined}
-        />
-      ) : (
-        <div className='space-y-2'>
-          {updates.map(update => (
-            <LeadUpdateItem
-              key={update.id}
-              // An update logged after the list loaded eases in.
-              className={
-                initialIds && !initialIds.has(update.id)
-                  ? 'animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out motion-reduce:animate-none'
-                  : undefined
+      <EntityList
+        title='Updates'
+        icon={MessageSquareText}
+        titleAddon={
+          updates.length > 0 ? (
+            <Badge variant='secondary'>{updates.length}</Badge>
+          ) : null
+        }
+        add={
+          canManage ? { label: 'Add update', onAdd: openLogDialog } : undefined
+        }
+        isEmpty={updates.length === 0}
+        emptyMessage='No updates on this lead yet.'
+        status={
+          isLoading ? (
+            <div className='space-y-2'>
+              <Skeleton className='h-16 w-full' />
+              <Skeleton className='h-16 w-full' />
+            </div>
+          ) : loadFailed ? (
+            <EmptyState
+              message='Unable to load updates.'
+              action={
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => {
+                    setIsLoading(true)
+                    setLoadFailed(false)
+                    void fetchUpdates()
+                  }}
+                >
+                  Retry
+                </Button>
               }
-              update={update}
-              canManage={canManage}
-              onEdit={openEditDialog}
-              onArchived={handleSaved}
             />
-          ))}
-        </div>
-      )}
-    </div>
+          ) : undefined
+        }
+      >
+        {updates.map(update => (
+          <LeadUpdateItem
+            key={update.id}
+            // An update logged after the list loaded eases in.
+            className={
+              initialIds && !initialIds.has(update.id)
+                ? 'animate-in fade-in-0 slide-in-from-top-1 duration-200 ease-out motion-reduce:animate-none'
+                : undefined
+            }
+            update={update}
+            canManage={canManage}
+            onEdit={openEditDialog}
+            onArchived={handleSaved}
+          />
+        ))}
+      </EntityList>
+    </>
   )
 }

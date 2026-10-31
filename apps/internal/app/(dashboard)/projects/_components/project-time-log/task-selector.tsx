@@ -1,4 +1,5 @@
-import { SectionAddButton } from '@/components/sheets/section-add-button'
+import type { ReactElement } from 'react'
+
 import {
   Command,
   CommandEmpty,
@@ -17,35 +18,17 @@ export type TaskSelectorProps = {
   onAddTask: (taskId: string) => void
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  disabled: boolean
-  disabledReason: string | null
+  /** The section's + (from `EntityList`). */
+  trigger: ReactElement
 }
 
 export function TaskSelector(props: TaskSelectorProps) {
-  const {
-    availableTasks,
-    onAddTask,
-    isOpen,
-    onOpenChange,
-    disabled,
-    disabledReason,
-  } = props
+  const { availableTasks, onAddTask, isOpen, onOpenChange, trigger } = props
 
   return (
     // The section's + opens the list, hanging from its right edge.
     <Popover open={isOpen} onOpenChange={onOpenChange} modal>
-      <PopoverTrigger asChild>
-        <SectionAddButton
-          label='Link task'
-          disabled={disabled}
-          disabledReason={
-            disabled
-              ? (disabledReason ??
-                (availableTasks.length === 0 ? 'Every task is linked.' : null))
-              : null
-          }
-        />
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent align='end' sideOffset={4} className='w-80 p-0'>
         <Command>
           <CommandInput placeholder='Search tasks…' />

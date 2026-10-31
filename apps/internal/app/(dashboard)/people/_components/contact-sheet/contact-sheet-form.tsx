@@ -197,7 +197,7 @@ export function ContactSheetForm({
               )}
             />
             <Separator />
-            <SheetSection title='Details'>
+            <SheetSection>
               <FormField
                 control={form.control}
                 name='name'
