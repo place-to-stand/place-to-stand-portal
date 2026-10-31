@@ -22,7 +22,6 @@ import {
   buildMemberOptions,
   type MemberCandidate,
 } from './project-members-utils'
-import { UserAvatar } from '@/components/ui/user-avatar'
 
 type ProjectMembersResponse = {
   candidates: MemberCandidate[]
@@ -104,7 +103,6 @@ export function ProjectMembersField({
   return (
     <SheetSection
       title='Members'
-      icon={ENTITY_ICONS.contact}
       description='Admins see every project. Sales staff see only the projects they are members of.'
       action={
         canAdd ? (
@@ -148,15 +146,7 @@ export function ProjectMembersField({
             return (
               <SheetRecordRow
                 key={member.id}
-                leading={
-                  <UserAvatar
-                    size='xs'
-                    userId={member.id}
-                    name={name}
-                    hasPhoto={Boolean(member.avatarUrl)}
-                    alt=''
-                  />
-                }
+                icon={ENTITY_ICONS.contact}
                 title={name}
                 description={member.fullName ? member.email : null}
                 actions={
