@@ -1,3 +1,4 @@
+import { EntityFieldLabel } from '@/components/ui/entity-label-icon'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
@@ -24,9 +25,9 @@ export function UserSelectField(props: UserSelectFieldProps) {
 
   return (
     <div className='space-y-2 sm:col-span-2'>
-      <label htmlFor='time-log-user' className='text-sm font-medium'>
+      <EntityFieldLabel entity='contact' htmlFor='time-log-user'>
         Log hours for
-      </label>
+      </EntityFieldLabel>
       <SearchableCombobox
         id='time-log-user'
         value={selectedUserId}

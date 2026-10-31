@@ -412,7 +412,7 @@ export function InvoiceSheet({
                           name='companyId'
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Client</FormLabel>
+                              <FormLabel entity='client'>Client</FormLabel>
                               <FormControl>
                                 <DisabledFieldTooltip
                                   disabled={clientField.disabled}

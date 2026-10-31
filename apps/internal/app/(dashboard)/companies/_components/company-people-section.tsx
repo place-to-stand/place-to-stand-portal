@@ -12,6 +12,7 @@ import {
 } from '@/components/contacts/contact-link-picker'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import {
   RecordRowField,
@@ -186,6 +187,7 @@ export function CompanyPeopleSection({
   return (
     <SheetSection
       title='People'
+      icon={ENTITY_ICONS.contact}
       action={
         !canAdd ? (
           <SectionAddButton label='Add person' disabledReason={lockedReason} />

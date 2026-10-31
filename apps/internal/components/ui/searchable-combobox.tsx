@@ -5,6 +5,7 @@ import { CheckIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
+import { getInitials } from '@/lib/users/initials'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Command,
@@ -27,6 +28,18 @@ export type SearchableComboboxItem = {
   disabled?: boolean
   avatarUrl?: string | null
   userId?: string
+  /**
+   * A person's avatar for an option that isn't a sign-in (a contact): their
+   * photo (`personPhotoSrc`), else initials of the label (or `initials`).
+   * Sign-ins pass `userId` instead. A person picker gives every option one,
+   * never a generic person icon.
+   */
+  avatar?: { src: string | null; initials?: string }
+  /**
+   * A one-off glyph for an option that differs from the rest ("Unassigned").
+   * A picker whose options are all one entity shows no icon: its field label
+   * carries the entity's icon (`FormLabel entity`).
+   */
   icon?: React.ComponentType<{ className?: string }>
   /**
    * Shown in place of the label, in the list row and in the trigger when
@@ -455,6 +468,16 @@ function renderLeading(
           <AvatarImage src={`/api/storage/user-avatar/${item.userId}`} />
         )}
         <AvatarFallback>{item.label.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+    )
+  }
+  if (item.avatar) {
+    return (
+      <Avatar size='xs' className={className}>
+        {item.avatar.src ? <AvatarImage src={item.avatar.src} alt='' /> : null}
+        <AvatarFallback>
+          {item.avatar.initials ?? getInitials(item.label)}
+        </AvatarFallback>
       </Avatar>
     )
   }

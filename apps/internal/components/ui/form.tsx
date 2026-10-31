@@ -15,6 +15,8 @@ import {
 
 import { cn } from '@/lib/utils'
 import { Label } from '@pts/ui/label'
+import { EntityLabelIcon } from '@/components/ui/entity-label-icon'
+import type { AccentEntity } from '@/lib/entity-accents'
 
 const Form = FormProvider
 
@@ -90,11 +92,17 @@ function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
 function FormLabel({
   className,
   optional = false,
+  entity,
   children,
   ...props
 }: React.ComponentProps<'label'> & {
   /** Appends a muted "(optional)" marker after the label text. */
   optional?: boolean
+  /**
+   * The entity a picker field picks: its registry icon, in its colour, leads
+   * the label ("[icon] Company"). Assignees, owners and members are `contact`.
+   */
+  entity?: AccentEntity
 }) {
   const { error, formItemId } = useFormField()
 
@@ -106,6 +114,7 @@ function FormLabel({
       htmlFor={formItemId}
       {...props}
     >
+      {entity ? <EntityLabelIcon entity={entity} /> : null}
       {children}
       {optional ? <OptionalMarker /> : null}
     </Label>

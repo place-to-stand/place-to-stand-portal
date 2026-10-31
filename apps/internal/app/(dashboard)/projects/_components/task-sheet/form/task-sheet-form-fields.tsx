@@ -139,7 +139,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
 
             return (
               <FormItem>
-                <FormLabel>Project</FormLabel>
+                <FormLabel entity='project'>Project</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
                     <SearchableCombobox
@@ -249,7 +249,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
 
             return (
               <FormItem>
-                <FormLabel>Assignee</FormLabel>
+                <FormLabel entity='contact'>Assignee</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
                     <SearchableCombobox

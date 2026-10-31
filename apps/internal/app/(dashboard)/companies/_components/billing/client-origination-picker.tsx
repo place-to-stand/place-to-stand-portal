@@ -47,6 +47,7 @@ function userCandidate(
     id: user.id,
     name: user.fullName?.trim() || user.email,
     email: user.email,
+    hasPhoto: user.hasPhoto,
     pick: () => onSelect(user),
   }
 }
@@ -60,6 +61,7 @@ function contactCandidate(
     id: contact.id,
     name: contact.name?.trim() || contact.email || 'Unnamed person',
     email: contact.email,
+    hasPhoto: contact.hasPhoto,
     pick: () => onSelect(contact),
   }
 }
@@ -134,7 +136,6 @@ export function ClientOriginationPicker({
           className='w-full justify-start'
           disabled={disabled}
         >
-          <ENTITY_ICONS.contact className='h-4 w-4' />
           No originator
         </Button>
       }

@@ -9,7 +9,7 @@ import {
   type EntityLinkOption,
 } from '@/components/ui/entity-link-picker'
 import type { ContactOption } from '@/lib/queries/contacts/options'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { personPhotoSrc } from '@/components/ui/user-avatar'
 
 export const CONTACT_OPTIONS_QUERY_KEY = ['contactOptions'] as const
 
@@ -77,12 +77,20 @@ export function ContactLinkPicker({
 
   const byId = new Map(data.map(contact => [contact.id, contact]))
   const excluded = new Set(excludeIds)
+  // Each person shows their own avatar: photo, else initials.
+  const avatarOf = (contactId: string) => ({
+    src: personPhotoSrc({
+      contactId,
+      hasPhoto: byId.get(contactId)?.hasPhoto ?? false,
+    }),
+  })
   const options: EntityLinkOption[] = data
     .filter(contact => !excluded.has(contact.id))
     .map(contact => ({
       id: contact.id,
       label: contact.name,
       description: describe(contact),
+      avatar: avatarOf(contact.id),
     }))
 
   return (
@@ -91,10 +99,14 @@ export function ContactLinkPicker({
       entity='contact'
       entityLabel='person'
       aria-label='Person'
-      icon={ENTITY_ICONS.contact}
       value={
         value
-          ? { id: value.id, label: value.name, description: describe(value) }
+          ? {
+              id: value.id,
+              label: value.name,
+              description: describe(value),
+              avatar: avatarOf(value.id),
+            }
           : null
       }
       onChange={option => {
@@ -115,6 +127,7 @@ export function ContactLinkPicker({
         id: record.id,
         label: record.name,
         description: record.email,
+        avatar: { src: null },
       })}
       createPrefillParam='contactName'
       createParams={
