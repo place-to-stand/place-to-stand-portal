@@ -90,7 +90,7 @@ export function PatternsHouseRules() {
           <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
               <span className='font-semibold'>People</span>
-              <div className='bg-background flex items-center justify-between rounded-md border px-3 py-2'>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
                 <span className='text-muted-foreground text-xs'>
                   Opens on top
@@ -104,7 +104,7 @@ export function PatternsHouseRules() {
           <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
               <span className='font-semibold'>People</span>
-              <div className='bg-background flex items-center justify-between rounded-md border px-3 py-2'>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
                 <span className='text-muted-foreground text-xs'>
                   Leaves this page
@@ -122,7 +122,7 @@ export function PatternsHouseRules() {
         doExample={
           <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
-              <div className='bg-background flex items-center justify-between rounded-md border px-3 py-2'>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
                 <Switch defaultChecked aria-label='Portal access' />
               </div>
@@ -136,7 +136,7 @@ export function PatternsHouseRules() {
         dontExample={
           <MiniSheet parts={['People']}>
             <div className='space-y-2 p-3'>
-              <div className='bg-background flex items-center justify-between rounded-md border px-3 py-2'>
+              <div className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'>
                 Ada Lovelace
                 <span className='text-muted-foreground text-xs'>
                   Saved on toggle

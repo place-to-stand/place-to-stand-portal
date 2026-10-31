@@ -355,7 +355,7 @@ export function GitHubReposSection({
         {displayRepos.map(repo => (
           <div
             key={repo.id}
-            className='bg-background flex items-center justify-between rounded-md border px-3 py-2'
+            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
           >
             <div className='flex min-w-0 flex-col gap-1'>
               <div className='flex items-center gap-2 text-sm'>
@@ -396,7 +396,7 @@ export function GitHubReposSection({
         {pendingRepos.map(repo => (
           <div
             key={`pending-${repo.repoFullName}`}
-            className='bg-background flex items-center justify-between rounded-md border px-3 py-2'
+            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
           >
             <div className='flex min-w-0 flex-col gap-1'>
               <div className='flex items-center gap-2 text-sm'>
@@ -427,7 +427,7 @@ export function GitHubReposSection({
         {removedRepos.map(repo => (
           <div
             key={`removed-${repo.id}`}
-            className='bg-background flex items-center justify-between rounded-md border px-3 py-2 opacity-60'
+            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2 opacity-60'
           >
             <div className='flex min-w-0 flex-col gap-1'>
               <div className='flex items-center gap-2 text-sm line-through'>
