@@ -7,13 +7,9 @@ import { expect, test, type Page } from '@playwright/test'
 test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 
 async function openFirstNonClientCompany(page: Page) {
-  await page.goto('/companies')
-  const row = page
-    .locator('tbody tr')
-    .filter({
-      hasNot: page.locator('[data-slot="badge"]', { hasText: 'Client' }),
-    })
-    .first()
+  // The Companies list's "Not a client" filter.
+  await page.goto('/companies?type=none')
+  const row = page.locator('tbody tr').first()
   await row.locator('td').first().click()
   const sheet = page.getByRole('dialog')
   // Not a client: the Client column's Bill this company switch is off.
@@ -49,16 +45,16 @@ test('billing: make a client, stop billing, restart, and back', async ({
   await setBilling(page, false)
 
   // Stopping defaults to billing through the end of this month, so it is
-  // still a client with the stop scheduled; Keep billing cancels the stop.
+  // still billed with the stop scheduled; the switch reads off, and
+  // switching it back on cancels the stop.
   await page.goto(url)
   const ending = page.getByRole('dialog')
-  await expect(ending.getByText(/^Billing stops after /)).toBeVisible()
-  await ending.getByRole('button', { name: 'Keep billing' }).click()
+  await expect(ending.getByText(/^Billing ends after /)).toBeVisible()
   await setBilling(page, true)
 
   await page.goto(url)
   await expect(
-    page.getByRole('dialog').getByText(/^Billing stops after /)
+    page.getByRole('dialog').getByText(/^Billing ends after /)
   ).toHaveCount(0)
 
   await page.goto(url)

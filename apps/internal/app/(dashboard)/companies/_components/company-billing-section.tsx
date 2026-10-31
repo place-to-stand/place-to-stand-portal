@@ -57,9 +57,6 @@ type BillingContextValue = {
   setEffective: (effective: BillingEffectiveValue) => void
   /** The last month billed while a stop is scheduled. */
   billingEndsOn: string | null
-  /** In the final billed month: "Keep billing" cancels the stop on Save. */
-  keepBilling: boolean
-  setKeepBilling: (keep: boolean) => void
   client: ClientWithClosers | null
   state: UseClientBillingFormReturn | null
   isPending: boolean
@@ -73,8 +70,6 @@ const BillingContext = createContext<BillingContextValue>({
   effective: 'current_month',
   setEffective: () => {},
   billingEndsOn: null,
-  keepBilling: false,
-  setKeepBilling: () => {},
   client: null,
   state: null,
   isPending: false,
@@ -164,8 +159,6 @@ export function CompanyBillingProvider(props: CompanyBillingProviderProps) {
           effective: 'current_month',
           setEffective: () => {},
           billingEndsOn: props.billingEndsOn,
-          keepBilling: false,
-          setKeepBilling: () => {},
           client: null,
           state: null,
           isPending: props.isPending,
@@ -196,23 +189,25 @@ function BillingStateProvider({
   children,
 }: CompanyBillingProviderProps & { client: ClientWithClosers | null }) {
   const mode = billingModeOf({ billed, billingEndsOn, wasClient })
-  // Billed now, the final billed month included: the switch starts on.
+  // Billed now, the final billed month included.
   const billedNow = mode === 'live' || mode === 'ending'
-  const initialOn = billedNow
+  // A scheduled stop reads as off (it was switched off and saved); switching
+  // it back on cancels the stop.
+  const initialOn = mode === 'live'
   const [billingOn, setBillingOnState] = useState(initialOn)
-  const [keepBilling, setKeepBilling] = useState(false)
+  // A scheduled stop's last month billed is this month ('next_month').
   const [effective, setEffective] = useState<BillingEffectiveValue>(
-    defaultEffective(false)
+    defaultEffective(mode === 'ending')
   )
   // A billing form seeded with the client's terms (a former client's last
   // ones, to restart with), or a blank one to start billing.
   const state = useClientBillingForm({ open, client, isPending })
-  const fieldsShown = billingOn
+  // Terms stay editable while a stop is scheduled.
+  const fieldsShown = billingOn || mode === 'ending'
 
   const setBillingOn = useCallback(
     (on: boolean) => {
       setBillingOnState(on)
-      if (!on) setKeepBilling(false)
       // Switching off a client billed now stops it; anything else starts.
       setEffective(defaultEffective(billedNow && !on))
     },
@@ -221,7 +216,8 @@ function BillingStateProvider({
 
   const dirty =
     billingOn !== initialOn ||
-    keepBilling ||
+    // A scheduled stop moved to last month.
+    (mode === 'ending' && !billingOn && effective === 'current_month') ||
     (fieldsShown && state.hasUnsavedChanges)
   useEffect(() => {
     onDirtyChange(dirty)
@@ -250,25 +246,25 @@ function BillingStateProvider({
             // Switched off: "this month" as the last month billed is the
             // stop already scheduled; "last month" moves it earlier.
             if (!billingOn) {
-              return effective === 'current_month'
-                ? { kind: 'stop', effective }
+              if (effective === 'current_month')
+                return { kind: 'stop', effective }
+              // Terms stay editable while the stop is scheduled.
+              const changed = state.hasUnsavedChanges
+              const update = fields()
+              if (changed && !update) return null
+              return update
+                ? { kind: 'update', fields: update }
                 : { kind: 'none' }
             }
+            // Switched back on: cancels the scheduled stop.
             const changed = state.hasUnsavedChanges
             const update = fields()
             if (changed && !update) return null
-            if (keepBilling) {
-              // Cancels the scheduled stop, whatever the month.
-              return {
-                kind: 'restart',
-                effective: 'current_month',
-                ...(update ? { fields: update } : {}),
-              }
+            return {
+              kind: 'restart',
+              effective: 'current_month',
+              ...(update ? { fields: update } : {}),
             }
-            // Terms stay editable while the stop is scheduled.
-            return update
-              ? { kind: 'update', fields: update }
-              : { kind: 'none' }
           }
           case 'former': {
             if (!billingOn) return { kind: 'none' }
@@ -285,7 +281,7 @@ function BillingStateProvider({
         }
       },
     }),
-    [billingOn, effective, fieldsShown, keepBilling, mode, state]
+    [billingOn, effective, fieldsShown, mode, state]
   )
 
   return (
@@ -298,8 +294,6 @@ function BillingStateProvider({
         effective,
         setEffective,
         billingEndsOn,
-        keepBilling,
-        setKeepBilling,
         client,
         state,
         isPending,

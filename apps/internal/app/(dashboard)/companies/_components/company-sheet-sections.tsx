@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { EmptyState } from '@pts/ui/empty-state'
-import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
@@ -101,12 +100,18 @@ export function CompanyBillingSection({
               'Billing restarts with these terms when you save, with any changes from its first month billed. Its people with Portal on get portal access back.'
             )
           : null
-        : mode === 'ending' && billingOn
-          ? billing.keepBilling
+        : mode === 'ending'
+          ? billingOn
             ? onSave(
                 'The stop is cancelled and billing continues when you save.'
               )
-            : state(`Billing stops after ${endsLabel}.`)
+            : effective === 'current_month'
+              ? onSave(
+                  'Billing stops when you save. Their people lose portal access when billing ends; projects, invoices and history stay.'
+                )
+              : state(
+                  `Billing ends after ${endsLabel}. Switch it on to keep billing.`
+                )
           : billingOn
             ? null
             : onSave(
@@ -164,20 +169,6 @@ export function CompanyBillingSection({
         ) : line ? (
           <p className='text-muted-foreground text-sm'>{line.text}</p>
         ) : null}
-        {mode === 'ending' && billingOn ? (
-          <div>
-            <Button
-              type='button'
-              size='sm'
-              variant={billing.keepBilling ? 'secondary' : 'outline'}
-              aria-pressed={billing.keepBilling}
-              disabled={disabled}
-              onClick={() => billing.setKeepBilling(!billing.keepBilling)}
-            >
-              Keep billing
-            </Button>
-          </div>
-        ) : null}
         {choice ? (
           <EffectiveMonthSelect
             id='company-billing-effective'
@@ -200,7 +191,7 @@ export function CompanyBillingSection({
           </Alert>
         ) : null}
       </SheetSection>
-      {isClient && billingOn && work?.hours ? (
+      {isClient && (billingOn || mode === 'ending') && work?.hours ? (
         // `list`: 8px under the heading, like a field label over its input.
         <SheetSection list title='Hours'>
           <div className='grid grid-cols-3 gap-3'>
@@ -221,7 +212,7 @@ export function CompanyBillingSection({
           </div>
         </SheetSection>
       ) : null}
-      {billingOn ? <CompanyBillingFields /> : null}
+      {billingOn || mode === 'ending' ? <CompanyBillingFields /> : null}
     </>
   )
 }

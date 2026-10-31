@@ -93,11 +93,9 @@ test('sales sees no billing or sign-in controls on a company', async ({
 test('sales sees no portal switches on a client company’s people', async ({
   page,
 }) => {
-  await page.goto('/companies')
-  const clientRow = page
-    .locator('tbody tr')
-    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
-    .first()
+  // Sales see no billing marks: the Client filter finds client companies.
+  await page.goto('/companies?type=client')
+  const clientRow = page.locator('tbody tr').first()
   test.skip((await clientRow.count()) === 0, 'no client company to open')
   await clientRow.locator('td').first().click()
   const sheet = page.getByRole('dialog')
@@ -110,11 +108,9 @@ test('sales sees no portal switches on a client company’s people', async ({
 
 /** The first client company on the list, opened (People is on Details). */
 async function openClientPeople(page: Page) {
-  await page.goto('/companies')
-  const clientRow = page
-    .locator('tbody tr')
-    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
-    .first()
+  // Sales see no billing marks: the Client filter finds client companies.
+  await page.goto('/companies?type=client')
+  const clientRow = page.locator('tbody tr').first()
   if ((await clientRow.count()) === 0) return null
   const name = (
     (await clientRow.locator('span.font-medium').first().textContent()) ?? ''

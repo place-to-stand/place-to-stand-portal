@@ -142,20 +142,21 @@ test('billing through the end of the month, then restarting, keeps a client', as
   await billing.getByRole('button', { name: 'Save changes' }).click()
   await expect(billing).toBeHidden()
 
-  // Still a client this month, with the stop scheduled: the switch stays
-  // on, the terms stay editable, and Keep billing cancels the stop.
+  // Still billed this month, with the stop scheduled: the switch reads off
+  // (as it was saved), the terms stay editable, and switching it back on
+  // cancels the stop.
   billing = await openCompany(page, name)
-  await expect(billing.getByText(/^Billing stops after /)).toBeVisible()
+  await expect(billing.getByText(/^Billing ends after /)).toBeVisible()
   await expect(
     billing.getByRole('switch', { name: 'Bill this company' })
-  ).toHaveAttribute('aria-checked', 'true')
+  ).toHaveAttribute('aria-checked', 'false')
   await expect(
     billing.getByText('Client', { exact: true }).first()
   ).toBeVisible()
   await expect(billing.getByText('Billing type', { exact: true })).toBeVisible()
 
-  // Keep billing: the scheduled stop is cancelled.
-  await billing.getByRole('button', { name: 'Keep billing' }).click()
+  // Switching back on cancels the scheduled stop.
+  await billing.getByRole('switch', { name: 'Bill this company' }).click()
   await expect(
     billing.getByText(
       'The stop is cancelled and billing continues when you save.'
@@ -168,7 +169,7 @@ test('billing through the end of the month, then restarting, keeps a client', as
   await expect(
     billing.getByRole('switch', { name: 'Bill this company' })
   ).toHaveAttribute('aria-checked', 'true')
-  await expect(billing.getByText(/^Billing stops after /)).toHaveCount(0)
+  await expect(billing.getByText(/^Billing ends after /)).toHaveCount(0)
   await page.keyboard.press('Escape')
 
   await cleanUp(page, name)

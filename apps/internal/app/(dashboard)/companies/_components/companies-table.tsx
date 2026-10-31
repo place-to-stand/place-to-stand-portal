@@ -167,15 +167,15 @@ export function CompaniesTable({
                   </div>
                 </TableCell>
                 {seesBilling ? (
-<TableCell label='Client'>
-                  {/* Billed now: CompanyBillingMark. Not billed: the dash. */}
-                  {company.companyId ? (
-                    <CompanyBillingMark billingType={company.billingType} />
-                  ) : (
-                    <EmptyValue />
-                  )}
-                </TableCell>
-) : null}
+                  <TableCell label='Client'>
+                    {/* Billed now: CompanyBillingMark. Not billed: the dash. */}
+                    {company.companyId ? (
+                      <CompanyBillingMark billingType={company.billingType} />
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </TableCell>
+                ) : null}
                 {seesBilling ? (
                   <TableCell label='Hours' className='text-sm tabular-nums'>
                     {company.hours ? (

@@ -6,10 +6,10 @@ import { expect, test } from '@playwright/test'
  * Read-only: the sheet is discarded at the end.
  */
 test('removing a closer can be undone before saving', async ({ page }) => {
-  await page.goto('/companies')
+  await page.goto('/companies?type=client')
   const sheet = page.getByRole('dialog')
   // Open client companies until one has a closer.
-  const rows = page.locator('tbody tr').filter({ hasText: 'Client' })
+  const rows = page.locator('tbody tr')
   const count = Math.min(await rows.count(), 8)
   let found = false
   for (let i = 0; i < count && !found; i++) {

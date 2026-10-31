@@ -31,7 +31,7 @@ test('a client company shows the Client badge and its projects', async ({
   await expectHealthy(page)
   const row = page.locator('tbody tr').first()
   await expect(
-    row.locator('[data-slot="badge"]', { hasText: 'Client' })
+    row.locator('[data-slot="badge"]', { hasText: /Prepaid|Net 30/ })
   ).toBeVisible()
   await row.locator('td').first().click()
   const sheet = page.getByRole('dialog')

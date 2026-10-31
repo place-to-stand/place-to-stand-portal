@@ -33,7 +33,7 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
   const showPortal =
     portal !== null &&
     billing.status === 'ready' &&
-    (billing.billingOn || formerClient)
+    (billing.billingOn || billing.mode === 'ending' || formerClient)
 
   const access = new Set(portal?.ids ?? [])
   const portalAccessFor = showPortal
