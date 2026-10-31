@@ -17,11 +17,13 @@ import {
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
-import { Separator } from '@pts/ui/separator'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import {
+  SheetSection,
+  SHEET_SECTIONS_CLASS,
+} from '@/components/sheets/sheet-section'
 import { useToast } from '@/components/ui/use-toast'
 import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -359,7 +361,7 @@ export function SubmissionDetailSheet({
         />
 
         <div className='flex-1 overflow-y-auto'>
-          <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+          <div className={cn(SHEET_SECTIONS_CLASS, 'px-6 pt-6 pb-8')}>
             {/* Two deliberate rows — what it is, then when — instead of a
                 justify-between pair that wrapped into a ragged second line
                 at sheet width. */}
@@ -434,7 +436,6 @@ export function SubmissionDetailSheet({
               </ul>
             </div>
 
-            <Separator />
             <SheetSection title='Contact'>
               <dl className={KV_GRID}>
                 <Kv label='Name' value={value(displaySubmission.contactName)} />
@@ -493,7 +494,6 @@ export function SubmissionDetailSheet({
                 "Emails" block full of dashes would read as a failure. */}
             {emailStamps ? (
               <>
-                <Separator />
                 <SheetSection title='Emails'>
                   <dl className={KV_GRID}>
                     <Kv label='Team notification' value={emailStamps.team} />
@@ -508,7 +508,6 @@ export function SubmissionDetailSheet({
 
             {isAudit && (
               <>
-                <Separator />
                 <SheetSection
                   title='Answers'
                   action={
@@ -544,7 +543,6 @@ export function SubmissionDetailSheet({
 
             {displaySubmission.result && (
               <>
-                <Separator />
                 <SheetSection title='Result'>
                   <dl className={KV_GRID}>
                     <Kv
@@ -589,7 +587,6 @@ export function SubmissionDetailSheet({
 
             {hasFeedback && (
               <>
-                <Separator />
                 <SheetSection title='Feedback'>
                   <dl className={KV_GRID}>
                     <Kv
@@ -637,7 +634,6 @@ export function SubmissionDetailSheet({
 
             {hasAttribution && (
               <>
-                <Separator />
                 <SheetSection title='Attribution'>
                   <dl className={KV_GRID}>
                     <Kv
@@ -671,7 +667,6 @@ export function SubmissionDetailSheet({
               </>
             )}
 
-            <Separator />
             <SheetSection title='Session'>
               <dl className={KV_GRID}>
                 <Kv
@@ -782,7 +777,6 @@ export function SubmissionDetailSheet({
           onCancel={() => setArchiveConfirmOpen(false)}
           onConfirm={handleArchiveConfirm}
         />
-
       </SheetContent>
     </Sheet>
   )

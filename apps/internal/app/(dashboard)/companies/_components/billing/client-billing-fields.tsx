@@ -3,7 +3,6 @@
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@pts/ui/badge'
-import { Separator } from '@pts/ui/separator'
 import {
   Select,
   SelectContent,
@@ -256,8 +255,6 @@ export function ClientBillingFields({
           />
         ) : null}
       </SheetSection>
-
-      <Separator />
 
       <SheetSection
         title='Commission'

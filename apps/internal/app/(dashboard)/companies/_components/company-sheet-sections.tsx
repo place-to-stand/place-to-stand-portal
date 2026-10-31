@@ -255,7 +255,7 @@ export function CompanyClientReadOnly({
 
 /**
  * The company's latest client updates (clients and former clients), on the
- * Company column under Leads.
+ * Client column, last (the activity stream ends a sheet).
  */
 export function CompanyClientUpdates({ companyId }: { companyId: string }) {
   const { data: work } = useQuery({

@@ -1,5 +1,8 @@
 'use client'
 
+import { cn } from '@/lib/utils'
+import { SHEET_SECTIONS_CLASS } from '@/components/sheets/sheet-section'
+
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,7 +13,6 @@ import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { archiveCompanyDescription } from '../_lib/archive-copy'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
-import { Separator } from '@pts/ui/separator'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -37,10 +39,7 @@ import {
   useCompanySheetForm,
   type CompanyFormValues,
 } from './use-company-sheet-form'
-import {
-  CompanyClientUpdates,
-  CompanyLeadsSection,
-} from './company-sheet-sections'
+import { CompanyLeadsSection } from './company-sheet-sections'
 import {
   COMPANY_BILLING_SECTION_ID,
   COMPANY_PROJECTS_SECTION_ID,
@@ -452,7 +451,12 @@ export function CompanySheet({
                 >
                   {/* Company */}
                   <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
-                    <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
+                    <div
+                      className={cn(
+                        SHEET_SECTIONS_CLASS,
+                        'flex-1 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'
+                      )}
+                    >
                       {isArchived ? (
                         <p className='text-muted-foreground text-sm'>
                           {ARCHIVED_COMPANY_NOTE}
@@ -462,7 +466,6 @@ export function CompanySheet({
                         control={form.control}
                         disabled={fieldsDisabled}
                       />
-                      <Separator />
                       <div
                         id={COMPANY_PEOPLE_SECTION_ID}
                         className='scroll-mt-6'
@@ -499,11 +502,7 @@ export function CompanySheet({
                           }
                         />
                       </div>
-                      <Separator />
                       <CompanyLeadsSection leads={company?.leads ?? []} />
-                      {isAdmin && isEditing && updatesCompanyId ? (
-                        <CompanyClientUpdates companyId={updatesCompanyId} />
-                      ) : null}
                     </div>
                     <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
                       <SheetFormFooter
@@ -547,6 +546,9 @@ export function CompanySheet({
                     projectsCompanyId={showProjects ? projectsCompanyId : null}
                     isEditing={isEditing}
                     disabled={fieldsDisabled}
+                    updatesCompanyId={
+                      isAdmin && isEditing ? (updatesCompanyId ?? null) : null
+                    }
                   />
                 </form>
               </CompanyBillingProvider>

@@ -16,7 +16,11 @@ import { Textarea } from '@pts/ui/textarea'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import {
+  SheetSection,
+  SHEET_SECTIONS_CLASS,
+} from '@/components/sheets/sheet-section'
+import { cn } from '@/lib/utils'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   useHourBlockSheetState,
@@ -125,7 +129,7 @@ export function HourBlockSheet({
                 onSubmit={form.handleSubmit((values: HourBlockFormValues) =>
                   handleSubmit(values)
                 )}
-                className='flex flex-col gap-6 px-6 pt-6 pb-8'
+                className={cn(SHEET_SECTIONS_CLASS, 'px-6 pt-6 pb-8')}
               >
                 <SheetSection>
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>

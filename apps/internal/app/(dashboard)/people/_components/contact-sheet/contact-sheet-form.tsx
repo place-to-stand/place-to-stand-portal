@@ -7,7 +7,11 @@ import { useWatch, type UseFormReturn } from 'react-hook-form'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import {
+  SheetSection,
+  SHEET_SECTIONS_CLASS,
+} from '@/components/sheets/sheet-section'
+import { cn } from '@/lib/utils'
 import {
   Form,
   FormControl,
@@ -19,7 +23,6 @@ import {
 import { Input } from '@pts/ui/input'
 import { UrlInput } from '@/components/ui/url-input'
 import { PhoneInput } from '@/components/ui/phone-input'
-import { Separator } from '@pts/ui/separator'
 import { AvatarUploadField } from '@/components/forms/avatar-upload-field'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
@@ -162,7 +165,7 @@ export function ContactSheetForm({
           onSubmit={form.handleSubmit(onSubmit)}
           className='flex flex-col'
         >
-          <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+          <div className={cn(SHEET_SECTIONS_CLASS, 'px-6 pt-6 pb-8')}>
             {readOnly ? (
               <p className='text-muted-foreground text-sm'>
                 {PERSON_WITH_SIGN_IN_ADMIN_ONLY}
@@ -196,7 +199,6 @@ export function ContactSheetForm({
                 </FormItem>
               )}
             />
-            <Separator />
             <SheetSection>
               <FormField
                 control={form.control}
@@ -305,7 +307,6 @@ export function ContactSheetForm({
                 />
               </div>
             </SheetSection>
-            <Separator />
             <FormField
               control={form.control}
               name='companies'
@@ -324,7 +325,6 @@ export function ContactSheetForm({
                 />
               )}
             />
-            <Separator />
             <SheetSection title='Access'>
               <ContactAccessFields
                 form={form}

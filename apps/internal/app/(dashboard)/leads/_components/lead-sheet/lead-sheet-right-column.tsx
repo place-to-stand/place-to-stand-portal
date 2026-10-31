@@ -1,8 +1,9 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
-
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
+import { SHEET_SECTIONS_CLASS } from '@/components/sheets/sheet-section'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { MessageSquareText } from 'lucide-react'
 import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -41,7 +42,7 @@ export function LeadSheetRightColumn({
       )}
     >
       {lead ? (
-        <div className='space-y-10 p-6'>
+        <div className={cn(SHEET_SECTIONS_CLASS, 'p-6')}>
           {/* Conversion — renders nothing until the lead is closed won */}
           {isAdmin ? (
             <LeadConversionSection
@@ -68,13 +69,27 @@ export function LeadSheetRightColumn({
         // Tasks and updates are their own records, saved on their own, and
         // need the lead to point at. Conversion needs a Won lead, so it
         // stays hidden until then.
-        <div className='space-y-10 p-6'>
-          <SheetSection list title='Tasks'>
-            <EmptyState message='Add tasks after you save the lead.' />
-          </SheetSection>
-          <SheetSection list title='Updates'>
-            <EmptyState message='Add updates after you save the lead.' />
-          </SheetSection>
+        <div className={cn(SHEET_SECTIONS_CLASS, 'p-6')}>
+          <EntityList
+            title='Tasks'
+            icon={ENTITY_ICONS.task}
+            add={{
+              label: 'Add task',
+              disabledReason: 'Add tasks after you save the lead.',
+            }}
+            isEmpty
+            emptyMessage='Add tasks after you save the lead.'
+          />
+          <EntityList
+            title='Updates'
+            icon={MessageSquareText}
+            add={{
+              label: 'Add update',
+              disabledReason: 'Add updates after you save the lead.',
+            }}
+            isEmpty
+            emptyMessage='Add updates after you save the lead.'
+          />
         </div>
       )}
     </div>

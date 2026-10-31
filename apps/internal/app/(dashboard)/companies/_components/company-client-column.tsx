@@ -1,6 +1,7 @@
 'use client'
 
-import { Separator } from '@pts/ui/separator'
+import { SHEET_SECTIONS_CLASS } from '@/components/sheets/sheet-section'
+
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -10,6 +11,7 @@ import {
   CompanyBillingSection,
   CompanyClientReadOnly,
   CompanyProjectsSection,
+  CompanyClientUpdates,
 } from './company-sheet-sections'
 
 /** Deep-link targets in the Client column (`?tab=billing`, `?tab=projects`). */
@@ -27,11 +29,13 @@ type CompanyClientColumnProps = {
   projectsCompanyId: string | null
   isEditing: boolean
   disabled: boolean
+  /** Admins editing a client or former client: its updates, always last. */
+  updatesCompanyId: string | null
 }
 
 /**
  * The company sheet's side column: Client. The Bill this company switch and
- * its billing, then its Projects. Below lg it stacks
+ * its billing, then its Projects, then its client updates (last). Below lg it stacks
  * under the Company column.
  */
 export function CompanyClientColumn({
@@ -41,6 +45,7 @@ export function CompanyClientColumn({
   projectsCompanyId,
   isEditing,
   disabled,
+  updatesCompanyId,
 }: CompanyClientColumnProps) {
   const billing = useCompanyBilling()
 
@@ -52,10 +57,10 @@ export function CompanyClientColumn({
         SHEET_SIDE_COLUMN_CLASSES.even
       )}
     >
-      <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+      <div className={cn(SHEET_SECTIONS_CLASS, 'px-6 pt-6 pb-8')}>
         <div
           id={COMPANY_BILLING_SECTION_ID}
-          className='flex scroll-mt-6 flex-col gap-6'
+          className={cn(SHEET_SECTIONS_CLASS, 'scroll-mt-6')}
         >
           {canManage ? (
             <CompanyBillingSection
@@ -71,7 +76,6 @@ export function CompanyClientColumn({
         </div>
         {canManage && isEditing && projectsCompanyId ? (
           <>
-            <Separator />
             <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
               <CompanyProjectsSection
                 companyId={projectsCompanyId}
@@ -82,7 +86,6 @@ export function CompanyClientColumn({
         ) : canManage && billing.billingOn ? (
           // Becoming a client in this Save: projects start once it is one.
           <>
-            <Separator />
             <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
               <EntityList
                 title='Projects'
@@ -95,6 +98,10 @@ export function CompanyClientColumn({
               />
             </div>
           </>
+        ) : null}
+        {/* The activity stream sits last, under everything else. */}
+        {updatesCompanyId ? (
+          <CompanyClientUpdates companyId={updatesCompanyId} />
         ) : null}
       </div>
     </div>
