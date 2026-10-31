@@ -34,7 +34,7 @@ test('sales is sent back from admin pages', async ({ page }) => {
   }
 })
 
-test('sales sees a person with a sign-in read-only, without sign-in or portal fields', async ({
+test('sales sees a person with a sign-in read-only, access locked', async ({
   page,
 }) => {
   // The admin test account has a sign-in.
@@ -58,8 +58,18 @@ test('sales sees a person with a sign-in read-only, without sign-in or portal fi
   ).toBeVisible()
   await expect(sheet.getByPlaceholder('John Doe')).toBeDisabled()
   await expect(sheet.getByPlaceholder('contact@example.com')).toBeDisabled()
-  // No Sign-in section, role or portal access.
-  await expect(sheet.getByText('Can sign in', { exact: true })).toHaveCount(0)
+  // Access shows what they have, locked; no role picker or portal access.
+  await expect(sheet.getByRole('radio', { name: 'Team' })).toBeChecked()
+  for (const name of ['No access', 'Team']) {
+    await expect(sheet.getByRole('radio', { name })).toBeDisabled()
+  }
+  // Staff: no client portal on offer.
+  await expect(sheet.getByRole('radio', { name: 'Client portal' })).toHaveCount(
+    0
+  )
+  await expect(
+    sheet.getByText('Signs in to this portal as an Admin', { exact: false })
+  ).toBeVisible()
   await expect(sheet.getByText('Role', { exact: true })).toHaveCount(0)
   await expect(sheet.getByText('Portal access')).toHaveCount(0)
   await expect(
