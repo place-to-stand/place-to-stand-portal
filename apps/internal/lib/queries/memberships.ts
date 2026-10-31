@@ -13,6 +13,7 @@ import {
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 import { roleCan, type Role } from '@/lib/auth/capabilities'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, memberships } from '@/lib/db/schema'
 import {
@@ -137,6 +138,8 @@ export type ContactMembership = {
   /** The company's live client, if it has one. */
   clientCompanyId: string | null
   clientName: string | null
+  /** A client's current billing type; null when not billed now. */
+  billingType: 'prepaid' | 'net_30' | null
   /** Billed before but not now: its portal access returns if billing restarts. */
   formerClient: boolean
   startedAt: string
@@ -174,6 +177,9 @@ export async function listContactMemberships(
       clientName: sql<
         string | null
       >`case when ${isClientCompany()} then ${companies.name} end`,
+      billingType: sql<
+        'prepaid' | 'net_30' | null
+      >`case when ${isClientCompany()} then ${currentBillingTypeSql()} end`,
       formerClient: isFormerClientSql,
       isStaff: companies.isStaff,
       startedAt: memberships.startedAt,
@@ -209,6 +215,7 @@ export async function listContactMemberships(
       portalAccess: row.portalAccess,
       clientCompanyId: row.clientCompanyId ?? null,
       clientName: row.clientName ?? null,
+      billingType: row.billingType ?? null,
       formerClient: Boolean(row.formerClient),
       isStaff: Boolean(row.isStaff),
       startedAt: row.startedAt,

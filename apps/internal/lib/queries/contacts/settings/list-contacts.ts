@@ -1,4 +1,5 @@
 import { isClientCompany } from '@pts/db/client-state'
+import { isAdminRole } from '@/lib/auth/roles'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -145,10 +146,7 @@ async function fetchClientDetails(
     .from(clientPortalAccess)
     .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
     .where(
-      and(
-        inArray(clientPortalAccess.contactId, contactIds),
-        isClientCompany()
-      )
+      and(inArray(clientPortalAccess.contactId, contactIds), isClientCompany())
     )
     .orderBy(asc(clientNameSql))
 
@@ -170,7 +168,8 @@ async function fetchClientDetails(
 function mapContactMetrics(
   rows: ContactMetricsResult[],
   clientsMap: Map<string, LinkedClient[]>,
-  membershipsMap: Map<string, ContactMembership[]>
+  membershipsMap: Map<string, ContactMembership[]>,
+  seesBilling: boolean
 ): ContactsSettingsListItem[] {
   return rows.map(row => ({
     id: row.id,
@@ -193,6 +192,7 @@ function mapContactMetrics(
       id: membership.companyId,
       name: membership.companyName,
       isClient: Boolean(membership.clientCompanyId),
+      billingType: seesBilling ? membership.billingType : null,
     })),
     metrics: {
       totalClients: Number(row.totalClients ?? 0),
@@ -335,7 +335,8 @@ export async function listContactsForSettings(
   const mappedItems = mapContactMetrics(
     normalizedRows,
     clientsMap,
-    membershipsMap
+    membershipsMap,
+    isAdminRole(user.role)
   ).map(item =>
     seesAccess
       ? item

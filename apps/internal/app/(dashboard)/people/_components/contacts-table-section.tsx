@@ -26,6 +26,7 @@ import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
 import { ClientBadge } from '@/components/clients/client-badge'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import { cn } from '@/lib/utils'
@@ -193,11 +194,12 @@ export function ContactsTableSection({
                           {contact.companyName}
                         </Link>
                       </TruncationTooltip>
-                      {contact.companies.find(
-                        company => company.id === contact.companyId
-                      )?.isClient ? (
-                        <ClientBadge className='shrink-0' />
-                      ) : null}
+                      <CompanyClientMark
+                        company={contact.companies.find(
+                          company => company.id === contact.companyId
+                        )}
+                        className='shrink-0'
+                      />
                       {contact.companies.length > 1 ? (
                         <LinkedRecordsHoverCell
                           count={contact.companies.length}
@@ -210,7 +212,7 @@ export function ContactsTableSection({
                             id: company.id,
                             label: company.name,
                             href: companySheetHref(company.id),
-                            trailing: company.isClient ? <ClientBadge /> : null,
+                            trailing: <CompanyClientMark company={company} />,
                           }))}
                         />
                       ) : null}
@@ -306,5 +308,25 @@ export function ContactsTableSection({
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+/**
+ * A company billed now, beside its name: its Prepaid / Net 30 badge for
+ * people who see billing, else the Client badge.
+ */
+function CompanyClientMark({
+  company,
+  className,
+}: {
+  company:
+    { isClient: boolean; billingType: 'prepaid' | 'net_30' | null } | undefined
+  className?: string
+}) {
+  if (!company?.isClient) return null
+  return company.billingType ? (
+    <BillingTypeBadge billingType={company.billingType} className={className} />
+  ) : (
+    <ClientBadge className={className} />
   )
 }

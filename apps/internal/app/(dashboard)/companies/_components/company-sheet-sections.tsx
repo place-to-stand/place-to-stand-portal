@@ -26,7 +26,6 @@ import {
   useCompanyBilling,
 } from './company-billing-section'
 import { Label } from '@pts/ui/label'
-import { ClientBadge } from '@/components/clients/client-badge'
 import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
@@ -141,7 +140,7 @@ export function CompanyBillingSection({
 
   return (
     <>
-      <SheetSection title='Client' action={isClient ? <ClientBadge /> : null}>
+      <SheetSection title='Client'>
         <div className='flex items-center gap-2'>
           <Switch
             id='company-bill-switch'
@@ -231,7 +230,7 @@ export function CompanyClientReadOnly({
   wasClient?: boolean
 }) {
   return (
-    <SheetSection title='Client' action={isClient ? <ClientBadge /> : null}>
+    <SheetSection title='Client'>
       {isClient ? (
         <p className='text-muted-foreground text-sm'>
           Only an admin can change a client’s billing.

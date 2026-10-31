@@ -52,7 +52,6 @@ import {
 } from './company-billing-section'
 import { CompanyDetailsFields } from './company-details-fields'
 import { CompanyPeopleTab } from './company-people-tab'
-import { ClientBadge } from '@/components/clients/client-badge'
 import {
   clearSheetSectionTarget,
   peekSheetSectionTarget,
@@ -420,7 +419,6 @@ export function CompanySheet({
                 className={`${ENTITY_ACCENTS.company.icon} size-4 shrink-0`}
               />
             }
-            badges={clientCompanyId ? <ClientBadge /> : null}
             className='flex-shrink-0'
           />
           {isError || (isEditing && data === null) ? (

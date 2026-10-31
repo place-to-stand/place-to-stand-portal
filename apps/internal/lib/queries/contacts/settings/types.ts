@@ -23,6 +23,8 @@ export type ContactCompanyItem = {
   name: string
   /** The company has a live client. */
   isClient: boolean
+  /** Billed now: prepaid or net 30 (people who manage clients), else null. */
+  billingType: 'prepaid' | 'net_30' | null
 }
 
 export type ContactsSettingsListItem = SelectContact &
