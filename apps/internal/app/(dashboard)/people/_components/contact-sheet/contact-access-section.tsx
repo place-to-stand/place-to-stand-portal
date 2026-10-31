@@ -39,7 +39,6 @@ import {
   accessSummary,
   type AccessKind,
 } from '@/lib/settings/contacts/person-access'
-import { SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
 import type {
   ContactCompanyEntry,
   ContactFormData,
@@ -126,33 +125,18 @@ type ContactAccessFieldsProps = {
  * manage sign-ins (Sales).
  */
 export function ContactAccessFields(props: ContactAccessFieldsProps) {
-  if (!props.canManage) return <ReadOnlyAccess {...props} />
+  if (!props.canManage) return <ReadOnlyAccess />
   return <ManagedAccess {...props} />
 }
 
 /** Sales: the saved state and its sentence, the choice locked. */
-function ReadOnlyAccess({
-  form,
-  hasSignIn,
-  savedRole,
-  personEmail,
-}: ContactAccessFieldsProps) {
-  const companies = useWatch({ control: form.control, name: 'companies' }) ?? []
-  const role = hasSignIn ? savedRole : null
-  const kind = accessKindOf(role ? { enabled: true, role } : null)
+// Sign-ins are admin-only information (as on the people list): people who
+// can't manage them see that, not someone's role or portal companies.
+function ReadOnlyAccess() {
   return (
-    <PersonAccessChoice
-      value={kind}
-      kinds={accessKindsFor(companies, kind)}
-      lockedReason={SIGN_IN_ADMIN_ONLY}
-      // Which companies they see is for people who manage clients.
-      summary={accessSummary({
-        kind,
-        email: personEmail,
-        role: role ?? 'CLIENT',
-        companies: null,
-      })}
-    />
+    <p className='text-muted-foreground text-sm'>
+      Only an admin can see or change someone&rsquo;s access.
+    </p>
   )
 }
 

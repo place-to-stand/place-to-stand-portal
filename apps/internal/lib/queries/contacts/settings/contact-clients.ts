@@ -130,12 +130,7 @@ export async function listContactClients(
     })
     .from(clientPortalAccess)
     .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
-    .where(
-      and(
-        eq(clientPortalAccess.contactId, contactId),
-        isClientCompany()
-      )
-    )
+    .where(and(eq(clientPortalAccess.contactId, contactId), isClientCompany()))
     .orderBy(asc(clientNameSql))
 
   return rows.map(row => ({
@@ -162,7 +157,7 @@ export async function getContactSheetData(
         phone: contacts.phone,
         linkedinUrl: contacts.linkedinUrl,
         updatedAt: contacts.updatedAt,
-        // As the people list shows it (a role only while it is live).
+        // A role only while it is live (stripped for Sales below).
         signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
           select u.role from users u
           where u.id = ${contacts.userId}
@@ -187,7 +182,10 @@ export async function getContactSheetData(
           phone: person.phone,
           linkedinUrl: person.linkedinUrl,
           updatedAt: person.updatedAt,
-          signInRole: person.signInRole ?? null,
+          // Sign-ins are admin-only information, as on the people list.
+          signInRole: canSeePortalAccess(user.role)
+            ? (person.signInRole ?? null)
+            : null,
         }
       : null,
   }
