@@ -213,7 +213,8 @@ export function ComponentsFeedback() {
           </AlertContent>
         </Alert>
         <SaveSideEffect>
-          Saving emails a portal invite to Ada Lovelace.
+          Ada Lovelace will get an email invite to the client portal when you
+          save.
         </SaveSideEffect>
       </Specimen>
       <Specimen

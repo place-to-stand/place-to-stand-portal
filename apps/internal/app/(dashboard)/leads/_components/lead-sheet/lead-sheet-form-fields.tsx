@@ -296,8 +296,8 @@ function ContactCompanyMismatchNote({
   const companyName = company.name || 'this company'
   return (
     <SaveSideEffect>
-      {contactName} is not yet at {companyName}. Saving adds {contactName} to{' '}
-      {companyName}.
+      {contactName} isn&rsquo;t at {companyName} yet, and will be added to{' '}
+      {companyName} when you save.
     </SaveSideEffect>
   )
 }
