@@ -98,7 +98,7 @@ test('creating a company with a person and billing is one Save', async ({
   const name = `E2E one-save company ${Date.now()}`
   const { sheet, personName } = await startCompany(page, name)
 
-  await sheet.getByRole('button', { name: 'Make a client' }).click()
+  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
   await expect(
     sheet.getByText('This company becomes a client when you save.')
   ).toBeVisible()
@@ -125,7 +125,7 @@ test('billing through the end of the month, then restarting, keeps a client', as
 }) => {
   const name = `E2E stop-restart ${Date.now()}`
   const { sheet } = await startCompany(page, name)
-  await sheet.getByRole('button', { name: 'Make a client' }).click()
+  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
   await sheet.getByRole('button', { name: 'Create company' }).click()
   await expect(sheet).toBeHidden()
 
@@ -186,9 +186,9 @@ test('restarting a former client shows its last terms to edit', async ({
   await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
-  // Not billed now: Restart billing, where the switch used to be off.
+  // Not billed now: the switch is off under the former-client line.
   await expect(sheet.getByText(/^Former client/)).toBeVisible()
-  await sheet.getByRole('button', { name: 'Restart billing' }).click()
+  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
   // On: its last terms fill the form, editable in the same Save.
   await expect(
     sheet.getByRole('switch', { name: 'Bill this company' })
@@ -214,7 +214,7 @@ test('a billed company is not archived: stop billing first', async ({
 }) => {
   const name = `E2E archive-billed ${Date.now()}`
   const { sheet } = await startCompany(page, name)
-  await sheet.getByRole('button', { name: 'Make a client' }).click()
+  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
   await sheet.getByRole('button', { name: 'Create company' }).click()
   await expect(sheet).toBeHidden()
 

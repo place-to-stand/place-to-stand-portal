@@ -18,7 +18,7 @@ export const COMPANY_BILLING_SECTION_ID = 'company-billing'
 export const COMPANY_PROJECTS_SECTION_ID = 'company-projects'
 
 type CompanyClientColumnProps = {
-  /** Admins: billing, Make a client and projects. Others see where it stands. */
+  /** Admins: the Bill this company switch, billing and projects. Others see where it stands. */
   canManage: boolean
   /** Billed now (a stop may be scheduled). */
   clientCompanyId: string | null
@@ -31,8 +31,8 @@ type CompanyClientColumnProps = {
 }
 
 /**
- * The company sheet's side column: Client. Its billing (or the "Not a
- * client" panel and Make a client), then its Projects. Below lg it stacks
+ * The company sheet's side column: Client. The Bill this company switch and
+ * its billing, then its Projects. Below lg it stacks
  * under the Company column.
  */
 export function CompanyClientColumn({

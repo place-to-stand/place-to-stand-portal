@@ -157,7 +157,7 @@ export function PatternsHouseRules() {
         doExample={
           <MiniSheet parts={['Company', 'Client']}>
             <div className='text-muted-foreground p-3'>
-              New company: both columns, Make a client included.
+              New company: both columns, the Bill this company switch included.
             </div>
           </MiniSheet>
         }

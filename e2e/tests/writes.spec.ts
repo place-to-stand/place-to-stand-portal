@@ -16,8 +16,10 @@ async function openFirstNonClientCompany(page: Page) {
     .first()
   await row.locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  // Not a client: the Client column offers Make a client.
-  await expect(sheet.getByRole('button', { name: 'Make a client' })).toBeVisible()
+  // Not a client: the Client column's Bill this company switch is off.
+  await expect(
+    sheet.getByRole('switch', { name: 'Bill this company' })
+  ).toHaveAttribute('aria-checked', 'false')
   return sheet
 }
 
@@ -26,13 +28,8 @@ async function setBilling(page: Page, on: boolean) {
   await expect(
     sheet.getByRole('heading', { name: 'Client', exact: true })
   ).toBeVisible()
-  const start = sheet.getByRole('button', {
-    name: /^(Make a client|Restart billing)$/,
-  })
   const toggle = sheet.getByRole('switch', { name: 'Bill this company' })
-  // Not billed: Make a client (or Restart billing) switches it on.
-  if (on && (await start.count())) await start.click()
-  else if ((await toggle.getAttribute('aria-checked')) !== String(on))
+  if ((await toggle.getAttribute('aria-checked')) !== String(on))
     await toggle.click()
   await sheet.getByRole('button', { name: 'Save changes' }).click()
   await expect(sheet).toBeHidden()

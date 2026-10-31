@@ -15,7 +15,6 @@ import {
 import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
@@ -62,15 +61,11 @@ export function CompanyLeadsSection({
   )
 }
 
-/** What making a company a client does, in one line. */
-const NOT_A_CLIENT =
-  'Not a client. A client is billed, has projects and can use the portal.'
-
 /**
- * The Client column's billing (admins). A company that isn't billed shows a
- * "Not a client" panel; Make a client (or Restart billing, for a former
- * client) switches "Bill this company" on, which makes it a client on Save.
- * Switched off, a client stops billing on Save. When that takes effect and
+ * The Client column's billing (admins): the "Bill this company" switch is
+ * always there. Switched on, a company becomes a client (or a former client
+ * restarts) on Save and the billing fields appear under it; switched off, a
+ * client stops billing on Save. When that takes effect and
  * the billing fields sit right under it. Everything saves with the sheet's
  * Save.
  */
@@ -96,6 +91,9 @@ export function CompanyBillingSection({
       })
     : null
   const isClient = mode === 'live' || mode === 'ending'
+  const lastType = CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
+    option => option.value === billing.client?.billing_type
+  )?.label
   const stopping = isClient && !billingOn
   // Starting next month still makes it a client on save, portal included.
   const portalNow =
@@ -107,13 +105,15 @@ export function CompanyBillingSection({
     mode === 'new'
       ? billingOn
         ? onSave(`This company becomes a client when you save.${portalNow}`)
-        : null // the Not a client panel shows instead
+        : null
       : mode === 'former'
         ? billingOn
           ? onSave(
               'Billing restarts with these terms when you save, with any changes from its first month billed. Its people with Portal on get portal access back.'
             )
-          : null // the former client panel shows instead
+          : state(
+              `Former client${lastType ? `, last billed ${lastType}` : ''}. Billing stopped.`
+            )
         : mode === 'ending' && billingOn
           ? billing.keepBilling
             ? onSave(
@@ -149,36 +149,6 @@ export function CompanyBillingSection({
     : billingOn && (mode === 'new' || mode === 'former')
       ? { title: 'First month billed', options: thisOrNextMonthOptions() }
       : null
-
-  // Not billed (never, or not any more): the panel, until Make a client.
-  if (!billingOn && (mode === 'new' || mode === 'former')) {
-    const lastType = CLIENT_BILLING_TYPE_SELECT_OPTIONS.find(
-      option => option.value === billing.client?.billing_type
-    )?.label
-    return (
-      <SheetSection title='Client'>
-        <EmptyState
-          message={
-            mode === 'new'
-              ? NOT_A_CLIENT
-              : `Former client${lastType ? `, last billed ${lastType}` : ''}. Billing stopped.`
-          }
-          action={
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              disabled={disabled || billing.status !== 'ready'}
-              onClick={() => billing.setBillingOn(true)}
-            >
-              <ENTITY_ICONS.client />
-              {mode === 'new' ? 'Make a client' : 'Restart billing'}
-            </Button>
-          }
-        />
-      </SheetSection>
-    )
-  }
 
   return (
     <>
@@ -286,7 +256,7 @@ export function CompanyClientReadOnly({
           message={
             wasClient
               ? 'Former client. Only an admin can restart billing.'
-              : `${NOT_A_CLIENT} Only an admin can make a company a client.`
+              : 'Not a client. Only an admin can make a company a client.'
           }
         />
       )}

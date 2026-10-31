@@ -76,7 +76,7 @@ type CompanySheetProps = {
 
 /**
  * Create and edit are the same sheet, in two columns: Company (details,
- * People, Leads, Updates) and Client (billing or Make a client, then
+ * People, Leads, Updates) and Client (the Bill this company switch and billing, then
  * Projects; read-only for Sales). One Save writes all of it — the company,
  * its people, billing and portal access — in one transaction.
  */
