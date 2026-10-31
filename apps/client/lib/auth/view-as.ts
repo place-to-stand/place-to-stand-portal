@@ -7,7 +7,12 @@ import { cookies } from 'next/headers'
 import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { companies, clientPortalAccess, contacts } from '@pts/db/schema'
+import {
+  companies,
+  clientPortalAccess,
+  contacts,
+  memberships,
+} from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
 
@@ -119,16 +124,26 @@ export const fetchPortalContactOptions = cache(
           isPromoted: isNotNull(contacts.userId).mapWith(Boolean),
         })
         .from(contacts)
-        // Only people who can see the portal: previewing anyone else shows an
-        // empty portal and reads as "nobody picked".
+        // Everyone at a current client, with or without portal access (as
+        // before): previewing shows what they'd see once given access.
+        // People at no client would preview an empty portal, so they're left
+        // out.
         .where(
           and(
             isNull(contacts.deletedAt),
             inArray(
               contacts.id,
               db
-                .selectDistinct({ id: clientPortalAccess.contactId })
-                .from(clientPortalAccess)
+                .selectDistinct({ id: memberships.contactId })
+                .from(memberships)
+                .innerJoin(
+                  companies,
+                  and(
+                    eq(companies.id, memberships.companyId),
+                    isNull(companies.deletedAt),
+                    isNull(clientEndedAtSql)
+                  )
+                )
             )
           )
         )
@@ -154,11 +169,14 @@ async function resolveAdminScope(): Promise<PortalScope> {
   const rows = await db
     .select({ companyId: companies.id, clientName: clientNameSql })
     .from(contacts)
-    .leftJoin(clientPortalAccess, eq(clientPortalAccess.contactId, contacts.id))
+    // Every current client the person is at, portal access or not: the
+    // admin sees what they'd see with access everywhere.
+    .leftJoin(memberships, eq(memberships.contactId, contacts.id))
     .leftJoin(
       companies,
       and(
-        eq(companies.id, clientPortalAccess.companyId),
+        eq(companies.id, memberships.companyId),
+        isNull(companies.deletedAt),
         isNull(clientEndedAtSql)
       )
     )
