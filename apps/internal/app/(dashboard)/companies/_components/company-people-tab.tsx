@@ -23,7 +23,7 @@ type CompanyPeopleTabProps = Omit<
 }
 
 /**
- * The People section (on the Company column): the list, plus each person's Portal switch while the
+ * The People section (on the Details tab): the list, plus each person's Portal switch while the
  * company is (or is becoming) billed, and on a former client, whose
  * switches show as they are (access returns with billing). Turning it on
  * for someone without a sign-in gives them one on Save.
@@ -86,10 +86,11 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
     : []
   const inviteNote = invitees.length ? (
     <SaveSideEffect>
+      Saving emails a portal invite to{' '}
       {new Intl.ListFormat('en', { type: 'conjunction' }).format(
         invitees.map(contact => contact.name)
-      )}{' '}
-      will get an email invite to the client portal when you save.
+      )}
+      .
     </SaveSideEffect>
   ) : null
 
