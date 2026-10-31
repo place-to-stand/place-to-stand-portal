@@ -186,9 +186,9 @@ export function TimeLogsTable({
                   <TableCell label='Client' className='text-sm'>
                     {item.clientName ? (
                       <div className='flex min-w-0 items-center gap-2'>
-                        <ENTITY_ICONS.company
+                        <ENTITY_ICONS.client
                           className={cn(
-                            ENTITY_ACCENTS.company.icon,
+                            ENTITY_ACCENTS.client.icon,
                             'h-4 w-4 shrink-0'
                           )}
                         />
