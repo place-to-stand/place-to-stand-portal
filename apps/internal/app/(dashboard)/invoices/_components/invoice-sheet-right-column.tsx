@@ -157,28 +157,9 @@ export function InvoiceSheetRightColumn({
           </>
         ) : null}
 
-        {/* Status & Invoice Number */}
-        <SheetSection>
-          <div className='space-y-2'>
-            <div className='flex items-center justify-between'>
-              <span className='text-muted-foreground text-sm'>Status</span>
-              <InvoiceStatusBadge status={invoice.status} />
-            </div>
-            {invoice.invoice_number ? (
-              <div className='flex items-center justify-between'>
-                <span className='text-muted-foreground text-sm'>Invoice #</span>
-                <span className='text-sm font-medium'>
-                  {invoice.invoice_number}
-                </span>
-              </div>
-            ) : null}
-          </div>
-        </SheetSection>
-
         {/* The hour blocks this invoice bought */}
         {invoice.hour_blocks?.length ? (
           <>
-            <Separator />
             <EntityList
               title={
                 invoice.hour_blocks.length === 1
@@ -200,8 +181,27 @@ export function InvoiceSheetRightColumn({
                 />
               ))}
             </EntityList>
+            <Separator />
           </>
         ) : null}
+
+        {/* Status & Invoice Number */}
+        <SheetSection>
+          <div className='space-y-2'>
+            <div className='flex items-center justify-between'>
+              <span className='text-muted-foreground text-sm'>Status</span>
+              <InvoiceStatusBadge status={invoice.status} />
+            </div>
+            {invoice.invoice_number ? (
+              <div className='flex items-center justify-between'>
+                <span className='text-muted-foreground text-sm'>Invoice #</span>
+                <span className='text-sm font-medium'>
+                  {invoice.invoice_number}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </SheetSection>
 
         <Separator />
 
