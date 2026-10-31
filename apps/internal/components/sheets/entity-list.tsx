@@ -5,6 +5,8 @@ import type { LucideIcon } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 
+import { InlineReveal } from '@/components/ui/inline-reveal'
+
 import { SectionAddButton } from './section-add-button'
 import { SheetRecordList } from './sheet-record-row'
 import { SheetSection } from './sheet-section'
@@ -41,6 +43,13 @@ type EntityListProps = {
   status?: ReactNode
   /** The rows: `SheetRecordRow`s, or any preview card. */
   children?: ReactNode
+  /**
+   * An add form that opens in place (logging a lead update): it sits under
+   * the heading, above the list, and eases its own height open and closed.
+   */
+  inlineForm?: ReactNode
+  /** While true, the empty state fades out so only the form shows. */
+  inlineFormOpen?: boolean
   /** Under the list or empty state (a pending-change note). */
   footer?: ReactNode
   className?: string
@@ -62,6 +71,8 @@ export function EntityList({
   isEmpty,
   status,
   children,
+  inlineForm,
+  inlineFormOpen = false,
   footer,
   className,
 }: EntityListProps) {
@@ -90,16 +101,22 @@ export function EntityList({
       action={action}
       className={className}
     >
-      {status ??
-        (isEmpty ? (
-          <EmptyState
-            message={emptyMessage}
-            label={canAdd ? add?.label : undefined}
-            onClick={canAdd ? add?.onAdd : undefined}
-          />
-        ) : (
-          <SheetRecordList>{children}</SheetRecordList>
-        ))}
+      {/* One child, so a closed form adds no gap of its own. */}
+      <div>
+        {inlineForm}
+        {status ??
+          (isEmpty ? (
+            <InlineReveal open={!inlineFormOpen}>
+              <EmptyState
+                message={emptyMessage}
+                label={canAdd ? add?.label : undefined}
+                onClick={canAdd ? add?.onAdd : undefined}
+              />
+            </InlineReveal>
+          ) : (
+            <SheetRecordList>{children}</SheetRecordList>
+          ))}
+      </div>
       {footer}
     </SheetSection>
   )

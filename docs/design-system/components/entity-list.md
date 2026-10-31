@@ -30,6 +30,7 @@ A sheet's list of related records: a section heading with the + on its right, th
 - **8px under the heading.** The heading sits 8px above the cards or the empty state, the same as a field label over its control. The + overlaps the heading row, so it never adds height.
 - **Rows are preview cards.** `SheetRecordRow` (and its entity variants) by default; any card that reads as one record is fine (time log rows, line items). Cards stack 8px apart.
 - **Read-only lists** leave out `add`: the heading and the cards stay, and the empty state is plain.
+- **Inline add forms open under the heading.** A form that opens in place from the + (Log update) goes in `inlineForm` with `inlineFormOpen`: it eases open between the heading and the list, and the empty state fades out while it's open. Never render it outside the list.
 - **`status`** replaces the body while loading or after a failed load.
 - **`titleAddon`** sits after the title (a count badge, "3h logged"). Don't put a count next to the +.
 

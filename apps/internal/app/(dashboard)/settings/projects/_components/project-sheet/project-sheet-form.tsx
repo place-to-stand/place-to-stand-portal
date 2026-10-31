@@ -246,7 +246,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
         <form
           id={PROJECT_FORM_ID}
           onSubmit={handleSave}
-          className='flex flex-col gap-5 px-6 pt-6 pb-8'
+          className='flex flex-col gap-6 px-6 pt-6 pb-8'
         >
           <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
             <FormField

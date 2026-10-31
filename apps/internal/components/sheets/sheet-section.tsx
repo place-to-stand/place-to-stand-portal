@@ -6,6 +6,13 @@ import type { LucideIcon } from 'lucide-react'
 import { entityIconAccent } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
+/**
+ * A major section with no divider around it (invoice Line items): 48px from
+ * its neighbours in a gap-6 column, the same as a `Separator` gives
+ * (24 + line + 24), so it still reads as its own block.
+ */
+export const SHEET_BLOCK_CLASS = 'my-6'
+
 type SheetSectionProps = {
   /**
    * Leave it out for a sheet's first group of fields: a generic "Details"

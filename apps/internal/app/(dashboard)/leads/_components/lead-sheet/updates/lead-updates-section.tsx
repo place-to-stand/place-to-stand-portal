@@ -85,14 +85,6 @@ export function LeadUpdatesSection({
 
   return (
     <>
-      <LeadUpdateDialog
-        leadId={lead.id}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        update={editingUpdate}
-        onSaved={handleSaved}
-      />
-
       <EntityList
         title='Updates'
         icon={MessageSquareText}
@@ -104,6 +96,16 @@ export function LeadUpdatesSection({
         add={
           canManage ? { label: 'Add update', onAdd: openLogDialog } : undefined
         }
+        inlineForm={
+          <LeadUpdateDialog
+            leadId={lead.id}
+            open={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            update={editingUpdate}
+            onSaved={handleSaved}
+          />
+        }
+        inlineFormOpen={isDialogOpen}
         isEmpty={updates.length === 0}
         emptyMessage='No updates on this lead yet.'
         status={

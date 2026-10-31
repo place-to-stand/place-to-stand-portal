@@ -45,6 +45,7 @@ import {
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { EntityList } from '@/components/sheets/entity-list'
+import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -405,7 +406,7 @@ export function InvoiceSheet({
                 <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
                   {/* Scrollable form body */}
                   <div className='flex-1 p-6 lg:overflow-y-auto'>
-                    <div className='flex flex-col gap-5'>
+                    <div className='flex flex-col gap-6'>
                       {/* ───── Header Fields ───── */}
                       <div className='grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2'>
                         <FormField
@@ -487,6 +488,7 @@ export function InvoiceSheet({
                         }
                         isEmpty={false}
                         emptyMessage=''
+                        className={SHEET_BLOCK_CLASS}
                       >
                         <FormMessage>
                           {form.formState.errors.lineItems?.message}
