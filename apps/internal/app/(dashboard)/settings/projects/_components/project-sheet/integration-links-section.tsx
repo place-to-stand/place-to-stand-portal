@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, Loader2, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, Loader2, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import {
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@pts/ui/dialog'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { integrationStatusQueryKey } from '@/components/integrations/token-integration-card'
 import {
@@ -241,10 +242,8 @@ export function IntegrationLinksSection({
     <SheetSection
       title={heading}
       action={
-        <RowActionButton
-          type='button'
+        <SectionAddButton
           label={`Link ${config.label} ${config.projectNoun}`}
-          icon={<Plus />}
           onClick={() => handleDialogOpenChange(true)}
           disabled={disabled}
         />

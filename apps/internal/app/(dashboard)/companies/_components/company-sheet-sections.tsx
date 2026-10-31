@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Button } from '@pts/ui/button'
 import { Skeleton } from '@pts/ui/skeleton'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
@@ -343,17 +344,12 @@ export function CompanyProjectsSection({
             {work.projects.length}
           </span>
           {canCreate ? (
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
+            <SectionAddButton
+              label='Create project'
               onClick={() =>
                 openNew('project', { projectCompanyId: companyId })
               }
-            >
-              <ENTITY_ICONS.project />
-              Create project
-            </Button>
+            />
           ) : null}
         </div>
       }

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
-import { Plus, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -12,6 +12,7 @@ import {
   SheetRecordList,
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project-sheet-state'
@@ -95,14 +96,7 @@ export function ProjectMembersField({
   const [pickerOpen, setPickerOpen] = useState(false)
   const canAdd = options.length > 0 && !disabled
 
-  const addButton = (
-    <RowActionButton
-      type='button'
-      label='Add member'
-      icon={<Plus />}
-      disabled={disabled}
-    />
-  )
+  const addButton = <SectionAddButton label='Add member' disabled={disabled} />
 
   // Same section shape as GitHub, Vercel and Supabase below: title row with
   // an add button, one boxed row per member, an empty state.

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Plus, Trash2, ExternalLink, Loader2 } from 'lucide-react'
+import { Trash2, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -327,10 +328,8 @@ export function GitHubReposSection({
     <SheetSection
       title='GitHub repositories'
       action={
-        <RowActionButton
-          type='button'
+        <SectionAddButton
           label='Link repository'
-          icon={<Plus />}
           onClick={() => handleDialogOpenChange(true)}
           disabled={disabled}
         />

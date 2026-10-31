@@ -1,12 +1,10 @@
 'use client'
 
-import { Plus } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { getInitials } from '@/lib/users/initials'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
@@ -55,23 +53,12 @@ export function TimeLogSection({
             {formatHours(totalHours)} logged
           </span>
         </div>
-        <DisabledFieldTooltip
+        <SectionAddButton
+          label='Log time'
           disabled={logTimeDisabled}
-          reason={logTimeDisabledReason}
-        >
-          {/* Matches the Attachments add button: icon-only ghost, labelled
-              for AT since the text label is gone. */}
-          <Button
-            type='button'
-            size='xs'
-            variant='ghost'
-            disabled={logTimeDisabled}
-            onClick={onLogTime}
-            aria-label='Log time'
-          >
-            <Plus className='h-4 w-4' />
-          </Button>
-        </DisabledFieldTooltip>
+          disabledReason={logTimeDisabled ? logTimeDisabledReason : null}
+          onClick={onLogTime}
+        />
       </div>
       {isLoading ? (
         <div className='space-y-2'>
@@ -169,17 +156,7 @@ export function TimeLogSectionPlaceholder() {
           />
           <h3 className='text-sm font-medium'>Time logs</h3>
         </div>
-        <DisabledFieldTooltip disabled reason={reason}>
-          <Button
-            type='button'
-            size='xs'
-            variant='ghost'
-            disabled
-            aria-label='Log time'
-          >
-            <Plus className='h-4 w-4' />
-          </Button>
-        </DisabledFieldTooltip>
+        <SectionAddButton label='Log time' disabledReason={reason} />
       </div>
       <EmptyState message={reason} />
     </section>
