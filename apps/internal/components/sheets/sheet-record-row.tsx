@@ -150,10 +150,15 @@ export function RecordRowField({
     // `contents`: the label and its control are the grid's two cells, and
     // clicking the label still focuses the control.
     <label className='contents'>
-      <span className='text-muted-foreground text-sm'>{label}</span>
+      {/* Both cells hug their content, so only the label text and the
+          control respond to a click, not the row's empty width. */}
+      <span className='text-muted-foreground justify-self-start text-sm'>
+        {label}
+      </span>
       <span
         className={cn(
           'flex min-h-8 min-w-0 items-center gap-2',
+          grow ? 'w-full' : 'justify-self-start',
           // Ghost inputs keep their text on the value column's edge.
           grow && 'max-w-72 [&>*:last-child]:-ml-2 [&>*:last-child]:w-full'
         )}
