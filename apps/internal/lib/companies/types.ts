@@ -39,6 +39,8 @@ export type CompanyListItem = {
   }[]
   /** Its projects (not archived), for the Projects hover card. */
   projects: { id: string; name: string; slug: string | null }[]
+  /** A prepaid client's hours (people who manage clients), else null. */
+  hours: { remaining: number; purchased: number } | null
   /** Its URL segment, for project board links. */
   slug: string | null
   primaryContactName: string | null

@@ -1,3 +1,4 @@
+import { getClientHoursTotals } from '@pts/db/hours'
 import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -189,11 +190,18 @@ export async function listCompanies(
 
   // Billing and commission are for people who manage clients.
   const seesBilling = isAdminRole(user.role)
-  const closersByClient = seesBilling
-    ? await fetchLatestClosersByClient(
-        rows.filter(row => row.isClient).map(row => row.id)
-      )
-    : new Map()
+  const clientIds = rows.filter(row => row.isClient).map(row => row.id)
+  const [closersByClient, hoursByClient] = seesBilling
+    ? await Promise.all([
+        fetchLatestClosersByClient(clientIds),
+        getClientHoursTotals(
+          db,
+          rows
+            .filter(row => row.isClient && row.billingType === 'prepaid')
+            .map(row => row.id)
+        ),
+      ])
+    : [new Map(), new Map()]
 
   return rows.map(row => ({
     id: row.id,
@@ -217,6 +225,14 @@ export async function listCompanies(
       })
     ),
     projects: row.projects ?? [],
+    // Prepaid clients only: none bought or logged yet reads as 0 of 0.
+    hours:
+      seesBilling && row.isClient && row.billingType === 'prepaid'
+        ? {
+            remaining: hoursByClient.get(row.id)?.remaining ?? 0,
+            purchased: hoursByClient.get(row.id)?.purchased ?? 0,
+          }
+        : null,
     companyId: row.isClient ? row.id : null,
     clientName: row.isClient ? row.name : null,
     formerClient: Boolean(row.formerClient),

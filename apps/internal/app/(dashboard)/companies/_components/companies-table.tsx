@@ -39,6 +39,8 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
+import { formatHours } from '@pts/ui/numbers'
+import { BALANCE_TONE_CLASS, balanceTone } from '@/lib/billing/balance-tone'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -125,17 +127,16 @@ export function CompaniesTable({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[34%]')}
-            <TableHead className='w-[12%] text-center'>Client</TableHead>
+            {sortHead('name', 'Company', 'w-[24%]')}
+            {sortHead('client', 'Client', 'w-[11%]')}
+            {seesBilling ? sortHead('hours', 'Hours', 'w-[16%]') : null}
             {sortHead('people', 'People', 'w-[9%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
-            <TableHead className='w-[9%] text-center'>Projects</TableHead>
+            {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
             {seesBilling ? (
               <>
-                <TableHead className='w-[10%] text-center'>
-                  Origination
-                </TableHead>
-                <TableHead className='w-[10%] text-center'>Closer</TableHead>
+                {sortHead('origination', 'Origination', 'w-[10%]', 'center')}
+                {sortHead('closer', 'Closer', 'w-[10%]', 'center')}
               </>
             ) : null}
             <TableHead className='w-16 text-right'>Actions</TableHead>
@@ -165,7 +166,7 @@ export function CompaniesTable({
                     </span>
                   </div>
                 </TableCell>
-                <TableCell label='Client' className='md:text-center'>
+                <TableCell label='Client'>
                   {/* Billed now: its billing type (admins) or a check. A former
                       client gets the dash. */}
                   {company.companyId && seesBilling && company.billingType ? (
@@ -182,6 +183,36 @@ export function CompaniesTable({
                     <EmptyValue />
                   )}
                 </TableCell>
+                {seesBilling ? (
+                  <TableCell label='Hours' className='text-sm tabular-nums'>
+                    {company.hours ? (
+                      <span className='inline-flex items-center gap-1.5'>
+                        <ENTITY_ICONS.timeLog
+                          className={cn(
+                            ENTITY_ACCENTS.timeLog.icon,
+                            'size-4 shrink-0'
+                          )}
+                          aria-hidden
+                        />
+                        <span
+                          className={cn(
+                            'font-medium',
+                            BALANCE_TONE_CLASS[
+                              balanceTone(company.hours.remaining)
+                            ]
+                          )}
+                        >
+                          {formatHours(company.hours.remaining)} remaining
+                        </span>
+                        <span className='text-muted-foreground'>
+                          ({formatHours(company.hours.purchased)} total)
+                        </span>
+                      </span>
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </TableCell>
+                ) : null}
                 <TableCell
                   label='People'
                   className='text-sm tabular-nums md:text-center'
@@ -317,7 +348,7 @@ export function CompaniesTable({
           })}
           {companies.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className='p-4'>
+              <TableCell colSpan={12} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
