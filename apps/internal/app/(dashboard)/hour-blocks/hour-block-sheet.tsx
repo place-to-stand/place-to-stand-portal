@@ -161,7 +161,8 @@ export function HourBlockSheet({
                       control={form.control}
                       name='hoursPurchased'
                       render={({ field }) => (
-                        <FormItem>
+                        // Its own row under Client, still half width.
+                        <FormItem className='sm:col-start-1'>
                           <FormLabel>Hours purchased</FormLabel>
                           <FormControl>
                             <DisabledFieldTooltip
