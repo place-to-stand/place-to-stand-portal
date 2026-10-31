@@ -42,6 +42,12 @@ import {
   setMembershipTitle,
 } from '@/lib/queries/memberships'
 import { roleCan } from '@/lib/auth/capabilities'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import {
+  currentOriginationContactIdSql,
+  currentOriginationUserIdSql,
+  fetchLatestClosersByClient,
+} from '@/lib/queries/clients/commission-terms'
 import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -113,7 +119,28 @@ export async function listCompanies(
       id: companies.id,
       name: companies.name,
       website: companies.website,
+      slug: companies.slug,
       isStaff: companies.isStaff,
+      billingType: currentBillingTypeSql(),
+      originationUserId: currentOriginationUserIdSql(),
+      originationContactId: currentOriginationContactIdSql(),
+      originationName: sql<string | null>`coalesce(
+        -- A user is called by their contact's name (see personNameOf).
+        (select uc.name from contacts uc
+          where uc.user_id = ${currentOriginationUserIdSql()}),
+        (select u.email from users u
+          where u.id = ${currentOriginationUserIdSql()}),
+        (select oc.name from contacts oc
+          where oc.id = ${currentOriginationContactIdSql()})
+      )`,
+      projects: sql<CompanyListItem['projects']>`coalesce((
+        select json_agg(
+          json_build_object('id', p.id, 'name', p.name, 'slug', p.slug)
+          order by lower(p.name)
+        )
+        from projects p
+        where p.company_id = companies.id and p.deleted_at is null
+      ), '[]'::json)`,
       // Billed now: the company is its own client.
       isClient: sql<boolean | null>`${isClientCompany()}`,
       // Billed before but not now.
@@ -160,10 +187,36 @@ export async function listCompanies(
         : desc(companies.deletedAt)
     )
 
+  // Billing and commission are for people who manage clients.
+  const seesBilling = isAdminRole(user.role)
+  const closersByClient = seesBilling
+    ? await fetchLatestClosersByClient(
+        rows.filter(row => row.isClient).map(row => row.id)
+      )
+    : new Map()
+
   return rows.map(row => ({
     id: row.id,
     name: row.name,
     website: row.website,
+    slug: row.slug,
+    billingType: seesBilling && row.isClient ? row.billingType : null,
+    origination:
+      seesBilling && row.isClient && row.originationName
+        ? {
+            userId: row.originationUserId ?? null,
+            contactId: row.originationContactId ?? null,
+            name: row.originationName,
+          }
+        : null,
+    closers: (closersByClient.get(row.id) ?? []).map(
+      (closer: { kind: 'user' | 'contact'; id: string; name: string }) => ({
+        kind: closer.kind,
+        id: closer.id,
+        name: closer.name,
+      })
+    ),
+    projects: row.projects ?? [],
     companyId: row.isClient ? row.id : null,
     clientName: row.isClient ? row.name : null,
     formerClient: Boolean(row.formerClient),

@@ -23,6 +23,24 @@ export type CompanyListItem = {
   openLeads: { id: string; contactName: string; status: LeadStatusValue }[]
   contactCount: number
   openLeadCount: number
+  /** Billing and commission: for people who manage clients, else empty. */
+  billingType: 'prepaid' | 'net_30' | null
+  /** The current originator (a staff user or a person), if any. */
+  origination: {
+    userId: string | null
+    contactId: string | null
+    name: string
+  } | null
+  /** The current closers, largest share first. */
+  closers: {
+    kind: 'user' | 'contact'
+    id: string
+    name: string
+  }[]
+  /** Its projects (not archived), for the Projects hover card. */
+  projects: { id: string; name: string; slug: string | null }[]
+  /** Its URL segment, for project board links. */
+  slug: string | null
   primaryContactName: string | null
   /** Why this user can't archive or restore it (the staff company, for Sales). */
   archiveRefusal: string | null

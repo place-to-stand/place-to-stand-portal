@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, Star } from 'lucide-react'
+import { Check, Star } from 'lucide-react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -21,12 +21,15 @@ import {
 import { EmptyValue } from '@/components/table/empty-value'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
-import { contactSheetHref, leadHref } from '@/lib/sheets/hrefs'
+import {
+  contactSheetHref,
+  leadHref,
+  projectBoardHref,
+} from '@/lib/sheets/hrefs'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { useToast } from '@/components/ui/use-toast'
 import type { CompanyListItem } from '@/lib/companies/types'
-import { displayWebsiteHost, toWebsiteHref } from '@/lib/companies/website'
 import { archiveCompanyDescription } from '../_lib/archive-copy'
 import { archiveCompany, restoreCompany } from '../actions'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
@@ -36,7 +39,9 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
-import { ClientBadge } from '@/components/clients/client-badge'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import { PersonAvatar } from '@/components/ui/user-avatar'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 export function CompaniesTable({
@@ -54,6 +59,8 @@ export function CompaniesTable({
   mode: 'active' | 'archive'
 }) {
   const { open } = useSheetParams()
+  // Billing and commission columns are for people who manage clients.
+  const { isAdmin: seesBilling } = useViewerAccess()
   const router = useRouter()
   const { toast } = useToast()
   const [isPending, startTransition] = useTransition()
@@ -114,20 +121,29 @@ export function CompaniesTable({
         density='compact'
         layout='fixed'
         stack
-        className='md:min-w-[60rem]'
+        className='md:min-w-[72rem]'
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            {sortHead('name', 'Company', 'w-[44%]')}
-            <TableHead className='w-[28%]'>Website</TableHead>
-            {sortHead('people', 'People', 'w-[12%]', 'center')}
-            {sortHead('leads', 'Open leads', 'w-[12%]', 'center')}
+            {sortHead('name', 'Company', 'w-[26%]')}
+            <TableHead className='w-[7%] text-center'>Client</TableHead>
+            {seesBilling ? (
+              <>
+                <TableHead className='w-[11%]'>Billing type</TableHead>
+                <TableHead className='w-[10%] text-center'>
+                  Origination
+                </TableHead>
+                <TableHead className='w-[10%] text-center'>Closer</TableHead>
+              </>
+            ) : null}
+            {sortHead('people', 'People', 'w-[9%]', 'center')}
+            {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
+            <TableHead className='w-[9%] text-center'>Projects</TableHead>
             <TableHead className='w-16 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {companies.map(company => {
-            const host = displayWebsiteHost(company.website)
             return (
               <TableRow
                 key={company.id}
@@ -148,32 +164,68 @@ export function CompaniesTable({
                     <span className='truncate font-medium' title={company.name}>
                       {company.name}
                     </span>
-                    {/* Billed now: the badge sits by the name, as in ⌘K. */}
-                    {company.companyId ? (
-                      <ClientBadge className='shrink-0' />
-                    ) : null}
                   </div>
                 </TableCell>
-                <TableCell
-                  label='Website'
-                  className='text-muted-foreground truncate text-sm'
-                  title={host ?? undefined}
-                >
-                  {host && company.website ? (
-                    // Opens the site; the row ignores clicks on links.
-                    <a
-                      href={toWebsiteHref(company.website)}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      className='group/link hover:text-foreground inline-flex max-w-full items-center gap-1 underline-offset-4 transition hover:underline'
-                    >
-                      <span className='truncate'>{host}</span>
-                      <ExternalLink className='size-3 shrink-0 opacity-0 transition group-hover/link:opacity-100' />
-                    </a>
+                <TableCell label='Client' className='md:text-center'>
+                  {/* Billed now; a former client gets no check. */}
+                  {company.companyId ? (
+                    <Check
+                      className={cn(
+                        ENTITY_ACCENTS.client.icon,
+                        'inline size-4'
+                      )}
+                      aria-label='Billed now'
+                    />
                   ) : (
                     <EmptyValue />
                   )}
                 </TableCell>
+                {seesBilling ? (
+                  <>
+                    <TableCell label='Billing type'>
+                      {company.billingType ? (
+                        <BillingTypeBadge billingType={company.billingType} />
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                    <TableCell label='Origination' className='md:text-center'>
+                      {company.origination ? (
+                        <PersonAvatar
+                          name={company.origination.name}
+                          userId={company.origination.userId ?? undefined}
+                          contactId={company.origination.contactId ?? undefined}
+                          ariaLabel={`Originated by ${company.origination.name}`}
+                        />
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                    <TableCell label='Closer' className='md:text-center'>
+                      {company.closers.length ? (
+                        <span className='inline-flex -space-x-1.5 [&>span]:rounded-full [&>span]:ring-2 [&>span]:ring-[var(--card)]'>
+                          {company.closers.map(closer => (
+                            <PersonAvatar
+                              key={`${closer.kind}:${closer.id}`}
+                              name={closer.name}
+                              userId={
+                                closer.kind === 'user' ? closer.id : undefined
+                              }
+                              contactId={
+                                closer.kind === 'contact'
+                                  ? closer.id
+                                  : undefined
+                              }
+                              ariaLabel={`Closed by ${closer.name}`}
+                            />
+                          ))}
+                        </span>
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                  </>
+                ) : null}
                 <TableCell
                   label='People'
                   className='text-sm tabular-nums md:text-center'
@@ -218,6 +270,26 @@ export function CompaniesTable({
                     }))}
                   />
                 </TableCell>
+                <TableCell
+                  label='Projects'
+                  className='text-sm tabular-nums md:text-center'
+                >
+                  <LinkedRecordsHoverCell
+                    count={company.projects.length}
+                    withIcon
+                    icon={ENTITY_ICONS.project}
+                    iconClassName={ENTITY_ACCENTS.project.icon}
+                    ariaLabel={`${company.projects.length} ${company.projects.length === 1 ? 'project' : 'projects'}`}
+                    items={company.projects.map(project => ({
+                      id: project.id,
+                      label: project.name,
+                      href:
+                        company.slug && project.slug
+                          ? projectBoardHref(company.slug, project.slug)
+                          : undefined,
+                    }))}
+                  />
+                </TableCell>
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
                     {mode === 'active' ? (
@@ -250,7 +322,7 @@ export function CompaniesTable({
           })}
           {companies.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className='p-4'>
+              <TableCell colSpan={11} className='p-4'>
                 <EmptyState message={emptyMessage} />
               </TableCell>
             </TableRow>
