@@ -141,18 +141,21 @@ export function CompanyBillingSection({
 
   return (
     <>
+      {/* Fields, not a list: 16px under the heading even with the switch
+          in its action slot (an action otherwise means 8px over a list). */}
       <SheetSection
         title='Client'
         icon={ENTITY_ICONS.client}
+        className='gap-4'
         action={
           <>
-            <Label htmlFor='company-bill-switch'>Bill this company</Label>
             <Switch
               id='company-bill-switch'
               checked={billingOn}
               disabled={disabled || billing.status !== 'ready'}
               onCheckedChange={billing.setBillingOn}
             />
+            <Label htmlFor='company-bill-switch'>Bill this company</Label>
           </>
         }
       >
