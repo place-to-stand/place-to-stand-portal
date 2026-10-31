@@ -124,24 +124,28 @@ function TakeA() {
           className='bg-card hover:bg-muted/40 flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-1.5 transition-colors'
         >
           <PersonIcon />
-          <span className='min-w-40 flex-1 basis-40'>
+          <span className='min-w-0 flex-1'>
             <NameBlock person={person} />
           </span>
-          <Input
-            value={person.title}
-            onChange={event => update(index, { title: event.target.value })}
-            placeholder='Add title'
-            aria-label={`${person.name}'s title`}
-            className={cn(GHOST_INPUT, 'w-44')}
-          />
-          <label className='text-muted-foreground flex h-8 items-center gap-2 text-sm'>
-            Portal
-            <Switch
-              checked={person.portal}
-              onCheckedChange={portal => update(index, { portal })}
-              aria-label={`Portal access for ${person.name}`}
+          {/* Fields: beside the name on wide sheets; on phones a line of
+              their own under the name, after the actions. */}
+          <span className='flex items-center gap-3 max-sm:order-last max-sm:w-full max-sm:pl-7'>
+            <Input
+              value={person.title}
+              onChange={event => update(index, { title: event.target.value })}
+              placeholder='Add title'
+              aria-label={`${person.name}'s title`}
+              className={cn(GHOST_INPUT, 'w-44 max-sm:flex-1')}
             />
-          </label>
+            <label className='text-muted-foreground flex h-8 shrink-0 items-center gap-2 text-sm'>
+              Portal
+              <Switch
+                checked={person.portal}
+                onCheckedChange={portal => update(index, { portal })}
+                aria-label={`Portal access for ${person.name}`}
+              />
+            </label>
+          </span>
           <span className='flex items-center'>
             <StarButton
               on={person.primary}
