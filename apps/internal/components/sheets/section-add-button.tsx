@@ -30,12 +30,7 @@ export function SectionAddButton({
 }: SectionAddButtonProps) {
   const isDisabled = Boolean(disabled || disabledReason)
   return (
-    <DisabledFieldTooltip
-      disabled={isDisabled}
-      reason={disabledReason}
-      // Never makes its heading row taller than the label.
-      className='-my-1 w-auto'
-    >
+    <DisabledFieldTooltip disabled={isDisabled} reason={disabledReason}>
       <Button
         type='button'
         variant='ghost'

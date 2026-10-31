@@ -65,7 +65,13 @@ export function SheetSection({
             ) : null}
             {title}
           </h3>
-          {action}
+          {/* The action overlaps the row instead of growing it, so the
+              heading keeps its 8px over the list either way. */}
+          {action ? (
+            <div className='-my-2 flex shrink-0 items-center gap-2'>
+              {action}
+            </div>
+          ) : null}
         </div>
         {description ? (
           <p className='text-muted-foreground text-xs'>{description}</p>
