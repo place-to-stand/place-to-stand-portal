@@ -2,9 +2,14 @@ import { parseCalendarDate } from '@/lib/dates/calendar-date'
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
-// PRD 004 §03: per-view sort allowlist (D6/R5). The single field has a
-// matching descriptor (order expr + cursor encode/compare) in the query.
-const HOUR_BLOCK_SORT_FIELDS = ['created'] as const
+// PRD 004 §03: per-view sort allowlist (D6/R5). Each field has a matching
+// descriptor (order expr + cursor encode/compare) in the query.
+const HOUR_BLOCK_SORT_FIELDS = [
+  'hours',
+  'client',
+  'invoice',
+  'created',
+] as const
 export type HourBlockSortField = (typeof HOUR_BLOCK_SORT_FIELDS)[number]
 
 export const DEFAULT_HOUR_BLOCKS_SORT = {

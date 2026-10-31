@@ -83,9 +83,33 @@ export function HourBlocksTableSection({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className='w-[18%]'>Hours purchased</TableHead>
-            <TableHead className='w-[34%]'>Client</TableHead>
-            <TableHead className='w-[18%]'>Invoice #</TableHead>
+            <SortableTableHead
+              field='hours'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Hours purchased
+            </SortableTableHead>
+            <SortableTableHead
+              field='client'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[34%]'
+            >
+              Client
+            </SortableTableHead>
+            <SortableTableHead
+              field='invoice'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Invoice #
+            </SortableTableHead>
             <SortableTableHead
               field='created'
               sort={sort}

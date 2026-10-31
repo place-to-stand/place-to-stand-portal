@@ -146,10 +146,51 @@ type HourBlockSortDescriptor = {
   orderDesc: SQL
 }
 
+/**
+ * A sort key that may be empty (a block with no invoice): empty values last
+ * in both directions; the cursor encodes null as ''.
+ */
+function nullsLastDescriptor(
+  expr: SQL,
+  encode: (row: HourBlockWithClient) => string
+): HourBlockSortDescriptor {
+  return {
+    encode,
+    compare: (op, value) =>
+      value === ''
+        ? sql`false`
+        : op === 'gt'
+          ? sql`(${expr} > ${value} OR ${expr} IS NULL)`
+          : sql`(${expr} < ${value} OR ${expr} IS NULL)`,
+    equals: value =>
+      value === '' ? sql`${expr} IS NULL` : sql`${expr} = ${value}`,
+    orderAsc: sql`${expr} ASC NULLS LAST`,
+    orderDesc: sql`${expr} DESC NULLS LAST`,
+  }
+}
+
 const HOUR_BLOCK_SORT_DESCRIPTORS: Record<
   HourBlockSortField,
   HourBlockSortDescriptor
 > = {
+  hours: {
+    encode: row => String(row.hours_purchased),
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${hourBlocks.hoursPurchased} > ${value}::numeric`
+        : sql`${hourBlocks.hoursPurchased} < ${value}::numeric`,
+    equals: value => sql`${hourBlocks.hoursPurchased} = ${value}::numeric`,
+    orderAsc: sql`${hourBlocks.hoursPurchased} ASC`,
+    orderDesc: sql`${hourBlocks.hoursPurchased} DESC`,
+  },
+  client: nullsLastDescriptor(
+    sql`lower(${clientNameSql})`,
+    row => row.client?.name.toLowerCase() ?? ''
+  ),
+  invoice: nullsLastDescriptor(
+    sql`${invoices.invoiceNumber}`,
+    row => row.invoice_number ?? ''
+  ),
   created: {
     encode: row => String(row.created_at),
     compare: (op, value) =>
