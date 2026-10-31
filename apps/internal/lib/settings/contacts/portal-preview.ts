@@ -15,3 +15,20 @@ export function openPortalPreview(clientPortalUrl: string, contactId: string) {
     'noopener,noreferrer'
   )
 }
+
+/** Why Preview is off for someone `canPreviewAsClient` turns down. */
+export const PREVIEW_UNAVAILABLE_REASON =
+  "Not at a client we bill, so there's nothing to preview."
+
+/**
+ * Whether previewing the portal as this person shows anything: they're not
+ * archived and work at a company we bill now (the portal shows exactly
+ * those companies; see the client app's `resolveAdminScope`). Portal access
+ * and sign-ins don't matter. The one rule for every Preview button.
+ */
+export function canPreviewAsClient(person: {
+  deletedAt?: string | null
+  companies: ReadonlyArray<{ isClient: boolean }>
+}) {
+  return !person.deletedAt && person.companies.some(company => company.isClient)
+}

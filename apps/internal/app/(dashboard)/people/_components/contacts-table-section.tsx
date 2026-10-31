@@ -28,6 +28,10 @@ import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cel
 import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import {
+  canPreviewAsClient,
+  PREVIEW_UNAVAILABLE_REASON,
+} from '@/lib/settings/contacts/portal-preview'
 import { cn } from '@/lib/utils'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -165,6 +169,7 @@ export function ContactsTableSection({
             const showRestore = mode === 'archive'
             // Portal preview is admin-only.
             const showPreview = isAdmin && mode === 'active'
+            const canPreview = canPreviewAsClient(contact)
 
             return (
               <TableRow
@@ -284,8 +289,14 @@ export function ContactsTableSection({
                       <RecordRowAction
                         kind='preview'
                         onClick={() => onRequestPreview(contact)}
-                        disabled={isPending}
-                        disabledReason={isPending ? pendingReason : null}
+                        disabled={isPending || !canPreview}
+                        disabledReason={
+                          isPending
+                            ? pendingReason
+                            : canPreview
+                              ? null
+                              : PREVIEW_UNAVAILABLE_REASON
+                        }
                       />
                     ) : null}
                     {showRestore ? (
