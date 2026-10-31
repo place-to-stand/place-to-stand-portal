@@ -105,22 +105,24 @@ export function CompanyBillingSection({
   const line =
     mode === 'new'
       ? billingOn
-        ? onSave(`Saving makes this company a client.${portalNow}`)
+        ? onSave(`This company becomes a client when you save.${portalNow}`)
         : null // the Not a client panel shows instead
       : mode === 'former'
         ? billingOn
           ? onSave(
-              'Saving restarts billing with these terms, any changes from its first month billed. Its people with Portal on get portal access back.'
+              'Billing restarts with these terms when you save, with any changes from its first month billed. Its people with Portal on get portal access back.'
             )
           : null // the former client panel shows instead
         : mode === 'ending' && billingOn
           ? billing.keepBilling
-            ? onSave('Saving cancels the stop and keeps billing this company.')
+            ? onSave(
+                'The stop is cancelled and billing continues when you save.'
+              )
             : state(`Billing stops after ${endsLabel}.`)
           : billingOn
             ? null
             : onSave(
-                'Saving stops billing. Their people lose portal access when billing ends. Its projects, invoices and history stay.'
+                'Billing stops when you save. Their people lose portal access when billing ends; projects, invoices and history stay.'
               )
   // A stop before this month leaves this month's net 30 time unbilled.
   const unbilledHours =
