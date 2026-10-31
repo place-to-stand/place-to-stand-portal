@@ -1,4 +1,4 @@
-import { clientEndedAtSql } from '@pts/db/client-state'
+import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -141,9 +141,10 @@ export const fetchPortalContactOptions = cache(
                   and(
                     eq(companies.id, memberships.companyId),
                     isNull(companies.deletedAt),
-                    isNull(clientEndedAtSql)
+                    isClientCompany()
                   )
                 )
+                .where(isNull(memberships.endedAt))
             )
           )
         )
@@ -171,13 +172,17 @@ async function resolveAdminScope(): Promise<PortalScope> {
     .from(contacts)
     // Every current client the person is at, portal access or not: the
     // admin sees what they'd see with access everywhere.
-    .leftJoin(memberships, eq(memberships.contactId, contacts.id))
+    // Current memberships only, at companies that are clients now.
+    .leftJoin(
+      memberships,
+      and(eq(memberships.contactId, contacts.id), isNull(memberships.endedAt))
+    )
     .leftJoin(
       companies,
       and(
         eq(companies.id, memberships.companyId),
         isNull(companies.deletedAt),
-        isNull(clientEndedAtSql)
+        isClientCompany()
       )
     )
     .where(and(eq(contacts.id, selectedContactId), isNull(contacts.deletedAt)))
