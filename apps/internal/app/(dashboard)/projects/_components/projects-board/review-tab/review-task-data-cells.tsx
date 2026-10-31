@@ -1,6 +1,6 @@
-import { MessageCircle, Paperclip } from 'lucide-react'
 
 import { TableCell } from '@pts/ui/table'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 
@@ -45,7 +45,7 @@ export function ReviewTaskDataCells({
       >
         {commentCount > 0 ? (
           <span className='inline-flex items-center gap-1'>
-            <MessageCircle className='h-3.5 w-3.5' />
+            <CONCEPT_ICONS.comment className='h-3.5 w-3.5' />
             {commentCount}
           </span>
         ) : (
@@ -60,7 +60,7 @@ export function ReviewTaskDataCells({
       >
         {attachmentCount > 0 ? (
           <span className='inline-flex items-center gap-1'>
-            <Paperclip className='h-3.5 w-3.5' />
+            <CONCEPT_ICONS.attachment className='h-3.5 w-3.5' />
             {attachmentCount}
           </span>
         ) : (

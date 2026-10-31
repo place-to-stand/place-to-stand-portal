@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic'
 import { type ReactNode } from 'react'
-import { History } from 'lucide-react'
 
 import {
   Accordion,
@@ -10,6 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@pts/ui/accordion'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import type { ActivityFeedProps } from '@/components/activity/activity-feed'
 import { useActivityCount } from '@/lib/activity/use-activity-feed'
 
@@ -87,7 +87,7 @@ export function SheetActivityDisclosure({
       <AccordionItem value='activity' className='border-b-0'>
         <AccordionTrigger className='py-0 text-sm font-semibold tracking-tight hover:no-underline'>
           <span className='flex items-center gap-2'>
-            <History
+            <CONCEPT_ICONS.activity
               className='text-muted-foreground size-4 shrink-0'
               aria-hidden
             />

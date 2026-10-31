@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MessageSquare, MoreHorizontal, type LucideIcon } from 'lucide-react'
+import { MoreHorizontal, type LucideIcon } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -24,6 +24,7 @@ import {
 import { Separator } from '@pts/ui/separator'
 import { Switch } from '@pts/ui/switch'
 import { Textarea } from '@pts/ui/textarea'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
@@ -288,7 +289,7 @@ function SampleEntitySheet({
                 </SheetSection>
                 {/* The bottom of a sheet: comments or updates, then
                         the collapsed Activity, always last. */}
-                <SheetSection title='Comments' icon={MessageSquare}>
+                <SheetSection title='Comments' icon={CONCEPT_ICONS.comment}>
                   <EmptyState message='No comments yet.' />
                 </SheetSection>
                 <SheetActivityDisclosure total={2}>

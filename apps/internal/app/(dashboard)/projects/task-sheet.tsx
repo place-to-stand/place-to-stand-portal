@@ -1,6 +1,7 @@
 'use client'
 
 import { EmptyState } from '@pts/ui/empty-state'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   useCallback,
@@ -12,7 +13,7 @@ import {
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ClipboardList, HelpCircle, MessageSquare } from 'lucide-react'
+import { ClipboardList, HelpCircle } from 'lucide-react'
 
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -459,7 +460,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   <>
                     <SheetSection
                       title='Comments'
-                      icon={MessageSquare}
+                      icon={CONCEPT_ICONS.comment}
                       className='px-6'
                     >
                       <TaskCommentsPanel
@@ -485,7 +486,7 @@ export function TaskSheet(props: TaskSheetProps) {
                 ) : !props.task ? (
                   <SheetSection
                     title='Comments'
-                    icon={MessageSquare}
+                    icon={CONCEPT_ICONS.comment}
                     className='px-6'
                   >
                     <EmptyState message='Add comments after you save the task.' />
