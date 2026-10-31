@@ -452,7 +452,7 @@ export function CompanySheet({
                 >
                   {/* Company */}
                   <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
-                    <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto'>
+                    <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
                       {isArchived ? (
                         <p className='text-muted-foreground text-sm'>
                           {ARCHIVED_COMPANY_NOTE}

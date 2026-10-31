@@ -234,7 +234,7 @@ function SampleEntitySheet({
             }}
           >
             <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
-              <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto'>
+              <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
                 <SheetSection
                   title='Details'
                   description='Everything here saves with the one Save below.'
