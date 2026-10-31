@@ -1,5 +1,6 @@
 'use client'
 
+import { Separator } from '@pts/ui/separator'
 import { InvoiceRecordRow } from '@/components/sheets/entity-record-rows'
 import { EntityList } from '@/components/sheets/entity-list'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
@@ -17,6 +18,7 @@ export function HourBlockInvoiceSection({
 
   return (
     <>
+      <Separator />
       <EntityList
         title='Linked invoice'
         description={

@@ -1,7 +1,6 @@
 'use client'
 
-import { SHEET_SECTIONS_CLASS } from '@/components/sheets/sheet-section'
-
+import { Separator } from '@pts/ui/separator'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -57,10 +56,10 @@ export function CompanyClientColumn({
         SHEET_SIDE_COLUMN_CLASSES.even
       )}
     >
-      <div className={cn(SHEET_SECTIONS_CLASS, 'px-6 pt-6 pb-8')}>
+      <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
         <div
           id={COMPANY_BILLING_SECTION_ID}
-          className={cn(SHEET_SECTIONS_CLASS, 'scroll-mt-6')}
+          className='flex scroll-mt-6 flex-col gap-6'
         >
           {canManage ? (
             <CompanyBillingSection
@@ -76,6 +75,7 @@ export function CompanyClientColumn({
         </div>
         {canManage && isEditing && projectsCompanyId ? (
           <>
+            <Separator />
             <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
               <CompanyProjectsSection
                 companyId={projectsCompanyId}
@@ -86,6 +86,7 @@ export function CompanyClientColumn({
         ) : canManage && billing.billingOn ? (
           // Becoming a client in this Save: projects start once it is one.
           <>
+            <Separator />
             <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
               <EntityList
                 title='Projects'
@@ -101,7 +102,10 @@ export function CompanyClientColumn({
         ) : null}
         {/* The activity stream sits last, under everything else. */}
         {updatesCompanyId ? (
-          <CompanyClientUpdates companyId={updatesCompanyId} />
+          <>
+            <Separator />
+            <CompanyClientUpdates companyId={updatesCompanyId} />
+          </>
         ) : null}
       </div>
     </div>

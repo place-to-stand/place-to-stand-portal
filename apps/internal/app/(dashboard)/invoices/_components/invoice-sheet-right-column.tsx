@@ -3,12 +3,10 @@
 import { Ban, Calendar, CheckCheck, Eye, Mail, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { Separator } from '@pts/ui/separator'
 
 import { EntityList } from '@/components/sheets/entity-list'
-import {
-  SheetSection,
-  SHEET_SECTIONS_CLASS,
-} from '@/components/sheets/sheet-section'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { formatCalendarDate } from '@pts/ui/dates'
 
@@ -79,11 +77,12 @@ export function InvoiceSheetRightColumn({
         SHEET_SIDE_COLUMN_CLASS
       )}
     >
-      <div className={cn(SHEET_SECTIONS_CLASS, 'p-6')}>
+      <div className='space-y-6 p-6'>
         {/* A draft reserves the link's space; sending fills it in. */}
         {liveToken || isDraft ? (
           <>
             <InvoiceLinkField invoiceId={invoice.id} shareToken={liveToken} />
+            <Separator />
           </>
         ) : null}
 
@@ -154,6 +153,7 @@ export function InvoiceSheetRightColumn({
                 ) : null}
               </div>
             </div>
+            <Separator />
           </>
         ) : null}
 
@@ -178,6 +178,7 @@ export function InvoiceSheetRightColumn({
         {/* The hour blocks this invoice bought */}
         {invoice.hour_blocks?.length ? (
           <>
+            <Separator />
             <EntityList
               title={
                 invoice.hour_blocks.length === 1
@@ -201,6 +202,8 @@ export function InvoiceSheetRightColumn({
             </EntityList>
           </>
         ) : null}
+
+        <Separator />
 
         {/* Key Dates */}
         <SheetSection title='Dates'>
@@ -240,6 +243,7 @@ export function InvoiceSheetRightColumn({
         {/* View Count */}
         {invoice.share_enabled && invoice.viewed_count > 0 ? (
           <>
+            <Separator />
             <div className='text-muted-foreground flex items-center gap-2 text-sm'>
               <Eye className='h-4 w-4' />
               Viewed {invoice.viewed_count} time

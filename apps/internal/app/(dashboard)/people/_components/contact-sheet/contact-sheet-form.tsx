@@ -9,9 +9,9 @@ import { getSubmitLabel } from '@/lib/forms/form-controls'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import {
   SheetSection,
-  SHEET_SECTIONS_CLASS,
+  SHEET_BLOCK_CLASS,
 } from '@/components/sheets/sheet-section'
-import { cn } from '@/lib/utils'
+import { Separator } from '@pts/ui/separator'
 import {
   Form,
   FormControl,
@@ -165,7 +165,7 @@ export function ContactSheetForm({
           onSubmit={form.handleSubmit(onSubmit)}
           className='flex flex-col'
         >
-          <div className={cn(SHEET_SECTIONS_CLASS, 'px-6 pt-6 pb-8')}>
+          <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
             {readOnly ? (
               <p className='text-muted-foreground text-sm'>
                 {PERSON_WITH_SIGN_IN_ADMIN_ONLY}
@@ -199,6 +199,7 @@ export function ContactSheetForm({
                 </FormItem>
               )}
             />
+            <Separator />
             <SheetSection>
               <FormField
                 control={form.control}
@@ -307,24 +308,28 @@ export function ContactSheetForm({
                 />
               </div>
             </SheetSection>
-            <FormField
-              control={form.control}
-              name='companies'
-              render={({ field }) => (
-                <ContactCompaniesSection
-                  companies={field.value}
-                  disabled={locked}
-                  loadFailed={companiesLoadFailed}
-                  onChange={next => field.onChange(next)}
-                  showPortalAccess={canManageSignIn}
-                  portalReason={
-                    portalSignIn
-                      ? null
-                      : 'Choose Client portal under Access to turn this on.'
-                  }
-                />
-              )}
-            />
+            {/* No line around Companies: 48px sets it apart instead. */}
+            <div className={SHEET_BLOCK_CLASS}>
+              <FormField
+                control={form.control}
+                name='companies'
+                render={({ field }) => (
+                  <ContactCompaniesSection
+                    companies={field.value}
+                    disabled={locked}
+                    loadFailed={companiesLoadFailed}
+                    onChange={next => field.onChange(next)}
+                    showPortalAccess={canManageSignIn}
+                    portalReason={
+                      portalSignIn
+                        ? null
+                        : 'Choose Client portal under Access to turn this on.'
+                    }
+                  />
+                )}
+              />
+            </div>
+            <Separator />
             <SheetSection title='Access'>
               <ContactAccessFields
                 form={form}

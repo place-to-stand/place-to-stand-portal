@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 export const SHEET_BLOCK_CLASS = 'my-6'
 
 /**
- * A sheet column's stack of sections: 48px apart, no dividers between them.
+ * A column of dividerless sections (company Company column): 48px apart.
  * Keep `Separator` for lines that do a job inside a block (an invoice total).
  */
 export const SHEET_SECTIONS_CLASS = 'flex flex-col gap-12'
@@ -47,7 +47,7 @@ type SheetSectionProps = {
 
 /**
  * A titled group of fields inside a sheet body. Sheets separate sections
- * 48px apart (`SHEET_SECTIONS_CLASS`), no dividers; the title row matches the submission sheet's
+ * with `<Separator />` (a few boxed lists stand alone, see sheet.md); the title row matches the submission sheet's
  * section heading so read-only and form sheets share one vocabulary.
  */
 export function SheetSection({

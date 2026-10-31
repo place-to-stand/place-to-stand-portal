@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
+import { Separator } from '@pts/ui/separator'
 import { Switch } from '@pts/ui/switch'
 import { Textarea } from '@pts/ui/textarea'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
@@ -32,10 +33,7 @@ import { EntityList } from '@/components/sheets/entity-list'
 import { SheetActivityDisclosure } from '@/components/sheets/sheet-activity-section'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
-import {
-  SheetSection,
-  SHEET_SECTIONS_CLASS,
-} from '@/components/sheets/sheet-section'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   Sheet,
   SheetContent,
@@ -236,12 +234,7 @@ function SampleEntitySheet({
             }}
           >
             <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
-              <div
-                className={cn(
-                  SHEET_SECTIONS_CLASS,
-                  'flex-1 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'
-                )}
-              >
+              <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
                 <SheetSection>
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                     <div className='space-y-2'>
@@ -336,7 +329,7 @@ function SampleEntitySheet({
                 SHEET_SIDE_COLUMN_CLASSES.even
               )}
             >
-              <div className={cn(SHEET_SECTIONS_CLASS, 'px-6 pt-6 pb-8')}>
+              <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
                 <SheetSection title='Client'>
                   <div className='space-y-2'>
                     <Label>Billing type</Label>
@@ -351,6 +344,7 @@ function SampleEntitySheet({
                     </Select>
                   </div>
                 </SheetSection>
+                <Separator />
                 <SheetSection title='Portal access'>
                   <div className='flex items-center gap-2'>
                     <Switch id='design-sheet-portal' defaultChecked />
