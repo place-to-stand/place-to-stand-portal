@@ -54,7 +54,7 @@ type IntegrationLinksSectionProps = {
 }
 
 const rowClasses =
-  'bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
+  'bg-background flex items-center justify-between rounded-md border px-3 py-2'
 
 async function fetchJson<T>(url: string, fallbackError: string): Promise<T> {
   const res = await fetch(url)

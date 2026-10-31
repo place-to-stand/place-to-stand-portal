@@ -100,7 +100,7 @@ export function SheetRecordRow({
   )
 
   const cardClassName = cn(
-    'bg-muted/40 rounded-md border transition-colors',
+    'bg-background rounded-md border transition-colors',
     // Rows that open their record light up on hover, like table rows.
     (onOpen || href) && 'hover:bg-muted hover:border-foreground/20',
     className

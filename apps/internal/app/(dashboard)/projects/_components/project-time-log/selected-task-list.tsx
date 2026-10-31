@@ -28,7 +28,7 @@ export function SelectedTaskList(props: SelectedTaskListProps) {
         return (
           <div
             key={task.id}
-            className='bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
+            className='bg-background flex items-center justify-between rounded-md border px-3 py-2'
           >
             <div className='flex flex-col text-sm leading-tight'>
               <span className='font-medium'>{task.title}</span>
