@@ -173,12 +173,12 @@ export function ContactCompaniesSection({
                   <>
                     {/* Where the company sheet puts its primary star. */}
                     {entry.isPrimary ? (
-                      <span className='flex size-8 items-center justify-center'>
+                      <span className='text-muted-foreground mr-1 flex h-8 items-center gap-1.5 text-xs'>
                         <Star
                           className='text-warning size-4 fill-current'
                           aria-hidden
                         />
-                        <span className='sr-only'>Primary contact</span>
+                        Primary contact
                       </span>
                     ) : null}
                     <DisabledFieldTooltip
