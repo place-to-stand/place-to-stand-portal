@@ -459,6 +459,7 @@ export function TaskSheet(props: TaskSheetProps) {
                 {props.task && taskPanelProjectId ? (
                   <>
                     <SheetSection
+                      list
                       title='Comments'
                       icon={CONCEPT_ICONS.comment}
                       className='px-6'
@@ -485,6 +486,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   </>
                 ) : !props.task ? (
                   <SheetSection
+                    list
                     title='Comments'
                     icon={CONCEPT_ICONS.comment}
                     className='px-6'

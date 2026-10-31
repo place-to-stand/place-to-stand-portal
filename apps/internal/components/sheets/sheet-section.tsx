@@ -15,6 +15,11 @@ type SheetSectionProps = {
   icon?: LucideIcon
   /** One line under the title — the place for copy that used to hang off each field. */
   description?: string
+  /**
+   * The section holds a list or an empty state (Comments): the heading sits
+   * 8px above it, like a section with a +. Implied by `action`.
+   */
+  list?: boolean
   /** Right-aligned slot on the title row (a "Link repository" button, a picker, a count). */
   action?: ReactNode
   children: ReactNode
@@ -31,6 +36,7 @@ export function SheetSection({
   icon: Icon,
   description,
   action,
+  list = false,
   children,
   className,
 }: SheetSectionProps) {
@@ -39,7 +45,11 @@ export function SheetSection({
     // heading sits 8px above it, the same as a field's label above its
     // control. A section of fields keeps 16px.
     <section
-      className={cn('flex flex-col', action ? 'gap-2' : 'gap-4', className)}
+      className={cn(
+        'flex flex-col',
+        action || list ? 'gap-2' : 'gap-4',
+        className
+      )}
     >
       <div className='flex flex-col gap-1'>
         <div className='flex min-h-5 items-center justify-between gap-2'>

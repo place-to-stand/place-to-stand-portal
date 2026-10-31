@@ -289,7 +289,11 @@ function SampleEntitySheet({
                 </SheetSection>
                 {/* The bottom of a sheet: comments or updates, then
                         the collapsed Activity, always last. */}
-                <SheetSection title='Comments' icon={CONCEPT_ICONS.comment}>
+                <SheetSection
+                  list
+                  title='Comments'
+                  icon={CONCEPT_ICONS.comment}
+                >
                   <EmptyState message='No comments yet.' />
                 </SheetSection>
                 <SheetActivityDisclosure total={2}>
