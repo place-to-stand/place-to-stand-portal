@@ -530,6 +530,41 @@ export function ComponentsTables() {
         <SampleProjectList />
       </Specimen>
       <Specimen
+        label='LinkedRecordsHoverCell'
+        note='components/ui/linked-records-hover-cell.tsx: a count in a table cell; hovering it opens the linked records, and each row opens its record. A zero is the shared dash; a single record can be a lone icon trigger.'
+      >
+        <Example caption='count (hover)'>
+          <LinkedRecordsHoverCell
+            count={2}
+            items={[
+              { id: 'ada', label: 'Ada Lovelace', sublabel: 'Head of product' },
+              { id: 'grace', label: 'Grace Hopper', sublabel: 'Engineering' },
+            ]}
+            icon={ENTITY_ICONS.contact}
+            withIcon
+            ariaLabel='2 people'
+          />
+        </Example>
+        <Example caption='zero: the dash, no card'>
+          <LinkedRecordsHoverCell
+            count={0}
+            items={[]}
+            icon={ENTITY_ICONS.contact}
+            withIcon
+            ariaLabel='No people'
+          />
+        </Example>
+        <Example caption='one record: an icon trigger'>
+          <LinkedRecordsHoverCell
+            count={1}
+            items={[{ id: 'acme', label: 'Acme Inc.' }]}
+            icon={ENTITY_ICONS.company}
+            trigger={<ENTITY_ICONS.company className='size-4' />}
+            ariaLabel='1 company: Acme Inc.'
+          />
+        </Example>
+      </Specimen>
+      <Specimen
         label="density='compact'"
         note='Reports and dense sheet tables'
         bleed

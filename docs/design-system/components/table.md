@@ -17,3 +17,9 @@ The data table: plain semantic markup with shadcn styling and three options, `de
 - Dates render through `formatCalendarDate` ("Sep 23, 2026").
 - Row actions are `RowActionButton`s (every icon-only one, so each has a hover tooltip) or a DropdownMenu; in-row toggles may apply instantly (unlike sheet controls).
 - Page counts come from `PageShell` ("Showing 24 of 118 clients"); empty states are one sentence ("No matching tasks.").
+
+## LinkedRecordsHoverCell
+
+`components/ui/linked-records-hover-cell.tsx`: a count in a table cell (people on a company, projects on a client, tasks on a time log). Hovering or focusing it opens a card listing the records behind it; each row opens its record (`href`, or `onSelect` for a sheet over the page). A zero is the shared dash with no card; a single record can use a lone icon `trigger` (with `ariaLabel`). `withIcon` puts the entity icon before the count, as list columns do.
+
+**Use it** in list tables, where a row has room for one number. In a sheet, show the records themselves as cards with `EntityList` / `SheetRecordList` instead: a sheet is where you work with them, a table is where you glance. (guard: review)
