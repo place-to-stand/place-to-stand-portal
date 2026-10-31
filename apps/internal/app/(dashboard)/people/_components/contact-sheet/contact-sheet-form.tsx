@@ -30,7 +30,7 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
 
 import { ContactCompaniesSection } from './contact-companies-section'
-import { ContactSignInFields } from './contact-sign-in-section'
+import { ContactAccessFields } from './contact-access-section'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -58,6 +58,8 @@ type ContactSheetFormProps = {
   portalUserId: string | null
   /** Their sign-in (admins only); undefined while loading. */
   signInAccount: PortalAccountSummary | null | undefined
+  /** Their live sign-in's role as saved (shown read-only to Sales). */
+  savedSignInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
   /** Months a role change can start from (with closed ones disabled). */
   roleMonths: RoleMonthOption[]
   /** The viewer manages clients: sees and edits sign-ins and portal access. */
@@ -90,6 +92,7 @@ export function ContactSheetForm({
   contactId,
   portalUserId,
   signInAccount,
+  savedSignInRole,
   roleMonths,
   canManageSignIn,
   readOnly,
@@ -100,16 +103,6 @@ export function ContactSheetForm({
   // The sign-in uses the email as typed: it changes with the same Save.
   const typedEmail =
     (useWatch({ control: form.control, name: 'email' }) ?? '').trim()
-  const typedName =
-    (useWatch({ control: form.control, name: 'name' }) ?? '').trim()
-  const stagedSignIn = useWatch({ control: form.control, name: 'signIn' })
-  // Portal access as loaded, by company: Save emails an invite only to
-  // someone switched on here.
-  const savedPortalAccess = Object.fromEntries(
-    (form.formState.defaultValues?.companies ?? []).flatMap(entry =>
-      entry?.companyId ? [[entry.companyId, Boolean(entry.portalAccess)]] : []
-    )
-  ) as Record<string, boolean>
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -309,48 +302,26 @@ export function ContactSheetForm({
                 disabled={locked}
                 loadFailed={companiesLoadFailed}
                 onChange={next => field.onChange(next)}
-                portal={
-                  canManageSignIn
-                    ? {
-                        person: {
-                          id: contactId ?? 'new',
-                          name: typedName || personName || 'this person',
-                          email: typedEmail || null,
-                          hasSignIn: Boolean(portalUserId),
-                          signInDisabled: Boolean(
-                            portalUserId &&
-                              (signInAccount?.disabledAt ||
-                                signInAccount?.deletedAt)
-                          ),
-                        },
-                        signInStaged:
-                          !portalUserId && Boolean(stagedSignIn?.enabled),
-                        savedAccess: savedPortalAccess,
-                        disabled: locked,
-                      }
-                    : null
-                }
+                showPortalAccess={canManageSignIn}
               />
             )}
           />
-            {canManageSignIn ? (
-              <>
-                <Separator />
-                <SheetSection title='Sign-in'>
-                  <ContactSignInFields
-                    form={form}
-                    account={portalUserId ? signInAccount : null}
-                    hasSignIn={Boolean(portalUserId)}
-                    contactId={contactId}
-                    personName={personName}
-                    personEmail={typedEmail}
-                    roleMonths={roleMonths}
-                    isPending={isPending}
-                    pendingReason={pendingReason}
-                  />
-                </SheetSection>
-              </>
-            ) : null}
+            <Separator />
+            <SheetSection title='Access'>
+              <ContactAccessFields
+                form={form}
+                canManage={canManageSignIn}
+                account={portalUserId ? signInAccount : null}
+                hasSignIn={Boolean(portalUserId)}
+                savedRole={savedSignInRole}
+                contactId={contactId}
+                personName={personName}
+                personEmail={typedEmail}
+                roleMonths={roleMonths}
+                isPending={isPending}
+                pendingReason={pendingReason}
+              />
+            </SheetSection>
           </div>
         </form>
       </div>

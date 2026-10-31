@@ -60,6 +60,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
     handleCancelDelete,
     handleConfirmDelete,
     signInAccount,
+    savedSignInRole,
     roleMonths,
     canManageSignIn,
     readOnly,
@@ -126,6 +127,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
             contactId={contact?.id ?? null}
             portalUserId={portalUserId}
             signInAccount={signInAccount}
+            savedSignInRole={savedSignInRole}
             roleMonths={roleMonths}
             canManageSignIn={canManageSignIn}
             readOnly={readOnly}
