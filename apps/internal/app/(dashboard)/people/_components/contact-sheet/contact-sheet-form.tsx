@@ -103,6 +103,8 @@ export function ContactSheetForm({
   // The sign-in uses the email as typed: it changes with the same Save.
   const typedEmail =
     (useWatch({ control: form.control, name: 'email' }) ?? '').trim()
+  const typedName =
+    (useWatch({ control: form.control, name: 'name' }) ?? '').trim()
   const handleSave = useCallback(
     () => form.handleSubmit(onSubmit)(),
     [form, onSubmit]
@@ -315,7 +317,7 @@ export function ContactSheetForm({
                 hasSignIn={Boolean(portalUserId)}
                 savedRole={savedSignInRole}
                 contactId={contactId}
-                personName={personName}
+                personName={typedName || personName}
                 personEmail={typedEmail}
                 roleMonths={roleMonths}
                 isPending={isPending}

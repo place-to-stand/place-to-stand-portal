@@ -77,7 +77,9 @@ export function ComponentsAccess() {
           ) : null}
           {kind === 'team' ? (
             <div className='flex flex-col gap-2 sm:max-w-xs'>
-              <Label htmlFor='design-access-role'>Role</Label>
+              <Label htmlFor='design-access-role' className='w-fit'>
+                Role
+              </Label>
               <Select
                 value={role}
                 onValueChange={next => setRole(next as 'ADMIN' | 'SALES')}

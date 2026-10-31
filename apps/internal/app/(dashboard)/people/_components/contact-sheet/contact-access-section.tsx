@@ -85,6 +85,20 @@ function seenCompanies(companies: readonly ContactCompanyEntry[]): string[] {
     .map(entry => entry.companyName || entry.clientName || 'Company')
 }
 
+/**
+ * The choices on offer. Staff (at the agency's own company) are team or
+ * nothing; the client portal stays listed only while it's what they have.
+ */
+function accessKindsFor(
+  companies: readonly ContactCompanyEntry[],
+  current: AccessKind
+): AccessKind[] {
+  const isStaff = companies.some(entry => entry.isStaff && !entry.archived)
+  return isStaff && current !== 'portal'
+    ? ['none', 'team']
+    : ['none', 'portal', 'team']
+}
+
 type ContactAccessFieldsProps = {
   form: UseFormReturn<ContactFormData>
   /** The viewer can change sign-ins and portal access (admins). */
@@ -118,15 +132,19 @@ export function ContactAccessFields(props: ContactAccessFieldsProps) {
 
 /** Sales: the saved state and its sentence, the choice locked. */
 function ReadOnlyAccess({
+  form,
   hasSignIn,
   savedRole,
   personEmail,
 }: ContactAccessFieldsProps) {
+  const companies =
+    useWatch({ control: form.control, name: 'companies' }) ?? []
   const role = hasSignIn ? savedRole : null
   const kind = accessKindOf(role ? { enabled: true, role } : null)
   return (
     <PersonAccessChoice
       value={kind}
+      kinds={accessKindsFor(companies, kind)}
       lockedReason={SIGN_IN_ADMIN_ONLY}
       // Which companies they see is for people who manage clients.
       summary={accessSummary({
@@ -182,11 +200,7 @@ function ManagedAccess({
     : isSelf
       ? 'You can’t change your own sign-in.'
       : null
-  // Staff (at the agency's own company) are team or nothing; the client
-  // portal stays listed only while it's what they have.
-  const isStaff = companies.some(entry => entry.isStaff && !entry.archived)
-  const kinds: AccessKind[] =
-    isStaff && kind !== 'portal' ? ['none', 'team'] : ['none', 'portal', 'team']
+  const kinds = accessKindsFor(companies, kind)
   // A sign-in needs an email (it is the login).
   const disabledKinds: AccessKind[] =
     !hasSignIn && noEmail ? ['portal', 'team'] : []
@@ -264,6 +278,11 @@ function ManagedAccess({
   })
   // A new sign-in is a save side effect: an account and an email.
   const createsSignIn = !hasSignIn && kind !== 'none'
+  // A live sign-in turned off with this Save.
+  const turnsOff = Boolean(
+    account && !account.disabledAt && !account.deletedAt && kind === 'none'
+  )
+  const who = personName || 'They'
 
   return (
     <>
@@ -302,7 +321,7 @@ function ManagedAccess({
             name='signIn.role'
             render={({ field }) => (
               <FormItem className='sm:max-w-xs'>
-                <FormLabel>Role</FormLabel>
+                <FormLabel className='w-fit'>Role</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip
                     disabled={Boolean(lockedReason)}
@@ -386,9 +405,11 @@ function ManagedAccess({
       {createsSignIn ? (
         <SaveSideEffect>
           {role === 'CLIENT'
-            ? `Saving creates a client portal sign-in for ${personEmail} and emails them a link.`
-            : `Saving creates a ${ROLE_LABELS[role ?? 'SALES']} sign-in to this portal for ${personEmail} and emails them an invite.`}
+            ? `${who} will get a client portal sign-in (${personEmail}) and an email link when you save.`
+            : `${who} will get ${role === 'ADMIN' ? 'an Admin' : 'a Sales'} sign-in to this portal (${personEmail}) and an email invite when you save.`}
         </SaveSideEffect>
+      ) : turnsOff ? (
+        <SaveSideEffect>{who} won’t be able to sign in once you save.</SaveSideEffect>
       ) : null}
 
       {hasSignIn && account ? (

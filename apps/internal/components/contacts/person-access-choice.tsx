@@ -114,7 +114,11 @@ export function PortalCompaniesField({
             {companies.map(company => {
               const id = `portal-company-${company.companyId}`
               return (
-                <li key={company.companyId} className='flex items-center gap-2'>
+                // Only the box and its name toggle it: the row hugs them.
+                <li
+                  key={company.companyId}
+                  className='flex w-fit items-center gap-2'
+                >
                   <Checkbox
                     id={id}
                     checked={company.checked}
