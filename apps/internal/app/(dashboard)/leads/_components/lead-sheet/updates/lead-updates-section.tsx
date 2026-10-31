@@ -68,6 +68,9 @@ export function LeadUpdatesSection({
     fetchUpdates()
   }, [fetchUpdates])
 
+  // The heading's X bumps this; the form closes as if Cancel was clicked.
+  const [closeRequest, setCloseRequest] = useState(0)
+
   const openLogDialog = useCallback(() => {
     setEditingUpdate(null)
     setIsDialogOpen(true)
@@ -103,9 +106,11 @@ export function LeadUpdatesSection({
             onOpenChange={setIsDialogOpen}
             update={editingUpdate}
             onSaved={handleSaved}
+            closeRequest={closeRequest}
           />
         }
         inlineFormOpen={isDialogOpen}
+        onInlineFormClose={() => setCloseRequest(n => n + 1)}
         isEmpty={updates.length === 0}
         emptyMessage='No updates on this lead yet.'
         status={

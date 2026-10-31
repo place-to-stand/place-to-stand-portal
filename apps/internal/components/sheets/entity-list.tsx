@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react'
 import { EmptyState } from '@pts/ui/empty-state'
 
 import { InlineReveal } from '@/components/ui/inline-reveal'
+import { cn } from '@/lib/utils'
 
 import { SectionAddButton } from './section-add-button'
 import { SheetRecordList } from './sheet-record-row'
@@ -48,8 +49,13 @@ type EntityListProps = {
    * the heading, above the list, and eases its own height open and closed.
    */
   inlineForm?: ReactNode
-  /** While true, the empty state fades out so only the form shows. */
+  /**
+   * While true, the empty state fades out so only the form shows, and the
+   * + turns into an X that closes the form.
+   */
   inlineFormOpen?: boolean
+  /** The X: closes the form exactly like its Cancel. */
+  onInlineFormClose?: () => void
   /** Under the list or empty state (a pending-change note). */
   footer?: ReactNode
   className?: string
@@ -73,6 +79,7 @@ export function EntityList({
   children,
   inlineForm,
   inlineFormOpen = false,
+  onInlineFormClose,
   footer,
   className,
 }: EntityListProps) {
@@ -80,12 +87,21 @@ export function EntityList({
 
   let action: ReactNode = null
   if (add) {
+    const closes = inlineFormOpen && Boolean(onInlineFormClose)
     const button = (
       <SectionAddButton
-        label={add.label}
+        label={closes ? 'Close' : add.label}
         disabled={add.disabled}
         disabledReason={add.disabledReason}
-        onClick={add.render ? undefined : add.onAdd}
+        onClick={
+          closes ? onInlineFormClose : add.render ? undefined : add.onAdd
+        }
+        aria-expanded={inlineForm ? inlineFormOpen : undefined}
+        // The + turns a quarter-ish turn into an X while the form is open.
+        className={cn(
+          '[&_svg]:transition-transform [&_svg]:duration-200 motion-reduce:[&_svg]:transition-none',
+          closes && '[&_svg]:rotate-45'
+        )}
       />
     )
     action = canAdd && add.render ? add.render(button) : button

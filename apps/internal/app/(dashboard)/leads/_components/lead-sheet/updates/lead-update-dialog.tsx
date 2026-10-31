@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
@@ -38,6 +38,8 @@ type LeadUpdateDialogProps = {
   /** Present = edit that update; null = log a new one. */
   update: LeadUpdateRecord | null
   onSaved: () => void
+  /** Bumped by the section's X: close like Cancel (asks first if edited). */
+  closeRequest?: number
 }
 
 /**
@@ -62,6 +64,7 @@ export function LeadUpdateDialog({
   onOpenChange,
   update,
   onSaved,
+  closeRequest = 0,
 }: LeadUpdateDialogProps) {
   const isEditing = update !== null
   const [type, setType] = useState<LeadUpdateTypeValue>('PHONE_CALL')
@@ -112,6 +115,14 @@ export function LeadUpdateDialog({
     },
     [isDirty, onOpenChange]
   )
+
+  // The section's X asks to close, like Cancel.
+  const lastCloseRequest = useRef(closeRequest)
+  useEffect(() => {
+    if (closeRequest === lastCloseRequest.current) return
+    lastCloseRequest.current = closeRequest
+    handleOpenChange(false)
+  }, [closeRequest, handleOpenChange])
 
   const handleSubmit = useCallback(() => {
     setError(null)

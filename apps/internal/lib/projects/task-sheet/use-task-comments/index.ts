@@ -20,13 +20,8 @@ import type { TaskCommentWithAuthor } from '@/lib/types'
 export function useTaskComments(
   options: UseTaskCommentsOptions
 ): UseTaskCommentsState {
-  const {
-    taskId,
-    projectId,
-    currentUserId,
-    currentUserName,
-    canComment,
-  } = options
+  const { taskId, projectId, currentUserId, currentUserName, canComment } =
+    options
 
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -57,17 +52,14 @@ export function useTaskComments(
   })
 
   /**
-   * The keyset query is newest-first (page 1 = the 20 most recent, page 2 the
-   * 20 before that), which is what pagination needs — but the thread renders
-   * chronologically, so the newest comment sits at the bottom next to the
-   * composer. Reversing the FLATTENED list (not each page) keeps that correct
-   * across pages: every older page lands above the ones already shown.
+   * Newest first, as the keyset query returns it: the composer opens under
+   * the heading, so a posted comment lands right under it, and older pages
+   * load in at the bottom.
    */
-  const flattenedComments = useMemo(() => {
-    // flatMap returns a fresh array, so reversing in place can't mutate the
-    // React Query cache.
-    return (data?.pages?.flatMap(page => page.items) ?? []).reverse()
-  }, [data?.pages])
+  const flattenedComments = useMemo(
+    () => data?.pages?.flatMap(page => page.items) ?? [],
+    [data?.pages]
+  )
 
   const loadMore = useCallback(() => {
     if (!hasNextPage) {
@@ -75,6 +67,9 @@ export function useTaskComments(
     }
     void fetchNextPage()
   }, [fetchNextPage, hasNextPage])
+
+  // The comment form opens in place from the section's + or empty state.
+  const [composerOpen, setComposerOpen] = useState(false)
 
   const createComment = useCreateTaskCommentMutation({
     taskId,
@@ -86,11 +81,14 @@ export function useTaskComments(
     toast,
     // The composer empties the moment the optimistic row appears, not after
     // the round-trip — and the draft comes back if the post fails.
+    // The form closes with it, and reopens holding the text on failure.
     onOptimisticInsert: () => {
       setDraft('')
+      setComposerOpen(false)
     },
     onRollback: body => {
       setDraft(body)
+      setComposerOpen(true)
     },
   })
 
@@ -184,6 +182,10 @@ export function useTaskComments(
     composer: {
       value: draft,
       onChange: setDraft,
+      isOpen: composerOpen,
+      open: () => setComposerOpen(true),
+      // Cancel keeps the draft for the next open.
+      close: () => setComposerOpen(false),
       submit: handleSubmit,
       disabled: !canComment || isMutating,
       isSubmitting: createComment.isPending,

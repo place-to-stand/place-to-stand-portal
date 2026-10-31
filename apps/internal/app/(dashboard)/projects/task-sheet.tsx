@@ -1,8 +1,7 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
 import {
   useCallback,
   useEffect,
@@ -458,22 +457,16 @@ export function TaskSheet(props: TaskSheetProps) {
                     Activity, always last in a sheet. */}
                 {props.task && taskPanelProjectId ? (
                   <>
-                    <SheetSection
-                      list
-                      title='Comments'
-                      icon={CONCEPT_ICONS.comment}
+                    <TaskCommentsPanel
                       className='px-6'
-                    >
-                      <TaskCommentsPanel
-                        taskId={props.task.id}
-                        projectId={taskPanelProjectId}
-                        currentUserId={props.currentUserId}
-                        currentUserName={currentUserName}
-                        canComment
-                        taskTitle={props.task.title}
-                        companyId={taskPanelClientId}
-                      />
-                    </SheetSection>
+                      taskId={props.task.id}
+                      projectId={taskPanelProjectId}
+                      currentUserId={props.currentUserId}
+                      currentUserName={currentUserName}
+                      canComment
+                      taskTitle={props.task.title}
+                      companyId={taskPanelClientId}
+                    />
                     <SheetActivitySection
                       // Remount per task so a newly opened task starts collapsed.
                       key={props.task.id}
@@ -485,14 +478,17 @@ export function TaskSheet(props: TaskSheetProps) {
                     />
                   </>
                 ) : !props.task ? (
-                  <SheetSection
-                    list
+                  <EntityList
+                    className='px-6'
                     title='Comments'
                     icon={CONCEPT_ICONS.comment}
-                    className='px-6'
-                  >
-                    <EmptyState message='Add comments after you save the task.' />
-                  </SheetSection>
+                    add={{
+                      label: 'Add comment',
+                      disabledReason: 'Add comments after you save the task.',
+                    }}
+                    isEmpty
+                    emptyMessage='Add comments after you save the task.'
+                  />
                 ) : null}
               </div>
 

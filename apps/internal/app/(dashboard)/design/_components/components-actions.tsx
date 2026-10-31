@@ -11,6 +11,7 @@ import { ClientBadge } from '@/components/clients/client-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { EntityList } from '@/components/sheets/entity-list'
+import { InlineReveal } from '@/components/ui/inline-reveal'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -174,6 +175,7 @@ export function ComponentsButtons() {
               isEmpty
               emptyMessage='Add projects after you save the company.'
             />
+            <InlineFormExample />
           </div>
         </Example>
         <Example caption='RowActionButton: icon-only, real tooltip'>
@@ -281,3 +283,30 @@ export function ComponentsBadges() {
 }
 
 function noop() {}
+
+/** EntityList with an inline form: the + turns into an X while it's open. */
+function InlineFormExample() {
+  const [open, setOpen] = useState(false)
+  return (
+    <EntityList
+      title='Comments'
+      add={{ label: 'Add comment', onAdd: () => setOpen(true) }}
+      inlineForm={
+        <InlineReveal open={open}>
+          <div className='pb-2'>
+            <div className='bg-card flex justify-end gap-2 rounded-lg border p-3'>
+              <Button variant='outline' onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setOpen(false)}>Comment</Button>
+            </div>
+          </div>
+        </InlineReveal>
+      }
+      inlineFormOpen={open}
+      onInlineFormClose={() => setOpen(false)}
+      isEmpty
+      emptyMessage='No comments yet.'
+    />
+  )
+}

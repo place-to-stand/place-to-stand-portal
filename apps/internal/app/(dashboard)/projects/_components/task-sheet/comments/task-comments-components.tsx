@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
-import type { FormEvent, ReactNode } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
+import type { FormEvent } from 'react'
 import { Loader2, MoreHorizontal, Pencil, Send, Trash2, X } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { InlineReveal } from '@/components/ui/inline-reveal'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import {
@@ -24,30 +25,6 @@ import type { TaskCommentWithAuthor } from '@/lib/types'
 import { getInitials } from '@/lib/users/initials'
 import { cn } from '@/lib/utils'
 
-export type TaskCommentsPanelShellProps = {
-  /** Omit inside an already-labelled tab — the tab is the heading. */
-  title?: string
-  description: string
-  children: ReactNode
-  action?: ReactNode
-}
-
-export function TaskCommentsPanelShell(props: TaskCommentsPanelShellProps) {
-  const { title, description, children, action } = props
-  return (
-    <section className='space-y-4 rounded-xl border px-5 py-4 shadow-sm'>
-      <div className='flex flex-wrap items-start justify-between gap-3'>
-        <div>
-          {title ? <h3 className='text-sm font-semibold'>{title}</h3> : null}
-          <p className='text-muted-foreground text-xs'>{description}</p>
-        </div>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
-}
-
 export type TaskCommentComposerProps = {
   value: string
   onChange: (value: string) => void
@@ -55,10 +32,34 @@ export type TaskCommentComposerProps = {
   disabled: boolean
   pending: boolean
   canComment: boolean
+  open: boolean
+  onCancel: () => void
 }
 
 export function TaskCommentComposer(props: TaskCommentComposerProps) {
-  const { value, onChange, onSubmit, disabled, pending, canComment } = props
+  const {
+    value,
+    onChange,
+    onSubmit,
+    onCancel,
+    open,
+    disabled,
+    pending,
+    canComment,
+  } = props
+
+  // The editor takes the cursor as the form opens.
+  useEffect(() => {
+    if (!open) return
+    const timer = window.setTimeout(() => {
+      document
+        .querySelector<HTMLElement>(
+          '#task-comment-composer [contenteditable="true"]'
+        )
+        ?.focus()
+    }, 50)
+    return () => window.clearTimeout(timer)
+  }, [open])
 
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -73,37 +74,49 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
   const isEmpty = isContentEmpty(value)
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-3'>
-      <RichTextEditor
-        id='task-comment-composer'
-        value={value}
-        onChange={onChange}
-        placeholder={
-          canComment
-            ? 'Share context, ask a question, or leave an update for the team.'
-            : 'You do not have permission to post comments on this task.'
-        }
-        disabled={disabled}
-        contentMinHeightClassName='[&_.ProseMirror]:min-h-20'
-      />
-      <div className='flex justify-end'>
-        <DisabledFieldTooltip
-          disabled={disabled}
-          reason={
-            canComment
-              ? disabled
-                ? 'Finish editing or wait for the previous action to complete.'
-                : null
-              : 'Only project collaborators can post comments.'
-          }
+    // Opens in place under the Comments heading (EntityList's inlineForm),
+    // the same card as logging a lead update.
+    <InlineReveal open={open}>
+      <div className='pb-2'>
+        <form
+          onSubmit={handleSubmit}
+          className='bg-card space-y-3 rounded-lg border p-3'
         >
-          <Button type='submit' disabled={disabled || isEmpty}>
-            {pending ? <Loader2 className='animate-spin' /> : <Send />}
-            Post comment
-          </Button>
-        </DisabledFieldTooltip>
+          <RichTextEditor
+            id='task-comment-composer'
+            value={value}
+            onChange={onChange}
+            placeholder={
+              canComment
+                ? 'Share context, ask a question, or leave an update for the team.'
+                : 'You do not have permission to post comments on this task.'
+            }
+            disabled={disabled}
+            contentMinHeightClassName='[&_.ProseMirror]:min-h-20'
+          />
+          <div className='flex justify-end gap-2'>
+            <Button type='button' variant='outline' onClick={onCancel}>
+              Cancel
+            </Button>
+            <DisabledFieldTooltip
+              disabled={disabled}
+              reason={
+                canComment
+                  ? disabled
+                    ? 'Finish editing or wait for the previous action to complete.'
+                    : null
+                  : 'Only project collaborators can post comments.'
+              }
+            >
+              <Button type='submit' disabled={disabled || isEmpty}>
+                {pending ? <Loader2 className='animate-spin' /> : <Send />}
+                Comment
+              </Button>
+            </DisabledFieldTooltip>
+          </div>
+        </form>
       </div>
-    </form>
+    </InlineReveal>
   )
 }
 
