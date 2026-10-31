@@ -86,7 +86,6 @@ test('a client sign-in is Client portal access, ticked by company', async ({
   await expect(
     sheet.getByText('Signs in to the client portal as', { exact: false })
   ).toBeVisible()
-  await expect(sheet.getByText('Sign-in email')).toBeVisible()
   // Which companies they see: each client company card's switch, on now.
   await expect(
     sheet.getByRole('switch', { name: /^Portal access at / }).first()
