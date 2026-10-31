@@ -55,11 +55,16 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
         <DialogContent className='w-full max-w-xl'>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>{state.projectLabel}</DialogDescription>
+            {/* The project shows in the box below; screen readers get it here. */}
+            <DialogDescription className='sr-only'>
+              {state.projectLabel}
+            </DialogDescription>
           </DialogHeader>
-          {rest.projectType === 'CLIENT' ? (
-            <TimeLogHoursSummary projectId={rest.projectId} />
-          ) : null}
+          <TimeLogHoursSummary
+            projectId={rest.projectId}
+            projectLabel={state.projectLabel}
+            isClientProject={rest.projectType === 'CLIENT'}
+          />
           <ProjectTimeLogForm
             isMutating={state.isMutating}
             disableSubmit={state.disableSubmit}

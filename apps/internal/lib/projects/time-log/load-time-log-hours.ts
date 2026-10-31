@@ -30,6 +30,7 @@ const UUID_PATTERN =
 export type TimeLogHours = {
   billingType: 'prepaid' | 'net_30'
   clientName: string
+  projectName: string
   /** Prepaid: all hours logged on the project. Net 30: this month's. */
   projectHours: number
   /** Prepaid: hours left on the client's blocks (may be negative). */
@@ -53,6 +54,7 @@ export async function loadTimeLogHours(
     .select({
       companyId: projects.companyId,
       clientName: companies.name,
+      projectName: projects.name,
       billingType: sql<
         'prepaid' | 'net_30'
       >`coalesce(${billingTypeAsOfSql(thisMonth)}, 'prepaid')`,
@@ -83,6 +85,7 @@ export async function loadTimeLogHours(
   return {
     billingType,
     clientName: project.clientName,
+    projectName: project.projectName,
     projectHours: net30
       ? (projectMonth ?? 0)
       : (projectSummary?.totalHours ?? 0),
