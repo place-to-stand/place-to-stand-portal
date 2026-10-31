@@ -127,6 +127,70 @@ export function LeadSheetFormFields({
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={control}
+          name='assigneeId'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel entity='contact'>Assignee</FormLabel>
+              <FormControl>
+                <SearchableCombobox
+                  items={assigneeItems}
+                  clearLabel='assignee'
+                  value={field.value ?? ''}
+                  onChange={value =>
+                    field.onChange(value.length ? value : null)
+                  }
+                  placeholder='Unassigned'
+                  searchPlaceholder='Search people…'
+                  onClear={() => field.onChange(null)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name='status'
+          render={({ field }) => {
+            const selectedStatus = LEAD_STATUS_ORDER.find(
+              status => status === field.value
+            )
+
+            return (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={(value: LeadStatusValue) =>
+                    field.onChange(value)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select status'>
+                        {selectedStatus ? (
+                          <LeadStatusBadge status={selectedStatus} />
+                        ) : null}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {LEAD_STATUS_ORDER.map(status => (
+                      <SelectItem key={status} value={status}>
+                        <LeadStatusBadge status={status} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+      </div>
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+        <FormField
+          control={control}
           name='sourceType'
           render={({ field }) => (
             <FormItem>
@@ -177,70 +241,6 @@ export function LeadSheetFormFields({
                   value={field.value ?? ''}
                   placeholder='Referral name, site URL, or event title'
                   disabled={!selectedSourceType}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='status'
-          render={({ field }) => {
-            const selectedStatus = LEAD_STATUS_ORDER.find(
-              status => status === field.value
-            )
-
-            return (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={(value: LeadStatusValue) =>
-                    field.onChange(value)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder='Select status'>
-                        {selectedStatus ? (
-                          <LeadStatusBadge status={selectedStatus} />
-                        ) : null}
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {LEAD_STATUS_ORDER.map(status => (
-                      <SelectItem key={status} value={status}>
-                        <LeadStatusBadge status={status} />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-        <FormField
-          control={control}
-          name='assigneeId'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel entity='contact'>Assignee</FormLabel>
-              <FormControl>
-                <SearchableCombobox
-                  items={assigneeItems}
-                  clearLabel='assignee'
-                  value={field.value ?? ''}
-                  onChange={value =>
-                    field.onChange(value.length ? value : null)
-                  }
-                  placeholder='Unassigned'
-                  searchPlaceholder='Search people…'
-                  onClear={() => field.onChange(null)}
                 />
               </FormControl>
               <FormMessage />

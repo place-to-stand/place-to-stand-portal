@@ -192,6 +192,45 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={form.control}
+          name='assigneeId'
+          render={({ field }) => {
+            const disabled = isPending || !canManage
+            const reason = resolveDisabledReason(disabled)
+            const selectedValue = field.value ?? unassignedValue
+
+            return (
+              <FormItem>
+                <FormLabel entity='contact'>Assignee</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
+                    <SearchableCombobox
+                      items={assigneeItems}
+                      clearLabel='assignee'
+                      value={selectedValue}
+                      onChange={next => {
+                        if (next === unassignedValue) {
+                          field.onChange(null)
+                          return
+                        }
+                        field.onChange(next)
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      placeholder='Unassigned'
+                      searchPlaceholder='Search people…'
+                      emptyMessage='No teammates on this project.'
+                      disabled={disabled}
+                      onClear={() => field.onChange(null)}
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+        <FormField
+          control={form.control}
           name='status'
           render={({ field }) => {
             const disabled = isPending || !canManage
@@ -234,45 +273,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-        <FormField
-          control={form.control}
-          name='assigneeId'
-          render={({ field }) => {
-            const disabled = isPending || !canManage
-            const reason = resolveDisabledReason(disabled)
-            const selectedValue = field.value ?? unassignedValue
-
-            return (
-              <FormItem>
-                <FormLabel entity='contact'>Assignee</FormLabel>
-                <FormControl>
-                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <SearchableCombobox
-                      items={assigneeItems}
-                      clearLabel='assignee'
-                      value={selectedValue}
-                      onChange={next => {
-                        if (next === unassignedValue) {
-                          field.onChange(null)
-                          return
-                        }
-                        field.onChange(next)
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      placeholder='Unassigned'
-                      searchPlaceholder='Search people…'
-                      emptyMessage='No teammates on this project.'
-                      disabled={disabled}
-                      onClear={() => field.onChange(null)}
-                    />
-                  </DisabledFieldTooltip>
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )
