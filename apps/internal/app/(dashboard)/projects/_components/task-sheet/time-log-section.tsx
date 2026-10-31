@@ -152,3 +152,36 @@ function resolveLoggerName(entry: TimeLogEntry): string {
     'Unknown'
   )
 }
+
+/**
+ * The same Time logs section on a new task, in the same place: logging time
+ * is its own record and needs the saved task, so the add button is disabled
+ * with that hint and the list shows the empty state.
+ */
+export function TimeLogSectionPlaceholder() {
+  const reason = 'Log time after you save the task.'
+  return (
+    <section className='space-y-1 px-6' aria-label='Time logged on this task'>
+      <div className='flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-2'>
+          <ENTITY_ICONS.timeLog
+            className={cn(ENTITY_ACCENTS.timeLog.icon, 'h-4 w-4')}
+          />
+          <h3 className='text-sm font-medium'>Time logs</h3>
+        </div>
+        <DisabledFieldTooltip disabled reason={reason}>
+          <Button
+            type='button'
+            size='xs'
+            variant='ghost'
+            disabled
+            aria-label='Log time'
+          >
+            <Plus className='h-4 w-4' />
+          </Button>
+        </DisabledFieldTooltip>
+      </div>
+      <EmptyState message={reason} />
+    </section>
+  )
+}

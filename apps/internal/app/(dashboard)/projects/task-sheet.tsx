@@ -36,7 +36,10 @@ import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { ProjectTimeLogDialog } from './_components/project-time-log/project-time-log-dialog'
-import { TimeLogSection } from './_components/task-sheet/time-log-section'
+import {
+  TimeLogSection,
+  TimeLogSectionPlaceholder,
+} from './_components/task-sheet/time-log-section'
 import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -441,12 +444,14 @@ export function TaskSheet(props: TaskSheetProps) {
                     onLogTime={handleLogTime}
                     onEditEntry={handleEditTimeLogEntry}
                   />
-                ) : isAdmin && !props.task && taskProject?.type === 'CLIENT' ? (
-                  // Create shows the same sheet: time and comments are their
-                  // own records, so they open once the task exists.
-                  <SheetSection title='Time logs' className='px-6'>
-                    <EmptyState message='Log time after you save the task.' />
-                  </SheetSection>
+                ) : isAdmin &&
+                  !props.task &&
+                  (!taskProject || taskProject.type === 'CLIENT') ? (
+                  // Create shows the same sheet: time is its own record, so
+                  // the section waits for the saved task. Shown until a
+                  // project is picked, unless that project is internal or
+                  // personal (no time is tracked there).
+                  <TimeLogSectionPlaceholder />
                 ) : null}
                 {/* Sections, no inner tabs: Comments, then the collapsed
                     Activity, always last in a sheet. */}
