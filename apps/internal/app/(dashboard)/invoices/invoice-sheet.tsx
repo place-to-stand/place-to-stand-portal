@@ -254,8 +254,8 @@ export function InvoiceSheet({
         toast({
           title: 'Invoice marked as sent',
           description: copied
-            ? 'The client link is copied to your clipboard.'
-            : 'Copy the client link from the top of this panel.',
+            ? 'The public link is copied to your clipboard.'
+            : 'Copy the public link from the top of this panel.',
         })
         router.refresh()
       }
