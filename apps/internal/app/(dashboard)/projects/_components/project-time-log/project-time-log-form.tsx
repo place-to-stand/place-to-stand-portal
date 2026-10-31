@@ -14,6 +14,7 @@ import { EntityList } from '@/components/sheets/entity-list'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { FIELD_STACK_CLASS } from '@/components/ui/form'
 import { Label } from '@pts/ui/label'
+import { EntityFieldLabel } from '@/components/ui/entity-label-icon'
 import { cn } from '@/lib/utils'
 import { TaskSelector } from './task-selector'
 import { UserSelectField } from './user-select-field'
@@ -95,7 +96,9 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
       className='grid grid-cols-1 gap-4 sm:grid-cols-2'
     >
       <div className={cn(FIELD_STACK_CLASS)}>
-        <Label htmlFor='time-log-hours'>Hours</Label>
+        <EntityFieldLabel entity='timeLog' htmlFor='time-log-hours'>
+          Hours
+        </EntityFieldLabel>
         <Input
           id='time-log-hours'
           type='number'
