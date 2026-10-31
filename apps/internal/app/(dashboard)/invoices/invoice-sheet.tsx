@@ -74,6 +74,7 @@ import { InvoiceEmailDialog } from './_components/invoice-email-dialog'
 import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-column'
 import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
 import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
+import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 
 const INVOICE_FORM_ID = 'invoice-form'
 
@@ -213,6 +214,8 @@ export function InvoiceSheet({
     () => fieldArray.fields.map(f => f.id),
     [fieldArray.fields]
   )
+  // Rows added in this sheet ease in; the ones it opened with don't.
+  const addedLineItemIds = useAddedIds(lineItemIds)
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -504,23 +507,29 @@ export function InvoiceSheet({
                             strategy={verticalListSortingStrategy}
                           >
                             {fieldArray.fields.map((field, index) => (
-                              <SortableLineItemRow
+                              <RevealOnAdd
                                 key={field.id}
-                                id={field.id}
-                                index={index}
-                                form={form}
-                                productCatalogOptions={productCatalogOptions}
-                                catalogItemMap={catalogItemMap}
-                                onProductSelect={handleProductSelect}
-                                onRemove={handleRemoveLineItem}
-                                canRemove={fieldArray.fields.length > 1}
-                                disabled={standardField.disabled || isReadOnly}
-                                isReadOnly={isReadOnly}
-                                isNet30={
-                                  invoice?.billing_type === 'net_30' ||
-                                  selectedClientBillingType === 'net_30'
-                                }
-                              />
+                                animate={addedLineItemIds.has(field.id)}
+                              >
+                                <SortableLineItemRow
+                                  id={field.id}
+                                  index={index}
+                                  form={form}
+                                  productCatalogOptions={productCatalogOptions}
+                                  catalogItemMap={catalogItemMap}
+                                  onProductSelect={handleProductSelect}
+                                  onRemove={handleRemoveLineItem}
+                                  canRemove={fieldArray.fields.length > 1}
+                                  disabled={
+                                    standardField.disabled || isReadOnly
+                                  }
+                                  isReadOnly={isReadOnly}
+                                  isNet30={
+                                    invoice?.billing_type === 'net_30' ||
+                                    selectedClientBillingType === 'net_30'
+                                  }
+                                />
+                              </RevealOnAdd>
                             ))}
                           </SortableContext>
                         </DndContext>

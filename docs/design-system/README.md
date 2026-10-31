@@ -139,6 +139,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Disabled** is `opacity-50` with pointer events off (`disabled`).
 - **Text links** (a client or project name on a card, an email on a lead) are `hover:text-foreground hover:underline` from muted text; the 4px underline offset is set once on `body` in the theme, so don't repeat or override it, the way the task card's client and project links read. When the link text truncates, use `truncate-link`, never `truncate`: `truncate`'s `overflow: hidden` clips the underline, so the hover silently shows nothing.
 - **Transitions** are Tailwind `transition-*` utilities (hover fades, chevron rotations). A collapsible that should open smoothly animates `h-(--collapsible-panel-height)` to and from `data-starting-style:h-0` / `data-ending-style:h-0`, with `motion-reduce:transition-none` (see `template-sheet.tsx`).
+- **Rows added to a list in place** (an invoice's line items) ease in: wrap each row in `RevealOnAdd` (`components/ui/reveal-on-add.tsx`) with `animate={added.has(id)}`, where `added = useAddedIds(ids)`. Height and opacity over 200ms ease-out, the same feel as `InlineReveal` (inline add forms). Rows the list loaded with never animate; reduced motion just shows them.
 - **Motion** is `tw-animate-css`:
   - Popovers fade and zoom from 95%, sliding 2 units from their trigger side.
   - Sheets slide from the right, 300ms both ways.

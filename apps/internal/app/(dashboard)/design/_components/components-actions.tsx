@@ -13,6 +13,7 @@ import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { EntityList } from '@/components/sheets/entity-list'
 import { InlineReveal } from '@/components/ui/inline-reveal'
+import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -177,6 +178,7 @@ export function ComponentsButtons() {
               emptyMessage='Add projects after you save the company.'
             />
             <InlineFormExample />
+            <RevealOnAddExample />
           </div>
         </Example>
         <Example caption='RowActionButton: icon-only, real tooltip'>
@@ -283,6 +285,32 @@ export function ComponentsBadges() {
 }
 
 function noop() {}
+
+/** RevealOnAdd: rows added after the list loads ease in; the first ones don't. */
+function RevealOnAddExample() {
+  const [rows, setRows] = useState(['Design', 'Build'])
+  const added = useAddedIds(rows)
+  return (
+    <EntityList
+      title='Line items'
+      add={{
+        label: 'Add line item',
+        onAdd: () =>
+          setRows(current => [...current, `Line ${current.length + 1}`]),
+      }}
+      isEmpty={false}
+      emptyMessage=''
+    >
+      {rows.map(row => (
+        <RevealOnAdd key={row} animate={added.has(row)}>
+          <div className='bg-card rounded-lg border px-3 py-2 text-sm'>
+            {row}
+          </div>
+        </RevealOnAdd>
+      ))}
+    </EntityList>
+  )
+}
 
 /** EntityList with an inline form: the + turns into an X while it's open. */
 function InlineFormExample() {
