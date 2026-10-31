@@ -137,8 +137,7 @@ function ReadOnlyAccess({
   savedRole,
   personEmail,
 }: ContactAccessFieldsProps) {
-  const companies =
-    useWatch({ control: form.control, name: 'companies' }) ?? []
+  const companies = useWatch({ control: form.control, name: 'companies' }) ?? []
   const role = hasSignIn ? savedRole : null
   const kind = accessKindOf(role ? { enabled: true, role } : null)
   return (
@@ -173,8 +172,7 @@ function ManagedAccess({
   const [isSending, startSending] = useTransition()
   const enabled = useWatch({ control: form.control, name: 'signIn.enabled' })
   const role = useWatch({ control: form.control, name: 'signIn.role' })
-  const companies =
-    useWatch({ control: form.control, name: 'companies' }) ?? []
+  const companies = useWatch({ control: form.control, name: 'companies' }) ?? []
 
   if (hasSignIn && account === undefined) {
     return (
@@ -182,6 +180,17 @@ function ManagedAccess({
         <Skeleton className='h-9 w-72' />
         <Skeleton className='h-5 w-full' />
       </div>
+    )
+  }
+
+  // Their sign-in exists but couldn't be loaded: don't offer choices that
+  // would be judged against a blank form.
+  if (hasSignIn && account === null) {
+    return (
+      <p className='text-muted-foreground text-sm'>
+        Couldn&rsquo;t load their sign-in. Close and reopen the sheet to change
+        their access.
+      </p>
     )
   }
 
@@ -240,9 +249,14 @@ function ManagedAccess({
       },
       { shouldDirty: true }
     )
-    // Leaving the client portal undoes the ticks made here (what was saved
-    // stays, as turning a sign-in off always has).
-    if (kind === 'portal') {
+    // Team staff don't use the client portal: choosing Team turns every
+    // company's portal access off (written on Save).
+    if (next === 'team') {
+      setCompanies(companies.map(entry => ({ ...entry, portalAccess: false })))
+    } else if (kind === 'portal' || kind === 'team') {
+      // Leaving Client portal for No access undoes the ticks made here (what
+      // was saved stays, as turning a sign-in off always has); coming back
+      // from Team restores what was saved.
       setCompanies(
         companies.map(entry => ({
           ...entry,
@@ -409,7 +423,9 @@ function ManagedAccess({
             : `${who} will get ${role === 'ADMIN' ? 'an Admin' : 'a Sales'} sign-in to this portal (${personEmail}) and an email invite when you save.`}
         </SaveSideEffect>
       ) : turnsOff ? (
-        <SaveSideEffect>{who} won’t be able to sign in once you save.</SaveSideEffect>
+        <SaveSideEffect>
+          {who} won’t be able to sign in once you save.
+        </SaveSideEffect>
       ) : null}
 
       {hasSignIn && account ? (
