@@ -107,7 +107,10 @@ function Row({
             )}
             aria-hidden
           />
-        ) : null}
+        ) : (
+          // The icon's width, so every label starts on the same edge.
+          <span className='size-4 shrink-0' aria-hidden />
+        )}
         {label}
       </dt>
       <dd className='min-w-0 truncate'>{children}</dd>
