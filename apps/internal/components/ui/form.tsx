@@ -75,6 +75,9 @@ const FormItemContext = React.createContext<FormItemContextValue>(
   {} as FormItemContextValue
 )
 
+/** A field's label above its control: the one gap every form uses (8px). */
+export const FIELD_STACK_CLASS = 'grid gap-2'
+
 function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
   const id = React.useId()
 
@@ -82,7 +85,7 @@ function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
     <FormItemContext.Provider value={{ id }}>
       <div
         data-slot='form-item'
-        className={cn('grid gap-2', className)}
+        className={cn(FIELD_STACK_CLASS, className)}
         {...props}
       />
     </FormItemContext.Provider>

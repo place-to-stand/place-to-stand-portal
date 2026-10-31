@@ -13,6 +13,9 @@ import { SelectedTaskList } from './selected-task-list'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { EmptyState } from '@pts/ui/empty-state'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { FIELD_STACK_CLASS } from '@/components/ui/form'
+import { Label } from '@pts/ui/label'
+import { cn } from '@/lib/utils'
 import { TaskSelector } from './task-selector'
 import { UserSelectField } from './user-select-field'
 
@@ -92,10 +95,8 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
       onSubmit={handleSubmit}
       className='grid grid-cols-1 gap-4 sm:grid-cols-2'
     >
-      <div className='space-y-2'>
-        <label htmlFor='time-log-hours' className='text-sm font-medium'>
-          Hours
-        </label>
+      <div className={cn(FIELD_STACK_CLASS)}>
+        <Label htmlFor='time-log-hours'>Hours</Label>
         <Input
           id='time-log-hours'
           type='number'
@@ -120,10 +121,8 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
           </p>
         ) : null}
       </div>
-      <div className='space-y-2'>
-        <label htmlFor='time-log-date' className='text-sm font-medium'>
-          Date
-        </label>
+      <div className={cn(FIELD_STACK_CLASS)}>
+        <Label htmlFor='time-log-date'>Date</Label>
         <DatePicker
           id='time-log-date'
           value={loggedOnInput}
@@ -188,10 +187,8 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
           />
         )}
       </SheetSection>
-      <div className='space-y-2 sm:col-span-2'>
-        <label htmlFor='time-log-note' className='text-sm font-medium'>
-          Notes
-        </label>
+      <div className={cn(FIELD_STACK_CLASS, 'sm:col-span-2')}>
+        <Label htmlFor='time-log-note'>Notes</Label>
         <Textarea
           id='time-log-note'
           value={noteInput}
