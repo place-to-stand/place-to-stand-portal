@@ -102,10 +102,10 @@ test('creating a company with a person and billing is one Save', async ({
   await expect(
     sheet.getByText('This company becomes a client when you save.')
   ).toBeVisible()
-  // The first billed month defaults to this month: no need to pick it.
+  // A first-time client bills from this month: there's no month to pick.
   await expect(
     sheet.getByRole('combobox', { name: 'First month billed' })
-  ).toHaveText(/\(this month\)/)
+  ).toHaveCount(0)
 
   const actions = await saveAndCountActions(
     page,

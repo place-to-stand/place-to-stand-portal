@@ -372,9 +372,12 @@ async function planBilling(
           error: 'That company was a client: restart its billing instead.',
         }
       }
+      // A first-time client bills from this month: the server picks it, the
+      // sheet doesn't ask.
+      const effective: BillingEffective = 'current_month'
       const fieldError =
         (await checkFields(intent.fields)) ??
-        (await guardThisMonth(intent.effective))
+        (await guardThisMonth(effective))
       if (fieldError) return { error: fieldError }
       const slugBase = toClientSlug(intent.fields.slug ?? plan.next.name)
       // Keep a slug it already has (its project URLs use it).
@@ -382,7 +385,7 @@ async function planBilling(
       return {
         plan: {
           kind: 'start',
-          effective: intent.effective,
+          effective,
           fields: intent.fields,
           slug: kept ?? (await generateUniqueClientSlug(slugBase)),
           slugGenerated: !kept,

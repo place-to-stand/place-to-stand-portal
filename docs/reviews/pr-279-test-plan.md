@@ -32,7 +32,7 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
 
 1. **MUST** Companies › **Create company**. Expect: Details and Billing tabs (no Projects tab on create); People is a section on Details.
    - Add a name and a person.
-   - Switch **Bill this company** on with "First month billed: October 2026 (this month)".
+   - Switch **Bill this company** on: a first-time client bills from this month, with no month to pick (restarting a former client still asks "First month billed").
    - Save once.
    - Expect: one save, the sheet closes, a **Client** badge, and the person on its People tab.
 2. **MUST** Open that client › Billing. Switch billing **off**. The picker reads **Last month billed** with "October 2026 (this month)" first. Keep it and Save. Expect:

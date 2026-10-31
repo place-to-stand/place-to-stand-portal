@@ -138,7 +138,9 @@ export function CompanyBillingSection({
           },
         ],
       }
-    : billingOn && (mode === 'new' || mode === 'former')
+    : // A first-time client just bills from this month; restarting a former
+      // one asks which month.
+      billingOn && mode === 'former'
       ? { title: 'First month billed', options: thisOrNextMonthOptions() }
       : null
 
