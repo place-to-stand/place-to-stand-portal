@@ -140,6 +140,8 @@ export type ContactMembership = {
   /** Billed before but not now: its portal access returns if billing restarts. */
   formerClient: boolean
   startedAt: string
+  /** The agency's own company (`companies.is_staff`). */
+  isStaff: boolean
   /** The company is archived, or its client is (history; hidden in active views). */
   archived: boolean
 }
@@ -173,6 +175,7 @@ export async function listContactMemberships(
         string | null
       >`case when ${isClientCompany()} then ${companies.name} end`,
       formerClient: isFormerClientSql,
+      isStaff: companies.isStaff,
       startedAt: memberships.startedAt,
       archived: sql<boolean>`not ${activeCompanySql('companies')}`,
       hasPortalAccess: sql<boolean>`exists (
@@ -207,6 +210,7 @@ export async function listContactMemberships(
       clientCompanyId: row.clientCompanyId ?? null,
       clientName: row.clientName ?? null,
       formerClient: Boolean(row.formerClient),
+      isStaff: Boolean(row.isStaff),
       startedAt: row.startedAt,
       archived: row.archived,
       hasPortalAccess: row.hasPortalAccess,

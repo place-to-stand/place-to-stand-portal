@@ -57,6 +57,8 @@ export type ContactSheetData = {
     phone: string | null
     linkedinUrl: string | null
     updatedAt: string
+    /** Their sign-in's role while they can sign in (null: they can't). */
+    signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
   } | null
 }
 
@@ -160,6 +162,12 @@ export async function getContactSheetData(
         phone: contacts.phone,
         linkedinUrl: contacts.linkedinUrl,
         updatedAt: contacts.updatedAt,
+        // As the people list shows it (a role only while it is live).
+        signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
+          select u.role from users u
+          where u.id = ${contacts.userId}
+            and u.deleted_at is null and u.disabled_at is null
+        )`,
       })
       .from(contacts)
       .where(eq(contacts.id, contactId))
@@ -179,6 +187,7 @@ export async function getContactSheetData(
           phone: person.phone,
           linkedinUrl: person.linkedinUrl,
           updatedAt: person.updatedAt,
+          signInRole: person.signInRole ?? null,
         }
       : null,
   }
