@@ -159,7 +159,7 @@ export async function resolveHourBlockBillingMonth(
 }
 
 /**
- * The client's billing type as the Billing tab last set it: the newest
+ * The client's billing type as the company sheet's billing last set it: the newest
  * billing term (latest effective date, so a change scheduled for next month
  * shows straight away, as it always has). This is the one place billing type
  * is stored; reports resolve by period with `billingTypeAsOfSql`. Correlated

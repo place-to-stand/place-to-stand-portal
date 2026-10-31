@@ -68,9 +68,14 @@ async function openCompany(page: Page, name: string) {
 /** Put it back: stop billing (if on) and archive the company. */
 async function cleanUp(page: Page, name: string) {
   const sheet = await openCompany(page, name)
-  await sheet.getByRole('tab', { name: 'Billing' }).click()
+  await expect(
+    sheet.getByRole('heading', { name: 'Client', exact: true })
+  ).toBeVisible()
   const toggle = sheet.getByRole('switch', { name: 'Bill this company' })
-  if ((await toggle.getAttribute('aria-checked')) === 'true') {
+  if (
+    (await toggle.count()) &&
+    (await toggle.getAttribute('aria-checked')) === 'true'
+  ) {
     await toggle.click()
     await sheet.getByRole('combobox', { name: 'Last month billed' }).click()
     await page.getByRole('option', { name: /\(last month\)$/ }).click()
@@ -93,10 +98,9 @@ test('creating a company with a person and billing is one Save', async ({
   const name = `E2E one-save company ${Date.now()}`
   const { sheet, personName } = await startCompany(page, name)
 
-  await sheet.getByRole('tab', { name: 'Billing' }).click()
-  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
+  await sheet.getByRole('button', { name: 'Make a client' }).click()
   await expect(
-    sheet.getByText('Saving makes this company a client.')
+    sheet.getByText('This company becomes a client when you save.')
   ).toBeVisible()
 
   const actions = await saveAndCountActions(
@@ -121,14 +125,12 @@ test('billing through the end of the month, then restarting, keeps a client', as
 }) => {
   const name = `E2E stop-restart ${Date.now()}`
   const { sheet } = await startCompany(page, name)
-  await sheet.getByRole('tab', { name: 'Billing' }).click()
-  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
+  await sheet.getByRole('button', { name: 'Make a client' }).click()
   await sheet.getByRole('button', { name: 'Create company' }).click()
   await expect(sheet).toBeHidden()
 
   // Stop, billed through the end of this month (the default).
   let billing = await openCompany(page, name)
-  await billing.getByRole('tab', { name: 'Billing' }).click()
   await billing.getByRole('switch', { name: 'Bill this company' }).click()
   await expect(
     billing.getByRole('combobox', { name: 'Last month billed' })
@@ -139,7 +141,6 @@ test('billing through the end of the month, then restarting, keeps a client', as
   // Still a client this month, with the stop scheduled: the switch stays
   // on, the terms stay editable, and Keep billing cancels the stop.
   billing = await openCompany(page, name)
-  await billing.getByRole('tab', { name: 'Billing' }).click()
   await expect(billing.getByText(/^Billing stops after /)).toBeVisible()
   await expect(
     billing.getByRole('switch', { name: 'Bill this company' })
@@ -152,13 +153,14 @@ test('billing through the end of the month, then restarting, keeps a client', as
   // Keep billing: the scheduled stop is cancelled.
   await billing.getByRole('button', { name: 'Keep billing' }).click()
   await expect(
-    billing.getByText('Saving cancels the stop and keeps billing this company.')
+    billing.getByText(
+      'The stop is cancelled and billing continues when you save.'
+    )
   ).toBeVisible()
   await billing.getByRole('button', { name: 'Save changes' }).click()
   await expect(billing).toBeHidden()
 
   billing = await openCompany(page, name)
-  await billing.getByRole('tab', { name: 'Billing' }).click()
   await expect(
     billing.getByRole('switch', { name: 'Bill this company' })
   ).toHaveAttribute('aria-checked', 'true')
@@ -184,14 +186,15 @@ test('restarting a former client shows its last terms to edit', async ({
   await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
-  await sheet.getByRole('tab', { name: 'Billing' }).click()
-
-  const toggle = sheet.getByRole('switch', { name: 'Bill this company' })
-  await expect(toggle).toHaveAttribute('aria-checked', 'false')
+  // Not billed now: Restart billing, where the switch used to be off.
+  await expect(sheet.getByText(/^Former client/)).toBeVisible()
+  await sheet.getByRole('button', { name: 'Restart billing' }).click()
   // On: its last terms fill the form, editable in the same Save.
-  await toggle.click()
   await expect(
-    sheet.getByText(/^Saving restarts billing with these terms/)
+    sheet.getByRole('switch', { name: 'Bill this company' })
+  ).toHaveAttribute('aria-checked', 'true')
+  await expect(
+    sheet.getByText(/^Billing restarts with these terms when you save/)
   ).toBeVisible()
   await expect(sheet.getByText('Billing type', { exact: true })).toBeVisible()
   await expect(
@@ -211,8 +214,7 @@ test('a billed company is not archived: stop billing first', async ({
 }) => {
   const name = `E2E archive-billed ${Date.now()}`
   const { sheet } = await startCompany(page, name)
-  await sheet.getByRole('tab', { name: 'Billing' }).click()
-  await sheet.getByRole('switch', { name: 'Bill this company' }).click()
+  await sheet.getByRole('button', { name: 'Make a client' }).click()
   await sheet.getByRole('button', { name: 'Create company' }).click()
   await expect(sheet).toBeHidden()
 

@@ -141,7 +141,7 @@ export function LeadsWorkspace({
     [clear, router, startRefresh]
   )
 
-  // Winning a lead opens its company's Billing tab next, for whoever can
+  // Winning a lead opens its company's billing (its sheet's Client column) next, for whoever can
   // make it a client there (the same step the lead sheet takes on save).
   const { role } = useViewerAccess()
   const canManageClients = roleCan(role, 'clients.manage')

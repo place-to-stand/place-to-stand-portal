@@ -15,7 +15,7 @@ export function ProjectSheetWrapper({ value, open, onRequestClose }: SheetWrappe
   const queryClient = useQueryClient()
   const { getAux } = useSheetParams()
   const data = useSheetInit('project', value)
-  // A company's Projects tab passes its id along.
+  // A company's Projects (its sheet's Client column) passes its id along.
   const initialCompanyId =
     value === NEW_SHEET_VALUE
       ? (getAux('projectCompanyId') ?? undefined)

@@ -57,7 +57,7 @@ export type ClientSheetContactData = {
 }
 
 /**
- * Every live contact, for the Billing tab's pickers (origination, closers)
+ * Every live contact, for the billing section's pickers (origination, closers)
  * and Portal access list. `companyId` is the client's company when they are
  * a member of it (so the Portal access list can pick them out), otherwise
  * their main company; `isPrimary` is the client's company's primary.
@@ -185,7 +185,7 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
 }
 
 /**
- * Fetches all data needed for the Billing tab's contact and partner pickers.
+ * Fetches all data needed for the billing section's contact and partner pickers.
  * If clientCompanyId is provided, also fetches the client's linked contacts.
  */
 export async function getClientSheetContactData(

@@ -71,7 +71,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   client: {
     // Old links only: `?client=<id>` opens that company's sheet (a client is
-    // a company you bill). Billing is switched on from the company's Billing tab.
+    // a company you bill). Billing is switched on from the company's billing (its sheet's Client column).
     auxParams: ['tab'],
     claimsPathname: () => false,
   },
@@ -101,7 +101,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   project: {
     // `projectCompanyId=` prefills the create sheet's client (a company's
-    // Projects tab).
+    // Projects, in its sheet's Client column).
     auxParams: ['projectCompanyId'],
     // Unclaimed everywhere: the projects tables can't resolve an arbitrary
     // project id from their own rows (the landing's row type omits fields

@@ -16,7 +16,7 @@ import { UrlInput } from '@/components/ui/url-input'
 
 import type { CompanyFormValues } from './use-company-sheet-form'
 
-/** The Details tab's fields: name, website, LinkedIn and notes. */
+/** The Company column's details fields: name, website, LinkedIn and notes. */
 export function CompanyDetailsFields({
   control,
   disabled,

@@ -7,7 +7,7 @@ import { saveCompanySchema } from './schema'
 /** Which month a billing start, stop or restart takes effect. */
 export const billingEffectiveSchema = z.enum(['current_month', 'next_month'])
 
-/** The Billing tab's fields, as one save writes them. */
+/** The company sheet's billing fields, as one save writes them. */
 export const companyBillingFieldsSchema = z.object({
   billingType: z.enum(CLIENT_BILLING_TYPE_VALUES),
   /** When a changed billing type starts (ignored when unchanged). */

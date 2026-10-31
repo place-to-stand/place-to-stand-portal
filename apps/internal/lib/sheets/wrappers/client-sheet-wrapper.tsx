@@ -8,7 +8,7 @@ import type { SheetWrapperProps } from './types'
 
 /**
  * Old `?client=<id>` links: a client is a company you bill, so this opens
- * the company. (Making a client happens on the company's Billing tab.)
+ * the company. (Making a client happens on the company's billing (its sheet's Client column).)
  */
 export function ClientSheetWrapper({
   value,

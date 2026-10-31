@@ -2,20 +2,24 @@ import { expect, test } from '@playwright/test'
 
 import { expectHealthy } from './helpers'
 
-test('company sheet: three line tabs, Billing reachable by deep link', async ({
+test('company sheet: two columns, no tabs, Billing reachable by deep link', async ({
   page,
 }) => {
-  await page.goto('/companies')
+  await page.goto('/companies?type=client')
   await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  for (const tab of ['Details', 'Projects', 'Billing']) {
-    await expect(sheet.getByRole('tab', { name: tab })).toBeVisible()
-  }
-  await sheet.getByRole('tab', { name: 'Billing' }).click()
-  await expect(page).toHaveURL(/tab=billing/)
+  // Company on the left, Client on the right: no tabs.
+  await expect(sheet.getByRole('tab')).toHaveCount(0)
+  await expect(
+    sheet.getByRole('heading', { name: 'People', exact: true })
+  ).toBeVisible()
+  await expect(
+    sheet.getByRole('heading', { name: 'Client', exact: true })
+  ).toBeVisible()
   await expect(sheet.getByText('Bill this company')).toBeVisible()
-  // Reload: the tab comes back from the URL.
-  await page.reload()
+  // An old `tab=billing` link opens the sheet at its billing.
+  await page.goto(`${page.url()}&tab=billing`)
+  await expect(page.locator('#company-billing')).toBeInViewport()
   await expect(
     page.getByRole('dialog').getByText('Bill this company')
   ).toBeVisible()
@@ -32,8 +36,9 @@ test('a client company shows the Client badge and its projects', async ({
   ).toBeVisible()
   await row.locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  await sheet.getByRole('tab', { name: 'Projects' }).click()
-  await expect(sheet.getByRole('tabpanel')).toBeVisible()
+  await expect(
+    sheet.getByRole('heading', { name: 'Projects', exact: true })
+  ).toBeVisible()
 })
 
 test('person sheet is one stacked form, sign-in included', async ({ page }) => {
@@ -48,7 +53,7 @@ test('person sheet is one stacked form, sign-in included', async ({ page }) => {
   ).toHaveCount(1)
 })
 
-test('projects list: client rows open the company on its Projects tab', async ({
+test('projects list: client rows open the company at its Projects', async ({
   page,
 }) => {
   await page.goto('/projects')
@@ -58,9 +63,11 @@ test('projects list: client rows open the company on its Projects tab', async ({
     /\/companies\?company=[0-9a-f-]{36}&tab=projects/
   )
   await link.click()
+  const sheet = page.getByRole('dialog')
   await expect(
-    page.getByRole('dialog').getByRole('tab', { name: 'Projects' })
-  ).toHaveAttribute('aria-selected', 'true')
+    sheet.getByRole('heading', { name: 'Projects', exact: true })
+  ).toBeVisible()
+  await expect(page.locator('#company-projects')).toBeInViewport()
 })
 
 test('lead sheet opens with the person and company pickers', async ({

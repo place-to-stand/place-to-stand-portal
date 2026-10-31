@@ -59,7 +59,7 @@ export type UseClientBillingFormArgs = {
 }
 
 /**
- * The Billing tab's form: billing type and state, origination and closers.
+ * The billing section's form: billing type and state, origination and closers.
  * It never saves itself: the company sheet's Save reads it with
  * `collectFields` and writes it in the same transaction as the company.
  */
