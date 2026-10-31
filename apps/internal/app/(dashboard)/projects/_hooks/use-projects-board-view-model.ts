@@ -110,7 +110,11 @@ export function useProjectsBoardViewModel({
           boardState.activeProject.burndown.totalProjectLoggedHours,
         projectMonthToDateLoggedHours:
           boardState.activeProject.burndown.projectMonthToDateLoggedHours,
+        lastLogAt: boardState.activeProject.burndown.lastLogAt,
       },
+      company_id: boardState.activeProject.company_id ?? null,
+      tasks: boardState.activeProject.tasks,
+      members: boardState.activeProject.members,
     }
   }, [boardState.activeProject])
 

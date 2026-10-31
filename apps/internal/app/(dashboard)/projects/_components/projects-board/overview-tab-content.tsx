@@ -1,13 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, Info } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Calendar, ExternalLink } from 'lucide-react'
 import { siGithub } from 'simple-icons/icons'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@pts/ui/badge'
+import { Button } from '@pts/ui/button'
+import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
+import { EmptyState } from '@pts/ui/empty-state'
 import { TabsContent } from '@pts/ui/tabs'
 import { formatHours } from '@pts/ui/numbers'
 import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
@@ -18,7 +21,17 @@ import { cn } from '@/lib/utils'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { ActivityFeed } from '@/components/activity/activity-feed'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import { WidgetCard } from '@/components/dashboard/widget-card'
+import {
+  SheetRecordList,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
+import { StatCard } from '@/components/ui/stat-card'
+import { BOARD_COLUMNS } from '@/lib/projects/board/board-constants'
+import { formatTaskStatusLabel } from '../project-time-log/task-status-utils'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 
 export type OverviewTabContentProps = {
@@ -41,13 +54,243 @@ export function OverviewTabContent(props: OverviewTabContentProps) {
       {!activeProject ? (
         <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       ) : (
-        <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-          <div className='space-y-4'>
-            <ProjectDetailsWidget project={activeProject} />
-          </div>
-        </div>
+        <ProjectOverview project={activeProject} />
       )}
     </TabsContent>
+  )
+}
+
+/**
+ * The project at a glance, in the home dashboard's cards: its hours, where
+ * the work stands (with what's blocked or in progress), recent activity,
+ * then the details, members and infrastructure on the side. Read-only:
+ * everything comes from the project already loaded for the board.
+ */
+function ProjectOverview({
+  project,
+}: {
+  project: NonNullable<ProjectsBoardActiveProject>
+}) {
+  const pathname = usePathname()
+  const tasksHref = pathname.replace(/\/overview$/, '/tasks')
+  const prepaid = project.client?.billing_type === 'prepaid'
+  const burndown = project.burndown
+
+  return (
+    <div className='flex flex-col gap-6'>
+      <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
+        <StatCard
+          label='Logged this month'
+          value={formatHours(burndown?.projectMonthToDateLoggedHours ?? 0)}
+        />
+        <StatCard
+          label='Logged in total'
+          value={formatHours(burndown?.totalProjectLoggedHours ?? 0)}
+        />
+        {prepaid ? (
+          <StatCard
+            label='Client remaining'
+            value={formatHours(burndown?.totalClientRemainingHours ?? 0)}
+            tone={
+              (burndown?.totalClientRemainingHours ?? 0) < 0
+                ? 'negative'
+                : 'default'
+            }
+          />
+        ) : (
+          <StatCard
+            label='Open tasks'
+            value={String(
+              project.tasks.filter(task => task.status !== 'DONE').length
+            )}
+          />
+        )}
+        <StatCard
+          label='Last logged'
+          value={
+            burndown?.lastLogAt
+              ? (formatRelativeTime(burndown.lastLogAt) ?? '—')
+              : '—'
+          }
+        />
+      </div>
+
+      <div className='grid grid-cols-1 items-start gap-6 lg:grid-cols-3'>
+        <div className='flex flex-col gap-6 lg:col-span-2'>
+          <TasksWidget project={project} tasksHref={tasksHref} />
+          <WidgetCard id='project-activity' title='Recent activity'>
+            <div className='px-4 py-3'>
+              <ActivityFeed
+                targetType={['PROJECT', 'TASK', 'COMMENT', 'TIME_LOG']}
+                projectId={project.id}
+                companyId={project.company_id ?? null}
+                pageSize={8}
+                emptyState='No project activity yet.'
+              />
+            </div>
+          </WidgetCard>
+        </div>
+        <div className='flex flex-col gap-6'>
+          <ProjectDetailsWidget project={project} />
+          <MembersWidget project={project} />
+          <InfrastructureWidget project={project} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Task counts by board column, then the work that needs eyes. */
+function TasksWidget({
+  project,
+  tasksHref,
+}: {
+  project: NonNullable<ProjectsBoardActiveProject>
+  tasksHref: string
+}) {
+  const { open } = useSheetParams()
+  const count = (status: string) =>
+    project.tasks.filter(task => task.status === status).length
+  const needsEyes = [
+    ...project.tasks.filter(task => task.status === 'BLOCKED'),
+    ...project.tasks.filter(task => task.status === 'IN_PROGRESS'),
+  ].slice(0, 6)
+
+  return (
+    <WidgetCard
+      id='project-tasks'
+      title='Tasks'
+      action={
+        <Button variant='outline' size='sm' asChild>
+          <Link href={tasksHref}>Open board</Link>
+        </Button>
+      }
+    >
+      <div className='flex flex-col gap-4 p-4'>
+        <div className='grid grid-cols-2 gap-3 sm:grid-cols-4'>
+          {BOARD_COLUMNS.map(column => (
+            <StatCard
+              key={column.id}
+              label={column.label}
+              value={String(count(column.id))}
+            />
+          ))}
+        </div>
+        {needsEyes.length > 0 ? (
+          <div className='flex flex-col gap-2'>
+            <h3 className='text-sm font-semibold'>Blocked and in progress</h3>
+            <SheetRecordList>
+              {needsEyes.map(task => (
+                <SheetRecordRow
+                  key={task.id}
+                  icon={ENTITY_ICONS.task}
+                  title={task.title}
+                  description={[
+                    formatTaskStatusLabel(task.status),
+                    task.due_on
+                      ? `Due ${formatCalendarDate(task.due_on) ?? task.due_on}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  onOpen={() => open('task', task.id)}
+                  openLabel={`Open ${task.title}`}
+                />
+              ))}
+            </SheetRecordList>
+          </div>
+        ) : (
+          <EmptyState message='Nothing blocked or in progress.' />
+        )}
+      </div>
+    </WidgetCard>
+  )
+}
+
+function MembersWidget({
+  project,
+}: {
+  project: NonNullable<ProjectsBoardActiveProject>
+}) {
+  const members = project.members.filter(member => !member.deleted_at)
+  return (
+    <WidgetCard
+      id='project-members'
+      title='Members'
+      meta={members.length ? String(members.length) : null}
+    >
+      <div className='p-4'>
+        {members.length ? (
+          <SheetRecordList>
+            {members.map(member => (
+              <SheetRecordRow
+                key={member.id}
+                icon={ENTITY_ICONS.contact}
+                title={member.user.full_name ?? member.user.email}
+                description={member.user.full_name ? member.user.email : null}
+              />
+            ))}
+          </SheetRecordList>
+        ) : (
+          <EmptyState message='Admins see every project. No other staff on it.' />
+        )}
+      </div>
+    </WidgetCard>
+  )
+}
+
+/** Where the code lives and runs: GitHub, Vercel, Supabase. */
+function InfrastructureWidget({
+  project,
+}: {
+  project: NonNullable<ProjectsBoardActiveProject>
+}) {
+  const hasAny =
+    project.githubRepos.length > 0 || project.integrationLinks.length > 0
+  return (
+    <WidgetCard id='project-infrastructure' title='Infrastructure'>
+      <div className='p-4'>
+        {hasAny ? (
+          <div className='flex flex-col gap-2'>
+            {project.githubRepos.map(repo => (
+              <a
+                key={repo.id}
+                href={`https://github.com/${repo.repoFullName}`}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='hover:text-foreground text-muted-foreground inline-flex min-w-0 items-center gap-2 text-sm transition-colors'
+              >
+                <SimpleIcon icon={siGithub} className='h-4 w-4 shrink-0' />
+                <span className='truncate font-medium'>
+                  {repo.repoFullName}
+                </span>
+                <ExternalLink className='h-3 w-3 shrink-0' />
+              </a>
+            ))}
+            {project.integrationLinks.map(link => (
+              <a
+                key={link.id}
+                href={link.url}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='hover:text-foreground text-muted-foreground inline-flex min-w-0 items-center gap-2 text-sm transition-colors'
+              >
+                <IntegrationProviderIcon
+                  provider={link.provider}
+                  className='h-4 w-4 shrink-0'
+                />
+                <span className='truncate font-medium'>
+                  {formatIntegrationLinkLabel(link)}
+                </span>
+                <ExternalLink className='h-3 w-3 shrink-0' />
+              </a>
+            ))}
+          </div>
+        ) : (
+          <EmptyState message='No repositories or hosting linked.' />
+        )}
+      </div>
+    </WidgetCard>
   )
 }
 
@@ -90,18 +333,7 @@ function ProjectDetailsWidget({
   const dateRange = formatProjectDateRange(project.starts_on, project.ends_on)
 
   return (
-    <section className='bg-card text-card-foreground overflow-hidden rounded-lg border'>
-      <div className='flex items-center gap-3 border-b px-4 py-3'>
-        <div
-          className={cn(
-            'flex h-7 w-7 items-center justify-center rounded-md',
-            ENTITY_ACCENTS.project.tint
-          )}
-        >
-          <Info className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4')} />
-        </div>
-        <h2 className='font-semibold'>Project details</h2>
-      </div>
+    <WidgetCard id='project-details' title='Details'>
       <div className='divide-y'>
         <DetailRow label='Name' value={project.name} />
         {project.slug && <DetailRow label='Slug' value={project.slug} mono />}
@@ -126,11 +358,11 @@ function ProjectDetailsWidget({
                 </span>
               )}
               {project.client.billing_type && (
-                <Badge variant='outline' className='font-medium'>
-                  {project.client.billing_type === 'net_30'
-                    ? 'Net 30'
-                    : 'Prepaid'}
-                </Badge>
+                <BillingTypeBadge
+                  billingType={
+                    project.client.billing_type as 'prepaid' | 'net_30'
+                  }
+                />
               )}
             </div>
           </div>
@@ -176,65 +408,8 @@ function ProjectDetailsWidget({
             </div>
           </div>
         )}
-        {project.burndown && (
-          <>
-            <DetailRow
-              label='Hours logged'
-              value={formatHours(project.burndown.totalProjectLoggedHours)}
-            />
-            {project.burndown.totalClientRemainingHours > 0 && (
-              <DetailRow
-                label='Client hours remaining'
-                value={formatHours(project.burndown.totalClientRemainingHours)}
-              />
-            )}
-          </>
-        )}
-        {project.githubRepos.length > 0 && (
-          <div className='flex items-center gap-3 px-4 py-2.5'>
-            <span className='text-muted-foreground text-sm'>Repos</span>
-            <div className='ml-auto flex flex-col items-end gap-1'>
-              {project.githubRepos.map(repo => (
-                <a
-                  key={repo.id}
-                  href={`https://github.com/${repo.repoFullName}`}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors'
-                >
-                  <SimpleIcon icon={siGithub} className='h-3.5 w-3.5' />
-                  <span className='font-medium'>{repo.repoFullName}</span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-        {project.integrationLinks.length > 0 && (
-          <div className='flex items-center gap-3 px-4 py-2.5'>
-            <span className='text-muted-foreground text-sm'>Hosting</span>
-            <div className='ml-auto flex flex-col items-end gap-1'>
-              {project.integrationLinks.map(link => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors'
-                >
-                  <IntegrationProviderIcon
-                    provider={link.provider}
-                    className='h-3.5 w-3.5'
-                  />
-                  <span className='font-medium'>
-                    {formatIntegrationLinkLabel(link)}
-                  </span>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
-    </section>
+    </WidgetCard>
   )
 }
 

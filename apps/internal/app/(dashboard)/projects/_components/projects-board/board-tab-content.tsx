@@ -25,7 +25,7 @@ import {
   BOARD_COLUMNS,
   type BoardColumnId,
 } from '@/lib/projects/board/board-constants'
-import type { TaskWithRelations } from '@/lib/types'
+import type { TaskWithRelations, ProjectMemberWithUser } from '@/lib/types'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 
 export type ProjectsBoardActiveProject = {
@@ -54,7 +54,13 @@ export type ProjectsBoardActiveProject = {
   burndown: {
     totalClientRemainingHours: number
     totalProjectLoggedHours: number
+    projectMonthToDateLoggedHours: number
+    lastLogAt: string | null
   }
+  /** For the overview: where the work stands and who is on it. */
+  company_id: string | null
+  tasks: TaskWithRelations[]
+  members: ProjectMemberWithUser[]
 } | null
 
 export type BoardTabContentProps = {
