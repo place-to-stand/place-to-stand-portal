@@ -263,33 +263,23 @@ export function ClientBillingFields({
         title='Commission'
         description='Origination pays 10% and closers share 20% of this client’s revenue.'
       >
+        <ClientOriginationPicker
+          selectedUser={selectedOriginationUser}
+          selectedContact={selectedOriginationContact}
+          availableUsers={availableOriginationUsers}
+          availableContacts={availableOriginationContacts}
+          disabled={originationPickerDisabled}
+          disabledReason={originationPickerDisabledReason}
+          isPickerOpen={isOriginationPickerOpen}
+          isPending={isPending}
+          pendingReason={pendingReason}
+          onPickerOpenChange={onOriginationPickerOpenChange}
+          onSelectUser={onSelectOriginationUser}
+          onSelectContact={onSelectOriginationContact}
+          onClear={onClearOrigination}
+          onCreateContact={onCreateOriginationContact}
+        />
         <div className='grid gap-2'>
-          <FormLabel optional>Origination</FormLabel>
-          <ClientOriginationPicker
-            selectedUser={selectedOriginationUser}
-            selectedContact={selectedOriginationContact}
-            availableUsers={availableOriginationUsers}
-            availableContacts={availableOriginationContacts}
-            disabled={originationPickerDisabled}
-            disabledReason={originationPickerDisabledReason}
-            isPickerOpen={isOriginationPickerOpen}
-            isPending={isPending}
-            pendingReason={pendingReason}
-            onPickerOpenChange={onOriginationPickerOpenChange}
-            onSelectUser={onSelectOriginationUser}
-            onSelectContact={onSelectOriginationContact}
-            onClear={onClearOrigination}
-            onCreateContact={onCreateOriginationContact}
-          />
-        </div>
-        <div className='grid gap-2'>
-          <FormLabel
-            optional
-            data-error={Boolean(closerError)}
-            className='data-[error=true]:text-destructive'
-          >
-            {closers.length > 1 ? 'Closers' : 'Closer'}
-          </FormLabel>
           <ClientClosersEditor
             closers={closers}
             availableUsers={availableCloserUsers}

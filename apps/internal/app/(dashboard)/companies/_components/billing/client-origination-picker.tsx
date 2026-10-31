@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 
@@ -67,8 +69,9 @@ function contactCandidate(
 }
 
 /**
- * The client's single originator — an admin or a contact, picked from one
- * list the same way closers are. The selection itself says which kind it is.
+ * The client's single originator, as an entity list: the + opens one picker
+ * of staff and people; one card once set (the + hides, since there is only
+ * one). Removing it leaves a "Pending removal" card with Undo until Save.
  */
 export function ClientOriginationPicker({
   selectedUser,
@@ -86,66 +89,105 @@ export function ClientOriginationPicker({
   onClear,
   onCreateContact,
 }: ClientOriginationPickerProps) {
+  // What was just removed, so Undo can put it back before Save.
+  const [removed, setRemoved] = useState<OriginatorCandidate | null>(null)
   const selected = selectedUser
     ? userCandidate(selectedUser, onSelectUser)
     : selectedContact
       ? contactCandidate(selectedContact, onSelectContact)
       : null
-
-  if (selected) {
-    const locked = isPending || disabled
-    return (
-      <SheetRecordRow
-        icon={ENTITY_ICONS.contact}
-        title={selected.name}
-        description={
-          selected.email && selected.email !== selected.name
-            ? selected.email
-            : null
-        }
-        actions={
-          <DisabledFieldTooltip
-            disabled={locked}
-            reason={isPending ? pendingReason : disabledReason}
-          >
-            <RowActionButton
-              type='button'
-              label={`Remove originator ${selected.name}`}
-              icon={<X />}
-              className='text-muted-foreground hover:text-destructive shrink-0'
-              onClick={onClear}
-              disabled={locked}
-            />
-          </DisabledFieldTooltip>
-        }
-      />
-    )
-  }
+  const locked = isPending || disabled
+  const lockedReason = isPending ? pendingReason : disabledReason
+  const pendingRemoval = !selected ? removed : null
 
   return (
-    <StaffOrPersonPicker
-      staff={availableUsers.map(user => userCandidate(user, onSelectUser))}
-      people={availableContacts.map(contact =>
-        contactCandidate(contact, onSelectContact)
-      )}
-      onSelect={candidate => candidate.pick()}
-      trigger={
-        <Button
-          type='button'
-          variant='outline'
-          className='w-full justify-start'
-          disabled={disabled}
-        >
-          No originator
-        </Button>
+    <EntityList
+      title='Origination'
+      add={
+        selected
+          ? undefined
+          : {
+              label: 'Add originator',
+              onAdd: () => onPickerOpenChange(true),
+              disabled: locked,
+              disabledReason: lockedReason,
+              render: button => (
+                <StaffOrPersonPicker
+                  staff={availableUsers.map(user =>
+                    userCandidate(user, onSelectUser)
+                  )}
+                  people={availableContacts.map(contact =>
+                    contactCandidate(contact, onSelectContact)
+                  )}
+                  onSelect={candidate => {
+                    setRemoved(null)
+                    candidate.pick()
+                  }}
+                  trigger={button}
+                  open={isPickerOpen}
+                  onOpenChange={onPickerOpenChange}
+                  disabled={disabled}
+                  disabledReason={disabledReason}
+                  isPending={isPending}
+                  onCreatePerson={onCreateContact}
+                />
+              ),
+            }
       }
-      triggerClassName='w-full'
-      open={isPickerOpen}
-      onOpenChange={onPickerOpenChange}
-      disabled={disabled}
-      disabledReason={disabledReason}
-      isPending={isPending}
-      onCreatePerson={onCreateContact}
-    />
+      isEmpty={!selected && !pendingRemoval}
+      emptyMessage='No originator.'
+    >
+      {selected ? (
+        <SheetRecordRow
+          icon={ENTITY_ICONS.contact}
+          title={selected.name}
+          description={
+            selected.email && selected.email !== selected.name
+              ? selected.email
+              : null
+          }
+          actions={
+            <DisabledFieldTooltip disabled={locked} reason={lockedReason}>
+              <RowActionButton
+                type='button'
+                label={`Remove originator ${selected.name}`}
+                icon={<X />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
+                onClick={() => {
+                  setRemoved(selected)
+                  onClear()
+                }}
+                disabled={locked}
+              />
+            </DisabledFieldTooltip>
+          }
+        />
+      ) : pendingRemoval ? (
+        <SheetRecordRow
+          icon={ENTITY_ICONS.contact}
+          className='opacity-60'
+          title={pendingRemoval.name}
+          description={
+            <span className='text-destructive'>Pending removal</span>
+          }
+          actions={
+            <Button
+              type='button'
+              variant='ghost'
+              size='xs'
+              className='text-muted-foreground'
+              disabled={locked}
+              onClick={() => {
+                setRemoved(null)
+                pendingRemoval.pick()
+              }}
+              aria-label={`Undo removing ${pendingRemoval.name}`}
+            >
+              Undo
+            </Button>
+          }
+        />
+      ) : null}
+    </EntityList>
   )
 }

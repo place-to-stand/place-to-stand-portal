@@ -1,6 +1,7 @@
 'use client'
 
-import { Plus, X } from 'lucide-react'
+import { useState } from 'react'
+import { X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
@@ -10,6 +11,7 @@ import {
   RecordRowField,
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
+import { EntityList } from '@/components/sheets/entity-list'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { cn } from '@/lib/utils'
 
@@ -67,150 +69,130 @@ export function ClientClosersEditor({
   const isSplit = closers.length > 1
   const locked = isPending || disabled
   const lockedReason = isPending ? pendingReason : disabledReason
+  // Removed closers, kept so Undo can put them back before Save.
+  const [removed, setRemoved] = useState<CloserCandidate[]>([])
+  const current = new Set(closers.map(closerKey))
+  const pendingRemovals = removed.filter(
+    closer => !current.has(closerKey(closer))
+  )
 
   return (
-    <div className='grid gap-2'>
-      {closers.length > 0 ? (
-        <ul className='grid gap-2'>
-          {closers.map(closer => {
-            const key = closerKey(closer)
-            return (
-              <li key={key}>
-                <SheetRecordRow
-                  // A closer is a person, staff or not, like the originator.
-                  icon={ENTITY_ICONS.contact}
-                  title={closer.name}
-                  description={
-                    closer.email && closer.email !== closer.name
-                      ? closer.email
-                      : null
-                  }
-                  fields={
-                    isSplit ? (
-                      <RecordRowField label='Share'>
-                        <div className='relative -ml-2 w-20 shrink-0'>
-                          <Input
-                            value={closer.shareText}
-                            onChange={event =>
-                              onShareChange(key, event.target.value)
-                            }
-                            inputMode='decimal'
-                            aria-label={`${closer.name} share`}
-                            aria-invalid={hasError || undefined}
-                            disabled={locked}
-                            className={cn(
-                              RECORD_ROW_INPUT_CLASS,
-                              'pr-6 text-right tabular-nums'
-                            )}
-                          />
-                          <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-sm'>
-                            %
-                          </span>
-                        </div>
-                      </RecordRowField>
-                    ) : undefined
-                  }
-                  actions={
-                    <span className='flex items-center gap-1'>
-                      <DisabledFieldTooltip
-                        disabled={locked}
-                        reason={lockedReason}
-                      >
-                        <RowActionButton
-                          type='button'
-                          label={`Remove closer ${closer.name}`}
-                          icon={<X />}
-                          className='text-muted-foreground hover:text-destructive shrink-0'
-                          onClick={() => onRemove(key)}
-                          disabled={locked}
-                        />
-                      </DisabledFieldTooltip>
-                    </span>
-                  }
-                />
-              </li>
-            )
-          })}
-        </ul>
-      ) : null}
-
-      <div className='flex items-center justify-between gap-3'>
-        <CloserAddButton
-          hasClosers={closers.length > 0}
-          availableUsers={availableUsers}
-          availableContacts={availableContacts}
-          disabled={disabled}
-          disabledReason={disabledReason}
-          isPickerOpen={isPickerOpen}
-          isPending={isPending}
-          onPickerOpenChange={onPickerOpenChange}
-          onAdd={onAdd}
-          onCreateContact={onCreateContact}
-        />
-        {isSplit ? (
+    <EntityList
+      title={closers.length > 1 ? 'Closers' : 'Closer'}
+      titleAddon={
+        isSplit ? (
           <span
             className={cn(
-              'text-sm tabular-nums',
+              'text-sm font-normal tabular-nums',
               hasError ? 'text-destructive' : 'text-muted-foreground'
             )}
           >
             Total {shareTotal === null ? '—' : `${shareTotal}%`}
           </span>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-type CloserAddButtonProps = {
-  hasClosers: boolean
-  availableUsers: CloserCandidate[]
-  availableContacts: CloserCandidate[]
-  disabled: boolean
-  disabledReason: string | null
-  isPickerOpen: boolean
-  isPending: boolean
-  onPickerOpenChange: (open: boolean) => void
-  onAdd: (candidate: CloserCandidate) => void
-  onCreateContact: (query: string) => void
-}
-
-function CloserAddButton({
-  hasClosers,
-  availableUsers,
-  availableContacts,
-  disabled,
-  disabledReason,
-  isPickerOpen,
-  isPending,
-  onPickerOpenChange,
-  onAdd,
-  onCreateContact,
-}: CloserAddButtonProps) {
-  return (
-    <StaffOrPersonPicker
-      staff={availableUsers}
-      people={availableContacts}
-      onSelect={onAdd}
-      trigger={
-        <Button
-          type='button'
-          variant={hasClosers ? 'ghost' : 'outline'}
-          size={hasClosers ? 'sm' : 'default'}
-          className={hasClosers ? undefined : 'w-full justify-start'}
-          disabled={disabled}
-        >
-          {hasClosers ? <Plus className='h-4 w-4' /> : null}
-          {hasClosers ? 'Add closer' : 'No closer'}
-        </Button>
+        ) : null
       }
-      triggerClassName={hasClosers ? undefined : 'w-full'}
-      open={isPickerOpen}
-      onOpenChange={onPickerOpenChange}
-      disabled={disabled}
-      disabledReason={disabledReason}
-      isPending={isPending}
-      onCreatePerson={onCreateContact}
-    />
+      add={{
+        label: 'Add closer',
+        onAdd: () => onPickerOpenChange(true),
+        disabled: locked,
+        disabledReason: lockedReason,
+        render: button => (
+          <StaffOrPersonPicker
+            staff={availableUsers}
+            people={availableContacts}
+            onSelect={onAdd}
+            trigger={button}
+            open={isPickerOpen}
+            onOpenChange={onPickerOpenChange}
+            disabled={disabled}
+            disabledReason={disabledReason}
+            isPending={isPending}
+            onCreatePerson={onCreateContact}
+          />
+        ),
+      }}
+      isEmpty={closers.length === 0 && pendingRemovals.length === 0}
+      emptyMessage='No closer.'
+    >
+      {closers.map(closer => {
+        const key = closerKey(closer)
+        return (
+          <SheetRecordRow
+            key={key}
+            // A closer is a person, staff or not, like the originator.
+            icon={ENTITY_ICONS.contact}
+            title={closer.name}
+            description={
+              closer.email && closer.email !== closer.name ? closer.email : null
+            }
+            fields={
+              isSplit ? (
+                <RecordRowField label='Share'>
+                  <div className='relative -ml-2 w-20 shrink-0'>
+                    <Input
+                      value={closer.shareText}
+                      onChange={event => onShareChange(key, event.target.value)}
+                      inputMode='decimal'
+                      aria-label={`${closer.name} share`}
+                      aria-invalid={hasError || undefined}
+                      disabled={locked}
+                      className={cn(
+                        RECORD_ROW_INPUT_CLASS,
+                        'pr-6 text-right tabular-nums'
+                      )}
+                    />
+                    <span className='text-muted-foreground pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-sm'>
+                      %
+                    </span>
+                  </div>
+                </RecordRowField>
+              ) : undefined
+            }
+            actions={
+              <DisabledFieldTooltip disabled={locked} reason={lockedReason}>
+                <RowActionButton
+                  type='button'
+                  label={`Remove closer ${closer.name}`}
+                  icon={<X />}
+                  className='text-muted-foreground hover:text-destructive shrink-0'
+                  onClick={() => {
+                    setRemoved(prev => [
+                      ...prev.filter(other => closerKey(other) !== key),
+                      closer,
+                    ])
+                    onRemove(key)
+                  }}
+                  disabled={locked}
+                />
+              </DisabledFieldTooltip>
+            }
+          />
+        )
+      })}
+      {pendingRemovals.map(closer => (
+        <SheetRecordRow
+          key={`removed-${closerKey(closer)}`}
+          icon={ENTITY_ICONS.contact}
+          className='opacity-60'
+          title={closer.name}
+          description={
+            <span className='text-destructive'>Pending removal</span>
+          }
+          actions={
+            <Button
+              type='button'
+              variant='ghost'
+              size='xs'
+              className='text-muted-foreground'
+              disabled={locked}
+              onClick={() => onAdd(closer)}
+              aria-label={`Undo removing ${closer.name}`}
+            >
+              Undo
+            </Button>
+          }
+        />
+      ))}
+    </EntityList>
   )
 }

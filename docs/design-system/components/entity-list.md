@@ -2,7 +2,7 @@
 
 `apps/internal/components/sheets/entity-list.tsx`
 
-A sheet's list of related records: a section heading with the + on its right, then one preview card per record 8px below, or a dashed empty state that does what the + does. Every related list uses it: People and Projects and Leads on a company, Companies on a person, Members and the GitHub / Vercel / Supabase links on a project, Tasks and Updates on a lead, Time logs on a task, Linked tasks on a time log, Line items on an invoice, Linked invoice and Linked hour block.
+A sheet's list of related records: a section heading with the + on its right, then one preview card per record 8px below, or a dashed empty state that does what the + does. Every related list uses it: People and Projects and Leads on a company, Companies on a person, Members and the GitHub / Vercel / Supabase links on a project, Tasks and Updates on a lead, Time logs on a task, Linked tasks on a time log, Line items on an invoice, Linked invoice and Linked hour block, and a client's Origination (one person: the + hides once set) and Closers.
 
 ```tsx
 <EntityList
