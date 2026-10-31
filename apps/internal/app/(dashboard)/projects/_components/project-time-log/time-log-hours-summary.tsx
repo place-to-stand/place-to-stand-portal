@@ -1,6 +1,6 @@
 'use client'
 
-import type { ComponentProps, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
@@ -29,13 +29,7 @@ export function TimeLogHoursSummary({
   projectId,
   projectLabel,
   isClientProject,
-  variant = 'panel',
 }: {
-  /**
-   * TEMPORARY comparison (drop with its commit): 'band' is the alternate
-   * full-width strip under the dialog title; 'panel' is the current one.
-   */
-  variant?: TimeLogInfoVariant
   projectId: string
   /** Shown alone for a project with no client. */
   projectLabel: string
@@ -52,108 +46,46 @@ export function TimeLogHoursSummary({
   })
 
   if (isClientProject && isLoading) {
-    return variant === 'band' ? (
-      <Skeleton className='-mx-6 -mt-4 h-[68px] rounded-none' />
-    ) : (
-      <Skeleton className='h-[138px] w-full rounded-lg' />
-    )
+    return <Skeleton className='h-[138px] w-full rounded-lg' />
   }
 
   if (!data) {
-    return <TimeLogInfoView variant={variant} projectName={projectLabel} />
+    return (
+      <InfoPanel>
+        <InfoPanelBody>
+          <Line icon={ENTITY_ICONS.project}>{projectLabel}</Line>
+        </InfoPanelBody>
+      </InfoPanel>
+    )
   }
 
   const net30 = data.billingType === 'net_30'
   const clientHours = net30 ? data.clientThisMonth : data.clientRemaining
 
-  return (
-    <TimeLogInfoView
-      variant={variant}
-      clientName={data.clientName}
-      billingType={data.billingType}
-      projectName={data.projectName}
-      stats={[
-        {
-          label: net30 ? 'Project this month' : 'Project logged',
-          value: formatHours(data.projectHours),
-        },
-        {
-          label: net30 ? 'Client this month' : 'Client remaining',
-          value: formatHours(clientHours ?? 0),
-          negative: !net30 && (clientHours ?? 0) < 0,
-        },
-      ]}
-    />
-  )
-}
-
-export type TimeLogInfoVariant = 'panel' | 'band'
-
-type TimeLogStat = { label: string; value: string; negative?: boolean }
-
-/**
- * The time log's context, drawn either way. 'panel': one read-only panel,
- * the names then the figures, never bordered like the inputs below it.
- * 'band' (TEMPORARY, for comparison): a tinted strip edge to edge under the
- * dialog title, names on the left and the two figures as quiet stats on the
- * right, a hairline under it, then the form.
- */
-export function TimeLogInfoView({
-  variant,
-  clientName,
-  billingType,
-  projectName,
-  stats,
-}: {
-  variant: TimeLogInfoVariant
-  clientName?: string
-  billingType?: ComponentProps<typeof BillingTypeBadge>['billingType']
-  projectName: string
-  stats?: TimeLogStat[]
-}) {
-  const names = (
-    <>
-      {clientName ? (
-        <Line icon={ENTITY_ICONS.client}>
-          <span className='truncate'>{clientName}</span>
-          {billingType ? <BillingTypeBadge billingType={billingType} /> : null}
-        </Line>
-      ) : null}
-      <Line icon={ENTITY_ICONS.project}>{projectName}</Line>
-    </>
-  )
-
-  if (variant === 'band') {
-    return (
-      // -mx-6 -mt-4: edge to edge, tucked under the title (the dialog's p-6
-      // and gap-4).
-      <div className='bg-muted/40 border-border/70 -mx-6 -mt-4 flex items-center justify-between gap-6 border-y px-6 py-3 text-sm'>
-        <div className='flex min-w-0 flex-col gap-1.5'>{names}</div>
-        {stats?.length ? (
-          <dl className='flex shrink-0 gap-6 text-right'>
-            {stats.map(stat => (
-              <div key={stat.label} className='flex flex-col gap-0.5'>
-                <dt className='text-muted-foreground text-xs'>{stat.label}</dt>
-                <dd
-                  className={cn(
-                    'font-medium tabular-nums',
-                    stat.negative && 'text-destructive'
-                  )}
-                >
-                  {stat.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-      </div>
-    )
-  }
-
+  // One read-only panel: the names, then the figures, never bordered like
+  // the inputs below it.
   return (
     <InfoPanel>
-      <InfoPanelBody>{names}</InfoPanelBody>
-      {stats?.length ? <InfoPanelStats stats={stats} /> : null}
+      <InfoPanelBody>
+        <Line icon={ENTITY_ICONS.client}>
+          <span className='truncate'>{data.clientName}</span>
+          <BillingTypeBadge billingType={data.billingType} />
+        </Line>
+        <Line icon={ENTITY_ICONS.project}>{data.projectName}</Line>
+      </InfoPanelBody>
+      <InfoPanelStats
+        stats={[
+          {
+            label: net30 ? 'Project this month' : 'Project logged',
+            value: formatHours(data.projectHours),
+          },
+          {
+            label: net30 ? 'Client this month' : 'Client remaining',
+            value: formatHours(clientHours ?? 0),
+            negative: !net30 && (clientHours ?? 0) < 0,
+          },
+        ]}
+      />
     </InfoPanel>
   )
 }

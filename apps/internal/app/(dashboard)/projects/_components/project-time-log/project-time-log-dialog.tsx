@@ -1,7 +1,5 @@
 'use client'
 
-import { useState } from 'react'
-
 import {
   Dialog,
   DialogContent,
@@ -10,13 +8,9 @@ import {
   DialogTitle,
 } from '@pts/ui/dialog'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { cn } from '@pts/ui/cn'
 import { ProjectTimeLogForm } from './project-time-log-form'
 import { InfoPanelDivider } from '@/components/ui/info-panel'
-import {
-  TimeLogHoursSummary,
-  type TimeLogInfoVariant,
-} from './time-log-hours-summary'
+import { TimeLogHoursSummary } from './time-log-hours-summary'
 import { useProjectTimeLogDialog } from '@/lib/projects/time-log/use-project-time-log-dialog'
 import type {
   ProjectTimeLogDialogParams,
@@ -53,10 +47,6 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
     onMutationSuccess,
   })
 
-  // TEMPORARY comparison (local dev only): a Panel / Band switch under the
-  // title shows the header band instead of the panel. Drop with its commit.
-  const [infoVariant, setInfoVariant] = useState<TimeLogInfoVariant>('panel')
-
   const dialogTitle = state.isEditMode ? 'Edit time log' : 'Create time log'
   const submitLabel = state.isEditMode ? 'Save changes' : 'Log time'
 
@@ -65,45 +55,18 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
       <Dialog open={open} onOpenChange={state.handleDialogOpenChange}>
         <DialogContent className='w-full max-w-xl'>
           <DialogHeader>
-            <div className='flex items-center justify-between gap-3 pr-8'>
-              <DialogTitle>{dialogTitle}</DialogTitle>
-              {process.env.NODE_ENV === 'development' ? (
-                <div
-                  className='bg-muted flex rounded-md p-0.5 text-xs'
-                  role='group'
-                  aria-label='Compare time log context'
-                >
-                  {(['panel', 'band'] as const).map(variant => (
-                    <button
-                      key={variant}
-                      type='button'
-                      aria-pressed={infoVariant === variant}
-                      onClick={() => setInfoVariant(variant)}
-                      className={cn(
-                        'cursor-pointer rounded px-2 py-0.5 capitalize',
-                        infoVariant === variant
-                          ? 'bg-background shadow-sm'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      {variant}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            <DialogTitle>{dialogTitle}</DialogTitle>
             {/* The project shows in the box below; screen readers get it here. */}
             <DialogDescription className='sr-only'>
               {state.projectLabel}
             </DialogDescription>
           </DialogHeader>
           <TimeLogHoursSummary
-            variant={infoVariant}
             projectId={rest.projectId}
             projectLabel={state.projectLabel}
             isClientProject={rest.projectType === 'CLIENT'}
           />
-          {infoVariant === 'band' ? null : <InfoPanelDivider />}
+          <InfoPanelDivider />
           <ProjectTimeLogForm
             isMutating={state.isMutating}
             disableSubmit={state.disableSubmit}
