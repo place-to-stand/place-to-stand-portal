@@ -1,6 +1,6 @@
 # Accordion
 
-The house accordion, from `@pts/ui/accordion`: shadcn's Accordion (`Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`) built on Base UI (house rule 1), with shadcn's styling: a full-width trigger, the label on the left, a chevron on the right that turns when open, an item divider.
+The house accordion, from `@pts/ui/accordion`: shadcn's Accordion (`Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`) built on Base UI (house rule 1), with shadcn's styling: a full-width trigger, the label on the left, a chevron on the right that turns when open, an item divider. Hovering the trigger fills it `bg-muted` (rounded, the same as a preview card's hover), with a pointer cursor and the focus ring for keyboard; it bleeds 8px to each side so the label stays aligned with the text around it.
 
 **Use it** for content most people don't need every time, behind one click: a sheet's Activity (always the last section, below comments or updates, closed by default, the trigger reads "Activity (12)"; see `components/sheets/sheet-activity-section.tsx`).
 

@@ -95,7 +95,7 @@ export function SheetActivityDisclosure({
       onValueChange={value => setOpen(value.length > 0)}
     >
       <AccordionItem value='activity' className='border-b-0'>
-        <AccordionTrigger className='py-0 text-sm font-semibold tracking-tight hover:no-underline'>
+        <AccordionTrigger className='-my-1 py-1 text-sm font-semibold tracking-tight'>
           <span className='flex items-center gap-2'>
             <CONCEPT_ICONS.activity
               className='text-muted-foreground size-4 shrink-0'
