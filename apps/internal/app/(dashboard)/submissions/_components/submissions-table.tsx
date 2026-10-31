@@ -363,7 +363,12 @@ export function SubmissionsTable({
                 onSortChange={next => updateListParams({ sort: next })}
                 className='w-40'
               >
-                Received
+                {/* The rows' unread-dot slot (8px dot + 8px gap), so
+                    "Received" lines up with the times below it. */}
+                <span className='inline-flex items-center'>
+                  <span aria-hidden className='w-4 shrink-0' />
+                  Received
+                </span>
               </SortableTableHead>
               <TableHead className='w-24'>Form</TableHead>
               <TableHead>Contact</TableHead>
