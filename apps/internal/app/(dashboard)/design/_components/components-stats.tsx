@@ -22,8 +22,9 @@ export function ComponentsStats() {
         note='components/ui/stat-card.tsx: the label above, the figure below; tone="negative" for a figure under zero'
         className='block'
       >
-        <div className='grid max-w-md grid-cols-2 gap-3'>
+        <div className='grid max-w-xl grid-cols-3 gap-3'>
           <StatCard label='Project this month' value='5.75h' />
+          <StatCard label='Client remaining' value='12h' tone='positive' />
           <StatCard label='Client remaining' value='-1.5h' tone='negative' />
         </div>
       </Specimen>

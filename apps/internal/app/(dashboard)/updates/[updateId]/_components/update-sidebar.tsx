@@ -1,3 +1,5 @@
+import { BALANCE_TONE_CLASS, balanceTone } from '@/lib/billing/balance-tone'
+import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 import { CalendarRange, UserCog, Users } from 'lucide-react'
 
@@ -69,9 +71,11 @@ export function HoursCard({ hours }: { hours: ClientHoursTotals }) {
           >
             <dt className='text-muted-foreground'>{label}</dt>
             <dd
-              className={
-                index === 0 ? 'font-semibold tabular-nums' : 'tabular-nums'
-              }
+              className={cn(
+                'tabular-nums',
+                index === 0 &&
+                  cn('font-semibold', BALANCE_TONE_CLASS[balanceTone(value)])
+              )}
             >
               {formatHours(value)}
             </dd>

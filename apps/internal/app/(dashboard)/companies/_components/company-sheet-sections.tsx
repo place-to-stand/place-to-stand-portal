@@ -31,6 +31,7 @@ import { Switch } from '@pts/ui/switch'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { balanceTone } from '@/lib/billing/balance-tone'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 import {
   addMonths,
@@ -226,9 +227,7 @@ export function CompanyBillingSection({
                 key={label}
                 label={label}
                 value={formatHours(value)}
-                tone={
-                  label === 'Remaining' && value < 0 ? 'negative' : 'default'
-                }
+                tone={label === 'Remaining' ? balanceTone(value) : 'default'}
               />
             ))}
           </div>

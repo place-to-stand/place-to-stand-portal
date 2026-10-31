@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
 
+import {
+  BALANCE_TONE_CLASS,
+  type BalanceTone,
+} from '@/lib/billing/balance-tone'
 import { cn } from '@/lib/utils'
 
 /**
@@ -36,7 +40,12 @@ export function InfoPanelBody({ children }: { children: ReactNode }) {
 export function InfoPanelStats({
   stats,
 }: {
-  stats: Array<{ label: string; value: ReactNode; negative?: boolean }>
+  stats: Array<{
+    label: string
+    value: ReactNode
+    /** A balance's colour (`balanceTone`). */
+    tone?: BalanceTone
+  }>
 }) {
   return (
     <dl
@@ -54,7 +63,7 @@ export function InfoPanelStats({
           <dd
             className={cn(
               'text-lg leading-tight font-semibold tabular-nums',
-              stat.negative && 'text-destructive'
+              BALANCE_TONE_CLASS[stat.tone ?? 'default']
             )}
           >
             {stat.value}

@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react'
 
+import {
+  BALANCE_TONE_CLASS,
+  type BalanceTone,
+} from '@/lib/billing/balance-tone'
 import { cn } from '@/lib/utils'
 
 /**
@@ -14,8 +18,11 @@ export function StatCard({
 }: {
   label: string
   value: ReactNode
-  /** `negative`: the value is below zero (an overdrawn balance). */
-  tone?: 'default' | 'negative'
+  /**
+   * A balance's colour (`balanceTone`): `positive` muted green (hours left),
+   * `negative` muted red (overdrawn).
+   */
+  tone?: BalanceTone
   className?: string
 }) {
   return (
@@ -29,7 +36,7 @@ export function StatCard({
       <span
         className={cn(
           'text-lg leading-tight font-semibold tabular-nums',
-          tone === 'negative' && 'text-destructive'
+          BALANCE_TONE_CLASS[tone]
         )}
       >
         {value}

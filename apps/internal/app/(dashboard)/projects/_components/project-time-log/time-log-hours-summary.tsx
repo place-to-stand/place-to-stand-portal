@@ -14,6 +14,7 @@ import {
   InfoPanelBody,
   InfoPanelStats,
 } from '@/components/ui/info-panel'
+import { balanceTone } from '@/lib/billing/balance-tone'
 import { loadTimeLogHours } from '@/lib/projects/time-log/load-time-log-hours'
 
 export const TIME_LOG_HOURS_QUERY_KEY = 'time-log-hours' as const
@@ -82,7 +83,7 @@ export function TimeLogHoursSummary({
           {
             label: net30 ? 'Client this month' : 'Client remaining',
             value: formatHours(clientHours ?? 0),
-            negative: !net30 && (clientHours ?? 0) < 0,
+            tone: net30 ? 'default' : balanceTone(clientHours ?? 0),
           },
         ]}
       />

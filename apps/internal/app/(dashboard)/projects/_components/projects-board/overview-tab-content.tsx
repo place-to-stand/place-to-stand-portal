@@ -30,6 +30,7 @@ import {
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
 import { StatCard } from '@/components/ui/stat-card'
+import { balanceTone } from '@/lib/billing/balance-tone'
 import { BOARD_COLUMNS } from '@/lib/projects/board/board-constants'
 import { formatTaskStatusLabel } from '../project-time-log/task-status-utils'
 import { companySheetHref } from '@/lib/sheets/hrefs'
@@ -91,11 +92,7 @@ function ProjectOverview({
           <StatCard
             label='Client remaining'
             value={formatHours(burndown?.totalClientRemainingHours ?? 0)}
-            tone={
-              (burndown?.totalClientRemainingHours ?? 0) < 0
-                ? 'negative'
-                : 'default'
-            }
+            tone={balanceTone(burndown?.totalClientRemainingHours ?? 0)}
           />
         ) : (
           <StatCard
