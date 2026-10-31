@@ -27,6 +27,7 @@ import {
   type ContactLink,
 } from '@/components/contacts/contact-link-picker'
 import { EntityLinkPicker } from '@/components/ui/entity-link-picker'
+import { EntityFieldLabel } from '@/components/ui/entity-label-icon'
 import {
   Form,
   FormControl,
@@ -44,7 +45,6 @@ import {
 import { UrlInput } from '@/components/ui/url-input'
 
 import { DesignSection, Example, Specimen } from './specimen'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 const STATIC_COMPANIES = [
   { id: 'design-acme', label: 'Acme Industries', description: 'Client' },
@@ -76,7 +76,18 @@ const COMBOBOX_ITEMS: SearchableComboboxItem[] = [
   value: name.split(' ')[0]!.toLowerCase(),
   label: name,
   description: `${name.split(' ')[0]!.toLowerCase()}@example.com`,
+  // A person: their photo, else initials (none of these have a photo).
+  avatar: { src: null },
 }))
+
+// One entity's options: no icon on any of them, the label carries it.
+const COMPANY_ITEMS: SearchableComboboxItem[] = STATIC_COMPANIES.map(
+  company => ({
+    value: company.id,
+    label: company.label,
+    description: company.description ?? undefined,
+  })
+)
 
 const emailSchema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -201,6 +212,10 @@ export function ComponentsInputs() {
 export function ComponentsPickers() {
   const [status, setStatus] = useState('active')
   const [person, setPerson] = useState<string | null>('radia')
+  const [fieldPerson, setFieldPerson] = useState<string | null>('ada')
+  const [fieldCompany, setFieldCompany] = useState<string | null>(
+    'design-acme'
+  )
   const [company, setCompany] = useState<CompanyLink | null>(null)
   const [contact, setContact] = useState<ContactLink | null>(null)
   const [staticCompany, setStaticCompany] = useState<{
@@ -263,6 +278,43 @@ export function ComponentsPickers() {
       </Specimen>
 
       <Specimen
+        label='Entity picker fields'
+        note="A picker for an entity leads its label with that entity's icon in its colour (FormLabel entity='…', or EntityFieldLabel). A person picker shows each person's avatar, photo else initials; a picker whose options are all one entity (company, project, client) shows no icon in its options or trigger."
+        className='grid grid-cols-1 gap-6 md:grid-cols-2'
+      >
+        <div className='grid gap-2'>
+          <EntityFieldLabel entity='contact' htmlFor='design-field-person'>
+            Person
+          </EntityFieldLabel>
+          <SearchableCombobox
+            id='design-field-person'
+            items={COMBOBOX_ITEMS}
+            value={fieldPerson}
+            onChange={setFieldPerson}
+            placeholder='Select a person'
+            searchPlaceholder='Search people…'
+            onClear={() => setFieldPerson(null)}
+            clearLabel='person'
+          />
+        </div>
+        <div className='grid gap-2'>
+          <EntityFieldLabel entity='company' htmlFor='design-field-company'>
+            Company
+          </EntityFieldLabel>
+          <SearchableCombobox
+            id='design-field-company'
+            items={COMPANY_ITEMS}
+            value={fieldCompany}
+            onChange={setFieldCompany}
+            placeholder='Select a company'
+            searchPlaceholder='Search companies…'
+            onClear={() => setFieldCompany(null)}
+            clearLabel='company'
+          />
+        </div>
+      </Specimen>
+
+      <Specimen
         label='Entity link pickers'
         note='Live data. Create opens the real create sheet; the link saves with the host form'
         className='grid grid-cols-1 gap-6 md:grid-cols-3'
@@ -284,7 +336,6 @@ export function ComponentsPickers() {
             entity='company'
             entityLabel='company'
             aria-label='Company'
-            icon={ENTITY_ICONS.company}
             value={staticCompany}
             onChange={setStaticCompany}
             options={STATIC_COMPANIES}
