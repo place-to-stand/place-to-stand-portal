@@ -102,6 +102,10 @@ test('creating a company with a person and billing is one Save', async ({
   await expect(
     sheet.getByText('This company becomes a client when you save.')
   ).toBeVisible()
+  // The first billed month defaults to this month: no need to pick it.
+  await expect(
+    sheet.getByRole('combobox', { name: 'First month billed' })
+  ).toHaveText(/\(this month\)/)
 
   const actions = await saveAndCountActions(
     page,
@@ -197,9 +201,11 @@ test('restarting a former client shows its last terms to edit', async ({
     sheet.getByText(/^Billing restarts with these terms when you save/)
   ).toBeVisible()
   await expect(sheet.getByText('Billing type', { exact: true })).toBeVisible()
+  // Starting (or restarting) billing defaults to this month: Save works
+  // without touching it, and it can still be backdated.
   await expect(
     sheet.getByRole('combobox', { name: 'First month billed' })
-  ).toBeVisible()
+  ).toHaveText(/\(this month\)/)
 
   await page.keyboard.press('Escape')
   await page
