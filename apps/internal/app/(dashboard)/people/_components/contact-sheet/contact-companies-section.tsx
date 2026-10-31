@@ -16,7 +16,6 @@ import {
   SheetRecordList,
 } from '@/components/sheets/sheet-record-row'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
@@ -66,7 +65,6 @@ export function ContactCompaniesSection({
   return (
     <SheetSection
       title='Companies'
-      icon={ENTITY_ICONS.company}
       action={
         disabled ? (
           <SectionAddButton label='Add company' disabled />
