@@ -32,6 +32,7 @@ import {
   ComponentsTabs,
 } from './_components/components-navigation'
 import { ComponentsSheets } from './_components/components-sheet'
+import { ComponentsRecordCardTakes } from './_components/record-card-takes'
 import { FoundationsColour } from './_components/foundations-colour'
 import { FoundationsEntities } from './_components/foundations-entities'
 import { FoundationsIcons } from './_components/foundations-icons'
@@ -74,6 +75,7 @@ export default async function DesignPage() {
         <ComponentsRichText />
         <ComponentsAvatars />
         <ComponentsRecordRows />
+        <ComponentsRecordCardTakes />
         <ComponentsTables />
         <ComponentsEmptyLoading />
         <ComponentsFeedback />

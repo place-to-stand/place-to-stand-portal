@@ -27,6 +27,7 @@ export const DESIGN_SECTION_GROUPS = [
       { id: 'rich-text', label: 'Rich text' },
       { id: 'avatars', label: 'Avatars' },
       { id: 'record-rows', label: 'Record rows' },
+      { id: 'record-card-takes', label: 'Record cards: pick one' },
       { id: 'tables', label: 'Tables and toolbar' },
       { id: 'empty-loading', label: 'Empty and loading' },
       { id: 'feedback', label: 'Alerts, toasts and errors' },
