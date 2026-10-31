@@ -9,7 +9,11 @@ import { formatHours } from '@pts/ui/numbers'
 import { Skeleton } from '@pts/ui/skeleton'
 import { ENTITY_ICONS, entityIconAccent } from '@/lib/entity-accents'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
-import { StatCard } from '@/components/ui/stat-card'
+import {
+  InfoPanel,
+  InfoPanelBody,
+  InfoPanelStats,
+} from '@/components/ui/info-panel'
 import { loadTimeLogHours } from '@/lib/projects/time-log/load-time-log-hours'
 
 export const TIME_LOG_HOURS_QUERY_KEY = 'time-log-hours' as const
@@ -42,47 +46,49 @@ export function TimeLogHoursSummary({
   })
 
   if (isClientProject && isLoading) {
-    return <Skeleton className='h-[150px] w-full rounded-lg' />
+    return <Skeleton className='h-[138px] w-full rounded-lg' />
   }
 
   if (!data) {
     return (
-      <div className={BOX}>
-        <Line icon={ENTITY_ICONS.project}>{projectLabel}</Line>
-      </div>
+      <InfoPanel>
+        <InfoPanelBody>
+          <Line icon={ENTITY_ICONS.project}>{projectLabel}</Line>
+        </InfoPanelBody>
+      </InfoPanel>
     )
   }
 
   const net30 = data.billingType === 'net_30'
   const clientHours = net30 ? data.clientThisMonth : data.clientRemaining
 
+  // One read-only panel: the names, then the figures, never bordered like
+  // the inputs below it.
   return (
-    <div className='flex flex-col gap-3'>
-      {/* The icons say client and project; the badge says how it's billed. */}
-      <div className={BOX}>
+    <InfoPanel>
+      <InfoPanelBody>
         <Line icon={ENTITY_ICONS.client}>
           <span className='truncate'>{data.clientName}</span>
           <BillingTypeBadge billingType={data.billingType} />
         </Line>
         <Line icon={ENTITY_ICONS.project}>{data.projectName}</Line>
-      </div>
-      <div className='grid grid-cols-2 gap-3'>
-        <StatCard
-          label={net30 ? 'Project this month' : 'Project logged'}
-          value={formatHours(data.projectHours)}
-        />
-        <StatCard
-          label={net30 ? 'Client this month' : 'Client remaining'}
-          value={formatHours(clientHours ?? 0)}
-          tone={!net30 && (clientHours ?? 0) < 0 ? 'negative' : 'default'}
-        />
-      </div>
-    </div>
+      </InfoPanelBody>
+      <InfoPanelStats
+        stats={[
+          {
+            label: net30 ? 'Project this month' : 'Project logged',
+            value: formatHours(data.projectHours),
+          },
+          {
+            label: net30 ? 'Client this month' : 'Client remaining',
+            value: formatHours(clientHours ?? 0),
+            negative: !net30 && (clientHours ?? 0) < 0,
+          },
+        ]}
+      />
+    </InfoPanel>
   )
 }
-
-const BOX =
-  'bg-muted/40 flex flex-col gap-1.5 rounded-lg border px-4 py-3 text-sm'
 
 function Line({
   icon: Icon,
