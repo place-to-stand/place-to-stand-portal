@@ -8,6 +8,7 @@ import { Skeleton } from '@pts/ui/skeleton'
 import { SectionAddButton } from '@/components/sheets/section-add-button'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { StatCard } from '@/components/ui/stat-card'
 import {
   LeadRecordRow,
   ProjectRecordRow,
@@ -205,7 +206,7 @@ export function CompanyBillingSection({
       </SheetSection>
       {isClient && billingOn && work?.hours ? (
         <SheetSection title='Hours'>
-          <dl className='grid grid-cols-3 gap-4 text-sm'>
+          <div className='grid grid-cols-3 gap-3'>
             {(
               [
                 ['Remaining', work.hours.remaining],
@@ -213,19 +214,16 @@ export function CompanyBillingSection({
                 ['Used', work.hours.used],
               ] as const
             ).map(([label, value]) => (
-              <div key={label} className='space-y-1'>
-                <dt className='text-muted-foreground text-xs'>{label}</dt>
-                <dd
-                  className={cn(
-                    'tabular-nums',
-                    label === 'Remaining' && value < 0 && 'text-destructive'
-                  )}
-                >
-                  {formatHours(value)}
-                </dd>
-              </div>
+              <StatCard
+                key={label}
+                label={label}
+                value={formatHours(value)}
+                tone={
+                  label === 'Remaining' && value < 0 ? 'negative' : 'default'
+                }
+              />
             ))}
-          </dl>
+          </div>
         </SheetSection>
       ) : null}
       {billingOn ? <CompanyBillingFields /> : null}
