@@ -275,7 +275,7 @@ function TakeB() {
 /* ── Take C: list without boxes ─────────────────────────────────────── */
 
 const LIST_COLUMNS =
-  'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_11rem_5.5rem_auto]'
+  'grid grid-cols-[minmax(0,1fr)_4rem] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_11rem_5.5rem_4rem]'
 
 function TakeC() {
   const { people, update } = usePeople()
@@ -322,7 +322,7 @@ function TakeC() {
                 aria-label={`Portal access for ${person.name}`}
               />
             </span>
-            <span className='col-start-2 row-start-1 flex items-center sm:col-start-auto sm:row-start-auto'>
+            <span className='col-start-2 row-start-1 flex items-center justify-end sm:col-start-auto sm:row-start-auto'>
               <StarButton
                 on={person.primary}
                 onClick={() => update(index, { primary: !person.primary })}
