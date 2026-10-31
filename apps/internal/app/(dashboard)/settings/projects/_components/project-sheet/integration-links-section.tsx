@@ -209,7 +209,7 @@ export function IntegrationLinksSection({
 
   if (statusQuery.isSuccess && !isConnected) {
     return (
-      <SheetSection title={heading}>
+      <SheetSection list title={heading}>
         <EmptyState
           message={`Connect your ${config.label} account in Settings to link ${config.projectNoun}s.`}
           action={
@@ -224,7 +224,7 @@ export function IntegrationLinksSection({
 
   if (statusQuery.isPending || (!isCreateMode && linksQuery.isPending)) {
     return (
-      <SheetSection title={heading}>
+      <SheetSection list title={heading}>
         <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' />
           Loading linked {config.projectNoun}s...
@@ -240,6 +240,7 @@ export function IntegrationLinksSection({
 
   return (
     <SheetSection
+      list
       title={heading}
       action={
         <SectionAddButton

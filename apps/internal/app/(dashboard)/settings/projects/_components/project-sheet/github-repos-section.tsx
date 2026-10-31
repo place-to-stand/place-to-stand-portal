@@ -274,7 +274,7 @@ export function GitHubReposSection({
 
   if (!isGitHubConnected) {
     return (
-      <SheetSection title='GitHub repositories'>
+      <SheetSection list title='GitHub repositories'>
         <EmptyState
           message='Connect your GitHub account in Settings to link repositories.'
           action={
@@ -289,7 +289,7 @@ export function GitHubReposSection({
 
   if (loading && !isCreateMode) {
     return (
-      <SheetSection title='GitHub repositories'>
+      <SheetSection list title='GitHub repositories'>
         <div className='text-muted-foreground flex items-center gap-2 text-sm'>
           <Loader2 className='h-4 w-4 animate-spin' />
           Loading linked repos...
@@ -326,6 +326,7 @@ export function GitHubReposSection({
 
   return (
     <SheetSection
+      list
       title='GitHub repositories'
       action={
         <SectionAddButton

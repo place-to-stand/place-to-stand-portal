@@ -85,7 +85,7 @@ export function CompanyClientColumn({
           <>
             <Separator />
             <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
-              <SheetSection title='Projects'>
+              <SheetSection list title='Projects'>
                 <EmptyState
                   message={
                     isEditing

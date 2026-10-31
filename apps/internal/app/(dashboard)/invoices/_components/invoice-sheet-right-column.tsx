@@ -180,6 +180,7 @@ export function InvoiceSheetRightColumn({
           <>
             <Separator />
             <SheetSection
+              list
               title={
                 invoice.hour_blocks.length === 1
                   ? 'Linked hour block'

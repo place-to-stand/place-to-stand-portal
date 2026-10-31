@@ -42,12 +42,7 @@ export function CompanyLeadsSection({
   leads: CompanyLeadSummary[]
 }) {
   return (
-    <SheetSection
-      title='Leads'
-      action={
-        <span className='text-muted-foreground text-xs'>{leads.length}</span>
-      }
-    >
+    <SheetSection title='Leads' list>
       {leads.length === 0 ? (
         <EmptyState message='No leads at this company.' />
       ) : (
@@ -296,7 +291,7 @@ export function CompanyProjectsSection({
 
   if (isLoading || !work) {
     return (
-      <SheetSection title='Projects'>
+      <SheetSection list title='Projects'>
         <Skeleton className='h-24 w-full' />
       </SheetSection>
     )
@@ -305,20 +300,14 @@ export function CompanyProjectsSection({
   return (
     <SheetSection
       title='Projects'
+      list
       action={
-        <div className='flex items-center gap-3'>
-          <span className='text-muted-foreground text-xs'>
-            {work.projects.length}
-          </span>
-          {canCreate ? (
-            <SectionAddButton
-              label='Create project'
-              onClick={() =>
-                openNew('project', { projectCompanyId: companyId })
-              }
-            />
-          ) : null}
-        </div>
+        canCreate ? (
+          <SectionAddButton
+            label='Create project'
+            onClick={() => openNew('project', { projectCompanyId: companyId })}
+          />
+        ) : null
       }
     >
       {work.projects.length === 0 ? (

@@ -69,10 +69,10 @@ export function LeadSheetRightColumn({
         // need the lead to point at. Conversion needs a Won lead, so it
         // stays hidden until then.
         <div className='space-y-10 p-6'>
-          <SheetSection title='Tasks'>
+          <SheetSection list title='Tasks'>
             <EmptyState message='Add tasks after you save the lead.' />
           </SheetSection>
-          <SheetSection title='Updates'>
+          <SheetSection list title='Updates'>
             <EmptyState message='Add updates after you save the lead.' />
           </SheetSection>
         </div>
