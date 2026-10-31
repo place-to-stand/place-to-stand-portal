@@ -33,6 +33,7 @@ import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { balanceTone } from '@/lib/billing/balance-tone'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 import { monthLabelFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 export function CompanyLeadsSection({
   leads,
@@ -140,7 +141,7 @@ export function CompanyBillingSection({
 
   return (
     <>
-      <SheetSection title='Client'>
+      <SheetSection title='Client' icon={ENTITY_ICONS.client}>
         <div className='flex items-center gap-2'>
           <Switch
             id='company-bill-switch'
@@ -230,7 +231,7 @@ export function CompanyClientReadOnly({
   wasClient?: boolean
 }) {
   return (
-    <SheetSection title='Client'>
+    <SheetSection title='Client' icon={ENTITY_ICONS.client}>
       {isClient ? (
         <p className='text-muted-foreground text-sm'>
           Only an admin can change a client’s billing.
