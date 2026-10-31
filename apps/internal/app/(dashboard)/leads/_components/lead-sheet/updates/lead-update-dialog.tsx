@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 
-import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Label } from '@pts/ui/label'
 import {
@@ -14,6 +13,7 @@ import {
 } from '@pts/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
 import { InlineReveal } from '@/components/ui/inline-reveal'
+import { InlineFormActions } from '@/components/sheets/inline-form-actions'
 import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useToast } from '@/components/ui/use-toast'
@@ -185,10 +185,6 @@ export function LeadUpdateDialog({
       <InlineReveal open={open}>
         <div className='pb-2'>
           <div className='bg-card space-y-4 rounded-lg border p-3'>
-            <p className='text-sm font-medium'>
-              {isEditing ? 'Edit update' : 'Log update'}
-            </p>
-
             {/* min-w-0 lets this grid child shrink to the popup's width — without
             it the RTE toolbar's min-content width drags the whole track wider
             than the panel and everything bleeds past the border. */}
@@ -259,20 +255,14 @@ export function LeadUpdateDialog({
               ) : null}
             </div>
 
-            <div className='flex justify-end gap-2'>
-              <Button
-                type='button'
-                variant='ghost'
-                onClick={() => handleOpenChange(false)}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              {/* Never gated on dirty state — only on an in-flight save. */}
-              <Button type='button' onClick={handleSubmit} disabled={isPending}>
-                {isPending ? 'Saving…' : isEditing ? 'Save' : 'Log'}
-              </Button>
-            </div>
+            {/* Never gated on dirty state — only on an in-flight save. */}
+            <InlineFormActions
+              submitLabel='Log update'
+              isEditing={isEditing}
+              pending={isPending}
+              onSubmit={handleSubmit}
+              onCancel={() => handleOpenChange(false)}
+            />
           </div>
         </div>
       </InlineReveal>

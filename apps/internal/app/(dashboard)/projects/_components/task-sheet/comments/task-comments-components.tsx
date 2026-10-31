@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import type { FormEvent } from 'react'
-import { Loader2, MoreHorizontal, Pencil, Send, Trash2, X } from 'lucide-react'
+import { MoreHorizontal, Pencil, Send, Trash2, X } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
@@ -13,8 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { InlineReveal } from '@/components/ui/inline-reveal'
+import { InlineFormActions } from '@/components/sheets/inline-form-actions'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import {
@@ -94,26 +94,20 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
             disabled={disabled}
             contentMinHeightClassName='[&_.ProseMirror]:min-h-20'
           />
-          <div className='flex justify-end gap-2'>
-            <Button type='button' variant='outline' onClick={onCancel}>
-              Cancel
-            </Button>
-            <DisabledFieldTooltip
-              disabled={disabled}
-              reason={
-                canComment
-                  ? disabled
-                    ? 'Finish editing or wait for the previous action to complete.'
-                    : null
-                  : 'Only project collaborators can post comments.'
-              }
-            >
-              <Button type='submit' disabled={disabled || isEmpty}>
-                {pending ? <Loader2 className='animate-spin' /> : <Send />}
-                Comment
-              </Button>
-            </DisabledFieldTooltip>
-          </div>
+          <InlineFormActions
+            submitLabel='Post comment'
+            submitType='submit'
+            pending={pending}
+            disabled={disabled || isEmpty}
+            disabledReason={
+              canComment
+                ? disabled
+                  ? 'Finish editing or wait for the previous action to complete.'
+                  : null
+                : 'Only project collaborators can post comments.'
+            }
+            onCancel={onCancel}
+          />
         </form>
       </div>
     </InlineReveal>

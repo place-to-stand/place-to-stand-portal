@@ -310,7 +310,9 @@ test('sales can’t edit or archive someone else’s lead update', async ({
       .last()
     await admin.locator('#lead-update-body .ProseMirror').click()
     await admin.keyboard.type(marker)
-    await logDialog.getByRole('button', { name: 'Log', exact: true }).click()
+    await logDialog
+      .getByRole('button', { name: 'Log update', exact: true })
+      .click()
     // The inline form closes (it stays mounted, hidden, so check its heading).
     await expect(admin.getByText('Log update', { exact: true })).toBeHidden()
 
