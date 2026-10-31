@@ -368,81 +368,6 @@ export function SubmissionDetailSheet({
         <div className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'>
           <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
             <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
-              {/* Two deliberate rows — what it is, then when — instead of a
-                justify-between pair that wrapped into a ragged second line
-                at sheet width. */}
-              <div className='flex flex-col gap-3'>
-                <div className='flex flex-wrap items-center gap-2'>
-                  <Badge
-                    variant='outline'
-                    className={cn(
-                      FORM_SUBMISSION_STATUS_TOKENS[displaySubmission.status]
-                    )}
-                  >
-                    {FORM_SUBMISSION_STATUS_LABELS[displaySubmission.status]}
-                  </Badge>
-                  {unacknowledged ? (
-                    <Badge variant='secondary'>Unacknowledged</Badge>
-                  ) : null}
-                  {/* Same summary the table and the team email show, so the
-                    answer to "where did this come from" is above the fold
-                    instead of eight fields down in Attribution. */}
-                  <Badge
-                    variant='outline'
-                    className={cn(ATTRIBUTION_CHANNEL_TOKENS[source.channel])}
-                  >
-                    {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
-                  </Badge>
-                  {source.detail ? (
-                    <span className='text-muted-foreground text-sm'>
-                      {source.detail}
-                    </span>
-                  ) : null}
-                </div>
-                {/* Each fact is its own icon-led item that never breaks
-                  internally, so a narrow sheet wraps between facts rather
-                  than mid-timestamp. */}
-                <ul className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
-                  <li className='flex items-center gap-1.5 whitespace-nowrap'>
-                    <CalendarClock
-                      className='size-3.5 shrink-0'
-                      aria-hidden='true'
-                    />
-                    {/* Company timezone, like the email stamps below — an
-                      ambient-TZ format here put two clocks in one sheet. */}
-                    <span>
-                      Started{' '}
-                      {formatCalendarDate(
-                        displaySubmission.startedAt,
-                        STARTED_STYLE
-                      )}
-                    </span>
-                  </li>
-                  {displaySubmission.durationMs !== null ? (
-                    <li className='flex items-center gap-1.5 whitespace-nowrap'>
-                      <Timer className='size-3.5 shrink-0' aria-hidden='true' />
-                      <span>
-                        {formatDuration(displaySubmission.durationMs)} on page
-                      </span>
-                    </li>
-                  ) : null}
-                  {mode === 'active' && warrantsAttention && acknowledged ? (
-                    <li className='flex items-center gap-1.5 whitespace-nowrap'>
-                      <Check className='size-3.5 shrink-0' aria-hidden='true' />
-                      <span>
-                        Acknowledged{' '}
-                        {override
-                          ? 'just now'
-                          : acknowledgedAt
-                            ? formatRelativeTime(acknowledgedAt)
-                            : ''}
-                      </span>
-                    </li>
-                  ) : null}
-                </ul>
-              </div>
-
-              <Separator />
               <SheetSection title='Contact'>
                 <dl className={KV_GRID}>
                   <Kv
@@ -693,11 +618,86 @@ export function SubmissionDetailSheet({
             )}
           >
             <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+              {/* What it is and when, above the technical trail. */}
+              {/* Two deliberate rows — what it is, then when — instead of a
+                justify-between pair that wrapped into a ragged second line
+                at sheet width. */}
+              <div className='flex flex-col gap-3'>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <Badge
+                    variant='outline'
+                    className={cn(
+                      FORM_SUBMISSION_STATUS_TOKENS[displaySubmission.status]
+                    )}
+                  >
+                    {FORM_SUBMISSION_STATUS_LABELS[displaySubmission.status]}
+                  </Badge>
+                  {unacknowledged ? (
+                    <Badge variant='secondary'>Unacknowledged</Badge>
+                  ) : null}
+                  {/* Same summary the table and the team email show, so the
+                    answer to "where did this come from" is above the fold
+                    instead of eight fields down in Attribution. */}
+                  <Badge
+                    variant='outline'
+                    className={cn(ATTRIBUTION_CHANNEL_TOKENS[source.channel])}
+                  >
+                    {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
+                  </Badge>
+                  {source.detail ? (
+                    <span className='text-muted-foreground text-sm'>
+                      {source.detail}
+                    </span>
+                  ) : null}
+                </div>
+                {/* Each fact is its own icon-led item that never breaks
+                  internally, so a narrow sheet wraps between facts rather
+                  than mid-timestamp. */}
+                <ul className='text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs'>
+                  <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                    <CalendarClock
+                      className='size-3.5 shrink-0'
+                      aria-hidden='true'
+                    />
+                    {/* Company timezone, like the email stamps below — an
+                      ambient-TZ format here put two clocks in one sheet. */}
+                    <span>
+                      Started{' '}
+                      {formatCalendarDate(
+                        displaySubmission.startedAt,
+                        STARTED_STYLE
+                      )}
+                    </span>
+                  </li>
+                  {displaySubmission.durationMs !== null ? (
+                    <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                      <Timer className='size-3.5 shrink-0' aria-hidden='true' />
+                      <span>
+                        {formatDuration(displaySubmission.durationMs)} on page
+                      </span>
+                    </li>
+                  ) : null}
+                  {mode === 'active' && warrantsAttention && acknowledged ? (
+                    <li className='flex items-center gap-1.5 whitespace-nowrap'>
+                      <Check className='size-3.5 shrink-0' aria-hidden='true' />
+                      <span>
+                        Acknowledged{' '}
+                        {override
+                          ? 'just now'
+                          : acknowledgedAt
+                            ? formatRelativeTime(acknowledgedAt)
+                            : ''}
+                      </span>
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
               {/* Only once the marketing site asked for email (PRD 008). Rows
                 from before that cutover never requested delivery, and an
                 "Emails" block full of dashes would read as a failure. */}
               {emailStamps ? (
                 <>
+                  <Separator />
                   <SheetSection title='Emails'>
                     <dl className={KV_GRID}>
                       <Kv label='Team notification' value={emailStamps.team} />
@@ -712,7 +712,7 @@ export function SubmissionDetailSheet({
 
               {hasAttribution && (
                 <>
-                  {emailStamps ? <Separator /> : null}
+                  <Separator />
                   <SheetSection title='Attribution'>
                     <dl className={KV_GRID}>
                       <Kv
@@ -752,7 +752,7 @@ export function SubmissionDetailSheet({
                 </>
               )}
 
-              {emailStamps || hasAttribution ? <Separator /> : null}
+              <Separator />
               <SheetSection title='Session'>
                 <dl className={KV_GRID}>
                   <Kv
