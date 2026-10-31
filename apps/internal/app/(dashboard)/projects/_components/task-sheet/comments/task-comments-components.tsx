@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import type { FormEvent } from 'react'
-import { MoreHorizontal, Pencil, Send, Trash2, X } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Button } from '@pts/ui/button'
@@ -170,23 +170,14 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
           placeholder='Update your comment…'
           contentMinHeightClassName='[&_.ProseMirror]:min-h-20'
         />
-        <div className='mt-3 flex items-center justify-end gap-2'>
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={onCancelEdit}
-          >
-            <X /> Cancel
-          </Button>
-          <Button
-            type='button'
-            size='sm'
-            onClick={onConfirmEdit}
+        <div className='mt-3'>
+          <InlineFormActions
+            submitLabel='Save'
+            isEditing
             disabled={isEditingEmpty || disableActions}
-          >
-            <Send /> Save
-          </Button>
+            onSubmit={onConfirmEdit}
+            onCancel={onCancelEdit}
+          />
         </div>
       </div>
     )
