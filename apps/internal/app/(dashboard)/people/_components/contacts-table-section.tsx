@@ -102,7 +102,15 @@ export function ContactsTableSection({
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[26%]'>Companies</TableHead>
+            <SortableTableHead
+              field='companies'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[26%]'
+            >
+              Companies
+            </SortableTableHead>
             <SortableTableHead
               field='email'
               sort={sort}
@@ -122,7 +130,16 @@ export function ContactsTableSection({
               Phone
             </SortableTableHead>
             {seesAccess ? (
-              <TableHead className='w-24 text-center'>Sign-in</TableHead>
+              <SortableTableHead
+                field='signIn'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-28'
+                align='center'
+              >
+                Sign-in
+              </SortableTableHead>
             ) : null}
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>

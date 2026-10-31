@@ -260,7 +260,12 @@ export async function listContactsForSettings(
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
   const seesAccess = canSeePortalAccess(user.role)
-  const sort = input.sort ?? DEFAULT_CONTACTS_SORT
+  // Sign-ins are hidden from people who don't manage access, so they can't
+  // sort by them either.
+  const sort =
+    input.sort && (input.sort.field !== 'signIn' || seesAccess)
+      ? input.sort
+      : DEFAULT_CONTACTS_SORT
   const descriptor = CONTACT_SORT_DESCRIPTORS[sort.field]
 
   const statusCondition = buildStatusCondition(normalizedStatus)
