@@ -11,14 +11,12 @@ import {
   ACTIVITY_TARGET_TYPES,
   type ActivityTargetType,
 } from '@/lib/activity/types'
-import {
-  canReadActivity,
-  SALES_ACTIVITY_TARGET_TYPES,
-} from '@/lib/auth/roles'
+import { canReadActivity, SALES_ACTIVITY_TARGET_TYPES } from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
 import { resolveUserIds } from '@/lib/cli/queries/users'
 import { serializeActivity } from '@/lib/cli/serializers/activity'
 import { resolveClientIdentifier } from '@/lib/data/clients'
+import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 import { resolveProjectIdentifier } from '@/lib/data/projects'
 import { activitySource } from '@/lib/db/schema'
 import { BadRequestError, ForbiddenError } from '@/lib/errors/http'
@@ -79,7 +77,6 @@ export function registerActivityTools(server: McpServer) {
     title: 'List activity',
     description:
       'The audit trail for one thing or one area, newest first: who changed what, when, and through which channel (portal, CLI or an agent). Filter by target type, a target id (a task, lead, contact…), project, client, source, actor or time window; when hasMore is true, narrow the filters. For "what happened recently" across everything, use recent_activity. Sales users must set targetType to LEAD and/or CONTACT and cannot filter by project or client.',
-    access: 'crm',
     effect: 'read',
     input: {
       targetType: z
@@ -147,7 +144,7 @@ export function registerActivityTools(server: McpServer) {
         !canReadActivity(user.role, {
           targetType,
           projectId: project,
-          clientId: client,
+          companyId: client,
         })
       ) {
         throw new ForbiddenError(
@@ -165,11 +162,23 @@ export function registerActivityTools(server: McpServer) {
         resolveActorId(user, actor),
       ])
 
+      // Billing activity moved from CLIENT to COMPANY (0113), and old client
+      // ids became company ids (0111): an agent asking the old way still
+      // finds it.
+      const targetTypes = targetType
+        ? [
+            ...new Set(
+              targetType.map(type => (type === 'CLIENT' ? 'COMPANY' : type))
+            ),
+          ]
+        : undefined
       const result = await fetchActivityLogs(user, {
-        targetType,
-        targetId,
+        targetType: targetTypes,
+        targetId: targetId
+          ? await companyIdForLegacyClientId(targetId)
+          : undefined,
         projectId,
-        clientId,
+        companyId: clientId,
         source,
         actorId,
         since: from,
@@ -188,7 +197,6 @@ export function registerActivityTools(server: McpServer) {
     name: 'recent_activity',
     title: 'Recent activity',
     description: `Everything that happened across the portal in a time window, oldest first, for questions like "what happened this week?". Returns the newest ${RECENT_DEFAULT} entries by default (max ${RECENT_MAX}); truncated: true means older entries in the window were left out, so narrow the window or filter by source, actor or target type. Sales users see lead and contact activity only.`,
-    access: 'crm',
     effect: 'read',
     input: {
       since: windowBound.describe(
@@ -218,7 +226,10 @@ export function registerActivityTools(server: McpServer) {
           `Maximum entries, 1–${RECENT_MAX}. Default ${RECENT_DEFAULT}.`
         ),
     },
-    run: async ({ since, until, targetType, source, actor, limit }, { user }) => {
+    run: async (
+      { since, until, targetType, source, actor, limit },
+      { user }
+    ) => {
       const from = startOf(since)
       const to = until ? endOf(until) : undefined
 

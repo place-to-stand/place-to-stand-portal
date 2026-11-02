@@ -1,9 +1,8 @@
 'use client'
 
-import { Pencil, RotateCcw } from 'lucide-react'
+import { Check, Pencil, RotateCcw } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 type LayoutEditControlsProps = {
   isEditing: boolean
@@ -14,8 +13,10 @@ type LayoutEditControlsProps = {
 }
 
 /**
- * Header-right slot for the home page: pencil to enter edit mode, Reset +
- * Done while editing. Saves are optimistic (revert + toast on failure), so
+ * The home page's toolbar action (where My Tasks has Create task): Edit
+ * widgets to enter edit mode; while
+ * editing, Reset and Done. Widgets are hidden and shown from the bar above
+ * each card or by dragging them to and from the Hidden widgets tray. Saves are optimistic (revert + toast on failure), so
  * the buttons deliberately don't reflect the in-flight save: toggling
  * disabled/spinner state on every drop reads as a flicker.
  */
@@ -26,49 +27,36 @@ export function LayoutEditControls({
   onStopEditing,
   onReset,
 }: LayoutEditControlsProps) {
+  // Same size and place as My Tasks' "Create task".
   if (!isEditing) {
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon-sm'
-            aria-label='Edit widget layout'
-            onClick={onStartEditing}
-          >
-            <Pencil aria-hidden />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Edit widget layout</TooltipContent>
-      </Tooltip>
+      <Button type='button' size='sm' onClick={onStartEditing}>
+        <Pencil className='h-4 w-4' aria-hidden />
+        Edit widgets
+      </Button>
     )
   }
 
   return (
-    <div className='flex items-center gap-1.5'>
+    <div className='flex items-center gap-2'>
       <span
         role='status'
-        className='text-muted-foreground mr-1.5 hidden text-xs sm:inline'
+        className='text-muted-foreground mr-1 hidden text-xs sm:inline'
       >
-        Editing widget layout
+        Drag widgets to arrange them
       </span>
       <Button
         type='button'
-        variant='ghost'
-        size='xs'
+        variant='outline'
+        size='sm'
         disabled={!canReset}
         onClick={onReset}
       >
-        <RotateCcw aria-hidden />
+        <RotateCcw className='h-4 w-4' aria-hidden />
         Reset
       </Button>
-      <Button
-        type='button'
-        size='xs'
-        onClick={onStopEditing}
-        aria-label='Done editing layout'
-      >
+      <Button type='button' size='sm' onClick={onStopEditing}>
+        <Check className='h-4 w-4' aria-hidden />
         Done
       </Button>
     </div>

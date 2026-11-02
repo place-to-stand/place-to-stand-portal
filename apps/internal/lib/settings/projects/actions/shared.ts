@@ -1,4 +1,6 @@
-'use server'
+// Plain server helpers, not server actions: as a 'use server' module these
+// were callable by anyone as unauthenticated revalidation endpoints.
+import 'server-only'
 
 import { revalidatePath } from 'next/cache'
 

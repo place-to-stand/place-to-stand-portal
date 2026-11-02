@@ -61,7 +61,7 @@ export async function acceptDoneTasks(input: {
     .select({
       id: projects.id,
       name: projects.name,
-      clientId: projects.clientId,
+      companyId: projects.companyId,
     })
     .from(projects)
     .where(eq(projects.id, projectId))
@@ -120,7 +120,7 @@ export async function acceptDoneTasks(input: {
     targetType: 'PROJECT',
     targetId: project.id,
     targetProjectId: project.id,
-    targetClientId: project.clientId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 

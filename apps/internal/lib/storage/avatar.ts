@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/types";
+import type { UserRoleValue } from "@/lib/types";
 
 type AvatarBucketClient = SupabaseClient<Database>;
 
@@ -36,6 +37,8 @@ export const ACCEPTED_AVATAR_MIME_TYPES = [
 
 const PENDING_PREFIX = "avatars/pending";
 const USER_PREFIX = "avatars";
+// A person's photo (contacts.avatar_url): anyone can have one.
+const PERSON_PREFIX = "avatars/people";
 const ACCEPTED_AVATAR_EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -72,6 +75,15 @@ export function resolveAvatarExtension(mimeType: string) {
 function inferAvatarExtensionFromPath(path: string) {
   const segments = path.split(".");
   return segments.length > 1 ? segments.pop() ?? null : null;
+}
+
+const STAGED_UPLOAD =
+  /^avatars\/pending\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.[a-z0-9]+$/i;
+
+/** A path the upload route staged for this actor (generateAvatarPath). */
+export function isStagedUploadOf(path: string, actorId: string) {
+  const match = path.match(STAGED_UPLOAD);
+  return Boolean(match && match[1] === actorId);
 }
 
 export function generateAvatarPath({ actorId, targetUserId, extension }: GeneratePathOptions) {
@@ -117,7 +129,7 @@ export async function deleteAvatarObject({ client, path }: DeleteOptions) {
 }
 
 /**
- * `users.avatar_url` stores an object path inside the avatar bucket, not a URL.
+ * `contacts.avatar_url` stores an object path inside the avatar bucket, not a URL.
  * Use this before trusting a path that came from outside the upload flow — an
  * identity provider's `user_metadata.avatar_url`, for instance, is a CDN URL.
  */
@@ -135,7 +147,7 @@ export function canManageAvatarPath({
   targetUserId,
 }: {
   actorId: string;
-  actorRole: Database["public"]["Enums"]["user_role"];
+  actorRole: UserRoleValue;
   path: string;
   targetUserId?: string | null;
 }) {
@@ -160,4 +172,32 @@ export function canManageAvatarPath({
   }
 
   return false;
+}
+
+/** Moves a staged upload into the person's folder (contacts.avatar_url). */
+export async function moveAvatarToPersonFolder({
+  client,
+  path,
+  contactId,
+}: {
+  client: AvatarBucketClient;
+  path: string;
+  contactId: string;
+}) {
+  if (path.startsWith(`${PERSON_PREFIX}/${contactId}/`)) {
+    return path;
+  }
+
+  const extension = inferAvatarExtensionFromPath(path) ?? "jpg";
+  const destination = `${PERSON_PREFIX}/${contactId}/${randomUUID()}.${extension}`;
+
+  await ensureAvatarBucket(client);
+
+  const { error } = await client.storage.from(AVATAR_BUCKET).move(path, destination);
+
+  if (error) {
+    throw error;
+  }
+
+  return destination;
 }

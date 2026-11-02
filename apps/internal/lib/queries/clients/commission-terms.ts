@@ -1,12 +1,12 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import {
-  clientCommissionTermClosers,
-  clientCommissionTerms,
-  clients,
+  commissionTermClosers,
+  commissionTerms,
   contacts,
   users,
 } from '@/lib/db/schema'
@@ -14,12 +14,10 @@ import {
   closerSplitsEqual,
   type ClientCloser,
   type CloserShare,
-} from '@/lib/settings/clients/closers'
+} from '@/lib/companies/billing/closers'
 
-import { currentMonthStartUtc } from './billing-terms'
 
-type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
-type DbOrTransaction = typeof db | DbTransaction
+type DbOrTransaction = typeof db | DbTx
 
 /**
  * One commission split: who closed the deal (zero or more closers sharing
@@ -50,7 +48,7 @@ async function insertTermClosers(
   closers: CloserShare[]
 ): Promise<void> {
   if (closers.length === 0) return
-  await tx.insert(clientCommissionTermClosers).values(
+  await tx.insert(commissionTermClosers).values(
     closers.map(closer => ({
       termId,
       closerUserId: closer.kind === 'user' ? closer.id : null,
@@ -61,27 +59,29 @@ async function insertTermClosers(
 }
 
 /**
- * Inserts a client's first commission term, effective the first of the
- * creation month. Must run in the same transaction as the client insert so
- * the client's first month resolves its closers/origination.
+ * Inserts a client's first commission term, effective its first billed month
+ * (the billing period's `starts_on`). Must run in the same transaction as the
+ * billing start so the client's first month resolves its closers/origination.
  */
 export async function insertInitialCommissionTerm(
   tx: DbOrTransaction,
   params: CommissionAssignment & {
-    clientId: string
+    companyId: string
+    /** The first billed month ('yyyy-MM-01'). */
+    effectiveFrom: string
     createdBy: string | null
   }
 ): Promise<void> {
   const [term] = await tx
-    .insert(clientCommissionTerms)
+    .insert(commissionTerms)
     .values({
-      clientId: params.clientId,
-      effectiveFrom: currentMonthStartUtc(),
+      companyId: params.companyId,
+      effectiveFrom: params.effectiveFrom,
       originationUserId: params.originationUserId,
       originationContactId: params.originationContactId,
       createdBy: params.createdBy,
     })
-    .returning({ id: clientCommissionTerms.id })
+    .returning({ id: commissionTerms.id })
 
   await insertTermClosers(tx, term.id, params.closers)
 }
@@ -96,23 +96,23 @@ export async function insertInitialCommissionTerm(
 export async function upsertCommissionTerm(
   tx: DbOrTransaction,
   params: CommissionAssignment & {
-    clientId: string
+    companyId: string
     effectiveFrom: string
     createdBy: string | null
   }
 ): Promise<void> {
   const now = new Date().toISOString()
   const [term] = await tx
-    .insert(clientCommissionTerms)
+    .insert(commissionTerms)
     .values({
-      clientId: params.clientId,
+      companyId: params.companyId,
       effectiveFrom: params.effectiveFrom,
       originationUserId: params.originationUserId,
       originationContactId: params.originationContactId,
       createdBy: params.createdBy,
     })
     .onConflictDoUpdate({
-      target: [clientCommissionTerms.clientId, clientCommissionTerms.effectiveFrom],
+      target: [commissionTerms.companyId, commissionTerms.effectiveFrom],
       targetWhere: sql`deleted_at IS NULL`,
       set: {
         originationUserId: params.originationUserId,
@@ -121,15 +121,15 @@ export async function upsertCommissionTerm(
         updatedAt: now,
       },
     })
-    .returning({ id: clientCommissionTerms.id })
+    .returning({ id: commissionTerms.id })
 
   await tx
-    .update(clientCommissionTermClosers)
+    .update(commissionTermClosers)
     .set({ deletedAt: now, updatedAt: now })
     .where(
       and(
-        eq(clientCommissionTermClosers.termId, term.id),
-        isNull(clientCommissionTermClosers.deletedAt)
+        eq(commissionTermClosers.termId, term.id),
+        isNull(commissionTermClosers.deletedAt)
       )
     )
 
@@ -143,56 +143,50 @@ export async function upsertCommissionTerm(
  * keeps its history even after someone leaves.
  */
 export async function fetchLatestClosersByClient(
-  clientIds: string[]
+  companyIds: string[]
 ): Promise<Map<string, ClientCloser[]>> {
   const result = new Map<string, ClientCloser[]>()
-  if (clientIds.length === 0) return result
+  if (companyIds.length === 0) return result
 
   const latestTerms = db
-    .selectDistinctOn([clientCommissionTerms.clientId], {
-      termId: clientCommissionTerms.id,
-      clientId: clientCommissionTerms.clientId,
+    .selectDistinctOn([commissionTerms.companyId], {
+      termId: commissionTerms.id,
+      companyId: commissionTerms.companyId,
     })
-    .from(clientCommissionTerms)
+    .from(commissionTerms)
     .where(
       and(
-        inArray(clientCommissionTerms.clientId, clientIds),
-        isNull(clientCommissionTerms.deletedAt)
+        inArray(commissionTerms.companyId, companyIds),
+        isNull(commissionTerms.deletedAt)
       )
     )
-    .orderBy(
-      clientCommissionTerms.clientId,
-      desc(clientCommissionTerms.effectiveFrom)
-    )
+    .orderBy(commissionTerms.companyId, desc(commissionTerms.effectiveFrom))
     .as('latest_terms')
 
   const rows = await db
     .select({
-      clientId: latestTerms.clientId,
-      closerUserId: clientCommissionTermClosers.closerUserId,
-      closerContactId: clientCommissionTermClosers.closerContactId,
-      sharePercent: clientCommissionTermClosers.sharePercent,
-      userName: users.fullName,
+      companyId: latestTerms.companyId,
+      closerUserId: commissionTermClosers.closerUserId,
+      closerContactId: commissionTermClosers.closerContactId,
+      sharePercent: commissionTermClosers.sharePercent,
+      userName: personNameSql,
       userEmail: users.email,
-      userAvatarUrl: users.avatarUrl,
+      userAvatarUrl: personAvatarSql,
       userUpdatedAt: users.updatedAt,
       contactName: contacts.name,
       contactEmail: contacts.email,
     })
     .from(latestTerms)
     .innerJoin(
-      clientCommissionTermClosers,
+      commissionTermClosers,
       and(
-        eq(clientCommissionTermClosers.termId, latestTerms.termId),
-        isNull(clientCommissionTermClosers.deletedAt)
+        eq(commissionTermClosers.termId, latestTerms.termId),
+        isNull(commissionTermClosers.deletedAt)
       )
     )
-    .leftJoin(users, eq(users.id, clientCommissionTermClosers.closerUserId))
-    .leftJoin(
-      contacts,
-      eq(contacts.id, clientCommissionTermClosers.closerContactId)
-    )
-    .orderBy(desc(clientCommissionTermClosers.sharePercent))
+    .leftJoin(users, eq(users.id, commissionTermClosers.closerUserId))
+    .leftJoin(contacts, eq(contacts.id, commissionTermClosers.closerContactId))
+    .orderBy(desc(commissionTermClosers.sharePercent))
 
   for (const row of rows) {
     const closer: ClientCloser = row.closerUserId
@@ -209,14 +203,14 @@ export async function fetchLatestClosersByClient(
           kind: 'contact',
           id: row.closerContactId as string,
           sharePercent: Number(row.sharePercent),
-          name: row.contactName?.trim() || row.contactEmail || 'Unknown contact',
+          name: row.contactName?.trim() || row.contactEmail || 'Unknown person',
           email: row.contactEmail,
           avatarUrl: null,
           avatarUpdatedAt: null,
         }
-    const list = result.get(row.clientId) ?? []
+    const list = result.get(row.companyId) ?? []
     list.push(closer)
-    result.set(row.clientId, list)
+    result.set(row.companyId, list)
   }
 
   return result
@@ -234,9 +228,9 @@ export async function resolveClosers(
       ? db
           .select({
             id: users.id,
-            name: users.fullName,
+            name: personNameSql,
             email: users.email,
-            avatarUrl: users.avatarUrl,
+            avatarUrl: personAvatarSql,
             updatedAt: users.updatedAt,
           })
           .from(users)
@@ -244,7 +238,11 @@ export async function resolveClosers(
       : Promise.resolve([]),
     contactIds.length
       ? db
-          .select({ id: contacts.id, name: contacts.name, email: contacts.email })
+          .select({
+            id: contacts.id,
+            name: contacts.name,
+            email: contacts.email,
+          })
           .from(contacts)
           .where(inArray(contacts.id, contactIds))
       : Promise.resolve([]),
@@ -266,7 +264,7 @@ export async function resolveClosers(
     const contact = contactsById.get(share.id)
     return {
       ...share,
-      name: contact?.name?.trim() || contact?.email || 'Unknown contact',
+      name: contact?.name?.trim() || contact?.email || 'Unknown person',
       email: contact?.email ?? null,
       avatarUrl: null,
       avatarUpdatedAt: null,
@@ -279,18 +277,22 @@ type CommissionColumn = 'id' | 'originationUserId' | 'originationContactId'
 /**
  * SQL fragment resolving one commission column as of a report period — the
  * newest `effective_from` <= period start wins, exactly like
- * `billingTypeAsOfSql`. Correlated against the outer `clients` table, so it
- * is only valid inside a query that joins `clients`. NULL when the resolved
+ * `billingTypeAsOfSql`. Correlated against the outer `companies` table
+ * (written table-qualified), so it is only valid inside a query that reads
+ * `companies`. NULL when the resolved
  * term has no assignment (or no term exists at or before the period).
  */
-function commissionColumnAsOfSql(column: CommissionColumn, periodStart: string) {
+function commissionColumnAsOfSql(
+  column: CommissionColumn,
+  periodStart: string
+) {
   return sql<string | null>`(
-    SELECT ${clientCommissionTerms[column]}
-    FROM ${clientCommissionTerms}
-    WHERE ${clientCommissionTerms.clientId} = ${clients.id}
-      AND ${clientCommissionTerms.effectiveFrom} <= ${periodStart}
-      AND ${clientCommissionTerms.deletedAt} IS NULL
-    ORDER BY ${clientCommissionTerms.effectiveFrom} DESC
+    SELECT ${commissionTerms[column]}
+    FROM ${commissionTerms}
+    WHERE ${commissionTerms.companyId} = ${sql.raw('"companies"."id"')}
+      AND ${commissionTerms.effectiveFrom} <= ${periodStart}
+      AND ${commissionTerms.deletedAt} IS NULL
+    ORDER BY ${commissionTerms.effectiveFrom} DESC
     LIMIT 1
   )`
 }
@@ -306,4 +308,33 @@ export function originationUserIdAsOfSql(periodStart: string) {
 
 export function originationContactIdAsOfSql(periodStart: string) {
   return commissionColumnAsOfSql('originationContactId', periodStart)
+}
+
+/**
+ * The client's current origination: the newest term's (latest effective
+ * date, even a future one, which is what the company sheet's billing last saved).
+ * Correlated against the outer `companies` table. The terms table is the one
+ * place commission is stored; reports resolve by period with the `AsOf`
+ * helpers above.
+ */
+function latestCommissionColumnSql(column: CommissionColumn) {
+  // The outer column is written out table-qualified: drizzle drops the table
+  // name from an interpolated column inside a selected fragment, which would
+  // bind it to the terms table's own id.
+  return sql<string | null>`(
+    SELECT ${commissionTerms[column]}
+    FROM ${commissionTerms}
+    WHERE ${commissionTerms.companyId} = ${sql.raw('"companies"."id"')}
+      AND ${commissionTerms.deletedAt} IS NULL
+    ORDER BY ${commissionTerms.effectiveFrom} DESC
+    LIMIT 1
+  )`
+}
+
+export function currentOriginationUserIdSql() {
+  return latestCommissionColumnSql('originationUserId')
+}
+
+export function currentOriginationContactIdSql() {
+  return latestCommissionColumnSql('originationContactId')
 }

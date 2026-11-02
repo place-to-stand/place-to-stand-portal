@@ -1,11 +1,13 @@
-import { Archive, Loader2, Pencil, RotateCcw } from 'lucide-react'
+import { Loader2, RotateCcw } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { formatHours } from '@pts/ui/numbers'
+import {
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
 import {
   Table,
   TableBody,
@@ -14,14 +16,11 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { cn } from '@/lib/utils'
+import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectTimeLogHistoryState } from '@/lib/projects/time-log/use-project-time-log-history'
-
-const HOURS_FORMATTER = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 2,
-  minimumFractionDigits: 0,
-})
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 type ProjectTimeLogHistoryContentProps = {
   state: ProjectTimeLogHistoryState
@@ -84,11 +83,10 @@ export function ProjectTimeLogHistoryContent(
           <Table stack>
             <TableHeader>
               <TableRow className='bg-muted/40'>
-                <TableHead className='min-w-28'>Logged on</TableHead>
                 <TableHead className='min-w-20'>Hours</TableHead>
-                <TableHead className='min-w-48'>Tasks</TableHead>
-                <TableHead className='min-w-36'>Member</TableHead>
-                <TableHead className='min-w-48'>Notes</TableHead>
+                <TableHead className='min-w-28'>Logged on</TableHead>
+                <TableHead className='min-w-20 text-center'>Tasks</TableHead>
+                <TableHead className='min-w-36'>Person</TableHead>
                 <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -137,10 +135,11 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
   const { log, onDeleteRequest, onEditRequest, isDeleting, pendingDeleteId } =
     props
 
-  const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown user'
+  const { open: openSheet } = useSheetParams()
+  const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown person'
   const loggedDate = formatCalendarDate(log.logged_on) ?? 'Unknown date'
   const deleteDisabled = isDeleting
-  const deleteReason = deleteDisabled ? 'Removing entry...' : null
+  const deleteReason = deleteDisabled ? 'Removing time log...' : null
 
   const visibleTaskLinks = (log.linked_tasks ?? []).filter(
     (
@@ -163,74 +162,49 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
 
   return (
     <TableRow>
-      <TableCell className='max-md:first:basis-auto'>
+      {/* Hours first, as on the Time logs list. */}
+      <TableCell className='font-semibold max-md:first:basis-auto'>
+        {formatHours(log.hours ?? 0)}
+      </TableCell>
+      <TableCell label='Logged on'>
         <div className='flex flex-col'>
           <span className='font-medium'>{loggedDate}</span>
         </div>
       </TableCell>
-      <TableCell className='font-semibold'>
-        {HOURS_FORMATTER.format(Number(log.hours ?? 0))} hrs
-      </TableCell>
-      <TableCell className='max-md:basis-full'>
-        {visibleTaskLinks.length === 0 ? (
-          <span className='text-muted-foreground text-sm'>
-            Logged to project
-          </span>
-        ) : (
-          <div className='flex flex-wrap gap-2'>
-            {visibleTaskLinks.map(link => (
-              <Badge key={link.task?.id ?? link.id} variant='secondary'>
-                {link.task?.title ?? 'Untitled task'}
-              </Badge>
-            ))}
-          </div>
-        )}
+      <TableCell label='Tasks' className='text-sm tabular-nums md:text-center'>
+        <LinkedRecordsHoverCell
+          count={visibleTaskLinks.length}
+          icon={ENTITY_ICONS.task}
+          iconClassName={ENTITY_ACCENTS.task.icon}
+          ariaLabel={`${visibleTaskLinks.length} ${visibleTaskLinks.length === 1 ? 'task' : 'tasks'}`}
+          items={visibleTaskLinks.map(link => ({
+            id: link.task?.id ?? link.id,
+            label: link.task?.title ?? 'Untitled task',
+            onSelect: link.task
+              ? () => openSheet('task', link.task!.id)
+              : undefined,
+          }))}
+        />
       </TableCell>
       <TableCell>
         <span className='line-clamp-2 text-sm'>{authorName}</span>
       </TableCell>
-      <TableCell
-        className={cn('max-md:basis-full', !log.note && 'max-md:hidden')}
-      >
-        {log.note ? (
-          <span className='text-muted-foreground line-clamp-3 text-sm whitespace-pre-wrap'>
-            {log.note}
-          </span>
-        ) : (
-          <span className='text-muted-foreground text-sm'>—</span>
-        )}
-      </TableCell>
       <TableCell className='text-right max-md:ml-auto'>
-        <div className='flex justify-end gap-2'>
-          <RowActionButton
-            type='button'
-            label='Edit time entry'
-            icon={<Pencil />}
-            variant='outline'
+        <RecordRowActions>
+          <RecordRowAction
+            kind='edit'
+            entity='time log'
             onClick={() => onEditRequest(log)}
           />
-          <DisabledFieldTooltip disabled={deleteDisabled} reason={deleteReason}>
-            <RowActionButton
-              type='button'
-              label='Delete time entry'
-              variant='destructive'
-              className={cn(
-                isDeleting && pendingDeleteId === log.id
-                  ? 'pointer-events-none'
-                  : undefined
-              )}
-              onClick={() => onDeleteRequest(log)}
-              disabled={deleteDisabled}
-              icon={
-                isDeleting && pendingDeleteId === log.id ? (
-                  <Loader2 className='animate-spin' />
-                ) : (
-                  <Archive />
-                )
-              }
-            />
-          </DisabledFieldTooltip>
-        </div>
+          <RecordRowAction
+            kind='archive'
+            entity='time log'
+            onClick={() => onDeleteRequest(log)}
+            disabled={deleteDisabled}
+            disabledReason={deleteReason}
+            pending={isDeleting && pendingDeleteId === log.id}
+          />
+        </RecordRowActions>
       </TableCell>
     </TableRow>
   )

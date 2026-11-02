@@ -6,7 +6,12 @@ import { z } from 'zod'
 import type { AppUser } from '@/lib/auth/session'
 import { listUsersForCli } from '@/lib/cli/queries/users'
 import { serializeClient } from '@/lib/cli/serializers/client'
-import { serializeContact } from '@/lib/cli/serializers/contact'
+import {
+  serializeContact,
+  serializeContactCompanies,
+} from '@/lib/cli/serializers/contact'
+import { listContactMemberships } from '@/lib/queries/memberships'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import { serializeProject } from '@/lib/cli/serializers/project'
 import { serializeUser, serializeUserRow } from '@/lib/cli/serializers/user'
 import {
@@ -28,6 +33,7 @@ import {
 
 import { listLimit, page, searchText } from '../output'
 import { defineTool } from '../tool'
+import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 
 const clientRef = z.string().trim().min(1).describe('Client slug or UUID.')
 
@@ -36,8 +42,9 @@ async function resolveContactFilterClient(
   reference: string
 ): Promise<string> {
   const clients = await listAllActiveClients(user)
+  const id = await companyIdForLegacyClientId(reference)
   const match = clients.find(
-    client => client.id === reference || client.slug === reference
+    client => client.id === id || client.slug === reference
   )
 
   if (!match) {
@@ -54,7 +61,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'Who am I',
     description:
       'Return the Place To Stand portal user this connection acts as (including their role), and the app it is connected through.',
-    access: 'crm',
     effect: 'read',
     input: {},
     run: async (_args, { user, agent }) => ({
@@ -68,7 +74,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'List users',
     description:
       'List portal users (team members and client portal users) — for sales users, only the admin and sales staff. Use it to find the email or id to assign a task or lead to; only admin and sales users can be assigned.',
-    access: 'crm',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -91,7 +96,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'List clients',
     description:
       'List clients with their billing type, project counts and prepaid hours balance (purchased, used, remaining). hoursRemaining can be negative when a client is over; net_30 clients have no meaningful balance.',
-    access: 'admin',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -108,8 +112,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_client',
     title: 'Get client',
     description:
-      'One client with its hours balance, linked contacts and projects.',
-    access: 'admin',
+      'One client with its hours balance, its Portal access contacts (who can see it in the client portal) and projects.',
     effect: 'read',
     input: { client: clientRef },
     run: async ({ client: reference }, { user }) => {
@@ -135,8 +138,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'list_contacts',
     title: 'List contacts',
     description:
-      'List contacts (people at clients and prospects), optionally only those linked to one client.',
-    access: 'crm',
+      'List contacts (at clients and prospects), optionally only those linked to one client.',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -153,14 +155,21 @@ export function registerDirectoryTools(server: McpServer) {
 
       const result = await listContactsForSettings(user, {
         search: search ?? null,
-        clientId,
+        companyId: clientId,
         limit,
       })
 
+      const memberships = await listContactMemberships(
+        result.items.map(contact => contact.id)
+      )
+      // Portal access and sign-ins are for people who manage clients.
+      const seesPortalAccess = canSeePortalAccess(user.role)
       return {
         items: result.items.map(contact => ({
-          ...serializeContact(contact),
-          clients: contact.metrics.clients,
+          ...serializeContact(contact, memberships.get(contact.id), {
+            seesPortalAccess,
+          }),
+          ...(seesPortalAccess ? { clients: contact.metrics.clients } : {}),
         })),
         hasMore: result.totalCount > result.items.length,
         totalCount: result.totalCount,
@@ -171,17 +180,31 @@ export function registerDirectoryTools(server: McpServer) {
   defineTool(server, {
     name: 'get_contact',
     title: 'Get contact',
-    description: 'One contact and the clients they are linked to.',
-    access: 'crm',
+    description:
+      'One contact and the companies they belong to (title, primary). For admins, also their portal access, sign-in and the clients they can see in the portal.',
     effect: 'read',
     input: { contactId: z.string().uuid().describe('Contact UUID.') },
     run: async ({ contactId }, { user }) => {
-      const [contact, clients] = await Promise.all([
+      const seesPortalAccess = canSeePortalAccess(user.role)
+      const [contact, memberships] = await Promise.all([
         getContactSheetInputById(user, contactId),
-        listContactClients(user, contactId),
+        listContactMemberships([contactId]),
       ])
-
-      return { contact, clients }
+      const companies = serializeContactCompanies(
+        memberships.get(contactId) ?? [],
+        { seesPortalAccess }
+      )
+      // Portal access and sign-ins are for people who manage clients.
+      if (!seesPortalAccess) {
+        const { userId: _userId, ...rest } = contact
+        void _userId
+        return { contact: rest, companies }
+      }
+      return {
+        contact,
+        companies,
+        clients: await listContactClients(user, contactId),
+      }
     },
   })
 
@@ -190,7 +213,6 @@ export function registerDirectoryTools(server: McpServer) {
     title: 'List projects',
     description:
       'List projects (CLIENT, INTERNAL and PERSONAL), optionally for one client. Use a project slug to scope task tools.',
-    access: 'admin',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -205,7 +227,7 @@ export function registerDirectoryTools(server: McpServer) {
 
       const projects = (await fetchProjectsLite()).filter(
         project =>
-          (!clientId || project.client_id === clientId) &&
+          (!clientId || project.company_id === clientId) &&
           (!needle ||
             project.name.toLowerCase().includes(needle) ||
             project.slug?.toLowerCase().includes(needle))
@@ -219,7 +241,6 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_project',
     title: 'Get project',
     description: 'One project by slug or UUID.',
-    access: 'admin',
     effect: 'read',
     input: {
       project: z.string().trim().min(1).describe('Project slug or UUID.'),

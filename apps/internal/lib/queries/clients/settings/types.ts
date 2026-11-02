@@ -1,10 +1,9 @@
-import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
-import type { ClientCloser } from '@/lib/settings/clients/closers'
+import type { ClientCloser } from '@/lib/companies/billing/closers'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type {
   ClientBillingFilter,
   ClientSortField,
-} from '@/lib/settings/clients/filters'
+} from '@/lib/companies/billing/filters'
 
 import type { SelectClient } from '../selectors'
 
@@ -40,15 +39,14 @@ export type ClientsSettingsResult = {
   totalCount: number
   /** Rows on the tab regardless of filters/search (the `M`). */
   unfilteredTotalCount: number
-  pageInfo: PageInfo
 }
 
 export type ListClientsForSettingsInput = {
   status?: 'active' | 'archived'
   billing?: ClientBillingFilter | null
   search?: string | null
-  cursor?: string | null
-  direction?: CursorDirection | null
+  /** Rows to skip (offset paging: `(page - 1) * limit`). */
+  offset?: number | null
   limit?: number | null
   sort?: ParsedSort<ClientSortField>
 }

@@ -57,7 +57,7 @@ export async function saveUpdateDraft(
     summary: event.summary,
     targetType: 'CLIENT_UPDATE',
     targetId: updated.id,
-    targetClientId: updated.clientId,
+    targetCompanyId: updated.companyId,
     metadata: event.metadata,
   })
 

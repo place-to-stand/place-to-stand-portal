@@ -8,11 +8,10 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { cn } from '@/lib/utils'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
-import { getLeadStatusToken } from '@/lib/leads/constants'
-import { Badge } from '@pts/ui/badge'
 import { RowActionButton } from '@pts/ui/row-action-button'
 
 import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 
 import { LeadCard } from './lead-card'
 
@@ -58,7 +57,6 @@ export function LeadColumn({
     },
   })
 
-  const statusToken = getLeadStatusToken(columnId)
   const highlight = isOver || isDropTarget
   const draggingLeadVisibleInColumn = Boolean(
     draggingLeadId && leads.some(lead => lead.id === draggingLeadId)
@@ -78,15 +76,7 @@ export function LeadColumn({
     >
       <div className='flex items-center justify-between gap-2'>
         <div className='flex items-center gap-3'>
-          <Badge
-            variant='outline'
-            className={cn(
-              'text-xs font-semibold tracking-wide uppercase',
-              statusToken
-            )}
-          >
-            {label}
-          </Badge>
+          <LeadStatusBadge status={columnId} label={label} />
           <span className='text-muted-foreground text-[10px]'>
             {leads.length}
           </span>
@@ -95,7 +85,7 @@ export function LeadColumn({
           {(enableCreateButton ?? canManage) && onCreateLead ? (
             <RowActionButton
               type='button'
-              label={`Add lead to ${label}`}
+              label={`Create lead to ${label}`}
               icon={<Plus />}
               onClick={() => onCreateLead(columnId)}
             />

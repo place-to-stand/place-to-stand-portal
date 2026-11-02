@@ -151,7 +151,7 @@ const LinkMain: React.FC<LinkMainProps> = ({
           <InputGroup>
             <Input
               type='url'
-              placeholder='Paste a link...'
+              placeholder='Paste a link…'
               value={url}
               onChange={e => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}

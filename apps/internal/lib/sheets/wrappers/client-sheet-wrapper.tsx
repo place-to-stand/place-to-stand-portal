@@ -1,42 +1,32 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { CompanySheet } from '@/app/(dashboard)/companies/_components/company-sheet'
 
-import { ClientSheet } from '@/app/(dashboard)/clients/_components/clients-sheet'
-
-import { emitSheetCreated } from '../created'
 import { NEW_SHEET_VALUE } from '../entities'
-import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function ClientSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
-  const router = useRouter()
-  const { getAux } = useSheetParams()
-  const data = useSheetInit('client', value)
-  const isCreating = value === NEW_SHEET_VALUE
-  // Create-from-picker: the host picker passes the typed name along.
-  const initialName = isCreating ? (getAux('clientName') ?? undefined) : undefined
+/**
+ * Old `?client=<id>` links: a client is a company you bill, so this opens
+ * the company. (Making a client happens on the company's billing (its sheet's Client column).)
+ */
+export function ClientSheetWrapper({
+  value,
+  open,
+  onRequestClose,
+}: SheetWrapperProps) {
+  const data = useSheetInit('client', value === NEW_SHEET_VALUE ? '' : value)
 
-  if (!data) {
+  if (value === NEW_SHEET_VALUE || !data?.client) {
     return null
   }
 
   return (
-    <ClientSheet
+    <CompanySheet
+      key={data.client.company_id ?? data.client.id}
+      companyId={data.client.company_id ?? null}
       open={open}
-      onOpenChange={next => {
-        if (!next) {
-          onRequestClose()
-        }
-      }}
-      onComplete={() => {
-        router.refresh()
-        onRequestClose()
-      }}
-      client={isCreating ? null : data.client}
-      initialName={initialName}
-      onCreated={record => emitSheetCreated('client', record)}
+      onClose={onRequestClose}
     />
   )
 }

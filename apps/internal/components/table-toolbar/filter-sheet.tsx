@@ -60,7 +60,7 @@ export function FilterSheetButton({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           hideCloseButton
-          size='sm'
+          columns={1}
           className='flex flex-col gap-0 overflow-hidden p-0'
         >
           <SheetHeader className='relative border-b p-2.5 pr-12'>

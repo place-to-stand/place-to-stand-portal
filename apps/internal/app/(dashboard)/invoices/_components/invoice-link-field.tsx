@@ -37,7 +37,7 @@ export function InvoiceLinkField({
   return (
     <div className='space-y-2'>
       <Label htmlFor='invoice-client-link' className='font-medium'>
-        Client link
+        Public link
       </Label>
       <div className='flex items-center gap-1'>
         {url ? (

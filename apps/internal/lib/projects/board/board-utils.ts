@@ -33,8 +33,8 @@ export const getProjectClientSegment = (
     return PROJECT_SPECIAL_SEGMENTS.PERSONAL
   }
 
-  const clientId = project.client_id ?? null
-  if (!clientId) {
+  const companyId = project.company_id ?? null
+  if (!companyId) {
     return null
   }
 
@@ -42,8 +42,8 @@ export const getProjectClientSegment = (
     return project.client.slug
   }
 
-  if (clientSlugLookup?.has(clientId)) {
-    return clientSlugLookup.get(clientId) ?? null
+  if (clientSlugLookup?.has(companyId)) {
+    return clientSlugLookup.get(companyId) ?? null
   }
 
   return null
@@ -158,12 +158,12 @@ export const createProjectsByClientLookup = (
 ): ProjectsByClientMap => {
   const map = new Map<string, ProjectWithRelations[]>()
   projects.forEach(project => {
-    if (!project.client_id) {
+    if (!project.company_id) {
       return
     }
-    const list = map.get(project.client_id) ?? []
+    const list = map.get(project.company_id) ?? []
     list.push(project)
-    map.set(project.client_id, list)
+    map.set(project.company_id, list)
   })
   return map
 }

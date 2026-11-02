@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { requireCrmUser } from '@/lib/auth/session'
 import { SALES_SHEET_ENTITIES } from '@/lib/auth/roles'
-import { NotFoundError } from '@/lib/errors/http'
+import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { isValidSheetParamValue } from '@/lib/sheets/entities'
 import {
   isSheetInitEntity,
@@ -31,7 +31,8 @@ export async function GET(request: Request) {
       )
     }
 
-    // SALES staff may open lead and contact sheets only.
+    // SALES staff may open CRM sheets, plus tasks on projects they work
+    // (the task resolver checks membership).
     if (user.role !== 'ADMIN' && !SALES_SHEET_ENTITIES.has(entity)) {
       return NextResponse.json(
         { ok: false, error: 'Forbidden' },
@@ -49,6 +50,12 @@ export async function GET(request: Request) {
     const data = await resolveSheetInit(user, entity, id)
     return NextResponse.json({ ok: true, data })
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden' },
+        { status: 403 }
+      )
+    }
     if (error instanceof NotFoundError) {
       return NextResponse.json(
         { ok: false, error: 'Not found' },

@@ -1,6 +1,6 @@
 import type { StripeFeesState } from '@/lib/stripe/fees'
 
-import { formatMoney } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
 
 type StripeFeesCardProps = {
   state: StripeFeesState
@@ -25,10 +25,10 @@ function Line({
     <div className='flex items-center gap-3 px-5 py-1.5 text-sm'>
       <span className='min-w-0 flex-1'>{label}</span>
       <span className='w-24 text-right tabular-nums'>
-        {debit === undefined ? '' : formatMoney(debit)}
+        {debit === undefined ? '' : formatCurrency(debit)}
       </span>
       <span className='w-24 text-right tabular-nums'>
-        {credit === undefined ? '' : formatMoney(credit)}
+        {credit === undefined ? '' : formatCurrency(credit)}
       </span>
     </div>
   )
@@ -61,7 +61,7 @@ export function StripeFeesCard({
           ) : null}
         </h2>
         <span className='text-base font-semibold tabular-nums'>
-          {data ? formatMoney(data.totalFees) : '—'}
+          {data ? formatCurrency(data.totalFees) : '—'}
         </span>
       </div>
 
@@ -102,7 +102,7 @@ export function StripeFeesCard({
                 Payments collected · {data.paymentCount}
               </span>
               <span className='tabular-nums'>
-                {formatMoney(data.grossPayments)}
+                {formatCurrency(data.grossPayments)}
               </span>
             </div>
             <div className='flex justify-between gap-3'>
@@ -113,7 +113,7 @@ export function StripeFeesCard({
                   : ''}
               </span>
               <span className='tabular-nums'>
-                {formatMoney(data.processingFees)}
+                {formatCurrency(data.processingFees)}
               </span>
             </div>
             {data.otherFees !== 0 ? (
@@ -122,7 +122,7 @@ export function StripeFeesCard({
                   Other Stripe fees
                 </span>
                 <span className='tabular-nums'>
-                  {formatMoney(data.otherFees)}
+                  {formatCurrency(data.otherFees)}
                 </span>
               </div>
             ) : null}

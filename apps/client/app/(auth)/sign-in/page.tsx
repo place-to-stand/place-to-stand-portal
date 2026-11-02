@@ -14,6 +14,7 @@ import {
 } from '@pts/ui/auth-shell'
 
 import { requestMagicLink } from '@/app/(auth)/_actions/auth-emails'
+import { recordSignInAttempt } from '@/app/(auth)/_actions/sign-in'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
@@ -51,9 +52,17 @@ export default function SignInPage() {
     setLoading(true)
 
     try {
+      const normalisedEmail = email.trim().toLowerCase()
+      const attempt = await recordSignInAttempt(normalisedEmail)
+
+      if (!attempt.allowed) {
+        setError(attempt.error)
+        return
+      }
+
       const supabase = getSupabaseBrowserClient()
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalisedEmail,
         password,
       })
 

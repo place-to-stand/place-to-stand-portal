@@ -1,3 +1,4 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { inArray } from 'drizzle-orm'
@@ -22,7 +23,12 @@ const UUID_RE =
  * in one batched query per page so the feed never shows a bare UUID.
  */
 export async function attachActivityReferences(
-  logs: ActivityLogWithActor[]
+  logs: ActivityLogWithActor[],
+  /**
+   * Projects this viewer may see, or null for all (admins). Names of other
+   * projects stay unresolved, so a member never learns them from history.
+   */
+  visibleProjectIds: readonly string[] | null = null
 ): Promise<ActivityLogWithActor[]> {
   const userIds = new Set<string>()
   const contactIds = new Set<string>()
@@ -30,6 +36,13 @@ export async function attachActivityReferences(
 
   for (const log of logs) {
     collectIds(log, userIds, contactIds, projectIds)
+  }
+
+  if (visibleProjectIds) {
+    const visible = new Set(visibleProjectIds)
+    for (const id of projectIds) {
+      if (!visible.has(id)) projectIds.delete(id)
+    }
   }
 
   if (!userIds.size && !contactIds.size && !projectIds.size) {
@@ -41,9 +54,9 @@ export async function attachActivityReferences(
       ? db
           .select({
             id: users.id,
-            fullName: users.fullName,
+            fullName: personNameSql,
             email: users.email,
-            avatarUrl: users.avatarUrl,
+            avatarUrl: personAvatarSql,
           })
           .from(users)
           .where(inArray(users.id, Array.from(userIds)))

@@ -1,3 +1,4 @@
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -7,6 +8,7 @@ import {
   desc,
   eq,
   gte,
+  inArray,
   isNotNull,
   isNull,
   lt,
@@ -18,8 +20,10 @@ import {
 
 import type { ProjectTypeValue } from '@/lib/types'
 import { db } from '@/lib/db'
+import { leadContactNameSql } from '@/lib/leads/lead-display'
 import {
-  clients as clientsTable,
+  companies as companiesTable,
+  leads as leadsTable,
   projects as projectsTable,
   taskAssigneeMetadata as taskAssigneeMetadataTable,
   taskAssignees as taskAssigneesTable,
@@ -46,6 +50,8 @@ export type AssignedTaskSummary = {
     name: string
     slug: string | null
   } | null
+  /** The lead a sales task belongs to (the home widget's list loads it). */
+  lead?: { id: string; name: string } | null
 }
 
 export type AssignedTaskSummaryResult = {
@@ -86,11 +92,18 @@ function assigneeJoinCondition(userId: string | null) {
  * view — but it's applied unconditionally so the two never disagree.
  */
 function projectScopeConditions(
-  clientId: string | null,
-  hiddenProjectTypes: readonly ProjectTypeValue[]
+  companyId: string | null,
+  hiddenProjectTypes: readonly ProjectTypeValue[],
+  projectIds: readonly string[] | null = null
 ) {
   return [
-    ...(clientId ? [eq(projectsTable.clientId, clientId)] : []),
+    // Non-admin viewers: only projects they can work (null = every project).
+    ...(projectIds === null
+      ? []
+      : projectIds.length > 0
+        ? [inArray(projectsTable.id, [...projectIds])]
+        : [sql`false`]),
+    ...(companyId ? [eq(projectsTable.companyId, companyId)] : []),
     ...(hiddenProjectTypes.length > 0
       ? [notInArray(projectsTable.type, [...hiddenProjectTypes])]
       : []),
@@ -123,9 +136,11 @@ type FetchAssignedTasksSummaryOptions = {
   /** Null = tasks assigned to ANYONE (the board's "All tasks" view). */
   userId: string | null
   /** Restrict to one client's projects (null/undefined = every client). */
-  clientId?: string | null
+  companyId?: string | null
   /** Project types to withhold (e.g. PERSONAL, INTERNAL); empty = show all. */
   hiddenProjectTypes?: readonly ProjectTypeValue[]
+  /** Only these projects (a non-admin's workable set); null = every project. */
+  projectIds?: readonly string[] | null
   limit?: number | null
   /**
    * Rows to skip before `limit` applies. Only meaningful with a `userId`:
@@ -140,16 +155,24 @@ type FetchAssignedTasksSummaryOptions = {
    * rolling window instead of an ever-growing archive.
    */
   doneSince?: string | null
+  /**
+   * 'status' (default): Blocked, In progress, On deck, then drag order and
+   * due date (the board). 'due': overdue and soonest-due first, undated
+   * last (the home widget's flat list).
+   */
+  order?: 'status' | 'due'
 }
 
 async function loadAssignedTaskSummaries({
   userId,
-  clientId = null,
+  companyId = null,
   hiddenProjectTypes = [],
+  projectIds = null,
   limit = DEFAULT_LIMIT,
   offset = 0,
   includeCompletedStatuses = true,
   doneSince = null,
+  order = 'status',
 }: FetchAssignedTasksSummaryOptions): Promise<AssignedTaskSummaryResult> {
   const normalizedLimit =
     typeof limit === 'number' && Number.isFinite(limit)
@@ -162,7 +185,7 @@ async function loadAssignedTaskSummaries({
 
   const baseConditions = [
     ...assignedTaskConditions(userId),
-    ...projectScopeConditions(clientId, hiddenProjectTypes),
+    ...projectScopeConditions(companyId, hiddenProjectTypes, projectIds),
   ]
 
   if (!includeCompletedStatuses) {
@@ -191,15 +214,23 @@ async function loadAssignedTaskSummaries({
   // progress, then On deck. The board groups by status into columns, so only
   // the keys after it -- the column's drag order, then due date -- shape what
   // it shows. Keep this in step with `sortAssignedTasks`.
-  const orderExpressions = [
-    STATUS_PRIORITY_SQL,
-    sql`CASE WHEN ${taskAssigneeMetadataTable.sortOrder} IS NULL THEN 1 ELSE 0 END`,
-    asc(taskAssigneeMetadataTable.sortOrder),
-    sql`CASE WHEN ${tasksTable.dueOn} IS NULL THEN 1 ELSE 0 END`,
-    asc(tasksTable.dueOn),
-    desc(sql`COALESCE(${tasksTable.updatedAt}, ${tasksTable.createdAt})`),
-    asc(tasksTable.title),
-  ]
+  const orderExpressions =
+    order === 'due'
+      ? [
+          sql`${tasksTable.dueOn} asc nulls last`,
+          STATUS_PRIORITY_SQL,
+          asc(tasksTable.createdAt),
+          asc(tasksTable.title),
+        ]
+      : [
+          STATUS_PRIORITY_SQL,
+          sql`CASE WHEN ${taskAssigneeMetadataTable.sortOrder} IS NULL THEN 1 ELSE 0 END`,
+          asc(taskAssigneeMetadataTable.sortOrder),
+          sql`CASE WHEN ${tasksTable.dueOn} IS NULL THEN 1 ELSE 0 END`,
+          asc(tasksTable.dueOn),
+          desc(sql`COALESCE(${tasksTable.updatedAt}, ${tasksTable.createdAt})`),
+          asc(tasksTable.title),
+        ]
 
   const baseQuery = db
     .select({
@@ -219,15 +250,23 @@ async function loadAssignedTaskSummaries({
         createdBy: projectsTable.createdBy,
       },
       client: {
-        id: clientsTable.id,
-        name: clientsTable.name,
-        slug: clientsTable.slug,
+        id: companiesTable.id,
+        name: clientNameSql,
+        slug: companiesTable.slug,
+      },
+      lead: {
+        id: leadsTable.id,
+        name: leadContactNameSql,
       },
     })
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
-    .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
+    .leftJoin(companiesTable, eq(projectsTable.companyId, companiesTable.id))
+    .leftJoin(
+      leadsTable,
+      and(eq(leadsTable.id, tasksTable.leadId), isNull(leadsTable.deletedAt))
+    )
     .leftJoin(
       taskAssigneeMetadataTable,
       and(
@@ -264,8 +303,9 @@ async function loadAssignedTaskSummaries({
     ? await countAssignedDoneBefore(
         userId,
         doneSince,
-        clientId,
-        hiddenProjectTypes
+        companyId,
+        hiddenProjectTypes,
+        projectIds
       )
     : 0
 
@@ -308,6 +348,7 @@ async function loadAssignedTaskSummaries({
             slug: row.client.slug ?? null,
           }
         : null,
+      lead: row.lead?.id ? { id: row.lead.id, name: row.lead.name } : null,
     }
   })
 
@@ -321,8 +362,9 @@ async function loadAssignedTaskSummaries({
 async function countAssignedDoneBefore(
   userId: string | null,
   before: string,
-  clientId: string | null = null,
-  hiddenProjectTypes: readonly ProjectTypeValue[] = []
+  companyId: string | null = null,
+  hiddenProjectTypes: readonly ProjectTypeValue[] = [],
+  projectIds: readonly string[] | null = null
 ): Promise<number> {
   const [result] = await db
     // Distinct: the all-assignees view joins one row per assignee.
@@ -333,7 +375,7 @@ async function countAssignedDoneBefore(
     .where(
       and(
         ...assignedTaskConditions(userId),
-        ...projectScopeConditions(clientId, hiddenProjectTypes),
+        ...projectScopeConditions(companyId, hiddenProjectTypes, projectIds),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         lt(tasksTable.completedAt, before)
@@ -359,14 +401,16 @@ export type AssignedDoneSliceResult = {
  */
 export async function listAssignedDoneSlice({
   userId,
-  clientId = null,
+  companyId = null,
   hiddenProjectTypes = [],
+  projectIds = null,
   since,
   before,
 }: {
   userId: string | null
-  clientId?: string | null
+  companyId?: string | null
   hiddenProjectTypes?: readonly ProjectTypeValue[]
+  projectIds?: readonly string[] | null
   since: string
   before: string
 }): Promise<AssignedDoneSliceResult> {
@@ -388,15 +432,15 @@ export async function listAssignedDoneSlice({
         createdBy: projectsTable.createdBy,
       },
       client: {
-        id: clientsTable.id,
-        name: clientsTable.name,
-        slug: clientsTable.slug,
+        id: companiesTable.id,
+        name: clientNameSql,
+        slug: companiesTable.slug,
       },
     })
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
     .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
-    .leftJoin(clientsTable, eq(projectsTable.clientId, clientsTable.id))
+    .leftJoin(companiesTable, eq(projectsTable.companyId, companiesTable.id))
     .leftJoin(
       taskAssigneeMetadataTable,
       and(
@@ -408,7 +452,7 @@ export async function listAssignedDoneSlice({
     .where(
       and(
         ...assignedTaskConditions(userId),
-        ...projectScopeConditions(clientId, hiddenProjectTypes),
+        ...projectScopeConditions(companyId, hiddenProjectTypes, projectIds),
         eq(tasksTable.status, 'DONE'),
         isNotNull(tasksTable.completedAt),
         gte(tasksTable.completedAt, since),
@@ -456,8 +500,9 @@ export async function listAssignedDoneSlice({
     olderDoneCount: await countAssignedDoneBefore(
       userId,
       since,
-      clientId,
-      hiddenProjectTypes
+      companyId,
+      hiddenProjectTypes,
+      projectIds
     ),
   }
 }

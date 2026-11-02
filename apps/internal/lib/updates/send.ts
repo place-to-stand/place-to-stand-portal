@@ -115,7 +115,7 @@ export async function sendClientUpdate(
   })
 
   // `fetchClientById` is request-cached, so this reuses the content build's read.
-  const client = await fetchClientById(user, sentUpdate.clientId)
+  const client = await fetchClientById(user, sentUpdate.companyId)
   const event = clientUpdateSentEvent({
     clientName: client.name,
     subject: sentUpdate.subject,
@@ -132,7 +132,7 @@ export async function sendClientUpdate(
     summary: event.summary,
     targetType: 'CLIENT_UPDATE',
     targetId: sentUpdate.id,
-    targetClientId: sentUpdate.clientId,
+    targetCompanyId: sentUpdate.companyId,
     metadata: event.metadata,
   })
 

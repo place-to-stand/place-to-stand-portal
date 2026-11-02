@@ -34,14 +34,14 @@ function shiftCalendarDate(date: string, days: number): string {
  * gap or an overlap; otherwise fall back to a week.
  */
 export async function resolveUpdateWindow(
-  clientId: string,
+  companyId: string,
   since?: string | null
 ): Promise<UpdateWindow> {
   const periodEnd = todayCalendarDate()
 
   if (since) return { periodStart: since, periodEnd }
 
-  const lastPeriodEnd = await fetchLastSentPeriodEnd(clientId)
+  const lastPeriodEnd = await fetchLastSentPeriodEnd(companyId)
   if (lastPeriodEnd) {
     // A second update on the same day would otherwise start tomorrow and end
     // today; clamp to a one-day window instead.

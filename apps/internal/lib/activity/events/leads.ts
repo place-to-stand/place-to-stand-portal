@@ -63,11 +63,6 @@ export const leadRestoredEvent = (args: { name: string }): ActivityEvent => ({
   summary: `Restored lead "${args.name}"`,
 })
 
-export const leadDeletedEvent = (args: { name: string }): ActivityEvent => ({
-  verb: ActivityVerbs.LEAD_DELETED,
-  summary: `Permanently deleted lead "${args.name}"`,
-})
-
 export const leadUpdateLoggedEvent = (args: {
   contactName: string
   type: string
@@ -120,19 +115,3 @@ export const leadUpdateDeletedEvent = (args: {
   }),
 })
 
-export const leadConvertedEvent = (args: {
-  leadId: string
-  leadName: string
-  clientId: string
-  clientName: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.LEAD_CONVERTED,
-  summary: `Converted lead "${args.leadName}" to client "${args.clientName}"`,
-  metadata: toMetadata({
-    conversion: {
-      leadId: args.leadId,
-      clientId: args.clientId,
-      clientName: args.clientName,
-    },
-  }),
-})

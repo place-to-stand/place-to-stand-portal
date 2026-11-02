@@ -18,5 +18,5 @@ export {
   
 } from './assignments'
 export { softDeleteUser, restoreUser } from './mutations'
-export { getUserAvatarPath } from './avatars'
+export { getPersonAvatarPath, getUserAvatarPath } from './avatars'
 

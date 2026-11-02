@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
 
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -8,19 +8,28 @@ import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import {
+  leadCompany,
+  leadCompanyJoin,
+  leadContact,
+  leadContactJoin,
+  leadDisplayFields,
+} from '@/lib/leads/lead-display'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 const leadFields = {
   id: leads.id,
-  contactName: leads.contactName,
+  contactName: leadDisplayFields.contactName,
   status: leads.status,
   sourceType: leads.sourceType,
   sourceDetail: leads.sourceDetail,
   assigneeId: leads.assigneeId,
-  contactEmail: leads.contactEmail,
-  contactPhone: leads.contactPhone,
-  companyName: leads.companyName,
-  companyWebsite: leads.companyWebsite,
+  contactEmail: leadDisplayFields.contactEmail,
+  contactPhone: leadDisplayFields.contactPhone,
+  companyName: leadDisplayFields.companyName,
+  companyWebsite: leadDisplayFields.companyWebsite,
+  companyId: leads.companyId,
+  contactId: leads.contactId,
   notes: leads.notes,
   rank: leads.rank,
   currentStageEnteredAt: leads.currentStageEnteredAt,
@@ -28,15 +37,28 @@ const leadFields = {
   lossReason: leads.lossReason,
   lossNotes: leads.lossNotes,
   convertedAt: leads.convertedAt,
-  convertedToClientId: leads.convertedToClientId,
+  // A won lead's client is its company (0111).
+  convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
 }
 
 export type CliLeadRow = Pick<
   typeof leads.$inferSelect,
-  keyof typeof leadFields
->
+  Exclude<
+    keyof typeof leadFields,
+    keyof typeof leadDisplayFields | 'convertedToClientId'
+  >
+> & {
+  /** The client it became: its company, once won and converted. */
+  convertedToClientId: string | null
+  /** Read through the lead's contact and company. */
+  contactName: string
+  contactEmail: string | null
+  contactPhone: string | null
+  companyName: string | null
+  companyWebsite: string | null
+}
 
 export type CliLeadFilters = {
   status?: LeadStatusValue
@@ -69,9 +91,9 @@ export async function listLeadsForCli(
   if (search) {
     const pattern = `%${search}%`
     const match = or(
-      ilike(leads.contactName, pattern),
-      ilike(leads.companyName, pattern),
-      ilike(leads.contactEmail, pattern)
+      ilike(leadContact.name, pattern),
+      ilike(leadCompany.name, pattern),
+      ilike(leadContact.email, pattern)
     )
 
     if (match) {
@@ -82,6 +104,8 @@ export async function listLeadsForCli(
   return db
     .select(leadFields)
     .from(leads)
+    .innerJoin(leadContact, leadContactJoin)
+    .leftJoin(leadCompany, leadCompanyJoin)
     .where(and(...conditions))
     .orderBy(desc(leads.updatedAt))
     .limit(limit)
@@ -106,6 +130,8 @@ export async function getLeadForCli(
   const [row] = await db
     .select(leadFields)
     .from(leads)
+    .innerJoin(leadContact, leadContactJoin)
+    .leftJoin(leadCompany, leadCompanyJoin)
     .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
     .limit(1)
 

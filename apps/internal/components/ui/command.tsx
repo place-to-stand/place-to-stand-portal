@@ -103,15 +103,40 @@ function CommandList({
   )
 }
 
+/**
+ * The empty result in every picker: one short muted line, left-aligned at
+ * the options' padding, and optionally one action (e.g. "Add someone to
+ * the company") so the picker offers the next step instead of a dead end.
+ */
 function CommandEmpty({
+  className,
+  children,
+  action,
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Empty>) {
+}: React.ComponentProps<typeof CommandPrimitive.Empty> & {
+  action?: { label: string; icon?: React.ReactNode; onSelect: () => void }
+}) {
   return (
     <CommandPrimitive.Empty
       data-slot='command-empty'
-      className='py-6 text-center text-sm'
+      className={cn(
+        'text-muted-foreground px-3 py-2.5 text-left text-sm',
+        className
+      )}
       {...props}
-    />
+    >
+      {children}
+      {action ? (
+        <button
+          type='button'
+          onClick={action.onSelect}
+          className='text-foreground hover:bg-accent focus-visible:ring-ring/50 -mx-2 mt-1.5 flex w-[calc(100%+1rem)] items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus-visible:ring-2'
+        >
+          {action.icon}
+          {action.label}
+        </button>
+      ) : null}
+    </CommandPrimitive.Empty>
   )
 }
 
@@ -152,7 +177,7 @@ function CommandItem({
     <CommandPrimitive.Item
       data-slot='command-item'
       className={cn(
-        'data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+        'data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground hover:bg-accent hover:text-accent-foreground [&_svg:not([data-slot=badge]_svg)]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg:not([data-slot=badge]_svg)]:size-4 [&_svg]:shrink-0',
         className
       )}
       {...props}
@@ -176,7 +201,57 @@ function CommandShortcut({
   )
 }
 
+/**
+ * Scrolls a picker's list so the item with this cmdk `value` sits in the
+ * middle, with no animation. Pickers call it from the list's ref as it
+ * mounts (and once more on the next frame, after the popup has its final
+ * height), so the selected option is in view the moment the list opens.
+ */
+function revealCommandItem(
+  list: HTMLElement | null,
+  value: string | null | undefined
+) {
+  if (!list || !value) return
+  const center = () => {
+    const item = Array.from(
+      list.querySelectorAll<HTMLElement>('[cmdk-item]')
+    ).find(node => node.getAttribute('data-value') === value)
+    if (!item) return
+    const listBox = list.getBoundingClientRect()
+    const itemBox = item.getBoundingClientRect()
+    const offset = itemBox.top - listBox.top + list.scrollTop
+    list.scrollTop = Math.max(
+      0,
+      offset - (list.clientHeight - itemBox.height) / 2
+    )
+  }
+  center()
+  requestAnimationFrame(center)
+}
+
+/**
+ * A list ref that reveals the selected option once, when the list mounts
+ * (each time a picker opens). Pass the selected item's cmdk value, and the
+ * same value as the Command's `defaultValue` so arrows and Enter start there.
+ */
+function useRevealSelected(value: string | null | undefined) {
+  // cmdk re-attaches the list's ref on every render (hovering a row
+  // re-renders), so reveal only for a list node not seen before: once per
+  // open. Scrolling and hovering afterwards are left alone.
+  const revealedRef = React.useRef<HTMLElement | null>(null)
+  return React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node || node === revealedRef.current) return
+      revealedRef.current = node
+      revealCommandItem(node, value)
+    },
+    [value]
+  )
+}
+
 export {
+  revealCommandItem,
+  useRevealSelected,
   Command,
   CommandDialog,
   CommandInput,

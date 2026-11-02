@@ -1,11 +1,14 @@
-'use server'
+import { isClientCompany } from '@pts/db/client-state'
+import { isAdminRole } from '@/lib/auth/roles'
+import { clientNameSql } from '@pts/db/names'
+import 'server-only'
 
 import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, contacts, contactClients } from '@/lib/db/schema'
+import { companies, clientPortalAccess, contacts } from '@/lib/db/schema'
 import { type PageInfo } from '@/lib/pagination/cursor'
 import {
   decodeSortCursor,
@@ -13,9 +16,22 @@ import {
   type SortCursorPayload,
   type SortDirection,
 } from '@/lib/pagination/sort'
-import { DEFAULT_CONTACTS_SORT } from '@/lib/settings/contacts/filters'
+import {
+  DEFAULT_CONTACTS_SORT,
+  type SignInFilter,
+} from '@/lib/settings/contacts/filters'
+import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import {
+  listContactMemberships,
+  type ContactMembership,
+} from '@/lib/queries/memberships'
 
-import { contactFields, type SelectContact } from '../selectors'
+import {
+  contactFields,
+  contactProfileFields,
+  type ContactProfile,
+  type SelectContact,
+} from '../selectors'
 import {
   buildClientCondition,
   buildSearchCondition,
@@ -35,14 +51,28 @@ import type {
   ListContactsForSettingsInput,
 } from './types'
 
-type ContactMetricsResult = SelectContact & {
-  totalClients: number | string | null
+type ContactMetricsResult = SelectContact &
+  ContactProfile & {
+    totalClients: number | string | null
+    userHasPhoto: boolean | null
+    signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
+  }
+
+/** People with (or without) a live sign-in, optionally of one role. */
+function buildSignInCondition(signIn: SignInFilter | null | undefined) {
+  if (!signIn) return null
+  const live = sql`exists (select 1 from users u where u.id = ${contacts.userId} and u.deleted_at is null${
+    signIn === 'any' || signIn === 'none' ? sql`` : sql` and u.role = ${signIn}`
+  })`
+  return signIn === 'none' ? sql`not ${live}` : live
 }
 
 function buildBaseConditions(
   status: StatusFilter,
   searchQuery: string,
-  clientId: string | null | undefined
+  clientCompanyId: string | null | undefined,
+  signIn?: SignInFilter | null,
+  clientMatch: 'portal' | 'member' = 'portal'
 ): SQL[] {
   const conditions: SQL[] = [buildStatusCondition(status)]
 
@@ -51,9 +81,14 @@ function buildBaseConditions(
     conditions.push(searchCondition)
   }
 
-  const clientCondition = buildClientCondition(clientId)
+  const clientCondition = buildClientCondition(clientCompanyId, clientMatch)
   if (clientCondition) {
     conditions.push(clientCondition)
+  }
+
+  const signInCondition = buildSignInCondition(signIn)
+  if (signInCondition) {
+    conditions.push(signInCondition)
   }
 
   return conditions
@@ -66,19 +101,28 @@ async function queryContactRows(
   opts?: { offset?: number }
 ) {
   // Correlated subquery instead of a join + GROUP BY: it counts only live
-  // clients (matching the Linked Clients cell) and is also what the
-  // `clients` sort descriptor orders by.
+  // clients with portal access (the MCP directory reports it).
   const query = db
     .select({
       ...contactFields,
+      ...contactProfileFields,
       totalClients: linkedClientsCountSql,
+      // They have a photo (the list's avatar).
+      userHasPhoto: sql<boolean>`("contacts"."avatar_url" is not null)`,
+      signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
+        select u.role from users u
+        where u.id = "contacts"."user_id"
+          and u.deleted_at is null and u.disabled_at is null
+      )`,
     })
     .from(contacts)
     .where(whereClause)
     .orderBy(...ordering)
 
   if (typeof opts?.offset === 'number') {
-    return query.limit(limit).offset(opts.offset) as Promise<ContactMetricsResult[]>
+    return query.limit(limit).offset(opts.offset) as Promise<
+      ContactMetricsResult[]
+    >
   }
 
   return query.limit(limit + 1) as Promise<ContactMetricsResult[]>
@@ -93,28 +137,27 @@ async function fetchClientDetails(
 
   const rows = await db
     .select({
-      contactId: contactClients.contactId,
-      clientId: clients.id,
-      clientName: clients.name,
-      clientSlug: clients.slug,
+      contactId: clientPortalAccess.contactId,
+      clientCompanyId: companies.id,
+      clientName: clientNameSql,
+      clientSlug: companies.slug,
+      companyId: companies.id,
     })
-    .from(contactClients)
-    .innerJoin(clients, eq(contactClients.clientId, clients.id))
+    .from(clientPortalAccess)
+    .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
     .where(
-      and(
-        inArray(contactClients.contactId, contactIds),
-        sql`${clients.deletedAt} IS NULL`
-      )
+      and(inArray(clientPortalAccess.contactId, contactIds), isClientCompany())
     )
-    .orderBy(asc(clients.name))
+    .orderBy(asc(clientNameSql))
 
   const result = new Map<string, LinkedClient[]>()
   for (const row of rows) {
     const existing = result.get(row.contactId) ?? []
     existing.push({
-      id: row.clientId,
+      id: row.clientCompanyId,
       name: row.clientName,
-      slug: row.clientSlug ?? row.clientId,
+      slug: row.clientSlug ?? row.clientCompanyId,
+      companyId: row.companyId,
     })
     result.set(row.contactId, existing)
   }
@@ -124,18 +167,33 @@ async function fetchClientDetails(
 
 function mapContactMetrics(
   rows: ContactMetricsResult[],
-  clientsMap: Map<string, LinkedClient[]>
+  clientsMap: Map<string, LinkedClient[]>,
+  membershipsMap: Map<string, ContactMembership[]>,
+  seesBilling: boolean
 ): ContactsSettingsListItem[] {
   return rows.map(row => ({
     id: row.id,
     email: row.email,
     name: row.name,
     phone: row.phone,
+    avatarUrl: row.avatarUrl,
     createdBy: row.createdBy,
     userId: row.userId,
+    userHasPhoto: Boolean(row.userHasPhoto),
+    signInRole: row.signInRole ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
+    jobTitle: row.jobTitle,
+    linkedinUrl: row.linkedinUrl,
+    companyId: row.companyId,
+    companyName: row.companyName,
+    companies: (membershipsMap.get(row.id) ?? []).map(membership => ({
+      id: membership.companyId,
+      name: membership.companyName,
+      isClient: Boolean(membership.clientCompanyId),
+      billingType: seesBilling ? membership.billingType : null,
+    })),
     metrics: {
       totalClients: Number(row.totalClients ?? 0),
       clients: clientsMap.get(row.id) ?? [],
@@ -201,14 +259,24 @@ export async function listContactsForSettings(
   const limit = resolvePaginationLimit(input.limit)
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
-  const sort = input.sort ?? DEFAULT_CONTACTS_SORT
+  const seesAccess = canSeePortalAccess(user.role)
+  // Sign-ins are hidden from people who don't manage access, so they can't
+  // sort by them either.
+  const sort =
+    input.sort && (input.sort.field !== 'signIn' || seesAccess)
+      ? input.sort
+      : DEFAULT_CONTACTS_SORT
   const descriptor = CONTACT_SORT_DESCRIPTORS[sort.field]
 
   const statusCondition = buildStatusCondition(normalizedStatus)
   const baseConditions = buildBaseConditions(
     normalizedStatus,
     searchQuery,
-    input.clientId
+    input.companyId,
+    // Sign-ins are admin-only information.
+    seesAccess ? input.signIn : null,
+    // Without portal access to go on, a client filter means "at the client".
+    seesAccess ? 'portal' : 'member'
   )
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
 
@@ -260,13 +328,29 @@ export async function listContactsForSettings(
 
   // Fetch client details for all contacts in parallel with the counts
   const contactIds = normalizedRows.map(row => row.id)
-  const [clientsMap, totalCount, unfilteredTotalCount] = await Promise.all([
-    fetchClientDetails(contactIds),
-    resolveCount(baseConditions),
-    resolveCount([statusCondition]),
-  ])
+  const [clientsMap, membershipsMap, totalCount, unfilteredTotalCount] =
+    await Promise.all([
+      fetchClientDetails(contactIds),
+      listContactMemberships(contactIds),
+      resolveCount(baseConditions),
+      resolveCount([statusCondition]),
+    ])
 
-  const mappedItems = mapContactMetrics(normalizedRows, clientsMap)
+  // Sign-ins and portal access are for people who manage clients only.
+  const mappedItems = mapContactMetrics(
+    normalizedRows,
+    clientsMap,
+    membershipsMap,
+    isAdminRole(user.role)
+  ).map(item =>
+    seesAccess
+      ? item
+      : {
+          ...item,
+          signInRole: null,
+          metrics: { totalClients: 0, clients: [] },
+        }
+  )
 
   const pageInfo: PageInfo = useOffset
     ? {

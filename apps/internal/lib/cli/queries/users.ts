@@ -1,3 +1,4 @@
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm'
@@ -44,7 +45,7 @@ export async function listUsersForCli(
 
   if (search) {
     const pattern = `%${search}%`
-    const match = or(ilike(users.email, pattern), ilike(users.fullName, pattern))
+    const match = or(ilike(users.email, pattern), ilike(personNameSql, pattern))
 
     if (match) {
       conditions.push(match)

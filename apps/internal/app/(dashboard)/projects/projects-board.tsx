@@ -1,9 +1,12 @@
 'use client'
 
+
+
 import { useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { useRecordCycle } from '@/hooks/use-record-cycle'
 import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
@@ -11,7 +14,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/project-lifecycle-dialogs'
 import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
 import type {
-  ClientRow,
+  ClientPickerRow,
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
@@ -21,7 +24,6 @@ import type { ProjectWithRelations } from '@/lib/types'
 import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
 import type { ProjectStatusValue } from '@/lib/constants'
 import { ProjectsBoardEmpty } from './_components/projects-board-empty'
-import { ProjectBurndownWidget } from './_components/project-burndown-widget'
 import { ProjectsBoardTabsSection } from './_components/projects-board/projects-board-tabs-section'
 import { ProjectsBoardDialogs } from './_components/projects-board-dialogs'
 import {
@@ -32,15 +34,18 @@ import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 type ProjectsBoardComponentProps = ProjectsBoardProps & {
   adminUsers?: AdminUserForOwner[]
-  allClients?: ClientRow[]
+  allClients?: ClientPickerRow[]
 }
 
 export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   const viewModel = useProjectsBoardViewModel(props)
   const router = useRouter()
+  // Project members (non-admins) get the task board only: no hours, time
+  // logs, review, project editing or the other tabs.
+  const { isAdmin } = useViewerAccess()
   const { toast } = useToast()
 
-  const clientRows = useMemo<ClientRow[]>(
+  const clientRows = useMemo<ClientPickerRow[]>(
     () => props.allClients ?? buildClientRows(props.projects),
     [props.allClients, props.projects]
   )
@@ -62,7 +67,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     sheetOpen,
     selectedProject,
     deleteTarget,
-    destroyTarget,
     isPending: projectMutationPending,
     openEdit,
     requestDelete,
@@ -70,8 +74,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     handleSheetComplete,
     cancelDelete,
     confirmDelete,
-    cancelDestroy,
-    confirmDestroy,
   } = controller
 
   const activeProject = viewModel.dialogs.activeProject
@@ -114,16 +116,20 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     [router, toast]
   )
 
-  const projectActions = activeProjectForSheet
-    ? {
-        canEdit: !projectMutationPending,
-        canArchive: !projectMutationPending,
-        editDisabledReason: projectMutationPending ? pendingReason : null,
-        archiveDisabledReason: projectMutationPending ? pendingReason : null,
-        onEdit: handleEditProject,
-        onArchive: handleArchiveProject,
-      }
-    : null
+  const projectActions =
+    activeProjectForSheet && isAdmin
+      ? {
+          canEdit: !projectMutationPending,
+          canArchive: !projectMutationPending,
+          editDisabledReason: projectMutationPending ? pendingReason : null,
+          archiveDisabledReason: projectMutationPending ? pendingReason : null,
+          onEdit: handleEditProject,
+          onArchive: handleArchiveProject,
+          onLogTime: viewModel.burndown.visible
+            ? viewModel.burndown.onAddTimeLog
+            : undefined,
+        }
+      : null
 
   // D2/D14: the combobox header is retired; the breadcrumb carries the
   // active project label and ⌘[/⌘] cycling moves to the shared hook.
@@ -159,24 +165,8 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   return (
     <PageShell
       breadcrumbs={boardBreadcrumbs}
-      headerRight={
-        viewModel.burndown.visible ? (
-          <ProjectBurndownWidget
-            totalClientRemainingHours={
-              viewModel.burndown.totalClientRemainingHours
-            }
-            totalProjectLoggedHours={viewModel.burndown.totalProjectLoggedHours}
-            projectMonthToDateLoggedHours={
-              viewModel.burndown.projectMonthToDateLoggedHours
-            }
-            onAddTimeLog={viewModel.burndown.onAddTimeLog}
-            showClientRemainingCard={viewModel.burndown.showClientRemainingCard}
-            showProjectMonthToDate={viewModel.burndown.showProjectMonthToDate}
-          />
-        ) : undefined
-      }
       // Only the kanban board pins to the viewport (columns scroll
-      // internally). Document-flow tabs (review, overview, …) need
+      // internally). Document-flow tabs (review, …) need
       // min-h-fit to defeat the shell wrapper's min-h-0 clamp so the box
       // grows with content and main's bottom padding is honored.
       contentClassName={
@@ -187,18 +177,16 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     >
       <ProjectsBoardTabsSection
         {...viewModel.tabs}
+        tasksOnly={!isAdmin}
         projectActions={projectActions}
         onProjectStatusChange={handleProjectStatusChange}
       />
       <ProjectsBoardDialogs {...viewModel.dialogs} />
       <ProjectLifecycleDialogs
         deleteTarget={deleteTarget}
-        destroyTarget={destroyTarget}
         isPending={projectMutationPending}
         onCancelDelete={cancelDelete}
         onConfirmDelete={confirmDelete}
-        onCancelDestroy={cancelDestroy}
-        onConfirmDestroy={confirmDestroy}
       />
       <ProjectSheet
         open={sheetOpen}
@@ -214,8 +202,8 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
   )
 }
 
-function buildClientRows(projects: ProjectWithRelations[]): ClientRow[] {
-  const map = new Map<string, ClientRow>()
+function buildClientRows(projects: ProjectWithRelations[]): ClientPickerRow[] {
+  const map = new Map<string, ClientPickerRow>()
 
   projects.forEach(project => {
     if (project.client) {
@@ -254,7 +242,7 @@ function mapRelationsToSheetProject(
     name: project.name,
     status: project.status,
     slug: project.slug,
-    client_id: project.client_id,
+    company_id: project.company_id,
     type: project.type,
     created_by: project.created_by,
     owner_id: project.owner_id,

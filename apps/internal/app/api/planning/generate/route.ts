@@ -9,7 +9,10 @@ import { logActivity } from '@/lib/activity/logger'
 import { getCurrentAdmin } from '@/lib/auth/session'
 import { getRepoLinkById } from '@/lib/data/github-repos'
 import { getRepoTree, resolveRepoLinkAuth } from '@/lib/github/client'
-import { buildPlanningSystemPrompt, createPlanningTools } from '@/lib/ai/planning'
+import {
+  buildPlanningSystemPrompt,
+  createPlanningTools,
+} from '@/lib/ai/planning'
 import {
   getMessages,
   appendMessage,
@@ -96,7 +99,14 @@ export async function POST(request: Request) {
       .map(e => e.path)
       .filter(p => {
         // Exclude node_modules, .git, dist, etc.
-        const excluded = ['node_modules/', '.git/', 'dist/', '.next/', '.vercel/', 'coverage/']
+        const excluded = [
+          'node_modules/',
+          '.git/',
+          'dist/',
+          '.next/',
+          '.vercel/',
+          'coverage/',
+        ]
         return !excluded.some(ex => p.startsWith(ex))
       })
       .slice(0, 500) // Cap at 500 files for prompt size
@@ -124,10 +134,13 @@ export async function POST(request: Request) {
     conversationMessages.push({ role: 'user', content: feedback })
     await appendMessage(threadId, 'user', feedback)
   } else if (conversationMessages.length === 0) {
-    const initialPrompt = 'Explore the repository to understand its structure, patterns, and relevant code, then generate the implementation plan.'
+    const initialPrompt =
+      'Explore the repository to understand its structure, patterns, and relevant code, then generate the implementation plan.'
     conversationMessages.push({ role: 'user', content: initialPrompt })
     await appendMessage(threadId, 'user', initialPrompt)
-  } else if (conversationMessages[conversationMessages.length - 1].role !== 'user') {
+  } else if (
+    conversationMessages[conversationMessages.length - 1].role !== 'user'
+  ) {
     // Safety: conversation must end with user message to avoid prefill error
     const continuePrompt = 'Continue generating the plan.'
     conversationMessages.push({ role: 'user', content: continuePrompt })
@@ -181,7 +194,10 @@ export async function POST(request: Request) {
       try {
         await updateThreadPartialContent(threadId, accumulatedText)
       } catch (error) {
-        console.error('[planning/generate] partial content persist failed', error)
+        console.error(
+          '[planning/generate] partial content persist failed',
+          error
+        )
       }
     },
     onError: async ({ error }) => {
@@ -192,7 +208,10 @@ export async function POST(request: Request) {
           error instanceof Error ? error.message : 'Generation failed'
         )
       } catch (persistError) {
-        console.error('[planning/generate] failed to persist generation error', persistError)
+        console.error(
+          '[planning/generate] failed to persist generation error',
+          persistError
+        )
       }
     },
     onFinish: async ({ text }) => {
@@ -223,7 +242,7 @@ export async function POST(request: Request) {
           targetType: 'PLAN',
           targetId: context?.sessionId ?? null,
           targetProjectId: context?.projectId ?? null,
-          targetClientId: context?.clientId ?? null,
+          targetCompanyId: context?.companyId ?? null,
           metadata: event.metadata,
         })
       }

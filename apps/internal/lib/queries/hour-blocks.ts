@@ -1,3 +1,9 @@
+import {
+  clientEndedAtSql,
+  isClientCompany,
+  wasClientCompany,
+} from '@pts/db/client-state'
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
@@ -5,11 +11,16 @@ import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, hourBlocks, invoices } from '@/lib/db/schema'
+import {
+  companies,
+  hourBlocks,
+  invoiceLineItems,
+  invoices,
+} from '@/lib/db/schema'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 
@@ -27,6 +38,7 @@ import {
 } from '@/lib/pagination/sort'
 import {
   DEFAULT_HOUR_BLOCKS_SORT,
+  type HourBlockInvoiceFilter,
   type HourBlockSortField,
 } from '@/lib/settings/hour-blocks/filters'
 
@@ -38,7 +50,7 @@ export type HourBlockClientSummary = {
 type HourBlockSelection = {
   block: {
     id: string
-    clientId: string
+    companyId: string
     hoursPurchased: string | null
     invoiceId: string | null
     invoiceNumber: string | null
@@ -55,6 +67,7 @@ type HourBlockSelection = {
   client: {
     id: string
     name: string
+    companyId: string
     deletedAt: string | null
   } | null
 }
@@ -62,16 +75,18 @@ type HourBlockSelection = {
 type ClientSelection = {
   id: string
   name: string
+  companyId: string
   deletedAt: string | null
 }
 
-// The invoice* fields are derived from the linked invoice — every query using
-// this selection must leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id)).
+// The invoice* fields are derived from the invoice line that created the
+// block: every query using this selection must leftJoin invoiceLineItems on
+// hourBlocks.invoiceLineItemId, then invoices on invoiceLineItems.invoiceId.
 const hourBlockSelection = {
   id: hourBlocks.id,
-  clientId: hourBlocks.clientId,
+  companyId: hourBlocks.companyId,
   hoursPurchased: hourBlocks.hoursPurchased,
-  invoiceId: hourBlocks.invoiceId,
+  invoiceId: invoiceLineItems.invoiceId,
   invoiceNumber: invoices.invoiceNumber,
   invoiceStatus: invoices.status,
   invoiceTotal: invoices.total,
@@ -85,16 +100,22 @@ const hourBlockSelection = {
 } as const
 
 const clientSelection = {
-  id: clients.id,
-  name: clients.name,
-  deletedAt: clients.deletedAt,
+  id: companies.id,
+  name: clientNameSql,
+  companyId: companies.id,
+  deletedAt: clientEndedAtSql,
 } as const
 
 export type ListHourBlocksForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
   /** Only this client's blocks. */
-  clientId?: string | null
+  companyId?: string | null
+  /** The invoice the block came from (see `HourBlockInvoiceFilter`). */
+  invoice?: HourBlockInvoiceFilter | null
+  /** Created on or after / before, `YYYY-MM-DD` (inclusive). */
+  from?: string | null
+  to?: string | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
@@ -104,7 +125,7 @@ export type ListHourBlocksForSettingsInput = {
 
 export type HourBlocksSettingsResult = {
   items: HourBlockWithClient[]
-  clients: ClientRow[]
+  clients: HourBlockClient[]
   /** Rows matching the active filters/search (drives `Showing N of M`). */
   totalCount: number
   /** Rows on the tab regardless of filters/search (the `M`). */
@@ -125,10 +146,51 @@ type HourBlockSortDescriptor = {
   orderDesc: SQL
 }
 
+/**
+ * A sort key that may be empty (a block with no invoice): empty values last
+ * in both directions; the cursor encodes null as ''.
+ */
+function nullsLastDescriptor(
+  expr: SQL,
+  encode: (row: HourBlockWithClient) => string
+): HourBlockSortDescriptor {
+  return {
+    encode,
+    compare: (op, value) =>
+      value === ''
+        ? sql`false`
+        : op === 'gt'
+          ? sql`(${expr} > ${value} OR ${expr} IS NULL)`
+          : sql`(${expr} < ${value} OR ${expr} IS NULL)`,
+    equals: value =>
+      value === '' ? sql`${expr} IS NULL` : sql`${expr} = ${value}`,
+    orderAsc: sql`${expr} ASC NULLS LAST`,
+    orderDesc: sql`${expr} DESC NULLS LAST`,
+  }
+}
+
 const HOUR_BLOCK_SORT_DESCRIPTORS: Record<
   HourBlockSortField,
   HourBlockSortDescriptor
 > = {
+  hours: {
+    encode: row => String(row.hours_purchased),
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${hourBlocks.hoursPurchased} > ${value}::numeric`
+        : sql`${hourBlocks.hoursPurchased} < ${value}::numeric`,
+    equals: value => sql`${hourBlocks.hoursPurchased} = ${value}::numeric`,
+    orderAsc: sql`${hourBlocks.hoursPurchased} ASC`,
+    orderDesc: sql`${hourBlocks.hoursPurchased} DESC`,
+  },
+  client: nullsLastDescriptor(
+    sql`lower(${clientNameSql})`,
+    row => row.client?.name.toLowerCase() ?? ''
+  ),
+  invoice: nullsLastDescriptor(
+    sql`${invoices.invoiceNumber}`,
+    row => row.invoice_number ?? ''
+  ),
   created: {
     encode: row => String(row.created_at),
     compare: (op, value) =>
@@ -166,12 +228,32 @@ export async function listHourBlocksForSettings(
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clientNameSql} ILIKE ${pattern})`
     )
   }
 
-  if (input.clientId) {
-    baseConditions.push(eq(hourBlocks.clientId, input.clientId))
+  if (input.companyId) {
+    baseConditions.push(eq(hourBlocks.companyId, input.companyId))
+  }
+
+  if (input.invoice) {
+    baseConditions.push(
+      input.invoice === 'none'
+        ? sql`${invoices.id} IS NULL`
+        : input.invoice === 'draft'
+          ? sql`${invoices.status} = 'DRAFT'`
+          : input.invoice === 'unpaid'
+            ? sql`${invoices.status} IN ('SENT', 'VIEWED')`
+            : sql`${invoices.status} = 'PAID'`
+    )
+  }
+
+  // Created dates are compared as calendar days.
+  if (input.from) {
+    baseConditions.push(sql`${hourBlocks.createdAt}::date >= ${input.from}`)
+  }
+  if (input.to) {
+    baseConditions.push(sql`${hourBlocks.createdAt}::date <= ${input.to}`)
   }
 
   const useOffset = typeof input.offset === 'number' && input.offset >= 0
@@ -194,8 +276,12 @@ export async function listHourBlocksForSettings(
         client: clientSelection,
       })
       .from(hourBlocks)
-      .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-      .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+      .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
+      .leftJoin(
+        invoiceLineItems,
+        eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+      )
+      .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
       .where(baseWhere)
       .orderBy(...ordering)
       .limit(limit)
@@ -236,8 +322,12 @@ export async function listHourBlocksForSettings(
         client: clientSelection,
       })
       .from(hourBlocks)
-      .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-      .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+      .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
+      .leftJoin(
+        invoiceLineItems,
+        eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+      )
+      .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
       .where(whereClause)
       .orderBy(...ordering)
       .limit(limit + 1)) as HourBlockSelection[]
@@ -257,14 +347,22 @@ export async function listHourBlocksForSettings(
       db
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
-        .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-        .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+        .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
+        .leftJoin(
+          invoiceLineItems,
+          eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+        )
+        .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
         .where(and(...baseConditions)),
       db
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
         .where(statusCondition),
-      db.select(clientSelection).from(clients).orderBy(asc(clients.name)),
+      db
+        .select(clientSelection)
+        .from(companies)
+        .where(wasClientCompany())
+        .orderBy(asc(clientNameSql)),
     ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
@@ -312,14 +410,14 @@ export async function listHourBlocksForSettings(
 
 export async function getActiveClientSummary(
   user: AppUser,
-  clientId: string
+  companyId: string
 ): Promise<HourBlockClientSummary | null> {
   assertAdmin(user)
 
   const rows = await db
     .select(clientSelection)
-    .from(clients)
-    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+    .from(companies)
+    .where(and(isClientCompany(), eq(companies.id, companyId)))
     .limit(1)
 
   if (!rows.length) {
@@ -338,13 +436,14 @@ export async function getActiveClientSummary(
  */
 export async function listHourBlockClientDirectory(
   user: AppUser
-): Promise<ClientRow[]> {
+): Promise<HourBlockClient[]> {
   assertAdmin(user)
 
   const rows = await db
     .select(clientSelection)
-    .from(clients)
-    .orderBy(asc(clients.name))
+    .from(companies)
+    .where(wasClientCompany())
+    .orderBy(asc(clientNameSql))
 
   return rows.map(mapClientRow)
 }
@@ -361,8 +460,12 @@ export async function getHourBlockWithClientById(
       client: clientSelection,
     })
     .from(hourBlocks)
-    .leftJoin(clients, eq(hourBlocks.clientId, clients.id))
-    .leftJoin(invoices, eq(hourBlocks.invoiceId, invoices.id))
+    .leftJoin(companies, eq(hourBlocks.companyId, companies.id))
+    .leftJoin(
+      invoiceLineItems,
+      eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+    )
+    .leftJoin(invoices, eq(invoiceLineItems.invoiceId, invoices.id))
     .where(eq(hourBlocks.id, hourBlockId))
     .limit(1)) as HourBlockSelection[]
 
@@ -379,13 +482,14 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
       ? {
           id: row.client.id,
           name: row.client.name,
+          company_id: row.client.companyId,
           deleted_at: row.client.deletedAt,
         }
       : null
 
   return {
     id: row.block.id,
-    client_id: row.block.clientId,
+    company_id: row.block.companyId,
     hours_purchased: Number(row.block.hoursPurchased ?? '0'),
     invoice_id: row.block.invoiceId,
     invoice_number: row.block.invoiceNumber,
@@ -403,10 +507,11 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
   }
 }
 
-function mapClientRow(row: ClientSelection): ClientRow {
+function mapClientRow(row: ClientSelection): HourBlockClient {
   return {
     id: row.id,
     name: row.name,
+    company_id: row.companyId,
     deleted_at: row.deletedAt,
   }
 }

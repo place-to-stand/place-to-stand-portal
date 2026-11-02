@@ -9,6 +9,10 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import { requireCrmUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { leadUpdates } from '@/lib/db/schema'
+import {
+  LEAD_UPDATE_NOT_AUTHOR_MESSAGE,
+  canChangeLeadUpdate,
+} from '@/lib/leads/lead-update-access'
 import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
 import { getLeadUpdateForLead } from '@/lib/queries/lead-updates'
 
@@ -59,6 +63,13 @@ export async function updateLeadUpdate(
 
   if (!existing) {
     return { success: false, error: 'Update not found.' }
+  }
+
+  // Only the author or an admin (`leads.edit_others_updates`).
+  if (
+    !canChangeLeadUpdate({ role: user.role, userId: user.id }, existing.authorId)
+  ) {
+    return { success: false, error: LEAD_UPDATE_NOT_AUTHOR_MESSAGE }
   }
 
   const changedFields: string[] = []

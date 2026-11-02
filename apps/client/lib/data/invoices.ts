@@ -1,10 +1,12 @@
+import { clientEndedAtSql, isClientCompany } from '@pts/db/client-state'
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
 import { and, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clients, invoiceLineItems, invoices } from '@pts/db/schema'
+import { companies, invoiceLineItems, invoices } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { resolvePortalScope } from '@/lib/auth/view-as'
 import type { InvoiceWithLineItems } from '@pts/pdf'
@@ -21,7 +23,7 @@ export type ClientInvoice = {
   id: string
   invoiceNumber: string | null
   status: ClientInvoiceStatusValue
-  clientId: string
+  companyId: string
   clientName: string
   issuedDate: string | null
   total: string
@@ -41,16 +43,16 @@ export type ClientInvoice = {
  */
 export const fetchClientInvoices = cache(
   async (user: AppUser): Promise<ClientInvoice[]> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return []
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return []
 
     const rows = await db
       .select({
         id: invoices.id,
         invoiceNumber: invoices.invoiceNumber,
         status: invoices.status,
-        clientId: invoices.clientId,
-        clientName: clients.name,
+        companyId: invoices.companyId,
+        clientName: clientNameSql,
         issuedDate: invoices.issuedDate,
         total: invoices.total,
         paidAt: invoices.paidAt,
@@ -58,12 +60,12 @@ export const fetchClientInvoices = cache(
         shareEnabled: invoices.shareEnabled,
       })
       .from(invoices)
-      .innerJoin(clients, eq(clients.id, invoices.clientId))
+      .innerJoin(companies, eq(companies.id, invoices.companyId))
       .where(
         and(
-          inArray(invoices.clientId, clientIds),
+          inArray(invoices.companyId, companyIds),
           isNull(invoices.deletedAt),
-          isNull(clients.deletedAt),
+          isClientCompany(),
           ne(invoices.status, 'DRAFT')
         )
       )
@@ -85,7 +87,7 @@ export const fetchClientInvoices = cache(
         id: row.id,
         invoiceNumber: row.invoiceNumber,
         status,
-        clientId: row.clientId,
+        companyId: row.companyId,
         clientName: row.clientName,
         issuedDate: row.issuedDate,
         total: row.total,
@@ -117,26 +119,28 @@ export const EMPTY_INVOICE_SUMMARY: ClientInvoiceSummary = {
  */
 export const fetchClientInvoiceSummaries = cache(
   async (user: AppUser): Promise<Map<string, ClientInvoiceSummary>> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return new Map()
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return new Map()
 
     const rows = await db
       .select({
-        clientId: invoices.clientId,
+        companyId: invoices.companyId,
         unpaidCount: sql<number>`count(*)::int`,
         unpaidTotal: sql<string>`coalesce(sum(${invoices.total}), 0)::text`,
       })
       .from(invoices)
       .where(
         and(
-          inArray(invoices.clientId, clientIds),
+          inArray(invoices.companyId, companyIds),
           isNull(invoices.deletedAt),
           inArray(invoices.status, ['SENT', 'VIEWED'])
         )
       )
-      .groupBy(invoices.clientId)
+      .groupBy(invoices.companyId)
 
-    return new Map(rows.map(({ clientId, ...summary }) => [clientId, summary]))
+    return new Map(
+      rows.map(({ companyId, ...summary }) => [companyId, summary])
+    )
   }
 )
 
@@ -154,25 +158,25 @@ export const fetchClientInvoiceForPdf = cache(
     user: AppUser,
     invoiceId: string
   ): Promise<InvoiceWithLineItems | null> => {
-    const { clientIds } = await resolvePortalScope(user)
-    if (clientIds.length === 0) return null
+    const { companyIds } = await resolvePortalScope(user)
+    if (companyIds.length === 0) return null
 
     const [row] = await db
       .select({
         invoice: invoices,
         client: {
-          id: clients.id,
-          name: clients.name,
-          slug: clients.slug,
-          deletedAt: clients.deletedAt,
+          id: companies.id,
+          name: clientNameSql,
+          slug: companies.slug,
+          deletedAt: clientEndedAtSql,
         },
       })
       .from(invoices)
-      .innerJoin(clients, eq(clients.id, invoices.clientId))
+      .innerJoin(companies, eq(companies.id, invoices.companyId))
       .where(
         and(
           eq(invoices.id, invoiceId),
-          inArray(invoices.clientId, clientIds),
+          inArray(invoices.companyId, companyIds),
           isNull(invoices.deletedAt),
           ne(invoices.status, 'DRAFT')
         )
@@ -198,7 +202,7 @@ export const fetchClientInvoiceForPdf = cache(
       id: invoice.id,
       invoice_number: invoice.invoiceNumber,
       status: invoice.status,
-      client_id: invoice.clientId,
+      company_id: invoice.companyId,
       created_by: invoice.createdBy,
       issued_date: invoice.issuedDate,
       due_date: invoice.dueDate,

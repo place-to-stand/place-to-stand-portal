@@ -57,7 +57,7 @@ const payrollRowSchema = z.object({
 })
 
 const billingClientDetailSchema = z.object({
-  clientId: z.string(),
+  companyId: z.string(),
   clientName: z.string(),
   billingType: z.enum(['prepaid', 'net_30']),
   hours: z.number(),
@@ -130,7 +130,7 @@ const partnerPayoutRowSchema = z.object({
 })
 
 const billingRowSchema = z.object({
-  clientId: z.string(),
+  companyId: z.string(),
   clientName: z.string(),
   totalHours: z.number(),
   amount: z.number(),
@@ -192,7 +192,7 @@ const snapshotReportSchema = z.object({
         z.object({
           invoiceId: z.string(),
           invoiceNumber: z.string().nullable(),
-          clientId: z.string(),
+          companyId: z.string(),
           clientName: z.string(),
           paidOn: z.string(),
           taxableAmount: z.number(),
@@ -278,13 +278,30 @@ type SnapshotParseResult =
   | { ok: false; error: string }
 
 /**
+ * Snapshots closed before the clientId → companyId rename store `clientId`.
+ * The stored report is never rewritten (a closed month stays as closed), so
+ * the key is mapped on read.
+ */
+function withCompanyIdKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withCompanyIdKeys)
+  if (value === null || typeof value !== 'object') return value
+  const out: Record<string, unknown> = {}
+  for (const [key, item] of Object.entries(value)) {
+    const mapped =
+      key === 'clientId' && !('companyId' in value) ? 'companyId' : key
+    out[mapped] = withCompanyIdKeys(item)
+  }
+  return out
+}
+
+/**
  * Single decode point for persisted snapshots. Version 1 is identity; future
  * report-shape changes bump the version and migrate on read here. An unknown
  * version or failed parse returns an explicit error the UI renders as
  * "snapshot unreadable — reopen to re-derive".
  */
 function parseSnapshotReport(payload: unknown): SnapshotParseResult {
-  const parsed = snapshotEnvelopeSchema.safeParse(payload)
+  const parsed = snapshotEnvelopeSchema.safeParse(withCompanyIdKeys(payload))
 
   if (!parsed.success) {
     const version =

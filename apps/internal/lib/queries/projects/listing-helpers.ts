@@ -1,12 +1,10 @@
-import { clients, projects, users } from '@/lib/db/schema'
+import { clientEndedAtSql } from '@pts/db/client-state'
+import { clientNameSql, personNameSql } from '@pts/db/names'
+import { companies, projects, users } from '@/lib/db/schema'
 import type { ProjectStatusValue } from '@/lib/constants'
 import type { ProjectTypeValue } from '@/lib/types'
 import type { ProjectOwnerSummary } from '@/lib/settings/projects/project-sheet-form'
 export type { ProjectOwnerSummary } from '@/lib/settings/projects/project-sheet-form'
-import {
-  type CursorDirection,
-  type PageInfo,
-} from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { ProjectSortField } from './sort'
 
@@ -14,7 +12,7 @@ export type SelectProject = typeof projects.$inferSelect
 
 export const projectFields = {
   id: projects.id,
-  clientId: projects.clientId,
+  companyId: projects.companyId,
   name: projects.name,
   status: projects.status,
   type: projects.type,
@@ -42,8 +40,8 @@ export type ProjectsSettingsListItem = typeof projects.$inferSelect & {
 export type ListProjectsForSettingsInput = {
   status?: 'active' | 'archived'
   search?: string | null
-  cursor?: string | null
-  direction?: CursorDirection | null
+  /** Rows to skip (offset paging: `(page - 1) * limit`). */
+  offset?: number | null
   limit?: number | null
   sort?: ParsedSort<ProjectSortField>
 }
@@ -54,7 +52,6 @@ export type ProjectsSettingsResult = {
   totalCount: number
   /** Rows on the tab regardless of filters/search (the `M`). */
   unfilteredTotalCount: number
-  pageInfo: PageInfo
   clients: ProjectClientSummary[]
 }
 
@@ -63,7 +60,7 @@ export const projectGroupByColumns = [
   projects.name,
   projects.status,
   projects.slug,
-  projects.clientId,
+  projects.companyId,
   projects.type,
   projects.createdBy,
   projects.ownerId,
@@ -72,11 +69,11 @@ export const projectGroupByColumns = [
   projects.createdAt,
   projects.updatedAt,
   projects.deletedAt,
-  clients.id,
-  clients.name,
-  clients.deletedAt,
+  companies.id,
+  clientNameSql,
+  clientEndedAtSql,
   users.id,
-  users.fullName,
+  personNameSql,
   users.email,
 ] as const
 
@@ -85,7 +82,7 @@ export const projectSelection = {
   name: projects.name,
   status: projects.status,
   slug: projects.slug,
-  clientId: projects.clientId,
+  companyId: projects.companyId,
   type: projects.type,
   createdBy: projects.createdBy,
   ownerId: projects.ownerId,
@@ -101,7 +98,7 @@ export type ProjectSelectionResult = {
   name: string
   status: ProjectStatusValue
   slug: string | null
-  clientId: string | null
+  companyId: string | null
   type: ProjectTypeValue
   createdBy: string | null
   ownerId: string | null

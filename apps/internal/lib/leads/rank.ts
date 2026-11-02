@@ -6,8 +6,14 @@ import { getRankAfter } from '@/lib/rank'
 
 import type { LeadStatusValue } from './constants'
 
-export async function resolveNextLeadRank(status: LeadStatusValue) {
-  const rows = await db
+/** Anything that can run a select: `db` or a transaction. */
+type RankExecutor = Pick<typeof db, 'select'>
+
+export async function resolveNextLeadRank(
+  status: LeadStatusValue,
+  executor: RankExecutor = db
+) {
+  const rows = await executor
     .select({ rank: leads.rank })
     .from(leads)
     .where(and(eq(leads.status, status), isNull(leads.deletedAt)))
@@ -18,4 +24,3 @@ export async function resolveNextLeadRank(status: LeadStatusValue) {
 
   return getRankAfter(previousRank)
 }
-

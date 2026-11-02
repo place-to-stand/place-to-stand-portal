@@ -29,9 +29,8 @@ const MAILPIT_URL = 'http://127.0.0.1:54324'
  * Sends through Resend when deployed, and into Mailpit when running locally.
  *
  * Local development has no verified Resend sender domain, so every send used to
- * fail with a 403 that surfaced as "unable to send invite email" — and because
- * `createPortalUser` treats a failed invite as a failed operation, the whole
- * account creation rolled back. Routing local mail to Mailpit makes the flow
+ * fail with a 403 that surfaced as "unable to send invite email". Routing
+ * local mail to Mailpit makes the flow
  * testable end to end and puts the invite next to Supabase's own emails.
  */
 export async function sendEmail(message: OutboundEmail): Promise<void> {

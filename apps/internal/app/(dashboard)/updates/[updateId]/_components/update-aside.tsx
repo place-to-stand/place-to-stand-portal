@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import type { ClientHoursTotals } from '@pts/db/hours'
 
 import type { StaffMember } from '@/lib/updates/staff'
@@ -80,8 +81,7 @@ export function UpdateAside({
 }
 
 function EmailList({ emails, empty }: { emails: string[]; empty: string }) {
-  if (emails.length === 0)
-    return <p className='text-muted-foreground text-sm'>{empty}</p>
+  if (emails.length === 0) return <EmptyState message={empty} />
   return (
     <ul className='space-y-1 text-sm'>
       {emails.map(email => (

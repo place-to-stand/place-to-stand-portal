@@ -8,15 +8,3 @@ export function getActorDisplayName(log: ActivityLogWithActor): string {
   )
 }
 
-export function getActorInitials(name: string): string {
-  const parts = name.split(/\s+/).filter(Boolean).slice(0, 2)
-
-  if (!parts.length) {
-    return '?'
-  }
-
-  return parts
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
-}

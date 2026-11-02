@@ -50,3 +50,7 @@ applyTo: "**/*.{tsx,jsx}"
 - Show field-level errors, not just form-level
 - Disabled buttons need tooltip explaining why
 - Required fields indicated with aria-required
+
+## Design system
+
+**Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes).

@@ -9,6 +9,10 @@ Before designing or changing anything visual in this repo, read `docs/design-sys
 
 ## How to apply it
 
+- **Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes).
+
+- **Sheets save once.** Every sheet saves in one server action and one database transaction, only on Save; controls inside it change the form. Instant actions are records of their own or act outside the app (comments, lead updates, logging time, invoice send/void, planning, password reset). Create and edit show the same sheet. See `docs/design-system/components/sheet.md`.
+
 - **Reuse before you build.** Look for an existing component in `packages/ui/src` or `apps/internal/components` first, and use it even if that bends the design a little. Do not hand-roll a toggle, badge, search box, filter, sheet header or page frame the codebase already has.
 - **Tokens, not literals.** Style through the semantic Tailwind tokens (`bg-background`, `text-muted-foreground`, `border`, `bg-accent`...). Status is `destructive` / `success` / `warning`; status badges use `BADGE_TINTS` from `@pts/ui/badge-tints`; brand and email colors are Tailwind colors (`bg-brand-bg`, `text-email-ink`). No raw palette shades or hex values in app UI.
 - **Shared pieces to reach for:** `EmptyState`, `RowActionButton`, `Card`, `Input`, `Textarea`, `Badge`, `Tabs` and the rest of `@pts/ui/*`; dates from `@pts/ui/dates`.

@@ -10,7 +10,7 @@ type DbActivityLog = {
   summary: string
   target_type: string
   target_id: string | null
-  target_client_id: string | null
+  target_company_id: string | null
   target_project_id: string | null
   context_route: string | null
   metadata: Json
@@ -46,8 +46,10 @@ export type ActivityLogWithActor = DbActivityLog & {
 export const ACTIVITY_TARGET_TYPES = [
   'TASK',
   'PROJECT',
+  // Retired in 0113: billing events sit on the COMPANY. Kept so old filters parse.
   'CLIENT',
   'CONTACT',
+  'COMPANY',
   'LEAD',
   'SUBMISSION',
   'COMMENT',
@@ -95,6 +97,7 @@ export const ActivityVerbs = {
   TIME_LOG_CREATED: 'TIME_LOG_CREATED',
   TIME_LOG_UPDATED: 'TIME_LOG_UPDATED',
   TIME_LOG_DELETED: 'TIME_LOG_DELETED',
+  TIME_LOG_RESTORED: 'TIME_LOG_RESTORED',
   // Clients
   CLIENT_CREATED: 'CLIENT_CREATED',
   CLIENT_UPDATED: 'CLIENT_UPDATED',
@@ -114,6 +117,12 @@ export const ActivityVerbs = {
   CONTACT_INVITED_TO_PORTAL: 'CONTACT_INVITED_TO_PORTAL',
   CONTACT_CLIENT_LINKED: 'CONTACT_CLIENT_LINKED',
   CONTACT_CLIENT_UNLINKED: 'CONTACT_CLIENT_UNLINKED',
+  // Companies (sales CRM)
+  COMPANY_CREATED: 'COMPANY_CREATED',
+  COMPANY_UPDATED: 'COMPANY_UPDATED',
+  COMPANY_ARCHIVED: 'COMPANY_ARCHIVED',
+  COMPANY_RESTORED: 'COMPANY_RESTORED',
+  COMPANY_PRIMARY_CONTACT_SET: 'COMPANY_PRIMARY_CONTACT_SET',
   // Projects
   PROJECT_CREATED: 'PROJECT_CREATED',
   PROJECT_UPDATED: 'PROJECT_UPDATED',
@@ -191,7 +200,7 @@ export type ActivityQueryFilters = {
   targetType?: ActivityTargetType | ActivityTargetType[]
   targetId?: string
   projectId?: string
-  clientId?: string
+  companyId?: string
   /** Narrow to one channel (e.g. `MCP` for agent writes). */
   source?: ActivitySourceValue
   /** Narrow to rows one user acted on. */

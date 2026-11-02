@@ -5,13 +5,12 @@ import type { BaseTaskInput } from '@/app/(dashboard)/projects/actions/shared-sc
 import type { Database } from '@/lib/supabase/types'
 import type { ActivitySourceValue } from '@/lib/types'
 
-// Local widening (do not touch the shared ActionResult): a result carrying
-// `taskId` means the row exists — even alongside `error`, which signals a
-// failed post-insert step. Clients must never retry the create path for it.
-export type SaveTaskResult = {
-  error?: string
-  taskId?: string
-}
+// A save is all or nothing: the task row, its assignee and its attachment rows
+// commit in one transaction. `taskId` means everything landed; `error` means
+// nothing did, so retrying is safe.
+export type SaveTaskResult =
+  | { taskId: string; error?: undefined }
+  | { error: string; taskId?: undefined }
 
 /**
  * Everything the create and update branches share, resolved once by

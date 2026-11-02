@@ -7,14 +7,14 @@ export const userCreatedEvent = (args: {
   role: string
   email?: string
   /** Clients a portal user was granted access to on creation. */
-  clientIds?: string[]
+  companyIds?: string[]
 }): ActivityEvent => ({
   verb: ActivityVerbs.USER_CREATED,
   summary: `Invited ${args.fullName} (${args.role})`,
   metadata: toMetadata({
     role: args.role,
     email: args.email,
-    clientIds: args.clientIds,
+    companyIds: args.companyIds,
   }),
 })
 
@@ -35,19 +35,6 @@ export const userUpdatedEvent = (args: {
   }),
 })
 
-export const userArchivedEvent = (args: {
-  fullName: string
-  email?: string
-  role?: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.USER_ARCHIVED,
-  summary: `Archived user ${args.fullName}`,
-  metadata: toMetadata({
-    email: args.email,
-    role: args.role,
-  }),
-})
-
 export const userRestoredEvent = (args: {
   fullName: string
   email?: string
@@ -55,19 +42,6 @@ export const userRestoredEvent = (args: {
 }): ActivityEvent => ({
   verb: ActivityVerbs.USER_RESTORED,
   summary: `Restored user ${args.fullName}`,
-  metadata: toMetadata({
-    email: args.email,
-    role: args.role,
-  }),
-})
-
-export const userDeletedEvent = (args: {
-  fullName: string
-  email?: string
-  role?: string
-}): ActivityEvent => ({
-  verb: ActivityVerbs.USER_DELETED,
-  summary: `Permanently deleted user ${args.fullName}`,
   metadata: toMetadata({
     email: args.email,
     role: args.role,

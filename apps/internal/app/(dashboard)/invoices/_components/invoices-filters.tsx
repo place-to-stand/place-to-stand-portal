@@ -1,5 +1,6 @@
 'use client'
 
+import { invoiceStatusTint } from './invoice-status-badge'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
@@ -14,6 +15,7 @@ import {
 const STATUS_OPTIONS = INVOICE_STATUS_VALUES.map(value => ({
   value,
   label: INVOICE_STATUS_LABELS[value],
+  badgeClassName: invoiceStatusTint(value),
 }))
 
 type InvoicesFiltersProps = {

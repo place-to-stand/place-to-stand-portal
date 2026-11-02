@@ -1,5 +1,8 @@
 'use client'
 
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
+
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
@@ -15,6 +18,7 @@ import type { LeadSheetProps } from './types'
 const LEAD_FORM_ID = 'lead-form'
 
 export function LeadSheet(props: LeadSheetProps) {
+  const { open: openSheet } = useSheetParams()
   const { open, lead, assignees, canManage = false, onSuccess } = props
   const {
     form,
@@ -22,9 +26,6 @@ export function LeadSheet(props: LeadSheetProps) {
     isArchiving,
     isArchiveDialogOpen,
     setArchiveDialogOpen,
-    isConvertDialogOpen,
-    setConvertDialogOpen,
-    setActionParam,
     canConvert,
     selectedSourceType,
     submitDisabled,
@@ -46,19 +47,15 @@ export function LeadSheet(props: LeadSheetProps) {
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='2xl'
-          className={cn(
-            'flex h-full w-full flex-col gap-0 overflow-hidden p-0',
-            // Edit mode appends the fixed-width task sidebar (384px) while the
-            // form column stays at the same 672px as add mode. Below lg the
-            // sidebar stacks under the form, so the sheet keeps its add width.
-            isEditing && 'lg:max-w-[1056px]'
-          )}
+          // Create and edit share one layout: the form plus the tasks and
+          // updates column, which waits for the lead to exist on create.
+          columns={2}
+          className='flex h-full w-full flex-col gap-0 overflow-hidden p-0'
         >
           {/* Header */}
           <SheetFormHeader
             entity='lead'
-            title={isEditing ? 'Edit lead' : 'Add lead'}
+            title={isEditing ? lead?.contactName || 'Lead' : 'Create lead'}
             className='flex-shrink-0'
           />
 
@@ -74,8 +71,7 @@ export function LeadSheet(props: LeadSheetProps) {
               {/* Left Column - Form Fields */}
               <div
                 className={cn(
-                  'flex flex-1 flex-col overflow-hidden max-lg:contents',
-                  isEditing && lead && 'lg:border-r'
+                  'flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'
                 )}
               >
                 <div className='flex-1 p-6 lg:overflow-y-auto'>
@@ -98,34 +94,37 @@ export function LeadSheet(props: LeadSheetProps) {
                     canUndo={canUndo}
                     canRedo={canRedo}
                     isEditing={isEditing}
-                    deleteDisabled={submitDisabled}
-                    deleteDisabledReason={archiveDisabledReason}
-                    onRequestDelete={() => setArchiveDialogOpen(true)}
-                    deleteAriaLabel='Archive lead'
+                    archiveDisabled={submitDisabled}
+                    archiveDisabledReason={archiveDisabledReason}
+                    onRequestArchive={() => setArchiveDialogOpen(true)}
+                    archiveAriaLabel='Archive lead'
                   />
                 </div>
               </div>
 
-              {/* Right Column - Conversion, tasks, updates (only for editing) */}
-              {isEditing && lead && (
-                <LeadSheetRightColumn
-                  lead={lead}
-                  canManage={canManage}
-                  canConvert={canConvert}
-                  onConvertToClient={() => {
-                    setConvertDialogOpen(true)
-                    setActionParam('convert')
-                  }}
-                  onSuccess={onSuccess}
-                />
-              )}
+              {/* Right Column - Conversion, tasks, updates. On create the
+                  sections show but wait for the lead to exist. */}
+              <LeadSheetRightColumn
+                lead={lead}
+                canManage={canManage}
+                canConvert={canConvert}
+                onConvertToClient={() => {
+                  // A client is made on its company's billing (its sheet's Client column): stack the
+                  // company's sheet on the lead, on that tab.
+                  if (lead?.companyId) {
+                    setSheetSectionTarget('company', lead.companyId, 'billing')
+                    openSheet('company', lead.companyId)
+                  }
+                }}
+                onSuccess={onSuccess}
+              />
             </form>
           </Form>
         </SheetContent>
       </Sheet>
       <LeadSheetDialogs
-        lead={lead}
         isArchiveDialogOpen={isArchiveDialogOpen}
+        leadName={lead?.contactName}
         isArchiving={isArchiving}
         onArchiveCancel={() => {
           if (!isArchiving) {
@@ -133,12 +132,6 @@ export function LeadSheet(props: LeadSheetProps) {
           }
         }}
         onArchiveConfirm={handleArchive}
-        isConvertDialogOpen={isConvertDialogOpen}
-        onConvertOpenChange={(next: boolean) => {
-          setConvertDialogOpen(next)
-          if (!next) setActionParam(null)
-        }}
-        onSuccess={onSuccess}
         unsavedChangesDialog={unsavedChangesDialog}
       />
     </>

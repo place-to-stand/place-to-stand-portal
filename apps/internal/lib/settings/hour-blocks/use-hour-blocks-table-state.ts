@@ -6,18 +6,18 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import {
-  destroyHourBlock,
   restoreHourBlock,
   softDeleteHourBlock,
 } from '@/app/(dashboard)/hour-blocks/actions'
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { HOUR_BLOCK_MISSING_CLIENT_REASON } from './hour-block-ui-state'
 
 type UseHourBlocksTableStateArgs = {
-  clients: ClientRow[]
+  clients: HourBlockClient[]
   /** The page's fresh rows — the open sheet re-resolves from them by id. */
   hourBlocks?: HourBlockWithClient[]
   /**
@@ -57,11 +57,8 @@ export function useHourBlocksTableState({
   const [deleteTarget, setDeleteTarget] = useState<HourBlockWithClient | null>(
     null
   )
-  const [destroyTarget, setDestroyTarget] =
-    useState<HourBlockWithClient | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
-  const [pendingDestroyId, setPendingDestroyId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
 
@@ -75,7 +72,7 @@ export function useHourBlocksTableState({
 
   const createDisabled = sortedClients.length === 0
   const createDisabledReason = createDisabled
-    ? 'Create a client before logging hour blocks.'
+    ? HOUR_BLOCK_MISSING_CLIENT_REASON
     : null
 
   const openEdit = (block: HourBlockWithClient) => {
@@ -138,7 +135,11 @@ export function useHourBlocksTableState({
             'The hour block is hidden from active tracking but remains in history.',
         })
         if (result.warning) {
-          toast({ title: 'Closed month affected', description: result.warning })
+          toast({
+            title: 'Closed month affected',
+            description: result.warning,
+            variant: 'warning',
+          })
         }
         router.refresh()
       } finally {
@@ -172,61 +173,15 @@ export function useHourBlocksTableState({
           description: 'The hour block is active again.',
         })
         if (result.warning) {
-          toast({ title: 'Closed month affected', description: result.warning })
+          toast({
+            title: 'Closed month affected',
+            description: result.warning,
+            variant: 'warning',
+          })
         }
         router.refresh()
       } finally {
         setPendingRestoreId(null)
-      }
-    })
-  }
-
-  const handleRequestDestroy = (block: HourBlockWithClient) => {
-    if (!block.deleted_at || isPending) {
-      return
-    }
-
-    setDestroyTarget(block)
-  }
-
-  const handleCancelDestroy = () => {
-    if (isPending) {
-      return
-    }
-
-    setDestroyTarget(null)
-  }
-
-  const handleConfirmDestroy = () => {
-    if (!destroyTarget || !destroyTarget.deleted_at) {
-      setDestroyTarget(null)
-      return
-    }
-
-    const block = destroyTarget
-    setDestroyTarget(null)
-    setPendingDestroyId(block.id)
-
-    startTransition(async () => {
-      try {
-        const result = await destroyHourBlock({ id: block.id })
-
-        if (result.error) {
-          toast({
-            title: 'Unable to permanently delete hour block',
-            description: result.error,
-            variant: 'destructive',
-          })
-          return
-        }
-
-        toast({
-          title: 'Hour block permanently deleted',
-          description: 'The hour block has been removed.',
-        })
-        router.refresh()
-      } finally {
-        setPendingDestroyId(null)
       }
     })
   }
@@ -250,20 +205,12 @@ export function useHourBlocksTableState({
       onCancel: handleCancelDelete,
       onConfirm: handleConfirmDelete,
     },
-    destroyDialog: {
-      open: Boolean(destroyTarget),
-      target: destroyTarget,
-      onCancel: handleCancelDestroy,
-      onConfirm: handleConfirmDestroy,
-    },
     isPending,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     handleRequestDelete,
     handleRestore,
-    handleRequestDestroy,
-    /** Drop `?hour-block=` (e.g. after the open row is destroyed). */
+    /** Drop `?hour-block=` (e.g. a link to a missing hour block). */
     clearSelection: clear,
   }
 }

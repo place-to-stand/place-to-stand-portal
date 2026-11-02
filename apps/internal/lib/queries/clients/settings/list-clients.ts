@@ -1,21 +1,15 @@
-'use server'
+import { wasClientCompany } from '@pts/db/client-state'
+import 'server-only'
 
 import { and, asc, eq, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { clients, projects } from '@/lib/db/schema'
-import { type PageInfo } from '@/lib/pagination/cursor'
-import {
-  decodeSortCursor,
-  encodeSortCursor,
-  type SortCursorPayload,
-  type SortDirection,
-} from '@/lib/pagination/sort'
+import { companies, projects } from '@/lib/db/schema'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
-import type { ClientCloser } from '@/lib/settings/clients/closers'
-import { DEFAULT_CLIENTS_SORT } from '@/lib/settings/clients/filters'
+import type { ClientCloser } from '@/lib/companies/billing/closers'
+import { DEFAULT_CLIENTS_SORT } from '@/lib/companies/billing/filters'
 
 import {
   ACTIVE_STATUS,
@@ -31,9 +25,7 @@ import {
   buildStatusCondition,
   CLIENT_SORT_DESCRIPTORS,
   normalizeStatus,
-  resolveClientDirection,
   resolvePaginationLimit,
-  type ClientSortDescriptor,
   type StatusFilter,
 } from './pagination'
 import type {
@@ -50,7 +42,7 @@ type ClientMetricsResult = SelectClient & {
 function buildBaseConditions(
   status: StatusFilter,
   searchQuery: string,
-  billing: ListClientsForSettingsInput['billing'],
+  billing: ListClientsForSettingsInput['billing']
 ): SQL[] {
   const conditions: SQL[] = [buildStatusCondition(status)]
 
@@ -71,6 +63,7 @@ async function queryClientRows(
   whereClause: SQL | undefined,
   ordering: SQL[],
   limit: number,
+  offset: number
 ) {
   return db
     .select({
@@ -87,12 +80,13 @@ async function queryClientRows(
         ), 0)
       `,
     })
-    .from(clients)
-    .leftJoin(projects, eq(projects.clientId, clients.id))
-    .where(whereClause)
+    .from(companies)
+    .leftJoin(projects, eq(projects.companyId, companies.id))
+    .where(and(wasClientCompany(), whereClause))
     .groupBy(...clientGroupByColumns)
     .orderBy(...ordering)
-    .limit(limit + 1) as Promise<ClientMetricsResult[]>
+    .limit(limit)
+    .offset(offset) as Promise<ClientMetricsResult[]>
 }
 
 function mapClientMetrics(
@@ -105,10 +99,10 @@ function mapClientMetrics(
     slug: row.slug,
     notes: row.notes,
     billingType: row.billingType,
-    website: row.website,
     state: row.state,
     originationContactId: row.originationContactId,
     originationUserId: row.originationUserId,
+    companyId: row.companyId,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -124,96 +118,28 @@ function mapClientMetrics(
 async function resolveCount(conditions: SQL[]) {
   const result = await db
     .select({ count: sql<number>`count(*)` })
-    .from(clients)
-    .where(conditions.length ? and(...conditions) : undefined)
+    .from(companies)
+    .where(
+      and(
+        wasClientCompany(),
+        conditions.length ? and(...conditions) : undefined
+      )
+    )
 
   return Number(result[0]?.count ?? 0)
 }
 
-function buildPageInfo(
-  direction: 'forward' | 'backward',
-  cursorPayload: SortCursorPayload | null,
-  items: ClientsSettingsListItem[],
-  hasExtraRecord: boolean,
-  sortField: string,
-  sortDirection: SortDirection,
-  descriptor: ClientSortDescriptor,
-): PageInfo {
-  const firstItem = items[0] ?? null
-  const lastItem = items[items.length - 1] ?? null
-
-  const hasPreviousPage =
-    direction === 'forward'
-      ? Boolean(cursorPayload)
-      : hasExtraRecord
-  const hasNextPage =
-    direction === 'forward'
-      ? hasExtraRecord
-      : Boolean(cursorPayload)
-
-  return {
-    hasPreviousPage,
-    hasNextPage,
-    startCursor: firstItem
-      ? encodeSortCursor({
-          sortField,
-          sortDirection,
-          value: descriptor.encode(firstItem),
-          id: firstItem.id,
-        })
-      : null,
-    endCursor: lastItem
-      ? encodeSortCursor({
-          sortField,
-          sortDirection,
-          value: descriptor.encode(lastItem),
-          id: lastItem.id,
-        })
-      : null,
-  }
-}
-
-/**
- * Just the header-count pair for a clients list page. The landing page renders
- * its rows from `fetchClientsWithMetrics` and only needs these two numbers —
- * running the full `listClientsForSettings` pipeline (paginated rows, member
- * map, client-user directory) for them wasted four queries per render.
- */
-export async function countClientsForSettings(
-  user: AppUser,
-  input: Pick<ListClientsForSettingsInput, 'status' | 'billing' | 'search'> = {},
-): Promise<{ totalCount: number; unfilteredTotalCount: number }> {
-  assertAdmin(user)
-
-  const normalizedStatus = normalizeStatus(input.status)
-  const searchQuery = input.search?.trim() ?? ''
-
-  const statusCondition = buildStatusCondition(normalizedStatus)
-  const baseConditions = buildBaseConditions(
-    normalizedStatus,
-    searchQuery,
-    input.billing,
-  )
-
-  const [totalCount, unfilteredTotalCount] = await Promise.all([
-    resolveCount(baseConditions),
-    resolveCount([statusCondition]),
-  ])
-
-  return { totalCount, unfilteredTotalCount }
-}
-
 export async function listClientsForSettings(
   user: AppUser,
-  input: ListClientsForSettingsInput = {},
+  input: ListClientsForSettingsInput = {}
 ): Promise<ClientsSettingsResult> {
   assertAdmin(user)
 
   const normalizedStatus = normalizeStatus(input.status)
   const searchQuery = input.search?.trim() ?? ''
 
-  const direction = resolveClientDirection(input.direction)
   const limit = resolvePaginationLimit(input.limit)
+  const offset = Math.max(0, Math.floor(input.offset ?? 0))
   const sort = input.sort ?? DEFAULT_CLIENTS_SORT
   const descriptor = CLIENT_SORT_DESCRIPTORS[sort.field]
 
@@ -221,57 +147,31 @@ export async function listClientsForSettings(
   const baseConditions = buildBaseConditions(
     normalizedStatus,
     searchQuery,
-    input.billing,
+    input.billing
   )
 
-  // Field-tagged cursor: payloads minted under a different sort are
-  // rejected and we serve page one (R5 backstop for stale deep links).
-  const cursorPayload = decodeSortCursor(input.cursor, sort.field, sort.direction)
+  // Offset paging (page numbers + total, like every other list). The id
+  // tiebreaker keeps page boundaries stable when sort values collide.
+  const ordering =
+    sort.direction === 'asc'
+      ? [descriptor.orderAsc, asc(companies.id)]
+      : [descriptor.orderDesc, sql`${companies.id} DESC`]
 
-  // Effective ordering combines the sort direction with the pagination
-  // direction (backward pages scan the reversed order, then re-reverse).
-  const effectiveAsc = (sort.direction === 'asc') === (direction === 'forward')
-  const cursorCondition = cursorPayload
-    ? sql`(${descriptor.compare(effectiveAsc ? 'gt' : 'lt', cursorPayload.value ?? '')} OR (${descriptor.equals(cursorPayload.value ?? '')} AND ${effectiveAsc ? sql`${clients.id} > ${cursorPayload.id}` : sql`${clients.id} < ${cursorPayload.id}`}))`
-    : null
-
-  const whereClause =
-    cursorCondition ? and(...baseConditions, cursorCondition) : and(...baseConditions)
-
-  const ordering = effectiveAsc
-    ? [descriptor.orderAsc, asc(clients.id)]
-    : [descriptor.orderDesc, sql`${clients.id} DESC`]
-
-  const rows = await queryClientRows(whereClause, ordering, limit)
-
-  const hasExtraRecord = rows.length > limit
-  const slicedRows = hasExtraRecord ? rows.slice(0, limit) : rows
-  const normalizedRows =
-    direction === 'backward' ? [...slicedRows].reverse() : slicedRows
-
-  const closersByClient = await fetchLatestClosersByClient(
-    normalizedRows.map(row => row.id)
-  )
-  const mappedItems = mapClientMetrics(normalizedRows, closersByClient)
-
-  const [totalCount, unfilteredTotalCount] = await Promise.all([
+  const [rows, totalCount, unfilteredTotalCount] = await Promise.all([
+    queryClientRows(and(...baseConditions), ordering, limit, offset),
     resolveCount(baseConditions),
     resolveCount([statusCondition]),
   ])
-  const pageInfo = buildPageInfo(
-    direction,
-    cursorPayload,
-    mappedItems,
-    hasExtraRecord,
-    sort.field,
-    sort.direction,
-    descriptor,
-  )
 
-  const clientIds = mappedItems.map(item => item.id)
+  const closersByClient = await fetchLatestClosersByClient(
+    rows.map(row => row.id)
+  )
+  const mappedItems = mapClientMetrics(rows, closersByClient)
+
+  const companyIds = mappedItems.map(item => item.id)
 
   const [membersByClient, clientUsers] = await Promise.all([
-    buildMembersByClient(clientIds),
+    buildMembersByClient(companyIds),
     listClientUsers(),
   ])
 
@@ -281,6 +181,5 @@ export async function listClientsForSettings(
     clientUsers,
     totalCount,
     unfilteredTotalCount,
-    pageInfo,
   }
 }

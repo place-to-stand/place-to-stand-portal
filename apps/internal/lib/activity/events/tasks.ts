@@ -107,11 +107,6 @@ export const taskRestoredEvent = (args: { title: string }): ActivityEvent => ({
   summary: `Restored task "${args.title}"`,
 })
 
-export const taskDeletedEvent = (args: { title: string }): ActivityEvent => ({
-  verb: ActivityVerbs.TASK_DELETED,
-  summary: `Permanently deleted task "${args.title}"`,
-})
-
 export const taskCommentCreatedEvent = (
   args: {
     taskTitle?: string | null

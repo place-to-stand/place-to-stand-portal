@@ -38,9 +38,12 @@ export type ProjectsBoardActiveProject = {
     name: string | null
     slug: string | null
     billing_type: string | null
+    /** The client's company: the Client link opens its sheet. */
+    company_id?: string | null
   } | null
   owner: {
     id: string
+    contact_id?: string | null
     full_name: string | null
     avatar_url: string | null
   } | null

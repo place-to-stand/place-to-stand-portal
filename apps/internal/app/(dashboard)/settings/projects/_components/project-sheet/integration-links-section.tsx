@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, Loader2, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, Loader2, Trash2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import {
@@ -11,16 +11,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@pts/ui/dialog'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { integrationStatusQueryKey } from '@/components/integrations/token-integration-card'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
 } from '@/components/ui/searchable-combobox'
-import { toast } from '@/components/ui/use-toast'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { EntityList } from '@/components/sheets/entity-list'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import {
   INTEGRATION_PROVIDERS,
   formatIntegrationLinkLabel,
@@ -30,8 +30,8 @@ import {
 } from '@/lib/types/integrations'
 
 /**
- * A link chosen in the picker but not yet saved. Mirrors the shape the
- * sheet state hook sends to `POST /api/projects/[id]/integration-links`.
+ * A link chosen in the picker but not yet saved. Save sends it with the
+ * project to `saveProject`, which links it in the same transaction.
  */
 export type PendingIntegrationLink = {
   provider: IntegrationProvider
@@ -78,10 +78,6 @@ export function IntegrationLinksSection({
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [unlinkConfirm, setUnlinkConfirm] =
-    useState<ProjectIntegrationLink | null>(null)
-  const [pendingRemoveConfirm, setPendingRemoveConfirm] =
-    useState<PendingIntegrationLink | null>(null)
 
   const statusQuery = useQuery({
     queryKey: integrationStatusQueryKey(provider),
@@ -172,64 +168,63 @@ export function IntegrationLinksSection({
         ownerName: option.ownerName,
       },
     ])
-    toast({
-      title: `${config.label} project added`,
-      description: `${option.externalName} will be linked when you save.`,
-    })
     handleDialogOpenChange(false)
   }
 
-  const handleRemovePending = () => {
-    if (!pendingRemoveConfirm) return
+  // Removing marks the row (Pending removal, with Undo) or drops an unsaved
+  // one; Save applies it. No confirm and no toast: Undo is the safety net.
+  const handleRemovePending = (removed: PendingIntegrationLink) =>
     onPendingLinksChange(
       pendingLinks.filter(
         link =>
           !(
-            link.provider === provider &&
-            link.externalId === pendingRemoveConfirm.externalId
+            link.provider === provider && link.externalId === removed.externalId
           )
       )
     )
-    setPendingRemoveConfirm(null)
-  }
 
-  const handleUnlink = () => {
-    if (!unlinkConfirm) return
-    onRemovedLinkIdsChange(new Set([...removedLinkIds, unlinkConfirm.id]))
-    setUnlinkConfirm(null)
-    toast({
-      title: `${config.label} project marked for removal`,
-      description: 'The change will be applied when you save.',
-    })
-  }
+  const handleUnlink = (link: { id: string }) =>
+    onRemovedLinkIdsChange(new Set([...removedLinkIds, link.id]))
 
   const heading = `${config.label} projects`
 
   if (statusQuery.isSuccess && !isConnected) {
     return (
-      <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>{heading}</h3>
-        <EmptyState
-          message={`Connect your ${config.label} account in Settings to link ${config.projectNoun}s.`}
-          action={
-            <Button variant='outline' size='sm' asChild>
-              <a href='/settings/integrations'>Go to integrations</a>
-            </Button>
-          }
-        />
-      </div>
+      <EntityList
+        title={heading}
+        isEmpty={false}
+        emptyMessage=''
+        status={
+          <>
+            <EmptyState
+              message={`Connect your ${config.label} account in Settings to link ${config.projectNoun}s.`}
+              action={
+                <Button variant='outline' size='sm' asChild>
+                  <a href='/settings/integrations'>Go to integrations</a>
+                </Button>
+              }
+            />
+          </>
+        }
+      />
     )
   }
 
   if (statusQuery.isPending || (!isCreateMode && linksQuery.isPending)) {
     return (
-      <div className='space-y-1'>
-        <h3 className='text-sm font-medium'>{heading}</h3>
-        <div className='text-muted-foreground flex items-center gap-2 text-sm'>
-          <Loader2 className='h-4 w-4 animate-spin' />
-          Loading linked {config.projectNoun}s...
-        </div>
-      </div>
+      <EntityList
+        title={heading}
+        isEmpty={false}
+        emptyMessage=''
+        status={
+          <>
+            <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+              <Loader2 className='h-4 w-4 animate-spin' />
+              Loading linked {config.projectNoun}s...
+            </div>
+          </>
+        }
+      />
     )
   }
 
@@ -239,29 +234,42 @@ export function IntegrationLinksSection({
     removedLinks.length === 0
 
   return (
-    <div className='space-y-1'>
-      <div className='flex items-center justify-between gap-3'>
-        <h3 className='text-sm font-medium'>{heading}</h3>
-        <RowActionButton
-          type='button'
-          label={`Link ${config.label} ${config.projectNoun}`}
-          icon={<Plus />}
-          onClick={() => handleDialogOpenChange(true)}
-          disabled={disabled}
-        />
-      </div>
-
-      {isEmpty ? (
-        <EmptyState
-          message={
-            isCreateMode
-              ? `No ${config.label} ${config.projectNoun}s selected.`
-              : `No ${config.label} ${config.projectNoun}s linked.`
-          }
-        />
-      ) : (
-        <div className='space-y-2'>
-          {activeLinks.map(link => (
+    <>
+      <EntityList
+        title={heading}
+        add={{
+          label: `Link ${config.label} ${config.projectNoun}`,
+          onAdd: () => handleDialogOpenChange(true),
+          disabled,
+        }}
+        isEmpty={isEmpty}
+        emptyMessage={
+          isCreateMode
+            ? `No ${config.label} ${config.projectNoun}s selected.`
+            : `No ${config.label} ${config.projectNoun}s linked.`
+        }
+      >
+        {links.map(link =>
+          removedLinkIds.has(link.id) ? (
+            <SheetRecordRow
+              key={link.id}
+              leading={
+                <IntegrationProviderIcon
+                  provider={provider}
+                  className='text-muted-foreground h-4 w-4'
+                />
+              }
+              title={formatIntegrationLinkLabel(link)}
+              pendingRemoval={{
+                disabled,
+                onUndo: () => {
+                  const next = new Set(removedLinkIds)
+                  next.delete(link.id)
+                  onRemovedLinkIdsChange(next)
+                },
+              }}
+            />
+          ) : (
             <div key={link.id} className={rowClasses}>
               <div className='flex min-w-0 flex-col gap-1'>
                 <div className='flex items-center gap-2 text-sm'>
@@ -290,73 +298,37 @@ export function IntegrationLinksSection({
                 label={`Remove ${link.externalName}`}
                 icon={<Trash2 />}
                 className='text-muted-foreground hover:text-destructive shrink-0'
-                onClick={() => setUnlinkConfirm(link)}
+                onClick={() => handleUnlink(link)}
                 disabled={disabled}
               />
             </div>
-          ))}
-          {ownPending.map(link => (
-            <div key={`pending-${link.externalId}`} className={rowClasses}>
-              <div className='flex min-w-0 flex-col gap-1'>
-                <div className='flex items-center gap-2 text-sm'>
-                  <IntegrationProviderIcon
-                    provider={provider}
-                    className='text-muted-foreground h-4 w-4'
-                  />
-                  <span className='truncate'>
-                    {formatIntegrationLinkLabel(link)}
-                  </span>
-                </div>
-                <div className='text-warning pl-6 text-xs'>Pending save</div>
+          )
+        )}
+        {ownPending.map(link => (
+          <div key={`pending-${link.externalId}`} className={rowClasses}>
+            <div className='flex min-w-0 flex-col gap-1'>
+              <div className='flex items-center gap-2 text-sm'>
+                <IntegrationProviderIcon
+                  provider={provider}
+                  className='text-muted-foreground h-4 w-4'
+                />
+                <span className='truncate'>
+                  {formatIntegrationLinkLabel(link)}
+                </span>
               </div>
-              <RowActionButton
-                type='button'
-                label={`Remove ${link.externalName}`}
-                icon={<Trash2 />}
-                className='text-muted-foreground hover:text-destructive shrink-0'
-                onClick={() => setPendingRemoveConfirm(link)}
-                disabled={disabled}
-              />
+              <div className='text-warning pl-6 text-xs'>Pending save</div>
             </div>
-          ))}
-          {removedLinks.map(link => (
-            <div
-              key={`removed-${link.id}`}
-              className={`${rowClasses} opacity-60`}
-            >
-              <div className='flex min-w-0 flex-col gap-1'>
-                <div className='flex items-center gap-2 text-sm line-through'>
-                  <IntegrationProviderIcon
-                    provider={provider}
-                    className='text-muted-foreground h-4 w-4'
-                  />
-                  <span className='truncate'>
-                    {formatIntegrationLinkLabel(link)}
-                  </span>
-                </div>
-                <div className='text-destructive pl-6 text-xs'>
-                  Pending removal
-                </div>
-              </div>
-              <Button
-                type='button'
-                variant='ghost'
-                size='xs'
-                className='text-muted-foreground shrink-0'
-                onClick={() => {
-                  const next = new Set(removedLinkIds)
-                  next.delete(link.id)
-                  onRemovedLinkIdsChange(next)
-                }}
-                disabled={disabled}
-                aria-label='Undo removal'
-              >
-                Undo
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+            <RowActionButton
+              type='button'
+              label={`Remove ${link.externalName}`}
+              icon={<Trash2 />}
+              className='text-muted-foreground hover:text-destructive shrink-0'
+              onClick={() => handleRemovePending(link)}
+              disabled={disabled}
+            />
+          </div>
+        ))}
+      </EntityList>
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
@@ -380,7 +352,7 @@ export function IntegrationLinksSection({
                 groups={optionGroups}
                 value={selectedId ?? ''}
                 onChange={setSelectedId}
-                searchPlaceholder={`Search ${config.label} ${config.projectNoun}s...`}
+                searchPlaceholder={`Search ${config.label} ${config.projectNoun}s…`}
                 emptyMessage={`No ${config.projectNoun}s found.`}
               />
             )}
@@ -398,28 +370,6 @@ export function IntegrationLinksSection({
           </div>
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={!!pendingRemoveConfirm}
-        title={`Remove ${config.projectNoun}?`}
-        description={`Remove ${pendingRemoveConfirm?.externalName} from the list?`}
-        confirmLabel='Remove'
-        cancelLabel='Cancel'
-        confirmVariant='destructive'
-        onConfirm={handleRemovePending}
-        onCancel={() => setPendingRemoveConfirm(null)}
-      />
-
-      <ConfirmDialog
-        open={!!unlinkConfirm}
-        title={`Remove ${config.projectNoun}?`}
-        description={`Remove ${unlinkConfirm?.externalName}? The change will be applied when you save.`}
-        confirmLabel='Remove'
-        cancelLabel='Cancel'
-        confirmVariant='destructive'
-        onConfirm={handleUnlink}
-        onCancel={() => setUnlinkConfirm(null)}
-      />
-    </div>
+    </>
   )
 }

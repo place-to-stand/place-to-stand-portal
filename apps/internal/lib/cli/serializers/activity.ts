@@ -17,7 +17,9 @@ export type CliActivity = {
     type: string
     id: string | null
     projectId: string | null
+    /** Since 0111 the client is its company: same value as companyId. */
     clientId: string | null
+    companyId: string | null
   }
 }
 
@@ -45,7 +47,8 @@ export function serializeActivity(log: ActivityLogWithActor): CliActivity {
       type: log.target_type,
       id: log.target_id,
       projectId: log.target_project_id,
-      clientId: log.target_client_id,
+      clientId: log.target_company_id,
+      companyId: log.target_company_id,
     },
   }
 }

@@ -6,7 +6,6 @@ import type { ProjectWithRelations } from '@/lib/types'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 
 export type ProjectsBoardNavigation = {
-  overviewHref: string
   boardHref: string
   activityHref: string
   reviewHref: string
@@ -42,9 +41,6 @@ export function useProjectsBoardNavigation({
     const defaultHref = '/projects'
 
     return {
-      overviewHref: projectPathBase
-        ? `${projectPathBase}/overview`
-        : defaultHref,
       boardHref: projectPathBase ? `${projectPathBase}/tasks` : defaultHref,
       activityHref: projectPathBase
         ? `${projectPathBase}/activity`

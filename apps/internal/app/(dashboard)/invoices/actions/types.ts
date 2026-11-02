@@ -4,7 +4,6 @@ import type {
   invoiceSchema,
   deleteSchema,
   restoreSchema,
-  destroySchema,
   sendSchema,
   unsendSchema,
   voidSchema,
@@ -25,7 +24,6 @@ export type SendResult = {
 export type InvoiceInput = z.infer<typeof invoiceSchema>
 export type DeleteInput = z.infer<typeof deleteSchema>
 export type RestoreInput = z.infer<typeof restoreSchema>
-export type DestroyInput = z.infer<typeof destroySchema>
 export type SendInput = z.infer<typeof sendSchema>
 export type UnsendInput = z.infer<typeof unsendSchema>
 export type VoidInput = z.infer<typeof voidSchema>

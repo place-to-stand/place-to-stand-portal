@@ -5,8 +5,8 @@ import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskStatusChangedEvent } from '@/lib/activity/events'
-import { requireUser } from '@/lib/auth/session'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { requireStaffUser } from '@/lib/auth/session'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -22,7 +22,7 @@ export async function changeTaskStatus(input: {
   taskId: string
   status: (typeof TASK_STATUSES)[number]
 }): Promise<ActionResult> {
-  const user = await requireUser()
+  const user = await requireStaffUser()
   const parsed = z
     .object({
       taskId: z.string().uuid(),
@@ -37,7 +37,7 @@ export async function changeTaskStatus(input: {
   const { taskId, status } = parsed.data
 
   try {
-    await ensureTaskAccess(user, taskId)
+    await ensureTaskWorkAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Task not found.' }
@@ -58,7 +58,7 @@ export async function changeTaskStatus(input: {
       status: tasks.status,
       completedAt: tasks.completedAt,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      companyId: projects.companyId,
       deletedAt: tasks.deletedAt,
     })
     .from(tasks)
@@ -103,7 +103,10 @@ export async function changeTaskStatus(input: {
       await pinTaskToTopOfAssigneeBoards(taskId, status)
     } catch (sortError) {
       console.error('Failed to pin task on assignee boards', sortError)
-      return { error: 'Status saved but the task could not be moved to the top of My Tasks.' }
+      return {
+        error:
+          'Status saved but the task could not be moved to the top of My Tasks.',
+      }
     }
 
     const event = taskStatusChangedEvent({
@@ -120,7 +123,7 @@ export async function changeTaskStatus(input: {
       targetType: 'TASK',
       targetId: taskId,
       targetProjectId: task.projectId,
-      targetClientId: task.clientId ?? null,
+      targetCompanyId: task.companyId ?? null,
       metadata: event.metadata,
     })
   }

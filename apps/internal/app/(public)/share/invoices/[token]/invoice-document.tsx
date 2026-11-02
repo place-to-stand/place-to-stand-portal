@@ -3,7 +3,9 @@ import { BlueprintCorners } from '@pts/ui/brand'
 import type { InvoiceWithLineItems } from '@/lib/invoices/invoice-form'
 import { cn } from '@/lib/utils'
 
-import { formatCurrency, formatDate, formatTaxRate } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
+
+import { formatDate, formatTaxRate } from './format'
 import { InvoiceLineItems } from './invoice-line-items'
 import { HEADLINE_FONT, PAPER_LABEL, SECTION_LABEL } from './styles'
 

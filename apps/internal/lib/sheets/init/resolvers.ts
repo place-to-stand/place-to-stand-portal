@@ -1,10 +1,12 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
+import { clientFields } from '@/lib/queries/clients/selectors'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients } from '@/lib/db/schema'
+import { companies, contacts } from '@/lib/db/schema'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -12,9 +14,16 @@ import {
 import { getActiveTaskProjectId } from '@/lib/data/tasks'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
 import { fetchLeadAssignees, fetchLeadById } from '@/lib/data/leads'
-import { getOrCreateSalesProject } from '@/lib/leads/sales-project'
-import { fetchAdminUsers } from '@/lib/data/users'
+import {
+  findSalesProjectId,
+  getOrCreateSalesProject,
+} from '@/lib/leads/sales-project'
+import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
+import { ForbiddenError } from '@/lib/errors/http'
+import { roleCan } from '@/lib/auth/capabilities'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
+import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { fetchClientDirectory } from '@/lib/queries/clients'
 import { getContactSheetInputById } from '@/lib/queries/contacts'
 import {
@@ -26,11 +35,9 @@ import {
   listInvoiceReferenceData,
 } from '@/lib/queries/invoices'
 import { getProjectById } from '@/lib/queries/projects'
-import { buildAssignmentsForUsers, getUserById } from '@/lib/queries/users'
 import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
 import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
-import type { ClientRow } from '@/lib/settings/clients/client-sheet-utils'
-import type { DbUser } from '@/lib/types'
+import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from './payloads'
@@ -46,12 +53,14 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
     return { client: null }
   }
 
-  // The client sheet self-fetches its reference data (contacts/admins) —
-  // it only needs the row (snake_case `DbClient` plus its closer split).
+  // The billing form self-fetches its reference data (contacts/admins) —
+  // it only needs the row (snake_case `ClientCompanyView` plus its closer split).
   const rows = await db
-    .select()
-    .from(clients)
-    .where(and(eq(clients.id, id), isNull(clients.deletedAt)))
+    .select(clientFields)
+    .from(companies)
+    // Former clients too: the company sheet restarts billing from their
+    // last terms.
+    .where(and(wasClientCompany(), eq(companies.id, id)))
     .limit(1)
 
   const row = rows[0]
@@ -60,18 +69,18 @@ const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
   }
 
   const closersByClient = await fetchLatestClosersByClient([row.id])
-  const client: ClientRow = {
+  const client: ClientWithClosers = {
     id: row.id,
     name: row.name,
     slug: row.slug,
     notes: row.notes,
-    website: row.website,
     state: row.state ?? null,
     origination_contact_id: row.originationContactId,
     origination_user_id: row.originationUserId,
     billing_type: row.billingType,
+    company_id: row.companyId,
     created_by: row.createdBy,
-    created_at: row.createdAt,
+    created_at: row.createdAt ?? row.updatedAt,
     updated_at: row.updatedAt,
     deleted_at: row.deletedAt,
     closers: closersByClient.get(row.id) ?? [],
@@ -138,33 +147,27 @@ const resolveInvoiceInit: SheetInitResolver<'invoice'> = async (user, id) => {
   return { invoice, ...reference }
 }
 
-const resolveUserInit: SheetInitResolver<'user'> = async (user, id) => {
-  if (id === NEW_SHEET_VALUE) {
-    return { user: null, currentUserId: user.id, assignments: {} }
-  }
-
-  const [row, assignments] = await Promise.all([
-    getUserById(user, id),
-    buildAssignmentsForUsers([id]),
-  ])
-
-  // Same camelCase → `DbUser` mapping the users settings page applies.
-  const record: DbUser = {
-    id: row.id,
-    email: row.email,
-    full_name: row.fullName,
-    role: row.role,
-    avatar_url: row.avatarUrl,
-    created_at: row.createdAt,
-    updated_at: row.updatedAt,
-    deleted_at: row.deletedAt,
-    disabled_at: row.disabledAt,
-  }
-
-  return { user: record, currentUserId: user.id, assignments }
+/** Old `?user=<id>` links: a sign-in is managed on its person's sheet. */
+const resolveUserInit: SheetInitResolver<'user'> = async (_user, id) => {
+  if (id === NEW_SHEET_VALUE) return { contactId: null }
+  const [person] = await db
+    .select({ id: contacts.id })
+    .from(contacts)
+    .where(and(eq(contacts.userId, id), isNull(contacts.deletedAt)))
+    .limit(1)
+  return { contactId: person?.id ?? null }
 }
 
 const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {
+  // Without `projects.manage` the sheet can only create (no edits) and gets
+  // no client or team lists.
+  if (!roleCan(user.role, 'projects.manage')) {
+    if (id !== NEW_SHEET_VALUE || !roleCan(user.role, 'projects.create')) {
+      throw new ForbiddenError('Only admins can edit projects.')
+    }
+    return { project: null, clients: [], adminUsers: [] }
+  }
+
   const [clientDirectory, adminUsersResult] = await Promise.all([
     fetchClientDirectory(),
     fetchAdminUsers(),
@@ -190,13 +193,13 @@ const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {
   const row = await getProjectById(user, id)
   // The directory holds every client (archived included), so the project's
   // client sub-row resolves from it without another query.
-  const clientRow = row.clientId
-    ? (clientDirectory.find(client => client.id === row.clientId) ?? null)
+  const clientRow = row.companyId
+    ? (clientDirectory.find(client => client.id === row.companyId) ?? null)
     : null
 
   const project: ProjectWithClient = {
     id: row.id,
-    client_id: row.clientId,
+    company_id: row.companyId,
     name: row.name,
     status: row.status,
     type: row.type,
@@ -234,12 +237,19 @@ const resolveLeadInit: SheetInitResolver<'lead'> = async (user, id) => {
 
 const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   // The sheet only reads project identity fields for its selector — no need
-  // to hydrate every project's task graph.
-  const [admins, allProjects, salesProjectId] = await Promise.all([
-    fetchAdminUsers(),
+  // to hydrate every project's task graph. Assignees come from every CRM
+  // user; the save path checks each one can reach the task's project.
+  const [admins, liteProjects, salesProjectId] = await Promise.all([
+    fetchCrmUsers(),
     fetchProjectsLite(),
-    getOrCreateSalesProject(user.id),
+    // Opening a sheet never creates projects for non-admins: SALES only
+    // read it (null until an admin's sheet or the CLI creates it).
+    user.role === 'ADMIN'
+      ? getOrCreateSalesProject(user.id)
+      : findSalesProjectId(),
   ])
+  // Non-admins only see (redacted) projects they can work.
+  const allProjects = await scopeProjectsForViewer(user, liteProjects)
 
   const base = {
     admins,
@@ -258,10 +268,14 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   if (!holdingProjectId) {
     throw new NotFoundError('Task not found')
   }
+  if (user.role !== 'ADMIN') {
+    await ensureTaskWorkAccess(user, id)
+  }
 
-  const [hydratedProject] = await fetchProjectsWithRelationsByIds([
-    holdingProjectId,
-  ])
+  const [hydratedProject] = await scopeProjectsForViewer(
+    user,
+    await fetchProjectsWithRelationsByIds([holdingProjectId])
+  )
   const task = hydratedProject?.tasks.find(item => item.id === id) ?? null
 
   if (!task) {
@@ -279,6 +293,10 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   }
 }
 
+const resolveCompanyInit: SheetInitResolver<'company'> = async (_user, id) => ({
+  companyId: id === NEW_SHEET_VALUE ? null : id,
+})
+
 const RESOLVERS: {
   [E in SheetInitEntity]: SheetInitResolver<E>
 } = {
@@ -291,6 +309,7 @@ const RESOLVERS: {
   user: resolveUserInit,
   project: resolveProjectInit,
   lead: resolveLeadInit,
+  company: resolveCompanyInit,
 }
 
 export const isSheetInitEntity = (value: string): value is SheetInitEntity =>

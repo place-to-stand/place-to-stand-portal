@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { formatHours } from '@pts/ui/numbers'
 
 type PendingAction = {
   nextHours: number
@@ -116,10 +117,10 @@ export function useTimeLogOverage(
     const { nextHours, deltaHours, remainingAfter, isEditUpdate } = pending
 
     if (isEditUpdate) {
-      return `Updating this log to ${nextHours.toFixed(2)} hrs adds ${deltaHours.toFixed(2)} hrs and will push the client balance to ${remainingAfter.toFixed(2)} hrs. Continue?`
+      return `Updating this log to ${formatHours(nextHours)} adds ${formatHours(deltaHours)} and will push the client balance to ${formatHours(remainingAfter)}. Continue?`
     }
 
-    return `Logging ${nextHours.toFixed(2)} hrs will push the client balance to ${remainingAfter.toFixed(2)} hrs. Continue?`
+    return `Logging ${formatHours(nextHours)} will push the client balance to ${formatHours(remainingAfter)}. Continue?`
   }, [pending])
 
   const overageDialog = useMemo(

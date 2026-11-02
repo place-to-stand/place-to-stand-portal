@@ -1,7 +1,8 @@
-export { createPortalUser } from './create-user'
-
-export { updatePortalUser } from './update-user'
+export {
+  createAuthUser,
+  deleteAuthUser,
+  sendSignInInvite,
+  takeOverExistingAuthUser,
+} from './create-user'
 export { softDeletePortalUser } from './soft-delete-user'
-export { restorePortalUser } from './restore-user'
-export { destroyPortalUser } from './destroy-user'
-export { setPortalUserDisabled } from './set-user-disabled'
+export { setAuthBanned, setPortalUserDisabled } from './set-user-disabled'

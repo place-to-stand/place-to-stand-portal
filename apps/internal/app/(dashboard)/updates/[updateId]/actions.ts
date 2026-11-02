@@ -4,10 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 import { assertAdmin } from '@/lib/auth/permissions'
-import { requireUser, type AppUser } from '@/lib/auth/session'
-import { fetchClientById } from '@/lib/data/clients'
+import { requireUser } from '@/lib/auth/session'
 import { HttpError } from '@/lib/errors/http'
-import { clientDetailHref, updateComposerHref } from '@/lib/sheets/hrefs'
+import { updateComposerHref } from '@/lib/sheets/hrefs'
 import {
   saveUpdateDraft,
   sendClientUpdate,
@@ -44,12 +43,10 @@ export type SaveClientUpdateDraftInput = z.infer<typeof saveDraftSchema>
 export type ClientUpdateActionResult =
   { success: true } | { success: false; error: string }
 
-async function revalidateUpdate(user: AppUser, id: string, clientId: string) {
+function revalidateUpdate(id: string) {
   revalidatePath(updateComposerHref(id))
-  // Both the id and slug forms of the client page render the updates section.
-  const client = await fetchClientById(user, clientId)
-  revalidatePath(clientDetailHref(client))
-  revalidatePath(clientDetailHref({ id: client.id, slug: null }))
+  // The company sheet's Updates load on open, so only the companies list.
+  revalidatePath('/companies')
 }
 
 export async function saveClientUpdateDraft(
@@ -69,8 +66,8 @@ export async function saveClientUpdateDraft(
   const { id, ...draft } = parsed.data
 
   try {
-    const updated = await saveUpdateDraft(user, id, draft)
-    await revalidateUpdate(user, id, updated.clientId)
+    await saveUpdateDraft(user, id, draft)
+    revalidateUpdate(id)
     return { success: true }
   } catch (error) {
     if (error instanceof HttpError)
@@ -94,7 +91,7 @@ export async function sendClientUpdateAction(input: {
 
   try {
     const sent = await sendClientUpdate(user, parsed.data.id)
-    await revalidateUpdate(user, sent.id, sent.clientId)
+    revalidateUpdate(sent.id)
     return { success: true }
   } catch (error) {
     if (error instanceof HttpError)

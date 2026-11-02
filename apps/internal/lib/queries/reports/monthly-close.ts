@@ -1,3 +1,11 @@
+import { billedInMonth } from '@pts/db/client-state'
+import {
+  clientNameSql,
+  personAvatarOf,
+  personAvatarSql,
+  personNameOf,
+  personNameSql,
+} from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -14,8 +22,8 @@ import {
 
 import { db } from '@/lib/db'
 import {
-  clientCommissionTermClosers,
-  clients,
+  companies,
+  commissionTermClosers,
   contacts,
   hourBlocks,
   invoices,
@@ -24,6 +32,7 @@ import {
   users,
 } from '@/lib/db/schema'
 import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
+import { liveDuring, roleAsOfSql } from '@/lib/queries/users/role-terms'
 import {
   commissionTermIdAsOfSql,
   originationContactIdAsOfSql,
@@ -33,15 +42,28 @@ import type { MonthCursor } from '@/lib/data/reports/types'
 
 /**
  * Billing type is resolved AS OF the report period (PRD 002 D4) — the newest
- * `client_billing_terms.effective_from` <= period start wins, so editing a
+ * `billing_terms.effective_from` <= period start wins, so editing a
  * client's billing type never rewrites already-rendered historical months.
  * NULL resolution (no term at or before the period) fails both comparisons
  * and excludes the client from that month.
  *
- * Closers and origination resolve the same way from `client_commission_terms`
- * (PRD 007; closer rows hang off the resolved term): the commission joins below match on the as-of assignment, never
- * on the live `clients.*` cache columns, so reassigning a closer today leaves
- * every closed month exactly as it was paid.
+ * Closers and origination resolve the same way from `commission_terms`
+ * (PRD 007; closer rows hang off the resolved term): the commission joins
+ * below match on the as-of assignment, never on the newest term, so
+ * reassigning a closer today leaves every closed month exactly as it was paid.
+ */
+/*
+ * Which months count which client work (the close's billing rule):
+ *
+ * - Prepaid hour blocks count in their billing month (the month bought),
+ *   whether or not the company is billed that month: the money came in. So
+ *   the hour-block queries (Billing In prepaid, and origination and closer
+ *   commission on blocks) do not filter on `billedInMonth`.
+ * - Net 30 time counts only in months the company is billed
+ *   (`billedInMonth`): hours logged in a month it isn't billed are never
+ *   invoiced.
+ * - Payroll counts all client work by the month it was worked (see
+ *   `fetchEmployeePayroll`).
  */
 function isPrepaidAsOf(periodStart: string) {
   return sql`${billingTypeAsOfSql(periodStart)} = 'prepaid'`
@@ -66,11 +88,11 @@ export type OriginationQueryRow = {
   originatorKind: OriginatorKind
   originatorId: string
   originatorName: string
-  originatorEmail: string
+  originatorEmail: string | null
   /** Populated only for user originators so we can render their avatar. */
   originatorAvatarUrl: string | null
   originatorUpdatedAt: string | null
-  clientId: string
+  companyId: string
   clientName: string
   clientBillingType: 'prepaid' | 'net_30'
   hours: string | null
@@ -86,7 +108,7 @@ export type CloserQueryRow = {
   closerUpdatedAt: string | null
   /** Share of the closer rate this closer takes on this client (0–100]. */
   sharePercent: number
-  clientId: string
+  companyId: string
   clientName: string
   clientBillingType: 'prepaid' | 'net_30'
   /** The client's full billing hours — the data layer applies the share. */
@@ -94,20 +116,22 @@ export type CloserQueryRow = {
 }
 
 type PrepaidBillingQueryRow = {
-  clientId: string
+  companyId: string
   clientName: string
   totalHours: string | null
 }
 
 type Net30QueryRow = {
-  clientId: string
+  companyId: string
   clientName: string
   totalHours: string | null
 }
 
 /**
  * Fetches employee payroll data for ADMIN users who logged time on CLIENT
- * projects in the given date range. Non-client time (PERSONAL, INTERNAL) is
+ * projects in the given date range. Deliberately no `billedInMonth`: payroll
+ * counts all client work by the month it was worked, whether or not the
+ * client was billed that month. Non-client time (PERSONAL, INTERNAL) is
  * excluded because it isn't billable and therefore can't fund a payroll
  * payout from the partner formula.
  *
@@ -121,9 +145,9 @@ export async function fetchEmployeePayroll(
   const rows = await db
     .select({
       userId: users.id,
-      fullName: users.fullName,
+      fullName: personNameSql,
       email: users.email,
-      avatarUrl: users.avatarUrl,
+      avatarUrl: personAvatarSql,
       updatedAt: users.updatedAt,
       totalHours: sql<string | null>`SUM(${timeLogs.hours})`,
     })
@@ -132,10 +156,10 @@ export async function fetchEmployeePayroll(
     .innerJoin(projects, eq(projects.id, timeLogs.projectId))
     .where(
       and(
-        eq(users.role, 'ADMIN'),
+        sql`${roleAsOfSql(startDate)} = 'ADMIN'`,
         eq(projects.type, 'CLIENT'),
         isNull(timeLogs.deletedAt),
-        isNull(users.deletedAt),
+        liveDuring(users.deletedAt, startDate),
         isNull(projects.deletedAt),
         gte(timeLogs.loggedOn, startDate),
         lte(timeLogs.loggedOn, endDate)
@@ -143,9 +167,9 @@ export async function fetchEmployeePayroll(
     )
     .groupBy(
       users.id,
-      users.fullName,
+      personNameSql,
       users.email,
-      users.avatarUrl,
+      personAvatarSql,
       users.updatedAt
     )
 
@@ -155,7 +179,8 @@ export async function fetchEmployeePayroll(
 /**
  * Fetches the total billable work hours (admin hours logged on CLIENT
  * projects) for the period — the "accrual" basis that grounds all partner
- * payouts. This is the denominator for the work-billable reconciliation:
+ * payouts. Like payroll, deliberately no `billedInMonth`: all client work
+ * counts by the month it was worked, billed or not. This is the denominator for the work-billable reconciliation:
  * work_billable_total × billablePerHour = Payroll + Origination + Closer + House
  */
 export async function fetchBillableWorkHours(
@@ -171,10 +196,10 @@ export async function fetchBillableWorkHours(
     .innerJoin(projects, eq(projects.id, timeLogs.projectId))
     .where(
       and(
-        eq(users.role, 'ADMIN'),
+        sql`${roleAsOfSql(startDate)} = 'ADMIN'`,
         eq(projects.type, 'CLIENT'),
         isNull(timeLogs.deletedAt),
-        isNull(users.deletedAt),
+        liveDuring(users.deletedAt, startDate),
         isNull(projects.deletedAt),
         gte(timeLogs.loggedOn, startDate),
         lte(timeLogs.loggedOn, endDate)
@@ -189,7 +214,7 @@ export async function fetchBillableWorkHours(
  * Fetches origination commission rows on a BILLING basis — the same
  * population we count for "Billing In":
  *
- *   Prepaid → hour_blocks.hours_purchased (when the block is billed)
+ *   Prepaid → hour_blocks.hours_purchased (in the block's billing month)
  *   Net_30  → time_logs.hours on net_30 client projects (when work is logged)
  *
  * Payroll and Closer stay on a work-basis (time_logs on client projects);
@@ -215,35 +240,34 @@ export async function fetchOriginationCommissions(
       db
         .select({
           originatorId: users.id,
-          originatorName: users.fullName,
+          originatorName: personNameSql,
           originatorEmail: users.email,
-          originatorAvatarUrl: users.avatarUrl,
+          originatorAvatarUrl: personAvatarSql,
           originatorUpdatedAt: users.updatedAt,
-          clientId: clients.id,
-          clientName: clients.name,
+          companyId: companies.id,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
         })
         .from(hourBlocks)
-        .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
+        .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
         .innerJoin(users, eq(originationUserIdAsOfSql(startDate), users.id))
         .where(
           and(
             isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
-            isNull(clients.deletedAt),
-            isNull(users.deletedAt),
+            liveDuring(users.deletedAt, startDate),
             gte(hourBlocks.billingMonth, startDate),
             lte(hourBlocks.billingMonth, endDate)
           )
         )
         .groupBy(
           users.id,
-          users.fullName,
+          personNameSql,
           users.email,
-          users.avatarUrl,
+          personAvatarSql,
           users.updatedAt,
-          clients.id,
-          clients.name
+          companies.id,
+          clientNameSql
         ),
 
       // 2. Prepaid + external contact referrer (from hour_blocks)
@@ -252,19 +276,21 @@ export async function fetchOriginationCommissions(
           originatorId: contacts.id,
           originatorName: contacts.name,
           originatorEmail: contacts.email,
-          clientId: clients.id,
-          clientName: clients.name,
+          companyId: companies.id,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
         })
         .from(hourBlocks)
-        .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
-        .innerJoin(contacts, eq(originationContactIdAsOfSql(startDate), contacts.id))
+        .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
+        .innerJoin(
+          contacts,
+          eq(originationContactIdAsOfSql(startDate), contacts.id)
+        )
         .where(
           and(
             isPrepaidAsOf(startDate),
             isNull(hourBlocks.deletedAt),
-            isNull(clients.deletedAt),
-            isNull(contacts.deletedAt),
+            liveDuring(contacts.deletedAt, startDate),
             gte(hourBlocks.billingMonth, startDate),
             lte(hourBlocks.billingMonth, endDate)
           )
@@ -273,25 +299,25 @@ export async function fetchOriginationCommissions(
           contacts.id,
           contacts.name,
           contacts.email,
-          clients.id,
-          clients.name
+          companies.id,
+          clientNameSql
         ),
 
       // 3. Net_30 + internal user originator (from time_logs on client projects)
       db
         .select({
           originatorId: users.id,
-          originatorName: users.fullName,
+          originatorName: personNameSql,
           originatorEmail: users.email,
-          originatorAvatarUrl: users.avatarUrl,
+          originatorAvatarUrl: personAvatarSql,
           originatorUpdatedAt: users.updatedAt,
-          clientId: clients.id,
-          clientName: clients.name,
+          companyId: companies.id,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${timeLogs.hours})`,
         })
         .from(timeLogs)
         .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-        .innerJoin(clients, eq(projects.clientId, clients.id))
+        .innerJoin(companies, eq(projects.companyId, companies.id))
         .innerJoin(users, eq(originationUserIdAsOfSql(startDate), users.id))
         .where(
           and(
@@ -299,20 +325,20 @@ export async function fetchOriginationCommissions(
             eq(projects.type, 'CLIENT'),
             isNull(timeLogs.deletedAt),
             isNull(projects.deletedAt),
-            isNull(clients.deletedAt),
-            isNull(users.deletedAt),
+            billedInMonth(startDate),
+            liveDuring(users.deletedAt, startDate),
             gte(timeLogs.loggedOn, startDate),
             lte(timeLogs.loggedOn, endDate)
           )
         )
         .groupBy(
           users.id,
-          users.fullName,
+          personNameSql,
           users.email,
-          users.avatarUrl,
+          personAvatarSql,
           users.updatedAt,
-          clients.id,
-          clients.name
+          companies.id,
+          clientNameSql
         ),
 
       // 4. Net_30 + external contact referrer (from time_logs on client projects)
@@ -321,22 +347,25 @@ export async function fetchOriginationCommissions(
           originatorId: contacts.id,
           originatorName: contacts.name,
           originatorEmail: contacts.email,
-          clientId: clients.id,
-          clientName: clients.name,
+          companyId: companies.id,
+          clientName: clientNameSql,
           hours: sql<string | null>`SUM(${timeLogs.hours})`,
         })
         .from(timeLogs)
         .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-        .innerJoin(clients, eq(projects.clientId, clients.id))
-        .innerJoin(contacts, eq(originationContactIdAsOfSql(startDate), contacts.id))
+        .innerJoin(companies, eq(projects.companyId, companies.id))
+        .innerJoin(
+          contacts,
+          eq(originationContactIdAsOfSql(startDate), contacts.id)
+        )
         .where(
           and(
             isNet30AsOf(startDate),
             eq(projects.type, 'CLIENT'),
             isNull(timeLogs.deletedAt),
             isNull(projects.deletedAt),
-            isNull(clients.deletedAt),
-            isNull(contacts.deletedAt),
+            billedInMonth(startDate),
+            liveDuring(contacts.deletedAt, startDate),
             gte(timeLogs.loggedOn, startDate),
             lte(timeLogs.loggedOn, endDate)
           )
@@ -345,8 +374,8 @@ export async function fetchOriginationCommissions(
           contacts.id,
           contacts.name,
           contacts.email,
-          clients.id,
-          clients.name
+          companies.id,
+          clientNameSql
         ),
     ])
 
@@ -360,7 +389,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: row.originatorAvatarUrl,
       originatorUpdatedAt: row.originatorUpdatedAt,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'prepaid',
       hours: row.hours,
@@ -374,7 +403,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: null,
       originatorUpdatedAt: null,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'prepaid',
       hours: row.hours,
@@ -388,7 +417,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: row.originatorAvatarUrl,
       originatorUpdatedAt: row.originatorUpdatedAt,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'net_30',
       hours: row.hours,
@@ -402,7 +431,7 @@ export async function fetchOriginationCommissions(
       originatorEmail: row.originatorEmail,
       originatorAvatarUrl: null,
       originatorUpdatedAt: null,
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType: 'net_30',
       hours: row.hours,
@@ -433,41 +462,47 @@ export async function fetchCloserCommissions(
   const closerContacts = aliasedTable(contacts, 'closer_contacts')
 
   const closerFields = {
-    closerUserId: clientCommissionTermClosers.closerUserId,
-    closerContactId: clientCommissionTermClosers.closerContactId,
-    sharePercent: clientCommissionTermClosers.sharePercent,
-    userName: closerUsers.fullName,
+    closerUserId: commissionTermClosers.closerUserId,
+    closerContactId: commissionTermClosers.closerContactId,
+    sharePercent: commissionTermClosers.sharePercent,
+    userName: personNameOf('closer_users'),
     userEmail: closerUsers.email,
-    userAvatarUrl: closerUsers.avatarUrl,
+    userAvatarUrl: personAvatarOf('closer_users'),
     userUpdatedAt: closerUsers.updatedAt,
     contactName: closerContacts.name,
     contactEmail: closerContacts.email,
-    clientId: clients.id,
-    clientName: clients.name,
+    companyId: companies.id,
+    clientName: clientNameSql,
   }
   const closerGroupBy = [
-    clientCommissionTermClosers.id,
-    clientCommissionTermClosers.closerUserId,
-    clientCommissionTermClosers.closerContactId,
-    clientCommissionTermClosers.sharePercent,
-    closerUsers.fullName,
+    commissionTermClosers.id,
+    commissionTermClosers.closerUserId,
+    commissionTermClosers.closerContactId,
+    commissionTermClosers.sharePercent,
+    personNameOf('closer_users'),
     closerUsers.email,
-    closerUsers.avatarUrl,
+    personAvatarOf('closer_users'),
     closerUsers.updatedAt,
     closerContacts.name,
     closerContacts.email,
-    clients.id,
-    clients.name,
+    companies.id,
+    clientNameSql,
   ] as const
   const termClosersJoin = and(
-    eq(clientCommissionTermClosers.termId, commissionTermIdAsOfSql(startDate)),
-    isNull(clientCommissionTermClosers.deletedAt)
+    eq(commissionTermClosers.termId, commissionTermIdAsOfSql(startDate)),
+    isNull(commissionTermClosers.deletedAt)
   )
   // A closer is paid only while their user/contact record is live — same rule
   // the origination joins apply.
   const payableCloser = or(
-    and(isNotNull(closerUsers.id), isNull(closerUsers.deletedAt)),
-    and(isNotNull(closerContacts.id), isNull(closerContacts.deletedAt))
+    and(
+      isNotNull(closerUsers.id),
+      liveDuring(closerUsers.deletedAt, startDate)
+    ),
+    and(
+      isNotNull(closerContacts.id),
+      liveDuring(closerContacts.deletedAt, startDate)
+    )
   )
 
   const [prepaid, net30] = await Promise.all([
@@ -478,21 +513,20 @@ export async function fetchCloserCommissions(
         hours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
       })
       .from(hourBlocks)
-      .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
-      .innerJoin(clientCommissionTermClosers, termClosersJoin)
+      .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
+      .innerJoin(commissionTermClosers, termClosersJoin)
       .leftJoin(
         closerUsers,
-        eq(clientCommissionTermClosers.closerUserId, closerUsers.id)
+        eq(commissionTermClosers.closerUserId, closerUsers.id)
       )
       .leftJoin(
         closerContacts,
-        eq(clientCommissionTermClosers.closerContactId, closerContacts.id)
+        eq(commissionTermClosers.closerContactId, closerContacts.id)
       )
       .where(
         and(
           isPrepaidAsOf(startDate),
           isNull(hourBlocks.deletedAt),
-          isNull(clients.deletedAt),
           payableCloser,
           gte(hourBlocks.billingMonth, startDate),
           lte(hourBlocks.billingMonth, endDate)
@@ -508,15 +542,15 @@ export async function fetchCloserCommissions(
       })
       .from(timeLogs)
       .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-      .innerJoin(clients, eq(projects.clientId, clients.id))
-      .innerJoin(clientCommissionTermClosers, termClosersJoin)
+      .innerJoin(companies, eq(projects.companyId, companies.id))
+      .innerJoin(commissionTermClosers, termClosersJoin)
       .leftJoin(
         closerUsers,
-        eq(clientCommissionTermClosers.closerUserId, closerUsers.id)
+        eq(commissionTermClosers.closerUserId, closerUsers.id)
       )
       .leftJoin(
         closerContacts,
-        eq(clientCommissionTermClosers.closerContactId, closerContacts.id)
+        eq(commissionTermClosers.closerContactId, closerContacts.id)
       )
       .where(
         and(
@@ -524,7 +558,7 @@ export async function fetchCloserCommissions(
           eq(projects.type, 'CLIENT'),
           isNull(timeLogs.deletedAt),
           isNull(projects.deletedAt),
-          isNull(clients.deletedAt),
+          billedInMonth(startDate),
           payableCloser,
           gte(timeLogs.loggedOn, startDate),
           lte(timeLogs.loggedOn, endDate)
@@ -550,7 +584,7 @@ export async function fetchCloserCommissions(
       closerAvatarUrl: isUser ? row.userAvatarUrl : null,
       closerUpdatedAt: isUser ? row.userUpdatedAt : null,
       sharePercent: Number(row.sharePercent),
-      clientId: row.clientId,
+      companyId: row.companyId,
       clientName: row.clientName,
       clientBillingType,
       hours: row.hours,
@@ -574,22 +608,21 @@ export async function fetchPrepaidBilling(
 ): Promise<PrepaidBillingQueryRow[]> {
   const rows = await db
     .select({
-      clientId: clients.id,
-      clientName: clients.name,
+      companyId: companies.id,
+      clientName: clientNameSql,
       totalHours: sql<string | null>`SUM(${hourBlocks.hoursPurchased})`,
     })
     .from(hourBlocks)
-    .innerJoin(clients, eq(hourBlocks.clientId, clients.id))
+    .innerJoin(companies, eq(hourBlocks.companyId, companies.id))
     .where(
       and(
         isPrepaidAsOf(startDate),
         isNull(hourBlocks.deletedAt),
-        isNull(clients.deletedAt),
         gte(hourBlocks.billingMonth, startDate),
         lte(hourBlocks.billingMonth, endDate)
       )
     )
-    .groupBy(clients.id, clients.name)
+    .groupBy(companies.id, clientNameSql)
 
   return rows as PrepaidBillingQueryRow[]
 }
@@ -597,7 +630,7 @@ export async function fetchPrepaidBilling(
 export type SalesTaxQueryRow = {
   invoiceId: string
   invoiceNumber: string | null
-  clientId: string
+  companyId: string
   clientName: string
   paidOn: string
   subtotal: string
@@ -621,15 +654,15 @@ export async function fetchSalesTaxCollected(
     .select({
       invoiceId: invoices.id,
       invoiceNumber: invoices.invoiceNumber,
-      clientId: clients.id,
-      clientName: clients.name,
+      companyId: companies.id,
+      clientName: clientNameSql,
       paidOn: sql<string>`${paidOn}::text`,
       subtotal: invoices.subtotal,
       taxRate: invoices.taxRate,
       taxAmount: sql<string>`${invoices.taxAmount}`,
     })
     .from(invoices)
-    .innerJoin(clients, eq(invoices.clientId, clients.id))
+    .innerJoin(companies, eq(invoices.companyId, companies.id))
     .where(
       and(
         eq(invoices.status, 'PAID'),
@@ -656,13 +689,13 @@ export async function fetchNet30Billing(
 ): Promise<Net30QueryRow[]> {
   const rows = await db
     .select({
-      clientId: clients.id,
-      clientName: clients.name,
+      companyId: companies.id,
+      clientName: clientNameSql,
       totalHours: sql<string | null>`SUM(${timeLogs.hours})`,
     })
     .from(timeLogs)
     .innerJoin(projects, eq(timeLogs.projectId, projects.id))
-    .innerJoin(clients, eq(projects.clientId, clients.id))
+    .innerJoin(companies, eq(projects.companyId, companies.id))
     .where(
       and(
         isNet30AsOf(startDate),
@@ -672,12 +705,12 @@ export async function fetchNet30Billing(
         eq(projects.type, 'CLIENT'),
         isNull(timeLogs.deletedAt),
         isNull(projects.deletedAt),
-        isNull(clients.deletedAt),
+        billedInMonth(startDate),
         gte(timeLogs.loggedOn, startDate),
         lte(timeLogs.loggedOn, endDate)
       )
     )
-    .groupBy(clients.id, clients.name)
+    .groupBy(companies.id, clientNameSql)
 
   return rows as Net30QueryRow[]
 }

@@ -6,7 +6,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listHourBlocksForSettings } from '@/lib/queries/hour-blocks'
 
 import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
-import { HourBlocksActivitySection } from '../_components/hour-blocks-activity-section'
+import { ActivitySection } from '@/components/activity/activity-section'
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
@@ -29,7 +29,11 @@ export default async function HourBlocksActivityPage() {
       primaryAction={<HourBlocksAddButton clients={clients} />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <HourBlocksActivitySection />
+        <ActivitySection
+          targetType='HOUR_BLOCK'
+          emptyState='No recent hour block activity.'
+          description='Audit hour block creation, edits, archives, and deletions in one place.'
+        />
       </section>
     </PageShell>
   )

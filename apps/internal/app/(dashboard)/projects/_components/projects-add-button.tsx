@@ -1,50 +1,34 @@
 'use client'
 
-import { Plus } from 'lucide-react'
-
-import { Button } from '@pts/ui/button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
-import type { ClientRow } from '@/lib/settings/projects/project-sheet-form'
-import { cn } from '@/lib/utils'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
+import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 
 type ProjectsAddButtonProps = {
-  clients: ClientRow[]
+  clients: ClientPickerRow[]
+  /**
+   * Members can only create personal projects, which need no client, so the
+   * button stays enabled for them even when no client exists.
+   */
+  allowWithoutClients?: boolean
   className?: string
 }
 
+/** "Create project" needs a client to attach to, so it waits for the first one. */
 export function ProjectsAddButton({
   clients,
+  allowWithoutClients = false,
   className,
 }: ProjectsAddButtonProps) {
-  // Opens `?project=new`; the global SheetHost renders the create sheet, so
-  // this button doesn't own a duplicate instance. (Project *edit* sheets stay
-  // page-local: the board and settings tables pass contractor membership the
-  // host can't supply.)
-  const { openCreate } = useSheetParamSelection('project')
-
-  const createDisabled = clients.length === 0
-  const createDisabledReason = createDisabled
-    ? 'Add a client before creating a project.'
-    : null
-
   return (
-    <div className={cn(className)}>
-      <DisabledFieldTooltip
-        disabled={createDisabled}
-        reason={createDisabledReason}
-      >
-        <Button
-          size='sm'
-          type='button'
-          onClick={openCreate}
-          disabled={createDisabled}
-          className='gap-2'
-        >
-          <Plus className='h-4 w-4' />
-          Add project
-        </Button>
-      </DisabledFieldTooltip>
-    </div>
+    <SheetCreateButton
+      entity='project'
+      label='Create project'
+      className={className}
+      disabledReason={
+        !allowWithoutClients && clients.length === 0
+          ? 'Add a client before creating a project.'
+          : null
+      }
+    />
   )
 }

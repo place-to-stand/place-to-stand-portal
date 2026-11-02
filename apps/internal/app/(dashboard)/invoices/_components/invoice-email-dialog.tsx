@@ -18,6 +18,7 @@ import {
   RecipientField,
   type RecipientOption,
 } from '@/components/email/recipient-field'
+import { useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { InvoiceEmailDraft } from '@/lib/invoices/send/email'
 
@@ -115,7 +116,7 @@ function InvoiceEmailForm({
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [triedSend, setTriedSend] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     let cancelled = false
@@ -181,7 +182,6 @@ function InvoiceEmailForm({
     if (!loaded) return
     setTriedSend(true)
     if (to.length === 0) return
-    setError(null)
     setSending(true)
     try {
       const result = await emailInvoice({
@@ -193,12 +193,20 @@ function InvoiceEmailForm({
         requestId: loaded.requestId,
       })
       if (!result.ok) {
-        setError(result.error)
+        toast({
+          variant: 'destructive',
+          title: 'Unable to send invoice',
+          description: result.error,
+        })
         return
       }
       onSent(result.data)
     } catch {
-      setError('Unable to send invoice email. Please try again.')
+      toast({
+        variant: 'destructive',
+        title: 'Unable to send invoice',
+        description: 'Please try again.',
+      })
     } finally {
       setSending(false)
     }
@@ -249,8 +257,8 @@ function InvoiceEmailForm({
             <RecipientField
               label='To'
               options={contactOptions}
-              groupHeading={`${draft.clientName} contacts`}
-              searchPlaceholder='Search contacts or type an email'
+              groupHeading={`${draft.clientName} people`}
+              searchPlaceholder='Search people or type an email'
               value={to}
               onChange={setTo}
               allowTyped
@@ -265,7 +273,7 @@ function InvoiceEmailForm({
               label='Cc'
               options={staffOptions}
               groupHeading='Team'
-              searchPlaceholder='Search the team'
+              searchPlaceholder='Search people…'
               value={cc}
               onChange={setCc}
               disabled={sending}
@@ -314,13 +322,9 @@ function InvoiceEmailForm({
       )}
 
       <DialogFooter className='items-center border-t px-6 py-4 sm:justify-between'>
-        {error ? (
-          <p className='text-destructive text-xs'>{error}</p>
-        ) : (
-          <p className='text-muted-foreground text-xs'>
-            From Place To Stand · replies go to you
-          </p>
-        )}
+        <p className='text-muted-foreground text-xs'>
+          From Place To Stand · replies go to you
+        </p>
         <div className='flex gap-2'>
           <Button
             type='button'

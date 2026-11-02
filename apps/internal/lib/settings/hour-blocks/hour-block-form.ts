@@ -1,11 +1,13 @@
 import { z } from 'zod'
 
+import type { ClientPickerRow } from '@/lib/types'
+
 const DEFAULT_HOURS_PURCHASED = 5
 
 export const HOUR_BLOCK_NOTES_MAX_LENGTH = 2000
 
 export const hourBlockFormSchema = z.object({
-  clientId: z.string().uuid('Select a client'),
+  companyId: z.string().uuid('Select a client'),
   hoursPurchased: z.coerce
     .number()
     .int('Hours purchased must be a whole number.')
@@ -23,7 +25,7 @@ export type HourBlockFormValues = z.infer<typeof hourBlockFormSchema>
 
 type HourBlockRow = {
   id: string
-  client_id: string
+  company_id: string
   hours_purchased: number
   invoice_id: string | null
   /**
@@ -44,16 +46,17 @@ type HourBlockRow = {
   billing_month: string
 }
 
-type ClientRow = {
-  id: string
-  name: string
-  deleted_at: string | null
+type HourBlockClient = ClientPickerRow & {
+  /** The client's company: the list links open its sheet. */
+  company_id: string
 }
 
-export type HourBlockWithClient = HourBlockRow & { client: ClientRow | null }
+export type HourBlockWithClient = HourBlockRow & {
+  client: HourBlockClient | null
+}
 
 export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
-  'clientId',
+  'companyId',
   'hoursPurchased',
   'notes',
 ]
@@ -61,14 +64,14 @@ export const HOUR_BLOCK_FORM_FIELDS: Array<keyof HourBlockFormValues> = [
 export const buildHourBlockFormDefaults = (
   hourBlock: HourBlockWithClient | null
 ): HourBlockFormValues => ({
-  clientId: hourBlock?.client_id ?? '',
+  companyId: hourBlock?.company_id ?? '',
   hoursPurchased: hourBlock?.hours_purchased ?? DEFAULT_HOURS_PURCHASED,
   notes: hourBlock?.notes ?? '',
 })
 
 export type HourBlockSavePayload = {
   id?: string
-  clientId: string
+  companyId: string
   hoursPurchased: number
   notes: string | null
 }
@@ -78,14 +81,16 @@ export const createHourBlockSavePayload = (
   hourBlock: HourBlockWithClient | null
 ): HourBlockSavePayload => ({
   id: hourBlock?.id,
-  clientId: values.clientId,
+  companyId: values.companyId,
   hoursPurchased: values.hoursPurchased,
   notes: values.notes.trim().length > 0 ? values.notes.trim() : null,
 })
 
-export const sortClientsByName = (clients: ClientRow[]): ClientRow[] =>
+export const sortClientsByName = (
+  clients: HourBlockClient[]
+): HourBlockClient[] =>
   [...clients].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   )
 
-export type { ClientRow }
+export type { HourBlockClient }

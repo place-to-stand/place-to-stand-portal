@@ -1,3 +1,5 @@
+import { isClientCompany } from '@pts/db/client-state'
+import { clientNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateText } from 'ai'
@@ -24,7 +26,13 @@ import {
 import { getCurrentUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { activityLogs, clients, leads, projects, tasks } from '@/lib/db/schema'
+import {
+  companies,
+  activityLogs,
+  leads,
+  projects,
+  tasks,
+} from '@/lib/db/schema'
 
 const VALID_TIMEFRAMES = [1, 7, 14, 28] as const
 const ONE_HOUR_MS = 60 * 60 * 1000
@@ -505,7 +513,7 @@ type ActivityContext = {
     {
       id: string
       name: string
-      clientId: string | null
+      companyId: string | null
     }
   >
   clients: Record<
@@ -527,6 +535,7 @@ const TARGET_LABELS: Record<string, string> = {
   USER: 'team members',
   SETTINGS: 'settings changes',
   CONTACT: 'contact updates',
+  COMPANY: 'company updates',
   LEAD: 'lead activity',
   INVOICE: 'invoicing',
   SUBMISSION: 'website submissions',
@@ -602,7 +611,7 @@ async function buildActivityContext(
   logs: ActivityLogWithActor[]
 ): Promise<ActivityContext> {
   const allowedProjectIds = dedupeIds(logs.map(log => log.target_project_id))
-  const allowedClientIds = dedupeIds(logs.map(log => log.target_client_id))
+  const allowedClientIds = dedupeIds(logs.map(log => log.target_company_id))
 
   const [projectRows, clientRows] = await Promise.all([
     allowedProjectIds.length
@@ -610,7 +619,7 @@ async function buildActivityContext(
           .select({
             id: projects.id,
             name: projects.name,
-            clientId: projects.clientId,
+            companyId: projects.companyId,
           })
           .from(projects)
           .where(
@@ -623,15 +632,12 @@ async function buildActivityContext(
     allowedClientIds.length
       ? db
           .select({
-            id: clients.id,
-            name: clients.name,
+            id: companies.id,
+            name: clientNameSql,
           })
-          .from(clients)
+          .from(companies)
           .where(
-            and(
-              inArray(clients.id, allowedClientIds),
-              isNull(clients.deletedAt)
-            )
+            and(isClientCompany(), inArray(companies.id, allowedClientIds))
           )
       : Promise.resolve([]),
   ])
@@ -641,7 +647,7 @@ async function buildActivityContext(
       acc[row.id] = {
         id: row.id,
         name: row.name?.trim() || 'Unnamed Project',
-        clientId: row.clientId,
+        companyId: row.companyId,
       }
       return acc
     },
@@ -680,12 +686,13 @@ function resolveProjectClientLabels(
     : null
 
   const clientFromProject =
-    projectFromContext?.clientId && context.clients[projectFromContext.clientId]
-      ? context.clients[projectFromContext.clientId]
+    projectFromContext?.companyId &&
+    context.clients[projectFromContext.companyId]
+      ? context.clients[projectFromContext.companyId]
       : null
 
-  const clientFromContext = log.target_client_id
-    ? (context.clients[log.target_client_id] ?? null)
+  const clientFromContext = log.target_company_id
+    ? (context.clients[log.target_company_id] ?? null)
     : null
 
   const projectName = selectFirstNonEmpty(

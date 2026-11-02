@@ -97,7 +97,10 @@ export function ProjectsLandingFilters({
         mode='multi'
         values={statuses}
         onChange={handleStatusChange}
-        placeholder='Status'
+        defaultValues={DEFAULT_STATUS_FILTER}
+        // Back to the clean landing URL, not an explicit copy of it.
+        onClear={() => update({ status: undefined })}
+        placeholder='All statuses'
         options={STATUS_OPTIONS}
       />
     </FilterBar>

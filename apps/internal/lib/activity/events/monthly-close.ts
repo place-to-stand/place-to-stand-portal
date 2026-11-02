@@ -1,4 +1,5 @@
 import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
+import { formatCurrency } from '@pts/ui/numbers'
 
 import { toMetadata } from './shared'
 
@@ -20,12 +21,6 @@ const MONTH_NAMES = [
 const periodLabel = (year: number, month: number): string =>
   `${MONTH_NAMES[month - 1] ?? `Month ${month}`} ${year}`
 
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
 export const monthlyCloseClosedEvent = (args: {
   year: number
   month: number
@@ -33,7 +28,7 @@ export const monthlyCloseClosedEvent = (args: {
   combinedPayoutTotal: number
 }): ActivityEvent => ({
   verb: ActivityVerbs.MONTHLY_CLOSE_CLOSED,
-  summary: `Closed ${periodLabel(args.year, args.month)} (billing ${currency.format(args.combinedBillingTotal)} / payouts ${currency.format(args.combinedPayoutTotal)})`,
+  summary: `Closed ${periodLabel(args.year, args.month)} (billing ${formatCurrency(args.combinedBillingTotal, { cents: false })} / payouts ${formatCurrency(args.combinedPayoutTotal, { cents: false })})`,
   metadata: toMetadata({
     year: args.year,
     month: args.month,
@@ -50,7 +45,7 @@ export const monthlyCloseReclosedEvent = (args: {
   previousSnapshotId?: string | null
 }): ActivityEvent => ({
   verb: ActivityVerbs.MONTHLY_CLOSE_RECLOSED,
-  summary: `Re-closed ${periodLabel(args.year, args.month)} (billing ${currency.format(args.combinedBillingTotal)} / payouts ${currency.format(args.combinedPayoutTotal)})`,
+  summary: `Re-closed ${periodLabel(args.year, args.month)} (billing ${formatCurrency(args.combinedBillingTotal, { cents: false })} / payouts ${formatCurrency(args.combinedPayoutTotal, { cents: false })})`,
   metadata: toMetadata({
     year: args.year,
     month: args.month,

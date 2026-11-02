@@ -1,38 +1,42 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { isClientCompany } from '@pts/db/client-state'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
+import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 
+import { clientFields } from '@/lib/queries/clients/selectors'
 import { db } from '@/lib/db'
 import {
-  clients as clientsTable,
-  clientMembers as clientMembersTable,
+  clientPortalAccess,
+  companies as companiesTable,
   users as usersTable,
 } from '@/lib/db/schema'
-import type { DbClient, DbUser } from '@/lib/types'
+import type { ClientCompanyView, DbUser } from '@/lib/types'
 
 import type { MemberWithUser } from '../types'
 
-export type ClientRow = {
+export type ClientRelationRow = {
   id: string
   name: string
   slug: string | null
   notes: string | null
-  website: string | null
   state: string | null
   originationContactId: string | null
   originationUserId: string | null
-  billingType: DbClient['billing_type']
+  billingType: ClientCompanyView['billing_type']
+  companyId: string
   createdBy: string | null
-  createdAt: string
+  /** When it became a client. */
+  createdAt: string | null
   updatedAt: string
   deletedAt: string | null
 }
 
 export type MemberRow = {
+  /** A portal login with access to the client (`client_portal_access`). */
   membership: {
-    id: number
-    clientId: string
+    /** The contact behind the login. */
+    id: string
+    companyId: string
     userId: string
-    createdAt: string
-    deletedAt: string | null
   }
   user: {
     id: string
@@ -47,75 +51,79 @@ export type MemberRow = {
   } | null
 }
 
-export async function loadClientRows(clientIds: string[]): Promise<ClientRow[]> {
-  if (!clientIds.length) {
+export async function loadClientRows(
+  companyIds: string[]
+): Promise<ClientRelationRow[]> {
+  if (!companyIds.length) {
     return []
   }
 
   return db
-    .select({
-      id: clientsTable.id,
-      name: clientsTable.name,
-      slug: clientsTable.slug,
-      notes: clientsTable.notes,
-      website: clientsTable.website,
-      state: clientsTable.state,
-      originationContactId: clientsTable.originationContactId,
-      originationUserId: clientsTable.originationUserId,
-      billingType: clientsTable.billingType,
-      createdBy: clientsTable.createdBy,
-      createdAt: clientsTable.createdAt,
-      updatedAt: clientsTable.updatedAt,
-      deletedAt: clientsTable.deletedAt,
-    })
-    .from(clientsTable)
-    .where(and(inArray(clientsTable.id, clientIds), isNull(clientsTable.deletedAt)))
+    .select(clientFields)
+    .from(companiesTable)
+    .where(and(inArray(companiesTable.id, companyIds), isClientCompany()))
 }
 
-export async function loadMemberRows(clientIds: string[]): Promise<MemberRow[]> {
-  if (!clientIds.length) {
+export async function loadMemberRows(
+  companyIds: string[]
+): Promise<MemberRow[]> {
+  if (!companyIds.length) {
     return []
   }
 
-  return db
+  const rows = await db
     .select({
       membership: {
-        id: clientMembersTable.id,
-        clientId: clientMembersTable.clientId,
-        userId: clientMembersTable.userId,
-        createdAt: clientMembersTable.createdAt,
-        deletedAt: clientMembersTable.deletedAt,
+        id: clientPortalAccess.contactId,
+        companyId: clientPortalAccess.companyId,
+        userId: clientPortalAccess.userId,
       },
       user: {
         id: usersTable.id,
         email: usersTable.email,
-        fullName: usersTable.fullName,
+        fullName: personNameSql,
         role: usersTable.role,
-        avatarUrl: usersTable.avatarUrl,
+        avatarUrl: personAvatarSql,
         createdAt: usersTable.createdAt,
         updatedAt: usersTable.updatedAt,
         deletedAt: usersTable.deletedAt,
         disabledAt: usersTable.disabledAt,
       },
     })
-    .from(clientMembersTable)
-    .leftJoin(usersTable, eq(clientMembersTable.userId, usersTable.id))
-    .where(and(inArray(clientMembersTable.clientId, clientIds), isNull(clientMembersTable.deletedAt)))
+    .from(clientPortalAccess)
+    .leftJoin(usersTable, eq(clientPortalAccess.userId, usersTable.id))
+    .where(
+      and(
+        inArray(clientPortalAccess.companyId, companyIds),
+        isNotNull(clientPortalAccess.userId)
+      )
+    )
+  // Only people with a portal login are members of a client's projects.
+  return rows.flatMap(row =>
+    row.membership.userId
+      ? [
+          {
+            ...row,
+            membership: { ...row.membership, userId: row.membership.userId },
+          },
+        ]
+      : []
+  )
 }
 
-export function mapClientRows(rows: ClientRow[]): DbClient[] {
+export function mapClientRows(rows: ClientRelationRow[]): ClientCompanyView[] {
   return rows.map(row => ({
     id: row.id,
     name: row.name,
     slug: row.slug,
     notes: row.notes,
-    website: row.website,
     state: row.state,
     origination_contact_id: row.originationContactId,
     origination_user_id: row.originationUserId,
     billing_type: row.billingType,
+    company_id: row.companyId,
     created_by: row.createdBy ?? null,
-    created_at: row.createdAt,
+    created_at: row.createdAt ?? row.updatedAt,
     updated_at: row.updatedAt,
     deleted_at: row.deletedAt,
   }))
@@ -124,10 +132,11 @@ export function mapClientRows(rows: ClientRow[]): DbClient[] {
 export function mapMemberRows(rows: MemberRow[]): MemberWithUser[] {
   return rows.map(row => ({
     id: row.membership.id,
-    client_id: row.membership.clientId,
+    company_id: row.membership.companyId,
     user_id: row.membership.userId,
-    created_at: row.membership.createdAt,
-    deleted_at: row.membership.deletedAt,
+    // Access has no date of its own; the login's creation stands in.
+    created_at: row.user?.createdAt ?? '',
+    deleted_at: null,
     user: row.user
       ? {
           id: row.user.id,
@@ -143,5 +152,3 @@ export function mapMemberRows(rows: MemberRow[]): MemberWithUser[] {
       : null,
   }))
 }
-
-

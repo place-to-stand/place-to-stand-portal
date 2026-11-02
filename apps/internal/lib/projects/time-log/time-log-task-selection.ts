@@ -13,10 +13,8 @@ export type UseTimeLogTaskSelectionResult = {
   isTaskPickerOpen: boolean
   onTaskPickerOpenChange: (open: boolean) => void
   onAddTask: (taskId: string) => void
+  /** Unlinks at once: nothing is saved until the dialog is. */
   requestTaskRemoval: (task: ProjectTask) => void
-  confirmTaskRemoval: () => void
-  cancelTaskRemoval: () => void
-  taskRemovalCandidate: ProjectTask | null
   initializeSelection: (taskIds?: string[]) => void
   resetSelection: () => void
 }
@@ -36,8 +34,6 @@ export function useTimeLogTaskSelection(
   const pinnedTaskIds = options?.pinnedTaskIds
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [isTaskPickerOpen, setIsTaskPickerOpen] = useState(false)
-  const [taskRemovalCandidate, setTaskRemovalCandidate] =
-    useState<ProjectTask | null>(null)
 
   const eligibleTasks = useMemo(() => {
     const pinnedSet = new Set(pinnedTaskIds ?? [])
@@ -114,32 +110,15 @@ export function useTimeLogTaskSelection(
   }, [])
 
   const requestTaskRemoval = useCallback((task: ProjectTask) => {
-    setTaskRemovalCandidate(task)
-  }, [])
-
-  const confirmTaskRemoval = useCallback(() => {
-    if (!taskRemovalCandidate) {
-      return
-    }
-
-    setSelectedTaskIds(prev =>
-      prev.filter(taskId => taskId !== taskRemovalCandidate.id)
-    )
-    setTaskRemovalCandidate(null)
-  }, [taskRemovalCandidate])
-
-  const cancelTaskRemoval = useCallback(() => {
-    setTaskRemovalCandidate(null)
+    setSelectedTaskIds(prev => prev.filter(taskId => taskId !== task.id))
   }, [])
 
   const initializeSelection = useCallback((taskIds: string[] = []) => {
     setSelectedTaskIds(taskIds)
-    setTaskRemovalCandidate(null)
   }, [])
 
   const resetSelection = useCallback(() => {
     setSelectedTaskIds([])
-    setTaskRemovalCandidate(null)
   }, [])
 
   return {
@@ -150,9 +129,6 @@ export function useTimeLogTaskSelection(
     onTaskPickerOpenChange: setIsTaskPickerOpen,
     onAddTask,
     requestTaskRemoval,
-    confirmTaskRemoval,
-    cancelTaskRemoval,
-    taskRemovalCandidate,
     initializeSelection,
     resetSelection,
   }

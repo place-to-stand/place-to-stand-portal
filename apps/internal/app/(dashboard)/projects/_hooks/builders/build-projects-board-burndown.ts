@@ -1,11 +1,11 @@
-import type { DbClient, ProjectTypeValue } from '@/lib/types'
+import type { ClientCompanyView, ProjectTypeValue } from '@/lib/types'
 
 import type { ProjectsBoardBurndownProps } from '../use-projects-board-view-model'
 
 type BuildBurndownArgs = {
   activeProject: {
     type: ProjectTypeValue
-    client: Pick<DbClient, 'billing_type'> | null
+    client: Pick<ClientCompanyView, 'billing_type'> | null
     burndown: {
       totalClientRemainingHours: number
       totalProjectLoggedHours: number

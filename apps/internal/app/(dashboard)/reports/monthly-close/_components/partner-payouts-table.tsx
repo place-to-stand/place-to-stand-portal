@@ -1,5 +1,6 @@
 'use client'
 
+import { EmptyState } from '@pts/ui/empty-state'
 import { Fragment, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -16,7 +17,7 @@ import {
 } from '@pts/ui/table'
 import { cn } from '@/lib/utils'
 
-import { formatMoney } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
 import { PayeeAvatar } from './payee-avatar'
 import type { PayoutColumn, PayoutTable } from './payout-rows'
 
@@ -33,7 +34,7 @@ function Amount({ value }: { value: number }) {
   if (value === 0) {
     return <span className='text-muted-foreground/50'>—</span>
   }
-  return <span className='text-foreground/80'>{formatMoney(value)}</span>
+  return <span className='text-foreground/80'>{formatCurrency(value)}</span>
 }
 
 export function PartnerPayoutsTable({
@@ -78,15 +79,15 @@ export function PartnerPayoutsTable({
             {showProfitShare ? 'Including profit share' : 'Total'}
           </span>
           <span className='text-base font-semibold tabular-nums'>
-            {formatMoney(table.totals.total)}
+            {formatCurrency(table.totals.total)}
           </span>
         </div>
       </div>
 
       {table.rows.length === 0 ? (
-        <p className='text-muted-foreground border-t px-5 py-8 text-center text-sm'>
-          No payouts this month.
-        </p>
+        <div className='border-t p-5'>
+          <EmptyState message='No payouts this month.' />
+        </div>
       ) : (
         // A money grid reads across its columns, so on a narrow screen it
         // keeps a floor width and scrolls inside the card rather than
@@ -152,7 +153,7 @@ export function PartnerPayoutsTable({
                       </TableCell>
                     ))}
                     <TableCell className={cn(MONEY_CELL, 'pr-5 font-semibold')}>
-                      {formatMoney(row.total)}
+                      {formatCurrency(row.total)}
                     </TableCell>
                   </TableRow>
                   {isOpen
@@ -182,7 +183,7 @@ export function PartnerPayoutsTable({
                               )}
                             >
                               {column === line.column
-                                ? formatMoney(line.amount)
+                                ? formatCurrency(line.amount)
                                 : null}
                             </TableCell>
                           ))}
@@ -202,11 +203,11 @@ export function PartnerPayoutsTable({
                   key={column}
                   className={cn(MONEY_CELL, 'font-medium')}
                 >
-                  {formatMoney(table.totals[column])}
+                  {formatCurrency(table.totals[column])}
                 </TableCell>
               ))}
               <TableCell className={cn(MONEY_CELL, 'pr-5 font-semibold')}>
-                {formatMoney(table.totals.total)}
+                {formatCurrency(table.totals.total)}
               </TableCell>
             </TableRow>
           </TableFooter>

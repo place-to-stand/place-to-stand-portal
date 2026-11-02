@@ -21,6 +21,8 @@ type Props = {
   disabled?: boolean
   targetUserId?: string
   existingUserId?: string | null
+  /** The person whose photo this is (preferred over a user id). */
+  contactId?: string | null
 }
 
 export function AvatarUploadField({
@@ -33,6 +35,7 @@ export function AvatarUploadField({
   disabled,
   targetUserId,
   existingUserId,
+  contactId,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { toast } = useToast()
@@ -142,7 +145,7 @@ export function AvatarUploadField({
       } catch (error) {
         console.error('Avatar upload failed', error)
         toast({
-          title: 'Unable to upload avatar',
+          title: 'Unable to upload photo',
           description:
             error instanceof Error ? error.message : 'Please try again.',
           variant: 'destructive',
@@ -189,6 +192,10 @@ export function AvatarUploadField({
       return previewUrl
     }
 
+    if (value && contactId) {
+      return `/api/storage/person-avatar/${contactId}?v=${cacheBuster}`
+    }
+
     const resolvedUserId = existingUserId ?? targetUserId
 
     if (value && resolvedUserId) {
@@ -196,7 +203,7 @@ export function AvatarUploadField({
     }
 
     return null
-  }, [cacheBuster, existingUserId, previewUrl, targetUserId, value])
+  }, [cacheBuster, contactId, existingUserId, previewUrl, targetUserId, value])
 
   const disableButtons = disabled || isUploading
   const disabledReason = disableButtons
@@ -216,6 +223,10 @@ export function AvatarUploadField({
   // a successful save the object has been moved out of the pending folder, so
   // this delete is a harmless no-op.
   useEffect(() => {
+    // Mounted (again): React runs effects twice in development, and this
+    // effect re-runs when its callback changes, so the flag must reset here
+    // or every later upload looks abandoned and is deleted.
+    isUnmountedRef.current = false
     return () => {
       isUnmountedRef.current = true
       if (pendingUploadRef.current) {
@@ -229,7 +240,7 @@ export function AvatarUploadField({
     <div className='flex items-start gap-4'>
       <Avatar className='h-16 w-16'>
         {remoteImage ? (
-          <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Avatar'} />
+          <AvatarImage src={remoteImage} alt={avatarLabel ?? 'Photo'} />
         ) : null}
         <AvatarFallback className='text-base font-semibold uppercase'>
           {initials}
@@ -253,7 +264,7 @@ export function AvatarUploadField({
               ) : (
                 <ImagePlus />
               )}
-              {value || previewUrl ? 'Replace avatar' : 'Upload avatar'}
+              {value || previewUrl ? 'Replace photo' : 'Upload photo'}
             </Button>
           </DisabledFieldTooltip>
           {(value || previewUrl) && (

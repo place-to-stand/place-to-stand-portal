@@ -1,3 +1,5 @@
+import { isClientCompany } from '@pts/db/client-state'
+import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import crypto from 'node:crypto'
@@ -8,12 +10,12 @@ import { invoiceSentEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { clients, invoices } from '@/lib/db/schema'
+import { companies, invoices } from '@/lib/db/schema'
 
 export type SendableInvoice = {
   id: string
   status: (typeof invoices.$inferSelect)['status']
-  clientId: string
+  companyId: string
   clientName: string | null
   invoiceNumber: string | null
   total: string
@@ -30,8 +32,8 @@ export async function fetchSendableInvoice(
     .select({
       id: invoices.id,
       status: invoices.status,
-      clientId: invoices.clientId,
-      clientName: clients.name,
+      companyId: invoices.companyId,
+      clientName: clientNameSql,
       invoiceNumber: invoices.invoiceNumber,
       total: invoices.total,
       issuedDate: invoices.issuedDate,
@@ -40,8 +42,8 @@ export async function fetchSendableInvoice(
     })
     .from(invoices)
     .leftJoin(
-      clients,
-      and(eq(clients.id, invoices.clientId), isNull(clients.deletedAt))
+      companies,
+      and(eq(companies.id, invoices.companyId), isClientCompany())
     )
     .where(and(eq(invoices.id, id), isNull(invoices.deletedAt)))
     .limit(1)
@@ -128,7 +130,7 @@ export async function markInvoiceSent(
     summary: event.summary,
     targetType: 'INVOICE',
     targetId: invoice.id,
-    targetClientId: invoice.clientId,
+    targetCompanyId: invoice.companyId,
     metadata: event.metadata,
   })
 

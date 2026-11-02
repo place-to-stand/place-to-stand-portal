@@ -20,6 +20,7 @@ const SHEET_ENTITY_KEYS = [
   'hour-block',
   'user',
   'project',
+  'company',
 ] as const
 
 export type SheetEntityKey = (typeof SHEET_ENTITY_KEYS)[number]
@@ -36,8 +37,9 @@ export const isValidSheetParamValue = (value: string) =>
 type SheetEntityConfig = {
   /**
    * Aux params carrying sub-state for this entity's sheet (always prefixed
-   * with the entity param, e.g. `leadMode=convert`). Removed alongside the
-   * entity param on close.
+   * with the entity param, e.g. `companyName=`). Removed alongside the
+   * entity param on close. `tab` is listed only so old `?tab=` links are
+   * dropped on close: sheets have no tabs and ignore it.
    */
   auxParams: readonly string[]
   /**
@@ -61,7 +63,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
       /^\/projects\/[^/]+\/[^/]+\/(tasks|review)$/.test(pathname),
   },
   lead: {
-    auxParams: ['leadMode'],
+    auxParams: [],
     // Only the board hosts the create sheet; the archive lists existing
     // leads, so `?lead=new` there falls through to the global host.
     claimsPathname: (pathname, value) =>
@@ -69,14 +71,16 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
       (pathname === '/leads/archive' && value !== NEW_SHEET_VALUE),
   },
   client: {
-    // `clientName=` prefills the create sheet's name (create-from-picker).
-    auxParams: ['clientName'],
-    claimsPathname: exactPaths('/clients', '/clients/archive'),
+    // Old links only: `?client=<id>` opens that company's sheet (a client is
+    // a company you bill). Billing is switched on from the company's billing (its sheet's Client column).
+    auxParams: ['tab'],
+    claimsPathname: () => false,
   },
   contact: {
-    // `contactName=` prefills the create sheet's name (create-from-picker).
-    auxParams: ['contactName'],
-    claimsPathname: exactPaths('/contacts', '/contacts/archive'),
+    // `contactName=` prefills the create sheet's name (create-from-picker);
+    // `contactCompanyId=` its company (e.g. the lead's).
+    auxParams: ['contactName', 'contactCompanyId'],
+    claimsPathname: exactPaths('/people', '/people/archive'),
   },
   invoice: {
     auxParams: [],
@@ -92,14 +96,25 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   user: {
     auxParams: [],
-    claimsPathname: exactPaths('/settings/users', '/settings/users/archive'),
+    // Old links only: a sign-in is managed on its person, so the global host
+    // opens `?user=<id>` as that person's sheet.
+    claimsPathname: () => false,
   },
   project: {
-    auxParams: [],
+    // `projectCompanyId=` prefills the create sheet's client (a company's
+    // Projects, in its sheet's Client column).
+    auxParams: ['projectCompanyId'],
     // Unclaimed everywhere: the projects tables can't resolve an arbitrary
     // project id from their own rows (the landing's row type omits fields
     // the sheet needs), so the host serves `?project=` on every route and
     // those tables keep their own local-state sheet for row clicks.
+    claimsPathname: () => false,
+  },
+  company: {
+    // `companyName=` prefills the create sheet's name (create-from-picker).
+    auxParams: ['companyName', 'tab'],
+    // The company sheet loads its own data, so the global host serves it on
+    // every route, the Companies page included.
     claimsPathname: () => false,
   },
 }

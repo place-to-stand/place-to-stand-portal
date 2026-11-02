@@ -78,6 +78,13 @@ const WRAPPERS: Record<SheetEntityKey, ComponentType<SheetWrapperProps>> = {
       ),
     { ssr: false }
   ),
+  company: dynamic(
+    () =>
+      import('./wrappers/company-sheet-wrapper').then(
+        module => module.CompanySheetWrapper
+      ),
+    { ssr: false }
+  ),
 }
 
 export const getSheetWrapper = (

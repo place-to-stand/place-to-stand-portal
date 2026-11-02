@@ -1,11 +1,9 @@
 import type { Metadata } from 'next'
 
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { PageShell } from '@/components/layout/page-shell'
+import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireCrmUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
@@ -15,8 +13,9 @@ import {
   fetchLeadsBoard,
 } from '@/lib/data/leads'
 import { NEW_SHEET_VALUE, UUID_PATTERN } from '@/lib/sheets/entities'
-import { leadHref, newLeadHref } from '@/lib/sheets/hrefs'
+import { leadHref } from '@/lib/sheets/hrefs'
 
+import { filterArchivedLeads } from '../_lib/archive-filters'
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
 
@@ -57,22 +56,25 @@ export default async function LeadsArchivePage({
     }
   }
 
+  // The table filters in memory; mirror it here for "Showing X of Y".
+  const filteredTotal = filterArchivedLeads(archivedLeads, {
+    status: firstParam(params.status),
+    q: firstParam(params.q),
+  }).length
+
   return (
     <PageShell
       breadcrumbs={[...crumbsForNav('/leads'), { label: 'Archive' }]}
       tabs={LEADS_TABS}
       activeTab='archive'
-      count={{ label: 'archived leads', total: archivedLeads.length }}
-      primaryAction={
-        <Button asChild size='sm'>
-          <Link href={newLeadHref()}>
-            <Plus className='h-4 w-4' />
-            Add lead
-          </Link>
-        </Button>
-      }
+      count={{
+        label: 'archived leads',
+        total: archivedLeads.length,
+        filteredTotal,
+      }}
+      primaryAction={<SheetCreateButton entity='lead' label='Create lead' />}
     >
-      <section className='bg-background space-y-3 rounded-xl border p-4 shadow-sm'>
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <LeadsArchiveSection
           leads={archivedLeads}
           assignees={assignees}

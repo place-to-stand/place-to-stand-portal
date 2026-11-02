@@ -1,22 +1,9 @@
 'use client'
 
-import Link from 'next/link'
-import { Receipt } from 'lucide-react'
-
-import { Button } from '@pts/ui/button'
-import { formatCalendarDate } from '@pts/ui/dates'
 import { Separator } from '@pts/ui/separator'
-import { LinkedRecordCard } from '@/components/sheets/linked-record-card'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { InvoiceRecordRow } from '@/components/sheets/entity-record-rows'
+import { EntityList } from '@/components/sheets/entity-list'
 import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
-import { invoiceHref } from '@/lib/sheets/hrefs'
-
-import { InvoiceStatusBadge } from '../../invoices/_components/invoice-status-badge'
-
-const USD = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
 
 /**
  * The invoice a block was created from, read-only. The link is set by the
@@ -32,54 +19,28 @@ export function HourBlockInvoiceSection({
   return (
     <>
       <Separator />
-      <SheetSection
-        title='Invoice'
+      <EntityList
+        title='Linked invoice'
         description={
           invoiceId
             ? undefined
             : 'Blocks created from a paid invoice link to it automatically.'
         }
+        isEmpty={!invoiceId}
+        emptyMessage='No invoice.'
       >
         {invoiceId ? (
-          <LinkedRecordCard
-            icon={Receipt}
-            title={hourBlock.invoice_number ?? 'Invoice'}
-            details={[
-              {
-                label: 'Status',
-                value: hourBlock.invoice_status ? (
-                  <InvoiceStatusBadge status={hourBlock.invoice_status} />
-                ) : (
-                  '—'
-                ),
-              },
-              {
-                label: 'Total',
-                value:
-                  hourBlock.invoice_total === null
-                    ? '—'
-                    : USD.format(hourBlock.invoice_total),
-              },
-              {
-                label: 'Issued',
-                value: hourBlock.invoice_issued_date
-                  ? formatCalendarDate(hourBlock.invoice_issued_date)
-                  : '—',
-              },
-            ]}
-            action={
-              <Button variant='outline' size='sm' asChild>
-                <Link href={invoiceHref(invoiceId)}>
-                  <Receipt />
-                  Open invoice
-                </Link>
-              </Button>
-            }
+          <InvoiceRecordRow
+            invoice={{
+              id: invoiceId,
+              number: hourBlock.invoice_number,
+              status: hourBlock.invoice_status,
+              total: hourBlock.invoice_total,
+              issuedDate: hourBlock.invoice_issued_date,
+            }}
           />
-        ) : (
-          <LinkedRecordCard icon={Receipt} title='No invoice' />
-        )}
-      </SheetSection>
+        ) : null}
+      </EntityList>
     </>
   )
 }

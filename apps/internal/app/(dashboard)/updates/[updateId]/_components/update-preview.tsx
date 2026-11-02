@@ -23,7 +23,7 @@ const BODY_CLASSES = [
 /** The body exactly as the email lays it out, plus the one button, minus the card chrome. */
 export function UpdatePreview({ portalHref, ...body }: UpdatePreviewProps) {
   return (
-    <div className='px-8 py-2 text-[15px] leading-relaxed'>
+    <div className='min-w-0 px-8 py-2 text-[15px] leading-relaxed wrap-anywhere'>
       <div
         className={BODY_CLASSES}
         // Our own renderer's output from escaped input — same trust as the email.

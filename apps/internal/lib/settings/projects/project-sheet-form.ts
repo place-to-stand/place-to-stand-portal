@@ -6,10 +6,11 @@ import {
   PROJECT_STATUS_VALUES,
   type ProjectStatusValue,
 } from '@/lib/constants'
-import type { DbClient, DbProject, ProjectTypeValue } from '@/lib/types'
+import type { ClientPickerRow, DbProject, ProjectTypeValue } from '@/lib/types'
+import type { IntegrationProvider } from '@/lib/types/integrations'
 
 type ProjectRow = DbProject
-export type ClientRow = Pick<DbClient, 'id' | 'name' | 'deleted_at'>
+export type { ClientPickerRow }
 
 export type ProjectOwnerSummary = {
   id: string | null
@@ -18,7 +19,7 @@ export type ProjectOwnerSummary = {
 }
 
 export type ProjectWithClient = ProjectRow & {
-  client: ClientRow | null
+  client: ClientPickerRow | null
   owner?: ProjectOwnerSummary | null
 }
 
@@ -56,7 +57,7 @@ export const projectSheetFormSchema = z
   .object({
     name: z.string().min(1, 'Project name is required'),
     projectType: z.enum(PROJECT_TYPE_ENUM_VALUES).default('CLIENT'),
-    clientId: z.string().uuid('Select a client').or(z.literal('')).optional(),
+    companyId: z.string().uuid('Select a client').or(z.literal('')).optional(),
     status: z.enum(PROJECT_STATUS_ENUM_VALUES),
     startsOn: z.string().optional().or(z.literal('')),
     endsOn: z.string().optional().or(z.literal('')),
@@ -66,6 +67,8 @@ export const projectSheetFormSchema = z
       .or(z.literal(''))
       .optional(),
     ownerId: z.string().uuid().or(z.literal('')).optional(),
+    /** Undefined until the members field has loaded the current list. */
+    memberIds: z.array(z.string().uuid()).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.startsOn && data.endsOn) {
@@ -85,13 +88,13 @@ export const projectSheetFormSchema = z
       }
     }
 
-    const trimmedClientId = data.clientId?.trim() ?? ''
+    const trimmedClientId = data.companyId?.trim() ?? ''
     const requiresClient = data.projectType === 'CLIENT'
     const hasClient = Boolean(trimmedClientId)
 
     if (requiresClient && !hasClient) {
       ctx.addIssue({
-        path: ['clientId'],
+        path: ['companyId'],
         code: z.ZodIssueCode.custom,
         message: 'Select a client for client projects.',
       })
@@ -99,7 +102,7 @@ export const projectSheetFormSchema = z
 
     if (!requiresClient && hasClient) {
       ctx.addIssue({
-        path: ['clientId'],
+        path: ['companyId'],
         code: z.ZodIssueCode.custom,
         message: 'Personal and internal projects cannot be linked to clients.',
       })
@@ -111,7 +114,7 @@ export type ProjectSheetFormValues = z.infer<typeof projectSheetFormSchema>
 export const PROJECT_FORM_FIELDS: Array<keyof ProjectSheetFormValues> = [
   'name',
   'projectType',
-  'clientId',
+  'companyId',
   'status',
   'startsOn',
   'endsOn',
@@ -133,42 +136,61 @@ const deriveInitialStatus = (
 }
 
 export const buildProjectFormDefaults = (
-  project: ProjectWithClient | null
+  project: ProjectWithClient | null,
+  /** New projects start as this type; non-admins can only make personal boards. */
+  defaultType: ProjectTypeValue = 'CLIENT',
+  /** New client projects start on this company (a company's Projects (its sheet's Client column)). */
+  initialCompanyId?: string
 ): ProjectSheetFormValues => ({
   name: project?.name ?? '',
-  projectType: project?.type ?? 'CLIENT',
-  clientId: project?.client_id ?? '',
+  projectType: project?.type ?? defaultType,
+  companyId:
+    project?.company_id ??
+    (!project && defaultType === 'CLIENT' ? (initialCompanyId ?? '') : ''),
   status: deriveInitialStatus(project),
   startsOn: project?.starts_on ? project.starts_on.slice(0, 10) : '',
   endsOn: project?.ends_on ? project.ends_on.slice(0, 10) : '',
   slug: project?.slug ?? '',
   ownerId: project?.owner_id ?? '',
+  memberIds: undefined,
 })
 
 export type ProjectSavePayload = {
   id?: string
   name: string
   projectType: ProjectTypeValue
-  clientId: string | null
+  companyId: string | null
   status: ProjectStatusValue
   startsOn: string | null
   endsOn: string | null
   slug: string | null
   ownerId: string | null
+  memberIds?: string[]
+  /** Saved with the project, in the same transaction (`saveProject`). */
+  repoLinks?: {
+    add: Array<{
+      repoFullName: string
+      source?: 'oauth' | 'app'
+      sourceId?: string
+    }>
+    remove: string[]
+  }
+  integrationLinks?: {
+    add: Array<{ provider: IntegrationProvider; externalId: string }>
+    remove: string[]
+  }
 }
 
 type CreatePayloadArgs = {
   values: ProjectSheetFormValues
   project: ProjectWithClient | null
-  isEditing: boolean
 }
 
 export const createProjectSavePayload = ({
   values,
   project,
-  isEditing,
 }: CreatePayloadArgs): ProjectSavePayload => {
-  const trimmedClientId = values.clientId?.trim() ?? ''
+  const trimmedClientId = values.companyId?.trim() ?? ''
   const normalizedClientId =
     values.projectType === 'CLIENT' && trimmedClientId ? trimmedClientId : null
   const trimmedOwnerId = values.ownerId?.trim() ?? ''
@@ -177,16 +199,20 @@ export const createProjectSavePayload = ({
     id: project?.id,
     name: values.name.trim(),
     projectType: values.projectType,
-    clientId: normalizedClientId,
+    companyId: normalizedClientId,
     status: values.status,
     startsOn: values.startsOn ? values.startsOn : null,
     endsOn: values.endsOn ? values.endsOn : null,
-    slug: isEditing ? (values.slug?.trim() ? values.slug.trim() : null) : null,
+    // Blank on create = generated from the name; edit requires one.
+    slug: values.slug?.trim() ? values.slug.trim() : null,
     ownerId: trimmedOwnerId ? trimmedOwnerId : null,
+    memberIds: values.memberIds,
   }
 }
 
-export const sortClientsByName = (clients: ClientRow[]): ClientRow[] =>
+export const sortClientsByName = (
+  clients: ClientPickerRow[]
+): ClientPickerRow[] =>
   [...clients].sort((a, b) =>
     a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
   )

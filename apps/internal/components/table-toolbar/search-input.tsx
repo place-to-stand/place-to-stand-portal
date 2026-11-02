@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 
 import { Input } from '@pts/ui/input'
+import { FieldClearButton } from '@/components/ui/field-clear-button'
 import { cn } from '@/lib/utils'
 
 const DEBOUNCE_MS = 300
@@ -79,14 +80,7 @@ export function SearchInput({
         className='px-8 [&::-webkit-search-cancel-button]:appearance-none'
       />
       {draft ? (
-        <button
-          type='button'
-          onClick={clear}
-          aria-label='Clear search'
-          className='text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer'
-        >
-          <X className='size-4' />
-        </button>
+        <FieldClearButton label='search' onClear={clear} className='right-3' />
       ) : null}
     </div>
   )

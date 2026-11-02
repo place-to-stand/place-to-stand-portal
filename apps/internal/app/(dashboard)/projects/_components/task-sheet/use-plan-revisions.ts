@@ -3,9 +3,25 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { fetchPlanRevisions } from '../../actions/planning'
+import type { PlanRevisionData } from '@/lib/planning/types'
 
 const PLAN_REVISIONS_KEY = 'plan-revisions'
+
+async function fetchPlanRevisions(
+  threadId: string
+): Promise<{ revisions: PlanRevisionData[] }> {
+  const response = await fetch(`/api/planning/threads/${threadId}/revisions`)
+  const payload = (await response.json().catch(() => null)) as {
+    revisions?: PlanRevisionData[]
+    error?: string
+  } | null
+
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Unable to load plan revisions.')
+  }
+
+  return { revisions: payload?.revisions ?? [] }
+}
 
 export function usePlanRevisions(threadId: string | null, enabled: boolean) {
   const queryClient = useQueryClient()
@@ -18,12 +34,8 @@ export function usePlanRevisions(threadId: string | null, enabled: boolean) {
 
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: async () => {
-      if (!threadId) return { revisions: [] }
-      const result = await fetchPlanRevisions({ threadId })
-      if ('error' in result) throw new Error(result.error)
-      return result
-    },
+    queryFn: () =>
+      threadId ? fetchPlanRevisions(threadId) : { revisions: [] },
     enabled: enabled && Boolean(threadId),
     staleTime: 10_000,
   })

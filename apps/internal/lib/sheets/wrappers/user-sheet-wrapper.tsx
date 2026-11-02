@@ -1,35 +1,24 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-
-import { UserSheet } from '@/app/(dashboard)/settings/users/components/sheet/user-sheet'
-
+import { ContactSheetWrapper } from './contact-sheet-wrapper'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function UserSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
-  const router = useRouter()
+/** Old `?user=<id>` links open that person's sheet (their sign-in is there). */
+export function UserSheetWrapper({
+  value,
+  open,
+  stack,
+  onRequestClose,
+}: SheetWrapperProps) {
   const data = useSheetInit('user', value)
-
-  if (!data) {
-    return null
-  }
-
+  if (!data?.contactId) return null
   return (
-    <UserSheet
+    <ContactSheetWrapper
+      value={data.contactId}
       open={open}
-      onOpenChange={next => {
-        if (!next) {
-          onRequestClose()
-        }
-      }}
-      onComplete={() => {
-        router.refresh()
-        onRequestClose()
-      }}
-      user={data.user}
-      currentUserId={data.currentUserId}
-      assignments={data.assignments}
+      stack={stack}
+      onRequestClose={onRequestClose}
     />
   )
 }

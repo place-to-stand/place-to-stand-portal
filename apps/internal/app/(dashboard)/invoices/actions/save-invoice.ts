@@ -1,26 +1,48 @@
 'use server'
+import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
+import { isClientCompany } from '@pts/db/client-state'
 
+import { clientNameSql } from '@pts/db/names'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { revalidatePath } from 'next/cache'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { logActivity } from '@/lib/activity/logger'
-import {
-  invoiceCreatedEvent,
-  invoiceUpdatedEvent,
-} from '@/lib/activity/events'
+import { invoiceCreatedEvent, invoiceUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
-import { invoices, invoiceLineItems, clients } from '@/lib/db/schema'
+import { getStripe } from '@/lib/stripe/client'
+import { companies, invoices, invoiceLineItems } from '@/lib/db/schema'
 
 import { invoiceSchema } from './schemas'
 import type { ActionResult, InvoiceInput } from './types'
 import { INVOICES_PATH } from './helpers'
 
-export async function saveInvoice(
-  input: InvoiceInput,
-): Promise<ActionResult> {
+/**
+ * Best effort: an intent that can still be paid would charge the old
+ * total, and its payment would no longer match the invoice. One already
+ * processing or finished can't be cancelled; the webhook's amount check
+ * covers it.
+ */
+async function cancelStalePaymentIntent(paymentIntentId: string) {
+  try {
+    const stripe = getStripe()
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
+    if (
+      intent.status === 'requires_payment_method' ||
+      intent.status === 'requires_confirmation' ||
+      intent.status === 'requires_action'
+    ) {
+      await stripe.paymentIntents.cancel(paymentIntentId)
+    }
+  } catch (error) {
+    console.error('Failed to cancel stale payment intent', error)
+  }
+}
+
+export async function saveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const mode = input.id ? 'edit' : 'create'
   const targetId = input.id ?? null
 
@@ -30,16 +52,14 @@ export async function saveInvoice(
       mode,
       targetId,
       metadata: {
-        clientId: input.clientId,
+        companyId: input.companyId,
       },
     },
-    async () => performSaveInvoice(input),
+    async () => performSaveInvoice(input)
   )
 }
 
-async function performSaveInvoice(
-  input: InvoiceInput,
-): Promise<ActionResult> {
+async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
 
@@ -52,12 +72,21 @@ async function performSaveInvoice(
     return { error: message, fieldErrors }
   }
 
-  const { id, clientId, notes, taxRate, lineItems } = parsed.data
+  const { id, companyId, notes, taxRate, lineItems } = parsed.data
+
+  const notClient = await ensureClientCompany(companyId)
+  if (notClient) {
+    return { error: notClient }
+  }
 
   const clientRows = await db
-    .select({ id: clients.id, name: clients.name, billingType: clients.billingType })
-    .from(clients)
-    .where(and(eq(clients.id, clientId), isNull(clients.deletedAt)))
+    .select({
+      id: companies.id,
+      name: clientNameSql,
+      billingType: currentBillingTypeSql(),
+    })
+    .from(companies)
+    .where(and(isClientCompany(), eq(companies.id, companyId)))
     .limit(1)
 
   const client = clientRows[0]
@@ -77,7 +106,7 @@ async function performSaveInvoice(
     try {
       const [inserted] = await db.transaction(async tx => {
         const seqResult = await tx.execute(
-          sql`SELECT nextval('invoice_number_seq')`,
+          sql`SELECT nextval('invoice_number_seq')`
         )
         const seqValue = (seqResult[0] as { nextval: string } | undefined)
           ?.nextval
@@ -89,7 +118,7 @@ async function performSaveInvoice(
         const [inv] = await tx
           .insert(invoices)
           .values({
-            clientId,
+            companyId: companyId,
             invoiceNumber,
             billingType: client.billingType,
             notes: notes ?? null,
@@ -116,7 +145,7 @@ async function performSaveInvoice(
               amount: item.amount.toFixed(2),
               createsHourBlock: item.createsHourBlock,
               sortOrder: item.sortOrder,
-            })),
+            }))
           )
         }
 
@@ -138,7 +167,7 @@ async function performSaveInvoice(
         summary: event.summary,
         targetType: 'INVOICE',
         targetId: inserted.id,
-        targetClientId: clientId,
+        targetCompanyId: companyId,
         metadata: event.metadata,
       })
     } catch (error) {
@@ -146,9 +175,7 @@ async function performSaveInvoice(
 
       return {
         error:
-          error instanceof Error
-            ? error.message
-            : 'Unable to create invoice.',
+          error instanceof Error ? error.message : 'Unable to create invoice.',
       }
     }
   } else {
@@ -156,12 +183,13 @@ async function performSaveInvoice(
       .select({
         id: invoices.id,
         status: invoices.status,
-        clientId: invoices.clientId,
+        companyId: invoices.companyId,
         invoiceNumber: invoices.invoiceNumber,
         notes: invoices.notes,
         taxRate: invoices.taxRate,
         subtotal: invoices.subtotal,
         total: invoices.total,
+        stripePaymentIntentId: invoices.stripePaymentIntentId,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
@@ -180,7 +208,7 @@ async function performSaveInvoice(
     try {
       await db.transaction(async tx => {
         const updateData: Record<string, unknown> = {
-          clientId,
+          companyId,
           notes: notes ?? null,
           taxRate: taxRate.toString(),
           subtotal: subtotal.toFixed(2),
@@ -190,18 +218,20 @@ async function performSaveInvoice(
         }
 
         // Re-sync billing type when client changes
-        if (existing.clientId !== clientId) {
+        if (existing.companyId !== companyId) {
           updateData.billingType = client.billingType
         }
 
         if (existing.status === 'SENT') {
           updateData.stripeCheckoutSessionId = null
         }
+        // A payment intent was made for the old total: drop it so checkout
+        // makes one for the new total (and cancel it below).
+        if (existing.stripePaymentIntentId) {
+          updateData.stripePaymentIntentId = null
+        }
 
-        await tx
-          .update(invoices)
-          .set(updateData)
-          .where(eq(invoices.id, id))
+        await tx.update(invoices).set(updateData).where(eq(invoices.id, id))
 
         const existingLineItemRows = await tx
           .select({ id: invoiceLineItems.id })
@@ -209,20 +239,20 @@ async function performSaveInvoice(
           .where(
             and(
               eq(invoiceLineItems.invoiceId, id),
-              isNull(invoiceLineItems.deletedAt),
-            ),
+              isNull(invoiceLineItems.deletedAt)
+            )
           )
 
         const existingLineItemIds = new Set(
-          existingLineItemRows.map(row => row.id),
+          existingLineItemRows.map(row => row.id)
         )
 
         const incomingLineItemIds = new Set(
-          lineItems.filter(item => item.id).map(item => item.id!),
+          lineItems.filter(item => item.id).map(item => item.id!)
         )
 
         const removedIds = [...existingLineItemIds].filter(
-          existingId => !incomingLineItemIds.has(existingId),
+          existingId => !incomingLineItemIds.has(existingId)
         )
 
         if (removedIds.length > 0) {
@@ -266,20 +296,22 @@ async function performSaveInvoice(
 
       return {
         error:
-          error instanceof Error
-            ? error.message
-            : 'Unable to update invoice.',
+          error instanceof Error ? error.message : 'Unable to update invoice.',
       }
+    }
+
+    if (existing.stripePaymentIntentId) {
+      await cancelStalePaymentIntent(existing.stripePaymentIntentId)
     }
 
     const changedFields: string[] = []
     const previousDetails: Record<string, unknown> = {}
     const nextDetails: Record<string, unknown> = {}
 
-    if (existing.clientId !== clientId) {
+    if (existing.companyId !== companyId) {
       changedFields.push('client')
-      previousDetails.clientId = existing.clientId
-      nextDetails.clientId = clientId
+      previousDetails.companyId = existing.companyId
+      nextDetails.companyId = companyId
       nextDetails.clientName = targetClientName
     }
 
@@ -336,7 +368,7 @@ async function performSaveInvoice(
         summary: event.summary,
         targetType: 'INVOICE',
         targetId: id,
-        targetClientId: clientId,
+        targetCompanyId: companyId,
         metadata: event.metadata,
       })
     }

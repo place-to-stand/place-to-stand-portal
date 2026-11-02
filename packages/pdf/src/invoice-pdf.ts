@@ -7,6 +7,7 @@
  * VOID shown as a stamp beside the number rather than a watermark.
  */
 
+import { formatCurrency } from '@pts/ui/numbers'
 import { jsPDF } from 'jspdf'
 
 import {
@@ -27,13 +28,6 @@ const MARGIN_TOP = 64 * PX
 const MARGIN_BOTTOM = 48 * PX
 /** Dashed rule + footer line, kept clear of content on every page. */
 const FOOTER_SPACE = 48 * PX
-
-const formatCurrency = (amount: string | number): string =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(Number(amount))
 
 /** Date-only column ("2026-09-01") → "September 1, 2026". */
 const formatDate = (date: string | null): string | null => {

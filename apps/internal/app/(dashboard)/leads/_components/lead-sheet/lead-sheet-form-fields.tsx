@@ -1,9 +1,16 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useWatch, type Control } from 'react-hook-form'
+import { useController, useWatch, type Control } from 'react-hook-form'
 
-import { Badge } from '@pts/ui/badge'
+import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
+import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
+import {
+  ContactLinkPicker,
+  useContactOptions,
+} from '@/components/contacts/contact-link-picker'
+
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import {
   FormControl,
   FormField,
@@ -12,7 +19,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
-import { PhoneInput } from '@/components/ui/phone-input'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
@@ -22,14 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
-import { cn } from '@/lib/utils'
 import { isSelectableUser } from '@/lib/users/selectable'
 import {
   LEAD_SOURCE_LABELS,
   LEAD_SOURCE_TYPES,
-  LEAD_STATUS_LABELS,
   LEAD_STATUS_ORDER,
-  getLeadStatusToken,
   type LeadSourceTypeValue,
   type LeadStatusValue,
 } from '@/lib/leads/constants'
@@ -51,13 +54,11 @@ export function LeadSheetFormFields({
   // Disabled admins are not offered, but a lead they already hold keeps
   // them as a disabled entry so the picker still names the assignee.
   const currentAssigneeId = useWatch({ control, name: 'assigneeId' }) ?? null
+  // A contact created from here starts at the lead's company.
+  const { field: companyField } = useController({ control, name: 'company' })
+  const leadCompanyId = companyField.value?.id ?? null
   const assigneeItems = useMemo(
     () => [
-      {
-        value: '',
-        label: 'Unassigned',
-        description: 'Leave unassigned for now.',
-      },
       ...assignees
         .filter(
           assignee =>
@@ -75,48 +76,72 @@ export function LeadSheetFormFields({
     [assignees, currentAssigneeId]
   )
 
-  const leadStatuses = useMemo(
-    () =>
-      LEAD_STATUS_ORDER.map(status => ({
-        value: status,
-        label: LEAD_STATUS_LABELS[status],
-        token: getLeadStatusToken(status),
-      })),
-    []
-  )
-
   return (
     <div className='space-y-6'>
       <FormField
         control={control}
-        name='contactName'
+        name='contact'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Contact name</FormLabel>
+            <FormLabel entity='contact'>Person</FormLabel>
             <FormControl>
-              <Input
-                {...field}
-                value={field.value ?? ''}
-                placeholder='Jordan Smith'
+              <ContactLinkPicker
+                value={field.value ?? null}
+                onChange={next => {
+                  field.onChange(next)
+                  // Fill the company from the contact's main company, only
+                  // while it's empty: never overwrite one already chosen.
+                  if (next?.companyId && !companyField.value) {
+                    companyField.onChange({
+                      id: next.companyId,
+                      name: next.companyName ?? '',
+                    })
+                  }
+                }}
+                showCreateButton
+                createCompanyId={leadCompanyId}
               />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
+      <FormField
+        control={control}
+        name='company'
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel entity='company'>Company</FormLabel>
+            <FormControl>
+              <CompanyLinkPicker
+                value={field.value ?? null}
+                onChange={next => field.onChange(next)}
+                showCreateButton
+              />
+            </FormControl>
+            <FormMessage />
+            <ContactCompanyMismatchNote control={control} />
+          </FormItem>
+        )}
+      />
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={control}
-          name='contactEmail'
+          name='assigneeId'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Contact email</FormLabel>
+              <FormLabel entity='contact'>Assignee</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
+                <SearchableCombobox
+                  items={assigneeItems}
+                  clearLabel='assignee'
                   value={field.value ?? ''}
-                  type='email'
-                  placeholder='name@org.com'
+                  onChange={value =>
+                    field.onChange(value.length ? value : null)
+                  }
+                  placeholder='Unassigned'
+                  searchPlaceholder='Search people…'
+                  onClear={() => field.onChange(null)}
                 />
               </FormControl>
               <FormMessage />
@@ -125,56 +150,42 @@ export function LeadSheetFormFields({
         />
         <FormField
           control={control}
-          name='contactPhone'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Contact phone</FormLabel>
-              <FormControl>
-                <PhoneInput
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='companyName'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company name</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  placeholder='Acme Corporation'
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name='companyWebsite'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company website</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  type='url'
-                  placeholder='https://acme.com'
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          name='status'
+          render={({ field }) => {
+            const selectedStatus = LEAD_STATUS_ORDER.find(
+              status => status === field.value
+            )
+
+            return (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={(value: LeadStatusValue) =>
+                    field.onChange(value)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select status'>
+                        {selectedStatus ? (
+                          <LeadStatusBadge status={selectedStatus} />
+                        ) : null}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {LEAD_STATUS_ORDER.map(status => (
+                      <SelectItem key={status} value={status}>
+                        <LeadStatusBadge status={status} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
         />
       </div>
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
@@ -237,84 +248,6 @@ export function LeadSheetFormFields({
           )}
         />
       </div>
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='status'
-          render={({ field }) => {
-            const selectedStatus = leadStatuses.find(
-              status => status.value === field.value
-            )
-
-            return (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={(value: LeadStatusValue) =>
-                    field.onChange(value)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder='Select status'>
-                        {selectedStatus ? (
-                          <Badge
-                            variant='outline'
-                            className={cn(
-                              'text-xs font-semibold tracking-wide uppercase',
-                              selectedStatus.token
-                            )}
-                          >
-                            {selectedStatus.label}
-                          </Badge>
-                        ) : null}
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {leadStatuses.map(status => (
-                      <SelectItem key={status.value} value={status.value}>
-                        <Badge
-                          variant='outline'
-                          className={cn(
-                            'text-xs font-semibold tracking-wide uppercase',
-                            status.token
-                          )}
-                        >
-                          {status.label}
-                        </Badge>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-        <FormField
-          control={control}
-          name='assigneeId'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assignee</FormLabel>
-              <FormControl>
-                <SearchableCombobox
-                  items={assigneeItems}
-                  value={field.value ?? ''}
-                  onChange={value =>
-                    field.onChange(value.length ? value : null)
-                  }
-                  placeholder='Assign teammate'
-                  searchPlaceholder='Search teammates'
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
       <FormField
         control={control}
         name='notes'
@@ -335,5 +268,36 @@ export function LeadSheetFormFields({
         )}
       />
     </div>
+  )
+}
+
+/**
+ * A caution when the lead's person isn't at the chosen company: saving the
+ * lead adds them to it (portal access stays off). Never blocks saving.
+ */
+function ContactCompanyMismatchNote({
+  control,
+}: {
+  control: Control<LeadFormValues>
+}) {
+  const contact = useWatch({ control, name: 'contact' })
+  const company = useWatch({ control, name: 'company' })
+  const { data: options = [] } = useContactOptions()
+
+  const companyIds = contact
+    ? options.find(option => option.id === contact.id)?.companyIds
+    : undefined
+  // Only once the person's companies are known, and only for a mismatch.
+  if (!contact || !company || !companyIds || companyIds.includes(company.id)) {
+    return null
+  }
+
+  const contactName = contact.name || 'This person'
+  const companyName = company.name || 'this company'
+  return (
+    <SaveSideEffect>
+      {contactName} isn&rsquo;t at {companyName} yet, and will be added to{' '}
+      {companyName} when you save.
+    </SaveSideEffect>
   )
 }

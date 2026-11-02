@@ -14,7 +14,7 @@ export const projectSchema = z
     id: z.string().uuid().optional(),
     name: z.string().min(1, 'Project name is required'),
     projectType: z.enum(PROJECT_TYPE_ENUM_VALUES),
-    clientId: z
+    companyId: z
       .string()
       .uuid('Select a client')
       .or(z.literal(''))
@@ -39,6 +39,42 @@ export const projectSchema = z
       .or(z.literal(''))
       .nullish()
       .transform(value => (value ? value : null)),
+    /**
+     * Sales users who may see the project. Omitted = leave members as they
+     * are (the sheet sends it only once it has loaded the current list).
+     */
+    memberIds: z.array(z.string().uuid()).max(100).optional(),
+    /** GitHub repos to link (as picked) and link ids to remove. */
+    repoLinks: z
+      .object({
+        add: z
+          .array(
+            z.object({
+              repoFullName: z
+                .string()
+                .regex(/^[^/]+\/[^/]+$/, 'Invalid repo (expected owner/repo)'),
+              source: z.enum(['oauth', 'app']).optional(),
+              sourceId: z.string().uuid().optional(),
+            })
+          )
+          .max(50),
+        remove: z.array(z.string().uuid()).max(100),
+      })
+      .optional(),
+    /** Vercel / Supabase projects to link and link ids to remove. */
+    integrationLinks: z
+      .object({
+        add: z
+          .array(
+            z.object({
+              provider: z.enum(['VERCEL', 'SUPABASE']),
+              externalId: z.string().trim().min(1),
+            })
+          )
+          .max(50),
+        remove: z.array(z.string().uuid()).max(100),
+      })
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.startsOn && data.endsOn) {
@@ -58,11 +94,11 @@ export const projectSchema = z
       }
     }
     const requiresClient = data.projectType === 'CLIENT'
-    const hasClient = Boolean(data.clientId)
+    const hasClient = Boolean(data.companyId)
 
     if (requiresClient && !hasClient) {
       ctx.addIssue({
-        path: ['clientId'],
+        path: ['companyId'],
         code: z.ZodIssueCode.custom,
         message: 'Select a client for client projects.',
       })
@@ -70,7 +106,7 @@ export const projectSchema = z
 
     if (!requiresClient && hasClient) {
       ctx.addIssue({
-        path: ['clientId'],
+        path: ['companyId'],
         code: z.ZodIssueCode.custom,
         message: 'Personal and internal projects cannot be linked to clients.',
       })
@@ -83,12 +119,10 @@ const projectIdentifierSchema = {
 
 export const deleteProjectSchema = z.object(projectIdentifierSchema)
 export const restoreProjectSchema = z.object(projectIdentifierSchema)
-export const destroyProjectSchema = z.object(projectIdentifierSchema)
 
 export type ProjectInput = z.infer<typeof projectSchema>
 export type DeleteProjectInput = z.infer<typeof deleteProjectSchema>
 export type RestoreProjectInput = z.infer<typeof restoreProjectSchema>
-export type DestroyProjectInput = z.infer<typeof destroyProjectSchema>
 
 export type ProjectActionResult = {
   error?: string
@@ -116,4 +150,3 @@ export async function projectSlugExists(
 export async function generateUniqueProjectSlug(base: string): Promise<string> {
   return generateUniqueProjectSlugDrizzle(base)
 }
-

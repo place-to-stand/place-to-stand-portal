@@ -19,7 +19,9 @@ import type { ProfitShareState } from '@/lib/data/reports/types'
 
 import { closeMonthAction } from '../actions/close-month'
 import { reopenMonthAction } from '../actions/reopen-month'
-import { formatMoney, formatShortDay } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
+
+import { formatShortDay } from './format'
 
 type CloseControlsProps = {
   /** 1-indexed month + year of the period being viewed (W4: page converts). */
@@ -171,7 +173,7 @@ function CloseSummary({
     <dl className='divide-border/60 divide-y rounded-lg border text-sm'>
       <div className='flex items-center justify-between gap-3 px-3 py-2'>
         <dt className='text-muted-foreground'>Partner payouts</dt>
-        <dd className='tabular-nums'>{formatMoney(payoutsTotal)}</dd>
+        <dd className='tabular-nums'>{formatCurrency(payoutsTotal)}</dd>
       </div>
       {data ? (
         <>
@@ -182,19 +184,19 @@ function CloseSummary({
                 End of day {formatShortDay(data.asOfDate)}
               </span>
             </dt>
-            <dd className='tabular-nums'>{formatMoney(data.balance)}</dd>
+            <dd className='tabular-nums'>{formatCurrency(data.balance)}</dd>
           </div>
           <div className='bg-muted/50 flex items-center justify-between gap-3 px-3 py-2'>
             <dt className='flex flex-col font-medium'>
               Profit share
               <span className='text-muted-foreground text-xs font-normal'>
                 {data.totalAmount > 0
-                  ? `${formatMoney(data.partners[0]?.amount ?? 0)} each`
+                  ? `${formatCurrency(data.partners[0]?.amount ?? 0)} each`
                   : 'No profit share this month'}
               </span>
             </dt>
             <dd className='font-medium tabular-nums'>
-              {formatMoney(data.totalAmount)}
+              {formatCurrency(data.totalAmount)}
             </dd>
           </div>
         </>

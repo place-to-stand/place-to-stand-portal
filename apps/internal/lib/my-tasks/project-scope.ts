@@ -3,7 +3,7 @@ import type { ProjectTypeValue } from '@/lib/types'
 /**
  * The My Tasks board's project-type scope, carried in the `?hide=` param as a
  * comma list drawn from `personal,internal` (absent = show both). PERSONAL
- * and INTERNAL projects have no client, so the `?clientId=` filter alone can
+ * and INTERNAL projects have no client, so the `?companyId=` filter alone can
  * never hide them; this is the other half of the client selector.
  *
  * Shared by the server page, the API routes, and the client selector, so the
@@ -35,12 +35,6 @@ export const HIDEABLE_PROJECT_TYPE_VALUES = [
 
 function isHideableToken(value: string): value is HideableProjectTypeToken {
   return (HIDEABLE_PROJECT_TYPE_TOKENS as readonly string[]).includes(value)
-}
-
-export function isHideableProjectType(
-  value: string
-): value is HideableProjectType {
-  return (HIDEABLE_PROJECT_TYPE_VALUES as readonly string[]).includes(value)
 }
 
 /**

@@ -12,7 +12,7 @@ import { fetchAdminUsers } from '@/lib/data/users'
 import { requireRole } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
 import type {
-  ClientRow,
+  ClientPickerRow,
   ProjectWithClient,
 } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
@@ -27,17 +27,20 @@ export default async function ProjectsArchivePage({
 }: PageProps<'/projects/archive'>) {
   const admin = await requireRole('ADMIN')
   const params = await searchParams
-  const preferredPageSize = await readPageSize()
-  const { searchQuery, cursor, direction, limit, sort } =
-    parseProjectsSearchParams(params)
+  const pageSize = await readPageSize()
+  const {
+    searchQuery,
+    page: currentPage,
+    sort,
+  } = parseProjectsSearchParams(params)
+  const offset = (currentPage - 1) * pageSize
 
   const [archiveResult, adminUsersResult] = await Promise.all([
     listProjectsForSettings(admin, {
       status: 'archived',
       search: searchQuery ?? '',
-      cursor,
-      direction,
-      limit: limit ?? preferredPageSize,
+      offset,
+      limit: pageSize,
       sort,
     }),
     fetchAdminUsers(),
@@ -51,7 +54,7 @@ export default async function ProjectsArchivePage({
     disabled_at: admin.disabled_at ?? null,
   }))
 
-  const clientRows: ClientRow[] = archiveResult.clients.map(client => ({
+  const clientRows: ClientPickerRow[] = archiveResult.clients.map(client => ({
     id: client.id,
     name: client.name,
     deleted_at: client.deletedAt,
@@ -59,6 +62,8 @@ export default async function ProjectsArchivePage({
 
   const hydratedProjects: ProjectWithClient[] =
     archiveResult.items.map(mapProjectToTableRow)
+
+  const totalPages = Math.max(1, Math.ceil(archiveResult.totalCount / pageSize))
 
   return (
     <PageShell
@@ -79,10 +84,17 @@ export default async function ProjectsArchivePage({
         adminUsers={adminUsers}
         contractorUsers={[]}
         membersByProject={{}}
-        pageInfo={archiveResult.pageInfo}
-        pageSize={limit ?? preferredPageSize}
+        totalCount={archiveResult.totalCount}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        pageSize={pageSize}
         filters={
-          <ProjectsArchiveFilters search={searchQuery ?? undefined} />
+          // A key: React checks props-passed elements from a server page
+          // like list children on a client navigation.
+          <ProjectsArchiveFilters
+            key='archive-filters'
+            search={searchQuery ?? undefined}
+          />
         }
       />
     </PageShell>

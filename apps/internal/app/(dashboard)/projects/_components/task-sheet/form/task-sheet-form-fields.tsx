@@ -23,6 +23,7 @@ import {
 import { Badge } from '@pts/ui/badge'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { DatePicker } from '@/components/ui/date-picker'
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { TaskSheetFormValues } from '@/lib/projects/task-sheet/task-sheet-schema'
@@ -31,9 +32,6 @@ import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-st
 import { cn } from '@/lib/utils'
 
 import { TaskAttachmentsField } from '../task-attachments-field'
-
-const FEEDBACK_CLASSES =
-  'border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'
 
 export type TaskSheetFormFieldsProps = {
   form: UseFormReturn<TaskSheetFormValues>
@@ -49,13 +47,13 @@ export type TaskSheetFormFieldsProps = {
   attachments: AttachmentItem[]
   onSelectFiles: (files: FileList | null) => void
   onAttachmentRemove: (key: string) => void
+  onAttachmentUndoRemove: (key: string) => void
   attachmentsDisabled: boolean
   attachmentsDisabledReason: string | null
   isUploadingAttachments: boolean
   isDragActive: boolean
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
-  feedback: string | null
   isSheetOpen: boolean
 }
 
@@ -74,13 +72,13 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
     attachments,
     onSelectFiles,
     onAttachmentRemove,
+    onAttachmentUndoRemove,
     attachmentsDisabled,
     attachmentsDisabledReason,
     isUploadingAttachments,
     isDragActive,
     acceptedAttachmentTypes,
     maxAttachmentSize,
-    feedback,
     isSheetOpen,
   } = props
 
@@ -143,7 +141,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
 
             return (
               <FormItem>
-                <FormLabel>Project</FormLabel>
+                <FormLabel entity='project'>Project</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
                     <SearchableCombobox
@@ -154,7 +152,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                       onBlur={field.onBlur}
                       name={field.name}
                       placeholder='Select project'
-                      searchPlaceholder='Search projects...'
+                      searchPlaceholder='Search projects…'
                       emptyMessage='No projects found.'
                       disabled={disabled}
                     />
@@ -177,10 +175,12 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                 <FormLabel>Due date</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <Input
-                      type='date'
-                      value={field.value ?? ''}
+                    <DatePicker
+                      value={field.value}
                       onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder='No due date'
+                      clearLabel='due date'
                       disabled={disabled}
                     />
                   </DisabledFieldTooltip>
@@ -192,6 +192,45 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
         />
       </div>
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+        <FormField
+          control={form.control}
+          name='assigneeId'
+          render={({ field }) => {
+            const disabled = isPending || !canManage
+            const reason = resolveDisabledReason(disabled)
+            const selectedValue = field.value ?? unassignedValue
+
+            return (
+              <FormItem>
+                <FormLabel entity='contact'>Assignee</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
+                    <SearchableCombobox
+                      items={assigneeItems}
+                      clearLabel='assignee'
+                      value={selectedValue}
+                      onChange={next => {
+                        if (next === unassignedValue) {
+                          field.onChange(null)
+                          return
+                        }
+                        field.onChange(next)
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      placeholder='Unassigned'
+                      searchPlaceholder='Search people…'
+                      emptyMessage='No teammates on this project.'
+                      disabled={disabled}
+                      onClear={() => field.onChange(null)}
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
         <FormField
           control={form.control}
           name='status'
@@ -217,10 +256,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                           {selectedStatus && (
                             <Badge
                               variant='outline'
-                              className={cn(
-                                'text-xs font-semibold tracking-wide uppercase',
-                                selectedStatus.token
-                              )}
+                              className={cn(selectedStatus.token)}
                             >
                               {selectedStatus.label}
                             </Badge>
@@ -232,56 +268,13 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                   <SelectContent>
                     {taskStatuses.map(status => (
                       <SelectItem key={status.value} value={status.value}>
-                        <Badge
-                          variant='outline'
-                          className={cn(
-                            'text-xs font-semibold tracking-wide uppercase',
-                            status.token
-                          )}
-                        >
+                        <Badge variant='outline' className={cn(status.token)}>
                           {status.label}
                         </Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-        <FormField
-          control={form.control}
-          name='assigneeId'
-          render={({ field }) => {
-            const disabled = isPending || !canManage
-            const reason = resolveDisabledReason(disabled)
-            const selectedValue = field.value ?? unassignedValue
-
-            return (
-              <FormItem>
-                <FormLabel>Assignee</FormLabel>
-                <FormControl>
-                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <SearchableCombobox
-                      items={assigneeItems}
-                      value={selectedValue}
-                      onChange={next => {
-                        if (next === unassignedValue) {
-                          field.onChange(null)
-                          return
-                        }
-                        field.onChange(next)
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      placeholder='Select assignee'
-                      searchPlaceholder='Search collaborators...'
-                      emptyMessage='No eligible collaborators found.'
-                      disabled={disabled}
-                    />
-                  </DisabledFieldTooltip>
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )
@@ -324,6 +317,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
         attachments={attachments}
         onSelectFiles={onSelectFiles}
         onRemove={onAttachmentRemove}
+        onUndoRemove={onAttachmentUndoRemove}
         disabled={attachmentsDisabled}
         disabledReason={attachmentsDisabledReason}
         isUploading={isUploadingAttachments}
@@ -331,7 +325,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
         acceptedMimeTypes={acceptedAttachmentTypes}
         maxFileSize={maxAttachmentSize}
       />
-      {feedback ? <p className={FEEDBACK_CLASSES}>{feedback}</p> : null}
     </>
   )
 }

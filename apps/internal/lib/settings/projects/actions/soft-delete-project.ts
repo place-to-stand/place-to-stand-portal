@@ -42,7 +42,7 @@ export async function softDeleteProject(
         | {
             id: string
             name: string
-            clientId: string | null
+            companyId: string | null
           }
         | undefined
 
@@ -51,7 +51,7 @@ export async function softDeleteProject(
           .select({
             id: projects.id,
             name: projects.name,
-            clientId: projects.clientId,
+            companyId: projects.companyId,
           })
           .from(projects)
           .where(eq(projects.id, projectId))
@@ -76,7 +76,9 @@ export async function softDeleteProject(
         console.error('Failed to archive project', error)
         return {
           error:
-            error instanceof Error ? error.message : 'Unable to archive project.',
+            error instanceof Error
+              ? error.message
+              : 'Unable to archive project.',
         }
       }
 
@@ -90,7 +92,7 @@ export async function softDeleteProject(
         targetType: 'PROJECT',
         targetId: existingProject.id,
         targetProjectId: existingProject.id,
-        targetClientId: existingProject.clientId,
+        targetCompanyId: existingProject.companyId,
         metadata: event.metadata,
       })
 

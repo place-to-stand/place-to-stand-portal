@@ -1,3 +1,4 @@
+// permission: public — tells the CLI where to authenticate
 import { NextResponse } from 'next/server'
 
 import { CLI_API_VERSION } from '@/lib/cli/constants'

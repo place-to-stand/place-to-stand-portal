@@ -1,22 +1,10 @@
-import {
-  Archive,
-  Building2,
-  FolderKanban,
-  RefreshCw,
-  Trash2,
-  User,
-  Users,
-} from 'lucide-react'
+import { User, Users } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
-import { RowActionButton } from '@pts/ui/row-action-button'
-import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { TableCell, TableRow } from '@pts/ui/table'
 import {
-  getProjectStatusLabel,
-  getProjectStatusToken,
-  getStatusBadgeToken,
-} from '@/lib/constants'
+  RecordRowAction,
+  RecordRowActions,
+} from '@/components/table/record-row-action'
+import { TableCell, TableRow } from '@pts/ui/table'
 import { formatProjectDateRange } from '@/lib/settings/projects/project-formatters'
 import { cn } from '@/lib/utils'
 
@@ -27,6 +15,7 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -35,11 +24,9 @@ type ProjectsTableRowProps = {
   pendingReason: string
   pendingDeleteId: string | null
   pendingRestoreId: string | null
-  pendingDestroyId: string | null
   onEdit: (project: ProjectWithClient) => void
   onRequestDelete: (project: ProjectWithClient) => void
   onRestore: (project: ProjectWithClient) => void
-  onRequestDestroy: (project: ProjectWithClient) => void
 }
 
 export function ProjectsTableRow({
@@ -49,49 +36,29 @@ export function ProjectsTableRow({
   pendingReason,
   pendingDeleteId,
   pendingRestoreId,
-  pendingDestroyId,
   onEdit,
   onRequestDelete,
   onRestore,
-  onRequestDestroy,
 }: ProjectsTableRowProps) {
   const ownerDisplay = resolveProjectOwnerDisplay(project)
   const isDeleting = isPending && pendingDeleteId === project.id
   const isRestoring = isPending && pendingRestoreId === project.id
-  const isDestroying = isPending && pendingDestroyId === project.id
 
   const deleteDisabled =
-    isDeleting || isRestoring || isDestroying || Boolean(project.deleted_at)
+    isDeleting || isRestoring || Boolean(project.deleted_at)
   const deleteDisabledReason = deleteDisabled
     ? project.deleted_at
       ? 'Project already archived.'
       : pendingReason
     : null
 
-  const restoreDisabled =
-    isRestoring || isDeleting || isDestroying || !project.deleted_at
+  const restoreDisabled = isRestoring || isDeleting || !project.deleted_at
   const restoreDisabledReason = restoreDisabled ? pendingReason : null
-
-  const destroyDisabled =
-    isDestroying || isDeleting || isRestoring || !project.deleted_at
-  const destroyDisabledReason = destroyDisabled
-    ? !project.deleted_at
-      ? 'Archive the project before permanently deleting.'
-      : pendingReason
-    : null
 
   const showArchive = mode === 'active'
   const showRestore = mode === 'archive'
-  const showDestroy = mode === 'archive'
 
   const isArchived = Boolean(project.deleted_at)
-
-  const statusLabel = isArchived
-    ? 'Archived'
-    : getProjectStatusLabel(project.status)
-  const statusTone = isArchived
-    ? getStatusBadgeToken('archived')
-    : getProjectStatusToken(project.status)
 
   return (
     <TableRow
@@ -100,11 +67,15 @@ export function ProjectsTableRow({
     >
       <TableCell>
         <div className='flex min-w-0 items-center gap-2'>
-          <FolderKanban className='text-muted-foreground h-4 w-4 shrink-0' />
-          <span className='truncate font-medium'>{project.name}</span>
+          <ENTITY_ICONS.project
+            className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
+          />
+          <span className='truncate font-medium' title={project.name}>
+            {project.name}
+          </span>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell label='Owner'>
         <div className='flex min-w-0 items-center gap-2 text-sm'>
           <ownerDisplay.Icon className='text-muted-foreground h-4 w-4 shrink-0' />
           <span className='truncate'>{ownerDisplay.label}</span>
@@ -122,59 +93,30 @@ export function ProjectsTableRow({
           </p>
         ) : null}
       </TableCell>
-      <TableCell>
-        <Badge variant='outline' className={statusTone}>
-          {statusLabel}
-        </Badge>
-      </TableCell>
-      <TableCell className='text-muted-foreground text-sm'>
+      <TableCell label='Timeline' className='text-muted-foreground text-sm'>
         {formatProjectDateRange(project.starts_on, project.ends_on)}
       </TableCell>
       <TableCell className='text-right max-md:ml-auto'>
-        <div className='flex justify-end gap-2'>
+        <RecordRowActions>
           {showRestore ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='restore'
+              entity='project'
+              onClick={() => onRestore(project)}
               disabled={restoreDisabled}
-              reason={restoreDisabledReason}
-            >
-              <RowActionButton
-                variant='outline'
-                onClick={() => onRestore(project)}
-                label='Restore project'
-                icon={<RefreshCw />}
-                disabled={restoreDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={restoreDisabledReason}
+            />
           ) : null}
           {showArchive ? (
-            <DisabledFieldTooltip
+            <RecordRowAction
+              kind='archive'
+              entity='project'
+              onClick={() => onRequestDelete(project)}
               disabled={deleteDisabled}
-              reason={deleteDisabledReason}
-            >
-              <RowActionButton
-                variant='destructive'
-                onClick={() => onRequestDelete(project)}
-                label='Archive project'
-                icon={<Archive />}
-                disabled={deleteDisabled}
-              />
-            </DisabledFieldTooltip>
+              disabledReason={deleteDisabledReason}
+            />
           ) : null}
-          {showDestroy ? (
-            <DisabledFieldTooltip
-              disabled={destroyDisabled}
-              reason={destroyDisabledReason}
-            >
-              <RowActionButton
-                variant='destructive'
-                onClick={() => onRequestDestroy(project)}
-                label='Permanently delete project'
-                icon={<Trash2 />}
-                disabled={destroyDisabled}
-              />
-            </DisabledFieldTooltip>
-          ) : null}
-        </div>
+        </RecordRowActions>
       </TableCell>
     </TableRow>
   )
@@ -211,7 +153,7 @@ function resolveProjectOwnerDisplay(project: ProjectWithClient): OwnerDisplay {
 
   if (client) {
     return {
-      Icon: Building2,
+      Icon: ENTITY_ICONS.company,
       label: client.name,
       message: client.deleted_at ? 'Client archived' : undefined,
       messageTone: client.deleted_at ? 'destructive' : undefined,
@@ -219,7 +161,7 @@ function resolveProjectOwnerDisplay(project: ProjectWithClient): OwnerDisplay {
   }
 
   return {
-    Icon: Building2,
+    Icon: ENTITY_ICONS.company,
     label: 'Client missing',
     message: 'Reassign this project to a client.',
     messageTone: 'destructive',

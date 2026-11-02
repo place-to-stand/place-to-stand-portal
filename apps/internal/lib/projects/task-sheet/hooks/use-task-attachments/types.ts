@@ -21,6 +21,8 @@ export type AttachmentItem = {
   mimeType: string
   size: number
   isPending: boolean
+  /** Saved, removed in this sheet: goes on Save (Pending removal, Undo). */
+  isRemoved: boolean
   url: string | null
 }
 
@@ -46,6 +48,7 @@ export type UseTaskAttachmentsReturn = {
   isUploading: boolean
   handleAttachmentUpload: (files: FileList | File[]) => void
   handleAttachmentRemove: (key: string) => void
+  handleAttachmentUndoRemove: (key: string) => void
   resetAttachmentsState: (options?: { preservePending?: boolean }) => void
   buildSubmissionPayload: () => AttachmentSubmission | undefined
 }

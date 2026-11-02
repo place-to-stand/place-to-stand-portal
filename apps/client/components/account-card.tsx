@@ -1,4 +1,5 @@
 import { Card } from '@pts/ui/card'
+import { formatCurrency } from '@pts/ui/numbers'
 
 import { HoursSummaryContent } from '@/components/hours/hours-summary-card'
 import { NavRow } from '@/components/ui/nav-row'
@@ -6,15 +7,9 @@ import { cn } from '@/lib/utils'
 import type { ClientHoursSummary } from '@/lib/data/hours'
 import type { ClientInvoiceSummary } from '@/lib/data/invoices'
 
-const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-
 function invoiceLine(summary: ClientInvoiceSummary): string {
   if (summary.unpaidCount > 0) {
-    return `${summary.unpaidCount} unpaid · ${CURRENCY_FORMATTER.format(Number(summary.unpaidTotal))}`
+    return `${summary.unpaidCount} unpaid · ${formatCurrency(summary.unpaidTotal)}`
   }
 
   return 'All paid'
@@ -26,12 +21,12 @@ function invoiceLine(summary: ClientInvoiceSummary): string {
  * section, so the card never names the client itself.
  */
 export function AccountCard({
-  clientId,
+  companyId,
   hoursSummary,
   invoiceSummary,
   className,
 }: {
-  clientId: string
+  companyId: string
   /** Absent when the client has no billing terms on record yet. */
   hoursSummary: ClientHoursSummary | undefined
   invoiceSummary: ClientInvoiceSummary
@@ -42,7 +37,7 @@ export function AccountCard({
       {hoursSummary ? <HoursSummaryContent summary={hoursSummary} /> : null}
 
       <NavRow
-        href={`/invoices?client=${clientId}`}
+        href={`/invoices?client=${companyId}`}
         title='Invoices'
         meta={
           <span className='text-muted-foreground truncate text-sm'>

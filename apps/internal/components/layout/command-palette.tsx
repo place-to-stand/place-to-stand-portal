@@ -11,7 +11,6 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Building2, Contact, FolderKanban } from 'lucide-react'
 
 import {
   CommandDialog,
@@ -24,9 +23,10 @@ import {
 import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
-import type {
-  PaletteSearchResult,
-} from '@/lib/queries/command-palette'
+import type { PaletteSearchResult } from '@/lib/queries/command-palette'
+import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -121,7 +121,7 @@ function CommandPalette() {
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
 
   const trimmedQuery = query.trim()
-  // Record search spans clients and projects, so it is admin-only; SALES
+  // Record search spans companies and projects, so it is admin-only; SALES
   // staff get page navigation only.
   const recordSearchEnabled =
     isAdmin && open && debouncedQuery.length >= MIN_QUERY_LENGTH
@@ -164,7 +164,7 @@ function CommandPalette() {
     [setOpen]
   )
 
-  const clients = recordSearchEnabled ? (records?.clients ?? []) : []
+  const companies = recordSearchEnabled ? (records?.companies ?? []) : []
   const projects = recordSearchEnabled ? (records?.projects ?? []) : []
   const contactResults = recordSearchEnabled ? (records?.contacts ?? []) : []
 
@@ -173,12 +173,12 @@ function CommandPalette() {
       open={open}
       onOpenChange={handleOpenChange}
       title='Command palette'
-      description='Search pages, clients, and projects'
+      description='Search pages, companies, projects and people'
     >
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder='Search pages, clients, projects…'
+        placeholder='Search pages, companies, projects, people…'
       />
       <CommandList>
         <CommandEmpty>
@@ -206,22 +206,26 @@ function CommandPalette() {
             })}
           </CommandGroup>
         ))}
-        {clients.length > 0 ? (
-          <CommandGroup heading='Clients'>
-            {clients.map(client => (
+        {companies.length > 0 ? (
+          <CommandGroup heading='Companies'>
+            {companies.map(company => (
               <CommandItem
-                key={client.id}
+                key={company.id}
                 // cmdk filters items by `value` even for server-fetched
                 // results — the visible label must be part of it or typing
                 // the name hides the match. The id suffix keeps values
                 // unique across same-named records.
-                value={`${client.name} ${client.slug ?? ''} client-${client.id}`}
-                onSelect={() =>
-                  navigate(`/clients/${client.slug ?? client.id}`)
-                }
+                value={`${company.name} company-${company.id}`}
+                onSelect={() => navigate(companySheetHref(company.id))}
               >
-                <Building2 className='size-4' />
-                <span>{client.name}</span>
+                <ENTITY_ICONS.company className='size-4' />
+                <span className='truncate'>{company.name}</span>
+                {company.isClient ? (
+                  <CompanyBillingMark
+                    billingType={company.billingType}
+                    className='ml-auto'
+                  />
+                ) : null}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -238,7 +242,7 @@ function CommandPalette() {
                   )
                 }
               >
-                <FolderKanban className='size-4' />
+                <ENTITY_ICONS.project className='size-4' />
                 <span>
                   {project.clientLabel ? (
                     <span className='text-muted-foreground'>
@@ -252,7 +256,7 @@ function CommandPalette() {
           </CommandGroup>
         ) : null}
         {contactResults.length > 0 ? (
-          <CommandGroup heading='Contacts'>
+          <CommandGroup heading='People'>
             {contactResults.map(contact => (
               <CommandItem
                 key={contact.id}
@@ -261,10 +265,12 @@ function CommandPalette() {
                   // Contacts have no detail route — land on the contacts list
                   // pre-filtered to the record. Email is unique where names
                   // are not, so it isolates the selected contact.
-                  navigate(`/contacts?q=${encodeURIComponent(contact.email)}`)
+                  navigate(
+                    `/people?q=${encodeURIComponent(contact.email ?? contact.name)}`
+                  )
                 }
               >
-                <Contact className='size-4' />
+                <ENTITY_ICONS.contact className='size-4' />
                 <span>
                   {contact.name}{' '}
                   <span className='text-muted-foreground'>{contact.email}</span>

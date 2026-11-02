@@ -51,33 +51,26 @@ function CompactStatusBadge({
   switch (status) {
     case 'dispatched':
       return (
-        <Badge variant='secondary' className='gap-1 text-[10px]'>
+        <Badge variant='secondary' className='gap-1'>
           Dispatched
         </Badge>
       )
     case 'working':
     case 'implementing':
       return (
-        <Badge variant='secondary' className='gap-1 text-[10px]'>
+        <Badge variant='secondary' className='gap-1'>
           <Loader2 className='h-2.5 w-2.5 animate-spin' />
           Executing
         </Badge>
       )
     case 'pr_created':
       return (
-        <Badge
-          variant='outline'
-          className={cn(BADGE_TINTS.emerald, 'text-[10px]')}
-        >
+        <Badge variant='outline' className={cn(BADGE_TINTS.emerald, '')}>
           PR created
         </Badge>
       )
     case 'error':
-      return (
-        <Badge variant='destructive' className='text-[10px]'>
-          Error
-        </Badge>
-      )
+      return <Badge variant='destructive'>Error</Badge>
     default:
       return null
   }

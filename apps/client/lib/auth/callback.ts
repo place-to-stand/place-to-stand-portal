@@ -32,10 +32,8 @@ export async function hasPortalProfile(userId: string): Promise<boolean> {
   return Boolean(profile)
 }
 
-/** Relative paths only — blocks an open redirect via `?redirect_to=//evil.com`. */
-export function safeRedirectPath(value: string): string {
-  return value.startsWith('/') && !value.startsWith('//') ? value : '/'
-}
+/** Relative paths only — blocks `?redirect_to=//evil.com` and `/\\evil.com`. */
+export { safeRedirectPath } from './safe-redirect'
 
 /**
  * Only the types we actually issue. Supabase's `verifyOtp` accepts more, but

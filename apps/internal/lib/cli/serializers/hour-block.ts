@@ -4,7 +4,9 @@ import { isoTimestamp } from './timestamp'
 
 export type CliHourBlock = {
   id: string
+  /** Since 0111 the client is its company: same value as companyId. */
   clientId: string
+  companyId: string
   clientName: string | null
   hoursPurchased: number
   /** Month the hours are billed in (YYYY-MM-DD, first of the month). */
@@ -24,7 +26,8 @@ export type CliHourBlock = {
 export function serializeHourBlock(block: HourBlockWithClient): CliHourBlock {
   return {
     id: block.id,
-    clientId: block.client_id,
+    clientId: block.company_id,
+    companyId: block.company_id,
     clientName: block.client?.name ?? null,
     hoursPurchased: block.hours_purchased,
     billingMonth: block.billing_month,

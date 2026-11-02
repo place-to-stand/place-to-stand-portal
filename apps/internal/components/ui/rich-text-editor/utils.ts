@@ -133,17 +133,20 @@ const sanitizeElement = (element: Element) => {
 const sanitizeNode = (node: Node) => {
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as Element
+    // Taken first: an unwrapped element's children move to its parent, past
+    // the parent's own walk, so they are sanitized here.
+    const children = Array.from(element.childNodes)
     if (!ALLOWED_RICH_TEXT_TAGS.has(element.tagName)) {
       if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
         element.remove()
-      } else {
-        unwrapElement(element)
+        return
       }
-      return
+      unwrapElement(element)
+    } else {
+      sanitizeElement(element)
     }
 
-    sanitizeElement(element)
-    Array.from(element.childNodes).forEach(sanitizeNode)
+    children.forEach(sanitizeNode)
     return
   }
 
@@ -152,10 +155,23 @@ const sanitizeNode = (node: Node) => {
   }
 }
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+/** Fails closed: the content as escaped plain text, never raw markup. */
+const toEscapedText = (content: string) =>
+  escapeHtml(richTextToPlainText(content))
+
 export const sanitizeEditorHtml = (content: string) => {
   if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
-    // Strip all tags as a safe fallback when DOMParser is unavailable (SSR)
-    return content.replace(/<[^>]*>/g, '')
+    // No DOMParser (SSR): render the text only, escaped. A tag-stripping
+    // regex isn't safe here (e.g. `<<img src=x onerror=...>` survives it).
+    return toEscapedText(content)
   }
 
   try {
@@ -168,6 +184,6 @@ export const sanitizeEditorHtml = (content: string) => {
     return body.innerHTML
   } catch (error) {
     console.warn('Failed to sanitize rich text content', error)
-    return content
+    return toEscapedText(content)
   }
 }

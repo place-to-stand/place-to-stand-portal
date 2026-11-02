@@ -3,12 +3,11 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 
-import { Button } from '@pts/ui/button'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { useHourBlocksTableState } from '@/lib/settings/hour-blocks/use-hour-blocks-table-state'
@@ -19,7 +18,7 @@ import { HourBlockSheet } from '../hour-block-sheet'
 
 type HourBlocksManagementTableProps = {
   hourBlocks: HourBlockWithClient[]
-  clients: ClientRow[]
+  clients: HourBlockClient[]
   totalCount: number
   currentPage: number
   totalPages: number
@@ -66,21 +65,20 @@ export function HourBlocksManagementTable({
     handleSheetOpenChange,
     handleComplete,
     deleteDialog,
-    destroyDialog,
     isPending,
     pendingDeleteId,
     pendingRestoreId,
-    pendingDestroyId,
     handleRequestDelete,
     handleRestore,
-    handleRequestDestroy,
     clearSelection,
   } = useHourBlocksTableState({ clients, hourBlocks, deepLinkedHourBlock })
 
-  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  const hasActiveFilter = ['q', 'companyId', 'invoice', 'from', 'to'].some(
+    key => Boolean(searchParams.get(key)?.trim())
+  )
 
   const emptyMessage = hasActiveFilter
-    ? 'No hour blocks match the current search.'
+    ? 'No hour blocks match the current filters.'
     : EMPTY_MESSAGES[mode]
 
   const handlePageChange = useCallback(
@@ -100,18 +98,10 @@ export function HourBlocksManagementTable({
   return (
     <div className='space-y-4'>
       {hourBlockNotFound ? (
-        <div
-          role='status'
-          className='border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm'
-        >
-          <span>
-            The linked hour block could not be found. It may have been
-            permanently deleted.
-          </span>
-          <Button variant='ghost' size='sm' onClick={clearSelection}>
-            Dismiss
-          </Button>
-        </div>
+        <DeepLinkNotFoundNotice
+          entity='hour block'
+          onDismiss={clearSelection}
+        />
       ) : null}
       <HourBlockArchiveDialog
         open={deleteDialog.open}
@@ -119,28 +109,16 @@ export function HourBlocksManagementTable({
         onCancel={deleteDialog.onCancel}
         onConfirm={deleteDialog.onConfirm}
       />
-      <ConfirmDialog
-        open={destroyDialog.open}
-        title='Permanently delete hour block?'
-        description='This action removes the hour block forever. Make sure no other records depend on it.'
-        confirmLabel='Delete forever'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
-        onCancel={destroyDialog.onCancel}
-        onConfirm={destroyDialog.onConfirm}
-      />
       <HourBlocksTableSection
         hourBlocks={hourBlocks}
         mode={mode}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}
         onRestore={handleRestore}
-        onRequestDestroy={handleRequestDestroy}
         isPending={isPending}
         pendingReason={pendingReason}
         pendingDeleteId={pendingDeleteId}
         pendingRestoreId={pendingRestoreId}
-        pendingDestroyId={pendingDestroyId}
         emptyMessage={emptyMessage}
         basePath={basePath}
       />

@@ -3,6 +3,7 @@ import { Download, ExternalLink, FileText } from 'lucide-react'
 import { Badge } from '@pts/ui/badge'
 import { buttonVariants } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatCurrency } from '@pts/ui/numbers'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 import {
@@ -10,12 +11,6 @@ import {
   getInvoiceStatusToken,
 } from '@/lib/invoices/status'
 import type { ClientInvoice } from '@/lib/data/invoices'
-
-const CURRENCY_FORMATTER = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-})
 
 /**
  * Issued is a date-only column; formatCalendarDate reads it back verbatim, so
@@ -93,7 +88,7 @@ function InvoiceRow({
 
       <div className='flex flex-wrap items-center gap-3 sm:shrink-0 sm:justify-end'>
         <span className='text-card-foreground text-sm font-semibold tabular-nums'>
-          {CURRENCY_FORMATTER.format(Number(invoice.total))}
+          {formatCurrency(invoice.total)}
         </span>
 
         <div className='flex flex-wrap items-center gap-2'>

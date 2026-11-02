@@ -1,4 +1,4 @@
-import type { ClientRow, ProductCatalogItemRow } from './invoice-form'
+import type { InvoiceClient, ProductCatalogItemRow } from './invoice-form'
 
 export type ClientOption = {
   value: string
@@ -18,7 +18,7 @@ export type ProductCatalogOption = {
   minQuantity: number | null
 }
 
-export const buildClientOptions = (clients: ClientRow[]): ClientOption[] =>
+export const buildClientOptions = (clients: InvoiceClient[]): ClientOption[] =>
   clients
     .filter(client => !client.deleted_at)
     .map(client => ({

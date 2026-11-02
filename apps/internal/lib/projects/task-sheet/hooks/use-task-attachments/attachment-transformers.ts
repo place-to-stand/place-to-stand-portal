@@ -1,15 +1,14 @@
-import type {
-  AttachmentDraft,
-  AttachmentItem,
-} from './types'
+import type { AttachmentDraft, AttachmentItem } from './types'
 
 export const makeAttachmentKey = (attachment: AttachmentDraft) =>
   attachment.id ?? attachment.storagePath
 
 export function toAttachmentItems(
   attachments: AttachmentDraft[],
+  removedIds: readonly string[] = []
 ): AttachmentItem[] {
   return attachments.map(attachment => ({
+    isRemoved: Boolean(attachment.id && removedIds.includes(attachment.id)),
     key: makeAttachmentKey(attachment),
     id: attachment.id,
     name: attachment.originalName,
@@ -23,7 +22,7 @@ export function toAttachmentItems(
 export function attachmentsAreDirty(
   attachments: AttachmentDraft[],
   baselineAttachments: AttachmentDraft[],
-  attachmentsToRemove: string[],
+  attachmentsToRemove: string[]
 ): boolean {
   if (attachments.some(attachment => attachment.isPending)) {
     return true
@@ -40,12 +39,12 @@ export function attachmentsAreDirty(
   const baselineIds = new Set(
     baselineAttachments
       .map(attachment => attachment.id)
-      .filter((id): id is string => Boolean(id)),
+      .filter((id): id is string => Boolean(id))
   )
   const currentIds = new Set(
     attachments
       .filter(attachment => !attachment.isPending && attachment.id)
-      .map(attachment => attachment.id as string),
+      .map(attachment => attachment.id as string)
   )
 
   if (baselineIds.size !== currentIds.size) {
@@ -63,10 +62,10 @@ export function attachmentsAreDirty(
 
 export function buildAttachmentSubmission(
   attachments: AttachmentDraft[],
-  attachmentsToRemove: string[],
+  attachmentsToRemove: string[]
 ) {
   const pendingAttachments = attachments.filter(
-    attachment => attachment.isPending,
+    attachment => attachment.isPending
   )
 
   if (!pendingAttachments.length && !attachmentsToRemove.length) {
@@ -83,4 +82,3 @@ export function buildAttachmentSubmission(
     toRemove: attachmentsToRemove,
   }
 }
-

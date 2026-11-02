@@ -111,7 +111,8 @@ export async function updateLeadFromInput(
       contactEmail: keep(payload.email, lead.contactEmail),
       contactPhone: keep(payload.phone, lead.contactPhone),
       companyName: keep(payload.company, lead.companyName),
-      companyWebsite: keep(payload.website, lead.companyWebsite),
+      // Omitted = leave it; `website` on the read side is the company's.
+      companyWebsite: payload.website,
       notes:
         payload.notes === undefined
           ? extractLeadNotes(lead.notes)

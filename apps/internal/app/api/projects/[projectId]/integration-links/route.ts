@@ -7,7 +7,7 @@ import {
   getProjectIntegrationLinks,
   linkExternalProject,
 } from '@/lib/data/project-integration-links'
-import { listExternalProjectsForUser } from '@/lib/integrations/connections'
+import { findExternalProjectsForUser } from '@/lib/integrations/find-external-projects'
 import { integrationErrorResponse } from '@/lib/integrations/route-helpers'
 import { NotFoundError } from '@/lib/errors/http'
 
@@ -42,7 +42,9 @@ export async function GET(
 /**
  * Links an external project by id. The option is re-resolved from the
  * caller's own connections rather than trusted from the body, so a link can
- * only be created for a project the staff member can actually see.
+ * only be created for a project the staff member can actually see. The
+ * project sheet doesn't use this: it sends its link changes with the rest of
+ * the project in `saveProject`, in one transaction.
  */
 export async function POST(
   request: Request,
@@ -72,13 +74,9 @@ export async function POST(
   }
 
   try {
-    const options = await listExternalProjectsForUser(
-      user.id,
-      parsed.data.provider
-    )
-    const option = options.find(
-      candidate => candidate.externalId === parsed.data.externalId
-    )
+    const {
+      options: [option],
+    } = await findExternalProjectsForUser(user.id, [parsed.data])
     if (!option) {
       return NextResponse.json(
         {

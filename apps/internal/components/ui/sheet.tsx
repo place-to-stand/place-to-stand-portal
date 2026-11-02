@@ -105,24 +105,86 @@ const SheetOverlay = ({
   )
 }
 
-type SheetSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'wide' | 'xwide' | 'full'
+/**
+ * A sheet's width follows its layout: `columns={1}` (one column:
+ * person, task, hour block, template, filters) is 720px,
+ * which fits the full rich text toolbar on one line with room to spare;
+ * `columns={2}` (a form beside a SHEET_SIDE_COLUMN_CLASS column: company, lead,
+ * invoice, submission, and project for admins) is 768px below lg and a set 1184px from lg, within the viewport.
+ * Below lg a side column stacks under the form. Phones get the full screen
+ * either way.
+ */
+export type SheetColumns = 1 | 2
 
-const sheetSizeClasses: Record<SheetSize, string> = {
-  sm: 'sm:max-w-sm',
-  md: 'sm:max-w-md',
-  lg: 'sm:max-w-lg',
-  xl: 'sm:max-w-xl',
-  '2xl': 'sm:max-w-2xl',
-  wide: 'sm:max-w-4xl lg:max-w-5xl',
-  xwide: 'sm:max-w-4xl lg:max-w-6xl',
-  full: 'w-screen max-w-none',
+/** The one-column sheet width, for layouts that add to it (task planning). */
+export const SHEET_ONE_COLUMN_WIDTH = 720
+
+const sheetColumnClasses: Record<SheetColumns, string> = {
+  1: 'sm:max-w-[720px]',
+  2: 'sm:max-w-3xl lg:w-[1184px] lg:max-w-[calc(100vw-4rem)]',
+}
+
+const SHEET_FIELD_SELECTOR = [
+  '[data-autofocus]:not([disabled])',
+  'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([disabled]):not([readonly])',
+  'textarea:not([disabled]):not([readonly])',
+  '[contenteditable="true"]',
+  'button[role="combobox"]:not([disabled])',
+].join(', ')
+
+/** The sheet's first editable field, outside its header; null if none yet. */
+function firstSheetField(popup: HTMLElement | null): HTMLElement | null {
+  if (!popup) return null
+  const marked = popup.querySelector<HTMLElement>(
+    '[data-autofocus]:not([disabled])'
+  )
+  if (marked) return marked
+  for (const element of popup.querySelectorAll<HTMLElement>(
+    SHEET_FIELD_SELECTOR
+  )) {
+    if (element.closest('[data-slot="sheet-header"], [aria-hidden="true"]'))
+      continue
+    if (element.getClientRects().length === 0) continue
+    return element
+  }
+  return null
+}
+
+/** Put the caret at the end of a text field or editor. */
+function placeCaretAtEnd(element: HTMLElement) {
+  if (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement
+  ) {
+    const end = element.value.length
+    try {
+      element.setSelectionRange(end, end)
+    } catch {
+      // Inputs like type="email" don't support selection ranges.
+    }
+    return
+  }
+  if (element.isContentEditable) {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    range.collapse(false)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+  }
+}
+
+function focusField(element: HTMLElement) {
+  element.focus({ preventScroll: true })
+  placeCaretAtEnd(element)
 }
 
 const SheetContent = React.forwardRef<
   HTMLDivElement,
   SheetPrimitive.Popup.Props & {
     side?: 'top' | 'right' | 'bottom' | 'left'
-    size?: SheetSize
+    /** One column or a form beside a side column; sets the width. */
+    columns?: SheetColumns
     showOverlay?: boolean
     hideCloseButton?: boolean
     /**
@@ -139,7 +201,7 @@ const SheetContent = React.forwardRef<
       className,
       children,
       side = 'right',
-      size = 'sm',
+      columns = 1,
       showOverlay = true,
       hideCloseButton = false,
       skipMountAnimation = false,
@@ -149,9 +211,13 @@ const SheetContent = React.forwardRef<
   ) => {
     const isHorizontal = side === 'left' || side === 'right'
     const popupRef = React.useRef<HTMLDivElement | null>(null)
+    const [popupNode, setPopupNode] = React.useState<HTMLDivElement | null>(
+      null
+    )
     const setPopupRef = React.useCallback(
       (node: HTMLDivElement | null) => {
         popupRef.current = node
+        setPopupNode(node)
         if (typeof ref === 'function') {
           ref(node)
         } else if (ref) {
@@ -160,19 +226,47 @@ const SheetContent = React.forwardRef<
       },
       [ref]
     )
-    // Land focus on the sheet's `data-autofocus` field when it has one, else
-    // on the popup itself — never on its first tabbable (the header's close
-    // button), which stays one Tab away.
-    const focusPopup = React.useCallback(() => {
-      const popup = popupRef.current
-      if (!popup) {
-        return null
+    // Land focus on the sheet's first field so you can just type: a
+    // `data-autofocus` field when the sheet marks one, else the first enabled
+    // input, textarea, editor or picker trigger. Never the header's close
+    // button. Edit sheets render their fields after their data loads, so
+    // until a field exists focus sits on the popup, and the first field to
+    // appear takes it then (unless focus has moved on, e.g. to a dialog).
+    const focusPopup = React.useCallback(
+      () => firstSheetField(popupRef.current) ?? popupRef.current,
+      []
+    )
+    React.useEffect(() => {
+      const popup = popupNode
+      if (!popup) return
+      // Until you click or type: a sheet whose form swaps in after its data
+      // loads drops the focused field, so focus falls back to the popup.
+      let interacted = false
+      const markInteracted = () => {
+        interacted = true
       }
-      return (
-        popup.querySelector<HTMLElement>('[data-autofocus]:not([disabled])') ??
-        popup
-      )
-    }, [])
+      popup.addEventListener('pointerdown', markInteracted, true)
+      popup.addEventListener('keydown', markInteracted, true)
+      const focusFirst = () => {
+        if (interacted) return
+        const active = document.activeElement
+        if (active && active !== popup && active !== document.body) return
+        const field = firstSheetField(popup)
+        if (field) focusField(field)
+      }
+      // After the open's own focus move, then whenever the content changes.
+      const frame = window.requestAnimationFrame(focusFirst)
+      const observer = new MutationObserver(focusFirst)
+      observer.observe(popup, { childList: true, subtree: true })
+      const stop = window.setTimeout(() => observer.disconnect(), 5000)
+      return () => {
+        window.cancelAnimationFrame(frame)
+        observer.disconnect()
+        window.clearTimeout(stop)
+        popup.removeEventListener('pointerdown', markInteracted, true)
+        popup.removeEventListener('keydown', markInteracted, true)
+      }
+    }, [popupNode])
 
     return (
       <SheetPortal>
@@ -185,7 +279,14 @@ const SheetContent = React.forwardRef<
         )}
         <SheetPrimitive.Popup
           ref={setPopupRef}
-          initialFocus={focusPopup}
+          initialFocus={() => {
+            const target = focusPopup()
+            // Caret at the end of an edit sheet's text, after focus lands.
+            if (target && target !== popupRef.current) {
+              window.requestAnimationFrame(() => placeCaretAtEnd(target))
+            }
+            return target
+          }}
           data-slot='sheet-content'
           className={cn(
             // Open and close both 300ms: the open used to run at 500ms, which
@@ -202,7 +303,7 @@ const SheetContent = React.forwardRef<
               'data-closed:slide-out-to-top data-open:slide-in-from-top inset-x-0 top-0 h-auto border-b',
             side === 'bottom' &&
               'data-closed:slide-out-to-bottom data-open:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t',
-            isHorizontal && sheetSizeClasses[size],
+            isHorizontal && sheetColumnClasses[columns],
             className
           )}
           {...props}
@@ -277,3 +378,22 @@ export {
   SheetTitle,
   SheetDescription,
 }
+
+/**
+ * How a two-column sheet splits its 1184px between the form and the side
+ * column. Named presets only, so sheets stay consistent:
+ * - `default`: a 384px side column (the invoice's status and actions).
+ * - `even`: a 480px side column, for a side column people work in as much as
+ *   the form (the lead's tasks and updates, the company's Client column). The form keeps ~700px, enough
+ *   for the full rich text toolbar on one line.
+ * Below lg the side column stacks under the form, full width.
+ */
+export type SheetSplit = 'default' | 'even'
+
+export const SHEET_SIDE_COLUMN_CLASSES: Record<SheetSplit, string> = {
+  default: 'lg:w-96',
+  even: 'lg:w-[30rem]',
+}
+
+/** The default split's side column (see `SHEET_SIDE_COLUMN_CLASSES`). */
+export const SHEET_SIDE_COLUMN_CLASS = SHEET_SIDE_COLUMN_CLASSES.default

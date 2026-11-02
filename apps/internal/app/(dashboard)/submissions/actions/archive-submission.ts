@@ -68,7 +68,7 @@ export async function archiveSubmission(
       targetType: 'SUBMISSION',
       targetId: existing.id,
       // Submissions precede any client relationship.
-      targetClientId: null,
+      targetCompanyId: null,
       metadata: event.metadata,
     })
   }

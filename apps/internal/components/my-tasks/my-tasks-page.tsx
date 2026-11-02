@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { Button } from '@pts/ui/button'
@@ -37,6 +38,7 @@ import {
   useOptimisticBoardScope,
 } from './use-optimistic-board-scope'
 import { Plus } from 'lucide-react'
+import { companySheetHref } from '@/lib/sheets/hrefs'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -83,6 +85,7 @@ export function MyTasksPage({
   initialOlderDoneCount,
 }: MyTasksPageProps) {
   const router = useRouter()
+  const { isAdmin } = useViewerAccess()
   const reorderMutation = useMyTasksReorderMutation()
   // Sheet selection goes through the shared hook like every other entity
   // sheet: the URL stays the source of truth, mirrored in local state so open
@@ -217,7 +220,7 @@ export function MyTasksPage({
           // to every assignee. The client scope rides along so the wider
           // window matches what the board is showing.
           assigneeId: selectedAssigneeId,
-          clientId: selectedClientId === 'all' ? null : selectedClientId,
+          companyId: selectedClientId === 'all' ? null : selectedClientId,
           hiddenProjectTypes,
           fromWeeks: doneWeeks,
           toWeeks,
@@ -470,19 +473,22 @@ export function MyTasksPage({
     <>
       <ClientSelector
         clients={clients}
-        selectedClientId={boardScope.clientId}
+        selectedClientId={boardScope.companyId}
         hiddenProjectTypes={boardScope.hiddenProjectTypes}
         onScopeChange={applyBoardScope}
       />
-      <PersonSelector
-        admins={admins}
-        selectedUserId={selectedAssigneeId}
-        currentUserId={user.id}
-      />
+      {/* Sales users only ever see their own board. */}
+      {isAdmin ? (
+        <PersonSelector
+          admins={admins}
+          selectedUserId={selectedAssigneeId}
+          currentUserId={user.id}
+        />
+      ) : null}
     </>
   )
   const scopeCount =
-    (boardScope.clientId !== 'all' ? 1 : 0) +
+    (boardScope.companyId !== 'all' ? 1 : 0) +
     (boardScope.hiddenProjectTypes.length > 0 ? 1 : 0) +
     (selectedAssigneeId !== user.id ? 1 : 0)
 
@@ -494,7 +500,7 @@ export function MyTasksPage({
       count={{ label: 'tasks', total: totalTaskCount }}
       primaryAction={
         <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
-          {/* Below md the pickers move into a slide-out so Add task keeps
+          {/* Below md the pickers move into a slide-out so Create task keeps
               the row; from md up they sit inline as before. */}
           <FilterSheetButton className='md:hidden' activeCount={scopeCount}>
             {scopePickers}
@@ -506,7 +512,7 @@ export function MyTasksPage({
             onClick={() => handleStartCreateTask('ON_DECK')}
           >
             <Plus className='h-4 w-4' />
-            Add task
+            Create task
           </Button>
         </div>
       }
@@ -616,9 +622,7 @@ function buildMemberDirectory(
     project.members.forEach(member => {
       const user = member.user
       const name =
-        user.full_name?.trim() ||
-        user.email?.split('@')[0] ||
-        'Unassigned member'
+        user.full_name?.trim() || user.email?.split('@')[0] || 'Unnamed user'
       directory.set(user.id, { name, avatarUrl: user.avatar_url })
     })
   })
@@ -673,16 +677,11 @@ function resolveClientLabel(project: ProjectWithRelations): string {
 
 function buildClientHref(project: ProjectWithRelations): string | null {
   // Only link to client pages for CLIENT-type projects with a valid client
-  if (project.type !== 'CLIENT' || !project.client) {
+  if (project.type !== 'CLIENT' || !project.client?.company_id) {
     return null
   }
 
-  const clientSlug = project.client.slug
-  if (clientSlug) {
-    return `/clients/${clientSlug}`
-  }
-
-  return `/clients/${project.client.id}`
+  return companySheetHref(project.client.company_id)
 }
 
 function buildProjectHref(project: ProjectWithRelations): string | null {

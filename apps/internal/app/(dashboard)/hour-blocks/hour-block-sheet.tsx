@@ -16,6 +16,7 @@ import { Textarea } from '@pts/ui/textarea'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   useHourBlockSheetState,
@@ -23,7 +24,7 @@ import {
 } from '@/lib/settings/hour-blocks/use-hour-block-sheet-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
-  ClientRow,
+  HourBlockClient,
   HourBlockWithClient,
 } from '@/lib/settings/hour-blocks/hour-block-form'
 import { HourBlockArchiveDialog } from './_components/hour-block-archive-dialog'
@@ -36,7 +37,7 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   hourBlock: HourBlockWithClient | null
-  clients: ClientRow[]
+  clients: HourBlockClient[]
 }
 
 export function HourBlockSheet({
@@ -48,7 +49,6 @@ export function HourBlockSheet({
 }: Props) {
   const {
     form,
-    feedback,
     isEditing,
     isPending,
     clientOptions,
@@ -105,12 +105,18 @@ export function HourBlockSheet({
       <Sheet open={open} onOpenChange={handleSheetOpenChange}>
         <SheetContent
           hideCloseButton
-          size='lg'
+          columns={1}
           className='flex w-full flex-col gap-0 overflow-hidden p-0'
         >
           <SheetFormHeader
             entity='hourBlock'
-            title={isEditing ? 'Edit hour block' : 'Add hour block'}
+            title={
+              !isEditing
+                ? 'Create hour block'
+                : hourBlock?.client?.name
+                  ? `Hour block for ${hourBlock.client.name}`
+                  : 'Hour block'
+            }
           />
           <Form {...form}>
             <div className='flex-1 overflow-y-auto'>
@@ -119,56 +125,88 @@ export function HourBlockSheet({
                 onSubmit={form.handleSubmit((values: HourBlockFormValues) =>
                   handleSubmit(values)
                 )}
-                className='flex flex-col gap-5 px-6 pt-6 pb-8'
+                className='flex flex-col gap-6 px-6 pt-6 pb-8'
               >
-                <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-                  <FormField
-                    control={form.control}
-                    name='clientId'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client</FormLabel>
-                        <FormControl>
-                          <DisabledFieldTooltip
-                            disabled={clientField.disabled}
-                            reason={clientField.reason}
-                          >
-                            <SearchableCombobox
-                              ref={firstFieldRef}
-                              name={field.name}
-                              value={field.value ?? ''}
-                              onChange={field.onChange}
-                              onBlur={field.onBlur}
-                              items={clientOptions}
-                              searchPlaceholder='Search clients...'
-                              emptyMessage='No clients found.'
+                <SheetSection>
+                  <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                    <FormField
+                      control={form.control}
+                      name='companyId'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel entity='client'>Client</FormLabel>
+                          <FormControl>
+                            <DisabledFieldTooltip
                               disabled={clientField.disabled}
-                            />
-                          </DisabledFieldTooltip>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                              reason={clientField.reason}
+                            >
+                              <SearchableCombobox
+                                ref={firstFieldRef}
+                                name={field.name}
+                                value={field.value ?? ''}
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                                items={clientOptions}
+                                searchPlaceholder='Search clients…'
+                                emptyMessage='No clients found.'
+                                disabled={clientField.disabled}
+                              />
+                            </DisabledFieldTooltip>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='hoursPurchased'
+                      render={({ field }) => (
+                        // Its own row under Client, still half width.
+                        <FormItem className='sm:col-start-1'>
+                          <FormLabel>Hours purchased</FormLabel>
+                          <FormControl>
+                            <DisabledFieldTooltip
+                              disabled={hoursField.disabled}
+                              reason={hoursField.reason}
+                            >
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                type='number'
+                                step='1'
+                                min='1'
+                                inputMode='numeric'
+                                disabled={hoursField.disabled}
+                              />
+                            </DisabledFieldTooltip>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
-                    name='hoursPurchased'
+                    name='notes'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hours purchased</FormLabel>
+                        <FormLabel>
+                          Notes{' '}
+                          <span className='text-muted-foreground text-xs'>
+                            (optional)
+                          </span>
+                        </FormLabel>
                         <FormControl>
                           <DisabledFieldTooltip
-                            disabled={hoursField.disabled}
-                            reason={hoursField.reason}
+                            disabled={notesField.disabled}
+                            reason={notesField.reason}
                           >
-                            <Input
+                            <Textarea
                               {...field}
                               value={field.value ?? ''}
-                              type='number'
-                              step='1'
-                              min='1'
-                              inputMode='numeric'
-                              disabled={hoursField.disabled}
+                              placeholder='e.g. Comped 2 hours for leaving a review'
+                              rows={3}
+                              disabled={notesField.disabled}
                             />
                           </DisabledFieldTooltip>
                         </FormControl>
@@ -176,43 +214,9 @@ export function HourBlockSheet({
                       </FormItem>
                     )}
                   />
-                </div>
-                <FormField
-                  control={form.control}
-                  name='notes'
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Notes{' '}
-                        <span className='text-muted-foreground text-xs'>
-                          (optional)
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <DisabledFieldTooltip
-                          disabled={notesField.disabled}
-                          reason={notesField.reason}
-                        >
-                          <Textarea
-                            {...field}
-                            value={field.value ?? ''}
-                            placeholder='e.g. Comped 2 hours for leaving a review'
-                            rows={3}
-                            disabled={notesField.disabled}
-                          />
-                        </DisabledFieldTooltip>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                </SheetSection>
                 {hourBlock ? (
                   <HourBlockInvoiceSection hourBlock={hourBlock} />
-                ) : null}
-                {feedback ? (
-                  <p className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm'>
-                    {feedback}
-                  </p>
                 ) : null}
               </form>
             </div>
@@ -226,10 +230,10 @@ export function HourBlockSheet({
               canUndo={canUndo}
               canRedo={canRedo}
               isEditing={isEditing}
-              deleteDisabled={deleteButton.disabled}
-              deleteDisabledReason={deleteButton.reason}
-              onRequestDelete={handleRequestDelete}
-              deleteAriaLabel='Archive hour block'
+              archiveDisabled={deleteButton.disabled}
+              archiveDisabledReason={deleteButton.reason}
+              onRequestArchive={handleRequestDelete}
+              archiveAriaLabel='Archive hour block'
             />
           </Form>
         </SheetContent>

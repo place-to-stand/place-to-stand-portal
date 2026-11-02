@@ -13,7 +13,7 @@ import {
 } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { activityLogs, formSubmissions } from '@/lib/db/schema'
+import { formSubmissions } from '@/lib/db/schema'
 import {
   DEFAULT_SUBMISSIONS_SORT,
   type SubmissionSortField,
@@ -494,87 +494,6 @@ export async function unacknowledgeFormSubmission(id: string) {
     .returning()
 
   return row ?? null
-}
-
-/**
- * "Delete forever" — restricted to rows that are already archived (mirrors
- * the contacts archive-then-destroy flow). NOT a SQL DELETE: the row is
- * PII-stripped and tombstoned (`destroyed_at`) in the same transaction that
- * purges its SUBMISSION activity logs, because:
- *   1. Deleting the row would free its unique `session_key`, letting a late
- *      intake beacon resurrect the "deleted" session as a fresh row.
- *   2. The confirm dialog promises the history goes too — prior activity
- *      summaries embed the prospect's name/email.
- * The tombstone is invisible to every list/count, rejects all future
- * beacons, and can never be restored.
- */
-export async function destroyFormSubmission(id: string) {
-  return db.transaction(async tx => {
-    const [row] = await tx
-      .update(formSubmissions)
-      .set({
-        destroyedAt: sql`timezone('utc'::text, now())`,
-        updatedAt: sql`timezone('utc'::text, now())`,
-
-        // Strip every PII / payload field; only the skeleton (id,
-        // session_key, kind, status, timing, source_detail) remains.
-        lastTrigger: null,
-        contactName: null,
-        contactEmail: null,
-        contactCompany: null,
-        contactWebsite: null,
-        subject: null,
-        message: null,
-        marketingConsent: null,
-        responses: null,
-        result: null,
-        phaseId: null,
-        topServiceId: null,
-        posthogDistinctId: null,
-        posthogSessionId: null,
-        posthogReplayUrl: null,
-        utmSource: null,
-        utmMedium: null,
-        utmCampaign: null,
-        utmTerm: null,
-        utmContent: null,
-        gclid: null,
-        referrer: null,
-        landingPath: null,
-        viewport: null,
-        screenWidth: null,
-        timezone: null,
-        language: null,
-        userAgent: null,
-        acknowledgedAt: null,
-        acknowledgedBy: null,
-      })
-      .where(
-        and(
-          eq(formSubmissions.id, id),
-          isNotNull(formSubmissions.deletedAt),
-          isNull(formSubmissions.destroyedAt)
-        )
-      )
-      .returning()
-
-    if (!row) {
-      return null
-    }
-
-    // The promised "and its history": hard-delete the submission's activity
-    // rows — their summaries carry the prospect's name/email.
-    await tx
-      .delete(activityLogs)
-      .where(
-        and(
-          eq(activityLogs.targetType, 'SUBMISSION'),
-          eq(activityLogs.targetId, id)
-        )
-      )
-
-    return row
-  })
 }
 
 export async function getFormSubmissionById(
