@@ -2415,8 +2415,9 @@ export const currentUserWithRole = pgView('current_user_with_role', {
 
 /**
  * Who can see which client in the client portal, derived from memberships:
- * a current, portal-enabled membership at the client's company. The one
- * source both portals read; there is nothing to keep in sync.
+ * a current, portal-enabled membership at the client's company, held by a
+ * live Client sign-in (0116: role CLIENT, not switched off or archived).
+ * The one source both portals read; there is nothing to keep in sync.
  */
 export const clientPortalAccess = pgView('client_portal_access', {
   companyId: uuid('company_id').notNull(),
