@@ -6,6 +6,7 @@ import {
   parseCompaniesSearchParams,
 } from '@/lib/companies/filters'
 import { countCompanies, listCompanies } from '@/lib/queries/companies'
+import { readPageSize } from '@/lib/pagination/page-size.server'
 
 import { CompaniesPageBody } from './_components/companies-page-body'
 
@@ -20,15 +21,26 @@ export default async function CompaniesPage({
   const params = await searchParams
   const listParams = parseCompaniesSearchParams(params)
 
-  const [companies, counts] = await Promise.all([
+  const [companies, counts, pageSize] = await Promise.all([
     listCompanies(user, { status: 'active', search: listParams.search }),
     countCompanies(user),
+    readPageSize(),
   ])
+  // Filter and sort the whole list, then show one page of it.
+  const filtered = applyCompanyListParams(companies, listParams)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const currentPage = Math.min(listParams.page, totalPages)
+  const pageRows = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  )
 
   return (
     <CompaniesPageBody
       mode='active'
-      companies={applyCompanyListParams(companies, listParams)}
+      companies={pageRows}
+      filteredCount={filtered.length}
+      pagination={{ currentPage, totalPages, pageSize }}
       totalCount={counts.active}
       params={listParams}
     />

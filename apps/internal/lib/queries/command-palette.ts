@@ -1,5 +1,6 @@
 import { isClientCompany } from '@pts/db/client-state'
 import { clientNameSql } from '@pts/db/names'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import 'server-only'
 
 import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
@@ -15,8 +16,9 @@ const RESULT_LIMIT = 8
 type PaletteCompanyResult = {
   id: string
   name: string
-  /** Billed now: shown with a Client badge. */
+  /** Billed now: shown with its billing type. */
   isClient: boolean
+  billingType: 'prepaid' | 'net_30' | null
 }
 
 type PaletteProjectResult = {
@@ -94,6 +96,9 @@ export async function searchCommandPalette(
         id: companies.id,
         name: companies.name,
         isClient: sql<boolean>`${isClientCompany()}`,
+        billingType: sql<
+          'prepaid' | 'net_30' | null
+        >`case when ${isClientCompany()} then ${currentBillingTypeSql()} end`,
       })
       .from(companies)
       .where(companyCondition)

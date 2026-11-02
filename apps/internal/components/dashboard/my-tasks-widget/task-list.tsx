@@ -270,8 +270,8 @@ function getClientLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
     return { href: null }
   }
 
-  // A client is its company: open the company on its Projects tab.
-  return { href: companySheetHref(client.id, 'projects') }
+  // A client is its company: open the company.
+  return { href: companySheetHref(client.id) }
 }
 
 function getClientDisplayName(task: AssignedTaskSummary): string {

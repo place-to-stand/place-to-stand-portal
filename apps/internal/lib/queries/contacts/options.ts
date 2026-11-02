@@ -17,6 +17,8 @@ export type ContactOption = {
   companyName: string | null
   /** Every company they're currently at (so a lead can flag a mismatch). */
   companyIds: string[]
+  /** They have a photo (`/api/storage/person-avatar/<id>`), else initials. */
+  hasPhoto: boolean
 }
 
 /** Live contacts for the contact pickers (lead sheet), A–Z. */
@@ -38,6 +40,7 @@ export async function listContactOptions(
         select array_agg(m.company_id) from memberships m
         where m.contact_id = "contacts"."id" and m.ended_at is null
       ), '{}')`,
+      hasPhoto: sql<boolean>`${contacts.avatarUrl} is not null`,
     })
     .from(contacts)
     .where(isNull(contacts.deletedAt))

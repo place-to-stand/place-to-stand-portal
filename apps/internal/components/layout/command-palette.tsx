@@ -24,7 +24,7 @@ import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
 import type { PaletteSearchResult } from '@/lib/queries/command-palette'
-import { ClientBadge } from '@/components/clients/client-badge'
+import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 
@@ -220,7 +220,12 @@ function CommandPalette() {
               >
                 <ENTITY_ICONS.company className='size-4' />
                 <span className='truncate'>{company.name}</span>
-                {company.isClient ? <ClientBadge className='ml-auto' /> : null}
+                {company.isClient ? (
+                  <CompanyBillingMark
+                    billingType={company.billingType}
+                    className='ml-auto'
+                  />
+                ) : null}
               </CommandItem>
             ))}
           </CommandGroup>

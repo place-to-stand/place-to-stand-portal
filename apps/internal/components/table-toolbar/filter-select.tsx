@@ -24,7 +24,7 @@ export type FilterOption = {
    * show that badge. `''` is the plain outline badge (roles).
    */
   badgeClassName?: string
-  /** A ready-made badge, for one with more than a tone (`<ClientBadge />`). */
+  /** A ready-made badge, for one with more than a tone. */
   badge?: ReactNode
 }
 

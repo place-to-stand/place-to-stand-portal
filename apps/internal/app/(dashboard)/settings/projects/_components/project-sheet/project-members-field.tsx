@@ -3,16 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
-import { Plus, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
-import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Skeleton } from '@pts/ui/skeleton'
-import {
-  SheetRecordList,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
+import { EntityList } from '@/components/sheets/entity-list'
+import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectSheetFormValues } from '@/lib/settings/projects/use-project-sheet-state'
 
@@ -20,7 +18,6 @@ import {
   buildMemberOptions,
   type MemberCandidate,
 } from './project-members-utils'
-import { UserAvatar } from '@/components/ui/user-avatar'
 
 type ProjectMembersResponse = {
   candidates: MemberCandidate[]
@@ -90,28 +87,23 @@ export function ProjectMembersField({
 
   const setMembers = (next: string[]) =>
     form.setValue('memberIds', next, { shouldDirty: true })
+  const removals = usePendingRemovals<MemberCandidate>(memberKey, members)
 
   // The + and the empty state open the same picker.
   const [pickerOpen, setPickerOpen] = useState(false)
   const canAdd = options.length > 0 && !disabled
 
-  const addButton = (
-    <RowActionButton
-      type='button'
-      label='Add member'
-      icon={<Plus />}
-      disabled={disabled}
-    />
-  )
-
   // Same section shape as GitHub, Vercel and Supabase below: title row with
   // an add button, one boxed row per member, an empty state.
   return (
-    <SheetSection
+    <EntityList
       title='Members'
-      description='Admins see every project. Sales staff see only the projects they are members of.'
-      action={
-        canAdd ? (
+      description='Admins see every project. Add additional staff here.'
+      add={{
+        label: 'Add member',
+        onAdd: () => setPickerOpen(true),
+        disabled: !canAdd,
+        render: button => (
           <SearchableCombobox
             open={pickerOpen}
             onOpenChange={setPickerOpen}
@@ -124,64 +116,58 @@ export function ProjectMembersField({
             searchPlaceholder='Search people…'
             emptyMessage='No sales staff found.'
             ariaLabel='Add member'
-            trigger={addButton}
+            trigger={button}
           />
-        ) : (
-          addButton
-        )
+        ),
+      }}
+      isEmpty={members.length === 0 && removals.pending.length === 0}
+      emptyMessage={
+        options.length > 0 ? 'No members yet.' : 'No sales staff yet.'
+      }
+      status={
+        isLoading ? (
+          <Skeleton className='h-11 w-full' />
+        ) : isError ? (
+          <p className='text-destructive text-sm'>
+            Members could not be loaded. Saving won&rsquo;t change them.
+          </p>
+        ) : undefined
       }
     >
-      {isLoading ? (
-        <Skeleton className='h-11 w-full' />
-      ) : isError ? (
-        <p className='text-destructive text-sm'>
-          Members could not be loaded. Saving won&rsquo;t change them.
-        </p>
-      ) : members.length === 0 ? (
-        <EmptyState
-          message={
-            options.length > 0 ? 'No members yet.' : 'No sales staff yet.'
-          }
-          label={canAdd ? 'Add member' : undefined}
-          onClick={canAdd ? () => setPickerOpen(true) : undefined}
-        />
-      ) : (
-        <SheetRecordList>
-          {members.map(member => {
-            const name = member.fullName ?? member.email
-            return (
-              <SheetRecordRow
-                key={member.id}
-                leading={
-                  <UserAvatar
-                    size='xs'
-                    userId={member.id}
-                    name={name}
-                    hasPhoto={Boolean(member.avatarUrl)}
-                    alt=''
-                  />
-                }
-                title={name}
-                description={member.fullName ? member.email : null}
-                actions={
-                  <RowActionButton
-                    type='button'
-                    label={`Remove ${name}`}
-                    icon={<X />}
-                    className='text-muted-foreground hover:text-destructive'
-                    disabled={disabled}
-                    onClick={() =>
-                      setMembers(
-                        (memberIds ?? []).filter(id => id !== member.id)
-                      )
-                    }
-                  />
-                }
+      {removals.rows.map(({ item: member, pending }) => {
+        const name = member.fullName ?? member.email
+        return (
+          <SheetRecordRow
+            key={member.id}
+            icon={ENTITY_ICONS.contact}
+            title={name}
+            description={member.fullName ? member.email : null}
+            pendingRemoval={
+              pending
+                ? {
+                    disabled,
+                    onUndo: () => setMembers([...(memberIds ?? []), member.id]),
+                  }
+                : undefined
+            }
+            actions={
+              <RowActionButton
+                type='button'
+                label={`Remove ${name}`}
+                icon={<X />}
+                className='text-muted-foreground hover:text-destructive'
+                disabled={disabled}
+                onClick={() => {
+                  removals.markRemoved(member)
+                  setMembers((memberIds ?? []).filter(id => id !== member.id))
+                }}
               />
-            )
-          })}
-        </SheetRecordList>
-      )}
-    </SheetSection>
+            }
+          />
+        )
+      })}
+    </EntityList>
   )
 }
+
+const memberKey = (member: MemberCandidate) => member.id

@@ -7,10 +7,14 @@ import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { RoleBadge } from '@/components/auth/role-badge'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { ClientBadge } from '@/components/clients/client-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
-import { SectionAddButton } from '@/components/sheets/section-add-button'
+import { EntityList } from '@/components/sheets/entity-list'
+import { InlineReveal } from '@/components/ui/inline-reveal'
+import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -157,12 +161,26 @@ export function ComponentsButtons() {
             </Button>
           </DisabledFieldTooltip>
         </Example>
-        <Example caption='SectionAddButton: sheet section title rows'>
-          <SectionAddButton label='Add person' />
-          <SectionAddButton
-            label='Add person'
-            disabledReason='Save the company first.'
-          />
+        <Example caption='EntityList: the + only comes with its list (empty: clickable; locked: disabled with a reason)'>
+          <div className='grid w-full grid-cols-1 gap-6 sm:grid-cols-2'>
+            <EntityList
+              title='People'
+              add={{ label: 'Add person', onAdd: noop }}
+              isEmpty
+              emptyMessage='No people here yet.'
+            />
+            <EntityList
+              title='Projects'
+              add={{
+                label: 'Create project',
+                disabledReason: 'Save the company first.',
+              }}
+              isEmpty
+              emptyMessage='Add projects after you save the company.'
+            />
+            <InlineFormExample />
+            <RevealOnAddExample />
+          </div>
         </Example>
         <Example caption='RowActionButton: icon-only, real tooltip'>
           <RowActionButton label='Delete attachment' icon={<Trash2 />} />
@@ -220,16 +238,18 @@ export function ComponentsBadges() {
         label='Domain badges'
         className='grid grid-cols-1 gap-6 md:grid-cols-2'
       >
-        <Example caption='Label: ClientBadge, the client state of a company (entity icon)'>
+        <Example caption='Status: CompanyBillingMark, a company billed now (admins only; nothing for Sales)'>
+          <BillingTypeBadge billingType='prepaid' />
+          <BillingTypeBadge billingType='net_30' />
+        </Example>
+        <Example caption='Status: ClientBadge, a company billed now on the People list (admins only)'>
           <ClientBadge />
         </Example>
-        <Example caption='Label: sign-in role (ROLE_LABELS), no icon'>
+        <Example caption='Status: RoleBadge, a sign-in role. Grey with its state when switched off or archived'>
           {ROLES.map(role => (
-            <Badge key={role} variant='outline'>
-              {ROLE_LABELS[role]}
-            </Badge>
+            <RoleBadge key={role} role={role} />
           ))}
-          <Badge variant='outline'>{ROLE_LABELS.SALES} · off</Badge>
+          <RoleBadge role='SALES' state='off' />
         </Example>
         <Example caption='Status: LeadStatusBadge'>
           {LEAD_STATUS_VALUES.map(status => (
@@ -269,3 +289,56 @@ export function ComponentsBadges() {
 }
 
 function noop() {}
+
+/** RevealOnAdd: rows added after the list loads ease in; the first ones don't. */
+function RevealOnAddExample() {
+  const [rows, setRows] = useState(['Design', 'Build'])
+  const added = useAddedIds(rows)
+  return (
+    <EntityList
+      title='Line items'
+      add={{
+        label: 'Add line item',
+        onAdd: () =>
+          setRows(current => [...current, `Line ${current.length + 1}`]),
+      }}
+      isEmpty={false}
+      emptyMessage=''
+    >
+      {rows.map(row => (
+        <RevealOnAdd key={row} animate={added.has(row)}>
+          <div className='bg-card rounded-lg border px-3 py-2 text-sm'>
+            {row}
+          </div>
+        </RevealOnAdd>
+      ))}
+    </EntityList>
+  )
+}
+
+/** EntityList with an inline form: the + turns into an X while it's open. */
+function InlineFormExample() {
+  const [open, setOpen] = useState(false)
+  return (
+    <EntityList
+      title='Comments'
+      add={{ label: 'Add comment', onAdd: () => setOpen(true) }}
+      inlineForm={
+        <InlineReveal open={open}>
+          <div className='pb-2'>
+            <div className='bg-card flex justify-end gap-2 rounded-lg border p-3'>
+              <Button variant='outline' onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => setOpen(false)}>Comment</Button>
+            </div>
+          </div>
+        </InlineReveal>
+      }
+      inlineFormOpen={open}
+      onInlineFormClose={() => setOpen(false)}
+      isEmpty
+      emptyMessage='No comments yet.'
+    />
+  )
+}

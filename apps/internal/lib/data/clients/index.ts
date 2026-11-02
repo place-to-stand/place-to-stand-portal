@@ -430,7 +430,7 @@ export const resolveClientIdentifier = cache(
     let client: ClientDetail
 
     if (isUUID) {
-      // Old client ids (before 0111) still resolve, for one release.
+      // Old client ids (before 0111) still resolve, for good (client_id_map).
       client = await fetchClientById(
         user,
         await companyIdForLegacyClientId(identifier)

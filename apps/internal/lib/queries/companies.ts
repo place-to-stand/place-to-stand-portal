@@ -1,3 +1,4 @@
+import { getClientHoursTotals } from '@pts/db/hours'
 import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
@@ -42,6 +43,12 @@ import {
   setMembershipTitle,
 } from '@/lib/queries/memberships'
 import { roleCan } from '@/lib/auth/capabilities'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import {
+  currentOriginationContactIdSql,
+  currentOriginationUserIdSql,
+  fetchLatestClosersByClient,
+} from '@/lib/queries/clients/commission-terms'
 import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -113,7 +120,28 @@ export async function listCompanies(
       id: companies.id,
       name: companies.name,
       website: companies.website,
+      slug: companies.slug,
       isStaff: companies.isStaff,
+      billingType: currentBillingTypeSql(),
+      originationUserId: currentOriginationUserIdSql(),
+      originationContactId: currentOriginationContactIdSql(),
+      originationName: sql<string | null>`coalesce(
+        -- A user is called by their contact's name (see personNameOf).
+        (select uc.name from contacts uc
+          where uc.user_id = ${currentOriginationUserIdSql()}),
+        (select u.email from users u
+          where u.id = ${currentOriginationUserIdSql()}),
+        (select oc.name from contacts oc
+          where oc.id = ${currentOriginationContactIdSql()})
+      )`,
+      projects: sql<CompanyListItem['projects']>`coalesce((
+        select json_agg(
+          json_build_object('id', p.id, 'name', p.name, 'slug', p.slug)
+          order by lower(p.name)
+        )
+        from projects p
+        where p.company_id = companies.id and p.deleted_at is null
+      ), '[]'::json)`,
       // Billed now: the company is its own client.
       isClient: sql<boolean | null>`${isClientCompany()}`,
       // Billed before but not now.
@@ -160,10 +188,51 @@ export async function listCompanies(
         : desc(companies.deletedAt)
     )
 
+  // Billing and commission are for people who manage clients.
+  const seesBilling = isAdminRole(user.role)
+  const clientIds = rows.filter(row => row.isClient).map(row => row.id)
+  const [closersByClient, hoursByClient] = seesBilling
+    ? await Promise.all([
+        fetchLatestClosersByClient(clientIds),
+        getClientHoursTotals(
+          db,
+          rows
+            .filter(row => row.isClient && row.billingType === 'prepaid')
+            .map(row => row.id)
+        ),
+      ])
+    : [new Map(), new Map()]
+
   return rows.map(row => ({
     id: row.id,
     name: row.name,
     website: row.website,
+    slug: row.slug,
+    billingType: seesBilling && row.isClient ? row.billingType : null,
+    origination:
+      seesBilling && row.isClient && row.originationName
+        ? {
+            userId: row.originationUserId ?? null,
+            contactId: row.originationContactId ?? null,
+            name: row.originationName,
+          }
+        : null,
+    closers: (closersByClient.get(row.id) ?? []).map(
+      (closer: { kind: 'user' | 'contact'; id: string; name: string }) => ({
+        kind: closer.kind,
+        id: closer.id,
+        name: closer.name,
+      })
+    ),
+    projects: row.projects ?? [],
+    // Prepaid clients only: none bought or logged yet reads as 0 of 0.
+    hours:
+      seesBilling && row.isClient && row.billingType === 'prepaid'
+        ? {
+            remaining: hoursByClient.get(row.id)?.remaining ?? 0,
+            purchased: hoursByClient.get(row.id)?.purchased ?? 0,
+          }
+        : null,
     companyId: row.isClient ? row.id : null,
     clientName: row.isClient ? row.name : null,
     formerClient: Boolean(row.formerClient),
@@ -270,20 +339,21 @@ export async function getCompanyDetail(
   const signInUserIds = seesSignIns
     ? memberRows.flatMap(member => (member.userId ? [member.userId] : []))
     : []
+  const signInRows = signInUserIds.length
+    ? await db
+        .select({
+          id: users.id,
+          role: users.role,
+          off: sql<boolean>`(${users.disabledAt} is not null or ${users.deletedAt} is not null)`,
+        })
+        .from(users)
+        .where(inArray(users.id, signInUserIds))
+    : []
   const disabledSignIns = new Set(
-    signInUserIds.length
-      ? (
-          await db
-            .select({ id: users.id })
-            .from(users)
-            .where(
-              and(
-                inArray(users.id, signInUserIds),
-                sql`(${users.disabledAt} is not null or ${users.deletedAt} is not null)`
-              )
-            )
-        ).map(signIn => signIn.id)
-      : []
+    signInRows.filter(signIn => signIn.off).map(signIn => signIn.id)
+  )
+  const signInRoles = new Map(
+    signInRows.map(signIn => [signIn.id, signIn.role])
   )
 
   const people = memberRows
@@ -298,8 +368,11 @@ export async function getCompanyDetail(
       hasPortalLogin: seesSignIns && Boolean(member.userId),
       signInLocked: !isAdminRole(user.role) && Boolean(member.userId),
       signInDisabled: Boolean(
-        member.userId && disabledSignIns.has(member.userId)
+        seesSignIns && member.userId && disabledSignIns.has(member.userId)
       ),
+      signInRole: member.userId
+        ? (signInRoles.get(member.userId) ?? null)
+        : null,
     }))
     // Primary contact first.
     .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
@@ -311,7 +384,8 @@ export async function getCompanyDetail(
     primaryContactName: primary?.name ?? null,
     clients: clientRows,
     formerClientId: clientRows.length ? null : (formerRows[0]?.id ?? null),
-    billingEndsOn: clientRows.length ? row.billingEndsOn : null,
+    // When billing ends is billing information: admins only.
+    billingEndsOn: seesSignIns && clientRows.length ? row.billingEndsOn : null,
     contacts: people,
     leads: leadRows.map(lead => ({
       id: lead.id,

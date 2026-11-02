@@ -7,8 +7,6 @@ import { billingOpenSql } from '@pts/db/client-state'
 import type { AppUser } from '@/lib/auth/session'
 import {
   afterSignInsCommitted,
-  discardPreparedSignIns,
-  prepareClientSignIns,
   writeClientSignIns,
   type PreparedSignIn,
 } from '@/lib/companies/portal-sign-ins'
@@ -60,28 +58,19 @@ export async function planPersonPortalAccess(
 }
 
 /**
- * Turning portal access on for someone with no sign-in gives them a Client
- * sign-in on Save, as on the company sheet: the auth user is made here
- * (undone if the Save fails), the row in the transaction, the invite after.
- * Not when the sheet's own Sign-in fields give them one in this Save.
+ * Portal access never makes a sign-in: the person sheet's Sign-in does
+ * (Can sign in, Role Client), written before the switches in the same Save.
+ * Kept as a step so the save's shape stays the same; it prepares nothing.
  */
 export async function preparePortalSignIn(
   plan: ContactSavePlan,
   portal: PersonPortalPlan,
   options: { hasSignIn: boolean; undo: Undo }
 ): Promise<{ signIns: PreparedSignIn[] } | { error: string }> {
-  if (!portal.grant.length || options.hasSignIn) return { signIns: [] }
-  const prepared = await prepareClientSignIns([
-    {
-      contactId: plan.contactId,
-      name: plan.values.name,
-      email: plan.values.email,
-    },
-  ])
-  if (!prepared.ok) return { error: prepared.error }
-  const { signIns } = prepared
-  options.undo.push(() => discardPreparedSignIns(signIns))
-  return { signIns }
+  void plan
+  void portal
+  void options
+  return { signIns: [] }
 }
 
 /** Writes the sign-in (if any) and the switches inside the Save's transaction. */

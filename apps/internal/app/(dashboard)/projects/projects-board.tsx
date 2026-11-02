@@ -166,7 +166,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
     <PageShell
       breadcrumbs={boardBreadcrumbs}
       // Only the kanban board pins to the viewport (columns scroll
-      // internally). Document-flow tabs (review, overview, …) need
+      // internally). Document-flow tabs (review, …) need
       // min-h-fit to defeat the shell wrapper's min-h-0 clamp so the box
       // grows with content and main's bottom padding is honored.
       contentClassName={

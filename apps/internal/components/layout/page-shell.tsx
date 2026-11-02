@@ -113,7 +113,9 @@ export function PageShell({
       </header>
       <main className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4'>
         {hasToolbar ? (
-          <div className='mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+          // The same space below the toolbar as the page padding above it
+          // (12px on phones, 16px from sm).
+          <div className='mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-center sm:justify-between'>
             {tabs?.length && activeTab ? (
               <TabsNav
                 tabs={tabs}

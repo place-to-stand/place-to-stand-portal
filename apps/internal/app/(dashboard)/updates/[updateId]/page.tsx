@@ -43,9 +43,7 @@ export async function generateMetadata({
   const update = await loadUpdate(updateId)
 
   return {
-    title: update
-      ? `${update.subject} | Updates`
-      : 'Update not found',
+    title: update ? `${update.subject} | Updates` : 'Update not found',
   }
 }
 
@@ -83,7 +81,7 @@ export default async function UpdatePage({
         {
           label: client.name,
           href: client.companyId
-            ? companySheetHref(client.companyId, 'projects')
+            ? companySheetHref(client.companyId)
             : undefined,
         },
         { label: update.status === 'SENT' ? 'Sent update' : 'Draft update' },

@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { GripVertical, Trash2, TriangleAlert } from 'lucide-react'
 
 import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 import { Button } from '@pts/ui/button'
@@ -32,8 +32,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FIELD_STACK_CLASS,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
+import { Label } from '@pts/ui/label'
 import { formatCurrency } from '@pts/ui/numbers'
 import {
   SHEET_SIDE_COLUMN_CLASS,
@@ -42,7 +44,8 @@ import {
 } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
+import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -71,6 +74,7 @@ import { InvoiceEmailDialog } from './_components/invoice-email-dialog'
 import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-column'
 import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
 import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
+import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 
 const INVOICE_FORM_ID = 'invoice-form'
 
@@ -210,6 +214,8 @@ export function InvoiceSheet({
     () => fieldArray.fields.map(f => f.id),
     [fieldArray.fields]
   )
+  // Rows added in this sheet ease in; the ones it opened with don't.
+  const addedLineItemIds = useAddedIds(lineItemIds)
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -253,8 +259,8 @@ export function InvoiceSheet({
         toast({
           title: 'Invoice marked as sent',
           description: copied
-            ? 'The client link is copied to your clipboard.'
-            : 'Copy the client link from the top of this panel.',
+            ? 'The public link is copied to your clipboard.'
+            : 'Copy the public link from the top of this panel.',
         })
         router.refresh()
       }
@@ -403,7 +409,7 @@ export function InvoiceSheet({
                 <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
                   {/* Scrollable form body */}
                   <div className='flex-1 p-6 lg:overflow-y-auto'>
-                    <div className='flex flex-col gap-5'>
+                    <div className='flex flex-col gap-6'>
                       {/* ───── Header Fields ───── */}
                       <div className='grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2'>
                         <FormField
@@ -411,7 +417,7 @@ export function InvoiceSheet({
                           name='companyId'
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Client</FormLabel>
+                              <FormLabel entity='client'>Client</FormLabel>
                               <FormControl>
                                 <DisabledFieldTooltip
                                   disabled={clientField.disabled}
@@ -470,26 +476,22 @@ export function InvoiceSheet({
                         )}
                       />
 
-                      <Separator />
-
                       {/* ───── Line Items ───── */}
-                      <SheetSection
+                      {/* Never empty: an invoice keeps at least one line. */}
+                      <EntityList
                         title='Line items'
-                        action={
-                          !isReadOnly ? (
-                            <Button
-                              type='button'
-                              variant='ghost'
-                              size='sm'
-                              onClick={handleAddLineItem}
-                              disabled={standardField.disabled}
-                              className='gap-1 text-xs'
-                            >
-                              <Plus className='h-3 w-3' />
-                              Add item
-                            </Button>
-                          ) : null
+                        add={
+                          !isReadOnly
+                            ? {
+                                label: 'Add line item',
+                                onAdd: handleAddLineItem,
+                                disabled: standardField.disabled,
+                              }
+                            : undefined
                         }
+                        isEmpty={false}
+                        emptyMessage=''
+                        className={SHEET_BLOCK_CLASS}
                       >
                         <FormMessage>
                           {form.formState.errors.lineItems?.message}
@@ -505,29 +507,33 @@ export function InvoiceSheet({
                             strategy={verticalListSortingStrategy}
                           >
                             {fieldArray.fields.map((field, index) => (
-                              <SortableLineItemRow
+                              <RevealOnAdd
                                 key={field.id}
-                                id={field.id}
-                                index={index}
-                                form={form}
-                                productCatalogOptions={productCatalogOptions}
-                                catalogItemMap={catalogItemMap}
-                                onProductSelect={handleProductSelect}
-                                onRemove={handleRemoveLineItem}
-                                canRemove={fieldArray.fields.length > 1}
-                                disabled={standardField.disabled || isReadOnly}
-                                isReadOnly={isReadOnly}
-                                isNet30={
-                                  invoice?.billing_type === 'net_30' ||
-                                  selectedClientBillingType === 'net_30'
-                                }
-                              />
+                                animate={addedLineItemIds.has(field.id)}
+                              >
+                                <SortableLineItemRow
+                                  id={field.id}
+                                  index={index}
+                                  form={form}
+                                  productCatalogOptions={productCatalogOptions}
+                                  catalogItemMap={catalogItemMap}
+                                  onProductSelect={handleProductSelect}
+                                  onRemove={handleRemoveLineItem}
+                                  canRemove={fieldArray.fields.length > 1}
+                                  disabled={
+                                    standardField.disabled || isReadOnly
+                                  }
+                                  isReadOnly={isReadOnly}
+                                  isNet30={
+                                    invoice?.billing_type === 'net_30' ||
+                                    selectedClientBillingType === 'net_30'
+                                  }
+                                />
+                              </RevealOnAdd>
                             ))}
                           </SortableContext>
                         </DndContext>
-                      </SheetSection>
-
-                      <Separator />
+                      </EntityList>
 
                       {/* ───── Tax Rate (read-only, driven by client state) ───── */}
                       <div className='grid grid-cols-1 items-center gap-4 sm:grid-cols-2'>
@@ -783,7 +789,7 @@ function LineItemRow({
       {dragHandleProps && !isReadOnly ? (
         <button
           type='button'
-          className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-l-lg border-r transition-colors'
+          className='text-muted-foreground hover:bg-muted hover:text-foreground flex w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-l-lg transition-colors'
           {...dragHandleProps}
         >
           <GripVertical className='h-4 w-4' />
@@ -854,7 +860,7 @@ function LineItemRow({
         ) : null}
 
         {/* Quantity + Unit Price + Amount */}
-        <div className='grid grid-cols-3 gap-3'>
+        <div className='grid grid-cols-3 items-start gap-3'>
           <FormField
             control={form.control}
             name={`lineItems.${index}.quantity`}
@@ -882,8 +888,8 @@ function LineItemRow({
             )}
           />
           {isCatalogItem ? (
-            <div className='space-y-1.5'>
-              <label className='text-xs font-medium'>Unit price</label>
+            <div className={FIELD_STACK_CLASS}>
+              <Label className='text-xs'>Unit price</Label>
               <div
                 className={cn(
                   'flex h-9 items-center rounded-md border px-3 text-sm',
@@ -921,8 +927,8 @@ function LineItemRow({
               )}
             />
           )}
-          <div className='space-y-1.5'>
-            <label className='text-xs font-medium'>Amount</label>
+          <div className={FIELD_STACK_CLASS}>
+            <Label className='text-xs'>Amount</Label>
             <div
               className={cn(
                 'flex h-9 items-center rounded-md border px-3 text-sm',

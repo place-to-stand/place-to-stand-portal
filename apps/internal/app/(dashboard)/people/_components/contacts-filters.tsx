@@ -12,6 +12,7 @@ import {
   isSignInFilter,
   type SignInFilter,
 } from '@/lib/settings/contacts/filters'
+import { RoleBadge } from '@/components/auth/role-badge'
 
 type ContactsFiltersProps = {
   search?: string
@@ -78,8 +79,8 @@ export function ContactsFilters({
           options={ROLE_FILTER_VALUES.map(value => ({
             value,
             label: ROLE_FILTER_LABELS[value],
-            // A role is the list's plain outline badge; "No user" is text.
-            badgeClassName: value === 'none' ? undefined : '',
+            // A role shows as the Role column's badge; "No sign-in" is text.
+            badge: value === 'none' ? undefined : <RoleBadge role={value} />,
           }))}
         />
       ) : null}

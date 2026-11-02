@@ -22,6 +22,9 @@ export type UseTaskCommentsState = {
   composer: {
     value: string
     onChange: (value: string) => void
+    isOpen: boolean
+    open: () => void
+    close: () => void
     submit: () => void
     disabled: boolean
     isSubmitting: boolean

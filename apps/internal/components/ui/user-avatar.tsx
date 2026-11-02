@@ -21,6 +21,26 @@ type UserAvatarProps = {
   alt?: string
 }
 
+/**
+ * Where a person's photo loads from: by person (contact) id, else by sign-in
+ * id. Null when they have no photo, so nothing is requested and the initials
+ * show.
+ */
+export function personPhotoSrc({
+  contactId,
+  userId,
+  hasPhoto = true,
+  version,
+}: Pick<UserAvatarProps, 'contactId' | 'userId' | 'hasPhoto' | 'version'>):
+  | string
+  | null {
+  const query = version ? `?v=${encodeURIComponent(version)}` : ''
+  if (!hasPhoto) return null
+  if (contactId) return `/api/storage/person-avatar/${contactId}${query}`
+  if (userId) return `/api/storage/user-avatar/${userId}${query}`
+  return null
+}
+
 /** A person's avatar: their uploaded photo, falling back to initials. */
 export function UserAvatar({
   contactId,
@@ -32,14 +52,7 @@ export function UserAvatar({
   className,
   alt,
 }: UserAvatarProps) {
-  const query = version ? `?v=${encodeURIComponent(version)}` : ''
-  const src = !hasPhoto
-    ? null
-    : contactId
-      ? `/api/storage/person-avatar/${contactId}${query}`
-      : userId
-        ? `/api/storage/user-avatar/${userId}${query}`
-        : null
+  const src = personPhotoSrc({ contactId, userId, hasPhoto, version })
 
   return (
     <Avatar size={size} className={className}>

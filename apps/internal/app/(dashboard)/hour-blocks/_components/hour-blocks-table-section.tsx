@@ -83,9 +83,33 @@ export function HourBlocksTableSection({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
-            <TableHead className='w-[18%]'>Hours purchased</TableHead>
-            <TableHead className='w-[34%]'>Client</TableHead>
-            <TableHead className='w-[18%]'>Invoice #</TableHead>
+            <SortableTableHead
+              field='hours'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Hours purchased
+            </SortableTableHead>
+            <SortableTableHead
+              field='client'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[34%]'
+            >
+              Client
+            </SortableTableHead>
+            <SortableTableHead
+              field='invoice'
+              sort={sort}
+              defaultSort='created:desc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[18%]'
+            >
+              Invoice #
+            </SortableTableHead>
             <SortableTableHead
               field='created'
               sort={sort}
@@ -160,16 +184,16 @@ export function HourBlocksTableSection({
                 </TableCell>
                 <TableCell>
                   <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <ENTITY_ICONS.company
+                    <ENTITY_ICONS.client
                       className={cn(
-                        ENTITY_ACCENTS.company.icon,
+                        ENTITY_ACCENTS.client.icon,
                         'h-4 w-4 shrink-0'
                       )}
                     />
                     {client ? (
                       // Opens the client; the row ignores clicks on links.
                       <Link
-                        href={companySheetHref(client.company_id, 'billing')}
+                        href={companySheetHref(client.company_id)}
                         title={client.name}
                         className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
                       >

@@ -46,6 +46,13 @@ export function nextApp({ dir, entityRegistry } = {}) {
       message:
         'Entity icons come from the registry: ENTITIES.<entity>.icon / ENTITY_ICONS in @/lib/entity-accents. For a non-entity meaning pick another glyph (e.g. CalendarClock for a timestamp).',
     })
+    // A sheet's related-records list (heading, +, empty state, cards) is
+    // always EntityList, which imports the + by relative path.
+    restrictedImports.push({
+      name: '@/components/sheets/section-add-button',
+      message:
+        'A section +, its list and its clickable empty state come together: use EntityList (@/components/sheets/entity-list). See docs/design-system/components/entity-list.md.',
+    })
   }
 
   const entityColourMessage = entityRegistry

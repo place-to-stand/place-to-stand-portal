@@ -34,7 +34,7 @@ test('sales is sent back from admin pages', async ({ page }) => {
   }
 })
 
-test('sales sees a person with a sign-in read-only, without sign-in or portal fields', async ({
+test('sales sees a person with a sign-in read-only, access locked', async ({
   page,
 }) => {
   // The admin test account has a sign-in.
@@ -58,8 +58,14 @@ test('sales sees a person with a sign-in read-only, without sign-in or portal fi
   ).toBeVisible()
   await expect(sheet.getByPlaceholder('John Doe')).toBeDisabled()
   await expect(sheet.getByPlaceholder('contact@example.com')).toBeDisabled()
-  // No Sign-in section, role or portal access.
-  await expect(sheet.getByText('Can sign in', { exact: true })).toHaveCount(0)
+  // Sign-ins are admin-only information: no switch, no role, no portal
+  // companies, just that line.
+  await expect(
+    sheet.getByText('Only an admin can see or change someone’s sign-in.')
+  ).toBeVisible()
+  await expect(sheet.getByRole('switch', { name: 'Can sign in' })).toHaveCount(
+    0
+  )
   await expect(sheet.getByText('Role', { exact: true })).toHaveCount(0)
   await expect(sheet.getByText('Portal access')).toHaveCount(0)
   await expect(
@@ -75,17 +81,23 @@ test('sales sees no billing or sign-in controls on a company', async ({
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab', { name: 'Billing' })).toHaveCount(0)
+  // The Client column is read-only: where it stands, no billing controls.
+  await expect(
+    sheet.getByRole('heading', { name: 'Client', exact: true })
+  ).toBeVisible()
   await expect(sheet.getByText('Bill this company')).toHaveCount(0)
+  await expect(
+    sheet.getByRole('button', { name: /^(Make a client|Restart billing)$/ })
+  ).toHaveCount(0)
+  await expect(sheet.getByRole('switch', { name: /Bill/ })).toHaveCount(0)
 })
 
 test('sales sees no portal switches on a client company’s people', async ({
   page,
 }) => {
-  await page.goto('/companies')
-  const clientRow = page
-    .locator('tbody tr')
-    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
-    .first()
+  // Sales see no billing marks: the Client filter finds client companies.
+  await page.goto('/companies?type=client')
+  const clientRow = page.locator('tbody tr').first()
   test.skip((await clientRow.count()) === 0, 'no client company to open')
   await clientRow.locator('td').first().click()
   const sheet = page.getByRole('dialog')
@@ -98,11 +110,9 @@ test('sales sees no portal switches on a client company’s people', async ({
 
 /** The first client company on the list, opened (People is on Details). */
 async function openClientPeople(page: Page) {
-  await page.goto('/companies')
-  const clientRow = page
-    .locator('tbody tr')
-    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
-    .first()
+  // Sales see no billing marks: the Client filter finds client companies.
+  await page.goto('/companies?type=client')
+  const clientRow = page.locator('tbody tr').first()
   if ((await clientRow.count()) === 0) return null
   const name = (
     (await clientRow.locator('span.font-medium').first().textContent()) ?? ''
@@ -253,12 +263,14 @@ test('sales can’t rename the staff company', async ({ page }) => {
 
 /** The timeline entry holding `marker`, with its actions button. */
 function leadUpdateEntry(target: Page, marker: string) {
+  // The update's own card: the nearest bordered box around its text (the
+  // inline form, hidden but mounted, may hold the same text).
   return target
     .getByRole('dialog')
-    .locator('div')
-    .filter({ hasText: marker })
+    .getByText(marker, { exact: true })
+    .locator('xpath=ancestor::div[contains(@class, "rounded-lg")][1]')
     .filter({ has: target.getByRole('button', { name: /^Actions for / }) })
-    .last()
+    .first()
 }
 
 // R14: only the author or an admin can edit or archive a lead update. An
@@ -283,13 +295,15 @@ test('sales can’t edit or archive someone else’s lead update', async ({
     await admin.goto('/leads')
     const card = admin.locator('[aria-roledescription="sortable"]').first()
     test.skip((await card.count()) === 0, 'no lead on the board')
-    await card.click()
+    // The title: the card's middle can be its email link.
+    await card.locator('h3').first().click()
     await expect(admin).toHaveURL(/[?&]lead=[0-9a-f-]{36}/)
     const leadId = new URL(admin.url()).searchParams.get('lead')!
     leadUrl = `/leads?lead=${leadId}`
 
     // Admin logs the update.
-    await admin.getByRole('button', { name: 'Add update' }).click()
+    // The section's + (the empty box does the same).
+    await admin.getByRole('button', { name: 'Add update' }).first().click()
     const logDialog = admin
       .getByRole('dialog')
       .filter({ has: admin.getByText('Log update', { exact: true }) })
@@ -297,28 +311,30 @@ test('sales can’t edit or archive someone else’s lead update', async ({
       .last()
     await admin.locator('#lead-update-body .ProseMirror').click()
     await admin.keyboard.type(marker)
-    await logDialog.getByRole('button', { name: 'Log', exact: true }).click()
-    await expect(logDialog).toBeHidden()
+    await logDialog
+      .getByRole('button', { name: 'Log update', exact: true })
+      .click()
+    // The inline form closes (it stays mounted, hidden, so check its heading).
+    await expect(admin.getByText('Log update', { exact: true })).toBeHidden()
 
     // Admin saves it once, unchanged, to capture the edit action's request.
     const adminEntry = leadUpdateEntry(admin, marker)
     await expect(adminEntry).toBeVisible()
     await adminEntry.getByRole('button', { name: /^Actions for / }).click()
     await admin.getByRole('menuitem', { name: 'Edit' }).click()
-    const editDialog = admin
+    // Editing happens in place: the card becomes the form, with Save.
+    const editSave = admin
       .getByRole('dialog')
-      .filter({ has: admin.getByText('Edit update', { exact: true }) })
-      // It opens over the lead sheet: the top one.
-      .last()
+      .getByRole('button', { name: 'Save', exact: true })
     const editRequest = admin.waitForRequest(
       request =>
         request.method() === 'POST' &&
         Boolean(request.headers()['next-action']) &&
         (request.postData() ?? '').includes(leadId)
     )
-    await editDialog.getByRole('button', { name: 'Save', exact: true }).click()
+    await editSave.click()
     const captured = await editRequest
-    await expect(editDialog).toBeHidden()
+    await expect(editSave).toBeHidden()
 
     // Sales: the update's actions are off.
     await page.goto(leadUrl)

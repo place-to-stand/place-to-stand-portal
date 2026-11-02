@@ -49,7 +49,7 @@ export type PreparedSignIn = {
 }
 
 const STAFF_EMAIL_ERROR = (name: string) =>
-  `${name}'s email belongs to a staff sign-in, so it can't be a client sign-in. Use a different email for them.`
+  `${name}'s email belongs to a staff sign-in, so it can't be a user account with the Client role. Use a different email for them.`
 
 /**
  * Supabase Auth can't join a database transaction, so a save that gives

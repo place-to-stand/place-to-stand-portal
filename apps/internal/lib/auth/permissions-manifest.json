@@ -1499,13 +1499,6 @@
   },
   {
     "type": "route",
-    "name": "GET /api/projects/[projectId]/overview",
-    "file": "apps/internal/app/api/projects/[projectId]/overview/route.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "route",
     "name": "GET /api/projects/[projectId]/tasks",
     "file": "apps/internal/app/api/projects/[projectId]/tasks/route.ts",
     "kind": "admin",
@@ -1718,6 +1711,13 @@
     "type": "route",
     "name": "GET /auth/confirm",
     "file": "apps/internal/app/auth/confirm/route.ts",
+    "kind": "public",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /auth/sign-out",
+    "file": "apps/internal/app/auth/sign-out/route.ts",
     "kind": "public",
     "capability": null
   },

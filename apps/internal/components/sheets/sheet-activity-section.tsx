@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { type ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import {
   Accordion,
@@ -9,6 +9,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@pts/ui/accordion'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
+import { cn } from '@/lib/utils'
+
+import { useScrollIntoViewOnOpen } from './use-scroll-into-view-on-open'
 import type { ActivityFeedProps } from '@/components/activity/activity-feed'
 import { useActivityCount } from '@/lib/activity/use-activity-feed'
 
@@ -52,7 +56,6 @@ export function SheetActivitySection({
   return (
     <SheetActivityDisclosure total={total} className={className}>
       <ActivityFeed
-        className='pt-4'
         targetType={targetType}
         targetId={targetId}
         projectId={projectId}
@@ -80,12 +83,23 @@ export function SheetActivityDisclosure({
   children: ReactNode
 }) {
   // One item, closed by default; a closed panel unmounts, so the feed (and
-  // its fetch) waits for the first open.
+  // its fetch) waits for the first open. Opening brings it to the top of the
+  // sheet, following the feed as it loads.
+  const [open, setOpen] = useState(false)
+  const ref = useScrollIntoViewOnOpen<HTMLDivElement>(open)
   return (
-    <Accordion className={className}>
+    <Accordion
+      ref={ref}
+      className={cn('scroll-mt-6', className)}
+      onValueChange={value => setOpen(value.length > 0)}
+    >
       <AccordionItem value='activity' className='border-b-0'>
-        <AccordionTrigger className='py-0 text-sm font-semibold tracking-tight hover:no-underline'>
-          <span>
+        <AccordionTrigger className='-my-1 py-1 text-sm font-semibold tracking-tight'>
+          <span className='flex items-center gap-2'>
+            <CONCEPT_ICONS.activity
+              className='text-muted-foreground size-4 shrink-0'
+              aria-hidden
+            />
             Activity
             {total !== null ? (
               <span className='text-muted-foreground font-normal'>
@@ -95,7 +109,9 @@ export function SheetActivityDisclosure({
             ) : null}
           </span>
         </AccordionTrigger>
-        <AccordionContent className='pb-0'>{children}</AccordionContent>
+        {/* The gap under the header lives here, so the loading line and the
+            loaded feed sit at the same spot and nothing jumps. */}
+        <AccordionContent className='pt-4 pb-0'>{children}</AccordionContent>
       </AccordionItem>
     </Accordion>
   )

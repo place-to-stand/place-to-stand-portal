@@ -37,8 +37,9 @@ export const isValidSheetParamValue = (value: string) =>
 type SheetEntityConfig = {
   /**
    * Aux params carrying sub-state for this entity's sheet (always prefixed
-   * with the entity param, e.g. `tab=billing`). Removed alongside the
-   * entity param on close.
+   * with the entity param, e.g. `companyName=`). Removed alongside the
+   * entity param on close. `tab` is listed only so old `?tab=` links are
+   * dropped on close: sheets have no tabs and ignore it.
    */
   auxParams: readonly string[]
   /**
@@ -71,7 +72,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   client: {
     // Old links only: `?client=<id>` opens that company's sheet (a client is
-    // a company you bill). Billing is switched on from the company's Billing tab.
+    // a company you bill). Billing is switched on from the company's billing (its sheet's Client column).
     auxParams: ['tab'],
     claimsPathname: () => false,
   },
@@ -101,7 +102,7 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   },
   project: {
     // `projectCompanyId=` prefills the create sheet's client (a company's
-    // Projects tab).
+    // Projects, in its sheet's Client column).
     auxParams: ['projectCompanyId'],
     // Unclaimed everywhere: the projects tables can't resolve an arbitrary
     // project id from their own rows (the landing's row type omits fields

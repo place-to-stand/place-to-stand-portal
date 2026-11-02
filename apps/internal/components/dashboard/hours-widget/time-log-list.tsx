@@ -220,7 +220,7 @@ function getClientHref(entry: DashboardTimeLogEntry) {
     return null
   }
 
-  return companySheetHref(entry.companyId, 'projects')
+  return companySheetHref(entry.companyId)
 }
 
 function renderProjectTypeIcon(projectType: string) {

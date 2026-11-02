@@ -17,9 +17,10 @@ type SectionAddButtonProps = Omit<
 }
 
 /**
- * The small "Add …" button on a sheet section's title row (the client
- * sheet's "Add person" style). Spreads the rest onto the button so it can be
- * a popover trigger.
+ * Every sheet section's add button: the + alone (a ghost icon button), its
+ * label ("Add person", "Add line item", "Log time") the accessible name.
+ * One style everywhere; spreads the rest onto the button so it can be a
+ * popover trigger.
  */
 export function SectionAddButton({
   label,
@@ -29,20 +30,16 @@ export function SectionAddButton({
 }: SectionAddButtonProps) {
   const isDisabled = Boolean(disabled || disabledReason)
   return (
-    <DisabledFieldTooltip
-      disabled={isDisabled}
-      reason={disabledReason}
-      className='w-auto'
-    >
+    <DisabledFieldTooltip disabled={isDisabled} reason={disabledReason}>
       <Button
         type='button'
-        variant='outline'
+        variant='ghost'
         size='xs'
         disabled={isDisabled}
+        aria-label={label}
         {...props}
       >
-        <Plus />
-        {label}
+        <Plus className='h-4 w-4' />
       </Button>
     </DisabledFieldTooltip>
   )

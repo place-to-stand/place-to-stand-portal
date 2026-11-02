@@ -135,7 +135,12 @@ export function useClientBillingForm({
     () =>
       allContacts
         .filter(c => c.id !== selectedOriginationContact?.id)
-        .map(c => ({ id: c.id, name: c.name, email: c.email })),
+        .map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          hasPhoto: c.hasPhoto,
+        })),
     [allContacts, selectedOriginationContact]
   )
 
@@ -151,6 +156,7 @@ export function useClientBillingForm({
           id: u.id,
           name: u.fullName?.trim() || u.email,
           email: u.email,
+          hasPhoto: u.hasPhoto,
         })),
     [allAdminUsers, closerKeys]
   )
@@ -163,6 +169,7 @@ export function useClientBillingForm({
           id: c.id,
           name: c.name?.trim() || c.email || 'Unnamed person',
           email: c.email,
+          hasPhoto: c.hasPhoto,
         })),
     [allContacts, closerKeys]
   )

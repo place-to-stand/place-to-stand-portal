@@ -83,7 +83,7 @@ export function LeadSheetFormFields({
         name='contact'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Person</FormLabel>
+            <FormLabel entity='contact'>Person</FormLabel>
             <FormControl>
               <ContactLinkPicker
                 value={field.value ?? null}
@@ -111,7 +111,7 @@ export function LeadSheetFormFields({
         name='company'
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Company</FormLabel>
+            <FormLabel entity='company'>Company</FormLabel>
             <FormControl>
               <CompanyLinkPicker
                 value={field.value ?? null}
@@ -124,6 +124,70 @@ export function LeadSheetFormFields({
           </FormItem>
         )}
       />
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+        <FormField
+          control={control}
+          name='assigneeId'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel entity='contact'>Assignee</FormLabel>
+              <FormControl>
+                <SearchableCombobox
+                  items={assigneeItems}
+                  clearLabel='assignee'
+                  value={field.value ?? ''}
+                  onChange={value =>
+                    field.onChange(value.length ? value : null)
+                  }
+                  placeholder='Unassigned'
+                  searchPlaceholder='Search people…'
+                  onClear={() => field.onChange(null)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name='status'
+          render={({ field }) => {
+            const selectedStatus = LEAD_STATUS_ORDER.find(
+              status => status === field.value
+            )
+
+            return (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  value={field.value}
+                  onValueChange={(value: LeadStatusValue) =>
+                    field.onChange(value)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select status'>
+                        {selectedStatus ? (
+                          <LeadStatusBadge status={selectedStatus} />
+                        ) : null}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {LEAD_STATUS_ORDER.map(status => (
+                      <SelectItem key={status} value={status}>
+                        <LeadStatusBadge status={status} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+      </div>
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={control}
@@ -184,70 +248,6 @@ export function LeadSheetFormFields({
           )}
         />
       </div>
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-        <FormField
-          control={control}
-          name='status'
-          render={({ field }) => {
-            const selectedStatus = LEAD_STATUS_ORDER.find(
-              status => status === field.value
-            )
-
-            return (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={(value: LeadStatusValue) =>
-                    field.onChange(value)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder='Select status'>
-                        {selectedStatus ? (
-                          <LeadStatusBadge status={selectedStatus} />
-                        ) : null}
-                      </SelectValue>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {LEAD_STATUS_ORDER.map(status => (
-                      <SelectItem key={status} value={status}>
-                        <LeadStatusBadge status={status} />
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-        <FormField
-          control={control}
-          name='assigneeId'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assignee</FormLabel>
-              <FormControl>
-                <SearchableCombobox
-                  items={assigneeItems}
-                  clearLabel='assignee'
-                  value={field.value ?? ''}
-                  onChange={value =>
-                    field.onChange(value.length ? value : null)
-                  }
-                  placeholder='Unassigned'
-                  searchPlaceholder='Search people…'
-                  onClear={() => field.onChange(null)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
       <FormField
         control={control}
         name='notes'
@@ -296,8 +296,8 @@ function ContactCompanyMismatchNote({
   const companyName = company.name || 'this company'
   return (
     <SaveSideEffect>
-      {contactName} is not yet at {companyName}. Saving adds {contactName} to{' '}
-      {companyName}.
+      {contactName} isn&rsquo;t at {companyName} yet, and will be added to{' '}
+      {companyName} when you save.
     </SaveSideEffect>
   )
 }

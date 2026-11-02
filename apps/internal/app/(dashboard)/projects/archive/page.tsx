@@ -63,10 +63,7 @@ export default async function ProjectsArchivePage({
   const hydratedProjects: ProjectWithClient[] =
     archiveResult.items.map(mapProjectToTableRow)
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(archiveResult.totalCount / pageSize)
-  )
+  const totalPages = Math.max(1, Math.ceil(archiveResult.totalCount / pageSize))
 
   return (
     <PageShell
@@ -92,7 +89,12 @@ export default async function ProjectsArchivePage({
         totalPages={totalPages}
         pageSize={pageSize}
         filters={
-          <ProjectsArchiveFilters search={searchQuery ?? undefined} />
+          // A key: React checks props-passed elements from a server page
+          // like list children on a client navigation.
+          <ProjectsArchiveFilters
+            key='archive-filters'
+            search={searchQuery ?? undefined}
+          />
         }
       />
     </PageShell>

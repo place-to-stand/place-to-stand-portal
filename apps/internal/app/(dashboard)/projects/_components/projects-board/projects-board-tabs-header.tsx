@@ -11,8 +11,7 @@ import type { ProjectStatusValue } from '@/lib/constants'
 import type { ProjectActionControls } from './projects-board-tabs'
 
 export type ProjectsBoardTabsHeaderProps = {
-  initialTab: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
-  overviewHref: string
+  initialTab: 'board' | 'activity' | 'review' | 'timeLogs'
   boardHref: string
   activityHref: string
   reviewHref: string
@@ -34,7 +33,6 @@ export type ProjectsBoardTabsHeaderProps = {
 export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
   const {
     initialTab,
-    overviewHref,
     boardHref,
     activityHref,
     reviewHref,
@@ -53,21 +51,6 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
       {/* Left-aligned like every tab strip; scrolls once it outgrows a phone. */}
       <TabsList className='bg-muted/40 h-10 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1'>
-        {tasksOnly ? null : (
-          <TabsTrigger
-            value='overview'
-            className='flex-none px-3 py-1.5 text-sm'
-            asChild
-          >
-            <Link
-              href={overviewHref}
-              prefetch={false}
-              onClick={() => startBoardTabInteraction(initialTab, 'overview')}
-            >
-              Overview
-            </Link>
-          </TabsTrigger>
-        )}
         <TabsTrigger
           value='board'
           className='flex-none px-3 py-1.5 text-sm'

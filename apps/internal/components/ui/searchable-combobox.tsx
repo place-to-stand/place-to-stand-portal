@@ -5,6 +5,7 @@ import { CheckIcon } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
+import { getInitials } from '@/lib/users/initials'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Command,
@@ -27,6 +28,18 @@ export type SearchableComboboxItem = {
   disabled?: boolean
   avatarUrl?: string | null
   userId?: string
+  /**
+   * A person's avatar for an option that isn't a sign-in (a contact): their
+   * photo (`personPhotoSrc`), else initials of the label (or `initials`).
+   * Sign-ins pass `userId` instead. A person picker gives every option one,
+   * never a generic person icon.
+   */
+  avatar?: { src: string | null; initials?: string }
+  /**
+   * A one-off glyph for an option that differs from the rest ("Unassigned").
+   * A picker whose options are all one entity shows no icon: its field label
+   * carries the entity's icon (`FormLabel entity`).
+   */
   icon?: React.ComponentType<{ className?: string }>
   /**
    * Shown in place of the label, in the list row and in the trigger when
@@ -303,7 +316,12 @@ export const SearchableCombobox = React.forwardRef<
       }
     }, [contentWidth, lockedWidth])
 
-    const showClear = Boolean(onClear && selectedItem && !disabled)
+    // A value that isn't among the options (an archived company in an old
+    // link) still shows as picked, and can still be cleared.
+    const unmatched = Boolean(value) && !selectedItem
+    const showClear = Boolean(
+      onClear && (selectedItem || unmatched) && !disabled
+    )
 
     return (
       <div
@@ -332,17 +350,22 @@ export const SearchableCombobox = React.forwardRef<
                   aria-invalid={ariaInvalid ? true : undefined}
                   disabled={disabled}
                   id={id}
-                  placeholder={!selectedItem}
+                  placeholder={!selectedItem && !unmatched}
                   clearable={showClear}
                   className={triggerClassName}
-                  labelTitle={selectedItem?.label ?? resolvedPlaceholder}
+                  labelTitle={
+                    selectedItem?.label ??
+                    (unmatched ? 'Not in this list' : resolvedPlaceholder)
+                  }
                   leading={
                     selectedItem ? renderLeading(selectedItem, 'trigger') : null
                   }
                   label={
                     selectedItem
                       ? (selectedItem.render ?? selectedItem.label)
-                      : resolvedPlaceholder
+                      : unmatched
+                        ? 'Not in this list'
+                        : resolvedPlaceholder
                   }
                 />
               )}
@@ -352,7 +375,11 @@ export const SearchableCombobox = React.forwardRef<
               // Never narrower than the trigger; grows to fit an option on one line,
               // up to a cap, past which options truncate with a tooltip.
               className='w-max max-w-[min(28rem,90vw)] overflow-hidden p-0'
-              sideOffset={8}
+              // A custom trigger is an "Add …" button at the right of a section
+              // heading: the list hangs from its right edge, just below it,
+              // inside the content column. A field opens under its left edge.
+              align={trigger ? 'end' : 'start'}
+              sideOffset={trigger ? 4 : 8}
               style={contentStyle}
             >
               <Command className='max-h-80' defaultValue={selectedCommandValue}>
@@ -428,7 +455,12 @@ function renderLeading(
   item: SearchableComboboxItem,
   place: 'row' | 'trigger'
 ): React.ReactNode {
-  const className = place === 'row' ? 'mr-2 shrink-0' : 'shrink-0'
+  // A hairline ring keeps the circle visible on a highlighted row, whose
+  // background matches the avatar's fill.
+  const className = cn(
+    'ring-border shrink-0 ring-1',
+    place === 'row' && 'mr-2'
+  )
   if (item.userId) {
     return (
       <Avatar size='xs' className={className}>
@@ -436,6 +468,16 @@ function renderLeading(
           <AvatarImage src={`/api/storage/user-avatar/${item.userId}`} />
         )}
         <AvatarFallback>{item.label.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+    )
+  }
+  if (item.avatar) {
+    return (
+      <Avatar size='xs' className={className}>
+        {item.avatar.src ? <AvatarImage src={item.avatar.src} alt='' /> : null}
+        <AvatarFallback>
+          {item.avatar.initials ?? getInitials(item.label)}
+        </AvatarFallback>
       </Avatar>
     )
   }

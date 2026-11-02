@@ -33,6 +33,7 @@
     "./popover": "./src/popover.tsx",
     "./progress": "./src/progress.tsx",
     "./row-action-button": "./src/row-action-button.tsx",
+    "./segmented-control": "./src/segmented-control.tsx",
     "./select": "./src/select.tsx",
     "./separator": "./src/separator.tsx",
     "./skeleton": "./src/skeleton.tsx",

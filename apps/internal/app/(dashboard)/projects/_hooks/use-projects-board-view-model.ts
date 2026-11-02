@@ -24,7 +24,7 @@ const NO_PROJECTS_MESSAGE = 'No projects assigned yet.'
 type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
 export type ProjectsBoardProps = BaseProps & {
-  initialTab?: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
+  initialTab?: 'board' | 'activity' | 'review' | 'timeLogs'
 }
 
 export type ProjectsBoardHeaderProps = {
@@ -62,10 +62,7 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView =
-    initialTab === 'timeLogs' || initialTab === 'overview'
-      ? 'board'
-      : initialTab
+  const currentBoardView = initialTab === 'timeLogs' ? 'board' : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
@@ -108,8 +105,6 @@ export function useProjectsBoardViewModel({
           boardState.activeProject.burndown.totalClientRemainingHours,
         totalProjectLoggedHours:
           boardState.activeProject.burndown.totalProjectLoggedHours,
-        projectMonthToDateLoggedHours:
-          boardState.activeProject.burndown.projectMonthToDateLoggedHours,
       },
     }
   }, [boardState.activeProject])

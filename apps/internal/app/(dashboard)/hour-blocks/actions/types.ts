@@ -1,10 +1,6 @@
 import type { z } from 'zod'
 
-import {
-  hourBlockSchema,
-  deleteSchema,
-  restoreSchema,
-} from './schemas'
+import { hourBlockSchema, deleteSchema, restoreSchema } from './schemas'
 
 export type ActionResult = {
   error?: string

@@ -38,6 +38,7 @@ import {
 } from '@/lib/pagination/sort'
 import {
   DEFAULT_HOUR_BLOCKS_SORT,
+  type HourBlockInvoiceFilter,
   type HourBlockSortField,
 } from '@/lib/settings/hour-blocks/filters'
 
@@ -110,6 +111,11 @@ export type ListHourBlocksForSettingsInput = {
   search?: string | null
   /** Only this client's blocks. */
   companyId?: string | null
+  /** The invoice the block came from (see `HourBlockInvoiceFilter`). */
+  invoice?: HourBlockInvoiceFilter | null
+  /** Created on or after / before, `YYYY-MM-DD` (inclusive). */
+  from?: string | null
+  to?: string | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null
@@ -140,10 +146,51 @@ type HourBlockSortDescriptor = {
   orderDesc: SQL
 }
 
+/**
+ * A sort key that may be empty (a block with no invoice): empty values last
+ * in both directions; the cursor encodes null as ''.
+ */
+function nullsLastDescriptor(
+  expr: SQL,
+  encode: (row: HourBlockWithClient) => string
+): HourBlockSortDescriptor {
+  return {
+    encode,
+    compare: (op, value) =>
+      value === ''
+        ? sql`false`
+        : op === 'gt'
+          ? sql`(${expr} > ${value} OR ${expr} IS NULL)`
+          : sql`(${expr} < ${value} OR ${expr} IS NULL)`,
+    equals: value =>
+      value === '' ? sql`${expr} IS NULL` : sql`${expr} = ${value}`,
+    orderAsc: sql`${expr} ASC NULLS LAST`,
+    orderDesc: sql`${expr} DESC NULLS LAST`,
+  }
+}
+
 const HOUR_BLOCK_SORT_DESCRIPTORS: Record<
   HourBlockSortField,
   HourBlockSortDescriptor
 > = {
+  hours: {
+    encode: row => String(row.hours_purchased),
+    compare: (op, value) =>
+      op === 'gt'
+        ? sql`${hourBlocks.hoursPurchased} > ${value}::numeric`
+        : sql`${hourBlocks.hoursPurchased} < ${value}::numeric`,
+    equals: value => sql`${hourBlocks.hoursPurchased} = ${value}::numeric`,
+    orderAsc: sql`${hourBlocks.hoursPurchased} ASC`,
+    orderDesc: sql`${hourBlocks.hoursPurchased} DESC`,
+  },
+  client: nullsLastDescriptor(
+    sql`lower(${clientNameSql})`,
+    row => row.client?.name.toLowerCase() ?? ''
+  ),
+  invoice: nullsLastDescriptor(
+    sql`${invoices.invoiceNumber}`,
+    row => row.invoice_number ?? ''
+  ),
   created: {
     encode: row => String(row.created_at),
     compare: (op, value) =>
@@ -187,6 +234,26 @@ export async function listHourBlocksForSettings(
 
   if (input.companyId) {
     baseConditions.push(eq(hourBlocks.companyId, input.companyId))
+  }
+
+  if (input.invoice) {
+    baseConditions.push(
+      input.invoice === 'none'
+        ? sql`${invoices.id} IS NULL`
+        : input.invoice === 'draft'
+          ? sql`${invoices.status} = 'DRAFT'`
+          : input.invoice === 'unpaid'
+            ? sql`${invoices.status} IN ('SENT', 'VIEWED')`
+            : sql`${invoices.status} = 'PAID'`
+    )
+  }
+
+  // Created dates are compared as calendar days.
+  if (input.from) {
+    baseConditions.push(sql`${hourBlocks.createdAt}::date >= ${input.from}`)
+  }
+  if (input.to) {
+    baseConditions.push(sql`${hourBlocks.createdAt}::date <= ${input.to}`)
   }
 
   const useOffset = typeof input.offset === 'number' && input.offset >= 0

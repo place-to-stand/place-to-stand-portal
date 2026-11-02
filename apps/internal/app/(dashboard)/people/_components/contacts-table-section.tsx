@@ -28,6 +28,10 @@ import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cel
 import { ClientBadge } from '@/components/clients/client-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import {
+  canPreviewAsClient,
+  PREVIEW_UNAVAILABLE_REASON,
+} from '@/lib/settings/contacts/portal-preview'
 import { cn } from '@/lib/utils'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -38,8 +42,7 @@ import {
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { Badge } from '@pts/ui/badge'
-import { ROLE_LABELS } from '@/lib/auth/roles'
+import { RoleBadge } from '@/components/auth/role-badge'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -102,7 +105,26 @@ export function ContactsTableSection({
             >
               Name
             </SortableTableHead>
-            <TableHead className='w-[26%]'>Companies</TableHead>
+            <SortableTableHead
+              field='companies'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[26%]'
+            >
+              Companies
+            </SortableTableHead>
+            {seesAccess ? (
+              <SortableTableHead
+                field='signIn'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-28'
+              >
+                Role
+              </SortableTableHead>
+            ) : null}
             <SortableTableHead
               field='email'
               sort={sort}
@@ -121,9 +143,6 @@ export function ContactsTableSection({
             >
               Phone
             </SortableTableHead>
-            {seesAccess ? (
-              <TableHead className='w-24 text-center'>Sign-in</TableHead>
-            ) : null}
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -149,6 +168,7 @@ export function ContactsTableSection({
             const showRestore = mode === 'archive'
             // Portal preview is admin-only.
             const showPreview = isAdmin && mode === 'active'
+            const canPreview = canPreviewAsClient(contact)
 
             return (
               <TableRow
@@ -193,11 +213,12 @@ export function ContactsTableSection({
                           {contact.companyName}
                         </Link>
                       </TruncationTooltip>
-                      {contact.companies.find(
-                        company => company.id === contact.companyId
-                      )?.isClient ? (
-                        <ClientBadge className='shrink-0' />
-                      ) : null}
+                      <CompanyClientMark
+                        company={contact.companies.find(
+                          company => company.id === contact.companyId
+                        )}
+                        className='shrink-0'
+                      />
                       {contact.companies.length > 1 ? (
                         <LinkedRecordsHoverCell
                           count={contact.companies.length}
@@ -210,7 +231,7 @@ export function ContactsTableSection({
                             id: company.id,
                             label: company.name,
                             href: companySheetHref(company.id),
-                            trailing: company.isClient ? <ClientBadge /> : null,
+                            trailing: <CompanyClientMark company={company} />,
                           }))}
                         />
                       ) : null}
@@ -219,6 +240,15 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
+                {seesAccess ? (
+                  <TableCell label='Role' className='text-sm'>
+                    {contact.signInRole ? (
+                      <RoleBadge role={contact.signInRole} />
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </TableCell>
+                ) : null}
                 <TableCell className='text-muted-foreground text-sm'>
                   {contact.email ? (
                     <a
@@ -252,25 +282,20 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
-                {seesAccess ? (
-                  <TableCell label='Sign-in' className='text-sm md:text-center'>
-                    {contact.signInRole ? (
-                      <Badge variant='outline'>
-                        {ROLE_LABELS[contact.signInRole]}
-                      </Badge>
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                ) : null}
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
                     {showPreview ? (
                       <RecordRowAction
                         kind='preview'
                         onClick={() => onRequestPreview(contact)}
-                        disabled={isPending}
-                        disabledReason={isPending ? pendingReason : null}
+                        disabled={isPending || !canPreview}
+                        disabledReason={
+                          isPending
+                            ? pendingReason
+                            : canPreview
+                              ? null
+                              : PREVIEW_UNAVAILABLE_REASON
+                        }
                       />
                     ) : null}
                     {showRestore ? (
@@ -307,4 +332,16 @@ export function ContactsTableSection({
       </Table>
     </div>
   )
+}
+
+/** A company billed now, beside its name: the Client badge (everyone). */
+function CompanyClientMark({
+  company,
+  className,
+}: {
+  company: { isClient: boolean } | undefined
+  className?: string
+}) {
+  if (!company?.isClient) return null
+  return <ClientBadge className={className} />
 }

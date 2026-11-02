@@ -11,7 +11,6 @@ import type { ProjectStatusValue } from '@/lib/constants'
 
 import { BoardTabContent } from './board-tab-content'
 import { ActivityTabContent } from './activity-tab-content'
-import { OverviewTabContent } from './overview-tab-content'
 import { ReviewTabContent } from './review-tab-content'
 import type { ReviewActionKind } from './review-tab/review-tab.types'
 import { ProjectsBoardTabsHeader } from './projects-board-tabs-header'
@@ -30,8 +29,7 @@ export type ProjectActionControls = {
 } | null
 
 export type ProjectsBoardTabsProps = {
-  initialTab: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
-  overviewHref: string
+  initialTab: 'board' | 'activity' | 'review' | 'timeLogs'
   boardHref: string
   activityHref: string
   reviewHref: string
@@ -89,7 +87,6 @@ export type ProjectsBoardTabsProps = {
 export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
   const {
     initialTab,
-    overviewHref,
     boardHref,
     activityHref,
     reviewHref,
@@ -147,7 +144,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     <Tabs value={initialTab} className='flex min-h-0 flex-1 flex-col gap-2'>
       <ProjectsBoardTabsHeader
         initialTab={initialTab}
-        overviewHref={overviewHref}
         boardHref={boardHref}
         activityHref={activityHref}
         reviewHref={reviewHref}
@@ -160,10 +156,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         activeProjectId={activeProject?.id ?? null}
         activeProjectStatus={activeProject?.status ?? null}
         onProjectStatusChange={onProjectStatusChange}
-      />
-      <OverviewTabContent
-        isActive={initialTab === 'overview'}
-        activeProject={activeProject}
       />
       <BoardTabContent
         isActive={initialTab === 'board'}

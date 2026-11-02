@@ -4,25 +4,19 @@ import { useState, type ReactNode } from 'react'
 import { ExternalLink, Star, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   ContactLinkPicker,
   type ContactLink,
 } from '@/components/contacts/contact-link-picker'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { EntityList } from '@/components/sheets/entity-list'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
-import {
-  RecordRowField,
-  SheetRecordList,
-} from '@/components/sheets/sheet-record-row'
+import { RecordRowField } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
 import { cn } from '@/lib/utils'
-
-import { SectionAddButton } from '@/components/sheets/section-add-button'
 
 /** Someone picked on the People list, joining the company on Save. */
 export type StagedPerson = {
@@ -63,6 +57,8 @@ type CompanyPeopleSectionProps = {
   onUndoRemove: (contactId: string) => void
   /** A billed company (admins only): each person's portal access switch. */
   portalAccessFor?: ((contactId: string) => ReactNode) | null
+  /** What Save does with a person's portal access, beside the switch. */
+  portalHintFor?: ((contactId: string) => ReactNode) | null
   /** One muted line under the list, e.g. who Save will email. */
   footer?: ReactNode
 }
@@ -89,13 +85,13 @@ export function CompanyPeopleSection({
   onRemove,
   onUndoRemove,
   portalAccessFor = null,
+  portalHintFor = null,
   footer = null,
 }: CompanyPeopleSectionProps) {
   const removed = new Set(removedIds)
   const listedIds = [...contacts.map(c => c.id), ...added.map(c => c.id)]
   const isEmpty = contacts.length === 0 && added.length === 0
   const [pickerOpen, setPickerOpen] = useState(false)
-  const canAdd = !lockedReason && !disabled
 
   const star = (contact: { id: string; name: string }) => {
     const isPrimary = contact.id === primaryContactId
@@ -105,22 +101,30 @@ export function CompanyPeopleSection({
         reason={primaryLockedReason}
         className='w-auto'
       >
-        <RowActionButton
+        {/* Labelled, like the person sheet's: a toggle that reads as one. */}
+        <Button
           type='button'
+          variant='ghost'
+          size='xs'
           disabled={disabled || Boolean(primaryLockedReason)}
           aria-pressed={isPrimary}
-          label={
+          aria-label={
             isPrimary
               ? `Remove ${contact.name} as primary contact`
               : `Make ${contact.name} the primary contact`
           }
           onClick={() => onSetPrimary(isPrimary ? null : contact.id)}
-          className={cn(
-            'text-muted-foreground',
-            isPrimary && 'text-warning hover:text-warning'
-          )}
-          icon={<Star className={cn(isPrimary && 'fill-current')} />}
-        />
+          className='text-muted-foreground gap-1.5 text-xs font-normal'
+        >
+          <Star
+            className={cn(
+              'size-4',
+              isPrimary ? 'text-warning fill-current' : 'opacity-60'
+            )}
+            aria-hidden
+          />
+          Primary contact
+        </Button>
       </DisabledFieldTooltip>
     )
   }
@@ -130,7 +134,7 @@ export function CompanyPeopleSection({
     const portal = portalAccessFor?.(contact.id) ?? null
     return (
       <>
-        <RecordRowField label='Title'>
+        <RecordRowField label='Title' grow>
           <MembershipTitleInput
             value={titles[contact.id] ?? ''}
             onChange={title => onTitleChange(contact.id, title)}
@@ -139,7 +143,12 @@ export function CompanyPeopleSection({
           />
         </RecordRowField>
         {portal ? (
-          <RecordRowField label='Portal access'>{portal}</RecordRowField>
+          <RecordRowField
+            label='Portal access'
+            hint={portalHintFor?.(contact.id) ?? null}
+          >
+            {portal}
+          </RecordRowField>
         ) : null}
       </>
     )
@@ -176,110 +185,90 @@ export function CompanyPeopleSection({
   }
 
   return (
-    <SheetSection
+    <EntityList
       title='People'
-      action={
-        !canAdd ? (
-          <SectionAddButton label='Add person' disabledReason={lockedReason} />
-        ) : (
+      add={{
+        label: 'Add person',
+        onAdd: () => setPickerOpen(true),
+        disabled,
+        disabledReason: lockedReason,
+        render: button => (
           <ContactLinkPicker
             value={null}
             onChange={contact => (contact ? onAdd(contact) : undefined)}
             excludeIds={listedIds.filter(id => !removed.has(id))}
-            trigger={<SectionAddButton label='Add person' />}
+            trigger={button}
             open={pickerOpen}
             onOpenChange={setPickerOpen}
           />
-        )
-      }
+        ),
+      }}
+      isEmpty={isEmpty}
+      emptyMessage='No people here yet. Add the ones you know at this company.'
+      footer={footer}
     >
-      {isEmpty ? (
-        <EmptyState
-          message='No people here yet. Add the ones you know at this company.'
-          label={canAdd ? 'Add person' : undefined}
-          onClick={canAdd ? () => setPickerOpen(true) : undefined}
-        />
-      ) : (
-        <SheetRecordList>
-          {contacts.map(contact =>
-            removed.has(contact.id) ? (
-              <ContactRecordRow
-                key={contact.id}
-                contact={contact}
-                className='opacity-60'
-                note={
-                  <span className='text-destructive'>
-                    {clientName
-                      ? `Pending removal · loses portal access to ${clientName}`
-                      : 'Pending removal'}
-                  </span>
-                }
-                actions={
-                  <Button
+      {contacts.map(contact =>
+        removed.has(contact.id) ? (
+          <ContactRecordRow
+            key={contact.id}
+            contact={contact}
+            pendingRemoval={{
+              disabled,
+              note: clientName
+                ? `Pending removal · loses portal access to ${clientName}`
+                : undefined,
+              onUndo: () => onUndoRemove(contact.id),
+            }}
+          />
+        ) : (
+          <ContactRecordRow
+            key={contact.id}
+            contact={contact}
+            fields={fields(contact)}
+            actions={
+              <>
+                {contact.linkedinUrl ? (
+                  <RowActionButton
                     type='button'
-                    variant='ghost'
-                    size='xs'
-                    className='text-muted-foreground'
-                    disabled={disabled}
-                    onClick={() => onUndoRemove(contact.id)}
-                    aria-label={`Undo removing ${contact.name}`}
-                  >
-                    Undo
-                  </Button>
-                }
-              />
-            ) : (
-              <ContactRecordRow
-                key={contact.id}
-                contact={contact}
-                fields={fields(contact)}
-                actions={
-                  <>
-                    {contact.linkedinUrl ? (
-                      <RowActionButton
-                        type='button'
-                        label={`${contact.name} on LinkedIn`}
-                        icon={<ExternalLink />}
-                        onClick={() =>
-                          window.open(
-                            contact.linkedinUrl ?? '',
-                            '_blank',
-                            'noopener,noreferrer'
-                          )
-                        }
-                      />
-                    ) : null}
-                    {star(contact)}
-                    {removeButton(contact)}
-                  </>
-                }
-              />
-            )
-          )}
-          {added.map(contact => {
-            const from = movesFrom(contact.id)
-            return (
-              <ContactRecordRow
-                key={`added-${contact.id}`}
-                contact={contact}
-                note={
-                  <span className='text-warning'>
-                    {from ? `Joins on save · also at ${from}` : 'Joins on save'}
-                  </span>
-                }
-                fields={fields(contact)}
-                actions={
-                  <>
-                    {star(contact)}
-                    {removeButton(contact)}
-                  </>
-                }
-              />
-            )
-          })}
-        </SheetRecordList>
+                    label={`${contact.name} on LinkedIn`}
+                    icon={<ExternalLink />}
+                    onClick={() =>
+                      window.open(
+                        contact.linkedinUrl ?? '',
+                        '_blank',
+                        'noopener,noreferrer'
+                      )
+                    }
+                  />
+                ) : null}
+                {star(contact)}
+                {removeButton(contact)}
+              </>
+            }
+          />
+        )
       )}
-      {footer}
-    </SheetSection>
+      {added.map(contact => {
+        const from = movesFrom(contact.id)
+        return (
+          <ContactRecordRow
+            key={`added-${contact.id}`}
+            contact={contact}
+            note={
+              <span className='text-warning'>
+                {from ? `Joins on save · also at ${from}` : 'Joins on save'}
+              </span>
+            }
+            fields={fields(contact)}
+            actions={
+              <>
+                {star(contact)}
+                {removeButton(contact)}
+              </>
+            }
+          />
+        )
+      })}
+    </EntityList>
   )
 }

@@ -4,7 +4,7 @@ import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import type { Session, User } from '@supabase/supabase-js'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import type { Database } from '@/lib/supabase/types'
 import { db } from '@/lib/db'
@@ -67,6 +67,9 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   }
 
   try {
+    if (!(await sessionIsLive(data.claims.session_id, authUserId))) {
+      return null
+    }
     const profile = await fetchUserProfile(authUserId)
 
     if (!profile) {
@@ -173,7 +176,9 @@ async function fetchUserProfile(
   return profileRows[0] ?? null
 }
 
-async function fetchUserProfileUncached(userId: string): Promise<UserProfile | null> {
+async function fetchUserProfileUncached(
+  userId: string
+): Promise<UserProfile | null> {
   // Direct query without React cache to get fresh data after sync
   const profileRows = await db
     .select({
@@ -263,7 +268,8 @@ export const requireUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
   // Admin-only by default. SALES staff get only the CRM pages, which call
@@ -289,7 +295,8 @@ export const requireCrmUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
   if (!roleCan(user.role, 'portal.sign_in')) {
@@ -316,4 +323,34 @@ export const requireRole = async (allowed: UserRole | UserRole[]) => {
   }
 
   return user
+}
+
+/**
+ * The token's Supabase session still exists. getClaims() checks only the
+ * JWT's signature and expiry, so a token issued before its session was
+ * ended (sign-out, or an orphaned sign-in taken over and re-linked to a
+ * person) would otherwise keep working until it expires. Ending a session
+ * deletes its auth.sessions row; this makes that end the token at once.
+ * (Security review, Nov 2026.)
+ */
+async function sessionIsLive(
+  sessionId: unknown,
+  userId: string
+): Promise<boolean> {
+  // Every Supabase user token carries session_id (password, link, invite,
+  // refresh): one without it isn't a user session.
+  if (typeof sessionId !== 'string' || !sessionId) return false
+  try {
+    const [row] = await db.execute<{ live: boolean }>(
+      sql`select exists (select 1 from auth.sessions s where s.id = ${sessionId}::uuid and s.user_id = ${userId}::uuid) as live`
+    )
+    return Boolean(row?.live)
+  } catch (error) {
+    // Fail closed: an unverifiable session counts as ended. A database
+    // outage would fail the users-row lookup next anyway; the one error this
+    // alone could cause (the role can't read auth.sessions) is ruled out by
+    // the pre-merge has_table_privilege check in the release runbook.
+    console.error('Session check failed; treating the session as ended', error)
+    return false
+  }
 }

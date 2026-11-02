@@ -18,7 +18,7 @@ import type { ActionResult, RestoreInput } from './types'
 import { HOUR_BLOCKS_PATH } from './helpers'
 
 export async function restoreHourBlock(
-  input: RestoreInput,
+  input: RestoreInput
 ): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
@@ -26,12 +26,12 @@ export async function restoreHourBlock(
       mode: 'restore',
       targetId: input.id,
     },
-    async () => performRestoreHourBlock(input),
+    async () => performRestoreHourBlock(input)
   )
 }
 
 async function performRestoreHourBlock(
-  input: RestoreInput,
+  input: RestoreInput
 ): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)

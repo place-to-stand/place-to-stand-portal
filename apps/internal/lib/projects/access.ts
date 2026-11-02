@@ -17,7 +17,7 @@ import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
  *   (`project_members`) and their own PERSONAL boards. No project is special:
  *   lead tasks live in the internal Sales project, so a sales user needs to be
  *   a member of it like any other. Only the task board: time logs,
- *   review, overview, billing, GitHub and planning stay admin-only and keep
+ *   review, billing, GitHub and planning stay admin-only and keep
  *   using `ensureProjectAccess` / `ensureTaskAccess`, which still assert ADMIN.
  *
  * Every helper here is the task-board twin of an admin guard. Use these only

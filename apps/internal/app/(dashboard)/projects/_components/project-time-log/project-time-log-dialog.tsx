@@ -9,6 +9,7 @@ import {
 } from '@pts/ui/dialog'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectTimeLogForm } from './project-time-log-form'
+import { InfoPanelDivider } from '@/components/ui/info-panel'
 import { TimeLogHoursSummary } from './time-log-hours-summary'
 import { useProjectTimeLogDialog } from '@/lib/projects/time-log/use-project-time-log-dialog'
 import type {
@@ -55,11 +56,17 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
         <DialogContent className='w-full max-w-xl'>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>{state.projectLabel}</DialogDescription>
+            {/* The project shows in the box below; screen readers get it here. */}
+            <DialogDescription className='sr-only'>
+              {state.projectLabel}
+            </DialogDescription>
           </DialogHeader>
-          {rest.projectType === 'CLIENT' ? (
-            <TimeLogHoursSummary projectId={rest.projectId} />
-          ) : null}
+          <TimeLogHoursSummary
+            projectId={rest.projectId}
+            projectLabel={state.projectLabel}
+            isClientProject={rest.projectType === 'CLIENT'}
+          />
+          <InfoPanelDivider />
           <ProjectTimeLogForm
             isMutating={state.isMutating}
             disableSubmit={state.disableSubmit}
@@ -93,16 +100,6 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
-        open={Boolean(state.taskRemovalCandidate)}
-        title='Remove linked task?'
-        description='The task will no longer be linked to this time log.'
-        confirmLabel='Remove'
-        confirmVariant='destructive'
-        confirmDisabled={state.isMutating}
-        onCancel={state.cancelTaskRemoval}
-        onConfirm={state.confirmTaskRemoval}
-      />
       <ConfirmDialog
         open={state.overageDialog.isOpen}
         title='Hours exceed client balance'

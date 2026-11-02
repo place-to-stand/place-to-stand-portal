@@ -15,7 +15,6 @@ import { SheetSection } from '@/components/sheets/sheet-section'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -31,10 +30,7 @@ import { CLIENT_BILLING_TYPE_SELECT_OPTIONS } from '@/lib/companies/billing/bill
 import { US_STATES } from '@/lib/companies/billing/us-states'
 import type { ClientSheetFormValues } from '@/lib/companies/billing/client-sheet-schema'
 import { cn } from '@/lib/utils'
-import {
-  monthNameFromNow,
-  thisOrNextMonthOptions,
-} from '@/lib/billing/months'
+import { monthNameFromNow, thisOrNextMonthOptions } from '@/lib/billing/months'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 
 import { ClientClosersEditor } from './client-closers-editor'
@@ -81,7 +77,7 @@ export type ClientBillingFieldsProps = {
 /**
  * A client's billing: billing type and state, commission, and portal access.
  * Shown in the company sheet (a client is its company's billing record) and
- * on the company's Billing tab. Renders inside the caller's `<Form>`.
+ * on the company's billing (its sheet's Client column). Renders inside the caller's `<Form>`.
  */
 export function ClientBillingFields({
   form,
@@ -133,7 +129,7 @@ export function ClientBillingFields({
 
   return (
     <>
-      <SheetSection title='Terms'>
+      <SheetSection>
         <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
           <FormField
             control={form.control}
@@ -182,11 +178,6 @@ export function ClientBillingFields({
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedBillingType.description ? (
-                    <FormDescription>
-                      {selectedBillingType.description}
-                    </FormDescription>
-                  ) : null}
                   <FormMessage />
                 </FormItem>
               )
@@ -223,9 +214,6 @@ export function ClientBillingFields({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>
-                  Sets the tax rate on invoices.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -266,33 +254,23 @@ export function ClientBillingFields({
         title='Commission'
         description='Origination pays 10% and closers share 20% of this client’s revenue.'
       >
+        <ClientOriginationPicker
+          selectedUser={selectedOriginationUser}
+          selectedContact={selectedOriginationContact}
+          availableUsers={availableOriginationUsers}
+          availableContacts={availableOriginationContacts}
+          disabled={originationPickerDisabled}
+          disabledReason={originationPickerDisabledReason}
+          isPickerOpen={isOriginationPickerOpen}
+          isPending={isPending}
+          pendingReason={pendingReason}
+          onPickerOpenChange={onOriginationPickerOpenChange}
+          onSelectUser={onSelectOriginationUser}
+          onSelectContact={onSelectOriginationContact}
+          onClear={onClearOrigination}
+          onCreateContact={onCreateOriginationContact}
+        />
         <div className='grid gap-2'>
-          <FormLabel optional>Origination</FormLabel>
-          <ClientOriginationPicker
-            selectedUser={selectedOriginationUser}
-            selectedContact={selectedOriginationContact}
-            availableUsers={availableOriginationUsers}
-            availableContacts={availableOriginationContacts}
-            disabled={originationPickerDisabled}
-            disabledReason={originationPickerDisabledReason}
-            isPickerOpen={isOriginationPickerOpen}
-            isPending={isPending}
-            pendingReason={pendingReason}
-            onPickerOpenChange={onOriginationPickerOpenChange}
-            onSelectUser={onSelectOriginationUser}
-            onSelectContact={onSelectOriginationContact}
-            onClear={onClearOrigination}
-            onCreateContact={onCreateOriginationContact}
-          />
-        </div>
-        <div className='grid gap-2'>
-          <FormLabel
-            optional
-            data-error={Boolean(closerError)}
-            className='data-[error=true]:text-destructive'
-          >
-            {closers.length > 1 ? 'Closers' : 'Closer'}
-          </FormLabel>
           <ClientClosersEditor
             closers={closers}
             availableUsers={availableCloserUsers}

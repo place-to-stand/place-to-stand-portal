@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { ClientBadge } from '@/components/clients/client-badge'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import {
   CompanyRecordRow,
   ContactRecordRow,
@@ -27,7 +27,7 @@ import {
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
-import { PortalAccessControl } from '@/components/clients/portal-access-control'
+import { PortalAccessField } from '@/components/clients/portal-access-control'
 import { EmptyValue } from '@/components/table/empty-value'
 import {
   RecordRowAction,
@@ -141,7 +141,7 @@ export function ComponentsRecordRows() {
             openable={false}
             fields={
               <>
-                <RecordRowField label='Title'>
+                <RecordRowField label='Title' grow>
                   <MembershipTitleInput
                     value={title}
                     onChange={setTitle}
@@ -149,18 +149,20 @@ export function ComponentsRecordRows() {
                   />
                 </RecordRowField>
                 <RecordRowField label='Portal access'>
-                  <PortalAccessControl
-                    person={{
-                      id: 'design-linus',
-                      name: 'Linus Torvalds',
-                      email: 'linus@acme.com',
-                      hasSignIn: true,
-                    }}
-                    hasAccess={portal}
-                    disabled={false}
-                    disabledReason={null}
+                  <PortalAccessField
+                    checked={portal}
+                    canHaveAccess
                     onChange={setPortal}
-                    showLabel={false}
+                    ariaLabel='Portal access for Linus Torvalds'
+                  />
+                </RecordRowField>
+                <RecordRowField label='No sign-in'>
+                  <PortalAccessField
+                    checked={false}
+                    canHaveAccess={false}
+                    onChange={noop}
+                    ariaLabel='Portal access for Ada Lovelace'
+                    action={{ label: 'Open person', onClick: noop }}
                   />
                 </RecordRowField>
               </>
@@ -168,7 +170,7 @@ export function ComponentsRecordRows() {
           />
           <CompanyRecordRow
             company={{ id: 'design-acme', name: 'Acme Industries' }}
-            titleAddon={<ClientBadge />}
+            titleAddon={<BillingTypeBadge billingType='prepaid' />}
             openable={false}
           />
           <LeadRecordRow
@@ -204,9 +206,17 @@ export function ComponentsRecordRows() {
               id: 'design-hour-block',
               name: 'Prepaid hours',
               hours: 40,
-              amount: 4800,
             }}
             openable={false}
+          />
+          <ContactRecordRow
+            contact={{
+              id: 'design-removed',
+              name: 'Grace Hopper',
+              email: 'grace@acme.com',
+            }}
+            openable={false}
+            pendingRemoval={{ onUndo: () => undefined }}
           />
         </SheetRecordList>
         <div className='space-y-4'>
@@ -522,6 +532,41 @@ export function ComponentsTables() {
         <SampleProjectList />
       </Specimen>
       <Specimen
+        label='LinkedRecordsHoverCell'
+        note='components/ui/linked-records-hover-cell.tsx: a count in a table cell; hovering it opens the linked records, and each row opens its record. A zero is the shared dash; a single record can be a lone icon trigger.'
+      >
+        <Example caption='count (hover)'>
+          <LinkedRecordsHoverCell
+            count={2}
+            items={[
+              { id: 'ada', label: 'Ada Lovelace', sublabel: 'Head of product' },
+              { id: 'grace', label: 'Grace Hopper', sublabel: 'Engineering' },
+            ]}
+            icon={ENTITY_ICONS.contact}
+            withIcon
+            ariaLabel='2 people'
+          />
+        </Example>
+        <Example caption='zero: the dash, no card'>
+          <LinkedRecordsHoverCell
+            count={0}
+            items={[]}
+            icon={ENTITY_ICONS.contact}
+            withIcon
+            ariaLabel='No people'
+          />
+        </Example>
+        <Example caption='one record: an icon trigger'>
+          <LinkedRecordsHoverCell
+            count={1}
+            items={[{ id: 'acme', label: 'Acme Inc.' }]}
+            icon={ENTITY_ICONS.company}
+            trigger={<ENTITY_ICONS.company className='size-4' />}
+            ariaLabel='1 company: Acme Inc.'
+          />
+        </Example>
+      </Specimen>
+      <Specimen
         label="density='compact'"
         note='Reports and dense sheet tables'
         bleed
@@ -542,7 +587,7 @@ export function ComponentsTables() {
                     className={cn(ENTITY_ACCENTS.company.icon, 'size-4')}
                     aria-hidden
                   />
-                  Acme Industries <ClientBadge />
+                  Acme Industries
                 </span>
               </TableCell>
               <TableCell>Prepaid</TableCell>
@@ -581,3 +626,5 @@ export function ComponentsTables() {
     </DesignSection>
   )
 }
+
+function noop() {}

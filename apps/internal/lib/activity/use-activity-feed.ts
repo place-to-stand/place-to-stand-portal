@@ -194,6 +194,10 @@ export function useActivityCount(
 
       const response = await fetch(`/api/activity?${params.toString()}`)
 
+      // Refused (403) or bad request: no count, and no retries.
+      if (response.status >= 400 && response.status < 500) {
+        return null
+      }
       if (!response.ok) {
         throw new Error('Failed to count activity.')
       }

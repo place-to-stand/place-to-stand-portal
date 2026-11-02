@@ -681,7 +681,7 @@ function buildClientHref(project: ProjectWithRelations): string | null {
     return null
   }
 
-  return companySheetHref(project.client.company_id, 'projects')
+  return companySheetHref(project.client.company_id)
 }
 
 function buildProjectHref(project: ProjectWithRelations): string | null {

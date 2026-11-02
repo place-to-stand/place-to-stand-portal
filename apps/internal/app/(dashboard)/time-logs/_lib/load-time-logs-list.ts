@@ -24,8 +24,9 @@ export async function loadTimeLogsList(
   const [page, unfilteredTotal, clientDirectory, projects, admins] =
     await Promise.all([
       fetchTimeLogPage({
-        from: params.from,
-        to: params.to,
+        search: params.q,
+        from: params.from || undefined,
+        to: params.to || undefined,
         clientCompanyId: params.companyId,
         projectId: params.projectId,
         userId: params.personId,

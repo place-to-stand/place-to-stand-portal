@@ -11,11 +11,17 @@ export function canSeePortalAccess(role: Role | null | undefined): boolean {
 
 /** A membership with its portal access left out, for everyone else. */
 export function withoutPortalAccess<
-  T extends { portalAccess: boolean; hasPortalAccess?: boolean },
+  T extends {
+    portalAccess: boolean
+    hasPortalAccess?: boolean
+    billingType?: string | null
+  },
 >(membership: T): T {
   return {
     ...membership,
     portalAccess: false,
     ...('hasPortalAccess' in membership ? { hasPortalAccess: false } : {}),
+    // Billing is admin-only too (security review, Nov 2026).
+    ...('billingType' in membership ? { billingType: null } : {}),
   }
 }

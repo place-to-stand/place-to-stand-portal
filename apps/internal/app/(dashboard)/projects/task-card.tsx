@@ -10,14 +10,7 @@ import {
 } from 'react'
 import { CSS } from '@dnd-kit/utilities'
 import { useSortable } from '@dnd-kit/sortable'
-import {
-  Bot,
-  CalendarDays,
-  MessageCircle,
-  Paperclip,
-  User,
-  Users,
-} from 'lucide-react'
+import { Bot, CalendarDays, User, Users } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
@@ -27,6 +20,7 @@ import {
   CardAssigneeAvatars,
   type CardAssignee,
 } from '@/components/cards/card-assignee-avatars'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type {
@@ -176,13 +170,13 @@ function CardContent({
             <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-xs'>
               {task.commentCount > 0 ? (
                 <span className='inline-flex items-center gap-1'>
-                  <MessageCircle className='h-3.5 w-3.5' />
+                  <CONCEPT_ICONS.comment className='h-3.5 w-3.5' />
                   {task.commentCount}
                 </span>
               ) : null}
               {attachmentCount > 0 ? (
                 <span className='inline-flex items-center gap-1'>
-                  <Paperclip className='h-3.5 w-3.5' />
+                  <CONCEPT_ICONS.attachment className='h-3.5 w-3.5' />
                   {attachmentCount}
                 </span>
               ) : null}

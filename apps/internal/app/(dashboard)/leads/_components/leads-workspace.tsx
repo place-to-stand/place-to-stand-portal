@@ -13,6 +13,7 @@ import {
   useSheetParamSelection,
   useSheetParams,
 } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import type { LeadAssigneeOption, LeadBoardColumnData } from '@/lib/leads/types'
 import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
@@ -141,7 +142,7 @@ export function LeadsWorkspace({
     [clear, router, startRefresh]
   )
 
-  // Winning a lead opens its company's Billing tab next, for whoever can
+  // Winning a lead opens its company's billing (its sheet's Client column) next, for whoever can
   // make it a client there (the same step the lead sheet takes on save).
   const { role } = useViewerAccess()
   const canManageClients = roleCan(role, 'clients.manage')
@@ -150,7 +151,8 @@ export function LeadsWorkspace({
     (lead: LeadRecord) => {
       if (!lead.companyId) return
       // Open it here, over the board, rather than leaving for /companies.
-      openSheet('company', lead.companyId, { tab: 'billing' })
+      setSheetSectionTarget('company', lead.companyId, 'billing')
+      openSheet('company', lead.companyId)
     },
     [openSheet]
   )

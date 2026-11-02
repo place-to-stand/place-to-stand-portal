@@ -3,9 +3,9 @@ import { expect, test, type Page, type Request } from '@playwright/test'
 import { expectHealthy } from './helpers'
 
 /**
- * The person sheet: create and edit are the same sheet (Sign-in included
- * for admins), Save is one request (one server action, one transaction),
- * and a role change asks which month it starts.
+ * The person sheet: create and edit are the same sheet (Sign-in included),
+ * Save is one request (one server action, one transaction), and a role
+ * change asks which month it starts.
  */
 
 const isServerAction = (request: Request) =>
@@ -28,12 +28,18 @@ test('changing a role asks which month it starts', async ({ page }) => {
   await expectHealthy(page)
   await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  await expect(sheet.getByText('Can sign in')).toBeVisible()
+  // A live Sales sign-in: Can sign in on, Role Sales.
+  const canSignIn = sheet.getByRole('switch', { name: 'Can sign in' })
+  await expect(canSignIn).toHaveAttribute('aria-checked', 'true')
+  const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+  await expect(role).toContainText('Sales')
 
   const roleStarts = sheet.getByRole('combobox', { name: 'Role starts' })
   await expect(roleStarts).toHaveCount(0)
 
-  await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
+  // Every role is on offer, Client included (staff can become a client).
+  await role.click()
+  await expect(page.getByRole('option', { name: 'Client' })).toHaveCount(1)
   await page.getByRole('option', { name: 'Admin' }).click()
   await expect(roleStarts).toBeVisible()
   await expect(roleStarts).toContainText('(this month)')
@@ -49,7 +55,46 @@ test('changing a role asks which month it starts', async ({ page }) => {
   expect(await options.count()).toBeLessThanOrEqual(3)
   await page.keyboard.press('Escape')
 
-  // Close without saving: the role change counts as unsaved.
+  // Switched off: no role or month to pick, and they can't sign in.
+  await canSignIn.click()
+  await expect(roleStarts).toHaveCount(0)
+  await expect(role).toHaveCount(0)
+  await expect(
+    sheet.getByText('won’t be able to sign in once you save.', { exact: false })
+  ).toBeVisible()
+
+  // Close without saving: the change counts as unsaved.
+  await page.keyboard.press('Escape')
+  await expect(page.getByText('Discard changes?')).toBeVisible()
+})
+
+test('a client sign-in sees the companies whose Portal is on', async ({
+  page,
+}) => {
+  await page.goto('/people?role=CLIENT')
+  await expectHealthy(page)
+  const rows = page
+    .locator('tbody tr')
+    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
+  test.skip((await rows.count()) === 0, 'needs a person with a client sign-in')
+  await rows.first().locator('td').first().click()
+  const sheet = page.getByRole('dialog')
+  await expect(
+    sheet.getByRole('switch', { name: 'Can sign in' })
+  ).toHaveAttribute('aria-checked', 'true')
+  const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+  await expect(role).toContainText('Client')
+  // Which companies they see: each client company card's switch, on now.
+  await expect(
+    sheet.getByRole('switch', { name: /^Portal access at / }).first()
+  ).toBeEnabled()
+
+  // Client to Sales is a role change: it asks which month.
+  await role.click()
+  await page.getByRole('option', { name: 'Sales' }).click()
+  await expect(
+    sheet.getByRole('combobox', { name: 'Role starts' })
+  ).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByText('Discard changes?')).toBeVisible()
 })
@@ -61,14 +106,20 @@ test('stopping being Admin starts next month, and warns about this month', async
   const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
   await page.goto('/people?role=ADMIN')
   await expectHealthy(page)
-  const rows = page.locator('tbody tr').filter({ hasNotText: adminEmail })
+  // A live Admin sign-in (a switched-off one is No access).
+  const rows = page
+    .locator('tbody tr')
+    .filter({ hasNotText: adminEmail })
+    .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Admin' }) })
   test.skip(
     (await rows.count()) === 0,
     'needs a second person with an Admin sign-in'
   )
   await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  await expect(sheet.getByText('Can sign in')).toBeVisible()
+  await expect(
+    sheet.getByRole('switch', { name: 'Can sign in' })
+  ).toHaveAttribute('aria-checked', 'true')
   const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
   await expect(role).toContainText('Admin')
 
@@ -96,6 +147,67 @@ test('stopping being Admin starts next month, and warns about this month', async
 test.describe('writes', () => {
   test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 
+  for (const teamRole of ['Admin', 'Sales'] as const) {
+    test(`a ${teamRole} sign-in can become a Client again`, async ({
+      page,
+    }) => {
+      const stamp = Date.now()
+      const name = `E2E ${teamRole} to client ${stamp}`
+      const email = `e2e-${teamRole.toLowerCase()}-client-${stamp}@local.test`
+
+      // A new person with a team sign-in (it puts them at the staff company).
+      await page.goto('/people?contact=new')
+      let sheet = page.getByRole('dialog')
+      await sheet.getByPlaceholder('John Doe').fill(name)
+      await sheet.getByPlaceholder('contact@example.com').fill(email)
+      await sheet.getByRole('switch', { name: 'Can sign in' }).click()
+      await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
+      await page.getByRole('option', { name: teamRole }).click()
+      await sheet.getByRole('button', { name: 'Create person' }).click()
+      await expect(sheet).toBeHidden()
+
+      // Reopen: Client is on offer, and Save says they leave the staff company.
+      await page.goto(`/people?q=${encodeURIComponent(email)}`)
+      await page.locator('tbody tr').first().locator('td').first().click()
+      sheet = page.getByRole('dialog')
+      const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+      await expect(role).toContainText(teamRole)
+      await role.click()
+      await page.getByRole('option', { name: 'Client' }).click()
+      await expect(sheet.getByText(/a Client isn’t staff/)).toBeVisible()
+      // Leaving Admin starts next month by default (payroll): this month here.
+      const starts = sheet.getByRole('combobox', { name: 'Role starts' })
+      if (!(await starts.textContent())?.includes('(this month)')) {
+        await starts.click()
+        await page.getByRole('option', { name: /\(this month\)/ }).click()
+      }
+      await sheet.getByRole('button', { name: 'Save changes' }).click()
+      await expect(sheet).toBeHidden()
+
+      // Saved: a Client now (this month), no longer at the staff company.
+      await page.goto(`/people?q=${encodeURIComponent(email)}`)
+      const row = page.locator('tbody tr').first()
+      await expect(
+        row.locator('[data-slot="badge"]', { hasText: 'Client' })
+      ).toBeVisible()
+      await row.locator('td').first().click()
+      sheet = page.getByRole('dialog')
+      await expect(
+        sheet.getByRole('combobox', { name: 'Role', exact: true })
+      ).toContainText('Client')
+      await expect(
+        sheet.getByText('Place To Stand', { exact: true })
+      ).toHaveCount(0)
+
+      // Put it back: archive the person.
+      await sheet.getByRole('button', { name: 'Archive person' }).click()
+      await page
+        .getByRole('button', { name: /^Archive/ })
+        .last()
+        .click()
+    })
+  }
+
   test('creating a person with a client sign-in is one request on Save', async ({
     page,
   }) => {
@@ -110,13 +222,17 @@ test.describe('writes', () => {
     const beforeSave = recordServerActions(page)
     await sheet.getByPlaceholder('John Doe').fill(name)
     await sheet.getByPlaceholder('contact@example.com').fill(email)
-    // Create shows the same Sign-in section as edit.
-    await sheet.getByRole('switch', { name: 'Can sign in' }).click()
+    // Create shows the same User section as edit: off, then on.
+    const canSignIn = sheet.getByRole('switch', { name: 'Can sign in' })
+    await expect(canSignIn).toHaveAttribute('aria-checked', 'false')
+    await canSignIn.click()
     await expect(
-      sheet.getByRole('combobox').filter({ hasText: 'Client' })
-    ).toBeVisible()
+      sheet.getByRole('combobox', { name: 'Role', exact: true })
+    ).toContainText('Client')
     await expect(
-      sheet.getByText(`creates a client portal sign-in for ${email}`)
+      sheet.getByText(
+        `Saving creates a sign-in for ${name} at ${email} and emails them a link to the client portal.`
+      )
     ).toBeVisible()
     beforeSave.stop()
     expect(beforeSave.actions.map(request => request.url())).toEqual([])

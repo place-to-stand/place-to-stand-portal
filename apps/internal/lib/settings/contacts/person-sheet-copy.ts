@@ -5,3 +5,6 @@ export const PERSON_WITH_SIGN_IN_ADMIN_ONLY =
 /** The person sheet's refusal when someone else saved the person since it loaded. */
 export const PERSON_SAVED_ELSEWHERE =
   'Someone else saved this person. Reload to see their changes.'
+
+/** The server's refusal when someone without sign-in rights changes one. */
+export const SIGN_IN_ADMIN_ONLY = 'Only an admin can change someone’s sign-in.'

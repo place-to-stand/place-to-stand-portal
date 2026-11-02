@@ -35,6 +35,10 @@ export default async function HourBlocksArchivePage({
     page: currentPage,
     search,
     sort,
+    companyId,
+    invoice,
+    from,
+    to,
   } = parseHourBlocksSearchParams(params)
   const offset = (currentPage - 1) * pageSize
 
@@ -45,6 +49,10 @@ export default async function HourBlocksArchivePage({
       limit: pageSize,
       search,
       sort,
+      companyId,
+      invoice,
+      from,
+      to,
     })
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -74,7 +82,15 @@ export default async function HourBlocksArchivePage({
       primaryAction={<HourBlocksAddButton clients={clients} />}
     >
       <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
-        <HourBlocksFilters basePath='/hour-blocks/archive' search={search} />
+        <HourBlocksFilters
+          basePath='/hour-blocks/archive'
+          search={search}
+          companyId={companyId}
+          invoice={invoice}
+          from={from}
+          to={to}
+          clients={clients}
+        />
         <HourBlocksManagementTable
           hourBlocks={items}
           clients={clients}

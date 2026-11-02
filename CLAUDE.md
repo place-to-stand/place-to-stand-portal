@@ -125,7 +125,7 @@ do not follow the bare-envelope, snake_case precedent set by `api/v1/`. Adding a
 serializer in `lib/cli/serializers/` plus a thin route; the serializers are the contract agents
 hardcode against, so adding a field is safe and renaming one is breaking.
 
-The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,overview,review,time-logs,activity,archive}`. The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,review,time-logs,activity,archive}` (`/overview` was retired and redirects to `tasks`). The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
 
 **Client portal** (`apps/client/app/`):
 ```
@@ -138,7 +138,7 @@ The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,ov
 └── unauthorized/     # Access denied page
 ```
 
-Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. It is switched on per person, by admins, on the company sheet's People section or the person sheet's Companies section (same switch, same Save rules: switching it on for someone with no sign-in gives them a Client sign-in and an invite).
+Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. A sign-in is made in one place: the person sheet's User section ("Can sign in" switch, then Role), saved with the sheet; switching it off disables the sign-in (`users.disabled_at`). Portal access is then switched on per company, by admins, on the company sheet's People section or the person sheet's company cards (same data, same Save rules), and only for someone who can already sign in: neither creates a sign-in.
 
 ### Database Schema
 
@@ -265,7 +265,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Design system:** `docs/design-system/` (README, `tokens.json`, `components/*.md`) documents colors, type, components, copy voice and house UI rules; the `design-system` skill loads it for UI work. Read it before any visual change, and update it when you change what it describes. `tokens.json` values are generated: run `npm run design-tokens` after changing `packages/ui/src/styles/theme.css`, `BRAND` or `EMAIL_COLORS`.
 
-**Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes).
+**Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes). A sheet's list of related records (heading, +, clickable empty state, preview cards) is always `EntityList` (`apps/internal/components/sheets/entity-list.tsx`); eslint blocks importing `SectionAddButton` anywhere else.
 
 **Rules name their guard:** every house rule and component rule in `docs/design-system/` ends with what enforces it, `(guard: eslint \`pts/…\`)`, `(guard: scripts/<check>.mjs)` or `(guard: review)`, and `scripts/check-rule-guards.mjs` (in `npm run lint`) fails on one that doesn't. A new preference lands with its guard, ideally a lint rule in `packages/eslint-config/rules/`; the README's "Which check guards which rule" table lists them all.
 

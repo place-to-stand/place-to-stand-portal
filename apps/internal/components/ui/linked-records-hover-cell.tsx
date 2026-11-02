@@ -175,7 +175,11 @@ function LinkedRecordRow({
           </span>
         ) : null}
       </span>
-      {item.trailing}
+      {/* A clear gap before the trailing mark (star, status badge); long
+          names truncate before it rather than touch it. */}
+      {item.trailing ? (
+        <span className='ml-2 flex shrink-0 items-center'>{item.trailing}</span>
+      ) : null}
     </>
   )
 

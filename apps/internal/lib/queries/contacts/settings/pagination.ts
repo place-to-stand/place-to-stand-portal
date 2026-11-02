@@ -12,7 +12,47 @@ import {
 import type { ContactSortField } from '@/lib/settings/contacts/filters'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 
+import { mainCompanyNameSql } from '@/lib/queries/memberships'
+
 import type { ContactsSettingsListItem } from './types'
+
+/** The People list's Companies column sorts by the person's main company. */
+const mainCompanySortSql = mainCompanyNameSql(contacts.id)
+
+/**
+ * Sign-in column order: Admin, Sales, Client; no live sign-in (none,
+ * archived or disabled: the column's dash) is null.
+ */
+const SIGN_IN_RANK = { ADMIN: '1', SALES: '2', CLIENT: '3' } as const
+const signInRankSql = sql`(
+  select case u.role when 'ADMIN' then '1' when 'SALES' then '2' when 'CLIENT' then '3' end
+  from users u
+  where u.id = "contacts"."user_id"
+    and u.deleted_at is null and u.disabled_at is null
+)`
+
+/**
+ * A nullable sort key that puts empty values last in both directions; the
+ * cursor encodes null as '' (like `phone`).
+ */
+function nullsLastDescriptor(
+  expr: SQL,
+  encode: (row: ContactsSettingsListItem) => string
+): ContactSortDescriptor {
+  return {
+    encode,
+    compare: (op, value) =>
+      value === ''
+        ? sql`false`
+        : op === 'gt'
+          ? sql`(${expr} > ${value} OR ${expr} IS NULL)`
+          : sql`(${expr} < ${value} OR ${expr} IS NULL)`,
+    equals: value =>
+      value === '' ? sql`${expr} IS NULL` : sql`${expr} = ${value}`,
+    orderAsc: sql`${expr} ASC NULLS LAST`,
+    orderDesc: sql`${expr} DESC NULLS LAST`,
+  }
+}
 
 export type StatusFilter = 'active' | 'archived'
 
@@ -153,6 +193,13 @@ export const CONTACT_SORT_DESCRIPTORS: Record<
     orderAsc: sql`${contacts.phone} ASC NULLS LAST`,
     orderDesc: sql`${contacts.phone} DESC NULLS LAST`,
   },
+  companies: nullsLastDescriptor(
+    mainCompanySortSql,
+    row => row.companies[0]?.name ?? ''
+  ),
+  signIn: nullsLastDescriptor(signInRankSql, row =>
+    row.signInRole ? SIGN_IN_RANK[row.signInRole] : ''
+  ),
   created: {
     encode: row => String(row.createdAt),
     compare: (op, value) =>

@@ -74,9 +74,6 @@ export type ProjectTimeLogDialogState = {
   requestTaskRemoval: (
     task: ProjectTimeLogDialogParams['tasks'][number]
   ) => void
-  taskRemovalCandidate: ProjectTimeLogDialogParams['tasks'][number] | null
-  confirmTaskRemoval: () => void
-  cancelTaskRemoval: () => void
   overageDialog: {
     isOpen: boolean
     description: string
@@ -168,9 +165,6 @@ export function useProjectTimeLogDialog(
     onTaskPickerOpenChange,
     onAddTask,
     requestTaskRemoval: rawRequestTaskRemoval,
-    confirmTaskRemoval,
-    cancelTaskRemoval: rawCancelTaskRemoval,
-    taskRemovalCandidate,
     initializeSelection,
     resetSelection,
   } = useTimeLogTaskSelection(tasks, { pinnedTaskIds: initialLinkedTaskIds })
@@ -421,13 +415,6 @@ export function useProjectTimeLogDialog(
     },
     [isMutating, rawRequestTaskRemoval]
   )
-
-  const cancelTaskRemoval = useCallback(() => {
-    if (isMutating) {
-      return
-    }
-    rawCancelTaskRemoval()
-  }, [isMutating, rawCancelTaskRemoval])
 
   const runMutation = useCallback(() => {
     timeLogMutation.mutate()
@@ -705,9 +692,6 @@ export function useProjectTimeLogDialog(
     taskPickerButtonDisabled,
     taskPickerReason,
     requestTaskRemoval,
-    taskRemovalCandidate,
-    confirmTaskRemoval,
-    cancelTaskRemoval,
     overageDialog: guardedOverageDialog,
     discardDialog,
     deleteDialog,

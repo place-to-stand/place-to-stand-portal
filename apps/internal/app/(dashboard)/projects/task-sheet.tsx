@@ -1,7 +1,7 @@
 'use client'
 
-import { EmptyState } from '@pts/ui/empty-state'
-import { SheetSection } from '@/components/sheets/sheet-section'
+import { CONCEPT_ICONS } from '@/lib/concept-icons'
+import { EntityList } from '@/components/sheets/entity-list'
 import {
   useCallback,
   useEffect,
@@ -36,7 +36,10 @@ import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { ProjectTimeLogDialog } from './_components/project-time-log/project-time-log-dialog'
-import { TimeLogSection } from './_components/task-sheet/time-log-section'
+import {
+  TimeLogSection,
+  TimeLogSectionPlaceholder,
+} from './_components/task-sheet/time-log-section'
 import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
@@ -98,6 +101,7 @@ export function TaskSheet(props: TaskSheetProps) {
     attachments,
     handleAttachmentUpload,
     handleAttachmentRemove,
+    handleAttachmentUndoRemove,
     isUploadingAttachments,
     acceptedAttachmentTypes,
     maxAttachmentSize,
@@ -428,6 +432,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   attachments={attachments}
                   onAttachmentUpload={handleAttachmentUpload}
                   onAttachmentRemove={handleAttachmentRemove}
+                  onAttachmentUndoRemove={handleAttachmentUndoRemove}
                   isUploadingAttachments={isUploadingAttachments}
                   acceptedAttachmentTypes={acceptedAttachmentTypes}
                   maxAttachmentSize={maxAttachmentSize}
@@ -444,28 +449,29 @@ export function TaskSheet(props: TaskSheetProps) {
                     onLogTime={handleLogTime}
                     onEditEntry={handleEditTimeLogEntry}
                   />
-                ) : isAdmin && !props.task && taskProject?.type === 'CLIENT' ? (
-                  // Create shows the same sheet: time and comments are their
-                  // own records, so they open once the task exists.
-                  <SheetSection title='Time logs' className='px-6'>
-                    <EmptyState message='Log time after you save the task.' />
-                  </SheetSection>
+                ) : isAdmin &&
+                  !props.task &&
+                  (!taskProject || taskProject.type === 'CLIENT') ? (
+                  // Create shows the same sheet: time is its own record, so
+                  // the section waits for the saved task. Shown until a
+                  // project is picked, unless that project is internal or
+                  // personal (no time is tracked there).
+                  <TimeLogSectionPlaceholder />
                 ) : null}
                 {/* Sections, no inner tabs: Comments, then the collapsed
                     Activity, always last in a sheet. */}
                 {props.task && taskPanelProjectId ? (
                   <>
-                    <SheetSection title='Comments' className='px-6'>
-                      <TaskCommentsPanel
-                        taskId={props.task.id}
-                        projectId={taskPanelProjectId}
-                        currentUserId={props.currentUserId}
-                        currentUserName={currentUserName}
-                        canComment
-                        taskTitle={props.task.title}
-                        companyId={taskPanelClientId}
-                      />
-                    </SheetSection>
+                    <TaskCommentsPanel
+                      className='px-6'
+                      taskId={props.task.id}
+                      projectId={taskPanelProjectId}
+                      currentUserId={props.currentUserId}
+                      currentUserName={currentUserName}
+                      canComment
+                      taskTitle={props.task.title}
+                      companyId={taskPanelClientId}
+                    />
                     <SheetActivitySection
                       // Remount per task so a newly opened task starts collapsed.
                       key={props.task.id}
@@ -477,9 +483,17 @@ export function TaskSheet(props: TaskSheetProps) {
                     />
                   </>
                 ) : !props.task ? (
-                  <SheetSection title='Comments' className='px-6'>
-                    <EmptyState message='Add comments after you save the task.' />
-                  </SheetSection>
+                  <EntityList
+                    className='px-6'
+                    title='Comments'
+                    icon={CONCEPT_ICONS.comment}
+                    add={{
+                      label: 'Add comment',
+                      disabledReason: 'Add comments after you save the task.',
+                    }}
+                    isEmpty
+                    emptyMessage='Add comments after you save the task.'
+                  />
                 ) : null}
               </div>
 

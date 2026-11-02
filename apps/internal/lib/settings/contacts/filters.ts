@@ -6,8 +6,10 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 // An unknown field (e.g. the retired `clients`) falls back to the default.
 const CONTACT_SORT_FIELDS = [
   'name',
+  'companies',
   'email',
   'phone',
+  'signIn',
   'created',
 ] as const
 export type ContactSortField = (typeof CONTACT_SORT_FIELDS)[number]
@@ -38,7 +40,8 @@ export const SIGN_IN_FILTER_VALUES = [
 ] as const
 export type SignInFilter = (typeof SIGN_IN_FILTER_VALUES)[number]
 /** What the Role filter offers. */
-export const ROLE_FILTER_VALUES = ['ADMIN', 'SALES', 'CLIENT', 'none'] as const
+// A–Z, then "No sign-in" last.
+export const ROLE_FILTER_VALUES = ['ADMIN', 'CLIENT', 'SALES', 'none'] as const
 export const ROLE_FILTER_LABELS: Record<
   (typeof ROLE_FILTER_VALUES)[number],
   string
@@ -46,7 +49,7 @@ export const ROLE_FILTER_LABELS: Record<
   ADMIN: 'Admin',
   SALES: 'Sales',
   CLIENT: 'Client',
-  none: 'No user',
+  none: 'No sign-in',
 }
 export const isSignInFilter = (value: string): value is SignInFilter =>
   (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
@@ -104,7 +107,11 @@ export function parseContactsSearchParams(
       clientIdParam && UUID_PATTERN.test(clientIdParam)
         ? clientIdParam
         : undefined,
-    signIn: isSignInFilter(signInParam) ? signInParam : undefined,
+    // 'any' (has a user) is no longer offered; an old link shows everyone.
+    signIn:
+      isSignInFilter(signInParam) && signInParam !== 'any'
+        ? signInParam
+        : undefined,
     sort,
   }
 }

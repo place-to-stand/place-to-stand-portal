@@ -1,5 +1,5 @@
 import { wasClientCompany } from '@pts/db/client-state'
-import { personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -41,6 +41,8 @@ type ContactOption = {
   signInDisabled?: boolean
   /** Their company's primary contact. */
   isPrimary?: boolean
+  /** They have a photo; the pickers show it, else initials. */
+  hasPhoto?: boolean
 }
 
 type AdminUserOption = {
@@ -48,6 +50,8 @@ type AdminUserOption = {
   fullName: string | null
   email: string
   disabledAt: string | null
+  /** Their person has a photo; the pickers show it, else initials. */
+  hasPhoto: boolean
 }
 
 export type ClientSheetContactData = {
@@ -57,7 +61,7 @@ export type ClientSheetContactData = {
 }
 
 /**
- * Every live contact, for the Billing tab's pickers (origination, closers)
+ * Every live contact, for the billing section's pickers (origination, closers)
  * and Portal access list. `companyId` is the client's company when they are
  * a member of it (so the Portal access list can pick them out), otherwise
  * their main company; `isPrimary` is the client's company's primary.
@@ -80,6 +84,7 @@ async function listAllActiveContacts(
       phone: contacts.phone,
       userId: contacts.userId,
       signInDisabled: signInDisabledSql,
+      hasPhoto: sql<boolean>`${contacts.avatarUrl} is not null`,
       atClientCompany,
       mainCompanyId: mainCompanyIdSql(contacts.id),
       isPrimary: companyId
@@ -105,6 +110,7 @@ async function listAllActiveContacts(
     signInDisabled: row.signInDisabled,
     companyId: row.atClientCompany ? (companyId ?? null) : row.mainCompanyId,
     isPrimary: Boolean(row.isPrimary),
+    hasPhoto: row.hasPhoto,
   }))
 }
 
@@ -169,6 +175,7 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
       fullName: personNameSql,
       email: users.email,
       disabledAt: users.disabledAt,
+      avatarUrl: personAvatarSql,
     })
     .from(users)
     .where(
@@ -181,11 +188,12 @@ async function listAllAdminUsers(user: AppUser): Promise<AdminUserOption[]> {
     fullName: row.fullName,
     email: row.email,
     disabledAt: row.disabledAt,
+    hasPhoto: Boolean(row.avatarUrl),
   }))
 }
 
 /**
- * Fetches all data needed for the Billing tab's contact and partner pickers.
+ * Fetches all data needed for the billing section's contact and partner pickers.
  * If clientCompanyId is provided, also fetches the client's linked contacts.
  */
 export async function getClientSheetContactData(
@@ -230,7 +238,7 @@ export async function applyPortalAccessInTx(
   for (const contactId of changes.grant) {
     if (!(await setPortalAccess(tx, actor, contactId, companyId, true))) {
       throw new PortalAccessRefusal(
-        'Someone given portal access has no sign-in or left this company. Reload and try again.'
+        'Someone given portal access needs a user account with the Client role (or left this company). Turn on Can sign in, Role Client, on their person sheet first.'
       )
     }
   }

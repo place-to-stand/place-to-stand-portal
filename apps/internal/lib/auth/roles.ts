@@ -17,10 +17,11 @@ import type { Database } from '@/lib/supabase/types'
  */
 type Role = Database['public']['Enums']['user_role']
 
+// Listed A–Z wherever roles are offered: Admin, Client, Sales.
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Admin',
-  SALES: 'Sales',
   CLIENT: 'Client',
+  SALES: 'Sales',
 }
 
 /** Where a SALES user lands after sign-in, and where admin-only pages send them. */

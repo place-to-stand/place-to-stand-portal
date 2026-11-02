@@ -2,13 +2,7 @@
 
 import { Button } from '@pts/ui/button'
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  type ComponentType,
-  type ReactElement,
-} from 'react'
+import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import { ExternalLink, Plus } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -28,6 +22,8 @@ export type EntityLinkOption = {
   label: string
   /** Second line in the list, e.g. an email. */
   description?: string | null
+  /** A person's avatar (photo, else initials); see `SearchableComboboxItem`. */
+  avatar?: SearchableComboboxItem['avatar']
 }
 
 type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
@@ -50,7 +46,6 @@ type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
   allowCreate?: boolean
   id?: string
   'aria-label'?: string
-  icon?: ComponentType<{ className?: string }>
   /**
    * A custom trigger (e.g. a section's "Add person" button) in place of the
    * field. Use with `value={null}` to add records to a list one at a time.
@@ -94,7 +89,6 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   allowCreate = true,
   id,
   'aria-label': ariaLabel,
-  icon,
   trigger,
   showCreateButton = false,
   open,
@@ -132,9 +126,10 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       label: option.label,
       description: option.description ?? undefined,
       keywords: option.description ? [option.description] : undefined,
-      icon,
+      // Options of one entity carry no icon: the field's label shows it.
+      avatar: option.avatar,
     }))
-  }, [icon, options, value])
+  }, [options, value])
 
   const plural = pluralize(entityLabel)
 
@@ -160,6 +155,7 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
                 id: next.value,
                 label: next.label,
                 description: next.description,
+                avatar: next.avatar,
               }
             : null
         )

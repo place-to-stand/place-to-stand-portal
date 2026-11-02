@@ -83,8 +83,8 @@ export function ProjectTimeLogHistoryContent(
           <Table stack>
             <TableHeader>
               <TableRow className='bg-muted/40'>
-                <TableHead className='min-w-28'>Logged on</TableHead>
                 <TableHead className='min-w-20'>Hours</TableHead>
+                <TableHead className='min-w-28'>Logged on</TableHead>
                 <TableHead className='min-w-20 text-center'>Tasks</TableHead>
                 <TableHead className='min-w-36'>Person</TableHead>
                 <TableHead className='w-20 text-right'>Actions</TableHead>
@@ -162,13 +162,14 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
 
   return (
     <TableRow>
-      <TableCell className='max-md:first:basis-auto'>
+      {/* Hours first, as on the Time logs list. */}
+      <TableCell className='font-semibold max-md:first:basis-auto'>
+        {formatHours(log.hours ?? 0)}
+      </TableCell>
+      <TableCell label='Logged on'>
         <div className='flex flex-col'>
           <span className='font-medium'>{loggedDate}</span>
         </div>
-      </TableCell>
-      <TableCell className='font-semibold'>
-        {formatHours(log.hours ?? 0)}
       </TableCell>
       <TableCell label='Tasks' className='text-sm tabular-nums md:text-center'>
         <LinkedRecordsHoverCell

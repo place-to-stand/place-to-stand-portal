@@ -13,8 +13,9 @@ import {
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 import { roleCan, type Role } from '@/lib/auth/capabilities'
+import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { db, type DbTx } from '@/lib/db'
-import { companies, contacts, memberships } from '@/lib/db/schema'
+import { companies, contacts, memberships, users } from '@/lib/db/schema'
 import {
   activeCompanySql,
   isClientCompany,
@@ -137,9 +138,13 @@ export type ContactMembership = {
   /** The company's live client, if it has one. */
   clientCompanyId: string | null
   clientName: string | null
+  /** A client's current billing type; null when not billed now. */
+  billingType: 'prepaid' | 'net_30' | null
   /** Billed before but not now: its portal access returns if billing restarts. */
   formerClient: boolean
   startedAt: string
+  /** The agency's own company (`companies.is_staff`). */
+  isStaff: boolean
   /** The company is archived, or its client is (history; hidden in active views). */
   archived: boolean
 }
@@ -172,7 +177,11 @@ export async function listContactMemberships(
       clientName: sql<
         string | null
       >`case when ${isClientCompany()} then ${companies.name} end`,
+      billingType: sql<
+        'prepaid' | 'net_30' | null
+      >`case when ${isClientCompany()} then ${currentBillingTypeSql()} end`,
       formerClient: isFormerClientSql,
+      isStaff: companies.isStaff,
       startedAt: memberships.startedAt,
       archived: sql<boolean>`not ${activeCompanySql('companies')}`,
       hasPortalAccess: sql<boolean>`exists (
@@ -206,7 +215,9 @@ export async function listContactMemberships(
       portalAccess: row.portalAccess,
       clientCompanyId: row.clientCompanyId ?? null,
       clientName: row.clientName ?? null,
+      billingType: row.billingType ?? null,
       formerClient: Boolean(row.formerClient),
+      isStaff: Boolean(row.isStaff),
       startedAt: row.startedAt,
       archived: row.archived,
       hasPortalAccess: row.hasPortalAccess,
@@ -431,7 +442,9 @@ export async function setPortalAccess(
   if (portalAccess && !roleCan(actor.role, 'clients.manage')) {
     throw new PortalAccessForbiddenError()
   }
-  if (portalAccess && !(await hasPortalLogin(executor, contactId))) {
+  // Only someone who can sign in to the client portal now: a live Client
+  // sign-in. Nothing here makes one (that's the person sheet's Sign-in).
+  if (portalAccess && !(await hasLiveClientSignIn(executor, contactId))) {
     return false
   }
   const where = and(
@@ -453,6 +466,31 @@ export async function setPortalAccess(
     await touchContacts(executor, [contactId])
   }
   return true
+}
+
+/**
+ * The contact can sign in to the client portal now: a sign-in with role
+ * CLIENT, not switched off or archived. The one rule for turning portal
+ * access on (both sheets show the same, see `canHavePortalAccess`).
+ */
+export async function hasLiveClientSignIn(
+  executor: Executor,
+  contactId: string
+): Promise<boolean> {
+  const [row] = await executor
+    .select({ id: users.id })
+    .from(contacts)
+    .innerJoin(users, eq(users.id, contacts.userId))
+    .where(
+      and(
+        eq(contacts.id, contactId),
+        eq(users.role, 'CLIENT'),
+        isNull(users.disabledAt),
+        isNull(users.deletedAt)
+      )
+    )
+    .limit(1)
+  return Boolean(row)
 }
 
 /** The contact has a portal login (`contacts.user_id`). */

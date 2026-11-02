@@ -12,7 +12,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 /** Someone a commission can go to: a staff sign-in or a person. */
 export type StaffOrPersonCandidate = {
@@ -20,6 +20,8 @@ export type StaffOrPersonCandidate = {
   id: string
   name: string
   email: string | null
+  /** They have a photo, shown in the list; else their initials. */
+  hasPhoto?: boolean
 }
 
 type StaffOrPersonPickerProps<T extends StaffOrPersonCandidate> = {
@@ -121,7 +123,18 @@ function CandidateItem({
       value={`${candidate.kind} ${candidate.name} ${candidate.email ?? ''}`}
       onSelect={onSelect}
     >
-      <ENTITY_ICONS.contact className='text-muted-foreground h-4 w-4' />
+      {/* Each person shows their own avatar; the field's label carries the
+          person icon. The ring keeps it visible on a highlighted row. */}
+      <UserAvatar
+        size='xs'
+        className='ring-border shrink-0 ring-1'
+        name={candidate.name}
+        alt=''
+        hasPhoto={candidate.hasPhoto ?? false}
+        {...(candidate.kind === 'contact'
+          ? { contactId: candidate.id }
+          : { userId: candidate.id })}
+      />
       <div className='flex min-w-0 flex-col'>
         <span className='truncate font-medium'>{candidate.name}</span>
         {candidate.email && candidate.email !== candidate.name ? (

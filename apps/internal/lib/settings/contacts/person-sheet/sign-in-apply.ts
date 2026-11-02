@@ -92,6 +92,15 @@ export async function runSignInAuth(
   const userId = plan.userId
   if (!userId) return null
 
+  // A sign-in left behind with this email (no live person) is linked to
+  // this person: whoever used it before may still know its password or
+  // hold a session, so reset it and end its sessions first (as for an
+  // orphaned auth user above). Security review, Nov 2026.
+  if (create?.source === 'user') {
+    const takeOverError = await takeOverExistingAuthUser(userId)
+    if (takeOverError) return takeOverError
+  }
+
   if (plan.emailChange) {
     const { from, to } = plan.emailChange
     const error = await setAuthEmail(userId, to)

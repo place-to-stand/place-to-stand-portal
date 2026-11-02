@@ -24,6 +24,7 @@ import {
 import {
   PERSON_SAVED_ELSEWHERE,
   PERSON_WITH_SIGN_IN_ADMIN_ONLY,
+  SIGN_IN_ADMIN_ONLY,
 } from '@/lib/settings/contacts/person-sheet-copy'
 
 import { SignInConflictError } from '@/lib/companies/portal-sign-ins'
@@ -108,7 +109,7 @@ async function save(
     return { error: PERSON_SAVED_ELSEWHERE }
   }
   if (signIn && !isAdmin) {
-    return { error: 'Only an admin can change someone’s sign-in.' }
+    return { error: SIGN_IN_ADMIN_ONLY }
   }
 
   const prepared = await prepareContactSave(user, contactInput, existing)
@@ -232,9 +233,8 @@ async function save(
     }
     await finishAvatarClaim(avatarClaim)
   }
-  if (plan.mode === 'update' && (portal.grant.length || portal.revoke.length)) {
-    plan.changedFields.push('portal access')
-  }
+  // Portal changes are logged as CONTACT_CLIENT_LINKED / UNLINKED (kept
+  // from Sales), not in the person's changed fields, which Sales can read.
   await logContactSave(user, plan)
   await finishPersonPortalAccess(user, contactId, portal, portalSignIn.signIns)
   const warning = signInPlan

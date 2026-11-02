@@ -82,6 +82,7 @@ type UseTaskSheetStateReturn = {
   attachments: AttachmentItem[]
   handleAttachmentUpload: (files: FileList | File[]) => void
   handleAttachmentRemove: (key: string) => void
+  handleAttachmentUndoRemove: (key: string) => void
   isUploadingAttachments: boolean
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
@@ -131,6 +132,7 @@ export const useTaskSheetState = ({
     isUploading,
     handleAttachmentUpload,
     handleAttachmentRemove,
+    handleAttachmentUndoRemove,
     resetAttachmentsState,
     buildSubmissionPayload,
   } = useTaskAttachments({
@@ -346,6 +348,7 @@ export const useTaskSheetState = ({
     attachments: attachmentItems,
     handleAttachmentUpload,
     handleAttachmentRemove,
+    handleAttachmentUndoRemove,
     isUploadingAttachments: isUploading,
     acceptedAttachmentTypes: ACCEPTED_TASK_ATTACHMENT_MIME_TYPES,
     maxAttachmentSize: MAX_TASK_ATTACHMENT_FILE_SIZE,

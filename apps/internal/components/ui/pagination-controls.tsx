@@ -1,9 +1,11 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { PageSizeSelect } from '@/components/table-toolbar/page-size-select'
+import { cn } from '@/lib/utils'
 
 type CursorPaginationProps = {
   mode?: 'cursor'
@@ -26,6 +28,11 @@ type PagedPaginationProps = {
   pageSize: number
   onPageChange: (page: number) => void
   showCount?: boolean
+  /**
+   * A list-wide figure (a total) centred in the footer between rows per
+   * page and the pager, e.g. the Time logs hours total.
+   */
+  summary?: ReactNode
 }
 
 type PaginationControlsProps = CursorPaginationProps | PagedPaginationProps
@@ -151,6 +158,7 @@ function PagedPagination({
   pageSize,
   onPageChange,
   showCount = true,
+  summary,
 }: PagedPaginationProps) {
   const hasMorePages = totalPages > 1
   // The footer is a fixture of every list (rows-per-page + count); only the
@@ -222,9 +230,19 @@ function PagedPagination({
   ) : null
 
   return (
-    <div className='flex flex-wrap items-center justify-between gap-x-4 gap-y-2'>
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-x-4 gap-y-2',
+        summary && 'sm:grid sm:grid-cols-[1fr_auto_1fr]'
+      )}
+    >
       <PageSizeSelect value={pageSize} />
-      <div className='flex items-center gap-3 sm:gap-4'>
+      {summary ? (
+        <div className='text-sm max-sm:order-last max-sm:w-full max-sm:text-center'>
+          {summary}
+        </div>
+      ) : null}
+      <div className='flex items-center gap-3 justify-self-end sm:gap-4'>
         {showCount ? (
           <p className='text-muted-foreground text-xs tabular-nums'>
             {(currentPage - 1) * pageSize + 1}–

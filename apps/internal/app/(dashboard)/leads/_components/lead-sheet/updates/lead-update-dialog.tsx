@@ -1,8 +1,7 @@
 'use client'
 
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 
-import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Label } from '@pts/ui/label'
 import {
@@ -13,6 +12,9 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
+import { InlineReveal } from '@/components/ui/inline-reveal'
+import { InlineFormActions } from '@/components/sheets/inline-form-actions'
+import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -22,7 +24,6 @@ import {
 import { toCalendarDate } from '@/lib/dates/calendar-date'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
 import {
-  LEAD_UPDATE_LABELS,
   LEAD_UPDATE_TYPES,
   type LeadUpdateTypeValue,
 } from '@/lib/leads/updates'
@@ -37,6 +38,8 @@ type LeadUpdateDialogProps = {
   /** Present = edit that update; null = log a new one. */
   update: LeadUpdateRecord | null
   onSaved: () => void
+  /** Bumped by the section's X: close like Cancel (asks first if edited). */
+  closeRequest?: number
 }
 
 /**
@@ -61,6 +64,7 @@ export function LeadUpdateDialog({
   onOpenChange,
   update,
   onSaved,
+  closeRequest = 0,
 }: LeadUpdateDialogProps) {
   const isEditing = update !== null
   const [type, setType] = useState<LeadUpdateTypeValue>('PHONE_CALL')
@@ -111,6 +115,14 @@ export function LeadUpdateDialog({
     },
     [isDirty, onOpenChange]
   )
+
+  // The section's X asks to close, like Cancel.
+  const lastCloseRequest = useRef(closeRequest)
+  useEffect(() => {
+    if (closeRequest === lastCloseRequest.current) return
+    lastCloseRequest.current = closeRequest
+    handleOpenChange(false)
+  }, [closeRequest, handleOpenChange])
 
   const handleSubmit = useCallback(() => {
     setError(null)
@@ -167,97 +179,93 @@ export function LeadUpdateDialog({
 
   return (
     <>
-      {/* Inline in the Updates section: no dialog over the lead sheet. */}
-      {open ? (
-        <div className='bg-card space-y-4 rounded-lg border p-3'>
-          <p className='text-sm font-medium'>
-            {isEditing ? 'Edit update' : 'Log update'}
-          </p>
-
-          {/* min-w-0 lets this grid child shrink to the popup's width — without
+      {/* Inline in the Updates section (EntityList's inlineForm), under the
+          heading: no dialog over the lead sheet. It eases open and closed so
+          the list below doesn't jump; pb-2 is its 8px over the list. */}
+      <InlineReveal open={open}>
+        <div className='pb-2'>
+          <div className='bg-card space-y-4 rounded-lg border p-3'>
+            {/* min-w-0 lets this grid child shrink to the popup's width — without
             it the RTE toolbar's min-content width drags the whole track wider
             than the panel and everything bleeds past the border. */}
-          <div className='min-w-0 space-y-4'>
-            <div className='flex gap-3'>
-              <div className='flex-1 space-y-1'>
-                <Label htmlFor='lead-update-type' className='text-xs'>
-                  Type
-                </Label>
-                <Select
-                  value={type}
-                  onValueChange={value => {
-                    setType(value as LeadUpdateTypeValue)
-                    setIsDirty(true)
-                  }}
-                >
-                  <SelectTrigger id='lead-update-type'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LEAD_UPDATE_TYPES.map(value => (
-                      <SelectItem key={value} value={value}>
-                        {LEAD_UPDATE_LABELS[value]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className='min-w-0 space-y-4'>
+              <div className='flex gap-3'>
+                <div className='flex-1 space-y-1'>
+                  <Label htmlFor='lead-update-type' className='text-xs'>
+                    Type
+                  </Label>
+                  <Select
+                    value={type}
+                    onValueChange={value => {
+                      setType(value as LeadUpdateTypeValue)
+                      setIsDirty(true)
+                    }}
+                  >
+                    <SelectTrigger id='lead-update-type'>
+                      <SelectValue>
+                        <LeadUpdateTypeBadge type={type} />
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LEAD_UPDATE_TYPES.map(value => (
+                        <SelectItem key={value} value={value}>
+                          <LeadUpdateTypeBadge type={value} />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className='flex-1 space-y-1'>
+                  <Label htmlFor='lead-update-date' className='text-xs'>
+                    Date
+                  </Label>
+                  <DatePicker
+                    id='lead-update-date'
+                    max={toCalendarDate(new Date())}
+                    value={occurredOn}
+                    clearable={false}
+                    onChange={value => {
+                      setOccurredOn(value)
+                      setIsDirty(true)
+                    }}
+                  />
+                </div>
               </div>
-              <div className='flex-1 space-y-1'>
-                <Label htmlFor='lead-update-date' className='text-xs'>
-                  Date
+
+              <div className='space-y-1'>
+                <Label htmlFor='lead-update-body' className='text-xs'>
+                  What happened
                 </Label>
-                <DatePicker
-                  id='lead-update-date'
-                  max={toCalendarDate(new Date())}
-                  value={occurredOn}
-                  clearable={false}
+                <RichTextEditor
+                  id='lead-update-body'
+                  value={body}
                   onChange={value => {
-                    setOccurredOn(value)
+                    setBody(value)
                     setIsDirty(true)
                   }}
+                  placeholder='Discussed scope and timeline…'
+                  contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'
                 />
               </div>
+
+              {error ? (
+                <p role='alert' className='text-destructive text-xs'>
+                  {error}
+                </p>
+              ) : null}
             </div>
 
-            <div className='space-y-1'>
-              <Label htmlFor='lead-update-body' className='text-xs'>
-                What happened
-              </Label>
-              <RichTextEditor
-                id='lead-update-body'
-                value={body}
-                onChange={value => {
-                  setBody(value)
-                  setIsDirty(true)
-                }}
-                placeholder='Discussed scope and timeline…'
-                contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'
-              />
-            </div>
-
-            {error ? (
-              <p role='alert' className='text-destructive text-xs'>
-                {error}
-              </p>
-            ) : null}
-          </div>
-
-          <div className='flex justify-end gap-2'>
-            <Button
-              type='button'
-              variant='ghost'
-              onClick={() => handleOpenChange(false)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
             {/* Never gated on dirty state — only on an in-flight save. */}
-            <Button type='button' onClick={handleSubmit} disabled={isPending}>
-              {isPending ? 'Saving…' : isEditing ? 'Save' : 'Log'}
-            </Button>
+            <InlineFormActions
+              submitLabel='Log update'
+              isEditing={isEditing}
+              pending={isPending}
+              onSubmit={handleSubmit}
+              onCancel={() => handleOpenChange(false)}
+            />
           </div>
         </div>
-      ) : null}
+      </InlineReveal>
 
       <ConfirmDialog
         open={showDiscardConfirm}

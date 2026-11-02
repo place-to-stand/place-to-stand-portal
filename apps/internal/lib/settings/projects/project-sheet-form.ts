@@ -139,7 +139,7 @@ export const buildProjectFormDefaults = (
   project: ProjectWithClient | null,
   /** New projects start as this type; non-admins can only make personal boards. */
   defaultType: ProjectTypeValue = 'CLIENT',
-  /** New client projects start on this company (a company's Projects tab). */
+  /** New client projects start on this company (a company's Projects (its sheet's Client column)). */
   initialCompanyId?: string
 ): ProjectSheetFormValues => ({
   name: project?.name ?? '',

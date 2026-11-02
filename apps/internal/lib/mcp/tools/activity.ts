@@ -16,6 +16,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { resolveUserIds } from '@/lib/cli/queries/users'
 import { serializeActivity } from '@/lib/cli/serializers/activity'
 import { resolveClientIdentifier } from '@/lib/data/clients'
+import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 import { resolveProjectIdentifier } from '@/lib/data/projects'
 import { activitySource } from '@/lib/db/schema'
 import { BadRequestError, ForbiddenError } from '@/lib/errors/http'
@@ -161,9 +162,21 @@ export function registerActivityTools(server: McpServer) {
         resolveActorId(user, actor),
       ])
 
+      // Billing activity moved from CLIENT to COMPANY (0113), and old client
+      // ids became company ids (0111): an agent asking the old way still
+      // finds it.
+      const targetTypes = targetType
+        ? [
+            ...new Set(
+              targetType.map(type => (type === 'CLIENT' ? 'COMPANY' : type))
+            ),
+          ]
+        : undefined
       const result = await fetchActivityLogs(user, {
-        targetType,
-        targetId,
+        targetType: targetTypes,
+        targetId: targetId
+          ? await companyIdForLegacyClientId(targetId)
+          : undefined,
         projectId,
         companyId: clientId,
         source,

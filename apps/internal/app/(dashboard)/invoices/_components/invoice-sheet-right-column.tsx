@@ -4,11 +4,13 @@ import { Ban, Calendar, CheckCheck, Eye, Mail, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Separator } from '@pts/ui/separator'
+
+import { EntityList } from '@/components/sheets/entity-list'
+import { SheetSection } from '@/components/sheets/sheet-section'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
 import { formatCalendarDate } from '@pts/ui/dates'
 
 import { HourBlockRecordRow } from '@/components/sheets/entity-record-rows'
-import { SheetRecordList } from '@/components/sheets/sheet-record-row'
 import { SHEET_SIDE_COLUMN_CLASS } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { InvoiceLinkField } from './invoice-link-field'
@@ -155,9 +157,35 @@ export function InvoiceSheetRightColumn({
           </>
         ) : null}
 
+        {/* The hour blocks this invoice bought */}
+        {invoice.hour_blocks?.length ? (
+          <>
+            <EntityList
+              title={
+                invoice.hour_blocks.length === 1
+                  ? 'Linked hour block'
+                  : 'Linked hour blocks'
+              }
+              isEmpty={false}
+              emptyMessage=''
+            >
+              {invoice.hour_blocks.map(block => (
+                <HourBlockRecordRow
+                  key={block.id}
+                  hourBlock={{
+                    id: block.id,
+                    name: block.description,
+                    hours: block.hours_purchased,
+                  }}
+                />
+              ))}
+            </EntityList>
+            <Separator />
+          </>
+        ) : null}
+
         {/* Status & Invoice Number */}
-        <div className='space-y-4'>
-          <span className='mb-2 block text-sm font-medium'>Details</span>
+        <SheetSection>
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>Status</span>
@@ -171,34 +199,13 @@ export function InvoiceSheetRightColumn({
                 </span>
               </div>
             ) : null}
-            {invoice.hour_blocks?.length ? (
-              <div className='space-y-2 pt-1'>
-                <span className='text-muted-foreground block text-sm'>
-                  Hour blocks
-                </span>
-                <SheetRecordList>
-                  {invoice.hour_blocks.map(block => (
-                    <HourBlockRecordRow
-                      key={block.id}
-                      hourBlock={{
-                        id: block.id,
-                        name: block.description,
-                        hours: block.hours_purchased,
-                        amount: block.amount,
-                      }}
-                    />
-                  ))}
-                </SheetRecordList>
-              </div>
-            ) : null}
           </div>
-        </div>
+        </SheetSection>
 
         <Separator />
 
         {/* Key Dates */}
-        <div className='space-y-4'>
-          <span className='mb-2 block text-sm font-medium'>Dates</span>
+        <SheetSection title='Dates'>
           <div className='space-y-2'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground flex items-center gap-1.5 text-sm'>
@@ -230,7 +237,7 @@ export function InvoiceSheetRightColumn({
               </div>
             ) : null}
           </div>
-        </div>
+        </SheetSection>
 
         {/* View Count */}
         {invoice.share_enabled && invoice.viewed_count > 0 ? (

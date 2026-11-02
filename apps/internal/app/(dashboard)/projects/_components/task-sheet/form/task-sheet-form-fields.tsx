@@ -47,6 +47,7 @@ export type TaskSheetFormFieldsProps = {
   attachments: AttachmentItem[]
   onSelectFiles: (files: FileList | null) => void
   onAttachmentRemove: (key: string) => void
+  onAttachmentUndoRemove: (key: string) => void
   attachmentsDisabled: boolean
   attachmentsDisabledReason: string | null
   isUploadingAttachments: boolean
@@ -71,6 +72,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
     attachments,
     onSelectFiles,
     onAttachmentRemove,
+    onAttachmentUndoRemove,
     attachmentsDisabled,
     attachmentsDisabledReason,
     isUploadingAttachments,
@@ -139,7 +141,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
 
             return (
               <FormItem>
-                <FormLabel>Project</FormLabel>
+                <FormLabel entity='project'>Project</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
                     <SearchableCombobox
@@ -192,6 +194,45 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={form.control}
+          name='assigneeId'
+          render={({ field }) => {
+            const disabled = isPending || !canManage
+            const reason = resolveDisabledReason(disabled)
+            const selectedValue = field.value ?? unassignedValue
+
+            return (
+              <FormItem>
+                <FormLabel entity='contact'>Assignee</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
+                    <SearchableCombobox
+                      items={assigneeItems}
+                      clearLabel='assignee'
+                      value={selectedValue}
+                      onChange={next => {
+                        if (next === unassignedValue) {
+                          field.onChange(null)
+                          return
+                        }
+                        field.onChange(next)
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      placeholder='Unassigned'
+                      searchPlaceholder='Search people…'
+                      emptyMessage='No teammates on this project.'
+                      disabled={disabled}
+                      onClear={() => field.onChange(null)}
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+        <FormField
+          control={form.control}
           name='status'
           render={({ field }) => {
             const disabled = isPending || !canManage
@@ -239,45 +280,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
             )
           }}
         />
-        <FormField
-          control={form.control}
-          name='assigneeId'
-          render={({ field }) => {
-            const disabled = isPending || !canManage
-            const reason = resolveDisabledReason(disabled)
-            const selectedValue = field.value ?? unassignedValue
-
-            return (
-              <FormItem>
-                <FormLabel>Assignee</FormLabel>
-                <FormControl>
-                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <SearchableCombobox
-                      items={assigneeItems}
-                      clearLabel='assignee'
-                      value={selectedValue}
-                      onChange={next => {
-                        if (next === unassignedValue) {
-                          field.onChange(null)
-                          return
-                        }
-                        field.onChange(next)
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      placeholder='Unassigned'
-                      searchPlaceholder='Search people…'
-                      emptyMessage='No teammates on this project.'
-                      disabled={disabled}
-                      onClear={() => field.onChange(null)}
-                    />
-                  </DisabledFieldTooltip>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
       </div>
       <FormField
         control={form.control}
@@ -315,6 +317,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
         attachments={attachments}
         onSelectFiles={onSelectFiles}
         onRemove={onAttachmentRemove}
+        onUndoRemove={onAttachmentUndoRemove}
         disabled={attachmentsDisabled}
         disabledReason={attachmentsDisabledReason}
         isUploading={isUploadingAttachments}

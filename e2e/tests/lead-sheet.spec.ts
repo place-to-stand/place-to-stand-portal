@@ -38,7 +38,8 @@ test('lead: the create sheet uses the edit sheet’s split layout', async ({
   await page.goto('/leads')
   const card = page.locator('[aria-roledescription="sortable"]').first()
   if (!(await card.count())) return
-  await card.click()
+  // The title: the card's middle can be its email link.
+  await card.locator('h3').first().click()
   const editSheet = page.getByRole('dialog')
   // The edit sheet is titled with the lead's name (its contact), as on the card.
   const title = editSheet.locator('h2').first()

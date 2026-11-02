@@ -23,6 +23,7 @@ import {
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import {
   leadFormSchema,
   type LeadFormValues,
@@ -45,14 +46,14 @@ export function useLeadSheetState({
   const [isArchiving, startArchiveTransition] = useTransition()
   const [isArchiveDialogOpen, setArchiveDialogOpen] = useState(false)
   // Making a client is billing, so it's admin-only (`leads.convert`); it
-  // happens on the lead's company (Billing tab).
+  // happens on the lead's company (its billing, on the company sheet).
   const { role, userId } = useViewerAccess()
   const canConvert =
     roleCan(role, 'leads.convert') &&
     lead?.status === 'CLOSED_WON' &&
     !lead?.convertedToClientId &&
     Boolean(lead?.companyId)
-  // Winning a lead opens its company's Billing tab next, for whoever can
+  // Winning a lead opens its company's billing (its sheet's Client column) next, for whoever can
   // make it a client there.
   const canManageClients = roleCan(role, 'clients.manage')
   const { toast } = useToast()
@@ -196,12 +197,13 @@ export function useLeadSheetState({
         }
 
         // Just won: billing the company is the next step, so open its
-        // Billing tab where we are, in place of the lead sheet that just
+        // billing where we are, in place of the lead sheet that just
         // closed (an empty aux value drops `lead` in the same write).
         const justWon =
           values.status === 'CLOSED_WON' && lead?.status !== 'CLOSED_WON'
         if (justWon && company && canManageClients) {
-          openSheet('company', company.id, { tab: 'billing', lead: '' })
+          setSheetSectionTarget('company', company.id, 'billing')
+          openSheet('company', company.id, { lead: '' })
         }
       })
     },

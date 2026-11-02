@@ -125,16 +125,16 @@ export function HourBlockSheet({
                 onSubmit={form.handleSubmit((values: HourBlockFormValues) =>
                   handleSubmit(values)
                 )}
-                className='flex flex-col gap-5 px-6 pt-6 pb-8'
+                className='flex flex-col gap-6 px-6 pt-6 pb-8'
               >
-                <SheetSection title='Details'>
+                <SheetSection>
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                     <FormField
                       control={form.control}
                       name='companyId'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Client</FormLabel>
+                          <FormLabel entity='client'>Client</FormLabel>
                           <FormControl>
                             <DisabledFieldTooltip
                               disabled={clientField.disabled}
@@ -161,7 +161,8 @@ export function HourBlockSheet({
                       control={form.control}
                       name='hoursPurchased'
                       render={({ field }) => (
-                        <FormItem>
+                        // Its own row under Client, still half width.
+                        <FormItem className='sm:col-start-1'>
                           <FormLabel>Hours purchased</FormLabel>
                           <FormControl>
                             <DisabledFieldTooltip

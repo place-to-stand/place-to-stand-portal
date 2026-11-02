@@ -336,7 +336,6 @@ async function fetchHourBlocksByInvoice(
       invoiceId: invoiceLineItems.invoiceId,
       hoursPurchased: hourBlocks.hoursPurchased,
       description: invoiceLineItems.description,
-      amount: invoiceLineItems.amount,
     })
     .from(hourBlocks)
     // A block's invoice is the one its creating line belongs to.
@@ -360,7 +359,6 @@ async function fetchHourBlocksByInvoice(
       id: row.id,
       hours_purchased: Number(row.hoursPurchased),
       description: row.description,
-      amount: Number(row.amount),
     })
     byInvoice.set(row.invoiceId, blocks)
   }

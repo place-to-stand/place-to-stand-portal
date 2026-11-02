@@ -57,6 +57,8 @@ export type ContactSheetData = {
     phone: string | null
     linkedinUrl: string | null
     updatedAt: string
+    /** Their sign-in's role while they can sign in (null: they can't). */
+    signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
   } | null
 }
 
@@ -128,12 +130,7 @@ export async function listContactClients(
     })
     .from(clientPortalAccess)
     .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
-    .where(
-      and(
-        eq(clientPortalAccess.contactId, contactId),
-        isClientCompany()
-      )
-    )
+    .where(and(eq(clientPortalAccess.contactId, contactId), isClientCompany()))
     .orderBy(asc(clientNameSql))
 
   return rows.map(row => ({
@@ -160,6 +157,12 @@ export async function getContactSheetData(
         phone: contacts.phone,
         linkedinUrl: contacts.linkedinUrl,
         updatedAt: contacts.updatedAt,
+        // A role only while it is live (stripped for Sales below).
+        signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
+          select u.role from users u
+          where u.id = ${sql.raw('"contacts"."user_id"')}
+            and u.deleted_at is null and u.disabled_at is null
+        )`,
       })
       .from(contacts)
       .where(eq(contacts.id, contactId))
@@ -179,6 +182,10 @@ export async function getContactSheetData(
           phone: person.phone,
           linkedinUrl: person.linkedinUrl,
           updatedAt: person.updatedAt,
+          // Sign-ins are admin-only information, as on the people list.
+          signInRole: canSeePortalAccess(user.role)
+            ? (person.signInRole ?? null)
+            : null,
         }
       : null,
   }

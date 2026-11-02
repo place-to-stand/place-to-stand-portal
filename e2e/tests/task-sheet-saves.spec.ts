@@ -94,9 +94,7 @@ test('Activity sits below Comments, collapsed, and loads when opened', async ({
   const toggleBox = await toggle.boundingBox()
   expect(commentsBox && toggleBox && commentsBox.y < toggleBox.y).toBe(true)
 
-  const feedRead = page.waitForResponse(response =>
-    isFeedRead(response.url())
-  )
+  const feedRead = page.waitForResponse(response => isFeedRead(response.url()))
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-expanded', 'true')
   expect((await feedRead).ok()).toBe(true)

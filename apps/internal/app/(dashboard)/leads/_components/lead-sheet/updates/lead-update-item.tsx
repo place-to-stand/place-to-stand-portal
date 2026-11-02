@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
-import { Badge } from '@pts/ui/badge'
 import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -24,13 +23,10 @@ import {
   canChangeLeadUpdate,
 } from '@/lib/leads/lead-update-access'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
-import {
-  LEAD_UPDATE_ICONS,
-  LEAD_UPDATE_LABELS,
-  LEAD_UPDATE_TOKENS,
-} from '@/lib/leads/updates'
+import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
 import { cn } from '@/lib/utils'
 
+import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { deleteLeadUpdate } from '../../../_actions/updates/delete-lead-update'
 
 type LeadUpdateItemProps = {
@@ -38,6 +34,7 @@ type LeadUpdateItemProps = {
   canManage: boolean
   onEdit: (update: LeadUpdateRecord) => void
   onArchived: () => void
+  className?: string
 }
 
 export function LeadUpdateItem({
@@ -45,11 +42,11 @@ export function LeadUpdateItem({
   canManage,
   onEdit,
   onArchived,
+  className,
 }: LeadUpdateItemProps) {
   const { toast } = useToast()
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const Icon = LEAD_UPDATE_ICONS[update.type]
   const label = LEAD_UPDATE_LABELS[update.type]
   const authorDisplay = update.authorName ?? update.authorEmail ?? 'Unknown'
   const occurredLabel = formatCalendarDate(update.occurredAt, {
@@ -93,19 +90,19 @@ export function LeadUpdateItem({
   }
 
   return (
-    <div className='bg-muted/30 rounded-lg border p-3'>
+    <div className={cn('bg-muted/30 rounded-lg border p-3', className)}>
       <div className='flex items-start justify-between gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           {/* Icon + label + color together — color is never the only signal. */}
-          <Badge className={cn('gap-1', LEAD_UPDATE_TOKENS[update.type])}>
-            <Icon className='h-3 w-3' aria-hidden='true' />
-            {label}
-          </Badge>
+          <LeadUpdateTypeBadge type={update.type} />
           <span className='text-muted-foreground text-xs'>{occurredLabel}</span>
         </div>
         {canManage && !canChange ? (
           // Someone else's update: the menu stays put but says why it's off.
-          <DisabledFieldTooltip disabled reason={LEAD_UPDATE_NOT_AUTHOR_MESSAGE}>
+          <DisabledFieldTooltip
+            disabled
+            reason={LEAD_UPDATE_NOT_AUTHOR_MESSAGE}
+          >
             <Button
               type='button'
               variant='ghost'

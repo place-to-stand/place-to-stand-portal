@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Rollout check for PR #279 (migrations 0089–0112): compares a copy of
+ * Rollout check for PR #279 (migrations 0089–0115): compares a copy of
  * production before the batch with the same copy after it and prints
  * pass/fail per check, with counts only (no names, emails or ids), so the
  * output can be pasted anywhere.

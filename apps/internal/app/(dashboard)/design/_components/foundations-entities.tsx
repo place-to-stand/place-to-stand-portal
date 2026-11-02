@@ -3,7 +3,6 @@
 import { Check, X } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { ClientBadge } from '@/components/clients/client-badge'
 import {
   ENTITIES,
   ENTITY_GROUP_LABELS,
@@ -137,14 +136,10 @@ function EntityPreview({ entity }: { entity: AccentEntity }) {
         <span className='truncate text-sm font-medium'>{example}</span>
       </div>
       <div className='flex items-center gap-2 px-3 py-2'>
-        {entity === 'client' ? (
-          <ClientBadge />
-        ) : (
-          <Badge variant='outline' className={cn('gap-1', accent.cardStatic)}>
-            <Icon className={cn('size-3', accent.icon)} />
-            {label}
-          </Badge>
-        )}
+        <Badge variant='outline' className={cn('gap-1', accent.cardStatic)}>
+          <Icon className={cn('size-3', accent.icon)} />
+          {label}
+        </Badge>
         <span className='text-muted-foreground truncate text-xs'>
           Updated Sep 23, 2026
         </span>
