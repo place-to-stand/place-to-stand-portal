@@ -69,6 +69,7 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
             disabledReason={PENDING_REASON}
             onChange={on => portal.onChange(contactId, on)}
             onOpenPerson={saved ? () => open('contact', saved.id) : undefined}
+            notBilled={formerClient}
           />
         )
       }
@@ -77,19 +78,11 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
   // Sign-ins are made on the person sheet, so no Save here invites anyone.
   const portalHintFor = () => null
 
-  const formerNote =
-    showPortal && formerClient ? (
-      <p className='text-muted-foreground text-xs'>
-        Portal access returns if billing restarts.
-      </p>
-    ) : null
-
   return (
     <CompanyPeopleSection
       {...props}
       portalAccessFor={portalAccessFor}
       portalHintFor={portalHintFor}
-      footer={formerNote}
     />
   )
 }

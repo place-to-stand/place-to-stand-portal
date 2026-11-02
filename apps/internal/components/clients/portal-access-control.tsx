@@ -36,6 +36,7 @@ export function PortalAccessField({
   disabledReason = null,
   action,
   fix = null,
+  notBilled = false,
 }: {
   checked: boolean
   /** A live Client sign-in (`canHavePortalAccess`). */
@@ -49,7 +50,13 @@ export function PortalAccessField({
   action?: { label: string; onClick: () => void } | null
   /** Or, where the switch is close by, plain words ("Turn on Can sign in below."). */
   fix?: ReactNode
+  /**
+   * The company isn't billed now (a former client): locked, showing what's
+   * stored, which comes back if billing restarts.
+   */
+  notBilled?: boolean
 }) {
+  const locked = notBilled || !canHaveAccess
   return (
     // The note sits right of the switch, like a switch's label.
     <div className='flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1'>
@@ -59,13 +66,18 @@ export function PortalAccessField({
         className='w-auto'
       >
         <Switch
-          checked={checked && canHaveAccess}
-          disabled={disabled || !canHaveAccess}
+          // Not billed: what's stored, locked. No sign-in: off, locked.
+          checked={notBilled ? checked : checked && canHaveAccess}
+          disabled={disabled || locked}
           aria-label={ariaLabel}
           onCheckedChange={onChange}
         />
       </DisabledFieldTooltip>
-      {canHaveAccess ? null : (
+      {notBilled ? (
+        <p className='text-muted-foreground text-xs'>
+          Not billed now. Portal access returns if billing restarts.
+        </p>
+      ) : canHaveAccess ? null : (
         <p className='text-muted-foreground text-xs'>
           Needs a client sign-in.
           {fix ? <> {fix}</> : null}
@@ -96,6 +108,7 @@ export function PortalAccessControl({
   disabledReason,
   onChange,
   onOpenPerson,
+  notBilled = false,
 }: {
   person: PortalAccessPerson
   hasAccess: boolean
@@ -104,6 +117,8 @@ export function PortalAccessControl({
   onChange: (on: boolean) => void
   /** Opens their person sheet, where the sign-in is set up. */
   onOpenPerson?: () => void
+  /** A former client: locked, showing what's stored. */
+  notBilled?: boolean
 }) {
   return (
     <PortalAccessField
@@ -120,6 +135,7 @@ export function PortalAccessControl({
       action={
         onOpenPerson ? { label: 'Open person', onClick: onOpenPerson } : null
       }
+      notBilled={notBilled}
     />
   )
 }

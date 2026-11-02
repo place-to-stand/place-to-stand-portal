@@ -137,13 +137,7 @@ export function ContactCompaniesSection({
                 <CompanyBillingMark billingType={entry.billingType} />
               ) : null
             }
-            note={
-              entry.formerClient && showPortalAccess
-                ? 'Portal access returns if billing restarts.'
-                : entry.archived
-                  ? 'Archived'
-                  : undefined
-            }
+            note={entry.archived ? 'Archived' : undefined}
             fields={
               <>
                 <RecordRowField label='Title' grow>
@@ -154,9 +148,11 @@ export function ContactCompaniesSection({
                     disabled={disabled}
                   />
                 </RecordRowField>
+                {/* A client now, or a former client (locked, showing what's
+                    stored: it returns if billing restarts). */}
                 {showPortalAccess &&
-                entry.clientCompanyId &&
-                !entry.archived ? (
+                ((entry.clientCompanyId && !entry.archived) ||
+                  entry.formerClient) ? (
                   <RecordRowField label='Portal access'>
                     <PortalAccessField
                       checked={entry.portalAccess}
@@ -166,6 +162,7 @@ export function ContactCompaniesSection({
                       }
                       ariaLabel={`Portal access at ${name}`}
                       disabled={disabled}
+                      notBilled={!entry.clientCompanyId}
                       fix={
                         <>
                           Turn on <UiRef>Can sign in</UiRef> below.
