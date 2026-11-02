@@ -326,7 +326,8 @@ export function ContactSheetForm({
                     portalSignIn
                       ? null
                       : portalAccessLockedReason(
-                          typedName || personName || 'They'
+                          typedName || personName || 'They',
+                          'person'
                         )
                   }
                 />

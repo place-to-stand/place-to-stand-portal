@@ -14,7 +14,11 @@ export function canHavePortalAccess(signIn: {
   return signIn.exists && signIn.enabled && signIn.role === 'CLIENT'
 }
 
-/** Why the Portal access switch is locked. */
-export function portalAccessLockedReason(name: string): string {
-  return `${name} can’t sign in as a client. Turn on Can sign in, Role Client, on their person sheet.`
+/** Why the Portal access switch is locked (on the person sheet: "under Sign-in"). */
+export function portalAccessLockedReason(
+  name: string,
+  where: 'company' | 'person' = 'company'
+): string {
+  const fix = where === 'person' ? 'under Sign-in' : 'on their person sheet'
+  return `${name} can’t sign in as a client. Turn on Can sign in, Role Client, ${fix}.`
 }
