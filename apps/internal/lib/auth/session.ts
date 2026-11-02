@@ -352,12 +352,11 @@ async function sessionIsLive(
     )
     return Boolean(row?.live)
   } catch (error) {
-    // Fail open on an error (e.g. the database role can't read
-    // auth.sessions): the token's signature and expiry are already
-    // verified and the users row is still checked, so this falls back to
-    // the old behaviour instead of signing everyone out. A session that is
-    // gone (the check ran and found no row) still signs them out.
-    console.error('Session check failed; allowing the verified token', error)
-    return true
+    // Fail closed: an unverifiable session counts as ended. A database
+    // outage would fail the users-row lookup next anyway; the one error this
+    // alone could cause (the role can't read auth.sessions) is ruled out by
+    // the pre-merge has_table_privilege check in the release runbook.
+    console.error('Session check failed; treating the session as ended', error)
+    return false
   }
 }

@@ -38,6 +38,7 @@ Covers PR #279's database chain, migrations **0089 → 0116**, and the matching 
 Each step needs Jason's go. Claude never connects to production; Jason runs every production command. Rehearsed on the Nov 1, 23:13 production dump: forward run 2s, 118 migrations, 41/41 comparison checks, verify checks, 13 closed months identical to their snapshots, the portal role check, and undo back to the 0104 state with no differences.
 
 **Before the window**
+0. **Required read-only check** (the new session check needs it, or everyone is signed out after release): `BEGIN READ ONLY; SELECT has_table_privilege(current_user, 'auth.sessions', 'SELECT'); ROLLBACK;` with production's `DATABASE_URL`. It must return `t`; if not, stop and tell Claude.
 1. **Freeze #279** at the release commit (`git rev-parse HEAD` on `claude/project-thread-ee2vhs`). Merge `origin/main` into it if main moved, and rerun the e2e suite.
 2. **Fresh dump** (this is also the restore point), Jason: `pg_dump "$PROD_DATABASE_URL" -Fc -f ~/Backups/pts-portal/prod-$(date +%Y%m%d-%H%M).dump`.
 3. **Rehearse on it** (local only, about 2 minutes): `scripts/rehearse-rollout.sh ~/Backups/pts-portal/prod-<stamp>.dump`. Expect `FORWARD exit=0 … migrations: 118`, `portal role checks pass`, `41/41 checks pass`, `ALL CHECKS PASS`, `drifting from their snapshot: none`, `UNDO differences from the 0104 state: 0`, and `exit 0`.

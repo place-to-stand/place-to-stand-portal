@@ -53,12 +53,12 @@ MCP tokens go through the same check as the CLI. For Client users, the portal vi
 Since 29de6966, both apps' `getCurrentUser` also requires the token's Supabase session to exist in `auth.sessions`.
 - **Every token has a session id.** Verified locally on real tokens: link and recovery sign-in, refresh (same session id), password sign-in, and magic or invite link verify all carry `session_id`. A token without one isn't a user session and is refused.
 - **Cost:** one primary-key lookup, 0.05 ms in the database and about 0.3 ms round trip locally (expect roughly 1–3 ms through the production pooler). It runs once per request: `getCurrentUser` is wrapped in React `cache`.
-- **The app can read `auth.sessions` in production.** Production code already reads `auth.users` directly (the last-sign-in times), and the takeover code deletes from `auth.sessions`, through the same database role. To confirm, run this read-only query, once, before merging:
+- **The app can read `auth.sessions` in production.** Production code already reads `auth.users` directly (the last-sign-in times), and the takeover code deletes from `auth.sessions`, through the same database role. **Required before merging**, run this read-only query once:
   ```sql
   BEGIN READ ONLY; SELECT has_table_privilege(current_user, 'auth.sessions', 'SELECT'); ROLLBACK;
   ```
   It should return `t`.
-- **It fails open on an error.** If the query errors (e.g. no permission), it logs and allows the already-verified token, which is the old behaviour, instead of signing everyone out. If the check runs and finds no session row, the user is signed out.
+- **It fails closed.** If the query errors, the session counts as ended. If the database is down, the users-row lookup that follows fails anyway, so the one error this check alone could cause is the role being unable to read `auth.sessions`. **That's why the `has_table_privilege` query below is a required step before merging:** if it returned `f`, everyone would be signed out after release. I first chose fail-open; an automated security review flagged that as weakening revocation, and failing closed costs nothing once the privilege is confirmed.
 - **After release:** everyone's existing session keeps working. Anyone whose Supabase session row is already gone (e.g. signed out elsewhere) just signs in again.
 - **CLI and MCP** validate through Supabase `getUser`, which checks the session server-side, so revoked sessions are refused there too (Codex second pass).
 
