@@ -15,13 +15,9 @@ import {
 import { Label } from '@pts/ui/label'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Switch } from '@pts/ui/switch'
-import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
+import { EffectiveMonthPicker } from '@/components/billing/effective-month-select'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import {
-  FormField,
-  FormItem,
-  FormMessage,
-} from '@/components/ui/form'
+import { FormField } from '@/components/ui/form'
 import { useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
@@ -77,7 +73,7 @@ type ContactSignInSectionProps = {
 }
 
 /**
- * The person sheet's Sign-in section, like a company's Client section: a
+ * The person sheet's User section, like a company's Client section: a
  * "Can sign in" switch at the right of the heading creates (or switches off)
  * their sign-in on Save; once on, their Role says what they get into (Admin
  * or Sales: this portal; Client: the client portal, at the companies whose
@@ -87,7 +83,7 @@ type ContactSignInSectionProps = {
 export function ContactSignInSection(props: ContactSignInSectionProps) {
   if (!props.canManage) {
     return (
-      <SheetSection title='Sign-in' icon={ENTITY_ICONS.user}>
+      <SheetSection title='User' icon={ENTITY_ICONS.user}>
         <p className='text-muted-foreground text-sm'>
           Only an admin can see or change someone&rsquo;s sign-in.
         </p>
@@ -234,7 +230,7 @@ function ManagedSignIn({
 
   return (
     <SheetSection
-      title='Sign-in'
+      title='User'
       icon={ENTITY_ICONS.user}
       // Fields, not a list: 16px under the heading (as the Client section).
       className='gap-4'
@@ -283,14 +279,14 @@ function ManagedSignIn({
                     <DisabledFieldTooltip
                       disabled={Boolean(lockedReason)}
                       reason={lockedReason}
-                      className='w-48'
+                      className='w-60'
                     >
                       <Select
                         onValueChange={next => setSignIn(true, next as Role)}
                         value={field.value}
                         disabled={Boolean(lockedReason)}
                       >
-                        <SelectTrigger aria-label='Role' className='w-48'>
+                        <SelectTrigger aria-label='Role' className='w-60'>
                           {/* The role reads as the badge it shows elsewhere. */}
                           <SelectValue>
                             {field.value ? (
@@ -324,6 +320,39 @@ function ManagedSignIn({
                   </RecordRowField>
                 )}
               />
+              {/* A role change on a saved sign-in: which month it counts from
+                  (the monthly close pays on the role in force on the 1st). */}
+              {roleChanged ? (
+                <FormField
+                  control={form.control}
+                  name='signIn.effectiveFrom'
+                  render={({ field }) => (
+                    <RecordRowField label='Role starts'>
+                      <EffectiveMonthPicker
+                        id='contact-role-starts'
+                        ariaLabel='Role starts'
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={roleMonths}
+                        disabled={Boolean(lockedReason)}
+                        disabledReason={lockedReason}
+                        className='w-60'
+                      />
+                      <p className='text-muted-foreground w-full text-xs'>
+                        {(account &&
+                          role &&
+                          rolePayrollWarning(
+                            account.role,
+                            role,
+                            field.value ?? '',
+                            currentMonthStartUtc()
+                          )) ??
+                          `Counts toward the monthly close from ${monthLabel(field.value ?? '')}.`}
+                      </p>
+                    </RecordRowField>
+                  )}
+                />
+              ) : null}
               {/* Only a live, saved sign-in that stays on: a reset needs one. */}
               {live && account ? (
                 <>
@@ -356,37 +385,6 @@ function ManagedSignIn({
                 </>
               ) : null}
             </RecordFieldGrid>
-          ) : null}
-          {roleChanged ? (
-            <FormField
-              control={form.control}
-              name='signIn.effectiveFrom'
-              render={({ field }) => (
-                <FormItem>
-                  <EffectiveMonthSelect
-                    id='contact-role-starts'
-                    title='Role starts'
-                    value={field.value}
-                    onChange={field.onChange}
-                    options={roleMonths}
-                    note={
-                      (account &&
-                        role &&
-                        rolePayrollWarning(
-                          account.role,
-                          role,
-                          field.value ?? '',
-                          currentMonthStartUtc()
-                        )) ??
-                      'The monthly close counts them in this role from this month. Closed months can’t be changed.'
-                    }
-                    disabled={Boolean(lockedReason)}
-                    disabledReason={lockedReason}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           ) : null}
           {enabled && account?.scheduledRole && !roleChanged ? (
             <p className='text-muted-foreground text-sm'>

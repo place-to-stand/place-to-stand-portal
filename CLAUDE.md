@@ -133,7 +133,7 @@ The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,re
 └── unauthorized/     # Access denied page
 ```
 
-Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. A sign-in is made in one place: the person sheet's Sign-in section ("Can sign in" switch, then Role), saved with the sheet; switching it off disables the sign-in (`users.disabled_at`). Portal access is then switched on per company, by admins, on the company sheet's People section or the person sheet's company cards (same data, same Save rules), and only for someone who can already sign in: neither creates a sign-in.
+Portal access is read from the `client_portal_access` view: a contact's membership at the client's company with `portal_access` on, a portal user (`contacts.user_id`), and that user not disabled or archived. A sign-in is made in one place: the person sheet's User section ("Can sign in" switch, then Role), saved with the sheet; switching it off disables the sign-in (`users.disabled_at`). Portal access is then switched on per company, by admins, on the company sheet's People section or the person sheet's company cards (same data, same Save rules), and only for someone who can already sign in: neither creates a sign-in.
 
 ### Database Schema
 

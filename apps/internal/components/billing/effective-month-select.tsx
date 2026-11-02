@@ -32,6 +32,65 @@ type EffectiveMonthSelectProps<T extends string> = {
 }
 
 /**
+ * The month select on its own, for a label | value row (the person sheet's
+ * "Role starts"). `EffectiveMonthSelect` is the same select in its callout.
+ */
+export function EffectiveMonthPicker<T extends string>({
+  id,
+  ariaLabel,
+  value,
+  onChange,
+  options,
+  disabled = false,
+  disabledReason = null,
+  className,
+}: {
+  id?: string
+  ariaLabel?: string
+  value: T
+  onChange: (value: T) => void
+  options: EffectiveMonthOption<T>[]
+  disabled?: boolean
+  disabledReason?: string | null
+  className?: string
+}) {
+  return (
+    <Select
+      value={value}
+      onValueChange={next => onChange(next as T)}
+      disabled={disabled}
+    >
+      <DisabledFieldTooltip
+        disabled={disabled}
+        reason={disabledReason}
+        className='w-auto'
+      >
+        <SelectTrigger
+          id={id}
+          aria-label={ariaLabel}
+          className={className ?? 'w-72 max-w-full shrink-0'}
+        >
+          <SelectValue>
+            {options.find(option => option.value === value)?.label}
+          </SelectValue>
+        </SelectTrigger>
+      </DisabledFieldTooltip>
+      <SelectContent>
+        {options.map(option => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            disabled={Boolean(option.disabledReason)}
+          >
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+/**
  * "When does this change take effect": a tinted callout with the title on
  * the left and a month select on the right, plus an optional one-line note.
  * The one shape for billing starts/stops, billing type and commission
@@ -53,38 +112,15 @@ export function EffectiveMonthSelect<T extends string>({
         <label htmlFor={id} className='text-sm font-medium'>
           {title}
         </label>
-        <Select
+        <EffectiveMonthPicker
+          id={id}
+          ariaLabel={id ? undefined : title}
           value={value}
-          onValueChange={next => onChange(next as T)}
+          onChange={onChange}
+          options={options}
           disabled={disabled}
-        >
-          <DisabledFieldTooltip
-            disabled={disabled}
-            reason={disabledReason}
-            className='w-auto'
-          >
-            <SelectTrigger
-              id={id}
-              aria-label={id ? undefined : title}
-              className='w-72 max-w-full shrink-0'
-            >
-              <SelectValue>
-                {options.find(option => option.value === value)?.label}
-              </SelectValue>
-            </SelectTrigger>
-          </DisabledFieldTooltip>
-          <SelectContent>
-            {options.map(option => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-                disabled={Boolean(option.disabledReason)}
-              >
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          disabledReason={disabledReason}
+        />
       </div>
       {note ? <p className='text-muted-foreground text-xs'>{note}</p> : null}
     </div>

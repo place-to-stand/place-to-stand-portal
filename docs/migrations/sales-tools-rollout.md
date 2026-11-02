@@ -46,7 +46,7 @@ Each step needs Jason's go. Claude never connects to production; Jason runs ever
 6. **Merge #279** to `main`. Vercel builds both apps; **don't promote** yet (or keep auto-promotion off for this one deploy).
 7. **Window** (about 15 minutes, off-hours; tell Kris and Dave first): run section 2a's "before" checks, then from `packages/db`: `npm run db:migrate:prod; echo "exit $?"` (expect 0), then `select count(*) from drizzle.__drizzle_migrations` (expect 117).
 8. **Promote** the internal app, then the client portal.
-9. **After checks** (section 2b) and the click-test on production (section 4, step 5), including: a person sheet's Sign-in section, a company's Bill this company, the People and Companies lists, the client portal as a portal user.
+9. **After checks** (section 2b) and the click-test on production (section 4, step 5), including: a person sheet's User section, a company's Bill this company, the People and Companies lists, the client portal as a portal user.
 10. **Tell the team** what changed (Kris, Dave): people get sign-ins from the person sheet's Can sign in; clients are companies you bill (Bill this company); Dave's Sales role sees leads, people and companies.
 
 **Rollback:** before the promote, roll back by not promoting and restoring nothing (the migration batch is one transaction: a stop leaves production at 0088). After it, see section 5 (undo SQL, or restore the step 3 dump).

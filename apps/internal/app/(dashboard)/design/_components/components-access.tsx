@@ -35,7 +35,7 @@ function CanSignIn({
   )
 }
 
-/** The person sheet's Sign-in section, live but saving nothing. */
+/** The person sheet's User section, live but saving nothing. */
 export function ComponentsAccess() {
   const [on, setOn] = useState(false)
 
@@ -43,7 +43,7 @@ export function ComponentsAccess() {
     <DesignSection
       id='access'
       title='Person sign-in'
-      when='Can this person sign in, and as what? The person sheet’s Sign-in section works like a company’s Client section: a “Can sign in” switch at the right of the heading makes (or switches off) their sign-in on Save, with a caution saying so; once on, Role says what they get into (Admin, Sales: this portal; Client: the client portal, at the companies whose Portal switch is on). Read-only for Sales.'
+      when='Can this person sign in, and as what? The person sheet’s User section works like a company’s Client section: a “Can sign in” switch at the right of the heading makes (or switches off) their sign-in on Save, with a caution saying so; once on, Role says what they get into (Admin, Sales: this portal; Client: the client portal, at the companies whose Portal switch is on). Read-only for Sales.'
     >
       <Specimen
         label='New sign-in'
@@ -51,7 +51,7 @@ export function ComponentsAccess() {
         className='block max-w-2xl'
       >
         <SheetSection
-          title='Sign-in'
+          title='User'
           icon={ENTITY_ICONS.user}
           className='gap-4'
           action={
@@ -72,7 +72,7 @@ export function ComponentsAccess() {
         className='block max-w-2xl'
       >
         <SheetSection
-          title='Sign-in'
+          title='User'
           icon={ENTITY_ICONS.user}
           className='gap-4'
           action={<CanSignIn id='design-sign-in-client' checked />}
@@ -112,7 +112,7 @@ export function ComponentsAccess() {
         note='No switch: only an admin manages sign-ins'
         className='block max-w-2xl'
       >
-        <SheetSection title='Sign-in' icon={ENTITY_ICONS.user}>
+        <SheetSection title='User' icon={ENTITY_ICONS.user}>
           <p className='text-muted-foreground text-sm'>
             Only an admin can see or change someone&rsquo;s sign-in.
           </p>

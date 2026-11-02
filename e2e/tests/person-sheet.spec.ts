@@ -228,7 +228,7 @@ test.describe('writes', () => {
     const beforeSave = recordServerActions(page)
     await sheet.getByPlaceholder('John Doe').fill(name)
     await sheet.getByPlaceholder('contact@example.com').fill(email)
-    // Create shows the same Sign-in section as edit: off, then on.
+    // Create shows the same User section as edit: off, then on.
     const canSignIn = sheet.getByRole('switch', { name: 'Can sign in' })
     await expect(canSignIn).toHaveAttribute('aria-checked', 'false')
     await canSignIn.click()
