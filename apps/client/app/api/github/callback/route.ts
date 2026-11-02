@@ -8,13 +8,39 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { safeRedirectPath } from '@/lib/auth/callback'
 import { ensureClientAccess } from '@/lib/auth/permissions'
 import { getGitHubAppEnv } from '@/lib/env.server'
+import { nanoid } from 'nanoid'
+
 import { getInstallationById } from '@pts/github/app-auth'
+import {
+  exchangeUserCode,
+  revokeUserToken,
+  userAuthorizeUrl,
+  userCanAccessInstallation,
+} from '@pts/github/user-auth'
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 600, // 10 minutes
+  path: '/',
+}
 
 /**
  * GET /api/github/callback
  *
- * Handles the redirect from GitHub after the user installs the GitHub App.
- * Validates the state cookie, fetches installation details, and saves to DB.
+ * GitHub sends people here twice:
+ *
+ * 1. After installing the App, with `installation_id` and our `state`. The
+ *    id alone proves nothing (anyone can type a number), so unless GitHub
+ *    also sent a sign-in `code` (the App's "Request user authorization
+ *    during installation" setting), the person is sent to sign in to GitHub
+ *    as the App, with the installation id held in a cookie.
+ * 2. After that sign-in, with `code` and a second state. The code becomes a
+ *    short-lived user token, and the installation is saved only if GitHub
+ *    lists it among the ones that person's account can reach.
+ *
+ * Both legs land on this URL, so it must be the App's Callback URL.
  */
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser()
@@ -50,22 +76,25 @@ export async function GET(request: NextRequest) {
     successPath = '/?github=installed'
   }
 
-  if (!installationId || !state || !returnClientId) {
+  const code = searchParams.get('code')
+  const env = getGitHubAppEnv()
+
+  // Leg 2: back from the GitHub sign-in we asked for.
+  const savedOauthState = cookieStore.get('github_oauth_state')?.value
+  const pendingInstallation = cookieStore.get('github_pending_installation')?.value
+  const isSignInReturn = Boolean(
+    code && state && savedOauthState && savedOauthState === state
+  )
+
+  // Leg 1: back from installing; our install state must match.
+  const savedInstallState = cookieStore.get('github_app_state')?.value
+  const isInstallReturn = Boolean(
+    installationId && state && savedInstallState && savedInstallState === state
+  )
+
+  if ((!isSignInReturn && !isInstallReturn) || !returnClientId) {
     return NextResponse.redirect(new URL(errorPath, request.url))
   }
-
-  // Verify CSRF state
-  const savedState = cookieStore.get('github_app_state')?.value
-
-  if (!savedState || savedState !== state) {
-    return NextResponse.redirect(new URL(errorPath, request.url))
-  }
-
-  // Clear cookies
-  cookieStore.delete('github_app_state')
-  cookieStore.delete('github_app_return_client')
-  cookieStore.delete('github_app_return_project')
-  cookieStore.delete('github_app_return_to')
 
   // Re-validate access to the client the install was started for (defense in
   // depth — matches the check the /api/github/install route already made).
@@ -75,12 +104,74 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(errorPath, request.url))
   }
 
-  const env = getGitHubAppEnv()
+  const verifiedId = Number.parseInt(
+    (isSignInReturn ? pendingInstallation : installationId) ?? '',
+    10
+  )
+  if (!Number.isSafeInteger(verifiedId) || verifiedId <= 0) {
+    return NextResponse.redirect(new URL(errorPath, request.url))
+  }
+
+  if (!code) {
+    // Installed, but no sign-in yet: ask GitHub who this person is. The
+    // return cookies stay for leg 2; the install state is spent.
+    const oauthState = nanoid(32)
+    cookieStore.delete('github_app_state')
+    cookieStore.set('github_oauth_state', oauthState, COOKIE_OPTIONS)
+    cookieStore.set(
+      'github_pending_installation',
+      String(verifiedId),
+      COOKIE_OPTIONS
+    )
+    // Give the sign-in its own ten minutes to find where to return.
+    for (const name of [
+      'github_app_return_client',
+      'github_app_return_project',
+      'github_app_return_to',
+    ]) {
+      const value = cookieStore.get(name)?.value
+      if (value) cookieStore.set(name, value, COOKIE_OPTIONS)
+    }
+    return NextResponse.redirect(
+      userAuthorizeUrl(env.GITHUB_APP_CLIENT_ID, oauthState)
+    )
+  }
+
+  // Every state is single-use.
+  cookieStore.delete('github_app_state')
+  cookieStore.delete('github_oauth_state')
+  cookieStore.delete('github_pending_installation')
+  cookieStore.delete('github_app_return_client')
+  cookieStore.delete('github_app_return_project')
+  cookieStore.delete('github_app_return_to')
+
+  try {
+    const token = await exchangeUserCode({
+      clientId: env.GITHUB_APP_CLIENT_ID,
+      clientSecret: env.GITHUB_APP_CLIENT_SECRET,
+      code,
+    })
+    const canAccess = await userCanAccessInstallation(token, verifiedId)
+    await revokeUserToken({
+      clientId: env.GITHUB_APP_CLIENT_ID,
+      clientSecret: env.GITHUB_APP_CLIENT_SECRET,
+      token,
+    })
+    if (!canAccess) {
+      return NextResponse.redirect(
+        new URL(withReason(errorPath, 'not_your_installation'), request.url)
+      )
+    }
+  } catch (error) {
+    console.error('GitHub sign-in check failed:', error)
+    return NextResponse.redirect(new URL(errorPath, request.url))
+  }
+
 
   try {
     // Fetch installation details from GitHub using App JWT
     const installation = await getInstallationById(
-      parseInt(installationId, 10),
+      verifiedId,
       env.GITHUB_APP_ID,
       env.GITHUB_APP_PRIVATE_KEY
     )
@@ -100,12 +191,7 @@ export async function GET(request: NextRequest) {
       // silently reassign ownership; surface it as an error instead.
       if (existing[0].companyId !== returnClientId) {
         return NextResponse.redirect(
-          new URL(
-            errorPath.includes('?')
-              ? `${errorPath}&reason=already_linked`
-              : `${errorPath}?reason=already_linked`,
-            request.url
-          )
+          new URL(withReason(errorPath, 'already_linked'), request.url)
         )
       }
 
@@ -147,4 +233,8 @@ export async function GET(request: NextRequest) {
     console.error('GitHub App callback error:', error)
     return NextResponse.redirect(new URL(errorPath, request.url))
   }
+}
+
+function withReason(path: string, reason: string): string {
+  return `${path}${path.includes('?') ? '&' : '?'}reason=${reason}`
 }
