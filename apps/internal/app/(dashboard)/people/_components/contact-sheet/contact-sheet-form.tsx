@@ -31,10 +31,7 @@ import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-
 
 import { ContactCompaniesSection } from './contact-companies-section'
 import { ContactSignInSection } from './contact-access-section'
-import {
-  canHavePortalAccess,
-  portalAccessLockedReason,
-} from '@/lib/settings/contacts/portal-eligibility'
+import { canHavePortalAccess } from '@/lib/settings/contacts/portal-eligibility'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -322,14 +319,7 @@ export function ContactSheetForm({
                   loadFailed={companiesLoadFailed}
                   onChange={next => field.onChange(next)}
                   showPortalAccess={canManageSignIn}
-                  portalReason={
-                    portalSignIn
-                      ? null
-                      : portalAccessLockedReason(
-                          typedName || personName || 'They',
-                          'person'
-                        )
-                  }
+                  canHaveAccess={portalSignIn}
                 />
               )}
             />

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
-import { Switch } from '@pts/ui/switch'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -18,6 +17,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sheet-state'
+import { PortalAccessField } from '@/components/clients/portal-access-control'
 
 type ContactCompaniesSectionProps = {
   companies: ContactCompanyEntry[]
@@ -25,16 +25,20 @@ type ContactCompaniesSectionProps = {
   /** Companies failed to load: show that instead of an empty list. */
   loadFailed?: boolean
   onChange: (companies: ContactCompanyEntry[]) => void
-  /**
-   * Notes which client rows have portal access (people who manage clients
-   * only). The sheet's Access section changes it, not this list.
-   */
+  /** Shows each client row's Portal access switch (people who manage clients). */
   showPortalAccess?: boolean
   /**
-   * Why the portal switches are off, if they are: portal access needs a
-   * client portal sign-in (Access).
+   * They have (or this Save gives them) a live Client sign-in
+   * (`canHavePortalAccess`); without one the switches are locked.
    */
-  portalReason?: string | null
+  canHaveAccess?: boolean
+}
+
+/** "Set up sign-in": brings the Sign-in section's switch into view. */
+function showSignIn() {
+  const control = document.getElementById('contact-sign-in-switch')
+  control?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  control?.focus({ preventScroll: true })
 }
 
 /**
@@ -50,7 +54,7 @@ export function ContactCompaniesSection({
   loadFailed = false,
   onChange,
   showPortalAccess = false,
-  portalReason = null,
+  canHaveAccess = false,
 }: ContactCompaniesSectionProps) {
   // A failed load must not look like "no companies": block edits until reopened.
   const disabled = disabledProp || loadFailed
@@ -159,18 +163,19 @@ export function ContactCompaniesSection({
                 {showPortalAccess &&
                 entry.clientCompanyId &&
                 !entry.archived ? (
-                  <RecordRowField
-                    label='Portal access'
-                    hint={!disabled && portalReason ? portalReason : null}
-                  >
-                    <Switch
-                      // Locked: shows off without clearing what's stored.
-                      checked={entry.portalAccess && !portalReason}
-                      disabled={disabled || Boolean(portalReason)}
-                      aria-label={`Portal access at ${name}`}
-                      onCheckedChange={portalAccess =>
+                  <RecordRowField label='Portal access'>
+                    <PortalAccessField
+                      checked={entry.portalAccess}
+                      canHaveAccess={canHaveAccess}
+                      onChange={portalAccess =>
                         update(entry.companyId, { portalAccess })
                       }
+                      ariaLabel={`Portal access at ${name}`}
+                      disabled={disabled}
+                      action={{
+                        label: 'Set up sign-in',
+                        onClick: showSignIn,
+                      }}
                     />
                   </RecordRowField>
                 ) : null}

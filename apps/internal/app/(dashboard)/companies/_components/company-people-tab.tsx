@@ -5,6 +5,7 @@ import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { PortalAccessControl } from '@/components/clients/portal-access-control'
 import { useCompanyBilling } from './company-billing-section'
 import { CompanyPeopleSection } from './company-people-section'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 type CompanyPeopleTabProps = Omit<
   Parameters<typeof CompanyPeopleSection>[0],
@@ -30,6 +31,7 @@ type CompanyPeopleTabProps = Omit<
  */
 export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
   const billing = useCompanyBilling()
+  const { open } = useSheetParams()
   const formerClient = billing.mode === 'former' && !billing.billingOn
   const showPortal =
     portal !== null &&
@@ -65,8 +67,8 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
             hasAccess={access.has(contactId)}
             disabled={portal.disabled}
             disabledReason={PENDING_REASON}
-            showLabel={false}
             onChange={on => portal.onChange(contactId, on)}
+            onOpenPerson={saved ? () => open('contact', saved.id) : undefined}
           />
         )
       }

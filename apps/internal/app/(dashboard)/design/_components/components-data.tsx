@@ -27,7 +27,7 @@ import {
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
-import { PortalAccessControl } from '@/components/clients/portal-access-control'
+import { PortalAccessField } from '@/components/clients/portal-access-control'
 import { EmptyValue } from '@/components/table/empty-value'
 import {
   RecordRowAction,
@@ -149,18 +149,20 @@ export function ComponentsRecordRows() {
                   />
                 </RecordRowField>
                 <RecordRowField label='Portal access'>
-                  <PortalAccessControl
-                    person={{
-                      id: 'design-linus',
-                      name: 'Linus Torvalds',
-                      email: 'linus@acme.com',
-                      hasSignIn: true,
-                    }}
-                    hasAccess={portal}
-                    disabled={false}
-                    disabledReason={null}
+                  <PortalAccessField
+                    checked={portal}
+                    canHaveAccess
                     onChange={setPortal}
-                    showLabel={false}
+                    ariaLabel='Portal access for Linus Torvalds'
+                  />
+                </RecordRowField>
+                <RecordRowField label='No sign-in'>
+                  <PortalAccessField
+                    checked={false}
+                    canHaveAccess={false}
+                    onChange={noop}
+                    ariaLabel='Portal access for Ada Lovelace'
+                    action={{ label: 'Open person', onClick: noop }}
                   />
                 </RecordRowField>
               </>
@@ -624,3 +626,5 @@ export function ComponentsTables() {
     </DesignSection>
   )
 }
+
+function noop() {}
