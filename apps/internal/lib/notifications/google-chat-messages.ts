@@ -96,12 +96,21 @@ export function buildInvoicePaidCard(
   }
 }
 
+const STUCK_KIND_LABELS: Record<
+  StuckEmailNotice['items'][number]['kind'],
+  string
+> = {
+  audit: 'Audit',
+  contact: 'Contact', // copy-check: allow — the website's contact form
+  subscribe: 'Subscribe',
+}
+
 export type StuckEmailNotice = {
   /** Rows whose email is still unsent past the alert threshold. */
   items: Array<{
     /** Visitor name or email, whatever the row has. */
     label: string
-    kind: 'audit' | 'contact'
+    kind: 'audit' | 'contact' | 'subscribe'
     /** Absolute portal link to the submission; null when no base URL is set. */
     url: string | null
   }>
@@ -133,8 +142,7 @@ export function buildStuckEmailCard(
             {
               widgets: notice.items.map(item => ({
                 decoratedText: {
-                  // copy-check: allow — the website's contact form
-                  topLabel: item.kind === 'audit' ? 'Audit' : 'Contact',
+                  topLabel: STUCK_KIND_LABELS[item.kind],
                   text: item.label,
                   ...(item.url
                     ? {

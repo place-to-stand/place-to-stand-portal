@@ -46,7 +46,7 @@ async function snapshotContact(
 }
 
 /**
- * The shared tail of both marketing intake routes: record, log, then send.
+ * The shared tail of the marketing intake routes: record, log, then send.
  *
  * Order is the point (PRD 008 §1). The row is written before any email is
  * attempted, so a Resend outage costs a delayed notification rather than a
@@ -57,7 +57,18 @@ async function snapshotContact(
  */
 export async function recordSubmission(
   row: NewFormSubmission,
-  { deliver }: { deliver: boolean }
+  {
+    deliver,
+    onInserted,
+  }: {
+    deliver: boolean
+    /**
+     * Runs once, after the first insert of this session (never on a replay).
+     * Must not throw: the row is already stored, so its failure is the
+     * callback's own to log.
+     */
+    onInserted?: () => Promise<void>
+  }
 ): Promise<RecordedSubmission> {
   // Only a delivering push can carry contact details, so only it needs to
   // know what the row said before.
@@ -98,6 +109,14 @@ export async function recordSubmission(
       // The submission is already stored. An audit-trail hiccup must not turn
       // into a visitor-facing error now that the site waits on this response.
       console.error('Failed to log submission activity', error)
+    }
+
+    if (onInserted) {
+      try {
+        await onInserted()
+      } catch (error) {
+        console.error('Submission post-insert step failed', { id, error })
+      }
     }
   }
 

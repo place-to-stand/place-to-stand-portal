@@ -60,7 +60,8 @@ const SERVICES: Record<
   },
   marketing_forms: {
     name: 'Website forms',
-    purpose: 'Contact and audit submissions',
+    // copy-check: allow — the website's contact form
+    purpose: 'Contact, audit and subscribe submissions',
     icon: <FileInput className='size-4' />,
   },
   posthog: {

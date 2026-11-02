@@ -3,7 +3,7 @@ import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
 import { toMetadata } from './shared'
 
 type SubmissionEventArgs = {
-  kind: 'audit' | 'contact'
+  kind: 'audit' | 'contact' | 'subscribe'
   contactName?: string | null
   contactEmail?: string | null
   status: string
@@ -63,11 +63,14 @@ export const submissionRestoredEvent = (
  * audit trail never needs to repeat them.
  */
 export const submissionReceivedEvent = (args: {
-  formType: 'audit' | 'contact'
+  formType: 'audit' | 'contact' | 'subscribe'
   status: string
 }): ActivityEvent => ({
   verb: ActivityVerbs.SUBMISSION_RECEIVED,
-  summary: `Received a new ${args.formType} submission`,
+  summary:
+    args.formType === 'subscribe'
+      ? 'Received a new mailing list signup'
+      : `Received a new ${args.formType} submission`,
   metadata: toMetadata({ formType: args.formType, status: args.status }),
 })
 

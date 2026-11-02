@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-
 const PUBLIC_PATHS = new Set([
   '/sign-in',
   '/unauthorized',
@@ -19,6 +18,7 @@ const PUBLIC_PATHS = new Set([
   '/share/',
   '/api/integrations/audit-responses',
   '/api/integrations/contact-submissions',
+  '/api/integrations/subscribe-submissions',
   '/api/integrations/stripe',
   '/api/cron/',
   '/api/public/',
@@ -73,13 +73,15 @@ async function checkSupabaseAuth(req: NextRequest): Promise<{
 
   // AuthSessionMissingError is expected for unauthenticated users - don't log it
   if (claimsError && claimsError.name !== 'AuthSessionMissingError') {
-    console.error('Failed to resolve Supabase session in middleware', claimsError)
+    console.error(
+      'Failed to resolve Supabase session in middleware',
+      claimsError
+    )
   }
 
   const claims = claimsError ? null : data?.claims
   const userMetadata = claims?.user_metadata as
-    | { must_reset_password?: unknown }
-    | undefined
+    { must_reset_password?: unknown } | undefined
 
   return {
     isAuthenticated: Boolean(claims?.sub),
@@ -195,7 +197,8 @@ function legacySheetParamRedirect(req: NextRequest): URL | null {
   url.search = ''
   for (const [key, value] of searchParams) {
     if (key === 'client') {
-      if (!url.searchParams.has('company')) url.searchParams.append('company', value)
+      if (!url.searchParams.has('company'))
+        url.searchParams.append('company', value)
     } else {
       url.searchParams.append(key, value)
     }

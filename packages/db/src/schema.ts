@@ -2046,6 +2046,8 @@ export const invoiceLineItems = pgTable(
 export const formSubmissionKind = pgEnum('form_submission_kind', [
   'audit',
   'contact',
+  // Blog/mailing-list signup: an email and nothing else (no name or message).
+  'subscribe',
 ])
 
 /**
@@ -2064,12 +2066,12 @@ export const formSubmissionStatus = pgEnum('form_submission_status', [
 ])
 
 /**
- * Raw inbox for marketing-site form submissions — both the multi-step
- * Opportunity Audit (including partial and abandoned attempts) and the contact
- * form. Rows are promoted to `leads` manually from the Submissions view.
+ * Raw inbox for marketing-site form submissions — the multi-step
+ * Opportunity Audit (including partial and abandoned attempts), the contact
+ * form and the blog/mailing-list subscribe form. Rows are promoted to `leads` manually from the Submissions view.
  *
- * Audit sessions are upserted many times as beacons arrive; contact
- * submissions are one-shot. Both share `session_key` as the idempotency key.
+ * Audit sessions are upserted many times as beacons arrive; contact and
+ * subscribe submissions are one-shot. Both share `session_key` as the idempotency key.
  * See `apps/internal/lib/queries/form-submissions.ts` for the upsert rules.
  */
 export const formSubmissions = pgTable(

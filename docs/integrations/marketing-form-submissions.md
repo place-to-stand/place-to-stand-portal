@@ -1,9 +1,10 @@
 # Marketing form submissions → Portal
 
 Integration contract for the Place To Stand marketing site. Covers the Opportunity Audit
-(including partial/abandoned attempts) and the contact form.
+(including partial/abandoned attempts), the contact form and the blog/mailing-list subscribe
+form.
 
-Both endpoints write to the portal's `form_submissions` table and surface at
+All three endpoints write to the portal's `form_submissions` table and surface at
 **Sales → Submissions** in the internal portal.
 
 ---
@@ -33,12 +34,14 @@ points at.
 | --- | --- | --- |
 | Opportunity Audit progress | `POST /api/integrations/audit-responses` | `Authorization: Bearer <AUDIT_INTAKE_TOKEN>` |
 | Contact form | `POST /api/integrations/contact-submissions` | `Authorization: Bearer <CONTACT_INTAKE_TOKEN>` |
+| Subscribe (blog / mailing list) | `POST /api/integrations/subscribe-submissions` | `Authorization: Bearer <SUBSCRIBE_INTAKE_TOKEN>` |
 
-`Content-Type: application/json` on both.
+`Content-Type: application/json` on all three.
 
-Two separate tokens so either can be rotated independently. They are issued out of band —
-never commit them. Store as `AUDIT_INTAKE_TOKEN` / `CONTACT_INTAKE_TOKEN` in the marketing
-site's Vercel project (all environments).
+A separate token per endpoint so each can be rotated independently. They are issued out of band —
+never commit them. Store as `AUDIT_INTAKE_TOKEN` / `CONTACT_INTAKE_TOKEN` /
+`SUBSCRIBE_INTAKE_TOKEN` in the marketing site's Vercel project (all environments), with the
+same values under the same names in the portal's Vercel project.
 
 ### Responses
 
@@ -268,7 +271,35 @@ interface ContactSubmissionPayload {
 }
 ```
 
-### 4.3 Validation strictness
+### 4.3 Subscribe — `POST /api/integrations/subscribe-submissions`
+
+```ts
+interface SubscribeSubmissionPayload {
+  submissionId: string  // UUID v4 — idempotency key
+  sourceDetail: string  // the page signed up from: 'https://placetostandagency.com/blog/some-post'
+  submittedAt: string   // ISO 8601
+
+  subscriber: {
+    email: string
+  }
+
+  // identical shapes to the audit and contact payloads
+  analytics:   { posthogDistinctId, posthogSessionId, posthogReplayUrl }
+  attribution: { utmSource, utmMedium, utmCampaign, utmTerm, utmContent,
+                 gclid, referrer, landingPath }
+  client:      { viewport, screenWidth, timezone, language, userAgent }
+}
+```
+
+One-shot, like the contact form. The row is stored as `kind: 'subscribe'`, `status: 'captured'`,
+with `contact_email` set, `marketing_consent = true` (submitting the form is the consent, and the
+form says so) and no name, company or message. A **new** `submissionId` also adds the address to
+the Resend marketing audience (production only, best-effort: a Resend failure never fails the
+request); a replay of the same `submissionId` adds nothing. No team notification or confirmation
+email is sent, and there is no `deliver` flag. The response has the same shape as the other
+endpoints, with `emails` and `details` always `skipped`.
+
+### 4.4 Validation strictness
 
 Deliberately mixed, so that a taxonomy change on the marketing side can never cause silent
 data loss:

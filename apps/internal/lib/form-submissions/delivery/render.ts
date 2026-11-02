@@ -150,12 +150,16 @@ export function renderAuditDetailsEmail(
 
 /**
  * Renders both emails for a captured submission. Returns null when the row has
- * no contact to write to, which the caller treats as "nothing to send".
+ * no contact to write to, or is a mailing-list signup (which sends no email),
+ * which the caller treats as "nothing to send".
  */
 export function renderSubmissionEmails(
   row: FormSubmission,
   { portalOrigin, teamInbox, repeat }: SubmissionEmailContext
 ): SubmissionEmails | null {
+  // Signups send no email (they never request delivery); belt and braces.
+  if (row.kind === 'subscribe') return null
+
   const contact = buildContact(row)
   if (!contact) return null
 

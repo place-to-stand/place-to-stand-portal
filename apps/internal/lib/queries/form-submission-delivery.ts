@@ -292,7 +292,7 @@ export async function listSubmissionsAwaitingEmail({
 export async function listSubmissionsStuckAtThreshold(): Promise<
   Array<{
     id: string
-    kind: 'audit' | 'contact'
+    kind: 'audit' | 'contact' | 'subscribe'
     contactName: string | null
     contactEmail: string | null
   }>

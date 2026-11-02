@@ -152,7 +152,7 @@ function buildFilters({
  */
 export type UpsertFormSubmissionResult = {
   id: string
-  kind: 'audit' | 'contact'
+  kind: 'audit' | 'contact' | 'subscribe'
   status: string
   /** True on first insert; false when an existing row was updated. */
   inserted: boolean

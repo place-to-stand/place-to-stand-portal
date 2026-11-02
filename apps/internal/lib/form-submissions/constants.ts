@@ -13,6 +13,7 @@ export type FormSubmissionStatus =
 export const FORM_SUBMISSION_KIND_LABELS: Record<FormSubmissionKind, string> = {
   audit: 'Audit',
   contact: 'Contact', // copy-check: allow — the website's contact form
+  subscribe: 'Subscribe',
 }
 
 export const FORM_SUBMISSION_STATUS_LABELS: Record<
@@ -49,12 +50,14 @@ export const ATTRIBUTION_CHANNEL_TOKENS: Record<AttributionChannel, string> = {
 export const FORM_SUBMISSION_KIND_TOKENS: Record<FormSubmissionKind, string> = {
   audit: BADGE_TINTS.indigo,
   contact: BADGE_TINTS.amber,
+  subscribe: BADGE_TINTS.emerald,
 }
 
 /**
  * D1 (PRD 001): only rows that warrant attention count as unacknowledged —
  * contact submissions (any status) and audits that reached
- * `completed`/`captured`. In-progress and abandoned audits are noise at ad
+ * `completed`/`captured`. Subscribe signups always arrive `captured`, so they
+ * flag through the status arm. In-progress and abandoned audits are noise at ad
  * volume and never flag.
  *
  * Terminology (2026-08-04 revision): the UI converges on the

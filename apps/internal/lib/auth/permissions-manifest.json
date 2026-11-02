@@ -1219,6 +1219,13 @@
   },
   {
     "type": "route",
+    "name": "POST /api/integrations/subscribe-submissions",
+    "file": "apps/internal/app/api/integrations/subscribe-submissions/route.ts",
+    "kind": "token",
+    "capability": null
+  },
+  {
+    "type": "route",
     "name": "POST /api/invoices/[id]/checkout",
     "file": "apps/internal/app/api/invoices/[id]/checkout/route.ts",
     "kind": "admin",
