@@ -44,7 +44,6 @@ const schema = z.object({
   CLIENT_PORTAL_URL: z.url(),
   AUDIT_INTAKE_TOKEN: z.string().min(1).optional(),
   CONTACT_INTAKE_TOKEN: z.string().min(1).optional(),
-  SUBSCRIBE_INTAKE_TOKEN: z.string().min(1).optional(),
   CRON_SECRET: z.string().min(1).optional(),
   // How long activity_logs rows are kept before the weekly prune cron
   // deletes them. Defaults to two years.
@@ -90,7 +89,6 @@ export const serverEnv = schema.parse({
   CLIENT_PORTAL_URL: process.env.CLIENT_PORTAL_URL,
   AUDIT_INTAKE_TOKEN: emptyToUndefined(process.env.AUDIT_INTAKE_TOKEN),
   CONTACT_INTAKE_TOKEN: emptyToUndefined(process.env.CONTACT_INTAKE_TOKEN),
-  SUBSCRIBE_INTAKE_TOKEN: emptyToUndefined(process.env.SUBSCRIBE_INTAKE_TOKEN),
   CRON_SECRET: emptyToUndefined(process.env.CRON_SECRET),
   ACTIVITY_LOG_RETENTION_DAYS: emptyToUndefined(
     process.env.ACTIVITY_LOG_RETENTION_DAYS

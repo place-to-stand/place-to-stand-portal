@@ -22,7 +22,9 @@ import {
 export async function POST(request: NextRequest) {
   const authFailure = verifyIntakeToken(
     request,
-    serverEnv.SUBSCRIBE_INTAKE_TOKEN,
+    // Same token as the contact form: both come from the marketing site's
+    // server, so a separate one would add a secret without adding isolation.
+    serverEnv.CONTACT_INTAKE_TOKEN,
     'Subscribe'
   )
 

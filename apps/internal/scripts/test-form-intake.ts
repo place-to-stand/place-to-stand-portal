@@ -15,8 +15,7 @@
  *   AUDIT_INTAKE_TOKEN=... CONTACT_INTAKE_TOKEN=... \
  *     BASE_URL=http://localhost:3000 npx tsx scripts/test-form-intake.ts
  *
- * Set SUBSCRIBE_INTAKE_TOKEN too (here and on the server) to also exercise the
- * mailing-list signup intake; without it that section is skipped.
+ * The mailing-list signup intake uses CONTACT_INTAKE_TOKEN as well.
  *
  * Add `--deliver` to also exercise email delivery (PRD 008): claim-once sends,
  * replay safety, the per-address throttle, and the audit `captured` gate. That
@@ -41,7 +40,7 @@ const MAILPIT_URL = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324'
 const WITH_DELIVERY = process.argv.includes('--deliver')
 const AUDIT_TOKEN = process.env.AUDIT_INTAKE_TOKEN
 const CONTACT_TOKEN = process.env.CONTACT_INTAKE_TOKEN
-const SUBSCRIBE_TOKEN = process.env.SUBSCRIBE_INTAKE_TOKEN
+const SUBSCRIBE_TOKEN = CONTACT_TOKEN
 
 const sessionId = randomUUID()
 const submissionId = randomUUID()
@@ -603,7 +602,7 @@ async function main() {
       subscribeRetry.body
     )
   } else {
-    console.log('\nSubscribe submission skipped (SUBSCRIBE_INTAKE_TOKEN unset)')
+    console.log('\nSubscribe submission skipped (CONTACT_INTAKE_TOKEN unset)')
   }
 
   // --- Email delivery (PRD 008) -------------------------------------------

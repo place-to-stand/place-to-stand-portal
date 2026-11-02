@@ -34,14 +34,16 @@ points at.
 | --- | --- | --- |
 | Opportunity Audit progress | `POST /api/integrations/audit-responses` | `Authorization: Bearer <AUDIT_INTAKE_TOKEN>` |
 | Contact form | `POST /api/integrations/contact-submissions` | `Authorization: Bearer <CONTACT_INTAKE_TOKEN>` |
-| Subscribe (blog / mailing list) | `POST /api/integrations/subscribe-submissions` | `Authorization: Bearer <SUBSCRIBE_INTAKE_TOKEN>` |
+| Subscribe (blog / mailing list) | `POST /api/integrations/subscribe-submissions` | `Authorization: Bearer <CONTACT_INTAKE_TOKEN>` |
 
 `Content-Type: application/json` on all three.
 
-A separate token per endpoint so each can be rotated independently. They are issued out of band —
-never commit them. Store as `AUDIT_INTAKE_TOKEN` / `CONTACT_INTAKE_TOKEN` /
-`SUBSCRIBE_INTAKE_TOKEN` in the marketing site's Vercel project (all environments), with the
-same values under the same names in the portal's Vercel project.
+The audit and contact endpoints each have their own token so each can be rotated independently.
+The subscribe endpoint reuses `CONTACT_INTAKE_TOKEN`: both are called only from the marketing
+site's server, so a third secret would add setup without adding isolation. Tokens are issued out
+of band — never commit them. Store as `AUDIT_INTAKE_TOKEN` / `CONTACT_INTAKE_TOKEN` in the
+marketing site's Vercel project (all environments), with the same values under the same names in
+the portal's Vercel project.
 
 ### Responses
 

@@ -334,12 +334,12 @@ creates a lead directly — leads are promoted from a submission by hand.
 **Endpoints:**
 - `POST /api/integrations/contact-submissions` — one-shot contact form; token `CONTACT_INTAKE_TOKEN`
 - `POST /api/integrations/audit-responses` — Opportunity Audit progress beacons, upserted on `sessionId`; token `AUDIT_INTAKE_TOKEN`
-- `POST /api/integrations/subscribe-submissions` — one-shot blog/mailing-list signup (email only, consent implied, added to the Resend audience on first insert, no emails sent); token `SUBSCRIBE_INTAKE_TOKEN`
+- `POST /api/integrations/subscribe-submissions` — one-shot blog/mailing-list signup (email only, consent implied, added to the Resend audience on first insert, no emails sent); token `CONTACT_INTAKE_TOKEN` (shared with the contact form)
 
 **Authentication:** Bearer token checked by `verifyIntakeToken` (`lib/integrations/verify-intake-token.ts`). All three paths are on the `proxy.ts` allowlist, so each route must verify its own token.
 
 **Setup:**
-1. Generate a token per endpoint: `openssl rand -hex 32`
+1. Generate a token per endpoint (subscribe reuses the contact token): `openssl rand -hex 32`
 2. Store the same values under the same names in this app and in the marketing site, which also needs `PORTAL_API_BASE_URL`
 
 **Email (PRD 008):** the marketing site sends no email. A payload with `deliver: true` makes the

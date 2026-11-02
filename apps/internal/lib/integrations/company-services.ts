@@ -152,7 +152,6 @@ export async function fetchCompanyServices(): Promise<CompanyService[]> {
     configured('marketing_forms', {
       CONTACT_INTAKE_TOKEN: serverEnv.CONTACT_INTAKE_TOKEN,
       AUDIT_INTAKE_TOKEN: serverEnv.AUDIT_INTAKE_TOKEN,
-      SUBSCRIBE_INTAKE_TOKEN: serverEnv.SUBSCRIBE_INTAKE_TOKEN,
     }),
   ]
 }
