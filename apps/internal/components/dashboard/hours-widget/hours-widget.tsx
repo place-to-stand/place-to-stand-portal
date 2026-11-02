@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { WIDGET_FRAME_CLASS } from '@/components/dashboard/widget-card'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { ProjectTimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import { cn } from '@/lib/utils'
@@ -283,39 +283,39 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
             disabled={prevDisabled}
             reason={prevTooltipReason}
           >
-            <Button
+            <RowActionButton
               type='button'
               variant='outline'
-              size='icon-sm'
               onClick={() => handleShift(-1)}
               disabled={prevDisabled}
-              aria-label='View previous month'
-            >
-              {isLoading && pendingDirection === 'prev' ? (
-                <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
-              ) : (
-                <ChevronLeft className='h-4 w-4' aria-hidden />
-              )}
-            </Button>
+              label='View previous month'
+              icon={
+                isLoading && pendingDirection === 'prev' ? (
+                  <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
+                ) : (
+                  <ChevronLeft aria-hidden />
+                )
+              }
+            />
           </DisabledFieldTooltip>
           <DisabledFieldTooltip
             disabled={nextDisabled}
             reason={nextTooltipReason}
           >
-            <Button
+            <RowActionButton
               type='button'
               variant='outline'
-              size='icon-sm'
               onClick={() => handleShift(1)}
               disabled={nextDisabled}
-              aria-label='View next month'
-            >
-              {isLoading && pendingDirection === 'next' ? (
-                <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
-              ) : (
-                <ChevronRight className='h-4 w-4' aria-hidden />
-              )}
-            </Button>
+              label='View next month'
+              icon={
+                isLoading && pendingDirection === 'next' ? (
+                  <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
+                ) : (
+                  <ChevronRight aria-hidden />
+                )
+              }
+            />
           </DisabledFieldTooltip>
         </div>
       </header>

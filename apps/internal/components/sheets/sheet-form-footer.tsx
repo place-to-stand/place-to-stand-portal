@@ -98,16 +98,14 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           disabled={archiveDisabled}
           reason={archiveDisabledReason}
         >
-          <Button
+          <RowActionButton
             type='button'
             variant='destructive'
             onClick={onRequestArchive}
             disabled={archiveDisabled}
-            aria-label={archiveAriaLabel}
-            size='icon-sm'
-          >
-            <Archive />
-          </Button>
+            label={archiveAriaLabel}
+            icon={<Archive />}
+          />
         </DisabledFieldTooltip>
       ) : null}
     </SheetFooterBar>

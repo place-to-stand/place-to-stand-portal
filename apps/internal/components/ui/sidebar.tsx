@@ -294,6 +294,7 @@ function SidebarTrigger({
   const { toggleSidebar } = useSidebar()
 
   return (
+    // eslint-disable-next-line pts/icon-button-tooltip -- shadcn sidebar primitive; named by its sr-only text
     <Button
       data-sidebar='trigger'
       data-slot='sidebar-trigger'

@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { cn } from '@/lib/utils'
 
 export type VersionDeployStatus = 'none' | 'dispatched' | 'pr_created'
@@ -64,15 +65,13 @@ export function PlanRevisionNav({
         </span>
       )}
 
-      <Button
+      <RowActionButton
         variant='ghost'
-        size='icon-sm'
-        aria-label='Previous version'
+        label='Previous version'
         disabled={disabled || !hasPrev}
         onClick={() => onNavigate(currentVersion - 1)}
-      >
-        <ChevronLeft />
-      </Button>
+        icon={<ChevronLeft />}
+      />
 
       <div className='flex items-center gap-0.5'>
         {items.map(item => {
@@ -101,15 +100,13 @@ export function PlanRevisionNav({
         })}
       </div>
 
-      <Button
+      <RowActionButton
         variant='ghost'
-        size='icon-sm'
-        aria-label='Next version'
+        label='Next version'
         disabled={disabled || !hasNext}
         onClick={() => onNavigate(currentVersion + 1)}
-      >
-        <ChevronRight />
-      </Button>
+        icon={<ChevronRight />}
+      />
     </div>
   )
 }

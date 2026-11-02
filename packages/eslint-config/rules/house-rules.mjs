@@ -172,6 +172,50 @@ export const noTitleTooltip = {
   },
 }
 
+/** Rule 11 again: an icon-only Button needs a hover label. */
+export const iconButtonTooltip = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'House rule 11: an icon-size Button needs RowActionButton or a Tooltip',
+    },
+    schema: [],
+    messages: {
+      tooltip: `House rule 11 (${README}): "Icon-only row actions use RowActionButton." This icon-size Button has no hover label: use RowActionButton (label = tooltip + accessible name), or wrap it in a Tooltip.`,
+    },
+  },
+  create(context) {
+    // A menu or popover trigger opens a labelled popup, so it may skip the
+    // tooltip; its aria-label still names it.
+    const TOOLTIP = /^(?:Tooltip|TooltipTrigger|\w+Trigger)$/
+    return {
+      JSXOpeningElement(node) {
+        if (jsxName(node.name) !== 'Button') return
+        const size = findAttr(node, 'size')
+        const value = size && attrValue(size)
+        if (
+          !value ||
+          value.type !== 'Literal' ||
+          !/^icon/.test(String(value.value))
+        ) {
+          return
+        }
+        for (let p = node.parent; p; p = p.parent) {
+          if (
+            (p.type === 'JSXElement' &&
+              TOOLTIP.test(jsxName(p.openingElement.name))) ||
+            (p.type === 'JSXOpeningElement' && TOOLTIP.test(jsxName(p.name)))
+          ) {
+            return
+          }
+        }
+        context.report({ node, messageId: 'tooltip' })
+      },
+    }
+  },
+}
+
 const SIZE_OVERRIDE = /(?:^|\s)(?:[\w-]+:)*!?(h-(?:\d|\[|px\b)|text-\[[^\]]*\])/
 
 /** Rule 12: pick a size, don't override it. */

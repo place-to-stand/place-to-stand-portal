@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Loader2, Lock } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { MonthCursor } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
@@ -68,17 +69,16 @@ export function ReportToolbar({
             disabled={!canGoPrev}
             reason={canGoPrev ? null : `No data before ${minLimitLabel}.`}
           >
-            <Button
+            <RowActionButton
+              size='icon'
               type='button'
               variant='ghost'
-              size='icon'
               className='rounded-none'
               onClick={goToPrevMonth}
               disabled={!canGoPrev}
-              aria-label='Previous month'
-            >
-              <ChevronLeft />
-            </Button>
+              label='Previous month'
+              icon={<ChevronLeft />}
+            />
           </DisabledFieldTooltip>
           <MonthPicker
             cursor={cursor}
@@ -100,17 +100,16 @@ export function ReportToolbar({
             disabled={!canGoNext}
             reason={canGoNext ? null : `No data beyond ${maxLimitLabel} yet.`}
           >
-            <Button
+            <RowActionButton
+              size='icon'
               type='button'
               variant='ghost'
-              size='icon'
               className='rounded-none'
               onClick={goToNextMonth}
               disabled={!canGoNext}
-              aria-label='Next month'
-            >
-              <ChevronRight />
-            </Button>
+              label='Next month'
+              icon={<ChevronRight />}
+            />
           </DisabledFieldTooltip>
         </div>
 

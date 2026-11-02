@@ -3,6 +3,7 @@ import { Archive, Link2, Plus, Save } from 'lucide-react'
 import { ToastCard } from '@/components/ui/toast-card'
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Input } from '@pts/ui/input'
 import { Switch } from '@pts/ui/switch'
@@ -53,13 +54,11 @@ export function PatternsHouseRules() {
             </div>
             <SheetFooterBar>
               <Button size='xs'>Save</Button>
-              <Button
-                size='icon-sm'
+              <RowActionButton
                 variant='destructive'
-                aria-label='Archive company'
-              >
-                <Archive />
-              </Button>
+                label='Archive company'
+                icon={<Archive />}
+              />
             </SheetFooterBar>
           </MiniSheet>
         }

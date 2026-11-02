@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { PageSizeSelect } from '@/components/table-toolbar/page-size-select'
 import { cn } from '@/lib/utils'
 
@@ -68,26 +68,22 @@ function CursorPagination({
       {showPageSize ? <PageSizeSelect value={pageSize} /> : <span />}
       {hasMorePages ? (
         <div className='flex justify-end gap-1'>
-          <Button
+          <RowActionButton
             type='button'
             variant='outline'
-            size='icon-sm'
             onClick={onPrevious}
             disabled={isPrevDisabled}
-            aria-label='Previous page'
-          >
-            <ChevronLeft />
-          </Button>
-          <Button
+            label='Previous page'
+            icon={<ChevronLeft />}
+          />
+          <RowActionButton
             type='button'
             variant='outline'
-            size='icon-sm'
             onClick={onNext}
             disabled={isNextDisabled}
-            aria-label='Next page'
-          >
-            <ChevronRight />
-          </Button>
+            label='Next page'
+            icon={<ChevronRight />}
+          />
         </div>
       ) : null}
     </div>
@@ -171,16 +167,14 @@ function PagedPagination({
 
   const controls = hasMorePages ? (
     <div className='flex items-center gap-1'>
-      <Button
+      <RowActionButton
         type='button'
         variant='outline'
-        size='icon-sm'
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        aria-label='Previous page'
-      >
-        <ChevronLeft />
-      </Button>
+        label='Previous page'
+        icon={<ChevronLeft />}
+      />
       {/* A phone has no room for nine page links: "3 / 5" instead. */}
       <span className='text-muted-foreground px-1.5 text-sm tabular-nums sm:hidden'>
         {currentPage} / {totalPages}
@@ -216,16 +210,14 @@ function PagedPagination({
           )
         })}
       </div>
-      <Button
+      <RowActionButton
         type='button'
         variant='outline'
-        size='icon-sm'
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        aria-label='Next page'
-      >
-        <ChevronRight />
-      </Button>
+        label='Next page'
+        icon={<ChevronRight />}
+      />
     </div>
   ) : null
 

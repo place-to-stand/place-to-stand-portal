@@ -22,6 +22,7 @@ export const HOUSE_RULES = {
   'pts/no-align-start': 'error', // rule 4
   'pts/save-not-gated-on-dirty': 'error', // rule 6
   'pts/no-title-tooltip': 'error', // rule 11
+  'pts/icon-button-tooltip': 'error', // rule 11
   'pts/no-size-override': 'error', // rule 12
   'pts/toast-copy': 'error', // rule 14
   'pts/grid-phone-column': 'error', // rule 15

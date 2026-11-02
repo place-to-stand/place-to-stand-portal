@@ -7,7 +7,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Trash2, TriangleAlert } from 'lucide-react'
 
 import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   FormControl,
   FormField,
@@ -153,17 +153,14 @@ function LineItemRow({
               )}
             />
             {canRemove ? (
-              <Button
+              <RowActionButton
                 type='button'
-                variant='ghost'
-                size='icon'
                 className='shrink-0'
                 onClick={() => onRemove(index)}
                 disabled={disabled}
-                aria-label={`Remove item ${index + 1}`}
-              >
-                <Trash2 className='h-3.5 w-3.5' />
-              </Button>
+                label={`Remove item ${index + 1}`}
+                icon={<Trash2 />}
+              />
             ) : null}
           </div>
         ) : null}
@@ -300,7 +297,10 @@ function LineItemRow({
 
 type SortableLineItemRowProps = LineItemRowProps & { id: string }
 
-export function SortableLineItemRow({ id, ...props }: SortableLineItemRowProps) {
+export function SortableLineItemRow({
+  id,
+  ...props
+}: SortableLineItemRowProps) {
   const {
     attributes,
     listeners,
