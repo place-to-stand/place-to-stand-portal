@@ -48,6 +48,7 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
               email: saved.email,
               hasSignIn: saved.hasPortalLogin,
               signInDisabled: saved.signInDisabled,
+              signInRole: saved.signInRole,
             }
           : joining
             ? {

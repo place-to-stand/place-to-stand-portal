@@ -164,7 +164,8 @@ export function ContactCompaniesSection({
                     hint={!disabled && portalReason ? portalReason : null}
                   >
                     <Switch
-                      checked={entry.portalAccess}
+                      // Locked: shows off without clearing what's stored.
+                      checked={entry.portalAccess && !portalReason}
                       disabled={disabled || Boolean(portalReason)}
                       aria-label={`Portal access at ${name}`}
                       onCheckedChange={portalAccess =>

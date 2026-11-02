@@ -339,20 +339,21 @@ export async function getCompanyDetail(
   const signInUserIds = seesSignIns
     ? memberRows.flatMap(member => (member.userId ? [member.userId] : []))
     : []
+  const signInRows = signInUserIds.length
+    ? await db
+        .select({
+          id: users.id,
+          role: users.role,
+          off: sql<boolean>`(${users.disabledAt} is not null or ${users.deletedAt} is not null)`,
+        })
+        .from(users)
+        .where(inArray(users.id, signInUserIds))
+    : []
   const disabledSignIns = new Set(
-    signInUserIds.length
-      ? (
-          await db
-            .select({ id: users.id })
-            .from(users)
-            .where(
-              and(
-                inArray(users.id, signInUserIds),
-                sql`(${users.disabledAt} is not null or ${users.deletedAt} is not null)`
-              )
-            )
-        ).map(signIn => signIn.id)
-      : []
+    signInRows.filter(signIn => signIn.off).map(signIn => signIn.id)
+  )
+  const signInRoles = new Map(
+    signInRows.map(signIn => [signIn.id, signIn.role])
   )
 
   const people = memberRows
@@ -369,6 +370,9 @@ export async function getCompanyDetail(
       signInDisabled: Boolean(
         member.userId && disabledSignIns.has(member.userId)
       ),
+      signInRole: member.userId
+        ? (signInRoles.get(member.userId) ?? null)
+        : null,
     }))
     // Primary contact first.
     .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))

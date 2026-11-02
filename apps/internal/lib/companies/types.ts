@@ -72,6 +72,8 @@ export type CompanyContactSummary = {
   signInLocked: boolean
   /** Their sign-in is switched off or archived: no access until it's back. */
   signInDisabled: boolean
+  /** Their sign-in's role (null without one, or for a viewer who can't manage clients). */
+  signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
 }
 
 export type CompanyLeadSummary = {

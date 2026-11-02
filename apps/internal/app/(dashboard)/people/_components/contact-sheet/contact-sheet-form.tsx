@@ -31,6 +31,10 @@ import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-
 
 import { ContactCompaniesSection } from './contact-companies-section'
 import { ContactSignInSection } from './contact-access-section'
+import {
+  canHavePortalAccess,
+  portalAccessLockedReason,
+} from '@/lib/settings/contacts/portal-eligibility'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -149,7 +153,13 @@ export function ContactSheetForm({
     name: 'signIn.enabled',
   })
   const signInRole = useWatch({ control: form.control, name: 'signIn.role' })
-  const portalSignIn = Boolean(signInEnabled) && signInRole === 'CLIENT'
+  // The shared rule, on the sign-in as this Save leaves it (a sign-in made
+  // or switched on in this Save is written before the switches).
+  const portalSignIn = canHavePortalAccess({
+    exists: true,
+    enabled: Boolean(signInEnabled),
+    role: signInRole,
+  })
 
   return (
     <Form {...form}>
@@ -315,7 +325,9 @@ export function ContactSheetForm({
                   portalReason={
                     portalSignIn
                       ? null
-                      : 'Turn on Can sign in with the Client role first (Sign-in, below).'
+                      : portalAccessLockedReason(
+                          typedName || personName || 'They'
+                        )
                   }
                 />
               )}

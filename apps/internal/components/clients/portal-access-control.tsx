@@ -2,6 +2,10 @@
 
 import { Switch } from '@pts/ui/switch'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  canHavePortalAccess,
+  portalAccessLockedReason,
+} from '@/lib/settings/contacts/portal-eligibility'
 
 /** A person on the company's People list, as the Portal switch needs them. */
 export type PortalAccessPerson = {
@@ -12,6 +16,8 @@ export type PortalAccessPerson = {
   hasSignIn: boolean | null
   /** Their sign-in is switched off: no access until it's back on. */
   signInDisabled?: boolean
+  /** Their sign-in's role: only a Client sign-in has portal access. */
+  signInRole?: 'ADMIN' | 'SALES' | 'CLIENT' | null
 }
 
 /**
@@ -38,12 +44,17 @@ export function PortalAccessControl({
   /** Off where the row labels it already ("Portal" beside the field). */
   showLabel?: boolean
 }) {
-  // No sign-in yet (or not known yet: joining on Save): none is made here.
-  const blocked = person.hasSignIn !== true && !hasAccess
+  // The one rule (canHavePortalAccess): a live Client sign-in. Without one
+  // the switch shows off and locked; a stored "on" isn't cleared.
+  const blocked = !canHavePortalAccess({
+    exists: person.hasSignIn === true,
+    enabled: !person.signInDisabled,
+    role: person.signInRole,
+  })
   const reason = disabled
     ? disabledReason
     : blocked
-      ? `${person.name} can’t sign in yet. Turn on Can sign in on their person sheet first.`
+      ? portalAccessLockedReason(person.name)
       : null
 
   return (
@@ -57,7 +68,7 @@ export function PortalAccessControl({
           <span className='text-muted-foreground text-xs'>Portal</span>
         ) : null}
         <Switch
-          checked={hasAccess}
+          checked={hasAccess && !blocked}
           disabled={disabled || blocked}
           aria-label={`Portal access for ${person.name}`}
           onCheckedChange={onChange}

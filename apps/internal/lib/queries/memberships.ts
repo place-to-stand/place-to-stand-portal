@@ -15,7 +15,7 @@ import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import { roleCan, type Role } from '@/lib/auth/capabilities'
 import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
 import { db, type DbTx } from '@/lib/db'
-import { companies, contacts, memberships } from '@/lib/db/schema'
+import { companies, contacts, memberships, users } from '@/lib/db/schema'
 import {
   activeCompanySql,
   isClientCompany,
@@ -442,7 +442,9 @@ export async function setPortalAccess(
   if (portalAccess && !roleCan(actor.role, 'clients.manage')) {
     throw new PortalAccessForbiddenError()
   }
-  if (portalAccess && !(await hasPortalLogin(executor, contactId))) {
+  // Only someone who can sign in to the client portal now: a live Client
+  // sign-in. Nothing here makes one (that's the person sheet's Sign-in).
+  if (portalAccess && !(await hasLiveClientSignIn(executor, contactId))) {
     return false
   }
   const where = and(
@@ -464,6 +466,31 @@ export async function setPortalAccess(
     await touchContacts(executor, [contactId])
   }
   return true
+}
+
+/**
+ * The contact can sign in to the client portal now: a sign-in with role
+ * CLIENT, not switched off or archived. The one rule for turning portal
+ * access on (both sheets show the same, see `canHavePortalAccess`).
+ */
+export async function hasLiveClientSignIn(
+  executor: Executor,
+  contactId: string
+): Promise<boolean> {
+  const [row] = await executor
+    .select({ id: users.id })
+    .from(contacts)
+    .innerJoin(users, eq(users.id, contacts.userId))
+    .where(
+      and(
+        eq(contacts.id, contactId),
+        eq(users.role, 'CLIENT'),
+        isNull(users.disabledAt),
+        isNull(users.deletedAt)
+      )
+    )
+    .limit(1)
+  return Boolean(row)
 }
 
 /** The contact has a portal login (`contacts.user_id`). */
