@@ -139,7 +139,6 @@ export function ContactsTableSection({
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
                 className='w-28'
-                align='center'
               >
                 Role
               </SortableTableHead>
@@ -275,7 +274,7 @@ export function ContactsTableSection({
                   )}
                 </TableCell>
                 {seesAccess ? (
-                  <TableCell label='Role' className='text-sm md:text-center'>
+                  <TableCell label='Role' className='text-sm'>
                     {contact.signInRole ? (
                       <RoleBadge role={contact.signInRole} />
                     ) : (

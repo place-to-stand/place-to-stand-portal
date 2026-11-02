@@ -26,7 +26,6 @@ import { currentMonthStartUtc } from '@/lib/billing/months'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
-import { listNames } from '@/lib/settings/contacts/person-access'
 import type {
   ContactCompanyEntry,
   ContactFormData,
@@ -40,7 +39,6 @@ import {
 import type { USER_ROLES } from '@/lib/settings/users/user-validation'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
-import { UiRef } from '@/components/ui/ui-ref'
 import {
   RecordRowField,
   SheetRecordRow,
@@ -208,13 +206,6 @@ function ManagedSignIn({
     'the staff company'
   const leavesStaff =
     enabled && role === 'CLIENT' && isStaff && account?.role !== 'CLIENT'
-  const seen = companies
-    .filter(
-      entry =>
-        Boolean(entry.clientCompanyId) && !entry.archived && entry.portalAccess
-    )
-    .map(entry => entry.companyName || entry.clientName || 'Company')
-
   // What Save does, as a caution; or where they stand.
   const saveNote = !enabled
     ? live
@@ -314,23 +305,7 @@ function ManagedSignIn({
                     control={form.control}
                     name='signIn.role'
                     render={({ field }) => (
-                      <RecordRowField
-                        label='Role'
-                        note={
-                          role === 'ADMIN' ? (
-                            'Signs in here and sees everything.'
-                          ) : role === 'SALES' ? (
-                            'Signs in here: leads, people, companies and their own work.'
-                          ) : seen.length ? (
-                            `Sees ${listNames(seen)} in the client portal.`
-                          ) : (
-                            <>
-                              No portal access yet. Turn on{' '}
-                              <UiRef>Portal access</UiRef> for a company above.
-                            </>
-                          )
-                        }
-                      >
+                      <RecordRowField label='Role'>
                         <DisabledFieldTooltip
                           disabled={Boolean(lockedReason)}
                           reason={lockedReason}
