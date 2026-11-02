@@ -21,6 +21,9 @@ export function describeSubmissionOutcome(
     return submission.subject?.trim() || null
   }
 
+  // A signup is an email and nothing else; the badge says it all.
+  if (submission.kind === 'subscribe') return null
+
   const phase = submission.result?.phaseName || submission.phaseId
   if (phase) return `${phase} phase`
 

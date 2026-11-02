@@ -316,6 +316,8 @@ export function SubmissionDetailSheet({
   const acknowledgedAt = displaySubmission.acknowledgedAt
 
   const isAudit = displaySubmission.kind === 'audit'
+  // A mailing-list signup carries an email only: no name, company or note.
+  const isSubscribe = displaySubmission.kind === 'subscribe'
   const source = describeAttribution(displaySubmission)
   // Not a hook: the sheet returns early above when nothing is selected. The
   // React Compiler memoises this; the clock read only changes the copy at
@@ -370,10 +372,12 @@ export function SubmissionDetailSheet({
             <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
               <SheetSection title='Contact details'>
                 <dl className={KV_GRID}>
-                  <Kv
-                    label='Name'
-                    value={value(displaySubmission.contactName)}
-                  />
+                  {!isSubscribe && (
+                    <Kv
+                      label='Name'
+                      value={value(displaySubmission.contactName)}
+                    />
+                  )}
                   <Kv
                     label='Email'
                     value={
@@ -391,24 +395,30 @@ export function SubmissionDetailSheet({
                       )
                     }
                   />
-                  <Kv
-                    label='Company'
-                    value={value(displaySubmission.contactCompany)}
-                  />
-                  <Kv
-                    label='Website'
-                    value={value(displaySubmission.contactWebsite)}
-                  />
-                  {!isAudit && (
+                  {!isSubscribe && (
+                    <>
+                      <Kv
+                        label='Company'
+                        value={value(displaySubmission.contactCompany)}
+                      />
+                      <Kv
+                        label='Website'
+                        value={value(displaySubmission.contactWebsite)}
+                      />
+                    </>
+                  )}
+                  {displaySubmission.kind === 'contact' && (
                     <Kv
                       label='Subject'
                       value={value(displaySubmission.subject)}
                     />
                   )}
-                  <Kv
-                    label='Heard about us'
-                    value={value(displaySubmission.heardFrom)}
-                  />
+                  {!isSubscribe && (
+                    <Kv
+                      label='Heard about us'
+                      value={value(displaySubmission.heardFrom)}
+                    />
+                  )}
                   <Kv
                     label='Marketing consent'
                     value={value(displaySubmission.marketingConsent)}

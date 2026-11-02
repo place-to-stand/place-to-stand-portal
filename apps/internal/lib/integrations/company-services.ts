@@ -6,10 +6,7 @@ import {
   fetchMercuryAccounts,
 } from '@/lib/integrations/mercury/api'
 import { getStripe } from '@/lib/stripe/client'
-import type {
-  CompanyService,
-  CompanyServiceId,
-} from '@/lib/types/integrations'
+import type { CompanyService, CompanyServiceId } from '@/lib/types/integrations'
 
 /** Every env var a service needs, and which of them are missing. */
 function envState(vars: Record<string, string | undefined>) {

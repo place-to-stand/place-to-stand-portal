@@ -4,17 +4,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "!.next/dev/**",
-        "dist/**"
-      ],
-      "env": [
-        "DATABASE_URL",
-        "NEXT_PUBLIC_*",
-        "ACTIVITY_LOG_RETENTION_DAYS"
-      ],
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"],
+      "env": ["DATABASE_URL", "NEXT_PUBLIC_*", "ACTIVITY_LOG_RETENTION_DAYS"],
       "passThroughEnv": [
         "SUPABASE_SERVICE_ROLE_KEY",
         "RESEND_API_KEY",

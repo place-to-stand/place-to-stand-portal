@@ -15,6 +15,8 @@
  *   AUDIT_INTAKE_TOKEN=... CONTACT_INTAKE_TOKEN=... \
  *     BASE_URL=http://localhost:3000 npx tsx scripts/test-form-intake.ts
  *
+ * The mailing-list signup intake uses CONTACT_INTAKE_TOKEN as well.
+ *
  * Add `--deliver` to also exercise email delivery (PRD 008): claim-once sends,
  * replay safety, the per-address throttle, and the audit `captured` gate. That
  * mode reads the messages back out of local Mailpit, so it only works against
@@ -38,9 +40,11 @@ const MAILPIT_URL = process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324'
 const WITH_DELIVERY = process.argv.includes('--deliver')
 const AUDIT_TOKEN = process.env.AUDIT_INTAKE_TOKEN
 const CONTACT_TOKEN = process.env.CONTACT_INTAKE_TOKEN
+const SUBSCRIBE_TOKEN = CONTACT_TOKEN
 
 const sessionId = randomUUID()
 const submissionId = randomUUID()
+const subscribeId = randomUUID()
 const throwawaySessionId = randomUUID()
 
 let failures = 0
@@ -89,6 +93,10 @@ function submitAudit(payload: unknown) {
 
 function submitContact(payload: unknown) {
   return post('/api/integrations/contact-submissions', CONTACT_TOKEN, payload)
+}
+
+function submitSubscribe(payload: unknown, token = SUBSCRIBE_TOKEN) {
+  return post('/api/integrations/subscribe-submissions', token, payload)
 }
 
 const QUESTIONS = [
@@ -516,6 +524,87 @@ async function main() {
     retry.status
   )
 
+  // --- Subscribe ----------------------------------------------------------
+  if (SUBSCRIBE_TOKEN) {
+    const subscribeBody = {
+      submissionId: subscribeId,
+      sourceDetail: 'https://placetostandagency.com/blog/some-post',
+      submittedAt: at(0),
+      subscriber: { email: `reader+${subscribeId.slice(0, 8)}@example.com` },
+      analytics: ENVELOPE.analytics,
+      attribution: ENVELOPE.attribution,
+      client: ENVELOPE.client,
+    }
+
+    console.log('\nSubscribe submission')
+    const badToken = await submitSubscribe(subscribeBody, 'wrong-token')
+    check('wrong token -> 401', badToken.status === 401, badToken.status)
+
+    const invalid = await submitSubscribe({
+      ...subscribeBody,
+      subscriber: { email: 'not-an-email' },
+    })
+    check('invalid email -> 400', invalid.status === 400, invalid.status)
+
+    const subscribe = await submitSubscribe(subscribeBody)
+    check('subscribe -> 200', subscribe.status === 200, subscribe.status)
+    check(
+      'response names the row',
+      typeof subscribe.body?.data?.id === 'string',
+      subscribe.body
+    )
+
+    const subscribeRow = await readRow(subscribeId)
+    check(
+      'kind is subscribe',
+      subscribeRow?.kind === 'subscribe',
+      subscribeRow?.kind
+    )
+    check(
+      'status is captured',
+      subscribeRow?.status === 'captured',
+      subscribeRow?.status
+    )
+    check(
+      'email stored, no name or message',
+      subscribeRow?.contactEmail === subscribeBody.subscriber.email &&
+        subscribeRow?.contactName === null &&
+        subscribeRow?.message === null,
+      subscribeRow
+    )
+    check(
+      'marketing consent recorded',
+      subscribeRow?.marketingConsent === true,
+      subscribeRow?.marketingConsent
+    )
+    check(
+      'source page stored',
+      subscribeRow?.sourceDetail === subscribeBody.sourceDetail,
+      subscribeRow?.sourceDetail
+    )
+    check(
+      'attribution stored',
+      subscribeRow?.utmCampaign === 'ai-audit-q3',
+      subscribeRow?.utmCampaign
+    )
+    check(
+      'no delivery requested',
+      subscribeRow?.deliveryRequestedAt === null,
+      subscribeRow?.deliveryRequestedAt
+    )
+
+    console.log('\nSubscribe retry (same submissionId)')
+    const subscribeRetry = await submitSubscribe(subscribeBody)
+    check(
+      'retry -> 200 on the same row',
+      subscribeRetry.status === 200 &&
+        subscribeRetry.body?.data?.id === subscribe.body?.data?.id,
+      subscribeRetry.body
+    )
+  } else {
+    console.log('\nSubscribe submission skipped (CONTACT_INTAKE_TOKEN unset)')
+  }
+
   // --- Email delivery (PRD 008) -------------------------------------------
   const deliveryKeys: string[] = []
   const deliveryEmails: string[] = []
@@ -837,6 +926,7 @@ async function main() {
   for (const key of [
     sessionId,
     submissionId,
+    subscribeId,
     throwawaySessionId,
     ...deliveryKeys,
   ]) {
