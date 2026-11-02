@@ -12,7 +12,6 @@ type DbActivityLog = {
   target_id: string | null
   target_company_id: string | null
   target_project_id: string | null
-  context_route: string | null
   metadata: Json
   created_at: string
 }

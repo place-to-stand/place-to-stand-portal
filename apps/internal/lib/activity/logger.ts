@@ -19,7 +19,6 @@ export type LogActivityOptions = {
   targetId?: string | null
   targetCompanyId?: string | null
   targetProjectId?: string | null
-  contextRoute?: string | null
   metadata?: Json
 }
 
@@ -42,7 +41,6 @@ export async function logActivity(options: LogActivityOptions) {
       targetId: options.targetId ?? null,
       targetCompanyId: options.targetCompanyId ?? null,
       targetProjectId: options.targetProjectId ?? null,
-      contextRoute: options.contextRoute ?? null,
       metadata: withAgent(normalizeMetadata(options.metadata)),
     })
   } catch (error) {
