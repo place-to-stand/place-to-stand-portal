@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, type ReactNode } from 'react'
+import { useTransition } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
@@ -18,10 +18,8 @@ import { Switch } from '@pts/ui/switch'
 import { EffectiveMonthSelect } from '@/components/billing/effective-month-select'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
-  FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form'
 import { useToast } from '@/components/ui/use-toast'
@@ -47,6 +45,10 @@ import type { USER_ROLES } from '@/lib/settings/users/user-validation'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { UiRef } from '@/components/ui/ui-ref'
+import {
+  RecordFieldGrid,
+  RecordRowField,
+} from '@/components/sheets/sheet-record-row'
 
 type Role = (typeof USER_ROLES)[number]
 
@@ -268,43 +270,44 @@ function ManagedSignIn({
         <>
           {saveNote ? <SaveSideEffect>{saveNote}</SaveSideEffect> : null}
           {enabled ? (
-            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+            // Label | value rows, lined up with the company cards above.
+            <RecordFieldGrid>
+              <RecordRowField label='Signs in with'>
+                <span className='text-sm break-all'>{personEmail || '—'}</span>
+              </RecordRowField>
               <FormField
                 control={form.control}
                 name='signIn.role'
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className='w-fit'>Role</FormLabel>
-                    <FormControl>
-                      <DisabledFieldTooltip
+                  <RecordRowField label='Role'>
+                    <DisabledFieldTooltip
+                      disabled={Boolean(lockedReason)}
+                      reason={lockedReason}
+                      className='w-48'
+                    >
+                      <Select
+                        onValueChange={next => setSignIn(true, next as Role)}
+                        value={field.value}
                         disabled={Boolean(lockedReason)}
-                        reason={lockedReason}
                       >
-                        <Select
-                          onValueChange={next => setSignIn(true, next as Role)}
-                          value={field.value}
-                          disabled={Boolean(lockedReason)}
-                        >
-                          <SelectTrigger>
-                            {/* The role reads as the badge it shows elsewhere. */}
-                            <SelectValue>
-                              {field.value ? (
-                                <RoleBadge role={field.value} />
-                              ) : null}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roles.map(option => (
-                              <SelectItem key={option} value={option}>
-                                <RoleBadge role={option} />
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </DisabledFieldTooltip>
-                    </FormControl>
-                    <FormMessage />
-                    <p className='text-muted-foreground text-sm'>
+                        <SelectTrigger aria-label='Role' className='w-48'>
+                          {/* The role reads as the badge it shows elsewhere. */}
+                          <SelectValue>
+                            {field.value ? (
+                              <RoleBadge role={field.value} />
+                            ) : null}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roles.map(option => (
+                            <SelectItem key={option} value={option}>
+                              <RoleBadge role={option} />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </DisabledFieldTooltip>
+                    <p className='text-muted-foreground w-full text-xs'>
                       {role === 'ADMIN' ? (
                         'Signs in here and sees everything.'
                       ) : role === 'SALES' ? (
@@ -318,19 +321,18 @@ function ManagedSignIn({
                         </>
                       )}
                     </p>
-                  </FormItem>
+                  </RecordRowField>
                 )}
               />
-              <SignInValue label='Signs in with'>
-                <span className='break-all'>{personEmail || '—'}</span>
-              </SignInValue>
               {/* Only a live, saved sign-in that stays on: a reset needs one. */}
               {live && account ? (
                 <>
-                  <SignInValue label='Last sign-in'>
-                    {formatRelativeTime(account.lastSignInAt) ?? 'Never'}
-                  </SignInValue>
-                  <SignInValue label='Password'>
+                  <RecordRowField label='Last sign-in'>
+                    <span className='text-sm'>
+                      {formatRelativeTime(account.lastSignInAt) ?? 'Never'}
+                    </span>
+                  </RecordRowField>
+                  <RecordRowField label='Password'>
                     <DisabledFieldTooltip
                       disabled={isSending || isPending || isSelf}
                       reason={
@@ -350,10 +352,10 @@ function ManagedSignIn({
                         {isSending ? 'Sending…' : 'Send reset link'}
                       </Button>
                     </DisabledFieldTooltip>
-                  </SignInValue>
+                  </RecordRowField>
                 </>
               ) : null}
-            </div>
+            </RecordFieldGrid>
           ) : null}
           {roleChanged ? (
             <FormField
@@ -395,21 +397,5 @@ function ManagedSignIn({
         </>
       )}
     </SheetSection>
-  )
-}
-
-/** A label over a read-only value, aligned with the form fields beside it. */
-function SignInValue({
-  label,
-  children,
-}: {
-  label: string
-  children: ReactNode
-}) {
-  return (
-    <div className='flex flex-col gap-2'>
-      <span className='text-sm font-medium'>{label}</span>
-      <div className='flex min-h-9 items-center text-sm'>{children}</div>
-    </div>
   )
 }

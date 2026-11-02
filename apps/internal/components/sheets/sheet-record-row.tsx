@@ -155,9 +155,7 @@ export function SheetRecordRow({
       className={cn('divide-border/60 flex flex-col divide-y', cardClassName)}
     >
       <div className={lineClassName}>{line}</div>
-      <div className='grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-4 gap-y-0.5 px-3 py-2'>
-        {fields}
-      </div>
+      <div className={RECORD_FIELD_GRID_CLASS}>{fields}</div>
     </div>
   )
 }
@@ -218,6 +216,23 @@ export function RecordRowField({
           </span>
         ) : null}
       </span>
+    </div>
+  )
+}
+
+/** A record card's label | value grid (labels in a 7rem column). */
+export const RECORD_FIELD_GRID_CLASS =
+  'grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-4 gap-y-0.5 px-3 py-2'
+
+/**
+ * Label | value rows outside a card (a sheet section), lined up with the
+ * record cards on the same sheet: the same grid, and a transparent 1px edge
+ * where a card has its border, so the values start on the same x.
+ */
+export function RecordFieldGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className='border border-transparent'>
+      <div className={cn(RECORD_FIELD_GRID_CLASS, 'px-3 py-0')}>{children}</div>
     </div>
   )
 }
