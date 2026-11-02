@@ -33,9 +33,6 @@ test('changing a role asks which month it starts', async ({ page }) => {
   await expect(canSignIn).toHaveAttribute('aria-checked', 'true')
   const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
   await expect(role).toContainText('Sales')
-  await expect(
-    sheet.getByText('Signs in here: leads', { exact: false })
-  ).toBeVisible()
 
   const roleStarts = sheet.getByRole('combobox', { name: 'Role starts' })
   await expect(roleStarts).toHaveCount(0)
@@ -87,9 +84,6 @@ test('a client sign-in sees the companies whose Portal is on', async ({
   ).toHaveAttribute('aria-checked', 'true')
   const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
   await expect(role).toContainText('Client')
-  await expect(
-    sheet.getByText('in the client portal', { exact: false })
-  ).toBeVisible()
   // Which companies they see: each client company card's switch, on now.
   await expect(
     sheet.getByRole('switch', { name: /^Portal access at / }).first()

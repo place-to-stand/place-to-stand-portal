@@ -233,9 +233,8 @@ async function save(
     }
     await finishAvatarClaim(avatarClaim)
   }
-  if (plan.mode === 'update' && (portal.grant.length || portal.revoke.length)) {
-    plan.changedFields.push('portal access')
-  }
+  // Portal changes are logged as CONTACT_CLIENT_LINKED / UNLINKED (kept
+  // from Sales), not in the person's changed fields, which Sales can read.
   await logContactSave(user, plan)
   await finishPersonPortalAccess(user, contactId, portal, portalSignIn.signIns)
   const warning = signInPlan

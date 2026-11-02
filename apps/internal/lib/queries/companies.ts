@@ -368,7 +368,7 @@ export async function getCompanyDetail(
       hasPortalLogin: seesSignIns && Boolean(member.userId),
       signInLocked: !isAdminRole(user.role) && Boolean(member.userId),
       signInDisabled: Boolean(
-        member.userId && disabledSignIns.has(member.userId)
+        seesSignIns && member.userId && disabledSignIns.has(member.userId)
       ),
       signInRole: member.userId
         ? (signInRoles.get(member.userId) ?? null)
@@ -384,7 +384,8 @@ export async function getCompanyDetail(
     primaryContactName: primary?.name ?? null,
     clients: clientRows,
     formerClientId: clientRows.length ? null : (formerRows[0]?.id ?? null),
-    billingEndsOn: clientRows.length ? row.billingEndsOn : null,
+    // When billing ends is billing information: admins only.
+    billingEndsOn: seesSignIns && clientRows.length ? row.billingEndsOn : null,
     contacts: people,
     leads: leadRows.map(lead => ({
       id: lead.id,
