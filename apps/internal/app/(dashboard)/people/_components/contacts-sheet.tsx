@@ -9,7 +9,7 @@ import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import {
   useContactSheetState,
   type UseContactSheetStateOptions,
-} from '@/lib/settings/contacts/use-contact-sheet-state'
+} from '@/lib/people/use-contact-sheet-state'
 
 import { useWatch } from 'react-hook-form'
 import { UserAvatar } from '@/components/ui/user-avatar'

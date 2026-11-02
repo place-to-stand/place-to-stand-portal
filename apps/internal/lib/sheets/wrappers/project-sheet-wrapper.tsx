@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
+import { ProjectSheet } from '@/app/(dashboard)/projects/project-sheet'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import { useSheetParams } from '../use-sheet-params'

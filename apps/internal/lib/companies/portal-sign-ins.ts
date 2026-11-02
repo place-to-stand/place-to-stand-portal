@@ -15,11 +15,11 @@ import {
 import {
   setAuthBanned,
   takeOverExistingAuthUser,
-} from '@/lib/settings/users/services'
+} from '@/lib/users/services'
 import {
   dispatchPortalInvite,
   generateTemporaryPassword,
-} from '@/lib/settings/users/user-service'
+} from '@/lib/users/user-service'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]

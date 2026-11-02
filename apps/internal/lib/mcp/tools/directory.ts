@@ -11,7 +11,7 @@ import {
   serializeContactCompanies,
 } from '@/lib/cli/serializers/contact'
 import { listContactMemberships } from '@/lib/queries/memberships'
-import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import { serializeProject } from '@/lib/cli/serializers/project'
 import { serializeUser, serializeUserRow } from '@/lib/cli/serializers/user'
 import {

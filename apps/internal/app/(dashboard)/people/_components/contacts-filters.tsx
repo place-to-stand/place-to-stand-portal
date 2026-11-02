@@ -11,7 +11,7 @@ import {
   ROLE_FILTER_VALUES,
   isSignInFilter,
   type SignInFilter,
-} from '@/lib/settings/contacts/filters'
+} from '@/lib/people/filters'
 import { RoleBadge } from '@/components/auth/role-badge'
 
 type ContactsFiltersProps = {

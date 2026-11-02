@@ -1,7 +1,7 @@
 'use client'
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
-import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 
 type ProjectsAddButtonProps = {
   clients: ClientPickerRow[]

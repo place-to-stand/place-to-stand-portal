@@ -16,7 +16,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
 import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { roleAsOfSql } from '@/lib/queries/users/role-terms'
-import { applyDueRoleTerms } from '@/lib/settings/users/services/role'
+import { applyDueRoleTerms } from '@/lib/users/services/role'
 
 /**
  * The signed-in person: their sign-in row plus their name and photo, which

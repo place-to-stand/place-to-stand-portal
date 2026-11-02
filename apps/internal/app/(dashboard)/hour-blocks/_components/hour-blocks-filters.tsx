@@ -12,7 +12,7 @@ import {
   HOUR_BLOCK_INVOICE_VALUES,
   isHourBlockInvoiceFilter,
   type HourBlockInvoiceFilter,
-} from '@/lib/settings/hour-blocks/filters'
+} from '@/lib/hour-blocks/filters'
 
 const INVOICE_OPTIONS = HOUR_BLOCK_INVOICE_VALUES.map(value => ({
   value,

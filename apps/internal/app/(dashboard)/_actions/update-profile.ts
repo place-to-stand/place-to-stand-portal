@@ -1,6 +1,6 @@
 'use server';
 
-import { renamePersonForUser } from '@/lib/settings/users/services/person';
+import { renamePersonForUser } from '@/lib/users/services/person';
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -16,7 +16,7 @@ import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { db } from "@/lib/db";
 import { contacts } from "@/lib/db/schema";
 import { and, eq, isNull } from "drizzle-orm";
-import { resolveAvatarUpdate } from "@/lib/settings/users/user-service";
+import { resolveAvatarUpdate } from "@/lib/users/user-service";
 
 type UpdateProfileInput = {
   fullName: string;

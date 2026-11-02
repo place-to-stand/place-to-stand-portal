@@ -1,4 +1,4 @@
-import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import type { HourBlockWithClient } from '@/lib/hour-blocks/hour-block-form'
 
 import { isoTimestamp } from './timestamp'
 

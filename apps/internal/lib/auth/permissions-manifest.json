@@ -652,6 +652,27 @@
   },
   {
     "type": "action",
+    "name": "saveProject",
+    "file": "apps/internal/app/(dashboard)/projects/project-sheet-actions.ts",
+    "kind": "capability",
+    "capability": "projects.create"
+  },
+  {
+    "type": "action",
+    "name": "softDeleteProject",
+    "file": "apps/internal/app/(dashboard)/projects/project-sheet-actions.ts",
+    "kind": "capability",
+    "capability": "projects.manage"
+  },
+  {
+    "type": "action",
+    "name": "restoreProject",
+    "file": "apps/internal/app/(dashboard)/projects/project-sheet-actions.ts",
+    "kind": "capability",
+    "capability": "projects.manage"
+  },
+  {
+    "type": "action",
     "name": "addProfitShareAction",
     "file": "apps/internal/app/(dashboard)/reports/monthly-close/actions/add-profit-share.ts",
     "kind": "admin",
@@ -698,27 +719,6 @@
     "file": "apps/internal/app/(dashboard)/settings/permissions/page.tsx",
     "kind": "public",
     "capability": null
-  },
-  {
-    "type": "action",
-    "name": "saveProject",
-    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
-    "kind": "capability",
-    "capability": "projects.create"
-  },
-  {
-    "type": "action",
-    "name": "softDeleteProject",
-    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
-    "kind": "capability",
-    "capability": "projects.manage"
-  },
-  {
-    "type": "action",
-    "name": "restoreProject",
-    "file": "apps/internal/app/(dashboard)/settings/projects/actions.ts",
-    "kind": "capability",
-    "capability": "projects.manage"
   },
   {
     "type": "page",

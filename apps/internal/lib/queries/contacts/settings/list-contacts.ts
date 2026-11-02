@@ -18,8 +18,8 @@ import {
 import {
   DEFAULT_CONTACTS_SORT,
   type SignInFilter,
-} from '@/lib/settings/contacts/filters'
-import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+} from '@/lib/people/filters'
+import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import {
   listContactMemberships,
   type ContactMembership,

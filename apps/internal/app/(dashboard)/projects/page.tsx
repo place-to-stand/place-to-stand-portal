@@ -17,8 +17,8 @@ import type { AppUser } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import type { LandingProject } from '@/lib/data/projects'
 import { listClientDirectory } from '@/lib/queries/companies/billing'
-import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
 
 export const metadata: Metadata = {

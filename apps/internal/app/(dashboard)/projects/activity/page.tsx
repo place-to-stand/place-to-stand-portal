@@ -4,7 +4,7 @@ import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { requireRole } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
-import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
+import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 
 import { ActivitySection } from '@/components/activity/activity-section'
 import { ProjectsAddButton } from '../_components/projects-add-button'

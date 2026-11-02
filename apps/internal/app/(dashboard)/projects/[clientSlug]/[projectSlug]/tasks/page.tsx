@@ -13,8 +13,8 @@ import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import { listClientDirectory } from '@/lib/queries/companies/billing'
-import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 
 export const metadata: Metadata = {
   title: 'Projects',

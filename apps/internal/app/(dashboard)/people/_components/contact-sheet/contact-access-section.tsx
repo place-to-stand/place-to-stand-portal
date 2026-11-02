@@ -29,14 +29,14 @@ import { ENTITY_ICONS } from '@/lib/entity-accents'
 import type {
   ContactCompanyEntry,
   ContactFormData,
-} from '@/lib/settings/contacts/use-contact-sheet-state'
+} from '@/lib/people/use-contact-sheet-state'
 import {
   defaultRoleMonth,
   monthLabel,
   rolePayrollWarning,
   type RoleMonthOption,
-} from '@/lib/settings/users/role-months'
-import type { USER_ROLES } from '@/lib/settings/users/user-validation'
+} from '@/lib/users/role-months'
+import type { USER_ROLES } from '@/lib/users/user-validation'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import {

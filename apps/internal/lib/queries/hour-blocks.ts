@@ -21,7 +21,7 @@ import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 import type {
   HourBlockClient,
   HourBlockWithClient,
-} from '@/lib/settings/hour-blocks/hour-block-form'
+} from '@/lib/hour-blocks/hour-block-form'
 
 import {
   clampLimit,
@@ -39,7 +39,7 @@ import {
   DEFAULT_HOUR_BLOCKS_SORT,
   type HourBlockInvoiceFilter,
   type HourBlockSortField,
-} from '@/lib/settings/hour-blocks/filters'
+} from '@/lib/hour-blocks/filters'
 
 export type HourBlockClientSummary = {
   id: string

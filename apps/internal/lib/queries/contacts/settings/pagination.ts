@@ -9,7 +9,7 @@ import {
   resolveDirection,
   type CursorDirection,
 } from '@/lib/pagination/cursor'
-import type { ContactSortField } from '@/lib/settings/contacts/filters'
+import type { ContactSortField } from '@/lib/people/filters'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 
 import { mainCompanyNameSql } from '@/lib/queries/memberships'

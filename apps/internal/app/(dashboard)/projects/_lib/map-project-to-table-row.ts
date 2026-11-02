@@ -1,5 +1,5 @@
 import type { ProjectsSettingsListItem } from '@/lib/queries/projects'
-import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
+import type { ProjectWithClient } from '@/lib/projects/sheet/project-sheet-form'
 
 export function mapProjectToTableRow(
   project: ProjectsSettingsListItem

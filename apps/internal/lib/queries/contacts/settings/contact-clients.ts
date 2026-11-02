@@ -11,7 +11,7 @@ import { NotFoundError } from '@/lib/errors/http'
 import {
   canSeePortalAccess,
   withoutPortalAccess,
-} from '@/lib/settings/contacts/portal-visibility'
+} from '@/lib/people/portal-visibility'
 
 import {
   listContactMemberships,

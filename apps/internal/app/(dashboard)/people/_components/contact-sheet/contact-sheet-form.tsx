@@ -22,16 +22,16 @@ import { UrlInput } from '@/components/ui/url-input'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { AvatarUploadField } from '@/components/forms/avatar-upload-field'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
-import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
-import type { RoleMonthOption } from '@/lib/settings/users/role-months'
+import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/people/person-sheet-copy'
+import type { RoleMonthOption } from '@/lib/users/role-months'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 
-import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
+import type { ContactFormData } from '@/lib/people/use-contact-sheet-state'
 
 import { ContactCompaniesSection } from './contact-companies-section'
 import { ContactSignInSection } from './contact-access-section'
-import { canHavePortalAccess } from '@/lib/settings/contacts/portal-eligibility'
+import { canHavePortalAccess } from '@/lib/people/portal-eligibility'
 
 const CONTACT_FORM_ID = 'contact-form'
 

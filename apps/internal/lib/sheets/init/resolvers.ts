@@ -30,7 +30,7 @@ import {
   listInvoiceReferenceData,
 } from '@/lib/queries/invoices'
 import { getProjectById } from '@/lib/queries/projects'
-import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
+import type { ProjectWithClient } from '@/lib/projects/sheet/project-sheet-form'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from './payloads'

@@ -1,7 +1,7 @@
-import type { SignInFilter } from '@/lib/settings/contacts/filters'
+import type { SignInFilter } from '@/lib/people/filters'
 import type { CursorDirection, PageInfo } from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
-import type { ContactSortField } from '@/lib/settings/contacts/filters'
+import type { ContactSortField } from '@/lib/people/filters'
 
 import type { ContactProfile, SelectContact } from '../selectors'
 
