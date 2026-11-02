@@ -71,7 +71,16 @@ Since 29de6966, both apps' `getCurrentUser` also requires the token's Supabase s
 
 ## Tests
 
-<!-- filled in below -->
+Full e2e suite on :3003 (a local production copy; app data and Supabase auth in one database, as in production): **107 passed, 0 failed, 7 skipped**. Two of the skips (the task planning panel and the task activity feed) pass when given a task path (`E2E_PLANNING_TASK_PATH`), so 109 tests ran green. The other 5 skip for lack of local data:
+- the client portal's Net 30 preview (needs the client portal app on the same database);
+- the draft-invoice send guard (no draft invoice);
+- a converted Closed Won lead (none in the copy);
+- archive row heights for hour blocks and invoices (fewer than 2 archived rows).
+
+None of them touch this PR's new code.
+
+Before the write tests ran, :3003's local database was backed up to `~/Backups/pts-portal/local-3003-before-e2e-20261101-2332.dump`. The tests archive what they create.
+
 
 ## Remaining risks
 
