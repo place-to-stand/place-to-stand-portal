@@ -42,6 +42,18 @@ export const cliCreateLeadFields = {
   email: optionalText(160).nullish(),
   phone: optionalText(40).nullish(),
   company: optionalText(160).nullish(),
+  companyId: z
+    .string()
+    .uuid()
+    .describe('Link an existing company by id (wins over company).')
+    .nullish(),
+  contactId: z
+    .string()
+    .uuid()
+    .describe(
+      'Use an existing person as the contact (their name, email and phone).'
+    )
+    .nullish(),
   website: websiteSchema.nullish(),
   notes: richTextSchema(20_000).nullish(),
 }
@@ -55,7 +67,7 @@ export const cliCreateLeadSchema = z.object(cliCreateLeadFields)
 export const cliUpdateLeadFields = {
   name: nameSchema.optional(),
   status: leadStatusSchema
-    .describe('Moving the stage records it in the lead\'s stage history.')
+    .describe("Moving the stage records it in the lead's stage history.")
     .optional(),
   source: leadSourceSchema.nullable().optional(),
   sourceDetail: optionalText(160).nullable().optional(),
@@ -63,6 +75,19 @@ export const cliUpdateLeadFields = {
   email: optionalText(160).nullable().optional(),
   phone: optionalText(40).nullable().optional(),
   company: optionalText(160).nullable().optional(),
+  companyId: z
+    .string()
+    .uuid()
+    .describe(
+      'Link an existing company by id (wins over company); null unlinks.'
+    )
+    .nullable()
+    .optional(),
+  contactId: z
+    .string()
+    .uuid()
+    .describe('Switch the contact to an existing person.')
+    .optional(),
   website: websiteSchema.nullable().optional(),
   notes: richTextSchema(20_000)
     .describe('Replaces the existing notes. Plain text or minimal markdown.')
