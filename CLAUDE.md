@@ -270,7 +270,7 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Rules name their guard:** every house rule and component rule in `docs/design-system/` ends with what enforces it, `(guard: eslint \`pts/…\`)`, `(guard: scripts/<check>.mjs)` or `(guard: review)`, and `scripts/check-rule-guards.mjs` (in `npm run lint`) fails on one that doesn't. A new preference lands with its guard, ideally a lint rule in `packages/eslint-config/rules/`; the README's "Which check guards which rule" table lists them all.
 
-**Sheet save rule:** every sheet saves in one server action and one database transaction, and only when Save is clicked: controls inside a sheet change the form and nothing else. Instant actions are their own records or act outside the app (comments, lead updates, logging time, invoice send/void, submission acknowledge, client update drafts, planning, password reset) and save on their own click. Create and edit show the same sheet: data that needs the new record's id is collected in the form and written in the same transaction. See `docs/design-system/components/sheet.md`.
+**Sheet save rule:** every sheet saves in one server action and one database transaction, and only when Save is clicked: controls inside a sheet change the form and nothing else. Instant actions are their own records or act outside the app (comments, lead updates, logging time, invoice send/void, submission acknowledge, planning, password reset) and save on their own click. Create and edit show the same sheet: data that needs the new record's id is collected in the form and written in the same transaction. See `docs/design-system/components/sheet.md`.
 
 **Component library:**
 - Radix UI primitives in `apps/internal/components/ui/`

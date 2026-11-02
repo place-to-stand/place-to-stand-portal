@@ -15,8 +15,6 @@ import {
   currentMonthStartUtc,
   nextMonthStartUtc,
 } from '@/lib/queries/companies/billing/billing-terms'
-import { createUpdateDraft, listClientUpdates } from '@/lib/updates'
-import type { ClientUpdateSummary } from './_components/company-updates-section'
 import { saveCompanySheet as saveCompanySheetMutation } from '@/lib/companies/save-company-sheet'
 import type { SaveCompanySheetInput } from '@/lib/companies/sheet-save-schema'
 import type {
@@ -112,7 +110,6 @@ export async function restoreCompany(
 export type CompanyClientWork = {
   clientSlug: string | null
   projects: ClientProject[]
-  updates: ClientUpdateSummary[]
   /** Prepaid hours for the current era; null for net 30. */
   hours: { purchased: number; used: number; remaining: number } | null
   /**
@@ -123,7 +120,7 @@ export type CompanyClientWork = {
   hoursLoggedThisMonth: number | null
 }
 
-/** A client company's work for its Client column and Updates (admins). */
+/** A client company's work for its Client column (admins). */
 export async function loadCompanyClientWork(
   companyId: string
 ): Promise<CompanyClientWork | null> {
@@ -141,9 +138,8 @@ export async function loadCompanyClientWork(
   if (!client) return null
 
   const net30 = client.billingType === 'net_30'
-  const [projectRows, updates, totals, loggedThisMonth] = await Promise.all([
+  const [projectRows, totals, loggedThisMonth] = await Promise.all([
     fetchProjectsForClient(user, companyId),
-    listClientUpdates({ companyId, limit: 5 }),
     getClientHoursTotals(db, [companyId]),
     net30 ? sumHoursLoggedThisMonth(companyId) : null,
   ])
@@ -152,13 +148,6 @@ export async function loadCompanyClientWork(
   return {
     clientSlug: client.slug,
     projects: projectRows,
-    updates: updates.map(update => ({
-      id: update.id,
-      subject: update.subject,
-      status: update.status,
-      sentAt: update.sentAt,
-      createdAt: update.createdAt,
-    })),
     hours:
       client.billingType === 'prepaid'
         ? {
@@ -189,31 +178,4 @@ async function sumHoursLoggedThisMonth(companyId: string): Promise<number> {
     )
   const hours = Number(row?.hours ?? 0)
   return Number.isFinite(hours) ? hours : 0
-}
-
-export type DraftUpdateResult =
-  { success: true; id: string } | { success: false; error: string }
-
-/**
- * Starts a draft update for a client company, generated the same way as
- * `pts updates draft` (see `lib/updates`); the caller navigates to it.
- */
-export async function draftUpdateForClient(
-  companyId: string
-): Promise<DraftUpdateResult> {
-  const user = await requireUser()
-  if (!UUID_PATTERN.test(companyId)) {
-    return { success: false, error: 'Invalid client id' }
-  }
-  try {
-    const update = await createUpdateDraft(user, { clientRef: companyId })
-    revalidatePath('/companies')
-    return { success: true, id: update.id }
-  } catch (error) {
-    console.error('Failed to draft client update:', error)
-    return {
-      success: false,
-      error: 'Unable to generate the draft. Please try again.',
-    }
-  }
 }

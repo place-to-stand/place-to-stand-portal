@@ -24,9 +24,6 @@ export const hourBlockHref = (id: string) => `/hour-blocks?hour-block=${id}`
 export const hourBlocksForInvoiceHref = (invoiceNumber: string) =>
   `/hour-blocks?q=${encodeURIComponent(invoiceNumber)}`
 
-/** The client-update composer — a full page, not a sheet. */
-export const updateComposerHref = (id: string) => `/updates/${id}`
-
 /**
  * A project's task board. `clientSegment` is the client slug, or
  * `internal` / `personal` for those project types — see

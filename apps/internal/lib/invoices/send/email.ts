@@ -20,7 +20,7 @@ import {
   fetchContactsForClient,
   type ClientContactRow,
 } from '@/lib/queries/companies/billing/contacts'
-import { fetchActiveStaff, type StaffMember } from '@/lib/updates/staff'
+import { fetchActiveStaff, type StaffMember } from '@/lib/users/staff'
 
 import {
   reserveShareToken,

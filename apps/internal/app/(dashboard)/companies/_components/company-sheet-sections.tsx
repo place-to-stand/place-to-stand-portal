@@ -12,7 +12,6 @@ import {
   LeadRecordRow,
   ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
-import { ClientUpdatesSection } from '@/app/(dashboard)/companies/_components/company-updates-section'
 import type { CompanyLeadSummary } from '@/lib/companies/types'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
@@ -242,20 +241,6 @@ export function CompanyClientReadOnly({
       )}
     </SheetSection>
   )
-}
-
-/**
- * The company's latest client updates (clients and former clients), on the
- * Client column, last (the activity stream ends a sheet).
- */
-export function CompanyClientUpdates({ companyId }: { companyId: string }) {
-  const { data: work } = useQuery({
-    queryKey: ['companyClientWork', companyId],
-    queryFn: () => loadCompanyClientWork(companyId),
-    staleTime: 0,
-  })
-  if (!work) return <Skeleton className='h-24 w-full' />
-  return <ClientUpdatesSection companyId={companyId} updates={work.updates} />
 }
 
 /**
