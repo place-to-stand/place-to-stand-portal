@@ -10,7 +10,6 @@ import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { requireStaffUser } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
-import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import { listClientDirectory } from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
@@ -20,9 +19,6 @@ export const metadata: Metadata = {
   title: 'Projects',
 }
 
-const firstParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
-
 export default async function ProjectBoardRoute({
   params,
   searchParams,
@@ -30,7 +26,6 @@ export default async function ProjectBoardRoute({
   const resolvedParams = await params
   const { clientSlug, projectSlug } = resolvedParams
   const resolvedSearchParams = await searchParams
-  const taskParam = firstParam(resolvedSearchParams.task) ?? null
   const user = await requireStaffUser()
   const isAdmin = user.role === 'ADMIN'
   // Lite list feeds the switcher and sheet selectors; only the active
@@ -100,7 +95,6 @@ export default async function ProjectBoardRoute({
 
   const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
-  const activeTaskId = taskParam && UUID_PATTERN.test(taskParam) ? taskParam : null
 
   // Hydrate the task graph for the active project only (after the
   // canonical-slug redirects above, so redirects stay cheap).
@@ -122,7 +116,6 @@ export default async function ProjectBoardRoute({
       allClients={allClients}
       activeClientId={activeClientId}
       activeProjectId={activeProjectId}
-      activeTaskId={activeTaskId}
       initialTab='board'
       // Server-rendered anchor for the Done column's rolling window, so SSR
       // and hydration measure the cutoff from the same instant.

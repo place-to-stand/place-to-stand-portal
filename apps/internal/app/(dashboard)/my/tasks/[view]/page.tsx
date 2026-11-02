@@ -152,15 +152,12 @@ export default async function MyTasksViewRoute({
 
   // Deep-linked task outside the assigned set: resolve its project by id so
   // the sheet opens in edit mode instead of silently creating a duplicate.
-  let resolvedActiveTaskId: string | null = null
-
   if (activeTaskId && UUID_PATTERN.test(activeTaskId)) {
     const holdingProjectId = await getActiveTaskProjectId(activeTaskId)
     if (
       holdingProjectId &&
       (isAdmin || (await canWorkTask(user, activeTaskId)))
     ) {
-      resolvedActiveTaskId = activeTaskId
       if (!includedProjectIds.has(holdingProjectId)) {
         includedProjectIds.add(holdingProjectId)
         orderedProjectIds.push(holdingProjectId)
@@ -192,7 +189,6 @@ export default async function MyTasksViewRoute({
       projects={relevantProjects}
       projectSelectionProjects={selectionProjects}
       initialEntries={initialEntries}
-      activeTaskId={resolvedActiveTaskId}
       view={viewParam}
       selectedAssigneeId={selectedAssigneeId}
       selectedClientId={selectedClientId ?? 'all'}

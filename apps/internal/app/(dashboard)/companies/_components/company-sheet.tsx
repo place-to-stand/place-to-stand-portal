@@ -28,11 +28,11 @@ import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warnin
 import type { CompanyBillingIntent } from '@/lib/companies/sheet-save-schema'
 
 import {
-  archiveCompany,
-  loadCompanyClientWork,
-  loadCompanySheet,
-  saveCompanySheet,
-} from '../actions'
+  fetchCompanyClientWork,
+  fetchCompanySheet,
+} from '@/lib/companies/sheet-fetch'
+
+import { archiveCompany, saveCompanySheet } from '../actions'
 import {
   companyFormSchema,
   companySheetQueryKey,
@@ -98,7 +98,7 @@ export function CompanySheet({
 
   const { data, isLoading, isError } = useQuery({
     queryKey: companySheetQueryKey(companyId),
-    queryFn: () => loadCompanySheet(companyId),
+    queryFn: () => fetchCompanySheet(companyId),
     staleTime: 0,
     // A refocus refetch would re-seed the form over unsaved edits.
     refetchOnWindowFocus: false,
@@ -195,7 +195,7 @@ export function CompanySheet({
   // A former client keeps its Projects only while it has projects.
   const { data: formerWork } = useQuery({
     queryKey: ['companyClientWork', formerClientId],
-    queryFn: () => loadCompanyClientWork(formerClientId!),
+    queryFn: () => fetchCompanyClientWork(formerClientId!),
     enabled: Boolean(isAdmin && formerClientId),
     staleTime: 0,
   })

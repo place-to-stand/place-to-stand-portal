@@ -11,6 +11,7 @@ import type {
   HourBlockWithClient,
 } from '@/lib/hour-blocks/hour-block-form'
 import { useHourBlocksTableState } from '@/lib/hour-blocks/use-hour-blocks-table-state'
+import { useDeepLinkNotFound } from '@/lib/sheets/use-sheet-params'
 
 import { HourBlockArchiveDialog } from './hour-block-archive-dialog'
 import { HourBlocksTableSection } from './hour-blocks-table-section'
@@ -72,6 +73,10 @@ export function HourBlocksManagementTable({
     handleRestore,
     clearSelection,
   } = useHourBlocksTableState({ clients, hourBlocks, deepLinkedHourBlock })
+  const showHourBlockNotFound = useDeepLinkNotFound(
+    'hour-block',
+    hourBlockNotFound
+  )
 
   const hasActiveFilter = ['q', 'companyId', 'invoice', 'from', 'to'].some(
     key => Boolean(searchParams.get(key)?.trim())
@@ -97,7 +102,7 @@ export function HourBlocksManagementTable({
 
   return (
     <div className='space-y-4'>
-      {hourBlockNotFound ? (
+      {showHourBlockNotFound ? (
         <DeepLinkNotFoundNotice
           entity='hour block'
           onDismiss={clearSelection}

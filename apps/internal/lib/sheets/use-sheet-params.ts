@@ -6,25 +6,39 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   NEW_SHEET_VALUE,
   SHEET_ENTITIES,
+  isSheetEntityClaimed,
   isSheetEntityKey,
   isValidSheetParamValue,
   type SheetEntityKey,
 } from './entities'
 import { emitSheetOpen } from './pending-open'
+import { writeShallowUrl } from './shallow-url'
 
 export type SheetStackItem = {
   entity: SheetEntityKey
   value: string
 }
 
+export type SheetOpenOptions = {
+  /**
+   * Skip the server. Defaults to true when the page can't need it: a sheet
+   * the page doesn't render itself (the SheetHost loads its own data) or a
+   * create sheet. A host page passes true when it already holds the record,
+   * e.g. a click on one of its own rows.
+   */
+  shallow?: boolean
+}
+
 /**
  * The one hook implementing the sheet deep-link conventions:
- * - open = `router.push` (Back closes the sheet), close = `router.replace`
- *   (Back after close doesn't reopen it), always `{ scroll: false }`
+ * - open = push (Back closes the sheet), close = replace (Back after close
+ *   doesn't reopen it), never scrolling
+ * - writes skip the server (`writeShallowUrl`) unless the page must resolve
+ *   the record itself: only `open` of a sheet the page renders, without
+ *   `shallow`, goes through `router.push`
  * - all other params are preserved on every write
  * - param order in the URL is the sheet stack order — `open` appends,
  *   `close` removes only its own param (plus its aux params)
- * - `replaceValue` rewrites a param in place (e.g. an active/archive swap)
  */
 export function useSheetParams() {
   const router = useRouter()
@@ -72,31 +86,38 @@ export function useSheetParams() {
       entity: SheetEntityKey,
       value: string,
       /** Aux params written in the same push (e.g. a create-sheet prefill). */
-      aux?: Record<string, string>
+      aux?: Record<string, string>,
+      options?: SheetOpenOptions
     ) => {
-      // Let the host mount now; the URL write below round-trips first.
+      // Let the host mount now, before the URL write lands.
       emitSheetOpen(entity, value)
-      router.push(
-        buildUrl(params => {
-          // `set` keeps an existing param's stack position; `append` puts a
-          // newly opened sheet on top.
-          if (params.has(entity)) {
-            params.set(entity, value)
+      const url = buildUrl(params => {
+        // `set` keeps an existing param's stack position; `append` puts a
+        // newly opened sheet on top.
+        if (params.has(entity)) {
+          params.set(entity, value)
+        } else {
+          params.append(entity, value)
+        }
+        for (const [key, auxValue] of Object.entries(aux ?? {})) {
+          if (auxValue) {
+            params.set(key, auxValue)
           } else {
-            params.append(entity, value)
+            params.delete(key)
           }
-          for (const [key, auxValue] of Object.entries(aux ?? {})) {
-            if (auxValue) {
-              params.set(key, auxValue)
-            } else {
-              params.delete(key)
-            }
-          }
-        }),
-        { scroll: false }
-      )
+        }
+      })
+      const shallow =
+        options?.shallow ??
+        (value === NEW_SHEET_VALUE ||
+          !isSheetEntityClaimed(entity, pathname, value))
+      if (shallow) {
+        writeShallowUrl(url, 'push')
+      } else {
+        router.push(url, { scroll: false })
+      }
     },
-    [buildUrl, router]
+    [buildUrl, pathname, router]
   )
 
   const openNew = useCallback(
@@ -107,48 +128,20 @@ export function useSheetParams() {
 
   const close = useCallback(
     (entity: SheetEntityKey) => {
-      router.replace(
+      writeShallowUrl(
         buildUrl(params => {
           params.delete(entity)
           for (const aux of SHEET_ENTITIES[entity].auxParams) {
             params.delete(aux)
           }
         }),
-        { scroll: false }
+        'replace'
       )
     },
-    [buildUrl, router]
+    [buildUrl]
   )
 
-  /** Swap the param value in place, keeping its stack position. */
-  const replaceValue = useCallback(
-    (entity: SheetEntityKey, value: string) => {
-      router.replace(
-        buildUrl(params => params.set(entity, value)),
-        { scroll: false }
-      )
-    },
-    [buildUrl, router]
-  )
-
-  /** Set/remove an entity's aux param (e.g. `companyName=`). */
-  const setAux = useCallback(
-    (aux: string, value: string | null) => {
-      router.replace(
-        buildUrl(params => {
-          if (value === null) {
-            params.delete(aux)
-          } else {
-            params.set(aux, value)
-          }
-        }),
-        { scroll: false }
-      )
-    },
-    [buildUrl, router]
-  )
-
-  return { stack, get, getAux, open, openNew, close, replaceValue, setAux }
+  return { stack, get, getAux, open, openNew, close }
 }
 
 /**
@@ -172,7 +165,8 @@ export function useSheetParamSelection(entity: SheetEntityKey) {
   const select = useCallback(
     (id: string) => {
       setSelectedValue(id)
-      open(entity, id)
+      // The host page picked one of its own rows, so it holds the record.
+      open(entity, id, undefined, { shallow: true })
     },
     [entity, open]
   )
@@ -197,4 +191,20 @@ export function useSheetParamSelection(entity: SheetEntityKey) {
     openCreate,
     clear,
   }
+}
+
+/**
+ * A page's server-side "this link points nowhere" flag, shown only while the
+ * URL still holds the link the server judged. Sheet writes skip the server,
+ * so the flag would otherwise outlive a dismiss or a click on another row.
+ */
+export function useDeepLinkNotFound(entity: SheetEntityKey, notFound: boolean) {
+  const { get } = useSheetParams()
+  const param = get(entity)
+  const [judged, setJudged] = useState({ notFound, param })
+  const changed = judged.notFound !== notFound
+  if (changed) {
+    setJudged({ notFound, param })
+  }
+  return notFound && param === (changed ? param : judged.param)
 }

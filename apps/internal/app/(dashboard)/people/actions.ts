@@ -6,12 +6,6 @@ import {
   type PersonSheetInput,
   type PersonSheetResult,
 } from '@/lib/people/person-sheet/save-person-sheet'
-import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
-import { listClosedMonthStarts } from '@/lib/queries/reports/close-snapshots'
-import {
-  roleMonthOptions,
-  type RoleMonthOption,
-} from '@/lib/users/role-months'
 
 import { revalidatePath } from 'next/cache'
 
@@ -29,24 +23,7 @@ import type {
   ContactMutationContext,
   ContactMutationResult,
 } from '@/lib/people/actions'
-import {
-  getContactSheetData as getSheetData,
-  type ContactSheetData,
-} from '@/lib/queries/contacts'
-import {
-  listContactOptions,
-  type ContactOption,
-} from '@/lib/queries/contacts/options'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
-import {
-  getPortalAccountSummary,
-  type PortalAccountSummary,
-} from '@/lib/queries/users/portal-account'
-
-export type PersonSignInDetails = {
-  account: PortalAccountSummary | null
-  roleMonths: RoleMonthOption[]
-}
 
 const CONTACT_ROUTES_TO_REVALIDATE = [
   '/people',
@@ -110,42 +87,6 @@ async function runContactMutation<TInput>(
   }
 
   return result
-}
-
-/** The contact sheet's Companies list. */
-export async function getContactSheetData(
-  contactId: string
-): Promise<ContactSheetData> {
-  const user = await requireCrmUser()
-  // Server actions take arbitrary input; guard before the uuid cast.
-  if (!UUID_PATTERN.test(contactId)) return { memberships: [], avatarUrl: null, person: null }
-  return getSheetData(user, contactId)
-}
-
-/**
- * A person's sign-in for the sheet (admins): the account, and the months a
- * role change can start from.
- */
-export async function getPersonSignIn(
-  userId: string
-): Promise<PersonSignInDetails> {
-  const user = await requireUser()
-  // Server actions take arbitrary input; guard before the uuid cast.
-  if (!UUID_PATTERN.test(userId)) return { account: null, roleMonths: [] }
-  const [account, closedMonths] = await Promise.all([
-    getPortalAccountSummary(user, userId),
-    listClosedMonthStarts(),
-  ])
-  return {
-    account,
-    roleMonths: roleMonthOptions(currentMonthStartUtc(), closedMonths),
-  }
-}
-
-/** Options for the contact picker (lead sheet). */
-export async function fetchContactOptions(): Promise<ContactOption[]> {
-  const user = await requireCrmUser()
-  return listContactOptions(user)
 }
 
 /** Emails the person a link to set a new password (admins). */

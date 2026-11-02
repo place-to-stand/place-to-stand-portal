@@ -26,7 +26,10 @@ import {
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
-import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
+import {
+  useDeepLinkNotFound,
+  useSheetParamSelection,
+} from '@/lib/sheets/use-sheet-params'
 import type { ArchivedLead } from '@/lib/data/leads'
 import type { LeadAssigneeOption } from '@/lib/leads/types'
 import {
@@ -90,6 +93,7 @@ export function LeadsArchiveSection({
   const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null)
   // `?lead=` drives selection so archived leads are deep-linkable too.
   const { selectedId, select, clear } = useSheetParamSelection('lead')
+  const showLeadNotFound = useDeepLinkNotFound('lead', leadNotFound)
 
   // Re-resolve from fresh props so the sheet reflects server refreshes.
   const selectedLead = selectedId
@@ -193,7 +197,7 @@ export function LeadsArchiveSection({
 
   return (
     <>
-      {leadNotFound ? (
+      {showLeadNotFound ? (
         <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
       {sheetLead ? (

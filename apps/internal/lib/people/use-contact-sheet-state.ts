@@ -11,9 +11,10 @@ import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warnin
 import {
   savePersonSheetAction,
   softDeleteContact,
-  getContactSheetData,
-  getPersonSignIn,
 } from '@/app/(dashboard)/people/actions'
+import { getJson } from '@/lib/http/get-json'
+import type { ContactSheetData } from '@/lib/queries/contacts'
+import type { PersonSignInDetails } from '@/lib/people/person-sign-in-details'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { PortalAccountSummary } from '@/lib/queries/users/portal-account'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
@@ -217,7 +218,7 @@ export function useContactSheetState({
     }
 
     let cancelled = false
-    getContactSheetData(contactId)
+    getJson<ContactSheetData>(`/api/contacts/${contactId}/sheet`)
       .then(data => {
         if (cancelled) return
         setCompaniesLoaded(true)
@@ -274,7 +275,7 @@ export function useContactSheetState({
     if (!signInUserId) return
     try {
       const { account, roleMonths: months } =
-        await getPersonSignIn(signInUserId)
+        await getJson<PersonSignInDetails>(`/api/users/${signInUserId}/sign-in`)
       setSignInAccount(account)
       setRoleMonths(months)
       if (account) {
@@ -307,7 +308,14 @@ export function useContactSheetState({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the sign-in before reloading it for a refreshed person
     setSignInAccount(undefined)
     void loadSignIn()
-  }, [open, contactKey, initialName, initialCompanyId, signInUserId, loadSignIn])
+  }, [
+    open,
+    contactKey,
+    initialName,
+    initialCompanyId,
+    signInUserId,
+    loadSignIn,
+  ])
 
   const contactDisplayName = contact?.name || contact?.email || 'this person'
   const sheetTitle = isEditing ? 'Edit person' : 'Create person'

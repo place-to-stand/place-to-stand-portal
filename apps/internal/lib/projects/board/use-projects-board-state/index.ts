@@ -8,6 +8,7 @@ import {
   isCompletedWithinDoneWindow,
   resolveDoneWindowStart,
 } from '@/lib/projects/tasks/done-window'
+import { UUID_PATTERN, isSheetEntityClaimed } from '@/lib/sheets/entities'
 
 import { BOARD_COLUMNS, getBoardViewFromPathname } from '../board-constants'
 import {
@@ -34,7 +35,6 @@ export const useProjectsBoardState = ({
   currentUserId,
   admins,
   activeProjectId,
-  activeTaskId,
   currentView,
   now,
 }: UseProjectsBoardStateArgs): ProjectsBoardState => {
@@ -44,6 +44,17 @@ export const useProjectsBoardState = ({
   const [isPending, startTransition] = useTransition()
   const [feedback, setFeedback] = useState<string | null>(null)
   const routeView = getBoardViewFromPathname(pathname)
+  // The open task follows the URL, not a server prop: sheet writes skip the
+  // server, so a prop would keep the task that was open on first load. Only
+  // the routes that render their own task sheet read it; elsewhere the
+  // SheetHost shows the task.
+  const taskParam = searchParams.get('task')
+  const activeTaskId =
+    taskParam &&
+    UUID_PATTERN.test(taskParam) &&
+    isSheetEntityClaimed('task', pathname, taskParam)
+      ? taskParam
+      : null
 
   const projectLookup = useMemo(() => createProjectLookup(projects), [projects])
   const projectsByClientId = useMemo(

@@ -3,12 +3,12 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
-import {
-  fetchWorkerStatus,
-  type WorkerComment,
-  type WorkerCommentStatus,
-  type WorkerStatusResult,
-} from '../../actions/fetch-worker-status'
+import { getJson } from '@/lib/http/get-json'
+import type {
+  WorkerComment,
+  WorkerCommentStatus,
+  WorkerStatusResult,
+} from '@/lib/tasks/worker-status'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -46,7 +46,10 @@ export function useWorkerStatus(deploymentId: string | null): WorkerStatusData {
 
   const { data: statusData, isLoading: isStatusLoading } = useQuery({
     queryKey,
-    queryFn: () => fetchWorkerStatus({ deploymentId: deploymentId! }),
+    queryFn: () =>
+      getJson<WorkerStatusResult>(
+        `/api/task-deployments/${deploymentId}/worker-status`
+      ),
     enabled: Boolean(deploymentId),
     refetchInterval: query => {
       const result = query.state.data
@@ -70,7 +73,8 @@ export function useWorkerStatus(deploymentId: string | null): WorkerStatusData {
     () => workerResult?.comments ?? [],
     [workerResult?.comments]
   )
-  const isWorking = latestStatus === 'working' || latestStatus === 'implementing'
+  const isWorking =
+    latestStatus === 'working' || latestStatus === 'implementing'
 
   return {
     statusData,

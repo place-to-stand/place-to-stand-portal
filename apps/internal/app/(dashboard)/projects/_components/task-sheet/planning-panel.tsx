@@ -64,7 +64,7 @@ import {
   TASK_DEPLOYMENTS_KEY,
 } from './use-task-deployments'
 import { deployPlan } from '../../actions/trigger-worker'
-import type { WorkerStatusResult } from '../../actions/fetch-worker-status'
+import type { WorkerStatusResult } from '@/lib/tasks/worker-status'
 import { WORKER_STATUS_KEY } from './use-worker-status'
 import { GitHubIcon } from './github-icon'
 import {
@@ -576,11 +576,12 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
               triggerLabel={activeModelLabel}
               align='center'
             />
-            <Button
-              onClick={handleStartPlanning}
-              disabled={isStartingThread}
-            >
-              {isStartingThread ? <Loader2 className='animate-spin' /> : <Play />}
+            <Button onClick={handleStartPlanning} disabled={isStartingThread}>
+              {isStartingThread ? (
+                <Loader2 className='animate-spin' />
+              ) : (
+                <Play />
+              )}
               Start planning
             </Button>
           </div>

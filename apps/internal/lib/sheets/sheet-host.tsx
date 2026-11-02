@@ -28,10 +28,9 @@ const signatureOf = (items: SheetStackItem[]) =>
  * Sheets render in URL param order, so a later param's portal mounts after
  * (visually above) an earlier one — param order is stack order.
  *
- * Closing is optimistic: `open` flips to false immediately so the sheet
- * animates out while the URL write lands, and the entry stays mounted until
- * the transition finishes. Unmounting on the param change alone would make
- * the sheet vanish without animating, one server round-trip late.
+ * Closing flips `open` to false at once so the sheet animates out, and the
+ * entry stays mounted until the transition finishes. Unmounting on the param
+ * change alone would make the sheet vanish without animating.
  */
 export function SheetHost() {
   const pathname = usePathname()
@@ -85,8 +84,8 @@ export function SheetHost() {
     }
   }, [closedKeys])
 
-  // Mount on the click, not on the URL — `open` round-trips to the server
-  // before `useSearchParams` reflects it, which would lag the sheet visibly.
+  // Mount on the click, not on the URL: an `open` that goes through the
+  // server lands in `useSearchParams` late, which would lag the sheet.
   useEffect(() => {
     return subscribeSheetOpen(pending => {
       if (isSheetEntityClaimed(pending.entity, pathname, pending.value)) {
@@ -106,7 +105,7 @@ export function SheetHost() {
 
   const requestClose = useCallback(
     (entity: SheetEntityKey) => {
-      // Animate now, update the URL after — `close` is a server round-trip.
+      // Animate now, then update the URL.
       setRendered(previous =>
         previous.map(entry =>
           entry.entity === entity ? { ...entry, open: false } : entry

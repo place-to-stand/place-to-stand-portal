@@ -1,4 +1,4 @@
-'use server'
+import 'server-only'
 
 import { billingTypeOrDefaultSql } from '@pts/db/terms'
 import { and, eq, gte, isNull, lt, sql } from 'drizzle-orm'

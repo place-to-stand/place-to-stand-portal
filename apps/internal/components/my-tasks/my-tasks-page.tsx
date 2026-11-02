@@ -54,7 +54,6 @@ type MyTasksPageProps = {
   projects: ProjectWithRelations[]
   projectSelectionProjects: ProjectWithRelations[]
   initialEntries: MyTasksInitialEntry[]
-  activeTaskId: string | null
   view: MyTasksView
   /** An admin id, or `'all'` for the everyone view. */
   selectedAssigneeId: string
@@ -75,7 +74,6 @@ export function MyTasksPage({
   projects,
   projectSelectionProjects,
   initialEntries,
-  activeTaskId,
   view,
   selectedAssigneeId,
   selectedClientId,
@@ -341,12 +339,11 @@ export function MyTasksPage({
     [taskContexts]
   )
 
-  // Resolve from the LOCAL selection, not the server's `activeTaskId`. The
-  // board already holds every loaded task client-side, so this lands in the
-  // same render as the open — whereas `activeTaskId` only updates when the
-  // route transition commits, which opened the sheet on an empty form and
-  // filled it ~230ms later, after the slide-in had finished.
-  const resolvedTaskId = selectedTaskId ?? activeTaskId
+  // Resolve from the local selection, which follows the URL. Sheet writes
+  // skip the server, so the board finds the task in what it already holds.
+  // A cold-loaded link to a task outside the board works because the server
+  // hydrates that task's project too.
+  const resolvedTaskId = selectedTaskId
   const activeTaskMeta = resolvedTaskId
     ? (taskLookup.get(resolvedTaskId) ?? null)
     : null

@@ -99,20 +99,6 @@
   },
   {
     "type": "action",
-    "name": "loadCompanySheet",
-    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
-    "name": "fetchCompanyOptions",
-    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
     "name": "saveCompanySheet",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "capability",
@@ -131,13 +117,6 @@
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "capability",
     "capability": "leads.manage"
-  },
-  {
-    "type": "action",
-    "name": "loadCompanyClientWork",
-    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
-    "kind": "admin",
-    "capability": null
   },
   {
     "type": "page",
@@ -449,27 +428,6 @@
   },
   {
     "type": "action",
-    "name": "getContactSheetData",
-    "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
-    "name": "getPersonSignIn",
-    "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "fetchContactOptions",
-    "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "capability",
-    "capability": "leads.manage"
-  },
-  {
-    "type": "action",
     "name": "sendPersonPasswordResetAction",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "admin",
@@ -558,13 +516,6 @@
     "file": "apps/internal/app/(dashboard)/projects/actions/change-task-status.ts",
     "kind": "capability",
     "capability": "portal.sign_in"
-  },
-  {
-    "type": "action",
-    "name": "fetchWorkerStatus",
-    "file": "apps/internal/app/(dashboard)/projects/actions/fetch-worker-status.ts",
-    "kind": "admin",
-    "capability": null
   },
   {
     "type": "action",
@@ -1037,6 +988,41 @@
   },
   {
     "type": "route",
+    "name": "GET /api/companies/[companyId]/client-work",
+    "file": "apps/internal/app/api/companies/[companyId]/client-work/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/companies/[companyId]/sheet",
+    "file": "apps/internal/app/api/companies/[companyId]/sheet/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/companies/options",
+    "file": "apps/internal/app/api/companies/options/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/contacts/[contactId]/sheet",
+    "file": "apps/internal/app/api/contacts/[contactId]/sheet/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/contacts/options",
+    "file": "apps/internal/app/api/contacts/options/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
     "name": "GET /api/cron/abandon-stale-submissions",
     "file": "apps/internal/app/api/cron/abandon-stale-submissions/route.ts",
     "kind": "token",
@@ -1380,6 +1366,13 @@
   },
   {
     "type": "route",
+    "name": "GET /api/projects/[projectId]/time-log-hours",
+    "file": "apps/internal/app/api/projects/[projectId]/time-log-hours/route.ts",
+    "kind": "delegated",
+    "capability": null
+  },
+  {
+    "type": "route",
     "name": "DELETE /api/projects/[projectId]/time-logs/[timeLogId]",
     "file": "apps/internal/app/api/projects/[projectId]/time-logs/[timeLogId]/route.ts",
     "kind": "admin",
@@ -1471,6 +1464,13 @@
   },
   {
     "type": "route",
+    "name": "GET /api/task-deployments/[deploymentId]/worker-status",
+    "file": "apps/internal/app/api/task-deployments/[deploymentId]/worker-status/route.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
     "name": "GET /api/tasks/[taskId]/comments",
     "file": "apps/internal/app/api/tasks/[taskId]/comments/route.ts",
     "kind": "capability",
@@ -1545,6 +1545,13 @@
     "file": "apps/internal/app/api/uploads/user-avatar/route.ts",
     "kind": "capability",
     "capability": "leads.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/users/[userId]/sign-in",
+    "file": "apps/internal/app/api/users/[userId]/sign-in/route.ts",
+    "kind": "admin",
+    "capability": null
   },
   {
     "type": "route",
@@ -1634,13 +1641,6 @@
     "type": "action",
     "name": "updateProjectStatus",
     "file": "apps/internal/lib/projects/sheet/actions/update-project-status.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "loadTimeLogHours",
-    "file": "apps/internal/lib/projects/time-log/load-time-log-hours.ts",
     "kind": "admin",
     "capability": null
   }

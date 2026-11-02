@@ -13,6 +13,7 @@ import {
 } from '@/lib/people/use-contacts-table-state'
 import type { ContactSheetInput } from '@/lib/people/use-contact-sheet-state'
 import { openPortalPreview } from '@/lib/people/portal-preview'
+import { useDeepLinkNotFound } from '@/lib/sheets/use-sheet-params'
 
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
@@ -58,7 +59,6 @@ export function ContactsManagementTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-
   const {
     sheetOpen,
     selectedContact,
@@ -76,6 +76,7 @@ export function ContactsManagementTable({
     handleConfirmDelete,
     handleRestore,
   } = useContactsTableState({ contacts, deepLinkedContact })
+  const showContactNotFound = useDeepLinkNotFound('contact', contactNotFound)
 
   // Guard-validated active search (R4): an empty list under a live `?q=`
   // shows the filtered message, not the tab's default empty state.
@@ -89,7 +90,6 @@ export function ContactsManagementTable({
       openPortalPreview(clientPortalUrl, contact.id),
     [clientPortalUrl]
   )
-
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -107,7 +107,7 @@ export function ContactsManagementTable({
 
   return (
     <div className='space-y-4'>
-      {contactNotFound ? (
+      {showContactNotFound ? (
         <DeepLinkNotFoundNotice entity='person' onDismiss={clearSelection} />
       ) : null}
       <ConfirmDialog
