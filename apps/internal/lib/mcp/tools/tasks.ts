@@ -123,9 +123,7 @@ export function registerTaskTools(server: McpServer) {
         throw new BadRequestError('project is required unless leadId is set.')
       }
 
-      const { task } = await createTaskFromInput(user, args, 'MCP')
-
-      return { task }
+      return createTaskFromInput(user, args, 'MCP')
     },
   })
 
@@ -141,9 +139,7 @@ export function registerTaskTools(server: McpServer) {
         throw new BadRequestError('Provide at least one field to update.')
       }
 
-      const { task } = await updateTaskFromInput(user, taskId, changes, 'MCP')
-
-      return { task }
+      return updateTaskFromInput(user, taskId, changes, 'MCP')
     },
   })
 

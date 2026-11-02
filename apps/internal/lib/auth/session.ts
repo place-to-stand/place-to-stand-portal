@@ -10,6 +10,8 @@ import type { Role } from '@/lib/auth/capabilities'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { isTokenRequest } from '@/lib/auth/token-request'
+import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
 import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
 import { roleCan } from '@/lib/auth/capabilities'
@@ -272,24 +274,45 @@ async function syncUserProfile(authUser: User): Promise<void> {
   }
 }
 
+/**
+ * The page guards' way out. A browser request is redirected; a CLI or MCP
+ * request has no cookie session to redirect, so it gets a typed error the
+ * token handlers turn into a 401/403 instead of a fake success or a 500.
+ * Token code should never reach these guards: pass the authenticated user in.
+ */
+function guardRedirect(
+  path: string,
+  reason: 'unauthenticated' | 'forbidden' = 'forbidden'
+): never {
+  if (isTokenRequest()) {
+    const message =
+      'A page-only session check ran during a token request. Pass the authenticated user in instead.'
+    console.error(message, { path })
+    throw reason === 'unauthenticated'
+      ? new UnauthorizedError(message)
+      : new ForbiddenError(message)
+  }
+  redirect(path)
+}
+
 export const requireUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
     // A session with no active user: sign it out, or /sign-in bounces back.
-    redirect('/auth/sign-out')
+    guardRedirect('/auth/sign-out', 'unauthenticated')
   }
 
   // Admin-only by default. SALES staff get only the CRM pages, which call
   // `requireCrmUser()` instead; anywhere else sends them to their home page.
   if (user.role === 'SALES') {
-    redirect(SALES_HOME_PATH)
+    guardRedirect(SALES_HOME_PATH)
   }
 
   // Portal (CLIENT) users belong in the client portal — send any lingering
   // session there rather than to a 403.
   if (user.role !== 'ADMIN') {
-    redirect(serverEnv.CLIENT_PORTAL_URL)
+    guardRedirect(serverEnv.CLIENT_PORTAL_URL)
   }
 
   return user
@@ -304,11 +327,11 @@ export const requireCrmUser = async () => {
 
   if (!user) {
     // A session with no active user: sign it out, or /sign-in bounces back.
-    redirect('/auth/sign-out')
+    guardRedirect('/auth/sign-out', 'unauthenticated')
   }
 
   if (!roleCan(user.role, 'portal.sign_in')) {
-    redirect(serverEnv.CLIENT_PORTAL_URL)
+    guardRedirect(serverEnv.CLIENT_PORTAL_URL)
   }
 
   return user
@@ -327,7 +350,7 @@ export const requireRole = async (allowed: UserRole | UserRole[]) => {
   const roles = Array.isArray(allowed) ? allowed : [allowed]
 
   if (!roles.includes(user.role)) {
-    redirect('/unauthorized')
+    guardRedirect('/unauthorized')
   }
 
   return user

@@ -2,12 +2,15 @@ import 'server-only'
 
 import type { z } from 'zod'
 
-import { revalidateProjectTaskViews } from '@/app/(dashboard)/projects/actions/shared'
 import type { AppUser } from '@/lib/auth/session'
 import { resolveProjectIdentifier } from '@/lib/data/projects'
 import { BadRequestError, NotFoundError } from '@/lib/errors/http'
 import { getOrCreateSalesProject } from '@/lib/leads/sales-project'
-import { createTaskComment, listTaskComments } from '@/lib/queries/task-comments'
+import {
+  createTaskComment,
+  listTaskComments,
+} from '@/lib/queries/task-comments'
+import { revalidateTaskViews } from '@/lib/tasks/revalidate-task-views'
 import { saveTaskForActor } from '@/lib/tasks/save-task-core'
 import type { SaveTaskResult } from '@/lib/tasks/types'
 import type { ActivitySourceValue } from '@/lib/types'
@@ -23,9 +26,14 @@ import { serializeTask, type CliTask } from './serializers/task'
 export type CreateTaskInput = z.output<typeof cliCreateTaskSchema>
 export type UpdateTaskInput = z.output<typeof cliUpdateTaskSchema>
 
-/** A write that landed, in full. */
+/**
+ * A write that landed. `warnings` lists follow-up steps that failed after
+ * the save (page refresh, read-back): the task exists, so callers must not
+ * retry the write.
+ */
 export type TaskWriteOutcome = {
-  task: CliTask
+  task: CliTask | { id: string }
+  warnings?: string[]
 }
 
 /**
@@ -50,11 +58,7 @@ export async function loadSerializedTask(
   const { task, assigneeIds } = await loadTaskForEdit(user, taskId)
   const locations = await fetchBoardLocationsByProject([task.projectId])
 
-  return serializeTask(
-    task,
-    assigneeIds,
-    locations.get(task.projectId) ?? null
-  )
+  return serializeTask(task, assigneeIds, locations.get(task.projectId) ?? null)
 }
 
 /**
@@ -155,14 +159,33 @@ async function finishTaskWrite(
     throw new BadRequestError(result.error)
   }
 
-  await revalidateProjectTaskViews()
+  // The task is saved. From here a failure must not read as a failed save,
+  // or the caller retries and makes a duplicate.
+  const warnings: string[] = []
 
-  return { task: await loadSerializedTask(user, result.taskId) }
+  try {
+    await revalidateTaskViews()
+  } catch (error) {
+    console.error('Task saved, but refreshing task pages failed', error)
+    warnings.push('Saved, but portal pages may show the old task until reload.')
+  }
+
+  try {
+    const task = await loadSerializedTask(user, result.taskId)
+    return warnings.length ? { task, warnings } : { task }
+  } catch (error) {
+    console.error('Task saved, but reading it back failed', error)
+    warnings.push('Saved, but the task could not be read back. Use get_task.')
+    return { task: { id: result.taskId }, warnings }
+  }
 }
 
 /** A task write as the CLI's HTTP response. */
 export function respondToTaskWrite(outcome: TaskWriteOutcome, status: number) {
-  return jsonOk(outcome.task, { status })
+  return jsonOk(outcome.task, {
+    status,
+    warning: outcome.warnings?.join(' '),
+  })
 }
 
 /**
