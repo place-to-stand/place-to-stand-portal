@@ -27,6 +27,7 @@ export function SheetRecordRow({
   href,
   openLabel,
   fields,
+  fieldsClassName,
   pendingRemoval,
   className,
 }: {
@@ -43,6 +44,8 @@ export function SheetRecordRow({
    * under a hairline.
    */
   fields?: ReactNode
+  /** Extra classes on the fields grid (e.g. roomier rows: `gap-y-4`). */
+  fieldsClassName?: string
   /**
    * The row was removed in this sheet and goes on Save: it dims, says
    * "Pending removal" (or `note`), drops its fields and actions, and offers
@@ -155,7 +158,9 @@ export function SheetRecordRow({
       className={cn('divide-border/60 flex flex-col divide-y', cardClassName)}
     >
       <div className={lineClassName}>{line}</div>
-      <div className={RECORD_FIELD_GRID_CLASS}>{fields}</div>
+      <div className={cn(RECORD_FIELD_GRID_CLASS, fieldsClassName)}>
+        {fields}
+      </div>
     </div>
   )
 }
@@ -176,9 +181,15 @@ export function RecordRowField({
   label,
   grow = false,
   hint,
+  note,
   children,
 }: {
   label: string
+  /**
+   * One muted line under the control (what the choice means). The label
+   * stays level with the control, not centred on control and note.
+   */
+  note?: ReactNode
   /**
    * What Save does with this field, right after the control: a small caution
    * icon and a short line ("Invite emailed when you save"). Use it in place
@@ -194,28 +205,59 @@ export function RecordRowField({
     // <label>: only the control responds to a click (it carries its own
     // aria-label), never the label text, the hint or the row's empty width.
     <div className='contents'>
-      <span className='text-muted-foreground justify-self-start text-sm'>
-        {label}
-      </span>
       <span
         className={cn(
-          'flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1',
-          grow ? 'w-full' : 'justify-self-start',
-          // Ghost inputs keep their text on the value column's edge.
-          grow && 'max-w-72 [&>*:last-child]:-ml-2 [&>*:last-child]:w-full'
+          'text-muted-foreground justify-self-start text-sm',
+          note && 'flex min-h-9 items-center self-start'
         )}
       >
-        {children}
-        {hint ? (
-          <span className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
-            <TriangleAlert
-              className='text-warning size-3.5 shrink-0'
-              aria-hidden
-            />
-            {hint}
-          </span>
-        ) : null}
+        {label}
       </span>
+      {note ? (
+        <span className='flex min-w-0 flex-col items-start gap-1.5'>
+          <span
+            className={cn(
+              note ? 'flex min-h-9 min-w-0' : 'flex min-h-8 min-w-0',
+              'flex-wrap items-center gap-x-2 gap-y-1',
+              grow ? 'w-full' : 'justify-self-start',
+              // Ghost inputs keep their text on the value column's edge.
+              grow && 'max-w-72 [&>*:last-child]:-ml-2 [&>*:last-child]:w-full'
+            )}
+          >
+            {children}
+            {hint ? (
+              <span className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
+                <TriangleAlert
+                  className='text-warning size-3.5 shrink-0'
+                  aria-hidden
+                />
+                {hint}
+              </span>
+            ) : null}
+          </span>
+          <span className='text-muted-foreground text-xs'>{note}</span>
+        </span>
+      ) : (
+        <span
+          className={cn(
+            'flex min-h-8 min-w-0 flex-wrap items-center gap-x-2 gap-y-1',
+            grow ? 'w-full' : 'justify-self-start',
+            // Ghost inputs keep their text on the value column's edge.
+            grow && 'max-w-72 [&>*:last-child]:-ml-2 [&>*:last-child]:w-full'
+          )}
+        >
+          {children}
+          {hint ? (
+            <span className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
+              <TriangleAlert
+                className='text-warning size-3.5 shrink-0'
+                aria-hidden
+              />
+              {hint}
+            </span>
+          ) : null}
+        </span>
+      )}
     </div>
   )
 }
@@ -223,19 +265,6 @@ export function RecordRowField({
 /** A record card's label | value grid (labels in a 7rem column). */
 export const RECORD_FIELD_GRID_CLASS =
   'grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-4 gap-y-0.5 px-3 py-2'
-
-/**
- * Label | value rows outside a card (a sheet section), lined up with the
- * record cards on the same sheet: the same grid, and a transparent 1px edge
- * where a card has its border, so the values start on the same x.
- */
-export function RecordFieldGrid({ children }: { children: ReactNode }) {
-  return (
-    <div className='border border-transparent'>
-      <div className={cn(RECORD_FIELD_GRID_CLASS, 'px-3 py-0')}>{children}</div>
-    </div>
-  )
-}
 
 /** The stack of SheetRecordRows. */
 export function SheetRecordList({ children }: { children: ReactNode }) {

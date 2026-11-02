@@ -7,6 +7,10 @@ import { Switch } from '@pts/ui/switch'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import {
+  RecordRowField,
+  SheetRecordRow,
+} from '@/components/sheets/sheet-record-row'
 import { UiRef } from '@/components/ui/ui-ref'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -67,8 +71,8 @@ export function ComponentsAccess() {
         </SheetSection>
       </Specimen>
       <Specimen
-        label='Client sign-in'
-        note='Role, the email they sign in with, and what they see'
+        label='Live sign-in'
+        note='One SheetRecordRow (no icon); RecordRowField note keeps the label level with the control'
         className='block max-w-2xl'
       >
         <SheetSection
@@ -77,23 +81,19 @@ export function ComponentsAccess() {
           className='gap-4'
           action={<CanSignIn id='design-sign-in-client' checked />}
         >
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            <div className='flex flex-col gap-2'>
-              <span className='text-sm font-medium'>Role</span>
-              <span className='flex h-9 items-center'>
+          <SheetRecordRow
+            title='ada@acme.com'
+            description='Last sign-in: never'
+            fieldsClassName='gap-y-4 py-3'
+            fields={
+              <RecordRowField
+                label='Role'
+                note='Sees Acme and Beta in the client portal.'
+              >
                 <RoleBadge role='CLIENT' />
-              </span>
-            </div>
-            <div className='flex flex-col gap-2'>
-              <span className='text-sm font-medium'>Signs in with</span>
-              <span className='flex h-9 items-center text-sm'>
-                ada@acme.com
-              </span>
-            </div>
-          </div>
-          <p className='text-muted-foreground text-sm'>
-            Sees Acme and Beta in the client portal.
-          </p>
+              </RecordRowField>
+            }
+          />
         </SheetSection>
       </Specimen>
       <Specimen
@@ -103,7 +103,7 @@ export function ComponentsAccess() {
       >
         <SheetSection title='Portal access'>
           <p className='text-muted-foreground text-xs'>
-            Needs a client sign-in. Turn on <UiRef>Can sign in</UiRef> below.
+            Needs a user account with the Client role. Turn on <UiRef>Can sign in</UiRef> below.
           </p>
         </SheetSection>
       </Specimen>

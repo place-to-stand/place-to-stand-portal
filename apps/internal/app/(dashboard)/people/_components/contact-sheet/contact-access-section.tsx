@@ -42,8 +42,8 @@ import { RoleBadge } from '@/components/auth/role-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { UiRef } from '@/components/ui/ui-ref'
 import {
-  RecordFieldGrid,
   RecordRowField,
+  SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
 
 type Role = (typeof USER_ROLES)[number]
@@ -266,125 +266,134 @@ function ManagedSignIn({
         <>
           {saveNote ? <SaveSideEffect>{saveNote}</SaveSideEffect> : null}
           {enabled ? (
-            // Label | value rows, lined up with the company cards above.
-            <RecordFieldGrid>
-              <RecordRowField label='Signs in with'>
-                <span className='text-sm break-all'>{personEmail || '—'}</span>
-              </RecordRowField>
-              <FormField
-                control={form.control}
-                name='signIn.role'
-                render={({ field }) => (
-                  <RecordRowField label='Role'>
-                    <DisabledFieldTooltip
-                      disabled={Boolean(lockedReason)}
-                      reason={lockedReason}
-                      className='w-60'
-                    >
-                      <Select
-                        onValueChange={next => setSignIn(true, next as Role)}
-                        value={field.value}
-                        disabled={Boolean(lockedReason)}
-                      >
-                        <SelectTrigger aria-label='Role' className='w-60'>
-                          {/* The role reads as the badge it shows elsewhere. */}
-                          <SelectValue>
-                            {field.value ? (
-                              <RoleBadge role={field.value} />
-                            ) : null}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {roles.map(option => (
-                            <SelectItem key={option} value={option}>
-                              <RoleBadge role={option} />
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </DisabledFieldTooltip>
-                    <p className='text-muted-foreground w-full text-xs'>
-                      {role === 'ADMIN' ? (
-                        'Signs in here and sees everything.'
-                      ) : role === 'SALES' ? (
-                        'Signs in here: leads, people, companies and their own work.'
-                      ) : seen.length ? (
-                        `Sees ${listNames(seen)} in the client portal.`
-                      ) : (
-                        <>
-                          No portal access yet. Turn on{' '}
-                          <UiRef>Portal access</UiRef> for a company above.
-                        </>
-                      )}
-                    </p>
-                  </RecordRowField>
-                )}
-              />
-              {/* A role change on a saved sign-in: which month it counts from
-                  (the monthly close pays on the role in force on the 1st). */}
-              {roleChanged ? (
-                <FormField
-                  control={form.control}
-                  name='signIn.effectiveFrom'
-                  render={({ field }) => (
-                    <RecordRowField label='Role starts'>
-                      <EffectiveMonthPicker
-                        id='contact-role-starts'
-                        ariaLabel='Role starts'
-                        value={field.value}
-                        onChange={field.onChange}
-                        options={roleMonths}
-                        disabled={Boolean(lockedReason)}
-                        disabledReason={lockedReason}
-                        className='w-60'
-                      />
-                      <p className='text-muted-foreground w-full text-xs'>
-                        {(account &&
-                          role &&
-                          rolePayrollWarning(
-                            account.role,
-                            role,
-                            field.value ?? '',
-                            currentMonthStartUtc()
-                          )) ??
-                          `Counts toward the monthly close from ${monthLabel(field.value ?? '')}.`}
-                      </p>
-                    </RecordRowField>
-                  )}
-                />
-              ) : null}
-              {/* Only a live, saved sign-in that stays on: a reset needs one. */}
-              {live && account ? (
-                <>
-                  <RecordRowField label='Last sign-in'>
-                    <span className='text-sm'>
-                      {formatRelativeTime(account.lastSignInAt) ?? 'Never'}
-                    </span>
-                  </RecordRowField>
-                  <RecordRowField label='Password'>
-                    <DisabledFieldTooltip
+            // One record card, like the company cards above: the email they
+            // sign in with and when they last did, the reset link, then Role.
+            <SheetRecordRow
+              title={<span className='break-all'>{personEmail || '—'}</span>}
+              description={
+                !hasSignIn
+                  ? 'New sign-in'
+                  : live && account
+                    ? `Last sign-in: ${formatRelativeTime(account.lastSignInAt) ?? 'never'}`
+                    : null
+              }
+              actions={
+                // Only a live, saved sign-in that stays on: a reset needs one.
+                live && account ? (
+                  <DisabledFieldTooltip
+                    disabled={isSending || isPending || isSelf}
+                    reason={
+                      isSelf ? 'Use Forgot password on the sign-in page.' : null
+                    }
+                    className='w-auto'
+                  >
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
                       disabled={isSending || isPending || isSelf}
-                      reason={
-                        isSelf
-                          ? 'Use Forgot password on the sign-in page.'
-                          : null
-                      }
-                      className='w-auto'
+                      onClick={sendReset}
                     >
-                      <Button
-                        type='button'
-                        variant='outline'
-                        size='sm'
-                        disabled={isSending || isPending || isSelf}
-                        onClick={sendReset}
+                      {isSending ? 'Sending…' : 'Send reset link'}
+                    </Button>
+                  </DisabledFieldTooltip>
+                ) : null
+              }
+              // Rows with a line under them: 16px between rows.
+              fieldsClassName='gap-y-4 py-3'
+              fields={
+                <>
+                  <FormField
+                    control={form.control}
+                    name='signIn.role'
+                    render={({ field }) => (
+                      <RecordRowField
+                        label='Role'
+                        note={
+                          role === 'ADMIN' ? (
+                            'Signs in here and sees everything.'
+                          ) : role === 'SALES' ? (
+                            'Signs in here: leads, people, companies and their own work.'
+                          ) : seen.length ? (
+                            `Sees ${listNames(seen)} in the client portal.`
+                          ) : (
+                            <>
+                              No portal access yet. Turn on{' '}
+                              <UiRef>Portal access</UiRef> for a company above.
+                            </>
+                          )
+                        }
                       >
-                        {isSending ? 'Sending…' : 'Send reset link'}
-                      </Button>
-                    </DisabledFieldTooltip>
-                  </RecordRowField>
+                        <DisabledFieldTooltip
+                          disabled={Boolean(lockedReason)}
+                          reason={lockedReason}
+                          className='w-60'
+                        >
+                          <Select
+                            onValueChange={next =>
+                              setSignIn(true, next as Role)
+                            }
+                            value={field.value}
+                            disabled={Boolean(lockedReason)}
+                          >
+                            <SelectTrigger aria-label='Role' className='w-60'>
+                              {/* The role reads as the badge it shows elsewhere. */}
+                              <SelectValue>
+                                {field.value ? (
+                                  <RoleBadge role={field.value} />
+                                ) : null}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {roles.map(option => (
+                                <SelectItem key={option} value={option}>
+                                  <RoleBadge role={option} />
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </DisabledFieldTooltip>
+                      </RecordRowField>
+                    )}
+                  />
+                  {/* A role change on a saved sign-in: which month it counts
+                      from (the close pays on the role in force on the 1st). */}
+                  {roleChanged ? (
+                    <FormField
+                      control={form.control}
+                      name='signIn.effectiveFrom'
+                      render={({ field }) => (
+                        <RecordRowField
+                          label='Role starts'
+                          note={
+                            (account &&
+                              role &&
+                              rolePayrollWarning(
+                                account.role,
+                                role,
+                                field.value ?? '',
+                                currentMonthStartUtc()
+                              )) ??
+                            `Counts toward the monthly close from ${monthLabel(field.value ?? '')}.`
+                          }
+                        >
+                          <EffectiveMonthPicker
+                            id='contact-role-starts'
+                            ariaLabel='Role starts'
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={roleMonths}
+                            disabled={Boolean(lockedReason)}
+                            disabledReason={lockedReason}
+                            className='w-60'
+                          />
+                        </RecordRowField>
+                      )}
+                    />
+                  ) : null}
                 </>
-              ) : null}
-            </RecordFieldGrid>
+              }
+            />
           ) : null}
           {enabled && account?.scheduledRole && !roleChanged ? (
             <p className='text-muted-foreground text-sm'>
