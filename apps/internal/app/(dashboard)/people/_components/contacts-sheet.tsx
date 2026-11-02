@@ -41,6 +41,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
   const {
     form,
     isPending,
+    companiesLoaded,
     companiesLoadFailed,
     isEditing,
     pendingReason,
@@ -113,6 +114,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
           <ContactSheetForm
             form={form}
             isPending={isPending}
+            companiesLoaded={companiesLoaded}
             companiesLoadFailed={companiesLoadFailed}
             isEditing={isEditing}
             pendingReason={pendingReason}

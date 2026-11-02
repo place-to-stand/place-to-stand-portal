@@ -42,6 +42,7 @@ type ContactSheetFormProps = {
   isPending: boolean
   isEditing: boolean
   /** The contact's companies failed to load; the list can't be edited. */
+  companiesLoaded: boolean
   companiesLoadFailed: boolean
   pendingReason: string
   submitDisabled: boolean
@@ -78,6 +79,7 @@ function initialsOf(name: string) {
 export function ContactSheetForm({
   form,
   isPending,
+  companiesLoaded,
   companiesLoadFailed,
   isEditing,
   pendingReason,
@@ -316,6 +318,7 @@ export function ContactSheetForm({
                 <ContactCompaniesSection
                   companies={field.value}
                   disabled={locked}
+                  loading={!companiesLoaded && !companiesLoadFailed}
                   loadFailed={companiesLoadFailed}
                   onChange={next => field.onChange(next)}
                   showPortalAccess={canManageSignIn}

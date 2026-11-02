@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -153,12 +153,22 @@ export function useContactSheetState({
     },
   })
 
+  // Opening the sheet changes the URL, so the list re-renders and hands over
+  // a new copy of the same person. Key the load on their id, not that copy,
+  // or the Companies list clears and reloads while the sheet slides in.
+  const contactRef = useRef(contact)
+  useEffect(() => {
+    contactRef.current = contact
+  })
+  const contactKey = contact?.id ?? null
+
   // Initialize the form and load the contact's clients when the sheet opens
   useEffect(() => {
     if (!open) {
       return
     }
 
+    const contact = contactRef.current
     const contactId = contact?.id
 
     form.reset({
@@ -196,7 +206,6 @@ export function useContactSheetState({
     })
 
     // Reset state - intentional setState during effect to sync UI with prop changes
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCompaniesLoaded(!contactId)
     setCompaniesLoadFailed(false)
     setLoadedUpdatedAt(null)
@@ -257,7 +266,7 @@ export function useContactSheetState({
     return () => {
       cancelled = true
     }
-  }, [open, contact, form, initialName, initialCompanyId, canManageSignIn])
+  }, [open, contactKey, form, initialName, initialCompanyId, canManageSignIn])
 
   // Their sign-in, loaded after the reset like the companies: it becomes
   // the saved state of the Sign-in fields, not an edit.
@@ -298,7 +307,7 @@ export function useContactSheetState({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSignInAccount(undefined)
     void loadSignIn()
-  }, [open, contact, initialName, initialCompanyId, signInUserId, loadSignIn])
+  }, [open, contactKey, initialName, initialCompanyId, signInUserId, loadSignIn])
 
   const contactDisplayName = contact?.name || contact?.email || 'this person'
   const sheetTitle = isEditing ? 'Edit person' : 'Create person'
@@ -475,6 +484,7 @@ export function useContactSheetState({
     form,
     isPending,
     isEditing,
+    companiesLoaded,
     companiesLoadFailed,
     pendingReason: PENDING_REASON,
     sheetTitle,
