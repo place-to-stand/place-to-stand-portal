@@ -77,7 +77,6 @@ export async function moveLead(
         .select({
           status: leads.status,
           companyId: leads.companyId,
-          convertedAt: leads.convertedAt,
           contactName: leadContactNameSql,
         })
         .from(leads)
@@ -115,10 +114,9 @@ export async function moveLead(
           setPayload.resolvedAt = now
         }
 
-        // Only set convertedAt if not already set
-        if (targetStatus === 'CLOSED_WON' && !current.convertedAt) {
-          setPayload.convertedAt = now
-        }
+        // Winning a lead doesn't convert it: only starting the company's
+        // billing does (`startClientBillingInTx`), which is admin-only. The
+        // sheet, CLI and MCP save path follows the same rule.
 
         // Moving back to an active stage reopens the lead. The conversion
         // record (`convertedAt`, which links the lead to its company as a
