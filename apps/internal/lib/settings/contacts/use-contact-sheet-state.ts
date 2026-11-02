@@ -484,6 +484,7 @@ export function useContactSheetState({
     form,
     isPending,
     isEditing,
+    companiesLoaded,
     companiesLoadFailed,
     pendingReason: PENDING_REASON,
     sheetTitle,

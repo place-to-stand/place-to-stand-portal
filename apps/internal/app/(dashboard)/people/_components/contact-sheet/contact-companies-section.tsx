@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
+import { Skeleton } from '@pts/ui/skeleton'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { CompanyLinkPicker } from '@/components/companies/company-link-picker'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -23,6 +24,8 @@ import { UiRef } from '@/components/ui/ui-ref'
 type ContactCompaniesSectionProps = {
   companies: ContactCompanyEntry[]
   disabled: boolean
+  /** Their companies are still loading: hold their place, not "none". */
+  loading?: boolean
   /** Companies failed to load: show that instead of an empty list. */
   loadFailed?: boolean
   onChange: (companies: ContactCompanyEntry[]) => void
@@ -45,13 +48,14 @@ type ContactCompaniesSectionProps = {
 export function ContactCompaniesSection({
   companies,
   disabled: disabledProp,
+  loading = false,
   loadFailed = false,
   onChange,
   showPortalAccess = false,
   canHaveAccess = false,
 }: ContactCompaniesSectionProps) {
   // A failed load must not look like "no companies": block edits until reopened.
-  const disabled = disabledProp || loadFailed
+  const disabled = disabledProp || loadFailed || loading
   const { role } = useViewerAccess()
   // Portal access shows only to people who manage clients.
   const canManageAccess = canSeePortalAccess(role)
@@ -107,6 +111,8 @@ export function ContactCompaniesSection({
       status={
         loadFailed ? (
           <EmptyState message="Couldn't load this person's companies. Close and reopen the sheet to edit them." />
+        ) : loading ? (
+          <Skeleton className='h-24 w-full' />
         ) : undefined
       }
     >
