@@ -9,6 +9,7 @@ import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { EntityList } from '@/components/sheets/entity-list'
@@ -240,6 +241,9 @@ export function ComponentsBadges() {
         <Example caption='Status: CompanyBillingMark, a company billed now (admins only; nothing for Sales)'>
           <BillingTypeBadge billingType='prepaid' />
           <BillingTypeBadge billingType='net_30' />
+        </Example>
+        <Example caption='Status: ClientBadge, a company billed now on the People list (admins only)'>
+          <ClientBadge />
         </Example>
         <Example caption='Status: RoleBadge, a sign-in role. Grey with its state when switched off or archived'>
           {ROLES.map(role => (

@@ -25,7 +25,7 @@ import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
-import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import {
@@ -335,20 +335,19 @@ export function ContactsTableSection({
   )
 }
 
-/** A company billed now, beside its name: `CompanyBillingMark`. */
+/**
+ * A company billed now, beside its name: the Client badge. Admins only, as
+ * client status is billing information (the Companies list hides its Client
+ * column from Sales too).
+ */
 function CompanyClientMark({
   company,
   className,
 }: {
-  company:
-    { isClient: boolean; billingType: 'prepaid' | 'net_30' | null } | undefined
+  company: { isClient: boolean } | undefined
   className?: string
 }) {
-  if (!company?.isClient) return null
-  return (
-    <CompanyBillingMark
-      billingType={company.billingType}
-      className={className}
-    />
-  )
+  const { isAdmin } = useViewerAccess()
+  if (!company?.isClient || !isAdmin) return null
+  return <ClientBadge className={className} />
 }

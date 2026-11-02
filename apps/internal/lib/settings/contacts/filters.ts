@@ -48,7 +48,7 @@ export const ROLE_FILTER_LABELS: Record<
   ADMIN: 'Admin',
   SALES: 'Sales',
   CLIENT: 'Client',
-  none: 'No user',
+  none: 'No sign-in',
 }
 export const isSignInFilter = (value: string): value is SignInFilter =>
   (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
