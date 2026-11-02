@@ -263,12 +263,14 @@ test('sales can’t rename the staff company', async ({ page }) => {
 
 /** The timeline entry holding `marker`, with its actions button. */
 function leadUpdateEntry(target: Page, marker: string) {
+  // The update's own card: the nearest bordered box around its text (the
+  // inline form, hidden but mounted, may hold the same text).
   return target
     .getByRole('dialog')
-    .locator('div')
-    .filter({ hasText: marker })
+    .getByText(marker, { exact: true })
+    .locator('xpath=ancestor::div[contains(@class, "rounded-lg")][1]')
     .filter({ has: target.getByRole('button', { name: /^Actions for / }) })
-    .last()
+    .first()
 }
 
 // R14: only the author or an admin can edit or archive a lead update. An
@@ -320,20 +322,19 @@ test('sales can’t edit or archive someone else’s lead update', async ({
     await expect(adminEntry).toBeVisible()
     await adminEntry.getByRole('button', { name: /^Actions for / }).click()
     await admin.getByRole('menuitem', { name: 'Edit' }).click()
-    const editDialog = admin
+    // Editing happens in place: the card becomes the form, with Save.
+    const editSave = admin
       .getByRole('dialog')
-      .filter({ has: admin.getByText('Edit update', { exact: true }) })
-      // It opens over the lead sheet: the top one.
-      .last()
+      .getByRole('button', { name: 'Save', exact: true })
     const editRequest = admin.waitForRequest(
       request =>
         request.method() === 'POST' &&
         Boolean(request.headers()['next-action']) &&
         (request.postData() ?? '').includes(leadId)
     )
-    await editDialog.getByRole('button', { name: 'Save', exact: true }).click()
+    await editSave.click()
     const captured = await editRequest
-    await expect(admin.getByText('Edit update', { exact: true })).toBeHidden()
+    await expect(editSave).toBeHidden()
 
     // Sales: the update's actions are off.
     await page.goto(leadUrl)
