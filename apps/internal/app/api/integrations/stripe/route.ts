@@ -146,8 +146,12 @@ export async function POST(request: Request) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object
 
-        // Look up invoice by the payment intent ID stored on the invoice
-        const invoice = await getInvoiceByPaymentIntent(paymentIntent.id)
+        // The intent id stored on the invoice, or the invoice id in the
+        // intent's metadata when a later checkout replaced the stored id.
+        const invoice = await getInvoiceByPaymentIntent(
+          paymentIntent.id,
+          paymentIntent.metadata?.invoiceId
+        )
 
         if (!invoice) {
           console.error(

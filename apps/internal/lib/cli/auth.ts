@@ -39,6 +39,31 @@ function readBearerToken(request: Request): string | null {
   return token.length ? token : null
 }
 
+export type AccessTokenClaims = {
+  client_id?: string
+  scope?: string
+  exp?: number
+}
+
+/**
+ * Read the payload of a JWT without verifying it. Trust the claims only after
+ * `resolveUserFromToken` has validated the token with Supabase; before that,
+ * use them only to refuse a token, never to admit one.
+ */
+export function readClaims(token: string): AccessTokenClaims {
+  const [, payload] = token.split('.')
+
+  if (!payload) {
+    return {}
+  }
+
+  try {
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'))
+  } catch {
+    return {}
+  }
+}
+
 /**
  * Resolve the user behind a Supabase access token, admitting only `roles`.
  * Shared by every bearer surface (the CLI, the MCP server) so they cannot
@@ -115,6 +140,15 @@ export async function resolveCliUser(request: Request): Promise<AppUser> {
 
   if (!token) {
     throw new UnauthorizedError(`Missing bearer token. ${SIGN_IN_HINT}`)
+  }
+
+  // A token issued to an OAuth app (the MCP server's connectors) carries a
+  // `client_id`. It is scoped to the MCP's per-tool role rules, so it must not
+  // open the CLI API, which admits its holder to every admin route.
+  if (readClaims(token).client_id) {
+    throw new ForbiddenError(
+      `This token was issued to a connected app and can't be used with the CLI. ${SIGN_IN_HINT}`
+    )
   }
 
   return resolveAdminFromToken(token, CLI_SURFACE)

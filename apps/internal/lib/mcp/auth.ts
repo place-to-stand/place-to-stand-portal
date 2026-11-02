@@ -4,7 +4,11 @@ import type { AuthInfo } from '@modelcontextprotocol/server'
 
 import { rolesWith } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
-import { resolveUserFromToken, type BearerSurface } from '@/lib/cli/auth'
+import {
+  readClaims,
+  resolveUserFromToken,
+  type BearerSurface,
+} from '@/lib/cli/auth'
 import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
@@ -36,31 +40,6 @@ export type McpPrincipal = {
 type McpAuthExtra =
   | { principal: McpPrincipal; forbidden?: never }
   | { forbidden: string; principal?: never }
-
-type AccessTokenClaims = {
-  client_id?: string
-  scope?: string
-  exp?: number
-}
-
-/**
- * Read the payload of a JWT without verifying it. Only called after
- * `resolveUserFromToken` has validated the token with Supabase, so the claims
- * are trusted by then; on its own this proves nothing.
- */
-function readClaims(token: string): AccessTokenClaims {
-  const [, payload] = token.split('.')
-
-  if (!payload) {
-    return {}
-  }
-
-  try {
-    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'))
-  } catch {
-    return {}
-  }
-}
 
 /**
  * OAuth client names never change once registered, so a per-instance cache is

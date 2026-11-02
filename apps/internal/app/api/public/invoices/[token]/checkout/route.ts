@@ -1,12 +1,45 @@
 // permission: public — unguessable share token
 import { NextResponse } from 'next/server'
+import Stripe from 'stripe'
 import { and, eq, isNull } from 'drizzle-orm'
 
+import { allowInvoiceCheckout } from '@/lib/auth/throttle'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
 import { getStripe } from '@/lib/stripe/client'
 
 const TOKEN_REGEX = /^[a-f0-9]{32}$/
+
+/** Statuses in which the client can still complete the existing intent. */
+const REUSABLE_STATUSES = new Set<Stripe.PaymentIntent.Status>([
+  'requires_payment_method',
+  'requires_confirmation',
+])
+
+function paymentInProgress() {
+  return NextResponse.json(
+    {
+      ok: false,
+      error:
+        'A payment for this invoice is already going through. Refresh the page in a few minutes.',
+    },
+    { status: 409 }
+  )
+}
+
+/** The stored intent, or null when Stripe no longer has it. */
+async function retrieveIntent(
+  id: string
+): Promise<Stripe.PaymentIntent | null> {
+  try {
+    return await getStripe().paymentIntents.retrieve(id)
+  } catch (err) {
+    if (err instanceof Stripe.errors.StripeInvalidRequestError) {
+      return null
+    }
+    throw err
+  }
+}
 
 export async function POST(
   request: Request,
@@ -19,6 +52,13 @@ export async function POST(
       return NextResponse.json(
         { ok: false, error: 'Invalid token.' },
         { status: 400 }
+      )
+    }
+
+    if (!(await allowInvoiceCheckout(token))) {
+      return NextResponse.json(
+        { ok: false, error: 'Too many attempts. Try again in a few minutes.' },
+        { status: 429 }
       )
     }
 
@@ -52,39 +92,46 @@ export async function POST(
 
     const totalCents = Math.round(Number(invoice.total) * 100)
 
-    // If a payment intent already exists, try to reuse it — only when it
-    // still charges this invoice's total (an edit may have changed it).
+    // If a payment intent already exists, reuse it when it still charges
+    // this invoice's total (an edit may have changed it). Otherwise cancel it
+    // before making a new one. An intent that is settling, or that Stripe
+    // won't let us cancel, may still be paid, so we never replace it: the
+    // client would be charged twice, or charged for an intent nothing tracks.
     if (invoice.stripePaymentIntentId) {
-      try {
-        const existingIntent = await getStripe().paymentIntents.retrieve(
-          invoice.stripePaymentIntentId
-        )
-        const isReusable =
-          (existingIntent.status === 'requires_payment_method' ||
-            existingIntent.status === 'requires_confirmation') &&
-          existingIntent.payment_method_types?.length === 1 &&
-          existingIntent.payment_method_types[0] === 'card' &&
-          existingIntent.amount === totalCents &&
-          existingIntent.currency === 'usd'
+      const existing = await retrieveIntent(invoice.stripePaymentIntentId)
 
-        if (isReusable) {
+      if (existing) {
+        const matchesInvoice =
+          existing.payment_method_types?.length === 1 &&
+          existing.payment_method_types[0] === 'card' &&
+          existing.amount === totalCents &&
+          existing.currency === 'usd'
+
+        if (matchesInvoice && REUSABLE_STATUSES.has(existing.status)) {
           return NextResponse.json({
             ok: true,
-            data: { clientSecret: existingIntent.client_secret },
+            data: { clientSecret: existing.client_secret },
           })
         }
 
-        // Cancel stale/mismatched intent before creating a new one
         if (
-          existingIntent.status === 'requires_payment_method' ||
-          existingIntent.status === 'requires_confirmation'
+          existing.status === 'processing' ||
+          existing.status === 'succeeded'
         ) {
-          await getStripe().paymentIntents.cancel(
-            invoice.stripePaymentIntentId
-          )
+          return paymentInProgress()
         }
-      } catch {
-        // Intent no longer valid, create a new one
+
+        if (existing.status !== 'canceled') {
+          try {
+            await getStripe().paymentIntents.cancel(existing.id)
+          } catch (err) {
+            console.error(
+              '[api/public/invoices/checkout] Could not cancel the earlier payment intent',
+              { invoiceId: invoice.id, paymentIntentId: existing.id, err }
+            )
+            return paymentInProgress()
+          }
+        }
       }
     }
 
@@ -99,19 +146,26 @@ export async function POST(
       ? (Number(invoice.taxRate) * 100).toString()
       : '0'
 
-    const paymentIntent = await getStripe().paymentIntents.create({
-      amount: totalCents,
-      currency: 'usd',
-      description: invoiceLabel,
-      metadata: {
-        invoiceId: invoice.id,
-        invoiceNumber: invoice.invoiceNumber ?? '',
-        subtotal: subtotalCents.toString(),
-        tax_amount: taxAmountCents.toString(),
-        tax_rate_percent: taxRatePercent,
+    const paymentIntent = await getStripe().paymentIntents.create(
+      {
+        amount: totalCents,
+        currency: 'usd',
+        description: invoiceLabel,
+        metadata: {
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoiceNumber ?? '',
+          subtotal: subtotalCents.toString(),
+          tax_amount: taxAmountCents.toString(),
+          tax_rate_percent: taxRatePercent,
+        },
+        payment_method_types: ['card'],
       },
-      payment_method_types: ['card'],
-    })
+      {
+        // Two clicks at once read the same row, so they get the same intent
+        // instead of two. Any later write to the invoice changes the key.
+        idempotencyKey: `invoice-checkout:${invoice.id}:${totalCents}:${invoice.stripePaymentIntentId ?? 'none'}:${invoice.updatedAt}`,
+      }
+    )
 
     // Store payment intent ID on invoice for reuse and webhook lookup
     await db
@@ -129,7 +183,10 @@ export async function POST(
   } catch (err) {
     console.error('[api/public/invoices/checkout] Unhandled error:', err)
     return NextResponse.json(
-      { ok: false, error: 'An unexpected error occurred. Please try again later.' },
+      {
+        ok: false,
+        error: 'An unexpected error occurred. Please try again later.',
+      },
       { status: 500 }
     )
   }

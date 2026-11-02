@@ -42,6 +42,17 @@ const PASSWORD_SIGN_IN: AttemptPolicy = {
   label: 'Password sign-in throttled',
 }
 
+/**
+ * Public invoice checkout. Each call can create a Stripe PaymentIntent, so a
+ * caller holding a share link shouldn't be able to make them on a loop.
+ */
+const INVOICE_CHECKOUT: AttemptPolicy = {
+  kind: 'invoice-checkout',
+  perSubjectLimit: 20,
+  perIpLimit: 30,
+  label: 'Invoice checkout throttled',
+}
+
 /** Shown when sign-in is refused. Says nothing about whether the account exists. */
 export const SIGN_IN_THROTTLED_MESSAGE =
   'Too many attempts to sign in. Try again in a few minutes.'
@@ -98,4 +109,11 @@ export async function allowAuthEmail(email: string): Promise<boolean> {
  */
 export async function allowPasswordSignIn(email: string): Promise<boolean> {
   return allowAttempt(PASSWORD_SIGN_IN, normaliseEmail(email))
+}
+
+/** Call before creating a PaymentIntent for a shared invoice. */
+export async function allowInvoiceCheckout(
+  shareToken: string
+): Promise<boolean> {
+  return allowAttempt(INVOICE_CHECKOUT, shareToken)
 }

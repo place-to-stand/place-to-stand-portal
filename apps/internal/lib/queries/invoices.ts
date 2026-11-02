@@ -42,6 +42,7 @@ import {
 } from '@/lib/invoices/filters'
 import { createSearchPattern } from '@/lib/pagination/cursor'
 import type { ParsedSort } from '@/lib/pagination/sort'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 import {
   listProductCatalogItems,
@@ -491,8 +492,8 @@ export async function getInvoiceByShareToken(
 // Get invoice by Stripe checkout session (webhook - no auth, no deletedAt filter)
 // ---------------------------------------------------------------------------
 
-export async function getInvoiceByStripeSession(
-  sessionId: string
+async function getInvoiceForWebhook(
+  where: SQL
 ): Promise<InvoiceWithLineItems | null> {
   const rows = (await db
     .select({
@@ -501,7 +502,7 @@ export async function getInvoiceByStripeSession(
     })
     .from(invoices)
     .leftJoin(companies, eq(invoices.companyId, companies.id))
-    .where(eq(invoices.stripeCheckoutSessionId, sessionId))
+    .where(where)
     .limit(1)) as InvoiceSelectionRow[]
 
   if (!rows.length) {
@@ -527,40 +528,34 @@ export async function getInvoiceByStripeSession(
   }
 }
 
-export async function getInvoiceByPaymentIntent(
-  paymentIntentId: string
+export async function getInvoiceByStripeSession(
+  sessionId: string
 ): Promise<InvoiceWithLineItems | null> {
-  const rows = (await db
-    .select({
-      invoice: invoiceSelection,
-      client: clientSelection,
-    })
-    .from(invoices)
-    .leftJoin(companies, eq(invoices.companyId, companies.id))
-    .where(eq(invoices.stripePaymentIntentId, paymentIntentId))
-    .limit(1)) as InvoiceSelectionRow[]
+  return getInvoiceForWebhook(eq(invoices.stripeCheckoutSessionId, sessionId))
+}
 
-  if (!rows.length) {
-    return null
+/**
+ * The invoice a PaymentIntent pays. Looks first by the intent id stored on
+ * the invoice, then by the invoice id the checkout route puts in the intent's
+ * metadata: a later checkout attempt can overwrite the stored id while an
+ * earlier intent is still settling, and that payment must still find its
+ * invoice.
+ */
+export async function getInvoiceByPaymentIntent(
+  paymentIntentId: string,
+  metadataInvoiceId?: string | null
+): Promise<InvoiceWithLineItems | null> {
+  const byStoredId = await getInvoiceForWebhook(
+    eq(invoices.stripePaymentIntentId, paymentIntentId)
+  )
+  if (
+    byStoredId ||
+    !metadataInvoiceId ||
+    !UUID_PATTERN.test(metadataInvoiceId)
+  ) {
+    return byStoredId
   }
-
-  const invoice = mapInvoiceWithClient(rows[0]!)
-
-  const lineItemRows = (await db
-    .select(lineItemSelection)
-    .from(invoiceLineItems)
-    .where(
-      and(
-        eq(invoiceLineItems.invoiceId, invoice.id),
-        isNull(invoiceLineItems.deletedAt)
-      )
-    )
-    .orderBy(asc(invoiceLineItems.sortOrder))) as LineItemSelectionRow[]
-
-  return {
-    ...invoice,
-    line_items: lineItemRows.map(mapLineItemRow),
-  }
+  return getInvoiceForWebhook(eq(invoices.id, metadataInvoiceId))
 }
 
 // ---------------------------------------------------------------------------
