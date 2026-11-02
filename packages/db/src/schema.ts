@@ -264,9 +264,6 @@ export const contacts = pgTable(
   table => [
     unique('contacts_email_key').on(table.email),
     unique('contacts_user_id_key').on(table.userId),
-    index('idx_contacts_email')
-      .using('btree', table.email.asc().nullsLast().op('text_ops'))
-      .where(sql`(deleted_at IS NULL)`),
     // Contacts settings and the command palette search with ILIKE '%…%'
     // over name and email.
     index('idx_contacts_name_trgm').using(
@@ -280,9 +277,6 @@ export const contacts = pgTable(
     index('idx_contacts_email_domain')
       .using('btree', sql`split_part(email, '@', 2)`)
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_contacts_user_id')
-      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(user_id IS NOT NULL)`),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -835,10 +829,6 @@ export const billingTerms = pgTable(
     uniqueIndex('uq_billing_terms_company_effective')
       .on(table.companyId, table.effectiveFrom)
       .where(sql`(deleted_at IS NULL)`),
-    // Resolution path: latest effective_from <= period start for a client.
-    index('idx_billing_terms_resolution')
-      .using('btree', table.companyId.asc(), table.effectiveFrom.desc())
-      .where(sql`(deleted_at IS NULL)`),
     foreignKey({
       columns: [table.companyId],
       foreignColumns: [companies.id],
@@ -931,9 +921,6 @@ export const userRoleTerms = pgTable(
     uniqueIndex('uq_user_role_terms_user_effective')
       .on(table.userId, table.effectiveFrom)
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_user_role_terms_resolution')
-      .using('btree', table.userId.asc(), table.effectiveFrom.desc())
-      .where(sql`(deleted_at IS NULL)`),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [users.id],
@@ -977,10 +964,6 @@ export const commissionTerms = pgTable(
     // One active term per client per boundary; re-editing a boundary upserts.
     uniqueIndex('uq_commission_terms_company_effective')
       .on(table.companyId, table.effectiveFrom)
-      .where(sql`(deleted_at IS NULL)`),
-    // Resolution path: latest effective_from <= period start for a client.
-    index('idx_commission_terms_resolution')
-      .using('btree', table.companyId.asc(), table.effectiveFrom.desc())
       .where(sql`(deleted_at IS NULL)`),
     foreignKey({
       columns: [table.companyId],
@@ -1093,9 +1076,6 @@ export const timeLogs = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
-    index('idx_time_logs_project')
-      .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
-      .where(sql`(deleted_at IS NULL)`),
     index('idx_time_logs_user_id')
       .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -1448,6 +1428,17 @@ export const activityLogs = pgTable(
       'btree',
       table.targetType.asc().nullsLast().op('text_ops'),
       table.targetId.asc().nullsLast().op('uuid_ops')
+    ),
+    // A company's feed (company sheet, client activity) pages by created_at.
+    index('idx_activity_logs_company').using(
+      'btree',
+      table.targetCompanyId.asc().nullsLast().op('uuid_ops'),
+      table.createdAt.desc().nullsFirst().op('timestamptz_ops')
+    ),
+    // Who-did-this lookups and the cascade when a sign-in is removed.
+    index('idx_activity_logs_actor').using(
+      'btree',
+      table.actorId.asc().nullsLast().op('uuid_ops')
     ),
     foreignKey({
       columns: [table.actorId],
@@ -1894,8 +1885,6 @@ export const planRevisions = pgTable(
       .notNull(),
   },
   table => [
-    index('idx_plan_revisions_thread')
-      .using('btree', table.threadId.asc().nullsLast().op('uuid_ops')),
     unique('plan_revisions_thread_version_key').on(table.threadId, table.version),
     foreignKey({
       columns: [table.threadId],
@@ -2405,13 +2394,6 @@ export const userDashboardLayouts = pgTable(
 // =============================================================================
 // VIEWS
 // =============================================================================
-
-export const currentUserWithRole = pgView('current_user_with_role', {
-  id: uuid(),
-  role: userRole(),
-}).as(
-  sql`SELECT id, role FROM users u WHERE id = auth.uid() AND deleted_at IS NULL`
-)
 
 /**
  * Who can see which client in the client portal, derived from memberships:
