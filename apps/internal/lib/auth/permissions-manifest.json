@@ -1734,5 +1734,47 @@
     "file": "apps/internal/app/unauthorized/page.tsx",
     "kind": "public",
     "capability": null
+  },
+  {
+    "type": "action",
+    "name": "loadTimeLogHours",
+    "file": "apps/internal/lib/projects/time-log/load-time-log-hours.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "restoreProject",
+    "file": "apps/internal/lib/settings/projects/actions/restore-project.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "saveProject",
+    "file": "apps/internal/lib/settings/projects/actions/save-project.ts",
+    "kind": "capability",
+    "capability": "projects.manage"
+  },
+  {
+    "type": "action",
+    "name": "softDeleteProject",
+    "file": "apps/internal/lib/settings/projects/actions/soft-delete-project.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "updateProjectOwner",
+    "file": "apps/internal/lib/settings/projects/actions/update-project-owner.ts",
+    "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "action",
+    "name": "updateProjectStatus",
+    "file": "apps/internal/lib/settings/projects/actions/update-project-status.ts",
+    "kind": "admin",
+    "capability": null
   }
 ]

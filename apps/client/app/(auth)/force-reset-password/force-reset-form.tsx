@@ -57,7 +57,7 @@ export function ForceResetForm({ email }: ForceResetFormProps) {
 
       // Full reload so middleware and server components see the fresh
       // session cookies.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full reload so the server sees the fresh session cookies
       window.location.href = '/'
     } catch {
       setError('An unexpected error occurred')

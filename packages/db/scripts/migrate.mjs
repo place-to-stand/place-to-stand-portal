@@ -49,8 +49,8 @@ try {
   })
   const [row] =
     await sql`select count(*)::int as n from drizzle.__drizzle_migrations`
-  console.log(
-    `Migrations applied. Rows in drizzle.__drizzle_migrations: ${row.n}`
+  process.stdout.write(
+    `Migrations applied. Rows in drizzle.__drizzle_migrations: ${row.n}\n`
   )
 } catch (error) {
   const cause = error?.cause ?? error

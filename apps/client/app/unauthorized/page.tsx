@@ -10,7 +10,7 @@ export default function UnauthorizedPage() {
           href='/sign-in'
           className='text-primary text-sm font-medium underline'
         >
-          Sign in with a different account
+          Sign in with a different email
         </a>
       </div>
     </div>

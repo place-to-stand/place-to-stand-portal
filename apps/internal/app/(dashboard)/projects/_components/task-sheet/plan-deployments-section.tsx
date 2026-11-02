@@ -93,9 +93,14 @@ function CopyButton({
   const [hovered, setHovered] = useState(false)
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard.writeText(value).then(
+      () => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      },
+      // Refused (permissions, insecure page): show no "Copied" tick.
+      () => setCopied(false)
+    )
   }, [value])
 
   return (
@@ -263,7 +268,8 @@ export function PlanDeploymentStatus({
           return
         }
         toast({ title: 'Dispatch cancelled' })
-        queryClient.invalidateQueries({ queryKey: deploymentsQueryKey })
+        // Background refetch: its errors land in the query, not here.
+        void queryClient.invalidateQueries({ queryKey: deploymentsQueryKey })
       })
     },
     [toast, queryClient, deploymentsQueryKey]

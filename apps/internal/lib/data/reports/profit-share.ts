@@ -2,7 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 
-import { COMPANY_TIME_ZONE } from '@pts/ui/dates'
+import { companyMonthEndCutoff } from '@pts/ui/dates'
 
 import {
   PROFIT_SHARE_POLICY,
@@ -19,43 +19,11 @@ import {
 import { fetchUsersByEmail } from '@/lib/queries/reports/profit-share-partners'
 
 /**
- * UTC offset (ms) of `timeZone` at the given instant: local wall time minus
- * UTC. Negative for America/Los_Angeles.
- */
-function zoneOffsetMs(utcMs: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(new Date(utcMs))
-  const get = (type: string) =>
-    Number(parts.find(part => part.type === type)?.value ?? 0)
-  const wallAsUtc = Date.UTC(
-    get('year'),
-    get('month') - 1,
-    get('day'),
-    get('hour'),
-    get('minute'),
-    get('second')
-  )
-  return wallAsUtc - utcMs
-}
-
-/**
- * The instant a month ends in the company time zone: midnight on the first
- * of the next month, America/Los_Angeles (so Aug 31 ends at Sep 1 07:00Z).
- * Two passes settle the offset across a DST change.
+ * The instant a month ends in the company time zone (see
+ * companyMonthEndCutoff in @pts/ui/dates).
  */
 export function monthEndCutoff(year: number, month: number): Date {
-  const naive = Date.UTC(year, month, 1) // month is 1-indexed → next month
-  let utc = naive - zoneOffsetMs(naive, COMPANY_TIME_ZONE)
-  utc = naive - zoneOffsetMs(utc, COMPANY_TIME_ZONE)
-  return new Date(utc)
+  return companyMonthEndCutoff(year, month)
 }
 
 function lastDayOfMonth(year: number, month: number): string {

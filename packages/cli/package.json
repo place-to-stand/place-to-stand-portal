@@ -11,9 +11,11 @@
   ],
   "scripts": {
     "build": "tsup",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint"
   },
   "devDependencies": {
+    "@pts/eslint-config": "^0.1.0",
     "@types/node": "^26.6.5",
     "tsup": "^9.0.0",
     "typescript": "^6.0.3"

@@ -93,7 +93,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
         data: { user: authUser },
       } = await supabase.auth.getUser()
       if (authUser) {
-        await syncUserProfile(authUser, profile.email)
+        await syncUserProfile(authUser)
       }
       // Re-fetch to get updated email
       const updatedProfile = await fetchUserProfileUncached(authUserId)
@@ -247,14 +247,8 @@ function mapProfileToAppUser(profile: UserProfile): AppUser {
   }
 }
 
-async function syncUserProfile(
-  authUser: User,
-  previousEmail: string
-): Promise<void> {
+async function syncUserProfile(authUser: User): Promise<void> {
   try {
-    console.log(
-      `Syncing user profile: email changed from ${previousEmail} to ${authUser.email}`
-    )
     const result = await ensureUserProfile(authUser)
 
     // Log only — never sign out mid-request. This runs while rendering an

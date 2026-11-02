@@ -82,6 +82,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@pts/eslint-config": "^0.1.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/lodash.throttle": "^4.1.9",
     "@types/node": "^26.6.5",
@@ -91,7 +92,6 @@
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^16.4.3",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "sass": "^1.105.2",
     "supabase": "^2.121.0",

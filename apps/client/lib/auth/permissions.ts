@@ -23,7 +23,7 @@ export async function ensureClientAccess(user: AppUser, companyId: string) {
   // Only a Client sign-in uses the portal (the view checks it too, 0116):
   // a Sales sign-in left with a portal flag gets nothing here.
   if (user.role !== 'CLIENT') {
-    throw new ForbiddenError('You do not have access to this client')
+    throw new ForbiddenError('You do not have access to this company')
   }
 
   const [access] = await db
@@ -38,7 +38,7 @@ export async function ensureClientAccess(user: AppUser, companyId: string) {
     .limit(1)
 
   if (!access) {
-    throw new ForbiddenError('You do not have access to this client')
+    throw new ForbiddenError('You do not have access to this company')
   }
 }
 

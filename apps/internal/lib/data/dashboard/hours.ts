@@ -169,14 +169,14 @@ export async function fetchTimeLogPage(
 
   const where = and(
     pattern
-      ? sql`(${timeLogs.note} ilike ${pattern}
-          or ${projects.name} ilike ${pattern}
-          or ${companies.name} ilike ${pattern}
-          or coalesce(${personNameSql}, ${users.email}) ilike ${pattern}
+      ? sql`(${sql.raw('"time_logs"."note"')} ilike ${pattern}
+          or ${sql.raw('"projects"."name"')} ilike ${pattern}
+          or ${sql.raw('"companies"."name"')} ilike ${pattern}
+          or coalesce(${personNameSql}, ${sql.raw('"users"."email"')}) ilike ${pattern}
           or exists (
             select 1 from time_log_tasks tlt
             join tasks t on t.id = tlt.task_id
-            where tlt.time_log_id = ${timeLogs.id}
+            where tlt.time_log_id = ${sql.raw('"time_logs"."id"')}
               and tlt.deleted_at is null and t.deleted_at is null
               and t.title ilike ${pattern}
           ))`

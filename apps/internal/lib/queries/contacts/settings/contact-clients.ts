@@ -160,7 +160,7 @@ export async function getContactSheetData(
         // A role only while it is live (stripped for Sales below).
         signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
           select u.role from users u
-          where u.id = ${contacts.userId}
+          where u.id = ${sql.raw('"contacts"."user_id"')}
             and u.deleted_at is null and u.disabled_at is null
         )`,
       })

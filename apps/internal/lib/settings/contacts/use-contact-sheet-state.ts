@@ -304,7 +304,7 @@ export function useContactSheetState({
   // blank defaults.
   useEffect(() => {
     if (!open || !signInUserId) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the sign-in before reloading it for a refreshed person
     setSignInAccount(undefined)
     void loadSignIn()
   }, [open, contactKey, initialName, initialCompanyId, signInUserId, loadSignIn])

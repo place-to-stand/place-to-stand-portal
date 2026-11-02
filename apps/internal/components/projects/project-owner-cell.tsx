@@ -127,7 +127,6 @@ export function ProjectOwnerCell({
           type='button'
           disabled={isPending}
           aria-label={triggerLabel}
-          title={displayOwner?.full_name ?? 'Assign owner'}
           // The whole row navigates on click — the picker must not. Plain
           // onClick (not capture): React delegates events at the root, so a
           // capture-phase stopPropagation would also silence the popover

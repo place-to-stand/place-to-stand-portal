@@ -534,7 +534,7 @@ const TARGET_LABELS: Record<string, string> = {
   HOUR_BLOCK: 'hour blocks',
   USER: 'team members',
   SETTINGS: 'settings changes',
-  CONTACT: 'contact updates',
+  CONTACT: 'person updates',
   COMPANY: 'company updates',
   LEAD: 'lead activity',
   INVOICE: 'invoicing',

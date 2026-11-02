@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { format, startOfDay, startOfMonth } from 'date-fns'
+import { startOfDay, startOfMonth } from 'date-fns'
 import { DndContext, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
 
 import { CalendarHeader } from '@/app/(dashboard)/projects/_components/projects-board/calendar/calendar-header'
@@ -9,6 +9,7 @@ import { CalendarGrid } from '@/app/(dashboard)/projects/_components/projects-bo
 import { TaskDragOverlay } from '@/app/(dashboard)/projects/_components/task-drag-overlay'
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { useScrollPersistence } from '@/hooks/use-scroll-persistence'
+import { toCalendarDate } from '@/lib/dates/calendar-date'
 import type { RenderAssigneeFn } from '@/lib/projects/board/board-selectors'
 import { useCalendarNavigation } from '@/lib/projects/calendar/use-calendar-navigation'
 import {
@@ -67,7 +68,7 @@ export function MyTasksCalendar({
     () => getCalendarRange(currentMonth),
     [currentMonth]
   )
-  const todayKey = useMemo(() => format(today, 'yyyy-MM-dd'), [today])
+  const todayKey = useMemo(() => toCalendarDate(today), [today])
   const days = useMemo(
     () => buildCalendarDays(rangeStart, rangeEnd, currentMonth, todayKey),
     [currentMonth, rangeEnd, rangeStart, todayKey]
