@@ -67,6 +67,7 @@ Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environmen
 2. Run `npm run db:generate -- --name descriptive_label` from `packages/db/`
 3. Review generated SQL in `packages/db/drizzle/migrations/`
 4. Apply locally with `npm run db:migrate`, then in staging/production
+5. **Production: migrate before merging.** A merge to `main` deploys both apps to production immediately (Vercel auto-promotes), so new code must never land before its migration. Run `npm run db:migrate:prod` from `packages/db/` first (it reads `apps/internal/.env.prod`, runs the batch in one transaction and prints the real error on failure), confirm `exit 0`, then merge. Migrations must therefore keep the current production code working (additive first, removals in a later release)
 
 The baseline migration (`packages/db/drizzle/migrations/0000_supabase_baseline.sql`) captures existing Supabase schema. Run `npm run db:migrate` once after configuring `DATABASE_URL` to register existing state.
 
