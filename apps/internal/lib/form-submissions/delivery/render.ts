@@ -71,7 +71,11 @@ function safeReplayUrl(value: string | null): string | null {
 
 function buildSource(row: FormSubmission): SubmissionSource {
   return {
-    summary: describeAttribution(row).label,
+    // The visitor's own answer rides along: chatbot and word-of-mouth visits
+    // carry no referrer, so the tracked source alone reads "Direct".
+    summary: row.heardFrom?.trim()
+      ? `${describeAttribution(row).label} · They said: ${row.heardFrom.trim()}`
+      : describeAttribution(row).label,
     landingPath: row.landingPath,
     device: describeDevice(row),
     timezone: row.timezone,

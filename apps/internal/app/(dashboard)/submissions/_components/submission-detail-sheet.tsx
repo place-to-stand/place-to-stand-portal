@@ -406,6 +406,10 @@ export function SubmissionDetailSheet({
                     />
                   )}
                   <Kv
+                    label='Heard about us'
+                    value={value(displaySubmission.heardFrom)}
+                  />
+                  <Kv
                     label='Marketing consent'
                     value={value(displaySubmission.marketingConsent)}
                   />

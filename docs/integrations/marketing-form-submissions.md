@@ -155,6 +155,8 @@ interface AuditProgressPayload {
     // Optional free-text note from the capture form; stored in `message`.
     message?: string | null
     marketingConsent: boolean
+    // Optional "How did you hear about us?" answer; stored in `heard_from`.
+    heardFrom?: string | null
   } | null
 
   // Optional. Results-page feedback: a yes/no vote and/or a comment. Either
@@ -254,6 +256,8 @@ interface ContactSubmissionPayload {
     subject?: string | null
     message: string
     marketingConsent: boolean
+    // Optional "How did you hear about us?" answer; stored in `heard_from`.
+    heardFrom?: string | null
   }
 
   // identical shapes to the audit payload
