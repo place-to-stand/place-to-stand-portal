@@ -1,19 +1,38 @@
+import type { InferSelectModel, Table } from 'drizzle-orm'
+
 import {
   activitySource,
   clientBillingType,
   projectType,
-  taskStatus,
+  taskAttachments,
+  taskDeployments,
+  tasks,
+  projects,
   userRole,
   workerStatus,
 } from '@/lib/db/schema'
 
 export type UserRoleValue = (typeof userRole.enumValues)[number]
 export type ActivitySourceValue = (typeof activitySource.enumValues)[number]
-type TaskStatusValue = (typeof taskStatus.enumValues)[number]
 export type ClientBillingTypeValue =
   (typeof clientBillingType.enumValues)[number]
 export type ProjectTypeValue = (typeof projectType.enumValues)[number]
 export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
+
+type SnakeCase<S extends string> = S extends `${infer Head}${infer Tail}`
+  ? Head extends Lowercase<Head>
+    ? `${Head}${SnakeCase<Tail>}`
+    : `_${Lowercase<Head>}${SnakeCase<Tail>}`
+  : S
+
+/**
+ * A table's row with snake_case keys: the shape the data layer hands to
+ * client components. Derived from the Drizzle schema so a column change
+ * shows up here instead of drifting from a hand-written copy.
+ */
+type SnakeRow<T extends Table> = {
+  [K in keyof InferSelectModel<T> as SnakeCase<K & string>]: InferSelectModel<T>[K]
+}
 
 /**
  * A client: a company you bill (0111), read from `companies`. `id` and
@@ -57,43 +76,9 @@ export type DbClientMember = {
   deleted_at: string | null
 }
 
-export type DbProject = {
-  id: string
-  /** The billed company (CLIENT projects). */
-  company_id: string | null
-  name: string
-  status: string
-  type: ProjectTypeValue
-  starts_on: string | null
-  ends_on: string | null
-  created_by: string | null
-  owner_id: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  slug: string | null
-}
+export type DbProject = SnakeRow<typeof projects>
 
-export type DbTask = {
-  id: string
-  project_id: string
-  lead_id: string | null
-  title: string
-  description: string | null
-  status: TaskStatusValue
-  due_on: string | null
-  created_by: string | null
-  updated_by: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  accepted_at: string | null
-  completed_at: string | null
-  rank: string
-  github_issue_number: number | null
-  github_issue_url: string | null
-  worker_status: WorkerStatusValue | null
-}
+export type DbTask = SnakeRow<typeof tasks>
 
 export type DbUser = {
   id: string
@@ -132,36 +117,9 @@ type DbTimeLog = {
   updated_at: string
   deleted_at: string | null
 }
-export type DbTaskAttachment = {
-  id: string
-  task_id: string
-  storage_path: string
-  original_name: string
-  mime_type: string
-  file_size: number
-  uploaded_by: string
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
+export type DbTaskAttachment = SnakeRow<typeof taskAttachments>
 
-export type DbTaskDeployment = {
-  id: string
-  task_id: string
-  repo_link_id: string
-  github_issue_number: number
-  github_issue_url: string
-  worker_status: WorkerStatusValue
-  pr_url: string | null
-  plan_id: string
-  plan_thread_id: string | null
-  plan_version: number | null
-  model: string | null
-  mode: string | null
-  created_by: string
-  created_at: string
-  updated_at: string
-}
+export type DbTaskDeployment = SnakeRow<typeof taskDeployments>
 
 // A person who can see a project in the client portal: a current member with
 // portal access at the project's client company (`client_portal_access`).
