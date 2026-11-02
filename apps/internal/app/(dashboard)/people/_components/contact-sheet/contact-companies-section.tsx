@@ -34,13 +34,6 @@ type ContactCompaniesSectionProps = {
   canHaveAccess?: boolean
 }
 
-/** "Set up sign-in": brings the Sign-in section's switch into view. */
-function showSignIn() {
-  const control = document.getElementById('contact-sign-in-switch')
-  control?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  control?.focus({ preventScroll: true })
-}
-
 /**
  * The companies a person belongs to: title at each and the primary-contact
  * star (set on the company sheet, read-only here). Portal access shows as a
@@ -172,10 +165,7 @@ export function ContactCompaniesSection({
                       }
                       ariaLabel={`Portal access at ${name}`}
                       disabled={disabled}
-                      action={{
-                        label: 'Set up sign-in',
-                        onClick: showSignIn,
-                      }}
+                      fix='Turn on Can sign in below.'
                     />
                   </RecordRowField>
                 ) : null}

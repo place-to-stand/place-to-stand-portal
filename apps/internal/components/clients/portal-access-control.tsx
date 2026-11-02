@@ -33,6 +33,7 @@ export function PortalAccessField({
   disabled = false,
   disabledReason = null,
   action,
+  fix = null,
 }: {
   checked: boolean
   /** A live Client sign-in (`canHavePortalAccess`). */
@@ -42,8 +43,10 @@ export function PortalAccessField({
   /** Locked for another reason (saving): the tooltip says why. */
   disabled?: boolean
   disabledReason?: string | null
-  /** The way to a sign-in: "Set up sign-in", "Open person". */
+  /** The way to a sign-in, as a link ("Open person"). */
   action?: { label: string; onClick: () => void } | null
+  /** Or, where the switch is close by, plain words ("Turn on Can sign in below."). */
+  fix?: string | null
 }) {
   return (
     // The note sits right of the switch, like a switch's label.
@@ -63,6 +66,7 @@ export function PortalAccessField({
       {canHaveAccess ? null : (
         <p className='text-muted-foreground text-xs'>
           Needs a client sign-in.
+          {fix ? ` ${fix}` : null}
           {action ? (
             <>
               {' '}
