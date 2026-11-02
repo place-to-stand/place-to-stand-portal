@@ -69,8 +69,6 @@ export const saveCompanySchema = z.object({
   primaryContactId: z.string().uuid().nullable().optional(),
 })
 
-export type SaveCompanyInput = z.input<typeof saveCompanySchema>
-
 export const linkedinUrlSchema = optionalUrl(255)
 export const normalizeWebAddress = (value: string | null | undefined) => {
   const parsed = optionalUrl(255).safeParse(value)

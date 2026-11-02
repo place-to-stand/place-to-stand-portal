@@ -12,7 +12,7 @@ export type StaffMember = {
   email: string
 }
 
-/** Active admins — the people who get cc'd on client updates by default. */
+/** Active admins: the staff an invoice email can cc. */
 export async function fetchActiveStaff(): Promise<StaffMember[]> {
   const rows = await db
     .select({ id: users.id, fullName: personNameSql, email: users.email })

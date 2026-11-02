@@ -134,16 +134,3 @@ export async function restartBilling(
   return { startsOn }
 }
 
-/** Remove every billing stretch (a permanent client delete). */
-export async function removeBilling(tx: DbTx, companyId: string) {
-  const now = new Date().toISOString()
-  await tx
-    .update(clientBillingPeriods)
-    .set({ deletedAt: now, updatedAt: now })
-    .where(
-      and(
-        eq(clientBillingPeriods.companyId, companyId),
-        isNull(clientBillingPeriods.deletedAt)
-      )
-    )
-}

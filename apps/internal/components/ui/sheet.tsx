@@ -116,9 +116,6 @@ const SheetOverlay = ({
  */
 export type SheetColumns = 1 | 2
 
-/** The one-column sheet width, for layouts that add to it (task planning). */
-export const SHEET_ONE_COLUMN_WIDTH = 720
-
 const sheetColumnClasses: Record<SheetColumns, string> = {
   1: 'sm:max-w-[720px]',
   2: 'sm:max-w-3xl lg:w-[1184px] lg:max-w-[calc(100vw-4rem)]',

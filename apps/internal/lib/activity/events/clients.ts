@@ -37,11 +37,6 @@ export const clientUpdatedEvent = (args: {
   }),
 })
 
-export const clientArchivedEvent = (args: { name: string }): ActivityEvent => ({
-  verb: ActivityVerbs.CLIENT_ARCHIVED,
-  summary: `Archived client "${args.name}"`,
-})
-
 /** A month as "October 2026" (UTC). */
 function monthName(offset: number): string {
   const now = new Date()
@@ -81,9 +76,4 @@ export const clientBillingRestartedEvent = (args: {
     metadata: { effective: args.effective, cancelsStop: args.cancelsStop },
   }
 }
-
-export const clientRestoredEvent = (args: { name: string }): ActivityEvent => ({
-  verb: ActivityVerbs.CLIENT_RESTORED,
-  summary: `Restored client "${args.name}"`,
-})
 

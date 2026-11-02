@@ -1,15 +1,13 @@
 import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { and, asc, eq, gt, isNull } from 'drizzle-orm'
+import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { userRoleTerms, users } from '@/lib/db/schema'
 import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
-
-import { fetchLastSignIns } from './settings'
 
 /** What a contact's sheet shows about the portal user it was promoted to. */
 export type PortalAccountSummary = {
@@ -76,4 +74,31 @@ export async function getPortalAccountSummary(
     lastSignInAt: lastSignIns.get(userId) ?? null,
     scheduledRole: scheduled ?? null,
   }
+}
+
+/**
+ * Sign-in times live only on Supabase's `auth.users`, so read them for the
+ * served page by id rather than joining the auth schema into the list query.
+ */
+export async function fetchLastSignIns(
+  userIds: string[],
+): Promise<Map<string, string>> {
+  if (!userIds.length) return new Map()
+
+  const rows = await db.execute<{
+    id: string
+    last_sign_in_at: Date | string | null
+  }>(
+    sql`SELECT id, last_sign_in_at FROM auth.users WHERE id IN (${sql.join(
+      userIds.map(id => sql`${id}::uuid`),
+      sql`, `,
+    )})`,
+  )
+
+  const lastSignIns = new Map<string, string>()
+  for (const row of rows) {
+    if (!row.last_sign_in_at) continue
+    lastSignIns.set(row.id, new Date(row.last_sign_in_at).toISOString())
+  }
+  return lastSignIns
 }

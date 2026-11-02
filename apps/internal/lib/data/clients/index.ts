@@ -106,10 +106,7 @@ export const fetchClientsWithMetrics = cache(
 
     const baseConditions = [isClientCompany()]
 
-    // PRD 004 §03: server-side `?q=` search on the clients landing table.
-    // Must match name OR slug — the shell header count comes from
-    // `listClientsForSettings`, whose predicate searches both; a narrower
-    // predicate here shows a nonzero count with zero rows.
+    // Server-side `?q=` search on the clients landing table: name or slug.
     const trimmedSearch = search?.trim()
     if (trimmedSearch) {
       const pattern = createSearchPattern(trimmedSearch)
