@@ -1,82 +1,80 @@
-'use server';
+'use server'
 // permission: public — signing in
 
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { z } from "zod";
+import { redirect } from 'next/navigation'
+import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 
 import {
   allowAuthEmail,
   allowPasswordSignIn,
   normaliseEmail,
   SIGN_IN_THROTTLED_MESSAGE,
-} from "@/lib/auth/throttle";
-import { isSafeRedirectPath } from "@/lib/auth/safe-redirect";
+} from '@/lib/auth/throttle'
+import { isSafeRedirectPath } from '@/lib/auth/safe-redirect'
 
-import { ensureUserProfile } from "@/lib/auth/profile";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { sendMagicLinkEmail } from "@/lib/email/auth-emails";
-import { canUseInternalPortal } from "@/lib/auth/roles";
-import { serverEnv } from "@/lib/env.server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { getSupabaseServiceClient } from "@/lib/supabase/service";
+import { ensureUserProfile } from '@/lib/auth/profile'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
+import { sendMagicLinkEmail } from '@/lib/email/auth-emails'
+import { canUseInternalPortal } from '@/lib/auth/roles'
+import { appOrigin } from '@/lib/app-origin'
+import { serverEnv } from '@/lib/env.server'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 const schema = z.object({
   email: z.preprocess(
-    (value) => (typeof value === "string" ? normaliseEmail(value) : value),
+    value => (typeof value === 'string' ? normaliseEmail(value) : value),
     z.string().email()
   ),
   password: z.string().min(8),
   redirectTo: z
     .string()
     .optional()
-    .transform((value) =>
-      value && isSafeRedirectPath(value) ? value : null
-    ),
-});
+    .transform(value => (value && isSafeRedirectPath(value) ? value : null)),
+})
 
 export type SignInState = {
-  error?: string;
+  error?: string
   /** Set when a client-portal (CLIENT role) account tried to sign in here. */
-  clientPortalUrl?: string;
-};
+  clientPortalUrl?: string
+}
 
 export async function signInWithPassword(
   _prevState: SignInState,
   formData: FormData
 ): Promise<SignInState> {
   const result = schema.safeParse({
-    email: formData.get("email"),
-    password: formData.get("password"),
-    redirectTo: formData.get("redirectTo"),
-  });
+    email: formData.get('email'),
+    password: formData.get('password'),
+    redirectTo: formData.get('redirectTo'),
+  })
 
   if (!result.success) {
     return {
-      error: "Please provide a valid email and password.",
-    };
+      error: 'Please provide a valid email and password.',
+    }
   }
 
-  const { email, password, redirectTo } = result.data;
+  const { email, password, redirectTo } = result.data
 
   // Counted before Supabase sees the password, for every address alike, so the
   // refusal can't be used to tell a real account from a made-up one.
   if (!(await allowPasswordSignIn(email))) {
-    return { error: SIGN_IN_THROTTLED_MESSAGE };
+    return { error: SIGN_IN_THROTTLED_MESSAGE }
   }
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient()
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
-  });
+  })
 
   if (error || !data.user) {
     return {
-      error: error?.message ?? "Unable to sign in. Please try again.",
-    };
+      error: error?.message ?? 'Unable to sign in. Please try again.',
+    }
   }
 
   // Supabase bans disabled users, but the DB flag is the source of truth —
@@ -85,13 +83,13 @@ export async function signInWithPassword(
     .select({ disabledAt: users.disabledAt, role: users.role })
     .from(users)
     .where(eq(users.id, data.user.id))
-    .limit(1);
+    .limit(1)
 
   if (profile?.disabledAt) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut()
     return {
-      error: "This user has been disabled. Contact an administrator.",
-    };
+      error: 'This user has been disabled. Contact an administrator.',
+    }
   }
 
   // The internal portal is for staff (ADMIN, and SALES for the CRM). Portal
@@ -99,29 +97,29 @@ export async function signInWithPassword(
   // point them there. The `profile &&` guard matters: a missing row is "no
   // account", handled separately below.
   if (profile && !canUseInternalPortal(profile.role)) {
-    await supabase.auth.signOut();
-    return { clientPortalUrl: serverEnv.CLIENT_PORTAL_URL };
+    await supabase.auth.signOut()
+    return { clientPortalUrl: serverEnv.CLIENT_PORTAL_URL }
   }
 
   // A provisioned user can't reach this branch — password sign-in implies an
   // admin-created account. Handled rather than ignored so the strict-provisioning
   // contract holds at every call site.
-  const profileResult = await ensureUserProfile(data.user);
+  const profileResult = await ensureUserProfile(data.user)
 
-  if (profileResult === "not_provisioned") {
-    await supabase.auth.signOut();
-    redirect("/account-not-set-up");
+  if (profileResult === 'not_provisioned') {
+    await supabase.auth.signOut()
+    redirect('/account-not-set-up')
   }
 
   const mustReset = Boolean(
-    (data.user.user_metadata?.must_reset_password as boolean | undefined)
-  );
+    data.user.user_metadata?.must_reset_password as boolean | undefined
+  )
 
   if (mustReset) {
-    redirect("/force-reset-password");
+    redirect('/force-reset-password')
   }
 
-  redirect(redirectTo ?? "/");
+  redirect(redirectTo ?? '/')
 }
 
 /* ------------------------------------------------------------------ */
@@ -129,29 +127,25 @@ export async function signInWithPassword(
 /* ------------------------------------------------------------------ */
 
 export type MagicLinkState = {
-  error?: string;
-  success?: boolean;
-};
+  error?: string
+  success?: boolean
+}
 
 export async function sendMagicLink(input: {
-  email: string;
-  redirectTo?: string | null;
+  email: string
+  redirectTo?: string | null
 }): Promise<MagicLinkState> {
-  const email = input.email?.trim();
+  const email = input.email?.trim()
   if (!email || !z.string().email().safeParse(email).success) {
-    return { error: "Enter a valid email address." };
+    return { error: 'Enter a valid email address.' }
   }
 
-  const headersList = await headers();
-  const origin =
-    headersList.get("origin") ??
-    serverEnv.APP_BASE_URL ??
-    "http://localhost:3000";
+  const origin = appOrigin()
 
   // Same response as an unknown address: "throttled" must not be
   // distinguishable from "no account".
   if (!(await allowAuthEmail(email.toLowerCase()))) {
-    return { success: true };
+    return { success: true }
   }
 
   try {
@@ -160,34 +154,34 @@ export async function sendMagicLink(input: {
     // errors here rather than minting an auth user.
     const { data, error } =
       await getSupabaseServiceClient().auth.admin.generateLink({
-        type: "magiclink",
+        type: 'magiclink',
         email,
-      });
+      })
 
-    const tokenHash = data?.properties?.hashed_token;
+    const tokenHash = data?.properties?.hashed_token
 
     if (error || !tokenHash) {
       // Logged, never surfaced: unknown addresses land here, and reporting that
       // difference would turn this form into an account-enumeration oracle. The
       // caller shows the same copy either way.
-      console.error("Failed to generate magic link", error);
-      return { success: true };
+      console.error('Failed to generate magic link', error)
+      return { success: true }
     }
 
     // Our own /auth/confirm rather than `properties.action_link`, which returns
     // the session in a URL fragment the server never sees.
     const params = new URLSearchParams({
       token_hash: tokenHash,
-      type: "magiclink",
+      type: 'magiclink',
       ...(input.redirectTo && isSafeRedirectPath(input.redirectTo)
         ? { redirect_to: input.redirectTo }
         : {}),
-    });
+    })
 
-    await sendMagicLinkEmail(email, `${origin}/auth/confirm?${params}`);
+    await sendMagicLinkEmail(email, `${origin}/auth/confirm?${params}`)
   } catch (cause) {
-    console.error("Unable to send magic link email", cause);
+    console.error('Unable to send magic link email', cause)
   }
 
-  return { success: true };
+  return { success: true }
 }

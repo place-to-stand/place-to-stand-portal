@@ -1,8 +1,7 @@
 import { sql } from 'drizzle-orm'
-import { headers } from 'next/headers'
 
+import { appOrigin } from '@/lib/app-origin'
 import { db } from '@/lib/db'
-import { serverEnv } from '@/lib/env.server'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
 import {
@@ -82,16 +81,19 @@ export async function takeOverExistingAuthUser(
       sql`DELETE FROM auth.refresh_tokens WHERE user_id = ${userId}`
     )
   } catch (revokeError) {
-    console.error('Failed to revoke existing auth sessions', userId, revokeError)
+    console.error(
+      'Failed to revoke existing auth sessions',
+      userId,
+      revokeError
+    )
     return 'Unable to sign out the existing sign-in. Please try again.'
   }
   return null
 }
 
 export async function deleteAuthUser(userId: string): Promise<void> {
-  const { error } = await getSupabaseServiceClient().auth.admin.deleteUser(
-    userId
-  )
+  const { error } =
+    await getSupabaseServiceClient().auth.admin.deleteUser(userId)
   if (error) console.error('Failed to delete auth user', userId, error)
 }
 
@@ -109,11 +111,7 @@ export async function sendSignInInvite(input: {
   if (input.role === 'ADMIN' || input.role === 'SALES') {
     // Staff sign in to this app with the temp-password flow: the proxy
     // forces a reset on first sign-in.
-    const headersList = await headers()
-    const baseUrl =
-      headersList.get('origin') ??
-      serverEnv.APP_BASE_URL ??
-      'http://localhost:3000'
+    const baseUrl = appOrigin()
     await dispatchAdminInvite({
       email: input.email,
       fullName: input.fullName,

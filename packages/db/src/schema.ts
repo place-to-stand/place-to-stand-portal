@@ -183,7 +183,14 @@ export const users = pgTable(
       mode: 'string',
     }),
   },
-  table => [unique('users_email_key').on(table.email)]
+  table => [
+    unique('users_email_key').on(table.email),
+    // One sign-in per address whatever its case (Bob@ and bob@ are one).
+    uniqueIndex('uq_users_email_lower').using(
+      'btree',
+      sql`lower(btrim(email))`
+    ),
+  ]
 )
 
 /**
@@ -265,6 +272,10 @@ export const contacts = pgTable(
   },
   table => [
     unique('contacts_email_key').on(table.email),
+    // One person per address whatever its case; lookups use lower(email).
+    uniqueIndex('uq_contacts_email_lower')
+      .using('btree', sql`lower(btrim(email))`)
+      .where(sql`email IS NOT NULL`),
     unique('contacts_user_id_key').on(table.userId),
     // Contacts settings and the command palette search with ILIKE '%…%'
     // over name and email.
@@ -1943,7 +1954,9 @@ export const invoices = pgTable(
     issuedDate: date('issued_date'),
     dueDate: date('due_date'),
     subtotal: numeric({ precision: 12, scale: 2 }).notNull().default('0'),
-    taxRate: numeric('tax_rate', { precision: 5, scale: 4 }).default('0'),
+    taxRate: numeric('tax_rate', { precision: 5, scale: 4 })
+      .notNull()
+      .default('0'),
     taxAmount: numeric('tax_amount', { precision: 12, scale: 2 })
       .notNull()
       .default('0'),
@@ -1983,6 +1996,12 @@ export const invoices = pgTable(
     index('idx_invoices_stripe_checkout_session')
       .using('btree', table.stripeCheckoutSessionId.asc())
       .where(sql`(stripe_checkout_session_id IS NOT NULL)`),
+    // Totals are a stored copy of the line items; these keep them honest.
+    check('chk_invoices_total', sql`total = subtotal + tax_amount`),
+    check(
+      'chk_invoices_paid_at',
+      sql`(status = 'PAID') = (paid_at IS NOT NULL)`
+    ),
     foreignKey({
       columns: [table.companyId],
       foreignColumns: [companies.id],
@@ -2020,6 +2039,10 @@ export const invoiceLineItems = pgTable(
     index('idx_invoice_line_items_invoice_id')
       .using('btree', table.invoiceId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
+    check(
+      'chk_invoice_line_items_amount',
+      sql`amount = round(quantity * unit_price, 2)`
+    ),
     index('idx_invoice_line_items_product_catalog')
       .using(
         'btree',

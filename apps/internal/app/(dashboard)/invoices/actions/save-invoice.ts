@@ -12,6 +12,11 @@ import { logActivity } from '@/lib/activity/logger'
 import { invoiceCreatedEvent, invoiceUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
+import {
+  centsToAmount,
+  invoiceTotals,
+  lineItemCents,
+} from '@/lib/invoices/invoice-totals'
 import { getStripe } from '@/lib/stripe/client'
 import { companies, invoices, invoiceLineItems } from '@/lib/db/schema'
 
@@ -71,7 +76,23 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
     return { error: message, fieldErrors }
   }
 
-  const { id, companyId, notes, taxRate, lineItems } = parsed.data
+  const { id, companyId, notes } = parsed.data
+  // Round to what the columns hold (2 and 4 decimals), then price from that,
+  // so the stored amount is exactly quantity × unit price.
+  const taxRate = Math.round(parsed.data.taxRate * 10_000) / 10_000
+  const lineItems = parsed.data.lineItems.map(item => {
+    const quantity = Math.round(item.quantity * 100) / 100
+    const unitPrice = Math.round(item.unitPrice * 100) / 100
+    return {
+      ...item,
+      quantity,
+      unitPrice,
+      amount: centsToAmount(lineItemCents(quantity, unitPrice)),
+    }
+  })
+  if (lineItems.some(item => item.quantity <= 0)) {
+    return { error: 'Quantity must be at least 0.01.' }
+  }
 
   const notClient = await ensureClientCompany(companyId)
   if (notClient) {
@@ -97,9 +118,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const targetClientName = client.name
   const nowIso = new Date().toISOString()
 
-  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0)
-  const taxAmount = Math.round(subtotal * taxRate * 100) / 100
-  const total = Math.round((subtotal + taxAmount) * 100) / 100
+  const { subtotal, taxAmount, total } = invoiceTotals(lineItems, taxRate)
 
   if (!id) {
     try {

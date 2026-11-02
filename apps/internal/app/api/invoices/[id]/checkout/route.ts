@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 
+import { appOrigin } from '@/lib/app-origin'
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
@@ -8,7 +9,7 @@ import { invoices } from '@/lib/db/schema'
 import { getStripe } from '@/lib/stripe/client'
 
 export async function POST(
-  request: Request,
+  _request: Request,
   { params }: RouteContext<'/api/invoices/[id]/checkout'>
 ) {
   try {
@@ -34,14 +35,21 @@ export async function POST(
     // Validate status
     if (invoice.status !== 'SENT' && invoice.status !== 'VIEWED') {
       return NextResponse.json(
-        { ok: false, error: 'Invoice must be in SENT or VIEWED status to create a checkout session.' },
+        {
+          ok: false,
+          error:
+            'Invoice must be in SENT or VIEWED status to create a checkout session.',
+        },
         { status: 400 }
       )
     }
 
     if (!invoice.shareEnabled) {
       return NextResponse.json(
-        { ok: false, error: 'Sharing must be enabled to create a checkout session.' },
+        {
+          ok: false,
+          error: 'Sharing must be enabled to create a checkout session.',
+        },
         { status: 400 }
       )
     }
@@ -69,8 +77,7 @@ export async function POST(
       }
     }
 
-    const appBaseUrl =
-      process.env.APP_BASE_URL ?? new URL(request.url).origin
+    const appBaseUrl = appOrigin()
 
     // Send total as a single line item so the embedded checkout header
     // shows "Invoice INV-XXXX" instead of duplicating the line-item breakdown.
@@ -118,7 +125,10 @@ export async function POST(
   } catch (err) {
     console.error('[api/invoices/checkout] Unhandled error:', err)
     return NextResponse.json(
-      { ok: false, error: 'An unexpected error occurred. Please try again later.' },
+      {
+        ok: false,
+        error: 'An unexpected error occurred. Please try again later.',
+      },
       { status: 500 }
     )
   }
