@@ -269,6 +269,13 @@ function ManagedSignIn({
             // One record card, like the company cards above: the email they
             // sign in with and when they last did, the reset link, then Role.
             <SheetRecordRow
+              // The person icon, uncoloured: this card is their sign-in.
+              leading={
+                <ENTITY_ICONS.contact
+                  className='text-muted-foreground size-4'
+                  aria-hidden
+                />
+              }
               title={<span className='break-all'>{personEmail || '—'}</span>}
               description={
                 !hasSignIn

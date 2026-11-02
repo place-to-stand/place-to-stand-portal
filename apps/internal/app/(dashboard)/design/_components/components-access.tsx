@@ -72,7 +72,7 @@ export function ComponentsAccess() {
       </Specimen>
       <Specimen
         label='Live sign-in'
-        note='One SheetRecordRow (no icon); RecordRowField note keeps the label level with the control'
+        note='One SheetRecordRow with the person icon uncoloured (muted); RecordRowField note keeps the label level with the control'
         className='block max-w-2xl'
       >
         <SheetSection
@@ -82,6 +82,12 @@ export function ComponentsAccess() {
           action={<CanSignIn id='design-sign-in-client' checked />}
         >
           <SheetRecordRow
+            leading={
+              <ENTITY_ICONS.contact
+                className='text-muted-foreground size-4'
+                aria-hidden
+              />
+            }
             title='ada@acme.com'
             description='Last sign-in: never'
             fieldsClassName='gap-y-4 py-3'
@@ -103,7 +109,8 @@ export function ComponentsAccess() {
       >
         <SheetSection title='Portal access'>
           <p className='text-muted-foreground text-xs'>
-            Needs a user account with the Client role. Turn on <UiRef>Can sign in</UiRef> below.
+            Needs a user account with the Client role. Turn on{' '}
+            <UiRef>Can sign in</UiRef> below.
           </p>
         </SheetSection>
       </Specimen>
