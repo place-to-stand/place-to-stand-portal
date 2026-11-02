@@ -1,125 +1,15 @@
-import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 
-import { ProjectsBoard } from '../../../projects-board'
 import {
-  fetchProjectsLite,
-  fetchProjectsWithRelationsByIds,
-} from '@/lib/data/projects'
-import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
-import { requireStaffUser } from '@/lib/auth/session'
-import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
-import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
-import { buildQuerySuffix } from '@/lib/sheets/hrefs'
-import { listClientDirectory } from '@/lib/queries/companies/billing'
-import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
+  projectTabMetadata,
+  renderProjectTabRoute,
+} from '../_lib/project-tab-route'
 
-export const metadata: Metadata = {
-  title: 'Projects',
-}
+export const metadata: Metadata = projectTabMetadata
 
-export default async function ProjectBoardRoute({
+export default function ProjectBoardRoute({
   params,
   searchParams,
 }: PageProps<'/projects/[clientSlug]/[projectSlug]/tasks'>) {
-  const resolvedParams = await params
-  const { clientSlug, projectSlug } = resolvedParams
-  const resolvedSearchParams = await searchParams
-  const user = await requireStaffUser()
-  const isAdmin = user.role === 'ADMIN'
-  // Lite list feeds the switcher and sheet selectors; only the active
-  // project (resolved below) gets its task graph hydrated. Non-admins
-  // (project members) see only their projects, without billing or the
-  // client directory the project editor needs.
-  const [allLiteProjects, admins, assignableUsers, clientDirectory] =
-    await Promise.all([
-      fetchProjectsLite(),
-      isAdmin ? fetchAdminUsers() : Promise.resolve([]),
-      fetchCrmUsers(),
-      isAdmin ? listClientDirectory() : Promise.resolve([]),
-    ])
-  const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)
-
-  const allClients: ClientPickerRow[] = clientDirectory.map(c => ({
-    id: c.id,
-    name: c.name,
-    deleted_at: c.deletedAt,
-  }))
-
-  const clients = liteProjects
-    .map(project => project.client)
-    .filter((client): client is NonNullable<typeof client> => Boolean(client))
-    .reduce(
-      (acc, client) => {
-        if (!acc.some(existing => existing.id === client.id)) {
-          acc.push({ id: client.id, name: client.name, slug: client.slug })
-        }
-        return acc
-      },
-      [] as Array<{ id: string; name: string; slug: string | null }>
-    )
-    .sort((a, b) => a.name.localeCompare(b.name))
-
-  const clientSlugById = new Map<string, string | null>(
-    clients.map(client => [client.id, client.slug ?? null])
-  )
-
-  const adminUsers: AdminUserForOwner[] = admins.map(admin => ({
-    id: admin.id,
-    full_name: admin.full_name,
-    email: admin.email,
-    avatar_url: admin.avatar_url,
-    disabled_at: admin.disabled_at ?? null,
-  }))
-
-  const project = liteProjects.find(item => item.slug === projectSlug)
-
-  if (!project) {
-    redirect('/projects')
-  }
-
-  const canonicalClientSlug = getProjectClientSegment(project, clientSlugById)
-
-  if (!canonicalClientSlug) {
-    redirect('/projects')
-  }
-
-  if (canonicalClientSlug !== clientSlug) {
-    // Carry the whole query string across the canonical redirect so a
-    // stacked sheet link (`?task=x&client=y`) survives it.
-    redirect(
-      `/projects/${canonicalClientSlug}/${project.slug}/tasks${buildQuerySuffix(resolvedSearchParams)}`
-    )
-  }
-
-  const activeClientId = project.company_id ?? null
-  const activeProjectId = project.id
-
-  // Hydrate the task graph for the active project only (after the
-  // canonical-slug redirects above, so redirects stay cheap).
-  const [hydratedProject] = await scopeProjectsForViewer(
-    user,
-    await fetchProjectsWithRelationsByIds([project.id])
-  )
-  const projects = liteProjects.map(item =>
-    item.id === project.id && hydratedProject ? hydratedProject : item
-  )
-
-  return (
-    <ProjectsBoard
-      projects={projects}
-      clients={clients}
-      currentUserId={user.id}
-      admins={assignableUsers}
-      adminUsers={adminUsers}
-      allClients={allClients}
-      activeClientId={activeClientId}
-      activeProjectId={activeProjectId}
-      initialTab='board'
-      // Server-rendered anchor for the Done column's rolling window, so SSR
-      // and hydration measure the cutoff from the same instant.
-      now={new Date().toISOString()}
-    />
-  )
+  return renderProjectTabRoute({ tab: 'board', params, searchParams })
 }

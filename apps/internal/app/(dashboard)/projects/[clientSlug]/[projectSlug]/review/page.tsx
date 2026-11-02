@@ -1,20 +1,15 @@
 import type { Metadata } from 'next'
 
-import { buildQuerySuffix } from '@/lib/sheets/hrefs'
+import {
+  projectTabMetadata,
+  renderProjectTabRoute,
+} from '../_lib/project-tab-route'
 
-import { renderReviewRoute, reviewMetadata } from './review-route'
+export const metadata: Metadata = projectTabMetadata
 
-export const metadata: Metadata = reviewMetadata
-
-export default async function ProjectReviewPage({
+export default function ProjectReviewRoute({
   params,
   searchParams,
 }: PageProps<'/projects/[clientSlug]/[projectSlug]/review'>) {
-  const resolvedParams = await params
-  const resolvedSearchParams = await searchParams
-
-  return renderReviewRoute({
-    ...resolvedParams,
-    querySuffix: buildQuerySuffix(resolvedSearchParams),
-  })
+  return renderProjectTabRoute({ tab: 'review', params, searchParams })
 }

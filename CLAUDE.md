@@ -127,7 +127,7 @@ do not follow the bare-envelope, snake_case precedent set by `api/v1/`. Adding a
 serializer in `lib/cli/serializers/` plus a thin route; the serializers are the contract agents
 hardcode against, so adding a field is safe and renaming one is breaking.
 
-The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,review,time-logs,activity,archive}` (`/overview` was retired and redirects to `tasks`). The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,review,time-logs,activity}`, all loaded by `renderProjectTabRoute` (`[projectSlug]/_lib/project-tab-route.tsx`); `/overview` redirects to `tasks` and `/archive` to `review`. The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
 
 **Client portal** (`apps/client/app/`):
 ```

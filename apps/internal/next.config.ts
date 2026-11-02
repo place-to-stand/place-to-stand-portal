@@ -93,6 +93,8 @@ const nextConfig: NextConfig = {
       // The project Overview and Scope tabs are gone: the board is Tasks.
       to('/projects/:clientSlug/:projectSlug/overview', '/projects/:clientSlug/:projectSlug/tasks'),
       to('/projects/:clientSlug/:projectSlug/scope', '/projects/:clientSlug/:projectSlug/tasks'),
+      // A project's archived tasks live on its Review tab.
+      to('/projects/:clientSlug/:projectSlug/archive', '/projects/:clientSlug/:projectSlug/review'),
     ]
   },
   async rewrites() {
