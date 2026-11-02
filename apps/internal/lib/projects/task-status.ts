@@ -1,25 +1,10 @@
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import {
+  TASK_STATUS_LABELS,
+  TASK_STATUS_TINTS as TASK_STATUS_TOKENS,
+} from '@pts/ui/status-tints'
 
 // Display vocabulary, not the DB enum: ACCEPTED (accepted_at set) and
 // ARCHIVED (deleted_at set) are derived states with no task_status value.
-const TASK_STATUS_TOKENS = {
-  ON_DECK: BADGE_TINTS.sky,
-  IN_PROGRESS: BADGE_TINTS.emerald,
-  BLOCKED: BADGE_TINTS.amber,
-  DONE: BADGE_TINTS.neutral,
-  ACCEPTED: BADGE_TINTS.neutral,
-  ARCHIVED: BADGE_TINTS.neutral,
-} as const
-
-const TASK_STATUS_LABELS = {
-  ON_DECK: 'On deck',
-  IN_PROGRESS: 'In progress',
-  BLOCKED: 'Blocked',
-  DONE: 'Done',
-  ACCEPTED: 'Accepted',
-  ARCHIVED: 'Archived',
-} as const
-
 type TaskStatusValue = keyof typeof TASK_STATUS_TOKENS
 
 export function getTaskStatusToken(value: string): string {

@@ -109,7 +109,7 @@ export function ComponentsAccess() {
       >
         <SheetSection title='Portal access'>
           <p className='text-muted-foreground text-xs'>
-            Needs a user account with the Client role. Turn on{' '}
+            Needs a sign-in with the Client role. Turn on{' '}
             <UiRef>Can sign in</UiRef> below.
           </p>
         </SheetSection>

@@ -1,34 +1,20 @@
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import {
+  statusTint,
+  TASK_STATUS_LABELS,
+  TASK_STATUS_TINTS,
+} from '@pts/ui/status-tints'
 
 /**
- * Client-facing subset of the internal app's task status presentation
- * (`apps/internal/lib/projects/task-status.ts`). ARCHIVED is intentionally
- * absent — archived tasks are never surfaced in the portal.
+ * Task status labels and colours, shared with the internal portal through
+ * `@pts/ui/status-tints`. Archived tasks never reach the client portal.
  */
-const TASK_STATUS_LABELS = {
-  ON_DECK: 'On deck',
-  IN_PROGRESS: 'In progress',
-  BLOCKED: 'Blocked',
-  DONE: 'Done',
-} as const
-
-const TASK_STATUS_TOKENS = {
-  ON_DECK: BADGE_TINTS.sky,
-  IN_PROGRESS: BADGE_TINTS.emerald,
-  BLOCKED: BADGE_TINTS.amber,
-  DONE: BADGE_TINTS.neutral,
-} as const
-
-type ClientTaskStatus = keyof typeof TASK_STATUS_LABELS
 
 export function getTaskStatusLabel(value: string): string {
   return value in TASK_STATUS_LABELS
-    ? TASK_STATUS_LABELS[value as ClientTaskStatus]
+    ? TASK_STATUS_LABELS[value as keyof typeof TASK_STATUS_LABELS]
     : value
 }
 
 export function getTaskStatusToken(value: string): string {
-  return value in TASK_STATUS_TOKENS
-    ? TASK_STATUS_TOKENS[value as ClientTaskStatus]
-    : BADGE_TINTS.neutral
+  return statusTint(TASK_STATUS_TINTS, value)
 }

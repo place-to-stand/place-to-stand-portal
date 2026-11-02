@@ -3,7 +3,8 @@
  * Keeps the retired entity words out of UI copy (run by `npm run lint`).
  * The rules are docs/design-system/README.md, "Content fundamentals":
  *
- * - Internal portal: the person record is a **person**, never a "contact"
+ * - Internal portal: the person record is a **person**, never a "contact",
+ *   and nobody has an "account" (they have a sign-in).
  *   ("People", "Add person"). "Contact" stays only as a verb or a
  *   non-entity noun: "contact support", the website's contact form (and its
  *   submissions), a company's primary contact.
@@ -43,6 +44,10 @@ const INTERNAL = [
 ]
 const CLIENT = ['apps/client/app', 'apps/client/components', 'apps/client/lib']
 
+/** Third-party accounts and money words are fine in both portals. */
+const ACCOUNT_ALLOWED =
+  /\b(?:Google|GitHub|Microsoft|Vercel|Supabase|Mercury|Stripe|bank|Resend|service|email) accounts?\b|\baccount (?:manager|number|balance)\b|\b(?:into|for|on) account\b|\btake into account\b|\baccounts? receivable\b/i
+
 /** [pattern, message, allowed context] */
 const INTERNAL_RULES = [
   [
@@ -50,6 +55,11 @@ const INTERNAL_RULES = [
     '"contact" as the person record: say person / people ("Add person")',
     // Verb or non-entity noun.
     /\bprimary contacts?\b|\bcontact (?:support|us|form|submissions?|details|info(?:rmation)?)\b|\bto contact\b|\bcontact (?:an?|the|them|him|her|us|you|someone|your)\b|\bsince (?:last )?contact\b|\bcontact and audit\b|\bcontacts?-\w/i,
+  ],
+  [
+    /\b(?:[Uu]ser|[Aa]n|[Yy]our|[Tt]heir|[Hh]is|[Hh]er) accounts?\b/,
+    '"account" for a sign-in: say sign-in (third-party accounts are fine)',
+    ACCOUNT_ALLOWED,
   ],
 ]
 const CLIENT_RULES = [
@@ -64,7 +74,7 @@ const CLIENT_RULES = [
   [
     /\b[Aa]ccounts?\b/,
     '"account": say what is meant (your email, your company)',
-    /\b(?:Google|GitHub|Microsoft) accounts?\b|\baccount manager\b/,
+    ACCOUNT_ALLOWED,
   ],
   [/\b[Ll]ogins?\b|\b[Ll]og in\b/, '"login": say "sign in"'],
   [

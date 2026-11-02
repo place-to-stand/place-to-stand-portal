@@ -55,8 +55,8 @@ export function ForgotPasswordForm({ redirectTo }: Props) {
       {state.error ? <p className={authErrorClass}>{state.error}</p> : null}
       {state.success ? (
         <p className={authNoticeClass}>
-          If that email is associated with an account, we just sent instructions
-          to reset the password.
+          If that email can sign in, we just sent instructions to reset the
+          password.
         </p>
       ) : null}
       <DisabledFieldTooltip

@@ -37,6 +37,7 @@
     "./select": "./src/select.tsx",
     "./separator": "./src/separator.tsx",
     "./skeleton": "./src/skeleton.tsx",
+    "./status-tints": "./src/status-tints.ts",
     "./slot": "./src/slot.tsx",
     "./switch": "./src/switch.tsx",
     "./table": "./src/table.tsx",

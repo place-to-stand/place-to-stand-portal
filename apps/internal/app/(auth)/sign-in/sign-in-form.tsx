@@ -184,8 +184,8 @@ export function SignInForm({ redirectTo }: Props) {
         // Deliberately non-committal: the action returns success for unknown
         // addresses too, so this copy can't be used to probe for accounts.
         <p className='text-brand-text-muted text-center text-sm'>
-          If an account exists for that email, we&apos;ve sent a sign-in link.
-          Check your inbox.
+          If that email can sign in, we&apos;ve sent a sign-in link. Check your
+          inbox.
         </p>
       ) : null}
       {magicLinkFeedback.error ? (
