@@ -40,7 +40,8 @@ export const SIGN_IN_FILTER_VALUES = [
 ] as const
 export type SignInFilter = (typeof SIGN_IN_FILTER_VALUES)[number]
 /** What the Role filter offers. */
-export const ROLE_FILTER_VALUES = ['ADMIN', 'SALES', 'CLIENT', 'none'] as const
+// A–Z, then "No sign-in" last.
+export const ROLE_FILTER_VALUES = ['ADMIN', 'CLIENT', 'SALES', 'none'] as const
 export const ROLE_FILTER_LABELS: Record<
   (typeof ROLE_FILTER_VALUES)[number],
   string

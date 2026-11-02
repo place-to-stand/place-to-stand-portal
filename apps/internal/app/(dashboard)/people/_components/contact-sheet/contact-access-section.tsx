@@ -49,10 +49,11 @@ import { ROLE_LABELS } from '@/lib/auth/roles'
 
 type Role = (typeof USER_ROLES)[number]
 
+// A–Z, as everywhere roles are listed.
 const ALL_ROLES = [
   'ADMIN',
-  'SALES',
   'CLIENT',
+  'SALES',
 ] as const satisfies readonly Role[]
 
 type ContactSignInSectionProps = {
