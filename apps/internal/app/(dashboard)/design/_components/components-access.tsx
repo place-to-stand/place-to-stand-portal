@@ -7,6 +7,7 @@ import { Switch } from '@pts/ui/switch'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
+import { UiRef } from '@/components/ui/ui-ref'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 import { DesignSection, Specimen } from './specimen'
@@ -91,8 +92,18 @@ export function ComponentsAccess() {
             </div>
           </div>
           <p className='text-muted-foreground text-sm'>
-            Sees Acme and Beta in the client portal. Turn Portal on or off on
-            each company above.
+            Sees Acme and Beta in the client portal.
+          </p>
+        </SheetSection>
+      </Specimen>
+      <Specimen
+        label='Naming a control in helper text'
+        note='UiRef (components/ui/ui-ref.tsx): medium weight, normal colour, no quotes'
+        className='block max-w-2xl'
+      >
+        <SheetSection title='Portal access'>
+          <p className='text-muted-foreground text-xs'>
+            Needs a client sign-in. Turn on <UiRef>Can sign in</UiRef> below.
           </p>
         </SheetSection>
       </Specimen>

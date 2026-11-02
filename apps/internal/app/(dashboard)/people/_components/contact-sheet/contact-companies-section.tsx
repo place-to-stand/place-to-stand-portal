@@ -18,6 +18,7 @@ import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
 import type { ContactCompanyEntry } from '@/lib/settings/contacts/use-contact-sheet-state'
 import { PortalAccessField } from '@/components/clients/portal-access-control'
+import { UiRef } from '@/components/ui/ui-ref'
 
 type ContactCompaniesSectionProps = {
   companies: ContactCompanyEntry[]
@@ -165,7 +166,11 @@ export function ContactCompaniesSection({
                       }
                       ariaLabel={`Portal access at ${name}`}
                       disabled={disabled}
-                      fix='Turn on Can sign in below.'
+                      fix={
+                        <>
+                          Turn on <UiRef>Can sign in</UiRef> below.
+                        </>
+                      }
                     />
                   </RecordRowField>
                 ) : null}

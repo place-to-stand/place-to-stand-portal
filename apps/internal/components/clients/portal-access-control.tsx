@@ -1,5 +1,7 @@
 'use client'
 
+import type { ReactNode } from 'react'
+
 import { Button } from '@pts/ui/button'
 import { Switch } from '@pts/ui/switch'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -46,7 +48,7 @@ export function PortalAccessField({
   /** The way to a sign-in, as a link ("Open person"). */
   action?: { label: string; onClick: () => void } | null
   /** Or, where the switch is close by, plain words ("Turn on Can sign in below."). */
-  fix?: string | null
+  fix?: ReactNode
 }) {
   return (
     // The note sits right of the switch, like a switch's label.
@@ -66,7 +68,7 @@ export function PortalAccessField({
       {canHaveAccess ? null : (
         <p className='text-muted-foreground text-xs'>
           Needs a client sign-in.
-          {fix ? ` ${fix}` : null}
+          {fix ? <> {fix}</> : null}
           {action ? (
             <>
               {' '}

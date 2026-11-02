@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useTransition, type ReactNode } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
@@ -46,6 +46,7 @@ import {
 import type { USER_ROLES } from '@/lib/settings/users/user-validation'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
+import { UiRef } from '@/components/ui/ui-ref'
 
 type Role = (typeof USER_ROLES)[number]
 
@@ -298,27 +299,56 @@ function ManagedSignIn({
                       </DisabledFieldTooltip>
                     </FormControl>
                     <FormMessage />
+                    <p className='text-muted-foreground text-sm'>
+                      {role === 'ADMIN' ? (
+                        'Signs in here and sees everything.'
+                      ) : role === 'SALES' ? (
+                        'Signs in here: leads, people, companies and their own work.'
+                      ) : seen.length ? (
+                        `Sees ${listNames(seen)} in the client portal.`
+                      ) : (
+                        <>
+                          No portal access yet. Turn on{' '}
+                          <UiRef>Portal access</UiRef> for a company above.
+                        </>
+                      )}
+                    </p>
                   </FormItem>
                 )}
               />
-              <div className='flex flex-col gap-2'>
-                <span className='text-sm font-medium'>Signs in with</span>
-                <span className='flex h-9 items-center text-sm break-all'>
-                  {personEmail || '—'}
-                </span>
-              </div>
+              <SignInValue label='Signs in with'>
+                <span className='break-all'>{personEmail || '—'}</span>
+              </SignInValue>
+              {/* Only a live, saved sign-in that stays on: a reset needs one. */}
+              {live && account ? (
+                <>
+                  <SignInValue label='Last sign-in'>
+                    {formatRelativeTime(account.lastSignInAt) ?? 'Never'}
+                  </SignInValue>
+                  <SignInValue label='Password'>
+                    <DisabledFieldTooltip
+                      disabled={isSending || isPending || isSelf}
+                      reason={
+                        isSelf
+                          ? 'Use Forgot password on the sign-in page.'
+                          : null
+                      }
+                      className='w-auto'
+                    >
+                      <Button
+                        type='button'
+                        variant='outline'
+                        size='sm'
+                        disabled={isSending || isPending || isSelf}
+                        onClick={sendReset}
+                      >
+                        {isSending ? 'Sending…' : 'Send reset link'}
+                      </Button>
+                    </DisabledFieldTooltip>
+                  </SignInValue>
+                </>
+              ) : null}
             </div>
-          ) : null}
-          {enabled ? (
-            <p className='text-muted-foreground text-sm'>
-              {role === 'ADMIN'
-                ? 'Admins sign in to this portal and see everything.'
-                : role === 'SALES'
-                  ? 'Sales sign in to this portal: leads, people, companies, and their own tasks and projects.'
-                  : seen.length
-                    ? `Sees ${listNames(seen)} in the client portal. Turn Portal on or off on each company above.`
-                    : 'Sees no companies in the client portal yet. Turn Portal on for a client company above.'}
-            </p>
           ) : null}
           {roleChanged ? (
             <FormField
@@ -357,34 +387,24 @@ function ManagedSignIn({
               {monthLabel(account.scheduledRole.effectiveFrom)}.
             </p>
           ) : null}
-          {/* Only a live, saved sign-in that stays on: a reset needs one. */}
-          {enabled && live && account ? (
-            <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
-              <span className='text-muted-foreground'>
-                Last sign-in:{' '}
-                {formatRelativeTime(account.lastSignInAt) ?? 'never'}
-              </span>
-              <DisabledFieldTooltip
-                disabled={isSending || isPending || isSelf}
-                reason={
-                  isSelf ? 'Use Forgot password on the sign-in page.' : null
-                }
-                className='w-auto'
-              >
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  disabled={isSending || isPending || isSelf}
-                  onClick={sendReset}
-                >
-                  {isSending ? 'Sending…' : 'Send password reset'}
-                </Button>
-              </DisabledFieldTooltip>
-            </div>
-          ) : null}
         </>
       )}
     </SheetSection>
+  )
+}
+
+/** A label over a read-only value, aligned with the form fields beside it. */
+function SignInValue({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <div className='flex flex-col gap-2'>
+      <span className='text-sm font-medium'>{label}</span>
+      <div className='flex min-h-9 items-center text-sm'>{children}</div>
+    </div>
   )
 }
