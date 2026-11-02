@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@pts/ui/dialog'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { ProjectTimeLogForm } from './project-time-log-form'
 import { InfoPanelDivider } from '@/components/ui/info-panel'
 import { TimeLogHoursSummary } from './time-log-hours-summary'
@@ -120,13 +121,13 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
         onCancel={state.discardDialog.cancel}
         onConfirm={state.discardDialog.confirm}
       />
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={state.deleteDialog.isOpen}
-        title='Archive time log?'
-        description='This removes the log from the project burndown.'
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={state.deleteDialog.isDeleting}
+        entity='time log'
+        name='this time log'
+        list='time logs'
+        extra="It no longer counts toward the project's hours."
+        pending={state.deleteDialog.isDeleting}
         onCancel={state.deleteDialog.cancel}
         onConfirm={state.deleteDialog.confirm}
       />

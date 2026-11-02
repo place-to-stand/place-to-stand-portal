@@ -3,7 +3,7 @@
 import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import {
@@ -18,13 +18,6 @@ import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 
 import { ContactSheetForm } from './contact-sheet/contact-sheet-form'
 import { RoleBadge } from '@/components/auth/role-badge'
-
-const ARCHIVE_CONTACT_DIALOG_TITLE = 'Archive person?'
-const ARCHIVE_CONTACT_CONFIRM_LABEL = 'Archive'
-
-function getArchiveContactDialogDescription(displayName: string) {
-  return `Archiving ${displayName} hides them from active views but keeps their record.`
-}
 
 type ContactsSheetProps = UseContactSheetStateOptions
 
@@ -136,13 +129,12 @@ export function ContactsSheet(props: ContactsSheetProps) {
           />
         </SheetContent>
       </Sheet>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={isDeleteDialogOpen}
-        title={ARCHIVE_CONTACT_DIALOG_TITLE}
-        description={getArchiveContactDialogDescription(contactDisplayName)}
-        confirmLabel={ARCHIVE_CONTACT_CONFIRM_LABEL}
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='person'
+        name={contactDisplayName}
+        list='active people'
+        pending={isPending}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />

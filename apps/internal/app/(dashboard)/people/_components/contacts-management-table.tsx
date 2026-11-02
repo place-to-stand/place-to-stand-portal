@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 
 import {
@@ -117,17 +117,12 @@ export function ContactsManagementTable({
       {showContactNotFound ? (
         <DeepLinkNotFoundNotice entity='person' onDismiss={clearSelection} />
       ) : null}
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={Boolean(deleteTarget)}
-        title='Archive person?'
-        description={
-          deleteTarget
-            ? `Archiving ${deleteTarget.name || deleteTarget.email} hides them from active views but keeps their record.`
-            : 'Archiving this person hides them from active views but keeps their record.'
-        }
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='person'
+        name={deleteTarget?.name || deleteTarget?.email || 'this person'}
+        list='active people'
+        pending={isPending}
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />
