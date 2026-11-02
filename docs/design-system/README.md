@@ -205,6 +205,7 @@ All of these run in `npm run lint` (and so in CI). The `pts/*` rules live in `pa
 | eslint `pts/dates-through-ui`                          | House rule 10: no `toLocaleDateString`, bare `Intl.DateTimeFormat` or date-fns `format()` outside `@pts/ui/dates` (apps and packages)           |
 | eslint `pts/no-title-tooltip`                          | House rule 11: no `title=` tooltip on a button                                                                                                  |
 | eslint `pts/icon-button-tooltip`                       | House rule 11: an icon-size `Button` is a `RowActionButton` or sits in a `Tooltip` (menu triggers excepted)                                     |
+| eslint `pts/archive-confirm`                           | Archive confirms are `ArchiveConfirmDialog` (`components/dialog.md`)                                                                            |
 | eslint `pts/no-size-override`                          | House rule 12: no `h-*` / `text-[…]` on `Button` or `Avatar`                                                                                    |
 | eslint `pts/toast-copy`                                | House rule 14: no "Failed to", "successfully", "!" or an "Error" title in a toast                                                               |
 | eslint `pts/grid-phone-column`                         | House rule 15: a responsive grid writes `grid-cols-1`                                                                                           |

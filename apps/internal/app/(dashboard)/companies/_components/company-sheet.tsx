@@ -9,8 +9,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import { archiveCompanyDescription } from '../_lib/archive-copy'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
+import { archiveCompanyExtra } from '../_lib/archive-copy'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Skeleton } from '@pts/ui/skeleton'
@@ -557,16 +557,13 @@ export function CompanySheet({
           )}
         </SheetContent>
       </Sheet>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={archiveOpen}
-        title='Archive company?'
-        description={archiveCompanyDescription(
-          company?.name,
-          Boolean(company?.formerClientId)
-        )}
-        confirmLabel='Archive company'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='company'
+        name={company?.name || 'this company'}
+        list='the Companies list'
+        extra={archiveCompanyExtra(Boolean(company?.formerClientId))}
+        pending={isPending}
         onCancel={() => setArchiveOpen(false)}
         onConfirm={handleArchive}
       />

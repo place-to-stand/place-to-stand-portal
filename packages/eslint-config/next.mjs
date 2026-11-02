@@ -23,6 +23,7 @@ export const HOUSE_RULES = {
   'pts/save-not-gated-on-dirty': 'error', // rule 6
   'pts/no-title-tooltip': 'error', // rule 11
   'pts/icon-button-tooltip': 'error', // rule 11
+  'pts/archive-confirm': 'error', // one archive confirmation
   'pts/no-size-override': 'error', // rule 12
   'pts/toast-copy': 'error', // rule 14
   'pts/grid-phone-column': 'error', // rule 15

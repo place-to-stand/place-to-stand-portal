@@ -216,6 +216,35 @@ export const iconButtonTooltip = {
   },
 }
 
+/** Archive confirms all read the same way. */
+export const archiveConfirm = {
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description: 'Archive confirmations use ArchiveConfirmDialog',
+    },
+    schema: [],
+    messages: {
+      archive: `Archive confirmations use ArchiveConfirmDialog (@/components/sheets/archive-confirm-dialog), so every archive asks the same way. Pass entity, name, list and, for extra consequences, extra.`,
+    },
+  },
+  create(context) {
+    const file = context.filename ?? context.getFilename()
+    if (/archive-confirm-dialog\.tsx$|\/design\//.test(file)) return {}
+    return {
+      JSXOpeningElement(node) {
+        if (jsxName(node.name) !== 'ConfirmDialog') return
+        const title = findAttr(node, 'title')
+        if (!title) return
+        const texts = staticStrings(attrValue(title))
+        if (texts.some(({ value }) => /^\s*Archive\b/.test(value))) {
+          context.report({ node, messageId: 'archive' })
+        }
+      },
+    }
+  },
+}
+
 const SIZE_OVERRIDE = /(?:^|\s)(?:[\w-]+:)*!?(h-(?:\d|\[|px\b)|text-\[[^\]]*\])/
 
 /** Rule 12: pick a size, don't override it. */

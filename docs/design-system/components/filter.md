@@ -18,6 +18,6 @@ The controls in a list's `FilterBar` (and My tasks' and Leads' toolbar pickers).
 
 **Rules**
 
-- Filters sit in one row after the search from `md` up and wrap only when the row runs out; below `md` they move into the Filters sheet, where each stretches to the sheet's width.
-- No labels above filters: the placeholder carries the meaning ("All statuses", "Everyone").
-- Never a plain `Select` in a filter bar.
+- Filters sit in one row after the search from `md` up and wrap only when the row runs out; below `md` they move into the Filters sheet, where each stretches to the sheet's width. (guard: review)
+- No labels above filters: the placeholder carries the meaning ("All statuses", "Everyone"). (guard: review)
+- Never a plain `Select` in a filter bar. (guard: eslint `pts/filter-select`)
