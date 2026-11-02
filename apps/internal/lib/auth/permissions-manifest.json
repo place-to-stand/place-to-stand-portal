@@ -463,13 +463,6 @@
   },
   {
     "type": "page",
-    "name": "/projects/[clientSlug]/[projectSlug]/archive",
-    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/archive/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
     "name": "/projects/[clientSlug]/[projectSlug]/review",
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/review/page.tsx",
     "kind": "admin",
@@ -479,8 +472,8 @@
     "type": "page",
     "name": "/projects/[clientSlug]/[projectSlug]/tasks",
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/tasks/page.tsx",
-    "kind": "capability",
-    "capability": "portal.sign_in"
+    "kind": "admin",
+    "capability": null
   },
   {
     "type": "page",
