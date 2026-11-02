@@ -343,9 +343,21 @@ async function sessionIsLive(
   sessionId: unknown,
   userId: string
 ): Promise<boolean> {
+  // Every Supabase user token carries session_id (password, link, invite,
+  // refresh): one without it isn't a user session.
   if (typeof sessionId !== 'string' || !sessionId) return false
-  const [row] = await db.execute<{ live: boolean }>(
-    sql`select exists (select 1 from auth.sessions s where s.id = ${sessionId}::uuid and s.user_id = ${userId}::uuid) as live`
-  )
-  return Boolean(row?.live)
+  try {
+    const [row] = await db.execute<{ live: boolean }>(
+      sql`select exists (select 1 from auth.sessions s where s.id = ${sessionId}::uuid and s.user_id = ${userId}::uuid) as live`
+    )
+    return Boolean(row?.live)
+  } catch (error) {
+    // Fail open on an error (e.g. the database role can't read
+    // auth.sessions): the token's signature and expiry are already
+    // verified and the users row is still checked, so this falls back to
+    // the old behaviour instead of signing everyone out. A session that is
+    // gone (the check ran and found no row) still signs them out.
+    console.error('Session check failed; allowing the verified token', error)
+    return true
+  }
 }
