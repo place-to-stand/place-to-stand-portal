@@ -1,7 +1,7 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { wasClientCompany } from '@pts/db/client-state'
 import { and, eq } from 'drizzle-orm'
 
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import { formatCalendarDate } from '@pts/ui/dates'
 
 import { logActivity } from '@/lib/activity/logger'

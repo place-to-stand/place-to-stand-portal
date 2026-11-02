@@ -1,15 +1,12 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { clientSinceSql, isClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import { sql, type SQL } from 'drizzle-orm'
 
 import { companies } from '@/lib/db/schema'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
-import {
-  clampLimit,
-  createSearchPattern,
-} from '@/lib/pagination/cursor'
+import { clampLimit, createSearchPattern } from '@/lib/pagination/cursor'
 import type {
   ClientBillingFilter,
   ClientSortField,
@@ -40,7 +37,9 @@ export function buildBillingCondition(
   return sql`${currentBillingTypeSql()} = ${billing}`
 }
 
-export function buildSearchCondition(search: string | null | undefined): SQL | null {
+export function buildSearchCondition(
+  search: string | null | undefined
+): SQL | null {
   const trimmed = search?.trim()
   if (!trimmed) {
     return null
@@ -69,7 +68,6 @@ export const CLIENT_SORT_DESCRIPTORS: Record<
     orderDesc: sql`${clientSinceSql} DESC`,
   },
 }
-
 
 export function resolvePaginationLimit(limit: number | null | undefined) {
   return clampLimit(limit, PAGE_SIZE_LIMITS)

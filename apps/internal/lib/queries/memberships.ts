@@ -1,3 +1,4 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import 'server-only'
 
 import {
@@ -13,7 +14,6 @@ import {
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 
 import { roleCan, type Role } from '@/lib/auth/capabilities'
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import { db, type DbTx } from '@/lib/db'
 import { companies, contacts, memberships, users } from '@/lib/db/schema'
 import {

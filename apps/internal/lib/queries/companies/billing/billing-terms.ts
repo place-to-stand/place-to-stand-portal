@@ -1,6 +1,8 @@
 import 'server-only'
 
-import { and, asc, desc, eq, gt, isNull, lte, sql } from 'drizzle-orm'
+import { billingTypeAsOfSql } from '@pts/db/terms'
+
+import { and, asc, eq, gt, isNull, sql } from 'drizzle-orm'
 
 import { db, type DbTx } from '@/lib/db'
 import { billingTerms } from '@/lib/db/schema'
@@ -72,26 +74,6 @@ export async function upsertBillingTerm(
 }
 
 /**
- * SQL fragment resolving a client's billing type as of a report period —
- * newest `effective_from` <= period start wins, mirroring how
- * `getPartnerRatesForPeriod` resolves the partner rate schedule. Correlated
- * against the outer `companies` table (written table-qualified, as drizzle
- * drops the table name from a column inside a selected fragment), so it is
- * only valid inside a query that reads `companies`.
- */
-export function billingTypeAsOfSql(periodStart: string) {
-  return sql<'prepaid' | 'net_30' | null>`(
-    SELECT ${billingTerms.billingType}
-    FROM ${billingTerms}
-    WHERE ${billingTerms.companyId} = ${sql.raw('"companies"."id"')}
-      AND ${billingTerms.effectiveFrom} <= ${periodStart}
-      AND ${billingTerms.deletedAt} IS NULL
-    ORDER BY ${billingTerms.effectiveFrom} DESC
-    LIMIT 1
-  )`
-}
-
-/**
  * Resolves a client's billing type as of a given month start ('yyyy-MM-dd').
  */
 async function resolveBillingTypeAsOf(
@@ -99,20 +81,12 @@ async function resolveBillingTypeAsOf(
   periodStart: string,
   tx: DbOrTransaction = db
 ): Promise<ClientBillingTypeValue | null> {
-  const [row] = await tx
-    .select({ billingType: billingTerms.billingType })
-    .from(billingTerms)
-    .where(
-      and(
-        eq(billingTerms.companyId, companyId),
-        lte(billingTerms.effectiveFrom, periodStart),
-        isNull(billingTerms.deletedAt)
-      )
-    )
-    .orderBy(desc(billingTerms.effectiveFrom))
-    .limit(1)
-
-  return row?.billingType ?? null
+  const [row] = await tx.execute<{
+    billing_type: ClientBillingTypeValue | null
+  }>(
+    sql`select ${billingTypeAsOfSql(periodStart, sql`${companyId}::uuid`)} as billing_type`
+  )
+  return row?.billing_type ?? null
 }
 
 /**
@@ -156,23 +130,4 @@ export async function resolveHourBlockBillingMonth(
     `[resolveHourBlockBillingMonth] Client ${companyId} has no prepaid billing term; attributing block to ${monthStart}`
   )
   return monthStart
-}
-
-/**
- * The client's billing type as the company sheet's billing last set it: the newest
- * billing term (latest effective date, so a change scheduled for next month
- * shows straight away, as it always has). This is the one place billing type
- * is stored; reports resolve by period with `billingTypeAsOfSql`. Correlated
- * against the outer `companies` table, written table-qualified because drizzle
- * drops the table name from a column inside a selected fragment.
- */
-export function currentBillingTypeSql() {
-  return sql<'prepaid' | 'net_30'>`coalesce((
-    SELECT ${billingTerms.billingType}
-    FROM ${billingTerms}
-    WHERE ${billingTerms.companyId} = ${sql.raw('"companies"."id"')}
-      AND ${billingTerms.deletedAt} IS NULL
-    ORDER BY ${billingTerms.effectiveFrom} DESC
-    LIMIT 1
-  ), 'prepaid')`
 }

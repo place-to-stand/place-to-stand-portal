@@ -1,8 +1,8 @@
 'use server'
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
 import { isClientCompany } from '@pts/db/client-state'
 
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import { revalidatePath } from 'next/cache'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 

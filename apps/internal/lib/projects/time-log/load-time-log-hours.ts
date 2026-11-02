@@ -1,5 +1,6 @@
 'use server'
 
+import { billingTypeOrDefaultSql } from '@pts/db/terms'
 import { and, eq, gte, isNull, lt, sql } from 'drizzle-orm'
 import {
   clientHoursTotalsFor,
@@ -11,7 +12,6 @@ import { getCurrentAdmin } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { companies, projects, timeLogs } from '@/lib/db/schema'
 import {
-  billingTypeAsOfSql,
   currentMonthStartUtc,
   nextMonthStartUtc,
 } from '@/lib/queries/companies/billing/billing-terms'
@@ -55,9 +55,7 @@ export async function loadTimeLogHours(
       companyId: projects.companyId,
       clientName: companies.name,
       projectName: projects.name,
-      billingType: sql<
-        'prepaid' | 'net_30'
-      >`coalesce(${billingTypeAsOfSql(thisMonth)}, 'prepaid')`,
+      billingType: billingTypeOrDefaultSql(thisMonth),
     })
     .from(projects)
     .innerJoin(companies, eq(companies.id, projects.companyId))
