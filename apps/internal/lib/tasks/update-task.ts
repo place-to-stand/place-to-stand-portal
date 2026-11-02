@@ -5,7 +5,13 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { resolveMovedTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
 import { logActivity } from '@/lib/activity/logger'
 import { db } from '@/lib/db'
-import { projects, taskAssignees, tasks } from '@/lib/db/schema'
+import {
+  projects,
+  taskAssignees,
+  tasks,
+  timeLogs,
+  timeLogTasks,
+} from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import {
   ensureProjectWorkAccess,
@@ -84,6 +90,30 @@ export async function updateTaskForActor(
     // elsewhere breaks billing. Only admins may do that.
     if (actor.role !== 'ADMIN' && existingTask.companyId) {
       return { error: 'Only an admin can move a task off a client project.' }
+    }
+
+    // Time logs belong to the task's project, and the database checks that
+    // each linked time log is on the same project as its task. A move would
+    // leave those links pointing across projects, so it waits until they
+    // are archived.
+    const [loggedTime] = await db
+      .select({ id: timeLogTasks.id })
+      .from(timeLogTasks)
+      .innerJoin(timeLogs, eq(timeLogs.id, timeLogTasks.timeLogId))
+      .where(
+        and(
+          eq(timeLogTasks.taskId, taskId),
+          isNull(timeLogTasks.deletedAt),
+          isNull(timeLogs.deletedAt)
+        )
+      )
+      .limit(1)
+
+    if (loggedTime) {
+      return {
+        error:
+          "This task has time logged on its project, so it can't move to another one. Archive those time logs first.",
+      }
     }
 
     try {

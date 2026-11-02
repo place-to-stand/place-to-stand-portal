@@ -1144,7 +1144,7 @@ export const timeLogTasks = pgTable(
     }).onDelete('cascade'),
     check(
       'time_log_tasks_project_match',
-      sql`CHECK (time_log_task_matches_project(time_log_id, task_id))`
+      sql`time_log_task_matches_project(time_log_id, task_id)`
     ),
   ]
 )
