@@ -1,7 +1,14 @@
+import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
+import { clientFields } from '@/lib/queries/companies/billing/selectors'
+import { and, eq } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
+import { db } from '@/lib/db'
+import { companies } from '@/lib/db/schema'
+import { fetchLatestClosersByClient } from '@/lib/queries/companies/billing/commission-terms'
+import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -40,6 +47,47 @@ type SheetInitResolver<E extends SheetInitEntity> = (
   /** Param value: a validated UUID, or `new` for create sheets. */
   id: string
 ) => Promise<SheetInitPayloads[E]>
+
+const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
+  if (id === NEW_SHEET_VALUE) {
+    return { client: null }
+  }
+
+  // The billing form self-fetches its reference data (contacts/admins) —
+  // it only needs the row (snake_case `ClientCompanyView` plus its closer split).
+  const rows = await db
+    .select(clientFields)
+    .from(companies)
+    // Former clients too: the company sheet restarts billing from their
+    // last terms.
+    .where(and(wasClientCompany(), eq(companies.id, id)))
+    .limit(1)
+
+  const row = rows[0]
+  if (!row) {
+    throw new NotFoundError('Client not found')
+  }
+
+  const closersByClient = await fetchLatestClosersByClient([row.id])
+  const client: ClientWithClosers = {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    notes: row.notes,
+    state: row.state ?? null,
+    origination_contact_id: row.originationContactId,
+    origination_user_id: row.originationUserId,
+    billing_type: row.billingType,
+    company_id: row.companyId,
+    created_by: row.createdBy,
+    created_at: row.createdAt ?? row.updatedAt,
+    updated_at: row.updatedAt,
+    deleted_at: row.deletedAt,
+    closers: closersByClient.get(row.id) ?? [],
+  }
+
+  return { client }
+}
 
 const resolveSubmissionInit: SheetInitResolver<'submission'> = async (
   user,
@@ -242,6 +290,7 @@ const RESOLVERS: {
   [E in SheetInitEntity]: SheetInitResolver<E>
 } = {
   task: resolveTaskInit,
+  client: resolveClientInit,
   submission: resolveSubmissionInit,
   contact: resolveContactInit,
   'hour-block': resolveHourBlockInit,

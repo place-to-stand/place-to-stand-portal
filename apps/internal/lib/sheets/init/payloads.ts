@@ -8,6 +8,7 @@
  * wrapper + resolver.
  */
 
+import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 import type {
   DbUser,
   ProjectWithRelations,
@@ -35,6 +36,11 @@ import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-st
 export type SheetInitPayloads = {
   /** The company sheet loads its own record; init only confirms access. */
   company: { companyId: string | null }
+  /**
+   * Not a sheet param: the company sheet's billing section loads its client
+   * row here. `null` only for `new`.
+   */
+  client: { client: ClientWithClosers | null }
   submission: { submission: FormSubmissionRecord }
   /** The contact sheet self-fetches its client links; it only needs the row. */
   contact: { contact: ContactSheetInput | null }
