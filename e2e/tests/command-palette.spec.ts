@@ -4,9 +4,9 @@ import { expectHealthy } from './helpers'
 
 type Company = { id: string; name: string; isClient: boolean }
 
-// Decision 8: ⌘K lists Companies (not Clients), with a Client badge on the
+// Decision 8: ⌘K lists Companies (not Clients), with the billing type on the
 // ones you bill. Names come from the database, so nothing is hard-coded.
-test('⌘K shows a Companies group with a Client badge on clients', async ({
+test('⌘K shows a Companies group with the billing type on clients', async ({
   page,
 }) => {
   await page.goto('/my/home')
@@ -28,7 +28,8 @@ test('⌘K shows a Companies group with a Client badge on clients', async ({
     dialog.locator('[cmdk-group-heading]', { hasText: /^Clients$/ })
   ).toHaveCount(0)
   const item = group.locator('[cmdk-item]', { hasText: client!.name }).first()
-  await expect(item).toContainText('Client')
+  // A client shows its billing type (CompanyBillingMark), for admins.
+  await expect(item).toContainText(/Prepaid|Net 30/)
 
   await item.click()
   await expect(page).toHaveURL(new RegExp(`company=${client!.id}`))
