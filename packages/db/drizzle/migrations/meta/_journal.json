@@ -834,6 +834,13 @@
       "when": 1793645129345,
       "tag": "0118_index_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1793649646214,
+      "tag": "0119_drop_client_updates",
+      "breakpoints": true
     }
   ]
 }

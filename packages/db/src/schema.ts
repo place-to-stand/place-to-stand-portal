@@ -127,7 +127,6 @@ export const leadLossReason = pgEnum('lead_loss_reason', [
   'OTHER',
 ])
 
-
 /**
  * How a logged lead interaction happened.
  * Kept deliberately small at launch — see PRD 005 D3. TEXT_MESSAGE (SMS /
@@ -141,11 +140,6 @@ export const leadUpdateType = pgEnum('lead_update_type', [
   'EMAIL',
   'NOTE',
 ])
-export const clientUpdateStatus = pgEnum('client_update_status', [
-  'DRAFT',
-  'SENT',
-])
-
 
 export const workerStatus = pgEnum('worker_status', [
   'dispatched',
@@ -180,7 +174,10 @@ export const users = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     // Blocks portal sign-in without archiving: the user stays in active lists
     // and historical reports, but auth rejects them while this is set.
-    disabledAt: timestamp('disabled_at', { withTimezone: true, mode: 'string' }),
+    disabledAt: timestamp('disabled_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     onboardingCompletedAt: timestamp('onboarding_completed_at', {
       withTimezone: true,
       mode: 'string',
@@ -225,13 +222,18 @@ export const companies = pgTable(
   },
   table => [
     unique('companies_slug_key').on(table.slug),
-    uniqueIndex('uq_companies_staff').on(table.isStaff).where(sql`is_staff`),
+    uniqueIndex('uq_companies_staff')
+      .on(table.isStaff)
+      .where(sql`is_staff`),
     // One live company per name (case-insensitive), so pickers and the lead
     // backfill can't fork "Lasso Group" into two records.
     uniqueIndex('idx_companies_name_unique')
       .using('btree', sql`lower(btrim(name))`)
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_companies_name_trgm').using('gin', table.name.op('gin_trgm_ops')),
+    index('idx_companies_name_trgm').using(
+      'gin',
+      table.name.op('gin_trgm_ops')
+    ),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
@@ -266,10 +268,7 @@ export const contacts = pgTable(
     unique('contacts_user_id_key').on(table.userId),
     // Contacts settings and the command palette search with ILIKE '%…%'
     // over name and email.
-    index('idx_contacts_name_trgm').using(
-      'gin',
-      table.name.op('gin_trgm_ops')
-    ),
+    index('idx_contacts_name_trgm').using('gin', table.name.op('gin_trgm_ops')),
     index('idx_contacts_email_trgm').using(
       'gin',
       table.email.op('gin_trgm_ops')
@@ -379,14 +378,8 @@ export const projects = pgTable(
     ),
     // Landing/settings search runs ILIKE '%…%' over name and slug —
     // trigram GIN is the only index shape that serves infix matches.
-    index('idx_projects_name_trgm').using(
-      'gin',
-      table.name.op('gin_trgm_ops')
-    ),
-    index('idx_projects_slug_trgm').using(
-      'gin',
-      table.slug.op('gin_trgm_ops')
-    ),
+    index('idx_projects_name_trgm').using('gin', table.name.op('gin_trgm_ops')),
+    index('idx_projects_slug_trgm').using('gin', table.slug.op('gin_trgm_ops')),
     index('idx_projects_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -442,7 +435,10 @@ export const projectMembers = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
-    unique('project_members_project_user_key').on(table.projectId, table.userId),
+    unique('project_members_project_user_key').on(
+      table.projectId,
+      table.userId
+    ),
     index('idx_project_members_user')
       .using('btree', table.userId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -528,7 +524,10 @@ export const tasks = pgTable(
       .where(sql`(deleted_at IS NULL AND lead_id IS NOT NULL)`),
     // Serves the My Tasks board's rolling "done in the last N weeks" window.
     index('idx_tasks_completed_at')
-      .using('btree', table.completedAt.desc().nullsLast().op('timestamptz_ops'))
+      .using(
+        'btree',
+        table.completedAt.desc().nullsLast().op('timestamptz_ops')
+      )
       .where(sql`(deleted_at IS NULL AND status = 'DONE'::task_status)`),
     foreignKey({
       columns: [table.projectId],
@@ -1011,7 +1010,10 @@ export const commissionTermClosers = pgTable(
     closerUserId: uuid('closer_user_id'),
     closerContactId: uuid('closer_contact_id'),
     /** Share of the closer rate, 0 < share <= 100. */
-    sharePercent: numeric('share_percent', { precision: 5, scale: 2 }).notNull(),
+    sharePercent: numeric('share_percent', {
+      precision: 5,
+      scale: 2,
+    }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -1163,20 +1165,32 @@ export const leads = pgTable(
     rank: text().default('zzzzzzzz').notNull(),
 
     // Activity Tracking
-    lastContactAt: timestamp('last_contact_at', { withTimezone: true, mode: 'string' }),
+    lastContactAt: timestamp('last_contact_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     awaitingReply: boolean('awaiting_reply').default(false),
 
     // Predictions
     expectedCloseDate: date('expected_close_date'),
 
     // Pipeline tracking
-    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'string' }),
+    resolvedAt: timestamp('resolved_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     lossReason: leadLossReason('loss_reason'),
     lossNotes: text('loss_notes'),
-    currentStageEnteredAt: timestamp('current_stage_entered_at', { withTimezone: true, mode: 'string' }),
+    currentStageEnteredAt: timestamp('current_stage_entered_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
 
     // Conversion
-    convertedAt: timestamp('converted_at', { withTimezone: true, mode: 'string' }),
+    convertedAt: timestamp('converted_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
 
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
@@ -1232,10 +1246,14 @@ export const leadStageHistory = pgTable(
     changedBy: uuid('changed_by'),
   },
   table => [
-    index('idx_lead_stage_history_lead')
-      .using('btree', table.leadId.asc().nullsLast().op('uuid_ops')),
-    index('idx_lead_stage_history_changed_at')
-      .using('btree', table.changedAt.asc().nullsLast()),
+    index('idx_lead_stage_history_lead').using(
+      'btree',
+      table.leadId.asc().nullsLast().op('uuid_ops')
+    ),
+    index('idx_lead_stage_history_changed_at').using(
+      'btree',
+      table.changedAt.asc().nullsLast()
+    ),
     foreignKey({
       columns: [table.leadId],
       foreignColumns: [leads.id],
@@ -1306,82 +1324,6 @@ export const leadUpdates = pgTable(
       columns: [table.authorId],
       foreignColumns: [users.id],
       name: 'lead_updates_author_id_fkey',
-    }).onDelete('restrict'),
-  ]
-)
-
-/**
- * A client-facing status email, drafted in the portal and sent through the
- * admin's own Gmail. The draft is the row itself — Gmail is only touched at
- * send time — and the email is rendered from `items` plus a generated frame
- * (greeting, hours balance, footer) rather than stored as HTML.
- */
-export const clientUpdates = pgTable(
-  'client_updates',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    companyId: uuid('company_id').notNull(),
-    status: clientUpdateStatus().default('DRAFT').notNull(),
-    subject: text().notNull(),
-    /** Opening line under the greeting. The greeting itself is derived at render. */
-    intro: text().default('').notNull(),
-    /**
-     * The substance: one entry per thing we want to tell the client, usually
-     * anchored to a task so the email can link to it in the client portal.
-     * `ClientUpdateItem[]` — `{ id, taskId, label, body }`, body in the
-     * minimal markdown `lib/updates/markdown.ts` accepts.
-     */
-    items: jsonb().default([]).notNull(),
-    /** Sign-off line(s) above the branded footer. */
-    closing: text().default('').notNull(),
-    /**
-     * The reporting window the scaffold was generated from. Informational —
-     * editing items does not move these — but the next draft for the same
-     * client starts the day after the last sent `period_end`.
-     */
-    periodStart: date('period_start').notNull(),
-    periodEnd: date('period_end').notNull(),
-    /** `{ to: string[]; cc: string[] }` — email addresses, resolved at draft time. */
-    recipients: jsonb().default({ to: [], cc: [] }).notNull(),
-    createdById: uuid('created_by_id').notNull(),
-    sentById: uuid('sent_by_id'),
-    sentAt: timestamp('sent_at', { withTimezone: true, mode: 'string' }),
-    gmailMessageId: text('gmail_message_id'),
-    gmailThreadId: text('gmail_thread_id'),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
-  },
-  table => [
-    // Serves the client page's recent-updates list and the "last sent" lookup
-    // that seeds the next draft's window.
-    index('idx_client_updates_company_created')
-      .using(
-        'btree',
-        table.companyId.asc().nullsLast().op('uuid_ops'),
-        table.createdAt.desc().nullsLast().op('timestamptz_ops')
-      )
-      .where(sql`(deleted_at IS NULL)`),
-    foreignKey({
-      columns: [table.companyId],
-      foreignColumns: [companies.id],
-      name: 'client_updates_company_id_fkey',
-    }).onDelete('restrict'),
-    // RESTRICT for the same reason as lead_updates: a sent update is a record
-    // of who told the client what, and users are disabled rather than deleted.
-    foreignKey({
-      columns: [table.createdById],
-      foreignColumns: [users.id],
-      name: 'client_updates_created_by_id_fkey',
-    }).onDelete('restrict'),
-    foreignKey({
-      columns: [table.sentById],
-      foreignColumns: [users.id],
-      name: 'client_updates_sent_by_id_fkey',
     }).onDelete('restrict'),
   ]
 )
@@ -1510,7 +1452,10 @@ export const oauthConnections = pgTable(
     displayName: text('display_name'),
     providerMetadata: jsonb('provider_metadata').default({}).notNull(),
     syncState: jsonb('sync_state').default({}).notNull(), // Provider-specific sync checkpoint (e.g., Gmail historyId)
-    lastSyncAt: timestamp('last_sync_at', { withTimezone: true, mode: 'string' }),
+    lastSyncAt: timestamp('last_sync_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
@@ -1629,7 +1574,10 @@ export const githubRepoLinks = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
-    unique('github_repo_links_project_repo_key').on(table.projectId, table.repoFullName),
+    unique('github_repo_links_project_repo_key').on(
+      table.projectId,
+      table.repoFullName
+    ),
     index('idx_github_repo_links_project')
       .using('btree', table.projectId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
@@ -1770,10 +1718,14 @@ export const taskDeployments = pgTable(
       .notNull(),
   },
   table => [
-    uniqueIndex('idx_task_deployments_plan_id')
-      .using('btree', table.planId.asc().nullsLast().op('text_ops')),
-    index('idx_task_deployments_task')
-      .using('btree', table.taskId.asc().nullsLast().op('uuid_ops')),
+    uniqueIndex('idx_task_deployments_plan_id').using(
+      'btree',
+      table.planId.asc().nullsLast().op('text_ops')
+    ),
+    index('idx_task_deployments_task').using(
+      'btree',
+      table.taskId.asc().nullsLast().op('uuid_ops')
+    ),
     foreignKey({
       columns: [table.taskId],
       foreignColumns: [tasks.id],
@@ -1801,11 +1753,10 @@ export const planningSessionStatus = pgEnum('planning_session_status', [
   'deployed',
 ])
 
-export const planThreadGenerationStatus = pgEnum('plan_thread_generation_status', [
-  'idle',
-  'streaming',
-  'error',
-])
+export const planThreadGenerationStatus = pgEnum(
+  'plan_thread_generation_status',
+  ['idle', 'streaming', 'error']
+)
 
 export const planningSessions = pgTable(
   'planning_sessions',
@@ -1823,8 +1774,10 @@ export const planningSessions = pgTable(
       .notNull(),
   },
   table => [
-    index('idx_planning_sessions_task')
-      .using('btree', table.taskId.asc().nullsLast().op('uuid_ops')),
+    index('idx_planning_sessions_task').using(
+      'btree',
+      table.taskId.asc().nullsLast().op('uuid_ops')
+    ),
     foreignKey({
       columns: [table.taskId],
       foreignColumns: [tasks.id],
@@ -1862,8 +1815,10 @@ export const planThreads = pgTable(
       .notNull(),
   },
   table => [
-    index('idx_plan_threads_session')
-      .using('btree', table.sessionId.asc().nullsLast().op('uuid_ops')),
+    index('idx_plan_threads_session').using(
+      'btree',
+      table.sessionId.asc().nullsLast().op('uuid_ops')
+    ),
     foreignKey({
       columns: [table.sessionId],
       foreignColumns: [planningSessions.id],
@@ -1885,7 +1840,10 @@ export const planRevisions = pgTable(
       .notNull(),
   },
   table => [
-    unique('plan_revisions_thread_version_key').on(table.threadId, table.version),
+    unique('plan_revisions_thread_version_key').on(
+      table.threadId,
+      table.version
+    ),
     foreignKey({
       columns: [table.threadId],
       foreignColumns: [planThreads.id],
@@ -1907,8 +1865,11 @@ export const planMessages = pgTable(
       .notNull(),
   },
   table => [
-    index('idx_plan_messages_thread')
-      .using('btree', table.threadId.asc().nullsLast().op('uuid_ops'), table.createdAt.asc().nullsLast()),
+    index('idx_plan_messages_thread').using(
+      'btree',
+      table.threadId.asc().nullsLast().op('uuid_ops'),
+      table.createdAt.asc().nullsLast()
+    ),
     foreignKey({
       columns: [table.threadId],
       foreignColumns: [planThreads.id],
@@ -2126,8 +2087,10 @@ export const formSubmissions = pgTable(
 
     // Timing. `last_activity_at` is the client-side ordering key used to
     // discard stale beacons — distinct from the `updated_at` row audit column.
-    startedAt: timestamp('started_at', { withTimezone: true, mode: 'string' })
-      .notNull(),
+    startedAt: timestamp('started_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).notNull(),
     lastActivityAt: timestamp('last_activity_at', {
       withTimezone: true,
       mode: 'string',
@@ -2302,7 +2265,10 @@ export const rateLimitBuckets = pgTable(
   'rate_limit_buckets',
   {
     key: text().primaryKey().notNull(),
-    windowStart: timestamp('window_start', { withTimezone: true, mode: 'string' })
+    windowStart: timestamp('window_start', {
+      withTimezone: true,
+      mode: 'string',
+    })
       .default(sql`timezone('utc'::text, now())`)
       .notNull(),
     count: integer().default(0).notNull(),
@@ -2346,10 +2312,18 @@ export const notifications = pgTable(
   },
   table => [
     index('idx_notifications_user_feed')
-      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'), table.createdAt.desc().nullsFirst().op('timestamptz_ops'))
+      .using(
+        'btree',
+        table.userId.asc().nullsLast().op('uuid_ops'),
+        table.createdAt.desc().nullsFirst().op('timestamptz_ops')
+      )
       .where(sql`(cleared_at IS NULL)`),
     uniqueIndex('idx_notifications_user_dedupe')
-      .using('btree', table.userId.asc().nullsLast().op('uuid_ops'), table.dedupeKey.asc().nullsLast().op('text_ops'))
+      .using(
+        'btree',
+        table.userId.asc().nullsLast().op('uuid_ops'),
+        table.dedupeKey.asc().nullsLast().op('text_ops')
+      )
       .where(sql`(dedupe_key IS NOT NULL)`),
     foreignKey({
       columns: [table.userId],
