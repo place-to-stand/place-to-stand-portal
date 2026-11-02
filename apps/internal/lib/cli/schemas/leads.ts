@@ -51,7 +51,7 @@ export const cliCreateLeadFields = {
     .string()
     .uuid()
     .describe(
-      'Use an existing person as the contact (their name, email and phone).'
+      'Use an existing person as the contact. Their own name, email and phone are used; name, email and phone in this call are ignored.'
     )
     .nullish(),
   website: websiteSchema.nullish(),
@@ -86,7 +86,9 @@ export const cliUpdateLeadFields = {
   contactId: z
     .string()
     .uuid()
-    .describe('Switch the contact to an existing person.')
+    .describe(
+      'Switch the contact to an existing person. Their own name, email and phone are used; name, email and phone in this call are ignored.'
+    )
     .optional(),
   website: websiteSchema.nullable().optional(),
   notes: richTextSchema(20_000)

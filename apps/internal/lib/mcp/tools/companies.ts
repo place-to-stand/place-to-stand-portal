@@ -86,6 +86,22 @@ async function readCompany(user: AppUser, id: string) {
   return { company: serializeCompany(await getCompanyDetail(user, id)) }
 }
 
+/**
+ * A title belongs to one company: the save ignores `jobTitle` without one,
+ * so refuse it rather than report a change that didn't happen.
+ */
+function assertTitleHasCompany(args: {
+  jobTitle?: string | null
+  companyId?: string | null
+  companyName?: string | null
+}) {
+  if (args.jobTitle !== undefined && !args.companyId && !args.companyName) {
+    throw new BadRequestError(
+      "jobTitle needs companyId or companyName. To change someone's title at a company they're already at, use update_company's titles."
+    )
+  }
+}
+
 /** Live companies only: an archived one is restored in the portal. */
 async function loadLiveCompany(user: AppUser, id: string) {
   const company = await getCompanyDetail(user, id)
@@ -250,6 +266,7 @@ export function registerCompanyTools(server: McpServer) {
       jobTitle: z.string().trim().max(160).nullish(),
     },
     run: async (args, { user }) => {
+      assertTitleHasCompany(args)
       const result = await savePersonSheet(user, {
         name: args.name,
         email: args.email ?? null,
@@ -289,6 +306,7 @@ export function registerCompanyTools(server: McpServer) {
       if (!Object.values(changes).some(value => value !== undefined)) {
         throw new BadRequestError('Provide at least one field to update.')
       }
+      assertTitleHasCompany(changes)
       const current = await loadExistingContact(personId)
       if (!current || current.deletedAt) {
         throw new NotFoundError('Person not found.')
@@ -301,7 +319,8 @@ export function registerCompanyTools(server: McpServer) {
         name: changes.name ?? current.name,
         email: keep(changes.email, current.email),
         phone: keep(changes.phone, current.phone),
-        linkedinUrl: keep(changes.linkedinUrl, current.linkedinUrl),
+        // Omitted keeps it as stored (not re-checked).
+        linkedinUrl: changes.linkedinUrl,
         companyId: changes.companyId,
         companyName: changes.companyId ? undefined : changes.companyName,
         jobTitle: changes.jobTitle,
