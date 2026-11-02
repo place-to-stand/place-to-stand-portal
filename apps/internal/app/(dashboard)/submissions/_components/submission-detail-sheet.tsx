@@ -368,7 +368,7 @@ export function SubmissionDetailSheet({
         <div className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'>
           <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
             <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
-              <SheetSection title='Contact'>
+              <SheetSection title='Contact details'>
                 <dl className={KV_GRID}>
                   <Kv
                     label='Name'

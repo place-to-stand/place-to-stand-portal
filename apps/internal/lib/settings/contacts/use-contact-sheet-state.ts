@@ -206,7 +206,6 @@ export function useContactSheetState({
     })
 
     // Reset state - intentional setState during effect to sync UI with prop changes
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- resets the sheet when the person it shows changes
     setCompaniesLoaded(!contactId)
     setCompaniesLoadFailed(false)
     setLoadedUpdatedAt(null)
