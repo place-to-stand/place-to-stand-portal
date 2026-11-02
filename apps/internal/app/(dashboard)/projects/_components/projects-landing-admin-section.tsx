@@ -1,7 +1,7 @@
 'use client'
 
-import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import type { LandingProject } from '@/lib/data/projects'
 
 import { PageShell } from '@/components/layout/page-shell'

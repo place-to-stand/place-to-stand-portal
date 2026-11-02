@@ -9,7 +9,7 @@ import {
 } from '@/lib/queries/hour-blocks'
 import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
 import { hourBlockHref } from '@/lib/sheets/hrefs'
-import { parseHourBlocksSearchParams } from '@/lib/settings/hour-blocks/filters'
+import { parseHourBlocksSearchParams } from '@/lib/hour-blocks/filters'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
 import { HourBlocksAddButton } from './_components/hour-blocks-add-button'

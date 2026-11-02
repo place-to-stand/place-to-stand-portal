@@ -8,15 +8,15 @@ import { useToast } from '@/components/ui/use-toast'
 import type {
   ClientPickerRow,
   ProjectWithClient,
-} from '@/lib/settings/projects/project-sheet-form'
-import { sortClientsByName } from '@/lib/settings/projects/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+} from '@/lib/projects/sheet/project-sheet-form'
+import { sortClientsByName } from '@/lib/projects/sheet/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 
-import { ProjectSheet } from '@/app/(dashboard)/settings/projects/project-sheet'
-import { ProjectLifecycleDialogs } from '@/components/settings/projects/table/project-lifecycle-dialogs'
-import { ProjectsTableSection } from '@/components/settings/projects/table/projects-table-section'
-import { type ContractorUserSummary } from '@/components/settings/projects/table/types'
-import { useProjectsSettingsController } from '@/components/settings/projects/table/use-projects-settings-controller'
+import { ProjectSheet } from '@/app/(dashboard)/projects/project-sheet'
+import { ProjectLifecycleDialogs } from '@/components/projects/table/project-lifecycle-dialogs'
+import { ProjectsTableSection } from '@/components/projects/table/projects-table-section'
+import { type ContractorUserSummary } from '@/components/projects/table/types'
+import { useProjectsSettingsController } from '@/components/projects/table/use-projects-settings-controller'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 
 type ProjectsManagementSectionProps = {

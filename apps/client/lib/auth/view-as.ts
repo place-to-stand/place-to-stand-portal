@@ -1,5 +1,4 @@
 import { isClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -86,11 +85,11 @@ export const resolvePortalScope = cache(
 
     // The view only lists live clients and live contacts.
     const accessible = await db
-      .select({ id: companies.id, name: clientNameSql })
+      .select({ id: companies.id, name: companies.name })
       .from(clientPortalAccess)
       .innerJoin(companies, eq(companies.id, clientPortalAccess.companyId))
       .where(eq(clientPortalAccess.userId, user.id))
-      .orderBy(asc(clientNameSql))
+      .orderBy(asc(companies.name))
 
     return {
       companyIds: accessible.map(m => m.id),
@@ -168,7 +167,7 @@ async function resolveAdminScope(): Promise<PortalScope> {
   // (fail closed); rows with a null client mean a valid contact with nothing
   // linked yet, which is still a valid preview.
   const rows = await db
-    .select({ companyId: companies.id, clientName: clientNameSql })
+    .select({ companyId: companies.id, clientName: companies.name })
     .from(contacts)
     // Every current client the person is at, portal access or not: the
     // admin sees what they'd see with access everywhere.
@@ -186,7 +185,7 @@ async function resolveAdminScope(): Promise<PortalScope> {
       )
     )
     .where(and(eq(contacts.id, selectedContactId), isNull(contacts.deletedAt)))
-    .orderBy(asc(clientNameSql))
+    .orderBy(asc(companies.name))
 
   if (rows.length === 0) {
     return EMPTY_ADMIN_SCOPE

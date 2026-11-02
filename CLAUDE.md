@@ -22,7 +22,7 @@ place-to-stand-portal/
 │       ├── lib/           # Auth, data fetching, utilities
 │       └── styles/        # Global CSS
 ├── packages/
-│   ├── db/                # Shared database schema, relations, and migrations (@pts/db)
+│   ├── db/                # Shared database schema and migrations (@pts/db)
 │   ├── github/            # GitHub App auth and API utilities (@pts/github)
 │   └── cli/               # `pts` admin CLI, consumes /api/cli/v1 (@pts/cli, not published)
 ├── supabase/              # Supabase config (stays at root)
@@ -63,7 +63,7 @@ Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environmen
 - `npm run db:migrate` - Apply migrations to database
 
 **Migration workflow:**
-1. Update schema files in `packages/db/src/schema.ts` and `packages/db/src/relations.ts`
+1. Update the schema in `packages/db/src/schema.ts`
 2. Run `npm run db:generate -- --name descriptive_label` from `packages/db/`
 3. Review generated SQL in `packages/db/drizzle/migrations/`
 4. Apply locally with `npm run db:migrate`, then in staging/production
@@ -178,7 +178,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 - Soft deletes via `deletedAt` timestamps on all core tables
 - `createdAt`/`updatedAt` on all records
 - PostgreSQL enums for status fields
-- Relations defined in `packages/db/src/relations.ts`
+- No Drizzle relations: queries join explicitly (the db client is created without a schema, so `db.query.*` is unavailable)
 - Both apps import schema via `@pts/db/schema`
 - **NO Row Level Security** - access control is handled in the application layer (see below)
 
@@ -376,7 +376,7 @@ Sep 2026.
 
 **Sheet deep links (`lib/sheets/`):**
 
-Every entity sheet is addressed by one query param — `?client=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
+Every entity sheet is addressed by one query param — `?company=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
 
 Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never hand-roll sheet URL writes:
 - Value is a UUID or `new` (create sheet). UUID-guard before any DB cast.
@@ -384,6 +384,8 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 - **Save = done = close** for create *and* edit, matching every sheet: a successful save clears the entity param. Never transition a create sheet into edit mode (see `task-sheet-closes-on-save`).
 - Paginated/filtered list pages resolve the param server-side with `resolveSheetDeepLink()` so a link to a row on page 3 still opens, and cross-redirect between active/archive tabs.
 - Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.
+
+**Retired routes and params:** static redirects live in `apps/internal/next.config.ts` `redirects()`; only routes that need a lookup stay as redirect pages (`/clients/[clientSlug]`, `/settings/users`). Old `?client=`/`?user=` sheet params are mapped in `proxy.ts`.
 
 **Adding a deep-linkable entity:** add the param to `lib/sheets/entities.ts` (with `claimsPathname` for its host pages), a payload type + resolver in `lib/sheets/init/`, a wrapper in `lib/sheets/wrappers/`, and one line in `lib/sheets/registry.tsx`.
 
@@ -429,12 +431,11 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 
 ### Creating a new table
 1. Define schema in `packages/db/src/schema.ts`
-2. Add relations in `packages/db/src/relations.ts`
-3. Generate migration: `npm run db:generate -- --name table_name` from `packages/db/`
-4. Review SQL in `packages/db/drizzle/migrations/`
-5. Apply: `npm run db:migrate`
-6. Add query functions in `apps/internal/lib/queries/`
-7. Add data layer functions in `apps/internal/lib/data/`
+2. Generate migration: `npm run db:generate -- --name table_name` from `packages/db/`
+3. Review SQL in `packages/db/drizzle/migrations/`
+4. Apply: `npm run db:migrate`
+5. Add query functions in `apps/internal/lib/queries/`
+6. Add data layer functions in `apps/internal/lib/data/`
 
 ### Adding a new server-side env var
 1. Add Zod validation to the appropriate app's `lib/env.server.ts`

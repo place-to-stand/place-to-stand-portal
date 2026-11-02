@@ -15,7 +15,7 @@ import {
 import { fetchCrmUsers } from '@/lib/data/users'
 import { canWorkTask, listWorkableProjectIds } from '@/lib/projects/access'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
-import { fetchClientDirectory } from '@/lib/queries/clients'
+import { listClientDirectory } from '@/lib/queries/companies/billing'
 import {
   HIDE_PARAM,
   parseHiddenProjectTypes,
@@ -71,7 +71,7 @@ export default async function MyTasksViewRoute({
     await Promise.all([
       fetchCrmUsers(),
       fetchProjectsLite(),
-      fetchClientDirectory(),
+      listClientDirectory(),
       listWorkableProjectIds(user),
     ])
   const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)

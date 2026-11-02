@@ -8,7 +8,7 @@ import type { DbTx } from '@/lib/db'
 import {
   currentMonthStartUtc,
   nextMonthStartUtc,
-} from '@/lib/queries/clients/billing-terms'
+} from '@/lib/queries/companies/billing/billing-terms'
 
 /** Which month a start, stop or restart takes effect. */
 export type BillingEffective = 'current_month' | 'next_month'

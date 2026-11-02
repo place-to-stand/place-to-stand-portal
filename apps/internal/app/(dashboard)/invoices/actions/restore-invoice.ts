@@ -1,7 +1,6 @@
 'use server'
 import { isClientCompany } from '@pts/db/client-state'
 
-import { clientNameSql } from '@pts/db/names'
 import { revalidatePath } from 'next/cache'
 import { and, eq } from 'drizzle-orm'
 
@@ -66,7 +65,7 @@ async function performRestoreInvoice(
   }
 
   const clientRows = await db
-    .select({ name: clientNameSql })
+    .select({ name: companies.name })
     .from(companies)
     .where(and(isClientCompany(), eq(companies.id, existing.companyId)))
     .limit(1)

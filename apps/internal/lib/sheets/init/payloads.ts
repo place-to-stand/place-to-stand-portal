@@ -8,7 +8,6 @@
  * wrapper + resolver.
  */
 
-import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 import type {
   DbUser,
   ProjectWithRelations,
@@ -22,22 +21,20 @@ import type {
 } from '@/lib/invoices/invoice-form'
 import type { TaxRateData } from '@/lib/invoices/use-invoice-sheet-state'
 import type { LeadAssigneeOption, LeadRecord } from '@/lib/leads/types'
-import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
+import type { ContactSheetInput } from '@/lib/people/use-contact-sheet-state'
 import type {
   HourBlockClient,
   HourBlockWithClient,
-} from '@/lib/settings/hour-blocks/hour-block-form'
+} from '@/lib/hour-blocks/hour-block-form'
 import type {
   ClientPickerRow,
   ProjectWithClient,
-} from '@/lib/settings/projects/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+} from '@/lib/projects/sheet/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 
 export type SheetInitPayloads = {
   /** The company sheet loads its own record; init only confirms access. */
   company: { companyId: string | null }
-  /** `null` client = create mode (`?client=new`). */
-  client: { client: ClientWithClosers | null }
   submission: { submission: FormSubmissionRecord }
   /** The contact sheet self-fetches its client links; it only needs the row. */
   contact: { contact: ContactSheetInput | null }
@@ -50,10 +47,6 @@ export type SheetInitPayloads = {
     clients: InvoiceClient[]
     productCatalog: ProductCatalogItemRow[]
     taxRates: TaxRateData[]
-  }
-  user: {
-    /** The person whose sign-in this is. */
-    contactId: string | null
   }
   project: {
     project: ProjectWithClient | null

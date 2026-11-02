@@ -4,10 +4,9 @@ import { randomUUID } from "node:crypto";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { Database } from "@/lib/supabase/types";
 import type { UserRoleValue } from "@/lib/types";
 
-type AvatarBucketClient = SupabaseClient<Database>;
+type AvatarBucketClient = SupabaseClient;
 
 type MoveOptions = {
   client: AvatarBucketClient;

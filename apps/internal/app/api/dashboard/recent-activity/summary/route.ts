@@ -1,5 +1,4 @@
 import { isClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { generateText } from 'ai'
@@ -633,7 +632,7 @@ async function buildActivityContext(
       ? db
           .select({
             id: companies.id,
-            name: clientNameSql,
+            name: companies.name,
           })
           .from(companies)
           .where(

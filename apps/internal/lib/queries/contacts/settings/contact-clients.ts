@@ -1,5 +1,4 @@
 import { isClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { asc, desc, eq, and, isNull, sql } from 'drizzle-orm'
@@ -12,7 +11,7 @@ import { NotFoundError } from '@/lib/errors/http'
 import {
   canSeePortalAccess,
   withoutPortalAccess,
-} from '@/lib/settings/contacts/portal-visibility'
+} from '@/lib/people/portal-visibility'
 
 import {
   listContactMemberships,
@@ -71,13 +70,13 @@ export async function listAllActiveClients(
   const rows = await db
     .select({
       id: companies.id,
-      name: clientNameSql,
+      name: companies.name,
       slug: companies.slug,
       companyId: companies.id,
     })
     .from(companies)
     .where(isClientCompany())
-    .orderBy(asc(clientNameSql))
+    .orderBy(asc(companies.name))
 
   return rows.map(row => ({
     id: row.id,
@@ -124,14 +123,14 @@ export async function listContactClients(
   const rows = await db
     .select({
       id: companies.id,
-      name: clientNameSql,
+      name: companies.name,
       slug: companies.slug,
       companyId: companies.id,
     })
     .from(clientPortalAccess)
     .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
     .where(and(eq(clientPortalAccess.contactId, contactId), isClientCompany()))
-    .orderBy(asc(clientNameSql))
+    .orderBy(asc(companies.name))
 
   return rows.map(row => ({
     id: row.id,

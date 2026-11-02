@@ -3,7 +3,7 @@
 import { Separator } from '@pts/ui/separator'
 import { InvoiceRecordRow } from '@/components/sheets/entity-record-rows'
 import { EntityList } from '@/components/sheets/entity-list'
-import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import type { HourBlockWithClient } from '@/lib/hour-blocks/hour-block-form'
 
 /**
  * The invoice a block was created from, read-only. The link is set by the

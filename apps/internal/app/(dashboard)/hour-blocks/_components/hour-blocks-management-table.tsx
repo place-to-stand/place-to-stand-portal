@@ -9,8 +9,8 @@ import { PaginationControls } from '@/components/ui/pagination-controls'
 import type {
   HourBlockClient,
   HourBlockWithClient,
-} from '@/lib/settings/hour-blocks/hour-block-form'
-import { useHourBlocksTableState } from '@/lib/settings/hour-blocks/use-hour-blocks-table-state'
+} from '@/lib/hour-blocks/hour-block-form'
+import { useHourBlocksTableState } from '@/lib/hour-blocks/use-hour-blocks-table-state'
 
 import { HourBlockArchiveDialog } from './hour-block-archive-dialog'
 import { HourBlocksTableSection } from './hour-blocks-table-section'

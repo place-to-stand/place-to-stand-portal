@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { HOUR_BLOCK_NOTES_MAX_LENGTH } from '@/lib/settings/hour-blocks/hour-block-form'
+import { HOUR_BLOCK_NOTES_MAX_LENGTH } from '@/lib/hour-blocks/hour-block-form'
 
 export const hourBlockSchema = z.object({
   id: z.string().uuid().optional(),

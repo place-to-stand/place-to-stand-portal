@@ -8,7 +8,7 @@ import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   buildOwnerOptions,
   type AdminUserForOwner,
-} from '@/lib/settings/projects/project-sheet-ui-state'
+} from '@/lib/projects/sheet/project-sheet-ui-state'
 import { cn } from '@/lib/utils'
 import { UserAvatar } from '@/components/ui/user-avatar'
 

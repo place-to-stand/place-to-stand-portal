@@ -1,4 +1,3 @@
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -251,7 +250,7 @@ async function loadAssignedTaskSummaries({
       },
       client: {
         id: companiesTable.id,
-        name: clientNameSql,
+        name: companiesTable.name,
         slug: companiesTable.slug,
       },
       lead: {
@@ -433,7 +432,7 @@ export async function listAssignedDoneSlice({
       },
       client: {
         id: companiesTable.id,
-        name: clientNameSql,
+        name: companiesTable.name,
         slug: companiesTable.slug,
       },
     })

@@ -1,6 +1,5 @@
 import { isClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import 'server-only'
 
 import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
@@ -76,7 +75,7 @@ export async function searchCommandPalette(
     or(
       sql`${projects.name} ILIKE ${pattern}`,
       sql`${projects.slug} ILIKE ${pattern}`,
-      sql`${clientNameSql} ILIKE ${pattern}`
+      sql`${companies.name} ILIKE ${pattern}`
     )
   )
 
@@ -110,13 +109,13 @@ export async function searchCommandPalette(
         name: projects.name,
         slug: projects.slug,
         type: projects.type,
-        clientName: clientNameSql,
+        clientName: companies.name,
         clientSlug: companies.slug,
       })
       .from(projects)
       .leftJoin(companies, eq(projects.companyId, companies.id))
       .where(projectCondition)
-      .orderBy(asc(clientNameSql), asc(projects.name))
+      .orderBy(asc(companies.name), asc(projects.name))
       .limit(RESULT_LIMIT),
     db
       .select({ id: contacts.id, name: contacts.name, email: contacts.email })

@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-import type { Database } from '@/lib/supabase/types'
 
 const PUBLIC_PATHS = new Set([
   '/sign-in',
@@ -47,7 +46,7 @@ async function checkSupabaseAuth(req: NextRequest): Promise<{
 }> {
   const res = NextResponse.next()
 
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -164,7 +163,44 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL('/', req.url))
   }
 
+  if (isAuthenticated && req.method === 'GET') {
+    const legacy = legacySheetParamRedirect(req)
+    if (legacy) return NextResponse.redirect(legacy)
+  }
+
   return response
+}
+
+/**
+ * Old sheet params from before clients became companies (0111) and sign-ins
+ * moved onto people. `?client=<id>` is the company's id, so it becomes
+ * `?company=<id>` in place (the param's position is its place in the sheet
+ * stack). `?user=<id>` needs a lookup, so it goes to `/settings/users`, which
+ * opens that person.
+ */
+function legacySheetParamRedirect(req: NextRequest): URL | null {
+  const { pathname, searchParams } = req.nextUrl
+  if (pathname.startsWith('/api/')) return null
+
+  if (searchParams.has('user') && pathname !== '/settings/users') {
+    const url = req.nextUrl.clone()
+    url.pathname = '/settings/users'
+    url.search = ''
+    url.searchParams.set('user', searchParams.get('user') ?? '')
+    return url
+  }
+
+  if (!searchParams.has('client')) return null
+  const url = req.nextUrl.clone()
+  url.search = ''
+  for (const [key, value] of searchParams) {
+    if (key === 'client') {
+      if (!url.searchParams.has('company')) url.searchParams.append('company', value)
+    } else {
+      url.searchParams.append(key, value)
+    }
+  }
+  return url
 }
 
 export const config = {

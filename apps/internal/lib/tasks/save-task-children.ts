@@ -17,7 +17,6 @@ import {
   moveAttachmentToTaskFolder,
 } from '@/lib/storage/task-attachments'
 import { TASK_ATTACHMENT_BUCKET } from '@/lib/storage/task-attachment-constants'
-import type { Database } from '@/lib/supabase/types'
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 
 /**
@@ -41,7 +40,7 @@ import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
  */
 
 type UserRole = UserRoleValue
-type StorageClient = SupabaseClient<Database>
+type StorageClient = SupabaseClient
 
 export type DbExecutor = typeof db | DbTx
 

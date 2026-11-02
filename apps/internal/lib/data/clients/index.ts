@@ -3,14 +3,14 @@ import {
   clientSinceSql,
   isClientCompany,
 } from '@pts/db/client-state'
-import { clientNameSql, personAvatarOf, personNameOf } from '@pts/db/names'
+import { personAvatarOf, personNameOf } from '@pts/db/names'
 import 'server-only'
 
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
-} from '@/lib/queries/clients/commission-terms'
+} from '@/lib/queries/companies/billing/commission-terms'
 import { cache } from 'react'
 import { aliasedTable, and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
@@ -22,12 +22,12 @@ import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 import { NotFoundError } from '@/lib/errors/http'
 import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 import { createSearchPattern } from '@/lib/pagination/cursor'
-import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
+import { fetchLatestClosersByClient } from '@/lib/queries/companies/billing/commission-terms'
 import type { ClientCloser } from '@/lib/companies/billing/closers'
 import {
   fetchContactSummariesByClient,
   type ClientContactSummary,
-} from '@/lib/queries/clients/contact-summaries'
+} from '@/lib/queries/companies/billing/contact-summaries'
 import type { ProjectStatusValue } from '@/lib/constants'
 
 export type { ClientContactSummary }
@@ -114,7 +114,7 @@ export const fetchClientsWithMetrics = cache(
     if (trimmedSearch) {
       const pattern = createSearchPattern(trimmedSearch)
       baseConditions.push(
-        sql`(${clientNameSql} ILIKE ${pattern} OR ${companies.slug} ILIKE ${pattern})`
+        sql`(${companies.name} ILIKE ${pattern} OR ${companies.slug} ILIKE ${pattern})`
       )
     }
 
@@ -135,7 +135,7 @@ export const fetchClientsWithMetrics = cache(
     const rows = await db
       .select({
         id: companies.id,
-        name: clientNameSql,
+        name: companies.name,
         slug: companies.slug,
         notes: companies.notes,
         website: sql<string | null>`nullif(btrim(${companies.website}), '')`,
@@ -161,7 +161,7 @@ export const fetchClientsWithMetrics = cache(
         eq(currentOriginationUserIdSql(), originationUsers.id)
       )
       .where(and(...baseConditions))
-      .orderBy(asc(clientNameSql))
+      .orderBy(asc(companies.name))
 
     if (rows.length === 0) {
       return []
@@ -300,7 +300,7 @@ export const fetchClientById = cache(
     const rows = await db
       .select({
         id: companies.id,
-        name: clientNameSql,
+        name: companies.name,
         slug: companies.slug,
         notes: companies.notes,
         website: sql<string | null>`nullif(btrim(${companies.website}), '')`,

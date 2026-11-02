@@ -5,7 +5,7 @@ import { contacts, users } from '@/lib/db/schema'
 import {
   clientSlugExistsDrizzle,
   generateUniqueClientSlugDrizzle,
-} from '@/lib/queries/clients'
+} from '@/lib/queries/companies/billing'
 import type { CloserShare } from '@/lib/companies/billing/closers'
 
 /**

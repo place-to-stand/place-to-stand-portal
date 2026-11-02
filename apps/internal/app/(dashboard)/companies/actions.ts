@@ -14,7 +14,7 @@ import {
   currentBillingTypeSql,
   currentMonthStartUtc,
   nextMonthStartUtc,
-} from '@/lib/queries/clients/billing-terms'
+} from '@/lib/queries/companies/billing/billing-terms'
 import { createUpdateDraft, listClientUpdates } from '@/lib/updates'
 import type { ClientUpdateSummary } from './_components/company-updates-section'
 import { saveCompanySheet as saveCompanySheetMutation } from '@/lib/companies/save-company-sheet'
@@ -25,11 +25,8 @@ import type {
   CompanyOption,
 } from '@/lib/companies/types'
 import { NotFoundError } from '@/lib/errors/http'
-import {
-  getCompanyDetail,
-  listCompanyOptions,
-  setCompanyArchived,
-} from '@/lib/queries/companies'
+import { setCompanyArchived } from '@/lib/companies/archive'
+import { getCompanyDetail, listCompanyOptions } from '@/lib/queries/companies'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 // A client is named after (and linked to) its company, so company saves also

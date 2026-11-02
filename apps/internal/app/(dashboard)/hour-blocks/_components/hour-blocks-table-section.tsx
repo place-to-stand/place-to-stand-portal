@@ -15,7 +15,7 @@ import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
 import { companySheetHref, invoiceHref } from '@/lib/sheets/hrefs'
-import { isHourBlockSortValue } from '@/lib/settings/hour-blocks/filters'
+import { isHourBlockSortValue } from '@/lib/hour-blocks/filters'
 import {
   Table,
   TableBody,
@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import type { HourBlockWithClient } from '@/lib/settings/hour-blocks/hour-block-form'
+import type { HourBlockWithClient } from '@/lib/hour-blocks/hour-block-form'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'

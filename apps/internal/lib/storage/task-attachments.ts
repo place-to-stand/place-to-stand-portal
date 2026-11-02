@@ -4,14 +4,13 @@ import { randomUUID } from 'node:crypto'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { Database } from '@/lib/supabase/types'
 import {
   ACCEPTED_TASK_ATTACHMENT_MIME_TYPES,
   MAX_TASK_ATTACHMENT_FILE_SIZE,
   TASK_ATTACHMENT_BUCKET,
 } from './task-attachment-constants'
 
-export type TaskAttachmentBucketClient = SupabaseClient<Database>
+export type TaskAttachmentBucketClient = SupabaseClient
 
 const PENDING_PREFIX = 'attachments/pending'
 const TASK_PREFIX = 'attachments/tasks'

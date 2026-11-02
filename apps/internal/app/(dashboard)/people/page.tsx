@@ -8,7 +8,7 @@ import {
   listContactsForSettings,
   listCompanyFilterOptions,
 } from '@/lib/queries/contacts'
-import { parseContactsSearchParams } from '@/lib/settings/contacts/filters'
+import { parseContactsSearchParams } from '@/lib/people/filters'
 import { serverEnv } from '@/lib/env.server'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 

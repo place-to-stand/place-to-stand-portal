@@ -186,7 +186,7 @@ export const buildBoardPath = (
     view?: BoardView
     /**
      * Current query string. Every other param is carried over so board
-     * navigation doesn't silently drop a stacked sheet (`?client=…`) or a
+     * navigation doesn't silently drop a stacked sheet (`?company=…`) or a
      * filter — only `task` is rewritten.
      */
     search?: string

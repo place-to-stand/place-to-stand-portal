@@ -34,7 +34,7 @@ export default async function DashboardLayout({
       sidebarDefaultOpen={sidebarDefaultOpen}
     >
       {children}
-      {/* Global sheet host: renders entity sheets for `?client=`/`?task=`/…
+      {/* Global sheet host: renders entity sheets for `?company=`/`?task=`/…
           params on routes that don't handle them with their own instances. */}
       <Suspense fallback={null}>
         <SheetHost />

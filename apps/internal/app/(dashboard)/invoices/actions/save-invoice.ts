@@ -2,8 +2,7 @@
 import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-company'
 import { isClientCompany } from '@pts/db/client-state'
 
-import { clientNameSql } from '@pts/db/names'
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import { revalidatePath } from 'next/cache'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
@@ -82,7 +81,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const clientRows = await db
     .select({
       id: companies.id,
-      name: clientNameSql,
+      name: companies.name,
       billingType: currentBillingTypeSql(),
     })
     .from(companies)

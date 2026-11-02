@@ -42,6 +42,19 @@ test('old bookmarks still land on the right page', async ({ page }) => {
   await page.goto('/settings/users')
   await expect(page).toHaveURL(/\/people/)
   await page.goto('/clients')
-  await expect(page).toHaveURL(/\/companies/)
+  await expect(page).toHaveURL(/\/companies\?type=client/)
+  await page.goto('/clients/archive')
+  await expect(page).toHaveURL(/\/companies\?type=former/)
+  await page.goto('/reports')
+  await expect(page).toHaveURL(/\/reports\/monthly-close/)
+  await page.goto('/my/tasks')
+  await expect(page).toHaveURL(/\/my\/tasks\/board/)
   await expectHealthy(page)
+})
+
+test('old ?client= sheet links open the company sheet', async ({ page }) => {
+  const id = '00000000-0000-4000-8000-000000000000'
+  await page.goto(`/companies?client=${id}&task=new`)
+  // Renamed in place, so the stack order (company under task) is kept.
+  await expect(page).toHaveURL(new RegExp(`\\?company=${id}&task=new$`))
 })

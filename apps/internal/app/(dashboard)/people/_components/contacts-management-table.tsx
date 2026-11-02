@@ -10,9 +10,9 @@ import { PaginationControls } from '@/components/ui/pagination-controls'
 import {
   type ContactsTableContact,
   useContactsTableState,
-} from '@/lib/settings/contacts/use-contacts-table-state'
-import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
-import { openPortalPreview } from '@/lib/settings/contacts/portal-preview'
+} from '@/lib/people/use-contacts-table-state'
+import type { ContactSheetInput } from '@/lib/people/use-contact-sheet-state'
+import { openPortalPreview } from '@/lib/people/portal-preview'
 
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'

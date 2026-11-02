@@ -1,5 +1,5 @@
 import type { ContactsSettingsListItem } from '@/lib/queries/contacts'
-import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
+import type { ContactsTableContact } from '@/lib/people/use-contacts-table-state'
 
 export function mapContactToTableRow(
   item: ContactsSettingsListItem

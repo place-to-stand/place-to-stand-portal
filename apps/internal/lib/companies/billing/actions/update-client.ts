@@ -1,8 +1,7 @@
 import { wasClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import { and, eq } from 'drizzle-orm'
 
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import { formatCalendarDate } from '@pts/ui/dates'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -17,7 +16,7 @@ import {
   currentMonthStartUtc,
   nextMonthStartUtc,
   upsertBillingTerm,
-} from '@/lib/queries/clients/billing-terms'
+} from '@/lib/queries/companies/billing/billing-terms'
 import {
   commissionAssignmentsEqual,
   fetchLatestClosersByClient,
@@ -25,7 +24,7 @@ import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
   upsertCommissionTerm,
-} from '@/lib/queries/clients/commission-terms'
+} from '@/lib/queries/companies/billing/commission-terms'
 import {
   closerSplitsEqual,
   describeClosers,
@@ -38,7 +37,7 @@ import {
   toClientSlug,
 } from '@/lib/companies/billing/client-service'
 
-import { getLinkableCompany } from '@/lib/queries/companies'
+import { getLinkableCompany } from '@/lib/companies/find-or-create'
 
 export type UpdateClientPayload = {
   id: string
@@ -163,7 +162,7 @@ export async function planClientUpdate(
     const rows = await db
       .select({
         id: companies.id,
-        name: clientNameSql,
+        name: companies.name,
         slug: companies.slug,
         billingType: currentBillingTypeSql(),
         notes: companies.notes,

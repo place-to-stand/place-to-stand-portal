@@ -3,7 +3,7 @@ import { cliListQuerySchema } from '@/lib/cli/schemas/listing'
 import { serializeContact } from '@/lib/cli/serializers/contact'
 import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
 import { listContactMemberships } from '@/lib/queries/memberships'
-import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 
 export const GET = withCliAuth(async ({ user, request }) => {
   const query = cliListQuerySchema.parse(

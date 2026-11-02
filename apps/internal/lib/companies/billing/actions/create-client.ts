@@ -3,12 +3,12 @@ import { and, eq, isNull } from 'drizzle-orm'
 import type { DbTx } from '@/lib/db'
 import { companies, leads } from '@/lib/db/schema'
 import type { ClientBillingTypeValue } from '@/lib/types'
-import { insertInitialBillingTerm } from '@/lib/queries/clients/billing-terms'
+import { insertInitialBillingTerm } from '@/lib/queries/companies/billing/billing-terms'
 import {
   startBilling,
   type BillingEffective,
 } from '@/lib/companies/billing/periods'
-import { insertInitialCommissionTerm } from '@/lib/queries/clients/commission-terms'
+import { insertInitialCommissionTerm } from '@/lib/queries/companies/billing/commission-terms'
 import type { CloserShare } from '@/lib/companies/billing/closers'
 
 /**

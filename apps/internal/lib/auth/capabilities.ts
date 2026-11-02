@@ -1,4 +1,4 @@
-import type { Database } from '@/lib/supabase/types'
+import type { userRole } from '@pts/db/schema'
 
 /**
  * The single list of what each role may do. Server guards, nav filtering,
@@ -14,7 +14,7 @@ import type { Database } from '@/lib/supabase/types'
  * - "Scoped" capabilities still pass through a data rule (e.g. project
  *   membership in `lib/projects/access.ts`); the note says which.
  */
-export type Role = Database['public']['Enums']['user_role']
+export type Role = (typeof userRole.enumValues)[number]
 
 export type CapabilitySurface = 'app' | 'mcp' | 'cli'
 

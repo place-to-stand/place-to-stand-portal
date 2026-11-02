@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { AppUser } from '@/lib/auth/session'
 import { getContactDeepLinkRowById } from '@/lib/queries/contacts'
-import type { ContactSheetInput } from '@/lib/settings/contacts/use-contact-sheet-state'
+import type { ContactSheetInput } from '@/lib/people/use-contact-sheet-state'
 import { contactSheetHref } from '@/lib/sheets/hrefs'
 import {
   resolveSheetDeepLink,

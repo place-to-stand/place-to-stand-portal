@@ -21,12 +21,12 @@ import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   useHourBlockSheetState,
   type HourBlockFormValues,
-} from '@/lib/settings/hour-blocks/use-hour-block-sheet-state'
+} from '@/lib/hour-blocks/use-hour-block-sheet-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type {
   HourBlockClient,
   HourBlockWithClient,
-} from '@/lib/settings/hour-blocks/hour-block-form'
+} from '@/lib/hour-blocks/hour-block-form'
 import { HourBlockArchiveDialog } from './_components/hour-block-archive-dialog'
 import { HourBlockInvoiceSection } from './_components/hour-block-invoice-section'
 

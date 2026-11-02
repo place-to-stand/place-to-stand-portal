@@ -173,12 +173,12 @@ export function ComponentsEmptyLoading() {
       </Specimen>
       <Specimen
         label='Missing record'
-        note='DeepLinkNotFoundNotice: a ?client= link to a deleted record'
+        note='DeepLinkNotFoundNotice: a ?company= link to a deleted record'
         className='block'
       >
         {noticeShown ? (
           <DeepLinkNotFoundNotice
-            entity='client'
+            entity='company'
             onDismiss={() => setNoticeShown(false)}
           />
         ) : (

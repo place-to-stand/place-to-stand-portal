@@ -1,4 +1,4 @@
-import { clientNameSql, personNameSql } from '@pts/db/names'
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, eq, gt, gte, isNull, lte, or, sql } from 'drizzle-orm'
@@ -154,7 +154,7 @@ export async function fetchLateRecords(
     db
       .select({
         id: timeLogs.id,
-        clientName: clientNameSql,
+        clientName: companies.name,
         hours: timeLogs.hours,
         eventDate: timeLogs.loggedOn,
         createdAt: timeLogs.createdAt,
@@ -178,7 +178,7 @@ export async function fetchLateRecords(
     db
       .select({
         id: hourBlocks.id,
-        clientName: clientNameSql,
+        clientName: companies.name,
         hours: hourBlocks.hoursPurchased,
         eventDate: hourBlocks.billingMonth,
         createdAt: hourBlocks.createdAt,

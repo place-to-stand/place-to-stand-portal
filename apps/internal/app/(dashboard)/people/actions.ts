@@ -1,17 +1,17 @@
 'use server'
 
-import { sendPersonPasswordReset } from '@/lib/settings/contacts/person-sign-in'
+import { sendPersonPasswordReset } from '@/lib/people/person-sign-in'
 import {
   savePersonSheet,
   type PersonSheetInput,
   type PersonSheetResult,
-} from '@/lib/settings/contacts/person-sheet/save-person-sheet'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+} from '@/lib/people/person-sheet/save-person-sheet'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { listClosedMonthStarts } from '@/lib/queries/reports/close-snapshots'
 import {
   roleMonthOptions,
   type RoleMonthOption,
-} from '@/lib/settings/users/role-months'
+} from '@/lib/users/role-months'
 
 import { revalidatePath } from 'next/cache'
 
@@ -20,15 +20,15 @@ import {
   type ContactActionResult,
   type DeleteContactInput,
   type RestoreContactInput,
-} from '@/lib/settings/contacts/contact-service'
+} from '@/lib/people/contact-service'
 import {
   restoreContactMutation,
   softDeleteContactMutation,
-} from '@/lib/settings/contacts/actions'
+} from '@/lib/people/actions'
 import type {
   ContactMutationContext,
   ContactMutationResult,
-} from '@/lib/settings/contacts/actions'
+} from '@/lib/people/actions'
 import {
   getContactSheetData as getSheetData,
   type ContactSheetData,

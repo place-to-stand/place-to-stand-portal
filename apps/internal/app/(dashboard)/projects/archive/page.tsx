@@ -14,8 +14,8 @@ import { listProjectsForSettings } from '@/lib/queries/projects'
 import type {
   ClientPickerRow,
   ProjectWithClient,
-} from '@/lib/settings/projects/project-sheet-form'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+} from '@/lib/projects/sheet/project-sheet-form'
+import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
 export const metadata: Metadata = {

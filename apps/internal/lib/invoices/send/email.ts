@@ -19,7 +19,7 @@ import { resolvePortalOrigin } from '@/lib/form-submissions/delivery/addresses'
 import {
   fetchContactsForClient,
   type ClientContactRow,
-} from '@/lib/queries/clients/contacts'
+} from '@/lib/queries/companies/billing/contacts'
 import { fetchActiveStaff, type StaffMember } from '@/lib/updates/staff'
 
 import {

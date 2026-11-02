@@ -34,16 +34,16 @@ import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { ProjectOwnerCell } from '@/components/projects/project-owner-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
-import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
+import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import { buildBoardPath } from '@/lib/projects/board/board-utils'
 import {
   createProjectLookup,
   createProjectsByClientLookup,
   createClientSlugLookup,
 } from '@/lib/projects/board/board-utils'
-import { updateProjectStatus } from '@/lib/settings/projects/actions/update-project-status'
-import { updateProjectOwner } from '@/lib/settings/projects/actions/update-project-owner'
-import { softDeleteProject } from '@/app/(dashboard)/settings/projects/actions'
+import { updateProjectStatus } from '@/lib/projects/sheet/actions/update-project-status'
+import { updateProjectOwner } from '@/lib/projects/sheet/actions/update-project-owner'
+import { softDeleteProject } from '@/app/(dashboard)/projects/project-sheet-actions'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import type { LandingProject } from '@/lib/data/projects'

@@ -11,7 +11,7 @@ import {
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
-import { isContactSortValue } from '@/lib/settings/contacts/filters'
+import { isContactSortValue } from '@/lib/people/filters'
 import {
   Table,
   TableBody,
@@ -21,17 +21,17 @@ import {
   TableRow,
 } from '@pts/ui/table'
 
-import type { ContactsTableContact } from '@/lib/settings/contacts/use-contacts-table-state'
+import type { ContactsTableContact } from '@/lib/people/use-contacts-table-state'
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
 import { ClientBadge } from '@/components/clients/client-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { canSeePortalAccess } from '@/lib/settings/contacts/portal-visibility'
+import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import {
   canPreviewAsClient,
   PREVIEW_UNAVAILABLE_REASON,
-} from '@/lib/settings/contacts/portal-preview'
+} from '@/lib/people/portal-preview'
 import { cn } from '@/lib/utils'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'

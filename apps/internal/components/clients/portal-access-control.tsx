@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { Button } from '@pts/ui/button'
 import { Switch } from '@pts/ui/switch'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { canHavePortalAccess } from '@/lib/settings/contacts/portal-eligibility'
+import { canHavePortalAccess } from '@/lib/people/portal-eligibility'
 
 /** A person on the company's People list, as the Portal switch needs them. */
 export type PortalAccessPerson = {

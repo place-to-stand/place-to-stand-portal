@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { serverEnv } from '@/lib/env.server'
 import { verifyIntakeToken } from '@/lib/integrations/verify-intake-token'
-import { applyDueRoleTerms } from '@/lib/settings/users/services/role'
+import { applyDueRoleTerms } from '@/lib/users/services/role'
 
 /**
  * Daily Vercel Cron (see vercel.json): a role change an admin dated next
