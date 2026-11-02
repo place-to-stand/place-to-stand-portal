@@ -41,7 +41,8 @@ import {
 import { cn } from '@/lib/utils'
 import { formatHours } from '@pts/ui/numbers'
 import { BALANCE_TONE_CLASS, balanceTone } from '@/lib/billing/balance-tone'
-import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
+import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
+import { ClientBadge } from '@/components/clients/client-badge'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
@@ -128,7 +129,7 @@ export function CompaniesTable({
         <TableHeader>
           <TableRow className='bg-muted/40'>
             {sortHead('name', 'Company', 'w-[30%]')}
-            {seesBilling ? sortHead('client', 'Client', 'w-[11%]') : null}
+            {seesBilling ? sortHead('client', 'Billing type', 'w-[11%]') : null}
             {seesBilling ? sortHead('hours', 'Hours', 'w-[18%]') : null}
             {sortHead('people', 'People', 'w-[7%]', 'center')}
             {sortHead('leads', 'Open leads', 'w-[9%]', 'center')}
@@ -164,13 +165,17 @@ export function CompaniesTable({
                     <span className='truncate font-medium' title={company.name}>
                       {company.name}
                     </span>
+                    {/* Billed now (admins only, as on the People list). */}
+                    {seesBilling && company.companyId ? (
+                      <ClientBadge className='shrink-0' />
+                    ) : null}
                   </div>
                 </TableCell>
                 {seesBilling ? (
-                  <TableCell label='Client'>
-                    {/* Billed now: CompanyBillingMark. Not billed: the dash. */}
-                    {company.companyId ? (
-                      <CompanyBillingMark billingType={company.billingType} />
+                  <TableCell label='Billing type'>
+                    {/* Billed now: Prepaid / Net 30. Not billed: the dash. */}
+                    {company.companyId && company.billingType ? (
+                      <BillingTypeBadge billingType={company.billingType} />
                     ) : (
                       <EmptyValue />
                     )}
