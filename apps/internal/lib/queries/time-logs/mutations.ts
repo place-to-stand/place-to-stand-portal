@@ -5,22 +5,16 @@ import { eq, inArray } from 'drizzle-orm'
 import {
   timeLogCreatedEvent,
   timeLogDeletedEvent,
+  timeLogRestoredEvent,
   timeLogUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureProjectAccess } from '@/lib/auth/permissions'
 import { HttpError, NotFoundError } from '@/lib/errors/http'
-import { db } from '@/lib/db'
-import {
-  projects,
-  tasks,
-  timeLogTasks,
-  timeLogs,
-} from '@/lib/db/schema'
+import { db, type DbTx } from '@/lib/db'
+import { projects, tasks, timeLogTasks, timeLogs } from '@/lib/db/schema'
 import type { ActivitySourceValue } from '@/lib/types'
-
-type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 /**
  * Server-side eligibility check for linked tasks (the client-side filter and
@@ -31,9 +25,9 @@ type TransactionClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
  * opened still fails cleanly with a 400.
  */
 async function assertLinkedTasksEligible(
-  tx: TransactionClient,
+  tx: DbTx,
   projectId: string,
-  taskIds: string[],
+  taskIds: string[]
 ): Promise<void> {
   if (!taskIds.length) {
     return
@@ -61,7 +55,7 @@ async function assertLinkedTasksEligible(
     if (!row || row.projectId !== projectId || row.deletedAt !== null) {
       throw new HttpError(
         'One or more linked tasks are no longer available.',
-        400,
+        400
       )
     }
   }
@@ -78,21 +72,21 @@ export type TimeLogMutationOptions = {
 
 type TimeLogProjectContext = {
   name: string | null
-  clientId: string | null
+  companyId: string | null
 }
 
 async function getTimeLogProjectContext(
   projectId: string
 ): Promise<TimeLogProjectContext> {
   const rows = await db
-    .select({ name: projects.name, clientId: projects.clientId })
+    .select({ name: projects.name, companyId: projects.companyId })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1)
 
   return {
     name: rows[0]?.name ?? null,
-    clientId: rows[0]?.clientId ?? null,
+    companyId: rows[0]?.companyId ?? null,
   }
 }
 
@@ -137,7 +131,7 @@ export type UpdateTimeLogInput = {
 export async function createTimeLog(
   user: AppUser,
   input: CreateTimeLogInput,
-  options: TimeLogMutationOptions = {},
+  options: TimeLogMutationOptions = {}
 ): Promise<string> {
   const { projectId, userId, hours, loggedOn, note, taskIds } = input
 
@@ -161,7 +155,7 @@ export async function createTimeLog(
       .returning({ id: timeLogs.id })
 
     if (!inserted) {
-      throw new Error('Unable to create time log entry.')
+      throw new Error('Unable to create time log.')
     }
 
     if (taskIds.length) {
@@ -195,7 +189,7 @@ export async function createTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetClientId: project.clientId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 
@@ -206,7 +200,7 @@ export async function softDeleteTimeLog(
   user: AppUser,
   projectId: string,
   timeLogId: string,
-  options: TimeLogMutationOptions = {},
+  options: TimeLogMutationOptions = {}
 ): Promise<{ loggedOn: string }> {
   const rows = await db
     .select({
@@ -262,7 +256,75 @@ export async function softDeleteTimeLog(
     targetType: 'TIME_LOG',
     targetId: timeLogId,
     targetProjectId: projectId,
-    targetClientId: project.clientId,
+    targetCompanyId: project.companyId,
+    metadata: event.metadata,
+  })
+
+  return { loggedOn: timeLog.loggedOn }
+}
+
+/** Undoes softDeleteTimeLog: the log counts toward burndown again. */
+export async function restoreTimeLog(
+  user: AppUser,
+  projectId: string,
+  timeLogId: string,
+  options: TimeLogMutationOptions = {}
+): Promise<{ loggedOn: string }> {
+  const rows = await db
+    .select({
+      id: timeLogs.id,
+      projectId: timeLogs.projectId,
+      userId: timeLogs.userId,
+      hours: timeLogs.hours,
+      loggedOn: timeLogs.loggedOn,
+      deletedAt: timeLogs.deletedAt,
+    })
+    .from(timeLogs)
+    .where(eq(timeLogs.id, timeLogId))
+    .limit(1)
+
+  if (!rows.length) {
+    throw new NotFoundError('Time log not found')
+  }
+
+  const [timeLog] = rows
+
+  if (timeLog.projectId !== projectId) {
+    throw new NotFoundError('Time log not found for project')
+  }
+
+  await ensureProjectAccess(user, projectId)
+
+  if (!timeLog.deletedAt) {
+    return { loggedOn: timeLog.loggedOn }
+  }
+
+  // updatedAt must move too (PRD 002 F1): the monthly close drift detector
+  // finds post-close changes via record timestamps > closed_at.
+  const nowIso = new Date().toISOString()
+  await db
+    .update(timeLogs)
+    .set({ deletedAt: null, updatedAt: nowIso })
+    .where(eq(timeLogs.id, timeLogId))
+
+  const hours = Number(timeLog.hours)
+  const project = await getTimeLogProjectContext(projectId)
+  const event = timeLogRestoredEvent({
+    hours,
+    loggedOn: timeLog.loggedOn,
+    projectName: project.name,
+  })
+
+  await logActivity({
+    actorId: user.id,
+    actorRole: user.role,
+    source: options.source,
+    verb: event.verb,
+    summary: event.summary,
+    targetType: 'TIME_LOG',
+    targetId: timeLogId,
+    targetProjectId: projectId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 
@@ -272,7 +334,7 @@ export async function softDeleteTimeLog(
 export async function updateTimeLog(
   user: AppUser,
   input: UpdateTimeLogInput,
-  options: TimeLogMutationOptions = {},
+  options: TimeLogMutationOptions = {}
 ): Promise<{ previousLoggedOn: string }> {
   const { projectId, timeLogId, userId, hours, loggedOn, note, taskIds } = input
 
@@ -439,8 +501,7 @@ async function logTimeLogUpdate(args: {
     targetType: 'TIME_LOG',
     targetId: args.timeLogId,
     targetProjectId: args.projectId,
-    targetClientId: project.clientId,
+    targetCompanyId: project.companyId,
     metadata: event.metadata,
   })
 }
-

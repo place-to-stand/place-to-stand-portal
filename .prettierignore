@@ -1,0 +1,7 @@
+# Generated: their --check scripts compare them byte for byte.
+docs/design-system/tokens.json
+apps/internal/lib/auth/permissions-manifest.json
+package-lock.json
+**/drizzle/**
+**/.next/**
+**/dist/**

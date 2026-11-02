@@ -4,8 +4,7 @@ import { cache } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
 import {
-  DEFAULT_DASHBOARD_LAYOUT,
-  cloneLayout,
+  defaultLayoutForRole,
   normalizeDashboardLayout,
   type DashboardLayout,
 } from '@/lib/dashboard/layout'
@@ -16,8 +15,8 @@ export const fetchDashboardLayout = cache(
   async (user: AppUser): Promise<DashboardLayout> => {
     const row = await fetchDashboardLayoutRow(user.id)
     if (!row) {
-      return cloneLayout(DEFAULT_DASHBOARD_LAYOUT)
+      return defaultLayoutForRole(user.role)
     }
-    return normalizeDashboardLayout(row.layout)
+    return normalizeDashboardLayout(row.layout, user.role)
   }
 )

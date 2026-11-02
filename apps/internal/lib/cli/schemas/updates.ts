@@ -30,5 +30,3 @@ export const cliUpdateListQuerySchema = z.object({
   status: clientUpdateStatusSchema.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 })
-
-export type CliCreateUpdateInput = z.infer<typeof cliCreateUpdateSchema>

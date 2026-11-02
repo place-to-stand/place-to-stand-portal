@@ -28,7 +28,12 @@ export type LeadRecord = {
   contactEmail: string | null
   contactPhone: string | null
   companyName: string | null
+  /** The company's website, falling back to the lead's legacy copy. */
   companyWebsite: string | null
+  /** The linked company record; `companyName` is its display copy. */
+  companyId: string | null
+  /** The lead's contact; contactName/Email/Phone are its display copy. */
+  contactId: string | null
   notesHtml: string
   rank: string
   createdAt: string
@@ -56,8 +61,16 @@ export type LeadRecord = {
  * `fetchLeadConversionSummary` for how the contact and projects are resolved.
  */
 export type LeadConversionSummary = {
-  client: { id: string; name: string; slug: string | null; archived: boolean }
-  contact: { id: string; name: string; email: string } | null
+  client: {
+    id: string
+    name: string
+    slug: string | null
+    companyId: string
+    archived: boolean
+    /** Billed now: its billing type; null when billing has stopped. */
+    billingType: 'prepaid' | 'net_30' | null
+  }
+  contact: { id: string; name: string; email: string | null } | null
   projects: Array<{
     id: string
     name: string

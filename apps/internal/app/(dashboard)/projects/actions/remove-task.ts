@@ -5,8 +5,8 @@ import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskArchivedEvent } from '@/lib/activity/events'
-import { requireUser } from '@/lib/auth/session'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { requireStaffUser } from '@/lib/auth/session'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, taskAttachments, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
@@ -20,7 +20,7 @@ import type { ActionResult } from './action-types'
 export async function removeTask(input: {
   taskId: string
 }): Promise<ActionResult> {
-  const user = await requireUser()
+  const user = await requireStaffUser()
   const parsed = z
     .object({
       taskId: z.string().uuid(),
@@ -34,7 +34,7 @@ export async function removeTask(input: {
   const { taskId } = parsed.data
 
   try {
-    await ensureTaskAccess(user, taskId)
+    await ensureTaskWorkAccess(user, taskId)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return { error: 'Task not found.' }
@@ -53,7 +53,7 @@ export async function removeTask(input: {
       id: tasks.id,
       title: tasks.title,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -73,18 +73,24 @@ export async function removeTask(input: {
     .set({ deletedAt: timestamp })
     .where(eq(tasks.id, taskId))
 
-  const attachmentRows = await db
-    .select({
-      id: taskAttachments.id,
-      storagePath: taskAttachments.storagePath,
-    })
-    .from(taskAttachments)
-    .where(
-      and(
-        eq(taskAttachments.taskId, taskId),
-        isNull(taskAttachments.deletedAt)
-      )
-    )
+  // Archiving deletes the task's files for good. Only admins may do that;
+  // a task another staff member archives keeps its files, so an admin
+  // restore brings everything back.
+  const attachmentRows =
+    user.role !== 'ADMIN'
+      ? []
+      : await db
+          .select({
+            id: taskAttachments.id,
+            storagePath: taskAttachments.storagePath,
+          })
+          .from(taskAttachments)
+          .where(
+            and(
+              eq(taskAttachments.taskId, taskId),
+              isNull(taskAttachments.deletedAt)
+            )
+          )
 
   if (attachmentRows.length) {
     await db
@@ -138,7 +144,7 @@ export async function removeTask(input: {
     targetType: 'TASK',
     targetId: taskId,
     targetProjectId: existingTask.projectId,
-    targetClientId: existingTask.clientId ?? null,
+    targetCompanyId: existingTask.companyId ?? null,
     metadata: archiveMetadata,
   })
 

@@ -1,3 +1,4 @@
+// permission: public — checks the signed-in user itself
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -24,11 +25,11 @@ export const metadata: Metadata = {
 }
 
 const ADMIN_ACCESS_SUMMARY =
-  'It will act as you: read clients, contacts, projects, tasks and leads, and create and update tasks, task comments and leads.'
+  'It will act as you: read clients, people, projects, tasks and leads, and create and update tasks, task comments and leads.'
 
 /** SALES reaches the MCP's CRM tools only, as in the portal (PRD 009 D6). */
 const SALES_ACCESS_SUMMARY =
-  'It will act as you: read leads, contacts and their activity, and create and update leads and log lead updates.'
+  'It will act as you: read leads, people and their activity, and create and update leads and log lead updates.'
 
 function redirectHost(uri: string): string | null {
   try {
@@ -76,7 +77,7 @@ export default async function OAuthConsentPage({
       <AuthShell
         label='Internal Portal'
         title='Staff only'
-        description='Connecting apps to the portal is limited to admin and sales accounts.'
+        description='Only admin and sales staff can connect apps to the portal.'
         footer={
           <Link className={authLinkClass} href='/'>
             Back to the portal

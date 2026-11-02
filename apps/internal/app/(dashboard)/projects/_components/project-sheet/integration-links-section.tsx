@@ -1,0 +1,375 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { ExternalLink, Loader2, Trash2 } from 'lucide-react'
+
+import { Button } from '@pts/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@pts/ui/dialog'
+import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
+import { integrationStatusQueryKey } from '@/components/integrations/token-integration-card'
+import {
+  SearchableCombobox,
+  type SearchableComboboxGroup,
+} from '@/components/ui/searchable-combobox'
+import { EmptyState } from '@pts/ui/empty-state'
+import { RowActionButton } from '@pts/ui/row-action-button'
+import { EntityList } from '@/components/sheets/entity-list'
+import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
+import {
+  INTEGRATION_PROVIDERS,
+  formatIntegrationLinkLabel,
+  type ExternalProjectOption,
+  type IntegrationProvider,
+  type ProjectIntegrationLink,
+} from '@/lib/types/integrations'
+
+/**
+ * A link chosen in the picker but not yet saved. Save sends it with the
+ * project to `saveProject`, which links it in the same transaction.
+ */
+export type PendingIntegrationLink = {
+  provider: IntegrationProvider
+  externalId: string
+  externalName: string
+  ownerName: string | null
+}
+
+type IntegrationLinksSectionProps = {
+  provider: IntegrationProvider
+  projectId?: string
+  disabled?: boolean
+  // Controlled by the parent so undo/redo can snapshot it. Arrays hold
+  // every provider's changes; this section filters to its own.
+  pendingLinks: PendingIntegrationLink[]
+  removedLinkIds: Set<string>
+  onPendingLinksChange: (links: PendingIntegrationLink[]) => void
+  onRemovedLinkIdsChange: (ids: Set<string>) => void
+}
+
+const rowClasses =
+  'bg-muted/40 flex items-center justify-between rounded-md border px-3 py-2'
+
+async function fetchJson<T>(url: string, fallbackError: string): Promise<T> {
+  const res = await fetch(url)
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string }
+  if (!res.ok) {
+    throw new Error(body.error ?? fallbackError)
+  }
+  return body
+}
+
+export function IntegrationLinksSection({
+  provider,
+  projectId,
+  disabled,
+  pendingLinks,
+  removedLinkIds,
+  onPendingLinksChange,
+  onRemovedLinkIdsChange,
+}: IntegrationLinksSectionProps) {
+  const config = INTEGRATION_PROVIDERS[provider]
+  const isCreateMode = !projectId
+
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const statusQuery = useQuery({
+    queryKey: integrationStatusQueryKey(provider),
+    queryFn: () =>
+      fetchJson<{ connected: boolean }>(
+        `/api/integrations/${config.slug}/status`,
+        `Could not check ${config.label} status`
+      ),
+  })
+  const isConnected = statusQuery.data?.connected ?? false
+
+  const linksQuery = useQuery({
+    queryKey: ['projectIntegrationLinks', projectId],
+    enabled: Boolean(projectId),
+    queryFn: () =>
+      fetchJson<{ data: ProjectIntegrationLink[] }>(
+        `/api/projects/${projectId}/integration-links`,
+        'Could not load linked projects'
+      ),
+  })
+  const links = useMemo(
+    () =>
+      (linksQuery.data?.data ?? []).filter(link => link.provider === provider),
+    [linksQuery.data, provider]
+  )
+
+  const ownPending = useMemo(
+    () => pendingLinks.filter(link => link.provider === provider),
+    [pendingLinks, provider]
+  )
+  const activeLinks = links.filter(link => !removedLinkIds.has(link.id))
+  const removedLinks = links.filter(link => removedLinkIds.has(link.id))
+
+  const optionsQuery = useQuery({
+    queryKey: ['integrationProjects', provider],
+    enabled: dialogOpen && isConnected,
+    queryFn: () =>
+      fetchJson<{ data: ExternalProjectOption[] }>(
+        `/api/integrations/${config.slug}/projects`,
+        `Could not load ${config.label} projects`
+      ),
+  })
+
+  const options = useMemo(() => {
+    const taken = new Set([
+      ...links.map(link => link.externalId),
+      ...ownPending.map(link => link.externalId),
+    ])
+    return (optionsQuery.data?.data ?? []).filter(
+      option => !taken.has(option.externalId)
+    )
+  }, [optionsQuery.data, links, ownPending])
+
+  const optionGroups = useMemo<SearchableComboboxGroup[]>(() => {
+    const byOwner = new Map<string, ExternalProjectOption[]>()
+    options.forEach(option => {
+      const key = option.ownerName ?? 'Other'
+      byOwner.set(key, [...(byOwner.get(key) ?? []), option])
+    })
+    return Array.from(byOwner.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([label, items]) => ({
+        label,
+        items: items.map(option => ({
+          value: option.externalId,
+          label: option.externalName,
+          keywords: [option.ownerName ?? '', option.ownerSlug ?? ''],
+        })),
+      }))
+  }, [options])
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open)
+    if (!open) setSelectedId(null)
+  }
+
+  const handleAdd = () => {
+    const option = options.find(
+      candidate => candidate.externalId === selectedId
+    )
+    if (!option) return
+    onPendingLinksChange([
+      ...pendingLinks,
+      {
+        provider,
+        externalId: option.externalId,
+        externalName: option.externalName,
+        ownerName: option.ownerName,
+      },
+    ])
+    handleDialogOpenChange(false)
+  }
+
+  // Removing marks the row (Pending removal, with Undo) or drops an unsaved
+  // one; Save applies it. No confirm and no toast: Undo is the safety net.
+  const handleRemovePending = (removed: PendingIntegrationLink) =>
+    onPendingLinksChange(
+      pendingLinks.filter(
+        link =>
+          !(
+            link.provider === provider && link.externalId === removed.externalId
+          )
+      )
+    )
+
+  const handleUnlink = (link: { id: string }) =>
+    onRemovedLinkIdsChange(new Set([...removedLinkIds, link.id]))
+
+  const heading = `${config.label} projects`
+
+  if (statusQuery.isSuccess && !isConnected) {
+    return (
+      <EntityList
+        title={heading}
+        isEmpty={false}
+        emptyMessage=''
+        status={
+          <>
+            <EmptyState
+              message={`Connect your ${config.label} account in Settings to link ${config.projectNoun}s.`}
+              action={
+                <Button variant='outline' size='sm' asChild>
+                  <a href='/settings/integrations'>Go to integrations</a>
+                </Button>
+              }
+            />
+          </>
+        }
+      />
+    )
+  }
+
+  if (statusQuery.isPending || (!isCreateMode && linksQuery.isPending)) {
+    return (
+      <EntityList
+        title={heading}
+        isEmpty={false}
+        emptyMessage=''
+        status={
+          <>
+            <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+              <Loader2 className='h-4 w-4 animate-spin' />
+              Loading linked {config.projectNoun}s...
+            </div>
+          </>
+        }
+      />
+    )
+  }
+
+  const isEmpty =
+    activeLinks.length === 0 &&
+    ownPending.length === 0 &&
+    removedLinks.length === 0
+
+  return (
+    <>
+      <EntityList
+        title={heading}
+        add={{
+          label: `Link ${config.label} ${config.projectNoun}`,
+          onAdd: () => handleDialogOpenChange(true),
+          disabled,
+        }}
+        isEmpty={isEmpty}
+        emptyMessage={
+          isCreateMode
+            ? `No ${config.label} ${config.projectNoun}s selected.`
+            : `No ${config.label} ${config.projectNoun}s linked.`
+        }
+      >
+        {links.map(link =>
+          removedLinkIds.has(link.id) ? (
+            <SheetRecordRow
+              key={link.id}
+              leading={
+                <IntegrationProviderIcon
+                  provider={provider}
+                  className='text-muted-foreground h-4 w-4'
+                />
+              }
+              title={formatIntegrationLinkLabel(link)}
+              pendingRemoval={{
+                disabled,
+                onUndo: () => {
+                  const next = new Set(removedLinkIds)
+                  next.delete(link.id)
+                  onRemovedLinkIdsChange(next)
+                },
+              }}
+            />
+          ) : (
+            <div key={link.id} className={rowClasses}>
+              <div className='flex min-w-0 flex-col gap-1'>
+                <div className='flex items-center gap-2 text-sm'>
+                  <IntegrationProviderIcon
+                    provider={provider}
+                    className='text-muted-foreground h-4 w-4'
+                  />
+                  <a
+                    href={link.url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='truncate-link hover:underline'
+                  >
+                    {link.externalName}
+                    <ExternalLink className='text-muted-foreground ml-1 inline h-3 w-3' />
+                  </a>
+                </div>
+                {link.ownerName ? (
+                  <div className='text-muted-foreground pl-6 text-xs'>
+                    {link.ownerName}
+                  </div>
+                ) : null}
+              </div>
+              <RowActionButton
+                type='button'
+                label={`Remove ${link.externalName}`}
+                icon={<Trash2 />}
+                className='text-muted-foreground hover:text-destructive shrink-0'
+                onClick={() => handleUnlink(link)}
+                disabled={disabled}
+              />
+            </div>
+          )
+        )}
+        {ownPending.map(link => (
+          <div key={`pending-${link.externalId}`} className={rowClasses}>
+            <div className='flex min-w-0 flex-col gap-1'>
+              <div className='flex items-center gap-2 text-sm'>
+                <IntegrationProviderIcon
+                  provider={provider}
+                  className='text-muted-foreground h-4 w-4'
+                />
+                <span className='truncate'>
+                  {formatIntegrationLinkLabel(link)}
+                </span>
+              </div>
+              <div className='text-warning pl-6 text-xs'>Pending save</div>
+            </div>
+            <RowActionButton
+              type='button'
+              label={`Remove ${link.externalName}`}
+              icon={<Trash2 />}
+              className='text-muted-foreground hover:text-destructive shrink-0'
+              onClick={() => handleRemovePending(link)}
+              disabled={disabled}
+            />
+          </div>
+        ))}
+      </EntityList>
+
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Add {config.label} {config.projectNoun}
+            </DialogTitle>
+          </DialogHeader>
+          <div className='space-y-4 pt-4'>
+            {optionsQuery.isPending || optionsQuery.isFetching ? (
+              <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                Loading {config.projectNoun}s...
+              </div>
+            ) : optionsQuery.isError ? (
+              <p className='text-destructive text-sm'>
+                {optionsQuery.error.message}
+              </p>
+            ) : (
+              <SearchableCombobox
+                groups={optionGroups}
+                value={selectedId ?? ''}
+                onChange={setSelectedId}
+                searchPlaceholder={`Search ${config.label} ${config.projectNoun}s…`}
+                emptyMessage={`No ${config.projectNoun}s found.`}
+              />
+            )}
+            <div className='flex justify-end gap-2'>
+              <Button
+                variant='outline'
+                onClick={() => handleDialogOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleAdd} disabled={!selectedId}>
+                Add {config.projectNoun}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}

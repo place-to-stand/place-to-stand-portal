@@ -29,13 +29,6 @@ const WRAPPERS: Record<SheetEntityKey, ComponentType<SheetWrapperProps>> = {
       ),
     { ssr: false }
   ),
-  client: dynamic(
-    () =>
-      import('./wrappers/client-sheet-wrapper').then(
-        module => module.ClientSheetWrapper
-      ),
-    { ssr: false }
-  ),
   contact: dynamic(
     () =>
       import('./wrappers/contact-sheet-wrapper').then(
@@ -64,17 +57,17 @@ const WRAPPERS: Record<SheetEntityKey, ComponentType<SheetWrapperProps>> = {
       ),
     { ssr: false }
   ),
-  user: dynamic(
-    () =>
-      import('./wrappers/user-sheet-wrapper').then(
-        module => module.UserSheetWrapper
-      ),
-    { ssr: false }
-  ),
   project: dynamic(
     () =>
       import('./wrappers/project-sheet-wrapper').then(
         module => module.ProjectSheetWrapper
+      ),
+    { ssr: false }
+  ),
+  company: dynamic(
+    () =>
+      import('./wrappers/company-sheet-wrapper').then(
+        module => module.CompanySheetWrapper
       ),
     { ssr: false }
   ),

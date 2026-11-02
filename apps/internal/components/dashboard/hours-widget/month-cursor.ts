@@ -31,13 +31,6 @@ export function shiftMonth(cursor: CursorLike, delta: number) {
   }
 }
 
-export function formatHours(value: number) {
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })
-}
-
 export function compareMonthCursor(a: CursorLike, b: CursorLike) {
   const aValue = a.year * 12 + (a.month - 1)
   const bValue = b.year * 12 + (b.month - 1)

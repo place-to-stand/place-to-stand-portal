@@ -1,0 +1,152 @@
+import { z } from 'zod'
+
+import { PROJECT_STATUS_ENUM_VALUES } from '@/lib/constants'
+import {
+  generateUniqueProjectSlugDrizzle,
+  projectSlugExistsDrizzle,
+} from '@/lib/queries/projects'
+import { PROJECT_TYPE_ENUM_VALUES } from './project-sheet-form'
+
+const DEFAULT_SLUG = 'project'
+
+export const projectSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    name: z.string().min(1, 'Project name is required'),
+    projectType: z.enum(PROJECT_TYPE_ENUM_VALUES),
+    companyId: z
+      .string()
+      .uuid('Select a client')
+      .or(z.literal(''))
+      .or(z.null())
+      .optional()
+      .transform(value => (value ? value : null)),
+    status: z.enum(PROJECT_STATUS_ENUM_VALUES),
+    startsOn: z.string().nullable().optional(),
+    endsOn: z.string().nullable().optional(),
+    slug: z
+      .string()
+      .regex(
+        /^[a-z0-9-]+$/,
+        'Slugs can only contain lowercase letters, numbers, and dashes'
+      )
+      .or(z.literal(''))
+      .nullish()
+      .transform(value => (value ? value : null)),
+    ownerId: z
+      .string()
+      .uuid()
+      .or(z.literal(''))
+      .nullish()
+      .transform(value => (value ? value : null)),
+    /**
+     * Sales users who may see the project. Omitted = leave members as they
+     * are (the sheet sends it only once it has loaded the current list).
+     */
+    memberIds: z.array(z.string().uuid()).max(100).optional(),
+    /** GitHub repos to link (as picked) and link ids to remove. */
+    repoLinks: z
+      .object({
+        add: z
+          .array(
+            z.object({
+              repoFullName: z
+                .string()
+                .regex(/^[^/]+\/[^/]+$/, 'Invalid repo (expected owner/repo)'),
+              source: z.enum(['oauth', 'app']).optional(),
+              sourceId: z.string().uuid().optional(),
+            })
+          )
+          .max(50),
+        remove: z.array(z.string().uuid()).max(100),
+      })
+      .optional(),
+    /** Vercel / Supabase projects to link and link ids to remove. */
+    integrationLinks: z
+      .object({
+        add: z
+          .array(
+            z.object({
+              provider: z.enum(['VERCEL', 'SUPABASE']),
+              externalId: z.string().trim().min(1),
+            })
+          )
+          .max(50),
+        remove: z.array(z.string().uuid()).max(100),
+      })
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.startsOn && data.endsOn) {
+      const start = new Date(data.startsOn)
+      const end = new Date(data.endsOn)
+
+      if (
+        !Number.isNaN(start.valueOf()) &&
+        !Number.isNaN(end.valueOf()) &&
+        end < start
+      ) {
+        ctx.addIssue({
+          path: ['endsOn'],
+          code: z.ZodIssueCode.custom,
+          message: 'End date must be on or after the start date.',
+        })
+      }
+    }
+    const requiresClient = data.projectType === 'CLIENT'
+    const hasClient = Boolean(data.companyId)
+
+    if (requiresClient && !hasClient) {
+      ctx.addIssue({
+        path: ['companyId'],
+        code: z.ZodIssueCode.custom,
+        message: 'Select a client for client projects.',
+      })
+    }
+
+    if (!requiresClient && hasClient) {
+      ctx.addIssue({
+        path: ['companyId'],
+        code: z.ZodIssueCode.custom,
+        message: 'Personal and internal projects cannot be linked to clients.',
+      })
+    }
+  })
+
+const projectIdentifierSchema = {
+  id: z.string().uuid(),
+}
+
+export const deleteProjectSchema = z.object(projectIdentifierSchema)
+export const restoreProjectSchema = z.object(projectIdentifierSchema)
+
+export type ProjectInput = z.infer<typeof projectSchema>
+export type DeleteProjectInput = z.infer<typeof deleteProjectSchema>
+export type RestoreProjectInput = z.infer<typeof restoreProjectSchema>
+
+export type ProjectActionResult = {
+  error?: string
+  fieldErrors?: Record<string, string[]>
+  projectId?: string
+}
+
+export function toProjectSlug(input: string): string {
+  const base = input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return base || DEFAULT_SLUG
+}
+
+export async function projectSlugExists(
+  slug: string,
+  options: { excludeId?: string } = {}
+): Promise<boolean> {
+  return projectSlugExistsDrizzle(slug, options)
+}
+
+export async function generateUniqueProjectSlug(base: string): Promise<string> {
+  return generateUniqueProjectSlugDrizzle(base)
+}

@@ -1,80 +1,84 @@
+import type { InferSelectModel, Table } from 'drizzle-orm'
+
 import {
   activitySource,
   clientBillingType,
   projectType,
-  taskStatus,
+  taskAttachments,
+  taskDeployments,
+  tasks,
+  projects,
   userRole,
   workerStatus,
 } from '@/lib/db/schema'
 
 export type UserRoleValue = (typeof userRole.enumValues)[number]
 export type ActivitySourceValue = (typeof activitySource.enumValues)[number]
-type TaskStatusValue = (typeof taskStatus.enumValues)[number]
 export type ClientBillingTypeValue =
   (typeof clientBillingType.enumValues)[number]
 export type ProjectTypeValue = (typeof projectType.enumValues)[number]
 export type WorkerStatusValue = (typeof workerStatus.enumValues)[number]
 
-export type DbClient = {
+type SnakeCase<S extends string> = S extends `${infer Head}${infer Tail}`
+  ? Head extends Lowercase<Head>
+    ? `${Head}${SnakeCase<Tail>}`
+    : `_${Lowercase<Head>}${SnakeCase<Tail>}`
+  : S
+
+/**
+ * A table's row with snake_case keys: the shape the data layer hands to
+ * client components. Derived from the Drizzle schema so a column change
+ * shows up here instead of drifting from a hand-written copy.
+ */
+type SnakeRow<T extends Table> = {
+  [K in keyof InferSelectModel<T> as SnakeCase<K & string>]: InferSelectModel<T>[K]
+}
+
+/**
+ * A client: a company you bill (0111), read from `companies`. `id` and
+ * `company_id` are the same id. `billing_type` and `origination_*` come
+ * from the newest terms; `deleted_at` means billing stopped
+ * (billing ended, or the company archived).
+ */
+export type ClientCompanyView = {
   id: string
   name: string
   slug: string | null
   notes: string | null
-  website: string | null
   state: string | null
   origination_contact_id: string | null
   origination_user_id: string | null
   billing_type: ClientBillingTypeValue
+  company_id?: string | null
   created_by: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
 }
 
+/**
+ * A client as the project, invoice and hour-block pickers list it (archived
+ * ones included, so a record's own archived client still shows).
+ */
+export type ClientPickerRow = Pick<
+  ClientCompanyView,
+  'id' | 'name' | 'deleted_at'
+>
+
+/** A portal login with access to a client (from `client_portal_access`). */
 export type DbClientMember = {
-  id: number
-  client_id: string
+  /** The contact behind the login. */
+  id: string
+  /** The billed company they can see. */
+  company_id: string
   user_id: string
   created_at: string
   deleted_at: string | null
 }
 
-export type DbProject = {
-  id: string
-  client_id: string | null
-  name: string
-  status: string
-  type: ProjectTypeValue
-  starts_on: string | null
-  ends_on: string | null
-  created_by: string | null
-  owner_id: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  slug: string | null
-}
+export type DbProject = SnakeRow<typeof projects>
 
-export type DbTask = {
-  id: string
-  project_id: string
-  lead_id: string | null
-  title: string
-  description: string | null
-  status: TaskStatusValue
-  due_on: string | null
-  created_by: string | null
-  updated_by: string | null
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-  accepted_at: string | null
-  completed_at: string | null
-  rank: string
-  github_issue_number: number | null
-  github_issue_url: string | null
-  worker_status: WorkerStatusValue | null
-}
+export type DbTask = SnakeRow<typeof tasks>
 
 export type DbUser = {
   id: string
@@ -113,41 +117,16 @@ type DbTimeLog = {
   updated_at: string
   deleted_at: string | null
 }
-export type DbTaskAttachment = {
-  id: string
-  task_id: string
-  storage_path: string
-  original_name: string
-  mime_type: string
-  file_size: number
-  uploaded_by: string
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
+export type DbTaskAttachment = SnakeRow<typeof taskAttachments>
 
-export type DbTaskDeployment = {
-  id: string
-  task_id: string
-  repo_link_id: string
-  github_issue_number: number
-  github_issue_url: string
-  worker_status: WorkerStatusValue
-  pr_url: string | null
-  plan_id: string
-  plan_thread_id: string | null
-  plan_version: number | null
-  model: string | null
-  mode: string | null
-  created_by: string
-  created_at: string
-  updated_at: string
-}
+export type DbTaskDeployment = SnakeRow<typeof taskDeployments>
 
-// ProjectMemberWithUser represents a client member who has access to a project
-// The project_id is derived from the client_id for backwards compatibility
+// A person who can see a project in the client portal: a current member with
+// portal access at the project's client company (`client_portal_access`).
+// `id` is their contact id; `project_id` is filled in per project, since
+// access is granted per company, not per project.
 export type ProjectMemberWithUser = {
-  id: number
+  id: string
   project_id: string
   user_id: string
   created_at: string
@@ -201,12 +180,14 @@ export type GitHubRepoLinkSummary = {
 
 export type ProjectOwner = {
   id: string
+  /** Their person record: the Owner link opens it. */
+  contact_id: string | null
   full_name: string | null
   avatar_url: string | null
 }
 
 export type ProjectWithRelations = DbProject & {
-  client: DbClient | null
+  client: ClientCompanyView | null
   owner: ProjectOwner | null
   members: ProjectMemberWithUser[]
   tasks: TaskWithRelations[]

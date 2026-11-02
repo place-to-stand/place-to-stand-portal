@@ -5,7 +5,7 @@ import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
 import type { AppUser } from '@/lib/auth/session'
 import { fetchClientById } from '@/lib/data/clients'
 import { db } from '@/lib/db'
-import { fetchContactsForClient } from '@/lib/queries/clients/contacts'
+import { fetchContactsForClient } from '@/lib/queries/companies/billing/contacts'
 
 import { greetingNameFromContacts } from './default-recipients'
 import { portalHomeHref } from './links'
@@ -22,9 +22,9 @@ export async function buildUpdateEmailContent(
   update: ClientUpdateRow
 ): Promise<UpdateEmailContent> {
   const [client, contacts, hoursByClient] = await Promise.all([
-    fetchClientById(user, update.clientId),
-    fetchContactsForClient(update.clientId),
-    getClientHoursTotals(db, [update.clientId]),
+    fetchClientById(user, update.companyId),
+    fetchContactsForClient(update.companyId),
+    getClientHoursTotals(db, [update.companyId]),
   ])
 
   const prepaid = client.billingType === 'prepaid'

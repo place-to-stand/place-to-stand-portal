@@ -1,40 +1,62 @@
 import type { Metadata } from 'next'
 
 import { HomeDashboard } from '@/components/dashboard/home-dashboard'
-import { requireUser } from '@/lib/auth/session'
+import { requireCrmUser } from '@/lib/auth/session'
+import type { DashboardWidgetId } from '@/lib/dashboard/layout'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import { fetchHoursSnapshot } from '@/lib/data/dashboard/hours'
 import { fetchDashboardLayout } from '@/lib/data/dashboard/layout'
+import { fetchSalesHomeData } from '@/lib/data/dashboard/sales'
 import { fetchAssignedTasksSummary } from '@/lib/data/tasks'
+import { listWorkableProjectIds } from '@/lib/projects/access'
 
 export const metadata: Metadata = {
   title: 'Home',
 }
 
-export default async function HomePage() {
-  const user = await requireUser()
-  const now = new Date()
-  const currentMonthCursor = {
-    year: now.getUTCFullYear(),
-    month: now.getUTCMonth() + 1,
-  }
+const SALES_WIDGETS: readonly DashboardWidgetId[] = ['pipeline', 'quiet-leads']
 
-  const [tasksResult, hoursSnapshot, layout] = await Promise.all([
-    fetchAssignedTasksSummary({
-      userId: user.id,
-      limit: MY_TASKS_WIDGET_PAGE_SIZE,
-      includeCompletedStatuses: false,
-    }),
-    fetchHoursSnapshot(user, currentMonthCursor),
-    fetchDashboardLayout(user),
+export default async function HomePage() {
+  // Every staff role lands here, so this page must not use requireUser,
+  // which would send non-admins straight back.
+  const user = await requireCrmUser()
+  const layout = await fetchDashboardLayout(user)
+
+  // Load what every widget in the layout needs, hidden ones included: the
+  // edit tray shows hidden widgets with live content so you can see them
+  // before adding them.
+  const visible = new Set([...layout.columns.flat(), ...layout.hidden])
+  const now = new Date()
+
+  const [tasksResult, hoursSnapshot, sales] = await Promise.all([
+    visible.has('my-tasks')
+      ? listWorkableProjectIds(user).then(projectIds =>
+          fetchAssignedTasksSummary({
+            userId: user.id,
+            projectIds,
+            limit: MY_TASKS_WIDGET_PAGE_SIZE,
+            includeCompletedStatuses: false,
+            order: 'due',
+          })
+        )
+      : null,
+    visible.has('hours')
+      ? fetchHoursSnapshot(user, {
+          year: now.getUTCFullYear(),
+          month: now.getUTCMonth() + 1,
+        })
+      : null,
+    SALES_WIDGETS.some(id => visible.has(id)) ? fetchSalesHomeData(user) : null,
   ])
 
   return (
     <HomeDashboard
-      tasks={tasksResult.items}
-      totalTaskCount={tasksResult.totalCount}
-      initialHoursSnapshot={hoursSnapshot}
+      tasks={tasksResult?.items}
+      totalTaskCount={tasksResult?.totalCount}
+      initialHoursSnapshot={hoursSnapshot ?? undefined}
+      sales={sales ?? undefined}
       initialLayout={layout}
+      role={user.role}
     />
   )
 }

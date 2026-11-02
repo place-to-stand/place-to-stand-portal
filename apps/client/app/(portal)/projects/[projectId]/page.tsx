@@ -30,7 +30,7 @@ export default async function ProjectDetailPage({
   // the caller's portal scope.
   const project = await fetchProjectDetail(user, projectId)
 
-  if (!project || !project.clientId) {
+  if (!project || !project.companyId) {
     notFound()
   }
 
@@ -61,7 +61,7 @@ export default async function ProjectDetailPage({
 
       <GitHubRepoSection
         projectId={project.id}
-        clientId={project.clientId}
+        companyId={project.companyId}
         hasInstallation={github.hasInstallation}
         links={github.links}
         staffAccounts={staffAccounts}

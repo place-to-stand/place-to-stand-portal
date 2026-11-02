@@ -14,8 +14,6 @@ import {
   CalendarDays,
   CheckCircle,
   Globe,
-  Handshake,
-  ListTodo,
   Mail,
   MessageSquareText,
   Phone,
@@ -23,7 +21,7 @@ import {
 } from 'lucide-react'
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
-import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
   getLeadSourceLabel,
@@ -39,7 +37,7 @@ import { formatPhoneUS } from '@/lib/utils/phone-format'
  * assignee avatar pinned bottom-right.
  */
 const LEAD_SOURCE_ICONS: Record<LeadSourceTypeValue, LucideIcon> = {
-  REFERRAL: Handshake,
+  REFERRAL: ENTITY_ICONS.lead,
   WEBSITE: Globe,
   EVENT: CalendarDays,
 }
@@ -192,13 +190,13 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
       <TooltipTrigger asChild>
         <span
           role='img'
-          aria-label='Converted to client'
+          aria-label='Made a client'
           className='text-success inline-flex size-5 shrink-0 items-center justify-center'
         >
           <CheckCircle className='size-4' aria-hidden />
         </span>
       </TooltipTrigger>
-      <TooltipContent side='top'>Converted to client</TooltipContent>
+      <TooltipContent side='top'>Made a client</TooltipContent>
     </Tooltip>
   ) : null
 
@@ -249,32 +247,22 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
           {lead.openTaskCount > 0 || lead.updateCount > 0 ? (
             <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-xs'>
               {lead.openTaskCount > 0 ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span
-                      className='inline-flex items-center gap-1'
-                      aria-label={openTasksLabel}
-                    >
-                      <ListTodo className='h-3.5 w-3.5' aria-hidden />
-                      {lead.openTaskCount}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side='top'>{openTasksLabel}</TooltipContent>
-                </Tooltip>
+                <span
+                  className='inline-flex items-center gap-1'
+                  aria-label={openTasksLabel}
+                >
+                  <ENTITY_ICONS.task className='h-3.5 w-3.5' aria-hidden />
+                  {lead.openTaskCount}
+                </span>
               ) : null}
               {lead.updateCount > 0 ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span
-                      className='inline-flex items-center gap-1'
-                      aria-label={updatesLabel}
-                    >
-                      <MessageSquareText className='h-3.5 w-3.5' aria-hidden />
-                      {lead.updateCount}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side='top'>{updatesLabel}</TooltipContent>
-                </Tooltip>
+                <span
+                  className='inline-flex items-center gap-1'
+                  aria-label={updatesLabel}
+                >
+                  <MessageSquareText className='h-3.5 w-3.5' aria-hidden />
+                  {lead.updateCount}
+                </span>
               ) : null}
             </div>
           ) : null}

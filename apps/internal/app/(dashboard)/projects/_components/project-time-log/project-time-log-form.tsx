@@ -1,6 +1,7 @@
 import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { DatePicker } from '@/components/ui/date-picker'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { Input } from '@pts/ui/input'
 import { type SearchableComboboxItem } from '@/components/ui/searchable-combobox'
@@ -9,6 +10,13 @@ import type { TaskWithRelations } from '@/lib/types'
 import type { TimeLogFormErrors } from '@/lib/projects/time-log/types'
 
 import { SelectedTaskList } from './selected-task-list'
+import { EntityList } from '@/components/sheets/entity-list'
+import { usePendingRemovals } from '@/components/sheets/use-pending-removals'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { FIELD_STACK_CLASS } from '@/components/ui/form'
+import { Label } from '@pts/ui/label'
+import { EntityFieldLabel } from '@/components/ui/entity-label-icon'
+import { cn } from '@/lib/utils'
 import { TaskSelector } from './task-selector'
 import { UserSelectField } from './user-select-field'
 
@@ -83,15 +91,21 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
 
   const SubmitIcon = isEditMode ? Pencil : PlusCircle
 
+  // Unlinked tasks stay as Pending removal, with Undo, until the log saves.
+  const taskRemovals = usePendingRemovals<TaskWithRelations>(
+    taskKey,
+    selectedTasks
+  )
+
   return (
     <form
       onSubmit={handleSubmit}
       className='grid grid-cols-1 gap-4 sm:grid-cols-2'
     >
-      <div className='space-y-2'>
-        <label htmlFor='time-log-hours' className='text-sm font-medium'>
+      <div className={cn(FIELD_STACK_CLASS)}>
+        <EntityFieldLabel entity='timeLog' htmlFor='time-log-hours'>
           Hours
-        </label>
+        </EntityFieldLabel>
         <Input
           id='time-log-hours'
           type='number'
@@ -116,20 +130,17 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
           </p>
         ) : null}
       </div>
-      <div className='space-y-2'>
-        <label htmlFor='time-log-date' className='text-sm font-medium'>
-          Date
-        </label>
-        <Input
+      <div className={cn(FIELD_STACK_CLASS)}>
+        <Label htmlFor='time-log-date'>Date</Label>
+        <DatePicker
           id='time-log-date'
-          type='date'
           value={loggedOnInput}
           max={getToday()}
-          onChange={event => onLoggedOnChange(event.currentTarget.value)}
+          onChange={onLoggedOnChange}
+          clearable={false}
           disabled={isMutating}
           aria-invalid={Boolean(formErrors.loggedOn)}
           aria-describedby={fieldErrorIds.loggedOn}
-          required
         />
         {formErrors.loggedOn ? (
           <p
@@ -149,32 +160,48 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         fieldErrorId={fieldErrorIds.user}
         errorMessage={formErrors.user}
       />
-      <div className='space-y-2 sm:col-span-2'>
-        <label htmlFor='time-log-task' className='text-sm font-medium'>
-          Link to tasks (optional)
-        </label>
-        <TaskSelector
-          availableTasks={availableTasks}
-          onAddTask={onAddTask}
-          isOpen={isTaskPickerOpen}
-          onOpenChange={onTaskPickerOpenChange}
-          disabled={taskPickerButtonDisabled}
-          disabledReason={taskPickerReason}
-        />
-        <p className='text-muted-foreground text-xs'>
-          Leave empty to apply hours to the project only.
-        </p>
+      {/* Like the task sheet's Time logs: a heading with the +, the linked
+          tasks, and an empty box that does what the + does. */}
+      <EntityList
+        title='Linked tasks'
+        icon={ENTITY_ICONS.task}
+        className='sm:col-span-2'
+        add={{
+          label: 'Link task',
+          onAdd: () => onTaskPickerOpenChange(true),
+          disabled: taskPickerButtonDisabled,
+          disabledReason: taskPickerButtonDisabled
+            ? (taskPickerReason ??
+              (availableTasks.length === 0 ? 'Every task is linked.' : null))
+            : null,
+          render: button => (
+            <TaskSelector
+              availableTasks={availableTasks}
+              onAddTask={onAddTask}
+              isOpen={isTaskPickerOpen}
+              onOpenChange={onTaskPickerOpenChange}
+              trigger={button}
+            />
+          ),
+        }}
+        isEmpty={
+          selectedTasks.length === 0 && taskRemovals.pending.length === 0
+        }
+        emptyMessage='No tasks linked. Hours apply to project if left empty.'
+      >
         <SelectedTaskList
-          tasks={selectedTasks}
+          rows={taskRemovals.rows}
           isActionDisabled={isMutating}
-          disabledReason={isMutating ? 'Logging time...' : null}
-          onRemove={requestTaskRemoval}
+          disabledReason={isMutating ? 'Logging time…' : null}
+          onRemove={task => {
+            taskRemovals.markRemoved(task)
+            requestTaskRemoval(task)
+          }}
+          onUndo={task => onAddTask(task.id)}
         />
-      </div>
-      <div className='space-y-2 sm:col-span-2'>
-        <label htmlFor='time-log-note' className='text-sm font-medium'>
-          Notes
-        </label>
+      </EntityList>
+      <div className={cn(FIELD_STACK_CLASS, 'sm:col-span-2')}>
+        <Label htmlFor='time-log-note'>Notes</Label>
         <Textarea
           id='time-log-note'
           value={noteInput}
@@ -195,16 +222,6 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
           </p>
         ) : null}
       </div>
-      {formErrors.general ? (
-        <div
-          id={fieldErrorIds.general}
-          className='border-destructive/40 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm sm:col-span-2'
-          role='alert'
-          aria-live='assertive'
-        >
-          {formErrors.general}
-        </div>
-      ) : null}
       <div className='flex items-center justify-end gap-3 sm:col-span-2'>
         {isEditMode && onRequestDelete ? (
           <Button
@@ -239,3 +256,5 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
     </form>
   )
 }
+
+const taskKey = (task: { id: string }) => task.id

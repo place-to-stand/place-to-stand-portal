@@ -6,7 +6,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listInvoices } from '@/lib/queries/invoices'
 
 import { InvoicesAddButton } from '../_components/invoices-add-button'
-import { InvoicesActivitySection } from '../_components/invoices-activity-section'
+import { ActivitySection } from '@/components/activity/activity-section'
 import { INVOICES_TABS } from '../_lib/tabs'
 
 export const metadata: Metadata = {
@@ -29,7 +29,11 @@ export default async function InvoicesActivityPage() {
       primaryAction={<InvoicesAddButton clients={clients} />}
     >
       <section className='bg-background rounded-xl border p-4 shadow-sm'>
-        <InvoicesActivitySection />
+        <ActivitySection
+          targetType='INVOICE'
+          emptyState='No recent invoice activity.'
+          description='Audit invoice creation, edits, sends, voids, and deletions in one place.'
+        />
       </section>
     </PageShell>
   )

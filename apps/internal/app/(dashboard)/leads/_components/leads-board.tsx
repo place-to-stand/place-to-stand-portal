@@ -25,25 +25,35 @@ import { useToast } from '@/components/ui/use-toast'
 import { moveLead } from '../actions'
 import { getRankAfter, getRankBefore, getRankBetween } from '@/lib/rank'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
+import {
+  LEAD_WON_NEEDS_COMPANY_MESSAGE,
+  breaksWonNeedsCompany,
+} from '@/lib/leads/won-rule'
 
 import { LeadColumn } from './lead-column'
 import { LeadCardPreview } from './lead-card'
 
 type LeadsBoardProps = {
   initialColumns: LeadBoardColumnData[]
+  /** Leads a filter hides; ranks are worked out around them too. */
+  hiddenLeads?: LeadRecord[]
   canManage: boolean
   onEditLead: (lead: LeadRecord) => void
   onCreateLead?: (status: LeadStatusValue) => void
   onLeadClosedWon?: (lead: LeadRecord) => void
+  /** A Won drag refused for want of a company: open the lead to add one. */
+  onWonNeedsCompany?: (lead: LeadRecord) => void
   activeLeadId: string | null
 }
 
 export function LeadsBoard({
   initialColumns,
+  hiddenLeads = NO_LEADS,
   canManage,
   onEditLead,
   onCreateLead,
   onLeadClosedWon,
+  onWonNeedsCompany,
   activeLeadId,
 }: LeadsBoardProps) {
   const { sensors } = useProjectsBoardSensors()
@@ -160,9 +170,33 @@ export function LeadsBoard({
         leadId,
         targetColumnId: target.columnId,
         targetIndex: target.index,
+        hiddenLeads,
       })
 
       if (!result) {
+        return
+      }
+
+      // Decision 7: Won needs a company. Leave the card where it was rather
+      // than flash it into Won and back; the server enforces it too.
+      const draggedLead = findLeadById(result.previousColumns, leadId)
+      if (
+        canManage &&
+        draggedLead &&
+        breaksWonNeedsCompany(
+          { status: result.targetColumnId, companyId: draggedLead.companyId },
+          draggedLead
+        )
+      ) {
+        if (onWonNeedsCompany) {
+          onWonNeedsCompany(draggedLead)
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Unable to move lead',
+            description: LEAD_WON_NEEDS_COMPANY_MESSAGE,
+          })
+        }
         return
       }
 
@@ -174,8 +208,6 @@ export function LeadsBoard({
         columnsRef.current = result.nextColumns
         return
       }
-
-      const movedLead = findLeadById(result.previousColumns, leadId)
 
       startTransition(async () => {
         const response = await moveLead({
@@ -195,20 +227,24 @@ export function LeadsBoard({
         } else {
           columnsRef.current = result.nextColumns
 
+          // Just won (not a reorder inside Won): billing is the next step.
           if (
             result.targetColumnId === 'CLOSED_WON' &&
-            movedLead &&
-            !movedLead.convertedToClientId &&
+            draggedLead &&
+            draggedLead.status !== 'CLOSED_WON' &&
+            draggedLead.companyId &&
             onLeadClosedWon
           ) {
-            onLeadClosedWon(movedLead)
+            onLeadClosedWon(draggedLead)
           }
         }
       })
     },
     [
       canManage,
+      hiddenLeads,
       onLeadClosedWon,
+      onWonNeedsCompany,
       scheduleRecentlyMovedReset,
       setDropPreview,
       setRecentlyMovedLeadId,
@@ -470,6 +506,8 @@ export function LeadsBoard({
   )
 }
 
+const NO_LEADS: LeadRecord[] = []
+
 function cloneColumns(columns: LeadBoardColumnData[]): LeadBoardColumnData[] {
   return columns.map(column => ({
     ...column,
@@ -615,11 +653,13 @@ function produceLeadReorder({
   leadId,
   targetColumnId,
   targetIndex,
+  hiddenLeads,
 }: {
   columns: LeadBoardColumnData[]
   leadId: string
   targetColumnId: LeadStatusValue
   targetIndex: number
+  hiddenLeads: LeadRecord[]
 }): {
   nextColumns: LeadBoardColumnData[]
   previousColumns: LeadBoardColumnData[]
@@ -684,7 +724,11 @@ function produceLeadReorder({
     return null
   }
 
-  const rank = computeRankFromNeighbors(reorderedLeads, insertedIndex)
+  const rank = computeRankAmongHidden(
+    reorderedLeads,
+    insertedIndex,
+    hiddenLeads.filter(lead => lead.status === targetColumnId)
+  )
 
   reorderedLeads[insertedIndex] = {
     ...reorderedLeads[insertedIndex],
@@ -710,6 +754,36 @@ function produceLeadReorder({
     rank,
     targetColumnId,
   }
+}
+
+/**
+ * The rank for the lead at `index` of the visible column, placed in the full
+ * column (visible plus filtered-out leads, by rank): straight after the
+ * visible lead above it, or straight before the one below.
+ */
+function computeRankAmongHidden(
+  visible: LeadRecord[],
+  index: number,
+  hidden: LeadRecord[]
+) {
+  if (!hidden.length) return computeRankFromNeighbors(visible, index)
+
+  const moved = visible[index]
+  const full = [...visible.filter(lead => lead !== moved), ...hidden].sort(
+    (a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0)
+  )
+  const above = visible[index - 1]
+  const below = visible[index + 1]
+  let position: number
+  if (above) {
+    position = full.indexOf(above) + 1
+  } else if (below) {
+    position = full.indexOf(below)
+  } else {
+    position = full.length
+  }
+  full.splice(position, 0, moved!)
+  return computeRankFromNeighbors(full, position)
 }
 
 function computeRankFromNeighbors(leads: LeadRecord[], index: number) {

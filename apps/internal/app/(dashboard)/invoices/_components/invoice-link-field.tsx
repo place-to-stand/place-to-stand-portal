@@ -29,15 +29,20 @@ export function InvoiceLinkField({
 
   const handleCopy = useCallback(() => {
     if (!url) return
-    navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    navigator.clipboard.writeText(url).then(
+      () => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      },
+      // Refused (permissions, insecure page): show no "Copied" tick.
+      () => setCopied(false)
+    )
   }, [url])
 
   return (
     <div className='space-y-2'>
       <Label htmlFor='invoice-client-link' className='font-medium'>
-        Client link
+        Public link
       </Label>
       <div className='flex items-center gap-1'>
         {url ? (

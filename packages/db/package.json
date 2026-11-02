@@ -5,23 +5,26 @@
   "type": "module",
   "exports": {
     "./schema": "./src/schema.ts",
-    "./relations": "./src/relations.ts",
     "./hours": "./src/hours.ts",
     "./rate-limit": "./src/rate-limit.ts",
     "./client": "./src/client.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./names": "./src/names.ts",
+    "./client-state": "./src/client-state.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
-    "db:migrate:prod": "dotenv -e ../../apps/internal/.env.prod -- drizzle-kit migrate --config drizzle.config.ts",
-    "type-check": "tsc --noEmit"
+    "db:migrate:prod": "node scripts/migrate.mjs ../../apps/internal/.env.prod",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
+    "@pts/eslint-config": "^0.1.0",
     "dotenv": "^18.0.8",
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.11",

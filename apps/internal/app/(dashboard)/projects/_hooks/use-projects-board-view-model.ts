@@ -24,7 +24,7 @@ const NO_PROJECTS_MESSAGE = 'No projects assigned yet.'
 type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
 export type ProjectsBoardProps = BaseProps & {
-  initialTab?: 'overview' | 'board' | 'activity' | 'review' | 'timeLogs'
+  initialTab?: 'board' | 'activity' | 'review' | 'timeLogs'
 }
 
 export type ProjectsBoardHeaderProps = {
@@ -62,10 +62,7 @@ export function useProjectsBoardViewModel({
   initialTab = 'board',
   ...props
 }: ProjectsBoardProps): ProjectsBoardViewModel {
-  const currentBoardView =
-    initialTab === 'timeLogs' || initialTab === 'overview'
-      ? 'board'
-      : initialTab
+  const currentBoardView = initialTab === 'timeLogs' ? 'board' : initialTab
   const { sensors } = useProjectsBoardSensors()
   const {
     boardState,
@@ -108,8 +105,6 @@ export function useProjectsBoardViewModel({
           boardState.activeProject.burndown.totalClientRemainingHours,
         totalProjectLoggedHours:
           boardState.activeProject.burndown.totalProjectLoggedHours,
-        projectMonthToDateLoggedHours:
-          boardState.activeProject.burndown.projectMonthToDateLoggedHours,
       },
     }
   }, [boardState.activeProject])
@@ -166,7 +161,6 @@ export function useProjectsBoardViewModel({
       onAcceptTask: reviewActions.handleAcceptTask,
       onUnacceptTask: reviewActions.handleUnacceptTask,
       onRestoreTask: reviewActions.handleRestoreTask,
-      onDestroyTask: reviewActions.handleDestroyTask,
       reviewActionTaskId,
       reviewActionType,
       isReviewActionPending: reviewActions.isReviewActionPending,
@@ -200,7 +194,9 @@ export function useProjectsBoardViewModel({
       timeLogProjectId: timeLogDialogs.timeLogProjectId,
       tasks: boardState.activeProjectTasks,
       currentUserId: props.currentUserId,
-      admins: props.admins,
+      // `admins` carries every assignable staff user; time is logged by
+      // admins only.
+      admins: props.admins.filter(user => user.role === 'ADMIN'),
       mode: timeLogDialogs.mode,
       editingEntry: timeLogDialogs.editingEntry,
     },

@@ -1,5 +1,7 @@
+import { clientEndedAtSql } from '@pts/db/client-state'
 import 'server-only'
 
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   and,
   asc,
@@ -14,16 +16,20 @@ import {
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
+import {
+  listClientDirectory,
+  type ClientDirectoryRow,
+} from '@/lib/queries/companies/billing/directory'
 import { db } from '@/lib/db'
 import {
-  clients,
+  companies,
   hourBlocks,
   invoices,
   invoiceLineItems,
 } from '@/lib/db/schema'
 
 import type {
-  ClientRow,
+  InvoiceClient,
   InvoiceHourBlockSummary,
   InvoiceLineItemRow,
   InvoiceWithClient,
@@ -41,10 +47,7 @@ import {
   listProductCatalogItems,
   type ProductCatalogItemRow,
 } from '@/lib/queries/product-catalog'
-import {
-  listTaxRates,
-  type TaxRateRow,
-} from '@/lib/queries/tax-rates'
+import { listTaxRates, type TaxRateRow } from '@/lib/queries/tax-rates'
 
 // ---------------------------------------------------------------------------
 // Selection objects
@@ -54,7 +57,7 @@ const invoiceSelection = {
   id: invoices.id,
   invoiceNumber: invoices.invoiceNumber,
   status: invoices.status,
-  clientId: invoices.clientId,
+  companyId: invoices.companyId,
   createdBy: invoices.createdBy,
   issuedDate: invoices.issuedDate,
   dueDate: invoices.dueDate,
@@ -92,12 +95,13 @@ const lineItemSelection = {
 } as const
 
 const clientSelection = {
-  id: clients.id,
-  name: clients.name,
-  slug: clients.slug,
-  billingType: clients.billingType,
-  state: clients.state,
-  deletedAt: clients.deletedAt,
+  id: companies.id,
+  name: companies.name,
+  slug: companies.slug,
+  companyId: companies.id,
+  billingType: currentBillingTypeSql(),
+  state: companies.state,
+  deletedAt: clientEndedAtSql,
 } as const
 
 // ---------------------------------------------------------------------------
@@ -109,7 +113,7 @@ type InvoiceSelectionRow = {
     id: string
     invoiceNumber: string | null
     status: string
-    clientId: string
+    companyId: string
     createdBy: string | null
     issuedDate: string | null
     dueDate: string | null
@@ -134,6 +138,7 @@ type InvoiceSelectionRow = {
     id: string
     name: string
     slug: string | null
+    companyId: string
     billingType: string
     state: string | null
     deletedAt: string | null
@@ -155,14 +160,6 @@ type LineItemSelectionRow = {
   deletedAt: string | null
 }
 
-type ClientSelectionRow = {
-  id: string
-  name: string
-  slug: string | null
-  billingType: string
-  state: string | null
-  deletedAt: string | null
-}
 
 // ---------------------------------------------------------------------------
 // List invoices
@@ -175,7 +172,7 @@ export type ListInvoicesInput = {
   /** Invoice status filter (DRAFT/SENT/…), distinct from the tab `status`. */
   invoiceStatus?: InvoiceStatusValue
   /** Only this client's invoices. */
-  clientId?: string
+  companyId?: string
   /** Fuzzy search on invoice number + client name (PRD 004 §03). */
   search?: string
   sort?: ParsedSort<InvoiceSortField>
@@ -183,7 +180,7 @@ export type ListInvoicesInput = {
 
 export type ListInvoicesResult = {
   items: InvoiceWithClient[]
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateRow[]
   /** Rows matching the active filters/search (drives `Showing N of M`). */
@@ -213,8 +210,8 @@ const INVOICE_SORT_ORDERINGS: Record<
   // (no client) sink to the bottom either way, and a client's own invoices
   // stay newest-first so the grouping reads like the default view.
   client: {
-    asc: sql`LOWER(${clients.name}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
-    desc: sql`LOWER(${clients.name}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
+    asc: sql`LOWER(${companies.name}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`LOWER(${companies.name}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
   },
 }
 
@@ -241,14 +238,14 @@ export async function listInvoices(
   if (input.invoiceStatus) {
     baseConditions.push(eq(invoices.status, input.invoiceStatus))
   }
-  if (input.clientId) {
-    baseConditions.push(eq(invoices.clientId, input.clientId))
+  if (input.companyId) {
+    baseConditions.push(eq(invoices.companyId, input.companyId))
   }
   const searchQuery = input.search?.trim() ?? ''
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clients.name} ILIKE ${pattern})`
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${companies.name} ILIKE ${pattern})`
     )
   }
 
@@ -266,7 +263,7 @@ export async function listInvoices(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(baseWhere)
     .orderBy(...ordering)
     .limit(limit)
@@ -286,16 +283,13 @@ export async function listInvoices(
     db
       .select({ count: sql<number>`count(*)` })
       .from(invoices)
-      .leftJoin(clients, eq(invoices.clientId, clients.id))
+      .leftJoin(companies, eq(invoices.companyId, companies.id))
       .where(baseWhere),
     db
       .select({ count: sql<number>`count(*)` })
       .from(invoices)
       .where(statusCondition),
-    db
-      .select(clientSelection)
-      .from(clients)
-      .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
+    listClientDirectory(),
     listProductCatalogItems(),
     listTaxRates(),
   ])
@@ -318,7 +312,10 @@ export async function listInvoices(
   }
 }
 
-/** Active hour blocks per invoice, oldest first, for the list's hours cell. */
+/**
+ * Active hour blocks per invoice, oldest first, for the list's hours cell and
+ * the invoice sheet's hour block rows (with the line that created each).
+ */
 async function fetchHourBlocksByInvoice(
   invoiceIds: string[]
 ): Promise<Map<string, InvoiceHourBlockSummary[]>> {
@@ -327,12 +324,21 @@ async function fetchHourBlocksByInvoice(
   const rows = await db
     .select({
       id: hourBlocks.id,
-      invoiceId: hourBlocks.invoiceId,
+      invoiceId: invoiceLineItems.invoiceId,
       hoursPurchased: hourBlocks.hoursPurchased,
+      description: invoiceLineItems.description,
     })
     .from(hourBlocks)
+    // A block's invoice is the one its creating line belongs to.
+    .innerJoin(
+      invoiceLineItems,
+      eq(hourBlocks.invoiceLineItemId, invoiceLineItems.id)
+    )
     .where(
-      and(inArray(hourBlocks.invoiceId, invoiceIds), isNull(hourBlocks.deletedAt))
+      and(
+        inArray(invoiceLineItems.invoiceId, invoiceIds),
+        isNull(hourBlocks.deletedAt)
+      )
     )
     .orderBy(asc(hourBlocks.createdAt), asc(hourBlocks.id))
 
@@ -343,6 +349,7 @@ async function fetchHourBlocksByInvoice(
     blocks.push({
       id: row.id,
       hours_purchased: Number(row.hoursPurchased),
+      description: row.description,
     })
     byInvoice.set(row.invoiceId, blocks)
   }
@@ -354,7 +361,7 @@ async function fetchHourBlocksByInvoice(
 // ---------------------------------------------------------------------------
 
 export type InvoiceReferenceData = {
-  clients: ClientRow[]
+  clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateRow[]
 }
@@ -369,10 +376,7 @@ export async function listInvoiceReferenceData(
   assertAdmin(user)
 
   const [clientDirectory, productCatalog, activeTaxRates] = await Promise.all([
-    db
-      .select(clientSelection)
-      .from(clients)
-      .orderBy(asc(clients.name)) as Promise<ClientSelectionRow[]>,
+    listClientDirectory(),
     listProductCatalogItems(),
     listTaxRates(),
   ])
@@ -400,7 +404,7 @@ export async function getInvoiceById(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.id, id))
     .limit(1)) as InvoiceSelectionRow[]
 
@@ -448,7 +452,7 @@ export async function getInvoiceByShareToken(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(
       and(
         eq(invoices.shareToken, token),
@@ -497,7 +501,7 @@ export async function getInvoiceByStripeSession(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.stripeCheckoutSessionId, sessionId))
     .limit(1)) as InvoiceSelectionRow[]
 
@@ -533,7 +537,7 @@ export async function getInvoiceByPaymentIntent(
       client: clientSelection,
     })
     .from(invoices)
-    .leftJoin(clients, eq(invoices.clientId, clients.id))
+    .leftJoin(companies, eq(invoices.companyId, companies.id))
     .where(eq(invoices.stripePaymentIntentId, paymentIntentId))
     .limit(1)) as InvoiceSelectionRow[]
 
@@ -564,9 +568,7 @@ export async function getInvoiceByPaymentIntent(
 // Record invoice view (atomic)
 // ---------------------------------------------------------------------------
 
-export async function recordInvoiceView(
-  invoiceId: string
-): Promise<number> {
+export async function recordInvoiceView(invoiceId: string): Promise<number> {
   const result = await db
     .update(invoices)
     .set({
@@ -595,6 +597,7 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
           id: row.client.id,
           name: row.client.name,
           slug: row.client.slug,
+          company_id: row.client.companyId,
           deleted_at: row.client.deletedAt,
         }
       : null
@@ -603,7 +606,7 @@ function mapInvoiceWithClient(row: InvoiceSelectionRow): InvoiceWithClient {
     id: row.invoice.id,
     invoice_number: row.invoice.invoiceNumber,
     status: row.invoice.status,
-    client_id: row.invoice.clientId,
+    company_id: row.invoice.companyId,
     created_by: row.invoice.createdBy,
     issued_date: row.invoice.issuedDate,
     due_date: row.invoice.dueDate,
@@ -644,7 +647,7 @@ function mapLineItemRow(row: LineItemSelectionRow): InvoiceLineItemRow {
   }
 }
 
-function mapClientRow(row: ClientSelectionRow): ClientRow {
+function mapClientRow(row: ClientDirectoryRow): InvoiceClient {
   return {
     id: row.id,
     name: row.name,

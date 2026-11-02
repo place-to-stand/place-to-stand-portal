@@ -7,6 +7,8 @@
  * (`scripts/test-google-chat.ts`). Keep it pure — payload construction only.
  */
 
+import { formatCurrency } from '@pts/ui/numbers'
+
 export type InvoicePaidNotice = {
   invoiceNumber?: string | null
   total?: string | null
@@ -19,15 +21,11 @@ export type InvoicePaidNotice = {
   invoiceUrl?: string | null
 }
 
-const formatCurrency = (amount: string | null | undefined): string => {
+const formatAmount = (amount: string | null | undefined): string => {
   if (amount === null || amount === undefined || amount === '') return '—'
   const value = Number(amount)
   if (Number.isNaN(value)) return String(amount)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-  }).format(value)
+  return formatCurrency(value)
 }
 
 /**
@@ -70,7 +68,7 @@ export function buildInvoicePaidCard(
                 {
                   decoratedText: {
                     topLabel: 'Amount',
-                    text: formatCurrency(notice.total),
+                    text: formatAmount(notice.total),
                   },
                 },
                 ...(notice.invoiceUrl
@@ -135,6 +133,7 @@ export function buildStuckEmailCard(
             {
               widgets: notice.items.map(item => ({
                 decoratedText: {
+                  // copy-check: allow — the website's contact form
                   topLabel: item.kind === 'audit' ? 'Audit' : 'Contact',
                   text: item.label,
                   ...(item.url

@@ -11,7 +11,7 @@ type ProjectsArchiveFiltersProps = {
 export function ProjectsArchiveFilters({ search }: ProjectsArchiveFiltersProps) {
   const { update, hasActiveFilters, reset } = useListParams({
     basePath: '/projects/archive',
-    resetKeys: ['cursor', 'dir'],
+    resetKeys: ['page'],
     filters: {
       q: {},
     },

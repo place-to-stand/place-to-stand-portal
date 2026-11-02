@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { and, eq, isNull } from 'drizzle-orm'
 import { cookies } from 'next/headers'
+import { z } from 'zod'
 
 import { db } from '@/lib/db'
 import { contacts } from '@pts/db/schema'
@@ -33,6 +34,14 @@ export async function GET(request: NextRequest) {
 
   if (!contactId) {
     return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  // UUID-guard before the uuid column cast (a bad value would 500).
+  if (!z.string().uuid().safeParse(contactId).success) {
+    return NextResponse.json(
+      { ok: false, error: 'Invalid contactId.' },
+      { status: 400 }
+    )
   }
 
   const [contact] = await db

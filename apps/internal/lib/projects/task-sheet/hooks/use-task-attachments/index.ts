@@ -153,9 +153,9 @@ export const useTaskAttachments = ({
       attachmentsAreDirty(
         attachments,
         persistedAttachments,
-        attachmentsToRemove,
+        attachmentsToRemove
       ),
-    [attachments, attachmentsToRemove, persistedAttachments],
+    [attachments, attachmentsToRemove, persistedAttachments]
   )
 
   // Switching tasks drops the previous task's unsaved delta during render
@@ -252,16 +252,33 @@ export const useTaskAttachments = ({
     [attachments, cleanupPendingAttachments]
   )
 
+  // Removed saved files stay in their place as Pending removal until Save.
   const attachmentItems = useMemo<AttachmentItem[]>(
-    () => toAttachmentItems(attachments),
-    [attachments],
+    () =>
+      toAttachmentItems(
+        [...persistedAttachments, ...pendingDrafts],
+        attachmentsToRemove
+      ),
+    [attachmentsToRemove, pendingDrafts, persistedAttachments]
+  )
+
+  const handleAttachmentUndoRemove = useCallback(
+    (key: string) => {
+      const target = persistedAttachments.find(
+        attachment => makeAttachmentKey(attachment) === key
+      )
+      if (!target?.id) return
+      const targetId = target.id
+      setAttachmentsToRemove(prev => prev.filter(id => id !== targetId))
+    },
+    [persistedAttachments]
   )
 
   const isUploading = pendingUploadCount > 0
 
   const buildSubmissionPayload = useCallback(
     () => buildAttachmentSubmission(attachments, attachmentsToRemove),
-    [attachments, attachmentsToRemove],
+    [attachments, attachmentsToRemove]
   )
 
   useEffect(() => {
@@ -282,6 +299,7 @@ export const useTaskAttachments = ({
     isUploading,
     handleAttachmentUpload,
     handleAttachmentRemove,
+    handleAttachmentUndoRemove,
     resetAttachmentsState,
     buildSubmissionPayload,
   }

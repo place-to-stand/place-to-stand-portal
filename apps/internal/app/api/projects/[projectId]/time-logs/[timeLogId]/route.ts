@@ -4,7 +4,11 @@ import { z } from 'zod'
 import { getCurrentAdmin } from '@/lib/auth/session'
 import { closedMonthWarning } from '@/lib/data/reports/close'
 import { HttpError } from '@/lib/errors/http'
-import { softDeleteTimeLog, updateTimeLog } from '@/lib/queries/time-logs'
+import {
+  restoreTimeLog,
+  softDeleteTimeLog,
+  updateTimeLog,
+} from '@/lib/queries/time-logs'
 
 const updateBodySchema = z.object({
   userId: z.string().uuid(),
@@ -17,6 +21,10 @@ const updateBodySchema = z.object({
     .transform(value => (value === null || value.length === 0 ? null : value))
     .optional(),
   taskIds: z.array(z.string().uuid()).optional(),
+})
+
+const actionBodySchema = z.object({
+  action: z.enum(['restore']),
 })
 
 export async function DELETE(
@@ -46,6 +54,49 @@ export async function DELETE(
     console.error('Failed to delete time log', error)
     return NextResponse.json(
       { error: 'Unable to delete time log.' },
+      { status: 500 },
+    )
+  }
+}
+
+/** POST `{ action: 'restore' }` un-archives a time log DELETE archived. */
+export async function POST(
+  request: NextRequest,
+  context: RouteContext<'/api/projects/[projectId]/time-logs/[timeLogId]'>
+) {
+  const user = await getCurrentAdmin()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { projectId, timeLogId } = await context.params
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    body = null
+  }
+
+  if (!actionBodySchema.safeParse(body).success) {
+    return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 })
+  }
+
+  try {
+    const { loggedOn } = await restoreTimeLog(user, projectId, timeLogId)
+
+    // PRD 002 section 05: non-blocking, admin-only closed-month warning.
+    const warning = await closedMonthWarning(user, [loggedOn])
+    return NextResponse.json(warning ? { ok: true, warning } : { ok: true })
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+
+    console.error('Failed to restore time log', error)
+    return NextResponse.json(
+      { error: 'Unable to restore time log.' },
       { status: 500 },
     )
   }

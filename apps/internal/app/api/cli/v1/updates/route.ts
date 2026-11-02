@@ -17,7 +17,7 @@ export const GET = withCliAuth(async ({ user, request }) => {
     : undefined
 
   const rows = await listClientUpdates({
-    clientId,
+    companyId: clientId,
     status: query.status,
     limit: query.limit,
   })

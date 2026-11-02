@@ -1,20 +1,40 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import type { Session, User } from '@supabase/supabase-js'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
-import type { Database } from '@/lib/supabase/types'
+import type { Role } from '@/lib/auth/capabilities'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
+import { roleCan } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
+import { roleAsOfSql } from '@/lib/queries/users/role-terms'
+import { applyDueRoleTerms } from '@/lib/users/services/role'
 
-export type AppUser = Database['public']['Tables']['users']['Row']
-export type UserRole = Database['public']['Enums']['user_role']
+/**
+ * The signed-in person: their sign-in row plus their name and photo, which
+ * live on the person (contacts) since 0109 and 0112.
+ */
+export type AppUser = {
+  id: string
+  email: string
+  role: Role
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+  disabled_at: string | null
+  onboarding_completed_at: string | null
+  full_name: string | null
+  avatar_url: string | null
+}
+export type UserRole = Role
 
 export const getSession = cache(async (): Promise<Session | null> => {
   const supabase = getSupabaseServerClient()
@@ -55,10 +75,21 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   }
 
   try {
+    if (!(await sessionIsLive(data.claims.session_id, authUserId))) {
+      return null
+    }
     const profile = await fetchUserProfile(authUserId)
 
     if (!profile) {
       return null
+    }
+
+    // A scheduled role change has come into force: apply it before
+    // trusting the role (the daily cron does the same for everyone).
+    if (profile.roleInForce && profile.roleInForce !== profile.role) {
+      await applyDueRoleTerms(authUserId)
+      const updated = await fetchUserProfileUncached(authUserId)
+      return updated ? mapProfileToAppUser(updated) : null
     }
 
     // Sync profile if Supabase auth email differs from database email
@@ -70,7 +101,7 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
         data: { user: authUser },
       } = await supabase.auth.getUser()
       if (authUser) {
-        await syncUserProfile(authUser, profile.email)
+        await syncUserProfile(authUser)
       }
       // Re-fetch to get updated email
       const updatedProfile = await fetchUserProfileUncached(authUserId)
@@ -85,6 +116,16 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
     return null
   }
 })
+
+/**
+ * The signed-in ADMIN or SALES user, or null. For API routes on the task-board
+ * surfaces opened to project members; pair with the guards in
+ * `lib/projects/access.ts`.
+ */
+export const getCurrentStaff = async (): Promise<AppUser | null> => {
+  const user = await getCurrentUser()
+  return roleCan(user?.role, 'portal.sign_in') ? user : null
+}
 
 /**
  * The signed-in user when they are an ADMIN, else null. For API routes that
@@ -105,19 +146,28 @@ type UserProfile = {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  disabledAt: string | null
+  onboardingCompletedAt: string | null
 }
 
-async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
+async function fetchUserProfile(
+  userId: string
+): Promise<(UserProfile & { roleInForce: string | null }) | null> {
   const profileRows = await db
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
       role: users.role,
-      avatarUrl: users.avatarUrl,
+      // A role change dated this month or earlier that users.role hasn't
+      // caught up with yet (see applyDueRoleTerms).
+      roleInForce: roleAsOfSql(currentMonthStartUtc()),
+      avatarUrl: personAvatarSql,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
+      disabledAt: users.disabledAt,
+      onboardingCompletedAt: users.onboardingCompletedAt,
     })
     .from(users)
     .where(
@@ -134,18 +184,22 @@ async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
   return profileRows[0] ?? null
 }
 
-async function fetchUserProfileUncached(userId: string): Promise<UserProfile | null> {
+async function fetchUserProfileUncached(
+  userId: string
+): Promise<UserProfile | null> {
   // Direct query without React cache to get fresh data after sync
   const profileRows = await db
     .select({
       id: users.id,
       email: users.email,
-      fullName: users.fullName,
+      fullName: personNameSql,
       role: users.role,
-      avatarUrl: users.avatarUrl,
+      avatarUrl: personAvatarSql,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
       deletedAt: users.deletedAt,
+      disabledAt: users.disabledAt,
+      onboardingCompletedAt: users.onboardingCompletedAt,
     })
     .from(users)
     .where(
@@ -169,9 +223,21 @@ async function fetchUserProfileUncached(userId: string): Promise<UserProfile | n
  * disabled/deleted filtering without a request-scoped session to read from.
  */
 export async function loadAppUserById(userId: string): Promise<AppUser | null> {
-  const profile = await fetchUserProfileUncached(userId)
+  const profile = await fetchUserProfile(userId)
 
-  return profile ? mapProfileToAppUser(profile) : null
+  if (!profile) {
+    return null
+  }
+
+  // Same as getCurrentUser: a scheduled role change that has come into
+  // force is applied before the role is trusted.
+  if (profile.roleInForce && profile.roleInForce !== profile.role) {
+    await applyDueRoleTerms(userId)
+    const updated = await fetchUserProfileUncached(userId)
+    return updated ? mapProfileToAppUser(updated) : null
+  }
+
+  return mapProfileToAppUser(profile)
 }
 
 function mapProfileToAppUser(profile: UserProfile): AppUser {
@@ -184,12 +250,13 @@ function mapProfileToAppUser(profile: UserProfile): AppUser {
     created_at: profile.createdAt,
     updated_at: profile.updatedAt,
     deleted_at: profile.deletedAt ?? null,
+    disabled_at: profile.disabledAt ?? null,
+    onboarding_completed_at: profile.onboardingCompletedAt ?? null,
   }
 }
 
-async function syncUserProfile(authUser: User, previousEmail: string): Promise<void> {
+async function syncUserProfile(authUser: User): Promise<void> {
   try {
-    console.log(`Syncing user profile: email changed from ${previousEmail} to ${authUser.email}`)
     const result = await ensureUserProfile(authUser)
 
     // Log only — never sign out mid-request. This runs while rendering an
@@ -209,7 +276,8 @@ export const requireUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
   // Admin-only by default. SALES staff get only the CRM pages, which call
@@ -235,15 +303,24 @@ export const requireCrmUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect('/sign-in')
+    // A session with no active user: sign it out, or /sign-in bounces back.
+    redirect('/auth/sign-out')
   }
 
-  if (user.role !== 'ADMIN' && user.role !== 'SALES') {
+  if (!roleCan(user.role, 'portal.sign_in')) {
     redirect(serverEnv.CLIENT_PORTAL_URL)
   }
 
   return user
 }
+
+/**
+ * Guard for the task-board surfaces opened to project members (boards, task
+ * sheet, My tasks): admits ADMIN and SALES. It does NOT check project access;
+ * pair it with `ensureProjectWorkAccess` / `ensureTaskWorkAccess` or a query
+ * scoped by `listWorkableProjectIds`.
+ */
+export const requireStaffUser = requireCrmUser
 
 export const requireRole = async (allowed: UserRole | UserRole[]) => {
   const user = await requireUser()
@@ -254,4 +331,34 @@ export const requireRole = async (allowed: UserRole | UserRole[]) => {
   }
 
   return user
+}
+
+/**
+ * The token's Supabase session still exists. getClaims() checks only the
+ * JWT's signature and expiry, so a token issued before its session was
+ * ended (sign-out, or an orphaned sign-in taken over and re-linked to a
+ * person) would otherwise keep working until it expires. Ending a session
+ * deletes its auth.sessions row; this makes that end the token at once.
+ * (Security review, Nov 2026.)
+ */
+async function sessionIsLive(
+  sessionId: unknown,
+  userId: string
+): Promise<boolean> {
+  // Every Supabase user token carries session_id (password, link, invite,
+  // refresh): one without it isn't a user session.
+  if (typeof sessionId !== 'string' || !sessionId) return false
+  try {
+    const [row] = await db.execute<{ live: boolean }>(
+      sql`select exists (select 1 from auth.sessions s where s.id = ${sessionId}::uuid and s.user_id = ${userId}::uuid) as live`
+    )
+    return Boolean(row?.live)
+  } catch (error) {
+    // Fail closed: an unverifiable session counts as ended. A database
+    // outage would fail the users-row lookup next anyway; the one error this
+    // alone could cause (the role can't read auth.sessions) is ruled out by
+    // the pre-merge has_table_privilege check in the release runbook.
+    console.error('Session check failed; treating the session as ended', error)
+    return false
+  }
 }

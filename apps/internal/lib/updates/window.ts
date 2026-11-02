@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { COMPANY_TIME_ZONE } from '@pts/ui/dates'
+import { companyCalendarDate } from '@pts/ui/dates'
 
 import { fetchLastSentPeriodEnd } from './queries'
 
@@ -13,13 +13,7 @@ const DEFAULT_LOOKBACK_DAYS = 7
 
 /** Today's calendar date in the company timezone as YYYY-MM-DD. */
 export function todayCalendarDate(): string {
-  // en-CA renders as YYYY-MM-DD, which is exactly the date column format.
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: COMPANY_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
+  return companyCalendarDate()
 }
 
 function shiftCalendarDate(date: string, days: number): string {
@@ -34,14 +28,14 @@ function shiftCalendarDate(date: string, days: number): string {
  * gap or an overlap; otherwise fall back to a week.
  */
 export async function resolveUpdateWindow(
-  clientId: string,
+  companyId: string,
   since?: string | null
 ): Promise<UpdateWindow> {
   const periodEnd = todayCalendarDate()
 
   if (since) return { periodStart: since, periodEnd }
 
-  const lastPeriodEnd = await fetchLastSentPeriodEnd(clientId)
+  const lastPeriodEnd = await fetchLastSentPeriodEnd(companyId)
   if (lastPeriodEnd) {
     // A second update on the same day would otherwise start tomorrow and end
     // today; clamp to a one-day window instead.

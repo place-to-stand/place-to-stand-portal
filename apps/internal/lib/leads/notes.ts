@@ -20,4 +20,3 @@ export function extractLeadNotes(notes: unknown): string {
 
   return ''
 }
-

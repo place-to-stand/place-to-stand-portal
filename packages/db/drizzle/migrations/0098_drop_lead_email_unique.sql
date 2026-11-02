@@ -1,0 +1,1 @@
+DROP INDEX "idx_leads_contact_email_unique";

@@ -1,6 +1,9 @@
+import { EmptyState } from '@pts/ui/empty-state'
 import type { SalesTaxData } from '@/lib/data/reports/types'
 
-import { formatMoney, formatShortDay } from './format'
+import { formatCurrency } from '@pts/ui/numbers'
+
+import { formatShortDay } from './format'
 import { TreeBranch } from './tree-branch'
 
 type SalesTaxCardProps = {
@@ -27,13 +30,13 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
           Sales tax owed
         </h2>
         <span className='text-base font-semibold tabular-nums'>
-          {formatMoney(salesTax.totalAmount)}
+          {formatCurrency(salesTax.totalAmount)}
         </span>
       </div>
       {rows.length === 0 ? (
-        <p className='text-muted-foreground px-5 py-8 text-center text-sm'>
-          No sales tax collected this month.
-        </p>
+        <div className='p-5'>
+          <EmptyState message='No sales tax collected this month.' />
+        </div>
       ) : (
         <div className='flex flex-col pb-3'>
           <div className='flex items-baseline gap-3 px-5 pt-3 pb-1.5 text-sm'>
@@ -42,7 +45,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
               <span className='text-muted-foreground'> · invoices paid</span>
             </span>
             <span className='text-muted-foreground text-right text-[13px] tabular-nums'>
-              on {formatMoney(salesTax.totalTaxable)}
+              on {formatCurrency(salesTax.totalTaxable)}
             </span>
           </div>
           {rows.map((row, index) => (
@@ -51,7 +54,10 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
               className='flex items-center gap-3 px-5 py-1.5 text-sm'
             >
               <span className='flex min-w-0 flex-1 items-center gap-2'>
-                <TreeBranch first={index === 0} last={index === rows.length - 1} />
+                <TreeBranch
+                  first={index === 0}
+                  last={index === rows.length - 1}
+                />
                 <span className='min-w-0'>
                   {row.clientName}
                   <span className='text-muted-foreground'>
@@ -65,7 +71,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
                 {formatRate(row.taxRate)}
               </span>
               <span className='w-24 text-right tabular-nums'>
-                {formatMoney(row.taxAmount)}
+                {formatCurrency(row.taxAmount)}
               </span>
             </div>
           ))}

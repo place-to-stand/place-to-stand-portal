@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 
 type SubmissionArchiveDialogProps = {
   open: boolean
@@ -14,13 +14,13 @@ export function SubmissionArchiveDialog({
   onConfirm,
 }: SubmissionArchiveDialogProps) {
   return (
-    <ConfirmDialog
+    <ArchiveConfirmDialog
       open={open}
-      title='Archive this submission?'
-      description='It will move to the Archive tab and stop counting toward unread. You can restore it at any time.'
-      confirmLabel='Archive'
-      confirmVariant='destructive'
-      confirmDisabled={confirmDisabled}
+      entity='submission'
+      name='this submission'
+      list='Submissions'
+      extra='It stops counting toward unread, and you can restore it from the Archive tab.'
+      pending={confirmDisabled}
       onCancel={onCancel}
       onConfirm={onConfirm}
     />

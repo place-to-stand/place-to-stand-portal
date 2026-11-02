@@ -3,11 +3,10 @@ import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-import type { Database } from "@/lib/supabase/types";
 import { serverEnv } from "@/lib/env.server";
 
 export function getSupabaseServerClient() {
-  return createServerClient<Database>(
+  return createServerClient(
     serverEnv.NEXT_PUBLIC_SUPABASE_URL,
     serverEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {

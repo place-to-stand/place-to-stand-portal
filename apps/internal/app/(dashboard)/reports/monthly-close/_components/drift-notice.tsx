@@ -9,7 +9,7 @@ import { toast } from '@/components/ui/use-toast'
 import type { CloseDrift } from '@/lib/data/reports/close'
 
 import { recloseMonthAction } from '../actions/reclose-month'
-import { formatMoney, formatSignedMoney } from './format'
+import { formatCurrency, formatHours } from '@pts/ui/numbers'
 
 type DriftNoticeProps = {
   year: number
@@ -25,13 +25,13 @@ type DriftUnit = CloseDrift['deltas'][number]['unit']
 function formatValue(value: number, unit: DriftUnit): string {
   switch (unit) {
     case 'hours':
-      return `${value.toFixed(2)} hrs`
+      return formatHours(value)
     case 'rate':
-      return `${formatMoney(value)}/hr`
+      return `${formatCurrency(value)}/hr`
     case 'flag':
       return value ? 'Yes' : 'No'
     default:
-      return formatMoney(value)
+      return formatCurrency(value)
   }
 }
 
@@ -39,10 +39,10 @@ function formatDifference(delta: number, unit: DriftUnit): string {
   // A flag has no magnitude — it flipped, that's the whole story.
   if (unit === 'flag') return delta >= 0 ? 'Turned on' : 'Turned off'
   if (unit === 'hours') {
-    return `${delta < 0 ? '−' : '+'}${Math.abs(delta).toFixed(2)} hrs`
+    return formatHours(delta, { signed: true })
   }
-  if (unit === 'rate') return `${formatSignedMoney(delta)}/hr`
-  return formatSignedMoney(delta)
+  if (unit === 'rate') return `${formatCurrency(delta, { signed: true })}/hr`
+  return formatCurrency(delta, { signed: true })
 }
 
 function describeLateRecord(record: CloseDrift['lateRecords'][number]): string {
@@ -62,7 +62,7 @@ function describeLateRecord(record: CloseDrift['lateRecords'][number]): string {
     month: 'short',
     day: 'numeric',
   })
-  return `A ${record.hours.toFixed(2)} hr ${what}${client}, dated ${dated}, was ${verb} ${when}.`
+  return `A ${formatHours(record.hours)} ${what}${client}, dated ${dated}, was ${verb} ${when}.`
 }
 
 /**

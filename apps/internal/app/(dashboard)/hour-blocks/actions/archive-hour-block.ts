@@ -18,7 +18,7 @@ import type { ActionResult, DeleteInput } from './types'
 import { HOUR_BLOCKS_PATH } from './helpers'
 
 export async function softDeleteHourBlock(
-  input: DeleteInput,
+  input: DeleteInput
 ): Promise<ActionResult> {
   return trackSettingsServerInteraction(
     {
@@ -26,12 +26,12 @@ export async function softDeleteHourBlock(
       mode: 'delete',
       targetId: input.id,
     },
-    async () => performSoftDeleteHourBlock(input),
+    async () => performSoftDeleteHourBlock(input)
   )
 }
 
 async function performSoftDeleteHourBlock(
-  input: DeleteInput,
+  input: DeleteInput
 ): Promise<ActionResult> {
   const user = await requireUser()
   assertAdmin(user)
@@ -80,7 +80,7 @@ async function performSoftDeleteHourBlock(
     summary: event.summary,
     targetType: 'HOUR_BLOCK',
     targetId: existingHourBlock.id,
-    targetClientId: existingHourBlock.client_id,
+    targetCompanyId: existingHourBlock.company_id,
     metadata: event.metadata,
   })
 

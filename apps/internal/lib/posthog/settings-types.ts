@@ -5,7 +5,7 @@ import type {
 
 type SettingsEntity = 'client' | 'contact' | 'project' | 'hour_block' | 'invoice' | 'user'
 
-type SettingsMode = 'create' | 'edit' | 'delete' | 'restore' | 'destroy' | 'send' | 'unsend' | 'void'
+type SettingsMode = 'create' | 'edit' | 'delete' | 'restore' | 'send' | 'unsend' | 'void'
 
 type SettingsInteractionContext = {
   entity: SettingsEntity

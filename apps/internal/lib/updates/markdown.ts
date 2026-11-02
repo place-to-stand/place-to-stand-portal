@@ -45,11 +45,6 @@ export function renderMarkdown(source: string): string {
     .join('')
 }
 
-/** Inline-only rendering for text that lives inside another element. */
-export function renderInlineMarkdown(source: string): string {
-  return inlineMarkdown(source.replace(/\s+/g, ' ').trim())
-}
-
 /** Plain-text counterpart for the email's text part. */
 export function markdownToText(source: string): string {
   return source

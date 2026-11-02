@@ -40,7 +40,7 @@ export function TemplateCard({
     >
       <div
         aria-hidden='true'
-        className='relative w-full shrink-0 overflow-hidden bg-email-backdrop'
+        className='bg-email-backdrop relative w-full shrink-0 overflow-hidden'
         style={{ height: THUMBNAIL_HEIGHT }}
       >
         {thumbnail}
@@ -52,10 +52,7 @@ export function TemplateCard({
             <Badge
               key={audience}
               variant='outline'
-              className={cn(
-                'font-normal',
-                AUDIENCE_STYLES[audience].badgeClassName
-              )}
+              className={cn(AUDIENCE_STYLES[audience].badgeClassName)}
             >
               {AUDIENCE_STYLES[audience].label}
             </Badge>

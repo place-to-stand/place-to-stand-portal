@@ -151,7 +151,7 @@ const LinkMain: React.FC<LinkMainProps> = ({
           <InputGroup>
             <Input
               type='url'
-              placeholder='Paste a link...'
+              placeholder='Paste a link…'
               value={url}
               onChange={e => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -166,7 +166,8 @@ const LinkMain: React.FC<LinkMainProps> = ({
             <Button
               type='button'
               onClick={setLink}
-              title='Apply link'
+              tooltip='Apply link'
+              aria-label='Apply link'
               disabled={!url && !isActive}
               data-style='ghost'
               tabIndex={0}
@@ -181,7 +182,8 @@ const LinkMain: React.FC<LinkMainProps> = ({
             <Button
               type='button'
               onClick={openLink}
-              title='Open in new window'
+              tooltip='Open in new window'
+              aria-label='Open in new window'
               disabled={!url && !isActive}
               data-style='ghost'
               tabIndex={0}
@@ -192,7 +194,8 @@ const LinkMain: React.FC<LinkMainProps> = ({
             <Button
               type='button'
               onClick={removeLink}
-              title='Remove link'
+              tooltip='Remove link'
+              aria-label='Remove link'
               disabled={!url && !isActive}
               data-style='ghost'
               tabIndex={0}

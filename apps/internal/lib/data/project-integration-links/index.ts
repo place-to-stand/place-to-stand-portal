@@ -2,7 +2,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import type { AppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db'
+import { db, type DbTx } from '@/lib/db'
 import { projectIntegrationLinks } from '@/lib/db/schema'
 import {
   INTEGRATION_PROVIDERS,
@@ -74,16 +74,21 @@ export async function getIntegrationLinkById(
   return link ?? null
 }
 
+/** `db` or an open transaction, so a sheet save can write links in its own. */
+export type IntegrationLinkExecutor = typeof db | DbTx
+
 /**
- * Links an external project. A previously unlinked row for the same
- * external project is restored (and refreshed) rather than duplicated, so
- * the unique constraint on (project, provider, external id) never trips.
+ * Writes a link row for an external project. A previously unlinked row for
+ * the same external project is restored (and refreshed) rather than
+ * duplicated, so the unique constraint on (project, provider, external id)
+ * never trips. Returns `created: false` when it was already linked.
  */
-export async function linkExternalProject(
+export async function writeIntegrationLink(
+  executor: IntegrationLinkExecutor,
   projectId: string,
   option: ExternalProjectOption,
-  actor: IntegrationLinkActor
-): Promise<ProjectIntegrationLink> {
+  actorId: string
+): Promise<{ link: ProjectIntegrationLink; created: boolean }> {
   const now = new Date().toISOString()
   const details = {
     externalName: option.externalName,
@@ -94,7 +99,7 @@ export async function linkExternalProject(
     metadata: option.metadata,
   }
 
-  const [existing] = await db
+  const [existing] = await executor
     .select()
     .from(projectIntegrationLinks)
     .where(
@@ -107,31 +112,51 @@ export async function linkExternalProject(
     .limit(1)
 
   if (existing && !existing.deletedAt) {
-    return existing
+    return { link: existing, created: false }
   }
 
-  let link: ProjectIntegrationLink
   if (existing) {
-    const [restored] = await db
+    const [restored] = await executor
       .update(projectIntegrationLinks)
-      .set({ ...details, linkedBy: actor.id, updatedAt: now, deletedAt: null })
+      .set({ ...details, linkedBy: actorId, updatedAt: now, deletedAt: null })
       .where(eq(projectIntegrationLinks.id, existing.id))
       .returning()
-    link = restored
-  } else {
-    const [inserted] = await db
-      .insert(projectIntegrationLinks)
-      .values({
-        projectId,
-        provider: option.provider,
-        externalId: option.externalId,
-        ...details,
-        linkedBy: actor.id,
-      })
-      .returning()
-    link = inserted
+    return { link: restored, created: true }
   }
 
+  const [inserted] = await executor
+    .insert(projectIntegrationLinks)
+    .values({
+      projectId,
+      provider: option.provider,
+      externalId: option.externalId,
+      ...details,
+      linkedBy: actorId,
+    })
+    .returning()
+  return { link: inserted, created: true }
+}
+
+/** Archives a link row (soft delete). */
+export async function archiveIntegrationLink(
+  executor: IntegrationLinkExecutor,
+  linkId: string
+): Promise<void> {
+  const now = new Date().toISOString()
+  await executor
+    .update(projectIntegrationLinks)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(eq(projectIntegrationLinks.id, linkId))
+}
+
+export async function logIntegrationLinked(
+  actor: IntegrationLinkActor,
+  projectId: string,
+  option: Pick<
+    ExternalProjectOption,
+    'provider' | 'externalId' | 'externalName' | 'ownerName'
+  >
+): Promise<void> {
   await logActivity({
     actorId: actor.id,
     actorRole: actor.role,
@@ -147,21 +172,12 @@ export async function linkExternalProject(
       ownerName: option.ownerName,
     },
   })
-
-  return link
 }
 
-export async function unlinkExternalProject(
-  link: ProjectIntegrationLink,
-  actor: IntegrationLinkActor
+export async function logIntegrationUnlinked(
+  actor: IntegrationLinkActor,
+  link: ProjectIntegrationLink
 ): Promise<void> {
-  const now = new Date().toISOString()
-
-  await db
-    .update(projectIntegrationLinks)
-    .set({ deletedAt: now, updatedAt: now })
-    .where(eq(projectIntegrationLinks.id, link.id))
-
   await logActivity({
     actorId: actor.id,
     actorRole: actor.role,
@@ -176,4 +192,30 @@ export async function unlinkExternalProject(
       externalName: link.externalName,
     },
   })
+}
+
+/** Links an external project now (REST route); see `writeIntegrationLink`. */
+export async function linkExternalProject(
+  projectId: string,
+  option: ExternalProjectOption,
+  actor: IntegrationLinkActor
+): Promise<ProjectIntegrationLink> {
+  const { link, created } = await writeIntegrationLink(
+    db,
+    projectId,
+    option,
+    actor.id
+  )
+  if (created) {
+    await logIntegrationLinked(actor, projectId, option)
+  }
+  return link
+}
+
+export async function unlinkExternalProject(
+  link: ProjectIntegrationLink,
+  actor: IntegrationLinkActor
+): Promise<void> {
+  await archiveIntegrationLink(db, link.id)
+  await logIntegrationUnlinked(actor, link)
 }

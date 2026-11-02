@@ -32,14 +32,14 @@ export function useGitHubCallbackNotice(redirectPath: string): {
       const reason = searchParams.get('reason')
       setError(
         reason === 'already_linked'
-          ? 'That GitHub organization is already connected to a different client.'
+          ? 'That GitHub organization is already connected to a different company.'
           : 'Unable to connect GitHub. Please try again.'
       )
     }
 
     router.replace(redirectPath, { scroll: false })
     // Only run once per param — router.replace clears them on the next render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per param: router.replace clears them on the next render
   }, [searchParams])
 
   return { notice, error }

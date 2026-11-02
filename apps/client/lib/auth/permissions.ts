@@ -1,9 +1,9 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { clientMembers } from '@pts/db/schema'
+import { clientPortalAccess } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { ForbiddenError } from '@/lib/errors/http'
 
@@ -13,27 +13,32 @@ export function isAdmin(user: AppUser | null | undefined): boolean {
 
 /**
  * Verify user has access to a specific client.
- * In the client portal, users must be a member of the client.
+ * In the client portal, users need portal access to it: a current,
+ * portal-enabled membership at the client's company (`client_portal_access`).
  */
-export async function ensureClientAccess(user: AppUser, clientId: string) {
+export async function ensureClientAccess(user: AppUser, companyId: string) {
   if (isAdmin(user)) {
     return
   }
+  // Only a Client sign-in uses the portal (the view checks it too, 0116):
+  // a Sales sign-in left with a portal flag gets nothing here.
+  if (user.role !== 'CLIENT') {
+    throw new ForbiddenError('You do not have access to this company')
+  }
 
-  const [membership] = await db
-    .select({ id: clientMembers.id })
-    .from(clientMembers)
+  const [access] = await db
+    .select({ companyId: clientPortalAccess.companyId })
+    .from(clientPortalAccess)
     .where(
       and(
-        eq(clientMembers.clientId, clientId),
-        eq(clientMembers.userId, user.id),
-        isNull(clientMembers.deletedAt)
+        eq(clientPortalAccess.companyId, companyId),
+        eq(clientPortalAccess.userId, user.id)
       )
     )
     .limit(1)
 
-  if (!membership) {
-    throw new ForbiddenError('You do not have access to this client')
+  if (!access) {
+    throw new ForbiddenError('You do not have access to this company')
   }
 }
 

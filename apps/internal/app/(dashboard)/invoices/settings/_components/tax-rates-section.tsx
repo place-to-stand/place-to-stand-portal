@@ -4,11 +4,10 @@ import { useState, useCallback, useMemo, useTransition } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Pencil, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { EmptyState } from '@pts/ui/empty-state'
-import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   Dialog,
   DialogContent,
@@ -39,9 +38,10 @@ import {
   SortableTableHead,
   type SortValue,
 } from '@/components/table-toolbar/sortable-table-head'
+import { RecordRowAction } from '@/components/table/record-row-action'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { TaxRateRow } from '@/lib/queries/tax-rates'
-import { US_STATES } from '@/lib/settings/clients/us-states'
+import { US_STATES } from '@/lib/companies/billing/us-states'
 
 import { saveTaxRate, toggleTaxRateActiveAction } from '../actions'
 
@@ -217,7 +217,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
         <h2 className='text-lg font-semibold'>Tax rates</h2>
         <Button size='sm' onClick={openAddDialog}>
           <Plus />
-          Add tax rate
+          Create tax rate
         </Button>
       </div>
 
@@ -267,9 +267,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                     />
                   </TableCell>
                   <TableCell className='max-md:ml-auto'>
-                    <RowActionButton
-                      label='Edit tax rate'
-                      icon={<Pencil />}
+                    <RecordRowAction
+                      kind='edit'
+                      entity='tax rate'
                       onClick={() => openEditDialog(rate)}
                     />
                   </TableCell>
@@ -285,12 +285,12 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingRate ? 'Edit tax rate' : 'Add tax rate'}
+              {editingRate ? 'Edit tax rate' : 'Create tax rate'}
             </DialogTitle>
             <DialogDescription>
               {editingRate
                 ? 'Update tax rate details.'
-                : 'Add a new tax rate for invoicing.'}
+                : 'Create a new tax rate for invoicing.'}
             </DialogDescription>
           </DialogHeader>
 

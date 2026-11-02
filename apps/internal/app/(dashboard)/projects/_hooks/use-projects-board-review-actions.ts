@@ -5,13 +5,12 @@ import type { ToastOptions } from '@/components/ui/use-toast'
 import {
   acceptDoneTasks,
   acceptTask,
-  destroyTask,
   restoreTask,
   unacceptTask,
 } from '../actions'
 import type { ActionResult } from '../actions/action-types'
 
-type ReviewActionKind = 'accept' | 'unaccept' | 'restore' | 'destroy'
+type ReviewActionKind = 'accept' | 'unaccept' | 'restore'
 type ReviewActionState = { type: ReviewActionKind; taskId: string }
 
 export type UseProjectsBoardReviewActionsArgs = {
@@ -24,7 +23,6 @@ export type UseProjectsBoardReviewActionsResult = {
   handleAcceptTask: (taskId: string) => void
   handleUnacceptTask: (taskId: string) => void
   handleRestoreTask: (taskId: string) => void
-  handleDestroyTask: (taskId: string) => void
   isAcceptingDone: boolean
   isReviewActionPending: boolean
   pendingReviewAction: ReviewActionState | null
@@ -166,25 +164,11 @@ export function useProjectsBoardReviewActions({
     [performReviewAction]
   )
 
-  const handleDestroyTask = useCallback(
-    (taskId: string) => {
-      performReviewAction(
-        'destroy',
-        taskId,
-        () => destroyTask({ taskId }),
-        { title: 'Task permanently deleted' },
-        'Unable to delete task'
-      )
-    },
-    [performReviewAction]
-  )
-
   return {
     handleAcceptAllDone,
     handleAcceptTask,
     handleUnacceptTask,
     handleRestoreTask,
-    handleDestroyTask,
     isAcceptingDone,
     isReviewActionPending,
     pendingReviewAction,

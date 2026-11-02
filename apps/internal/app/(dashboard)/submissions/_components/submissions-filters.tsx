@@ -6,8 +6,10 @@ import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import {
   FORM_SUBMISSION_KIND_LABELS,
+  FORM_SUBMISSION_KIND_TOKENS,
   FORM_SUBMISSION_KIND_VALUES,
   FORM_SUBMISSION_STATUS_LABELS,
+  FORM_SUBMISSION_STATUS_TOKENS,
   FORM_SUBMISSION_STATUS_VALUES,
   isFormSubmissionKind,
   isFormSubmissionStatus,
@@ -32,18 +34,20 @@ const ACK_PARAM: Record<AcknowledgementFilter, string> = {
 
 // Same one-param-two-states shape as the acknowledgement filter.
 const CONTACT_OPTIONS = [
-  { value: '1', label: 'With contact only' },
+  { value: '1', label: 'With contact details only' },
   { value: '0', label: 'Anonymous only' },
 ]
 
 const KIND_OPTIONS = FORM_SUBMISSION_KIND_VALUES.map(kind => ({
   value: kind,
   label: FORM_SUBMISSION_KIND_LABELS[kind],
+  badgeClassName: FORM_SUBMISSION_KIND_TOKENS[kind],
 }))
 
 const STATUS_OPTIONS = FORM_SUBMISSION_STATUS_VALUES.map(status => ({
   value: status,
   label: FORM_SUBMISSION_STATUS_LABELS[status],
+  badgeClassName: FORM_SUBMISSION_STATUS_TOKENS[status],
 }))
 
 type SubmissionsFiltersProps = {

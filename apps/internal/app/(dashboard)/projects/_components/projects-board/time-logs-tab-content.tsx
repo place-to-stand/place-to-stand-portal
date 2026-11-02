@@ -64,7 +64,7 @@ export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
 
       <ConfirmDialog
         open={Boolean(historyState.deleteState.pendingEntry)}
-        title='Delete time entry?'
+        title='Delete time log?'
         description='This removes the log from the project burndown.'
         confirmLabel='Delete'
         confirmVariant='destructive'

@@ -95,7 +95,7 @@ export const HeadingDropdownMenu = forwardRef<
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start">
+        <DropdownMenuContent>
           <Card>
             <CardBody>
               <ButtonGroup>

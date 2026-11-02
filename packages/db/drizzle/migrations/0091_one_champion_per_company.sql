@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "idx_contacts_one_champion" ON "contacts" USING btree ("company_id" uuid_ops) WHERE (is_champion AND deleted_at IS NULL);

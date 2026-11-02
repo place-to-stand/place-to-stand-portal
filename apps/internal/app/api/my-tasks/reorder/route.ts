@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
-import { requireUser } from '@/lib/auth/session'
+import { requireStaffUser } from '@/lib/auth/session'
+import { listWorkableProjectIds } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import {
   taskAssigneeMetadata as taskAssigneeMetadataTable,
@@ -25,7 +26,7 @@ const reorderPayloadSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const user = await requireUser()
+  const user = await requireStaffUser()
 
   let payload: z.infer<typeof reorderPayloadSchema>
 
@@ -81,9 +82,35 @@ export async function POST(request: Request) {
     )
   }
 
-  // Admins may reorder any board (the internal portal is admin-only);
-  // ordering persists under the VIEWED assignee's rows, defaulting to self.
+  // Admins may reorder any board; ordering persists under the VIEWED
+  // assignee's rows, defaulting to self. Sales users reorder only their own
+  // board, and only tasks on projects they can work.
+  if (
+    user.role !== 'ADMIN' &&
+    payload.assigneeId &&
+    payload.assigneeId !== user.id
+  ) {
+    return NextResponse.json(
+      { error: 'You can only reorder your own board.' },
+      { status: 403 }
+    )
+  }
   const boardOwnerId = payload.assigneeId ?? user.id
+
+  const workableProjectIds = await listWorkableProjectIds(user)
+  if (workableProjectIds !== null) {
+    const allowed = new Set(workableProjectIds)
+    const projectRows = await db
+      .select({ projectId: tasksTable.projectId })
+      .from(tasksTable)
+      .where(inArray(tasksTable.id, uniqueTaskIds))
+    if (projectRows.some(row => !allowed.has(row.projectId))) {
+      return NextResponse.json(
+        { error: 'You are not a member of every project on this board.' },
+        { status: 403 }
+      )
+    }
+  }
 
   const assigneeRows = await db
     .select({ taskId: taskAssigneesTable.taskId })

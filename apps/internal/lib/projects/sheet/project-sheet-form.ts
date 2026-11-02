@@ -1,0 +1,218 @@
+import { z } from 'zod'
+
+import {
+  PROJECT_STATUS_ENUM_VALUES,
+  PROJECT_STATUS_OPTIONS,
+  PROJECT_STATUS_VALUES,
+  type ProjectStatusValue,
+} from '@/lib/constants'
+import type { ClientPickerRow, DbProject, ProjectTypeValue } from '@/lib/types'
+import type { IntegrationProvider } from '@/lib/types/integrations'
+
+type ProjectRow = DbProject
+export type { ClientPickerRow }
+
+export type ProjectOwnerSummary = {
+  id: string | null
+  fullName: string | null
+  email: string | null
+}
+
+export type ProjectWithClient = ProjectRow & {
+  client: ClientPickerRow | null
+  owner?: ProjectOwnerSummary | null
+}
+
+export type ContractorUserSummary = {
+  id: string
+  email: string
+  fullName: string | null
+}
+
+export const PROJECT_TYPE_ENUM_VALUES = [
+  'CLIENT',
+  'PERSONAL',
+  'INTERNAL',
+] as const satisfies ReadonlyArray<ProjectTypeValue>
+
+export const PROJECT_TYPE_OPTIONS: ReadonlyArray<{
+  value: ProjectTypeValue
+  label: string
+}> = [
+  {
+    value: 'CLIENT',
+    label: 'Client project',
+  },
+  {
+    value: 'PERSONAL',
+    label: 'Personal project',
+  },
+  {
+    value: 'INTERNAL',
+    label: 'Internal project',
+  },
+] as const
+
+export const projectSheetFormSchema = z
+  .object({
+    name: z.string().min(1, 'Project name is required'),
+    projectType: z.enum(PROJECT_TYPE_ENUM_VALUES).default('CLIENT'),
+    companyId: z.string().uuid('Select a client').or(z.literal('')).optional(),
+    status: z.enum(PROJECT_STATUS_ENUM_VALUES),
+    startsOn: z.string().optional().or(z.literal('')),
+    endsOn: z.string().optional().or(z.literal('')),
+    slug: z
+      .string()
+      .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, and dashes only')
+      .or(z.literal(''))
+      .optional(),
+    ownerId: z.string().uuid().or(z.literal('')).optional(),
+    /** Undefined until the members field has loaded the current list. */
+    memberIds: z.array(z.string().uuid()).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.startsOn && data.endsOn) {
+      const start = new Date(data.startsOn)
+      const end = new Date(data.endsOn)
+
+      if (
+        !Number.isNaN(start.valueOf()) &&
+        !Number.isNaN(end.valueOf()) &&
+        end < start
+      ) {
+        ctx.addIssue({
+          path: ['endsOn'],
+          code: z.ZodIssueCode.custom,
+          message: 'End date must be on or after the start date.',
+        })
+      }
+    }
+
+    const trimmedClientId = data.companyId?.trim() ?? ''
+    const requiresClient = data.projectType === 'CLIENT'
+    const hasClient = Boolean(trimmedClientId)
+
+    if (requiresClient && !hasClient) {
+      ctx.addIssue({
+        path: ['companyId'],
+        code: z.ZodIssueCode.custom,
+        message: 'Select a client for client projects.',
+      })
+    }
+
+    if (!requiresClient && hasClient) {
+      ctx.addIssue({
+        path: ['companyId'],
+        code: z.ZodIssueCode.custom,
+        message: 'Personal and internal projects cannot be linked to clients.',
+      })
+    }
+  })
+
+export type ProjectSheetFormValues = z.infer<typeof projectSheetFormSchema>
+
+export const PROJECT_FORM_FIELDS: Array<keyof ProjectSheetFormValues> = [
+  'name',
+  'projectType',
+  'companyId',
+  'status',
+  'startsOn',
+  'endsOn',
+  'slug',
+  'ownerId',
+]
+
+const deriveInitialStatus = (
+  project: ProjectWithClient | null
+): ProjectStatusValue => {
+  if (
+    project &&
+    PROJECT_STATUS_VALUES.includes(project.status as ProjectStatusValue)
+  ) {
+    return project.status as ProjectStatusValue
+  }
+
+  return PROJECT_STATUS_OPTIONS[0]?.value ?? 'ACTIVE'
+}
+
+export const buildProjectFormDefaults = (
+  project: ProjectWithClient | null,
+  /** New projects start as this type; non-admins can only make personal boards. */
+  defaultType: ProjectTypeValue = 'CLIENT',
+  /** New client projects start on this company (a company's Projects (its sheet's Client column)). */
+  initialCompanyId?: string
+): ProjectSheetFormValues => ({
+  name: project?.name ?? '',
+  projectType: project?.type ?? defaultType,
+  companyId:
+    project?.company_id ??
+    (!project && defaultType === 'CLIENT' ? (initialCompanyId ?? '') : ''),
+  status: deriveInitialStatus(project),
+  startsOn: project?.starts_on ? project.starts_on.slice(0, 10) : '',
+  endsOn: project?.ends_on ? project.ends_on.slice(0, 10) : '',
+  slug: project?.slug ?? '',
+  ownerId: project?.owner_id ?? '',
+  memberIds: undefined,
+})
+
+export type ProjectSavePayload = {
+  id?: string
+  name: string
+  projectType: ProjectTypeValue
+  companyId: string | null
+  status: ProjectStatusValue
+  startsOn: string | null
+  endsOn: string | null
+  slug: string | null
+  ownerId: string | null
+  memberIds?: string[]
+  /** Saved with the project, in the same transaction (`saveProject`). */
+  repoLinks?: {
+    add: Array<{
+      repoFullName: string
+      source?: 'oauth' | 'app'
+      sourceId?: string
+    }>
+    remove: string[]
+  }
+  integrationLinks?: {
+    add: Array<{ provider: IntegrationProvider; externalId: string }>
+    remove: string[]
+  }
+}
+
+type CreatePayloadArgs = {
+  values: ProjectSheetFormValues
+  project: ProjectWithClient | null
+}
+
+export const createProjectSavePayload = ({
+  values,
+  project,
+}: CreatePayloadArgs): ProjectSavePayload => {
+  const trimmedClientId = values.companyId?.trim() ?? ''
+  const normalizedClientId =
+    values.projectType === 'CLIENT' && trimmedClientId ? trimmedClientId : null
+  const trimmedOwnerId = values.ownerId?.trim() ?? ''
+
+  return {
+    id: project?.id,
+    name: values.name.trim(),
+    projectType: values.projectType,
+    companyId: normalizedClientId,
+    status: values.status,
+    startsOn: values.startsOn ? values.startsOn : null,
+    endsOn: values.endsOn ? values.endsOn : null,
+    // Blank on create = generated from the name; edit requires one.
+    slug: values.slug?.trim() ? values.slug.trim() : null,
+    ownerId: trimmedOwnerId ? trimmedOwnerId : null,
+    memberIds: values.memberIds,
+  }
+}
+
+export const sortClientsByName = (
+  clients: ClientPickerRow[]
+): ClientPickerRow[] =>
+  [...clients].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+  )

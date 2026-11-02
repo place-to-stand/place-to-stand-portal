@@ -87,7 +87,10 @@ export async function GET(request: NextRequest) {
 
     // Upsert the installation record
     const existing = await db
-      .select({ id: githubAppInstallations.id, clientId: githubAppInstallations.clientId })
+      .select({
+        id: githubAppInstallations.id,
+        companyId: githubAppInstallations.companyId,
+      })
       .from(githubAppInstallations)
       .where(eq(githubAppInstallations.installationId, installation.id))
       .limit(1)
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
     if (existing.length > 0) {
       // This installation already belongs to a different client — don't
       // silently reassign ownership; surface it as an error instead.
-      if (existing[0].clientId !== returnClientId) {
+      if (existing[0].companyId !== returnClientId) {
         return NextResponse.redirect(
           new URL(
             errorPath.includes('?')
@@ -126,7 +129,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Create new installation
       await db.insert(githubAppInstallations).values({
-        clientId: returnClientId,
+        companyId: returnClientId,
         installedByUserId: user.id,
         installationId: installation.id,
         accountLogin: installation.account.login,

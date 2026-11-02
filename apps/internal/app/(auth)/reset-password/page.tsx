@@ -1,3 +1,4 @@
+// permission: public — part of sign-in
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -78,7 +79,7 @@ export default async function ResetPasswordPage({
       wide
       label="Internal Portal"
       title="Create a new password"
-      description="Choose a strong password to keep your account secure."
+      description="Choose a strong password to keep your sign-in secure."
     >
       {errorMessage ? <p className={authErrorClass}>{errorMessage}</p> : null}
       <PasswordResetForm redirectTo={redirectTo} email={user.email} />

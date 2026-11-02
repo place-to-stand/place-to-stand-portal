@@ -47,6 +47,17 @@ export const ensureEditorStyles = () => {
     .rich-text-editor .ProseMirror {
       --rte-font-size: 0.875rem;
       --rte-line-height: 1.5;
+      /* Break long words and URLs in every state. While editable the browser
+         wraps them for contenteditable; read-only (as during a save) it
+         doesn't, so they need wrapping here. */
+      overflow-wrap: anywhere;
+    }
+
+    /* Code keeps its lines; a long one scrolls inside the block. */
+    .rich-text-editor .ProseMirror pre {
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-wrap: normal;
     }
 
     .rich-text-editor .ProseMirror ul,

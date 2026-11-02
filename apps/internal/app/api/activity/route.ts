@@ -1,7 +1,11 @@
+// permission: activity.read_crm — canReadActivity narrows it per role
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-import { fetchActivityLogs } from '@/lib/activity/queries'
+import {
+  countActivityLogs,
+  fetchActivityLogs,
+} from '@/lib/activity/queries'
 import {
   ACTIVITY_TARGET_TYPES,
   type ActivityTargetType,
@@ -35,7 +39,7 @@ export async function GET(request: NextRequest) {
   const legacyTargetTypeParam = params.get('targetType')
   const targetId = params.get('targetId')
   const projectId = params.get('projectId')
-  const clientId = params.get('clientId')
+  const companyId = params.get('companyId')
   const cursor = params.get('cursor')
   const limitParam = params.get('limit')
 
@@ -45,7 +49,7 @@ export async function GET(request: NextRequest) {
       ? [legacyTargetTypeParam]
       : []
 
-  if (!requestedTargetTypes.length && !targetId && !projectId && !clientId) {
+  if (!requestedTargetTypes.length && !targetId && !projectId && !companyId) {
     return NextResponse.json(
       { error: 'A target filter is required.' },
       { status: 400 }
@@ -88,11 +92,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // `count=1` answers how many rows the feed holds (a sheet's collapsed
+    // Activity header) without loading them.
+    if (params.get('count') === '1') {
+      const total = await countActivityLogs(user, {
+        targetType,
+        targetId: targetId ?? undefined,
+        projectId: projectId ?? undefined,
+        companyId: companyId ?? undefined,
+      })
+
+      return NextResponse.json({ count: total })
+    }
+
     const result = await fetchActivityLogs(user, {
       targetType,
       targetId: targetId ?? undefined,
       projectId: projectId ?? undefined,
-      clientId: clientId ?? undefined,
+      companyId: companyId ?? undefined,
       cursor: cursor ?? undefined,
       limit,
     })

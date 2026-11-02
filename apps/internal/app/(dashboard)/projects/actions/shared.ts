@@ -2,7 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { requireStaffUser } from '@/lib/auth/session'
+
 export async function revalidateProjectTaskViews() {
+  // Exported from a server-action module, so callable from the browser:
+  // only staff may trigger it.
+  await requireStaffUser()
   await Promise.all([
     revalidatePath('/my/home'),
     revalidatePath('/projects'),

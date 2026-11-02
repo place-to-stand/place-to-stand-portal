@@ -3,16 +3,14 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 
-import { Badge } from '@pts/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@pts/ui/dropdown-menu'
+import { ProjectStatusBadge } from '@/components/projects/project-status-badge'
 import {
-  getProjectStatusLabel,
-  getProjectStatusToken,
   PROJECT_STATUS_OPTIONS,
   type ProjectStatusValue,
 } from '@/lib/constants'
@@ -60,15 +58,8 @@ export function ProjectStatusCell({
     })
   }
 
-  const currentLabel = getProjectStatusLabel(optimisticStatus)
-  const currentToken = getProjectStatusToken(optimisticStatus)
-
   if (disabled) {
-    return (
-      <Badge className={cn('text-xs', currentToken, className)}>
-        {currentLabel}
-      </Badge>
-    )
+    return <ProjectStatusBadge status={optimisticStatus} className={className} />
   }
 
   return (
@@ -78,15 +69,14 @@ export function ProjectStatusCell({
           'group focus-visible:border-ring focus-visible:ring-ring/50 inline-flex cursor-pointer items-center gap-1.5 rounded-md outline-none focus-visible:ring-[3px]',
           variant === 'table' && 'hover:bg-accent/60 -mx-0.5 p-0.5',
           variant === 'standalone' &&
-            'bg-background/20 hover:border-border h-9 border border-transparent px-2 transition-colors',
+            'bg-background/20 hover:border-border h-8 border border-transparent px-2 transition-colors',
           className
         )}
         disabled={isPending}
       >
-        <Badge className={cn('text-xs', currentToken)}>
-          {currentLabel}
+        <ProjectStatusBadge status={optimisticStatus}>
           {isPending ? <Loader2 className='animate-spin' /> : null}
-        </Badge>
+        </ProjectStatusBadge>
         <ChevronDown
           className={cn(
             'text-foreground/70 h-3.5 w-3.5',
@@ -97,7 +87,6 @@ export function ProjectStatusCell({
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         {PROJECT_STATUS_OPTIONS.map(option => {
-          const optionToken = getProjectStatusToken(option.value)
           const isSelected = option.value === optimisticStatus
 
           return (
@@ -106,9 +95,7 @@ export function ProjectStatusCell({
               onClick={() => handleSelect(option.value)}
               className={cn('cursor-pointer', isSelected && 'bg-accent/50')}
             >
-              <Badge className={cn('text-xs', optionToken)}>
-                {option.label}
-              </Badge>
+              <ProjectStatusBadge status={option.value} />
             </DropdownMenuItem>
           )
         })}

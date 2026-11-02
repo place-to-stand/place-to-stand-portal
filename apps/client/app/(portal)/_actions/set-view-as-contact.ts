@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { and, eq, isNull } from 'drizzle-orm'
+import { z } from 'zod'
 
 import { db } from '@/lib/db'
 import { contacts } from '@pts/db/schema'
@@ -15,7 +16,7 @@ import { VIEW_AS_CONTACT_COOKIE, VIEW_AS_COOKIE } from '@/lib/auth/view-as'
  * Select which contact an ADMIN previews the portal as.
  *
  * The portal will be scoped to all clients linked to that contact via
- * contact_clients.
+ * client_portal_access.
  *
  * SECURITY: server actions are POST endpoints reachable by any authenticated
  * user who knows the action id, so the admin check here is the real guard —
@@ -26,6 +27,11 @@ export async function setViewAsContact(contactId: string) {
 
   if (!isAdmin(user)) {
     throw new ForbiddenError('Only admins can preview the client portal')
+  }
+
+  // UUID-guard before the uuid column cast.
+  if (!z.string().uuid().safeParse(contactId).success) {
+    throw new ForbiddenError('Unknown contact')
   }
 
   const [contact] = await db

@@ -4,11 +4,7 @@ import { useMutation, type QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 
 import type { ToastOptions } from '@/components/ui/use-toast'
-import type {
-  FieldError,
-  TimeLogFormErrors,
-  TimeLogFormField,
-} from './types'
+import type { FieldError, TimeLogFormErrors, TimeLogFormField } from './types'
 
 const SUCCESS_TOAST: ToastOptions = {
   title: 'Time logged',
@@ -25,7 +21,7 @@ export type UseProjectTimeLogMutationOptions = {
   project: {
     id: string
     name: string
-    clientId: string | null
+    companyId: string | null
   }
   formValues: {
     hoursInput: string
@@ -118,7 +114,10 @@ export function useProjectTimeLogMutation(
       if (!response.ok) {
         const errorResult =
           typeof result === 'object' && result && result !== null
-            ? (result as { error?: unknown; fieldErrors?: Record<string, string> })
+            ? (result as {
+                error?: unknown
+                fieldErrors?: Record<string, string>
+              })
             : null
 
         const message =
@@ -134,17 +133,23 @@ export function useProjectTimeLogMutation(
         // If we have field-level errors, create an error with all field errors attached
         if (fieldErrors && Object.keys(fieldErrors).length > 0) {
           const firstField = Object.keys(fieldErrors)[0] as TimeLogFormField
-          const firstMessage = fieldErrors[firstField] ?? message ?? 'Invalid input.'
+          const firstMessage =
+            fieldErrors[firstField] ?? message ?? 'Invalid input.'
 
           // Attach all field errors to the error object
-          const error = makeFieldError(firstField, firstMessage) as FieldError & {
+          const error = makeFieldError(
+            firstField,
+            firstMessage
+          ) as FieldError & {
             allFieldErrors?: TimeLogFormErrors
           }
 
           const allFieldErrors: TimeLogFormErrors = {}
           Object.entries(fieldErrors).forEach(([key, value]) => {
             const field = key as TimeLogFormField
-            if (['hours', 'loggedOn', 'user', 'note', 'general'].includes(field)) {
+            if (
+              ['hours', 'loggedOn', 'user', 'note', 'general'].includes(field)
+            ) {
               allFieldErrors[field] = value
             }
           })
@@ -160,7 +165,7 @@ export function useProjectTimeLogMutation(
         typeof result === 'object' && result && 'timeLogId' in result
           ? String((result as { timeLogId?: unknown }).timeLogId ?? '')
           : isEditMode
-            ? timeLogId ?? ''
+            ? (timeLogId ?? '')
             : ''
 
       if (!resolvedTimeLogId) {
@@ -185,7 +190,7 @@ export function useProjectTimeLogMutation(
         toast({
           title: 'Closed month',
           description: data.warning,
-          variant: 'destructive',
+          variant: 'warning',
         })
       }
       router.refresh()
@@ -197,9 +202,22 @@ export function useProjectTimeLogMutation(
         allFieldErrors?: TimeLogFormErrors
       }
 
+      // A field's error shows under that field; anything else (a closed
+      // month, a refusal) is a toast, like every other save result.
+      const failureTitle =
+        mode === 'edit' ? 'Unable to save time log' : 'Unable to log time'
+
       // If we have all field errors from the API, use those
       if (fieldError.allFieldErrors) {
-        setFormErrors(fieldError.allFieldErrors)
+        const { general, ...fields } = fieldError.allFieldErrors
+        setFormErrors(fields)
+        if (general) {
+          toast({
+            title: failureTitle,
+            description: general,
+            variant: 'destructive',
+          })
+        }
         return
       }
 
@@ -211,7 +229,11 @@ export function useProjectTimeLogMutation(
         return
       }
 
-      setFormErrors({ general: message })
+      toast({
+        title: failureTitle,
+        description: message,
+        variant: 'destructive',
+      })
     },
   })
 }

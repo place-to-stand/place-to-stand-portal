@@ -1,13 +1,14 @@
-'use server'
-
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
   and,
+  count,
   desc,
   eq,
   gte,
   inArray,
+  isNull,
   lt,
   lte,
   notInArray,
@@ -18,7 +19,9 @@ import {
 import { db } from '@/lib/db'
 import { activityLogs, users } from '@/lib/db/schema'
 import type { AppUser } from '@/lib/auth/session'
+import { roleCan } from '@/lib/auth/capabilities'
 import { canReadActivity } from '@/lib/auth/roles'
+import { canWorkTask, listWorkableProjectIds } from '@/lib/projects/access'
 import { ForbiddenError } from '@/lib/errors/http'
 import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
@@ -37,6 +40,29 @@ import type {
  */
 const RETIRED_VERBS = ['PROJECT_VIEWED', 'CLIENT_VIEWED']
 
+/**
+ * Billing and portal-access events. They sit on the company (target COMPANY
+ * since 0113), so a company feed shows them; anyone who can't manage clients
+ * (Sales) never sees them, or the billing behind them.
+ */
+const BILLING_VERBS = [
+  'CLIENT_CREATED',
+  'CLIENT_UPDATED',
+  'CLIENT_ARCHIVED',
+  'CLIENT_RESTORED',
+  'CLIENT_DELETED',
+  'CONTACT_CLIENT_LINKED',
+  'CONTACT_CLIENT_UNLINKED',
+  // Says a person got a portal sign-in, which Sales can't see either.
+  'CONTACT_INVITED_TO_PORTAL',
+]
+
+function billingScope(user: AppUser) {
+  return roleCan(user.role, 'clients.manage')
+    ? undefined
+    : notInArray(activityLogs.verb, BILLING_VERBS)
+}
+
 const DEFAULT_PAGE_SIZE = 25
 const MAX_PAGE_SIZE = 100
 const DEFAULT_RECENT_ACTIVITY_LIMIT = 200
@@ -54,7 +80,7 @@ type ActivityLogSelection = {
     summary: string
     targetType: string
     targetId: string | null
-    targetClientId: string | null
+    targetCompanyId: string | null
     targetProjectId: string | null
     contextRoute: string | null
     metadata: Json
@@ -77,7 +103,7 @@ const activityLogSelection = {
   summary: activityLogs.summary,
   targetType: activityLogs.targetType,
   targetId: activityLogs.targetId,
-  targetClientId: activityLogs.targetClientId,
+  targetCompanyId: activityLogs.targetCompanyId,
   targetProjectId: activityLogs.targetProjectId,
   contextRoute: activityLogs.contextRoute,
   metadata: activityLogs.metadata,
@@ -86,10 +112,67 @@ const activityLogSelection = {
 
 const actorSelection = {
   id: users.id,
-  fullName: users.fullName,
+  fullName: personNameSql,
   email: users.email,
-  avatarUrl: users.avatarUrl,
+  avatarUrl: personAvatarSql,
 } as const
+
+/**
+ * `canReadActivity` plus one async case: a project member (SALES) may read
+ * the history of a single task they can work, which the task sheet shows.
+ */
+async function canReadActivityFor(
+  user: AppUser,
+  filters: ActivityQueryFilters
+): Promise<boolean> {
+  if (canReadActivity(user.role, filters)) return true
+  if (user.role !== 'SALES') return false
+  if (filters.projectId || filters.companyId || !filters.targetId) return false
+
+  const types =
+    typeof filters.targetType === 'string'
+      ? [filters.targetType]
+      : (filters.targetType ?? [])
+  if (types.length !== 1 || types[0] !== 'TASK') return false
+
+  return canWorkTask(user, filters.targetId)
+}
+
+/**
+ * The WHERE clause every per-record reader shares: the requested filters,
+ * narrowed to the projects the user can work and, for anyone who can't manage
+ * clients, with billing events removed. Throws when the user may not read
+ * this activity at all.
+ */
+async function scopedActivityWhere(
+  user: AppUser,
+  filters: ActivityQueryFilters
+) {
+  if (!user || !(await canReadActivityFor(user, filters))) {
+    throw new ForbiddenError('Not allowed to read this activity')
+  }
+
+  // A member reading a task's history sees only the events from projects
+  // they can work: a task moved in from elsewhere keeps its past there.
+  const visibleProjectIds = await listWorkableProjectIds(user)
+  const projectScope =
+    visibleProjectIds === null
+      ? undefined
+      : visibleProjectIds.length
+        ? or(
+            isNull(activityLogs.targetProjectId),
+            inArray(activityLogs.targetProjectId, visibleProjectIds)
+          )
+        : isNull(activityLogs.targetProjectId)
+
+  const whereClause = combineConditions([
+    buildFilterConditions(filters),
+    projectScope,
+    billingScope(user),
+  ])
+
+  return { whereClause, visibleProjectIds }
+}
 
 /**
  * Access control lives here, not in the callers (this project has NO RLS):
@@ -100,16 +183,15 @@ export async function fetchActivityLogs(
   user: AppUser,
   filters: ActivityQueryFilters
 ): Promise<ActivityQueryResult> {
-  if (!user || !canReadActivity(user.role, filters)) {
-    throw new ForbiddenError('Not allowed to read this activity')
-  }
+  const { whereClause, visibleProjectIds } = await scopedActivityWhere(
+    user,
+    filters
+  )
 
   const limit = Math.min(
     Math.max(filters.limit ?? DEFAULT_PAGE_SIZE, 1),
     MAX_PAGE_SIZE
   )
-
-  const whereClause = combineConditions([buildFilterConditions(filters)])
 
   const baseQuery = db
     .select({
@@ -130,17 +212,37 @@ export async function fetchActivityLogs(
   const hasMore = rows.length > limit
   const limitedRows = hasMore ? rows.slice(0, limit) : rows
   const logs = await attachActivityReferences(
-    limitedRows.map(mapToActivityLog)
+    limitedRows.map(mapToActivityLog),
+    visibleProjectIds
   )
   const lastRow = limitedRows[limitedRows.length - 1]
   const nextCursor =
-    hasMore && lastRow ? encodeCursor(lastRow.log.createdAt, lastRow.log.id) : null
+    hasMore && lastRow
+      ? encodeCursor(lastRow.log.createdAt, lastRow.log.id)
+      : null
 
   return {
     logs,
     hasMore,
     nextCursor,
   }
+}
+
+/**
+ * How many rows `fetchActivityLogs` would page through for these filters,
+ * under the same access rules: the count on a sheet's collapsed Activity
+ * header. One `count(*)` on the target index, no actor join, no references.
+ */
+export async function countActivityLogs(
+  user: AppUser,
+  filters: Omit<ActivityQueryFilters, 'cursor' | 'limit'>
+): Promise<number> {
+  const { whereClause } = await scopedActivityWhere(user, filters)
+
+  const baseQuery = db.select({ value: count() }).from(activityLogs)
+  const [row] = await (whereClause ? baseQuery.where(whereClause) : baseQuery)
+
+  return Number(row?.value ?? 0)
 }
 
 /**
@@ -181,10 +283,13 @@ export async function fetchActivityLogsSince(
 
   const whereClause = combineConditions([
     notInArray(activityLogs.verb, RETIRED_VERBS),
+    billingScope(user),
     gte(activityLogs.createdAt, since),
     until ? lte(activityLogs.createdAt, until) : undefined,
     ...buildAttributionConditions({ source, actorId }),
-    targetTypes.length ? inArray(activityLogs.targetType, targetTypes) : undefined,
+    targetTypes.length
+      ? inArray(activityLogs.targetType, targetTypes)
+      : undefined,
   ])
 
   const baseQuery = db
@@ -220,8 +325,8 @@ function buildFilterConditions(filters: ActivityQueryFilters) {
     conditions.push(eq(activityLogs.targetProjectId, filters.projectId))
   }
 
-  if (filters.clientId) {
-    conditions.push(eq(activityLogs.targetClientId, filters.clientId))
+  if (filters.companyId) {
+    conditions.push(eq(activityLogs.targetCompanyId, filters.companyId))
   }
 
   conditions.push(...buildAttributionConditions(filters))
@@ -275,7 +380,7 @@ function buildAttributionConditions({
   ]
 }
 
-const CURSOR_SEPARATOR = "|"
+const CURSOR_SEPARATOR = '|'
 
 function encodeCursor(createdAt: string, id: string): string {
   return `${createdAt}${CURSOR_SEPARATOR}${id}`
@@ -294,8 +399,8 @@ function decodeCursor(value: string): { createdAt: string; id: string | null } {
 }
 
 function combineConditions(conditions: Array<SqlExpression | undefined>) {
-  const filtered = conditions.filter(
-    (condition): condition is SqlExpression => Boolean(condition)
+  const filtered = conditions.filter((condition): condition is SqlExpression =>
+    Boolean(condition)
   )
 
   if (!filtered.length) {
@@ -322,7 +427,7 @@ function mapToActivityLog(row: ActivityLogSelection): ActivityLogWithActor {
     summary: log.summary,
     target_type: log.targetType,
     target_id: log.targetId,
-    target_client_id: log.targetClientId,
+    target_company_id: log.targetCompanyId,
     target_project_id: log.targetProjectId,
     context_route: log.contextRoute,
     metadata,

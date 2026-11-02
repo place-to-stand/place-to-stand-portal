@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { rolesWith } from '@/lib/auth/capabilities'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { loadAppUserById, type AppUser } from '@/lib/auth/session'
 import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
@@ -65,7 +66,7 @@ export async function resolveUserFromToken(
   // is mid-way through provisioning and should not be acting through the API.
   if (data.user.user_metadata?.must_reset_password) {
     throw new ForbiddenError(
-      `This account must reset its password in the portal before using ${surface.name}.`
+      `This user must reset their password in the portal before using ${surface.name}.`
     )
   }
 
@@ -74,9 +75,7 @@ export async function resolveUserFromToken(
   // The auth record outlived the profile — deleted, disabled, or never
   // provisioned. Treat it as unauthenticated rather than leaking which.
   if (!user) {
-    throw new UnauthorizedError(
-      `Account is not active. ${surface.signInHint}`
-    )
+    throw new UnauthorizedError(`User is not active. ${surface.signInHint}`)
   }
 
   if (!roles.includes(user.role)) {
@@ -90,12 +89,12 @@ export async function resolveUserFromToken(
   return user
 }
 
-/** The CLI admits ADMIN only. */
+/** The CLI admits the roles holding `integrations.cli` (admins today). */
 export async function resolveAdminFromToken(
   token: string,
   surface: BearerSurface
 ): Promise<AppUser> {
-  return resolveUserFromToken(token, surface, ['ADMIN'])
+  return resolveUserFromToken(token, surface, rolesWith('integrations.cli'))
 }
 
 function capitalize(value: string): string {

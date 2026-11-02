@@ -43,8 +43,3 @@ export const projectRestoredEvent = (args: {
   verb: ActivityVerbs.PROJECT_RESTORED,
   summary: `Restored project "${args.name}"`,
 })
-
-export const projectDeletedEvent = (args: { name: string }): ActivityEvent => ({
-  verb: ActivityVerbs.PROJECT_DELETED,
-  summary: `Permanently deleted project "${args.name}"`,
-})

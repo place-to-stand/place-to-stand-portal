@@ -1,25 +1,22 @@
 import type { LucideIcon } from 'lucide-react'
+
+import type { Capability } from '@/lib/auth/capabilities'
 import {
-  Clock3,
-  FolderKanban,
-  Building2,
-  Users,
-  Home as HomeIcon,
-  ListTodo,
-  Handshake,
-  Plug,
-  Contact,
   FileText,
-  Receipt,
-  Inbox,
-  Mail,
+  Home as HomeIcon,
+  Palette,
+  Plug,
+  ShieldCheck,
 } from 'lucide-react'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type NavItem = {
   href: string
   label: string
   icon: LucideIcon
   matchHrefs?: string[]
+  /** Who sees the entry (`lib/auth/capabilities.ts`). */
+  capability: Capability
 }
 
 export type NavGroup = {
@@ -33,13 +30,15 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/my/home',
+        capability: 'dashboard.home',
         label: 'Home',
         icon: HomeIcon,
       },
       {
         href: '/my/tasks/board',
+        capability: 'projects.view_member',
         label: 'Tasks',
-        icon: ListTodo,
+        icon: ENTITY_ICONS.task,
         matchHrefs: ['/my/tasks', '/my/tasks/calendar'],
       },
     ],
@@ -49,25 +48,46 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/submissions',
+        capability: 'submissions.manage',
         label: 'Submissions',
-        icon: Inbox,
+        icon: ENTITY_ICONS.submission,
         matchHrefs: ['/submissions'],
       },
       {
         href: '/leads',
+        capability: 'leads.manage',
         label: 'Leads',
-        icon: Handshake,
+        icon: ENTITY_ICONS.lead,
       },
       {
         href: '/invoices',
+        capability: 'billing.manage',
         label: 'Invoices',
-        icon: Receipt,
+        icon: ENTITY_ICONS.invoice,
         matchHrefs: ['/invoices'],
       },
       {
         href: '/hour-blocks',
+        capability: 'billing.manage',
         label: 'Hour blocks',
-        icon: Clock3,
+        icon: ENTITY_ICONS.hourBlock,
+      },
+    ],
+  },
+  {
+    title: 'Directory',
+    items: [
+      {
+        href: '/companies',
+        capability: 'companies.manage',
+        label: 'Companies',
+        icon: ENTITY_ICONS.company,
+      },
+      {
+        href: '/people',
+        capability: 'contacts.manage',
+        label: 'People',
+        icon: ENTITY_ICONS.contact,
       },
     ],
   },
@@ -76,18 +96,15 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/projects',
+        capability: 'projects.view_member',
         label: 'Projects',
-        icon: FolderKanban,
+        icon: ENTITY_ICONS.project,
       },
       {
-        href: '/clients',
-        label: 'Clients',
-        icon: Building2,
-      },
-      {
-        href: '/contacts',
-        label: 'Contacts',
-        icon: Contact,
+        href: '/time-logs',
+        capability: 'billing.manage',
+        label: 'Time logs',
+        icon: ENTITY_ICONS.timeLog,
       },
     ],
   },
@@ -96,6 +113,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       {
         href: '/reports/monthly-close',
+        capability: 'reports.view',
         label: 'Monthly close',
         icon: FileText,
         matchHrefs: ['/reports'],
@@ -106,20 +124,29 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'Settings',
     items: [
       {
-        href: '/settings/users',
-        label: 'Users',
-        icon: Users,
-      },
-      {
         href: '/settings/integrations',
+        capability: 'integrations.manage',
         label: 'Integrations',
         icon: Plug,
       },
       {
+        href: '/settings/permissions',
+        capability: 'settings.permissions',
+        label: 'Roles & permissions',
+        icon: ShieldCheck,
+      },
+      {
         href: '/settings/templates/emails',
+        capability: 'settings.templates',
         label: 'Templates',
-        icon: Mail,
+        icon: ENTITY_ICONS.template,
         matchHrefs: ['/settings/templates'],
+      },
+      {
+        href: '/design',
+        capability: 'settings.design',
+        label: 'Design system',
+        icon: Palette,
       },
     ],
   },

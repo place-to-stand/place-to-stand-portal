@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { ACCEPTED_TASK_ATTACHMENT_MIME_TYPES } from '@/lib/storage/task-attachment-constants'
+
 export const TASK_STATUSES = [
   'ON_DECK',
   'IN_PROGRESS',
@@ -12,7 +14,17 @@ export const statusSchema = z.enum(TASK_STATUSES)
 const attachmentToAttachSchema = z.object({
   path: z.string().min(1),
   originalName: z.string().min(1),
-  mimeType: z.string().min(1),
+  // The allowlist the upload route enforces: the download route serves
+  // this type back, so a free-form value (text/html) would be stored XSS.
+  mimeType: z
+    .string()
+    .refine(
+      value =>
+        (ACCEPTED_TASK_ATTACHMENT_MIME_TYPES as readonly string[]).includes(
+          value
+        ),
+      'Unsupported attachment type.'
+    ),
   fileSize: z.number().int().min(1),
 })
 

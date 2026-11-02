@@ -14,6 +14,7 @@ import {
 } from '@pts/ui/auth-shell'
 
 import { requestMagicLink } from '@/app/(auth)/_actions/auth-emails'
+import { recordSignInAttempt } from '@/app/(auth)/_actions/sign-in'
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
@@ -51,9 +52,17 @@ export default function SignInPage() {
     setLoading(true)
 
     try {
+      const normalisedEmail = email.trim().toLowerCase()
+      const attempt = await recordSignInAttempt(normalisedEmail)
+
+      if (!attempt.allowed) {
+        setError(attempt.error)
+        return
+      }
+
       const supabase = getSupabaseBrowserClient()
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalisedEmail,
         password,
       })
 
@@ -65,7 +74,7 @@ export default function SignInPage() {
       // Hard navigation rather than router.push so the server picks up the new
       // session cookie. Switching to a client transition produces a stale-session
       // bug that looks like sign-in silently failing.
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a hard navigation so the server picks up the new session cookie
       window.location.href = '/'
     } catch {
       setError('An unexpected error occurred')
@@ -97,7 +106,7 @@ export default function SignInPage() {
       await requestMagicLink(trimmed)
 
       setNotice(
-        "If an account exists for that email, we've sent a sign-in link. Check your inbox."
+        "If that email can sign in, we've sent it a link to sign in with. Check your inbox."
       )
       setCooldown(MAGIC_LINK_COOLDOWN_SECONDS)
     } catch {
@@ -139,7 +148,7 @@ export default function SignInPage() {
             ? 'Sending...'
             : cooldown > 0
               ? `Resend in ${cooldown}s`
-              : 'Email me a sign-in link'}
+              : 'Email me a link to sign in'}
         </button>
       </div>
 

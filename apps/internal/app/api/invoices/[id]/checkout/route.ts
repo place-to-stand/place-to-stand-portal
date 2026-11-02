@@ -52,7 +52,13 @@ export async function POST(
         const existingSession = await getStripe().checkout.sessions.retrieve(
           invoice.stripeCheckoutSessionId
         )
-        if (existingSession.status === 'open' && existingSession.client_secret) {
+        // Only while it still charges this invoice's total.
+        if (
+          existingSession.status === 'open' &&
+          existingSession.client_secret &&
+          existingSession.amount_total ===
+            Math.round(Number(invoice.total) * 100)
+        ) {
           return NextResponse.json({
             ok: true,
             data: { clientSecret: existingSession.client_secret },

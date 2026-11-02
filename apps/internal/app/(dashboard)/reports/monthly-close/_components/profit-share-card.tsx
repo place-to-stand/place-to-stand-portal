@@ -12,12 +12,9 @@ import type { ProfitShareState } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
 import { addProfitShareAction } from '../actions/add-profit-share'
-import {
-  formatDay,
-  formatDeduction,
-  formatMoney,
-  formatShortDay,
-} from './format'
+import { formatCurrency } from '@pts/ui/numbers'
+
+import { formatDay, formatDeduction, formatShortDay } from './format'
 import { PayeeAvatar } from './payee-avatar'
 import { TreeBranch } from './tree-branch'
 
@@ -136,7 +133,7 @@ function ReadyBody({
             </Button>
           ) : null}
           <span className='text-sm font-medium tabular-nums'>
-            {formatMoney(data.balance)}
+            {formatCurrency(data.balance)}
           </span>
         </div>
         {data.accounts.map((account, index) => (
@@ -151,7 +148,7 @@ function ReadyBody({
               reachUp={8}
             />
             <span className='flex-1'>{account.name}</span>
-            <span className='tabular-nums'>{formatMoney(account.balance)}</span>
+            <span className='tabular-nums'>{formatCurrency(account.balance)}</span>
           </div>
         ))}
       </div>
@@ -171,12 +168,12 @@ function ReadyBody({
             <span className='font-semibold'>Available to share</span>
             {data.shortfall > 0 ? (
               <span className='text-muted-foreground text-xs tabular-nums'>
-                {formatMoney(data.shortfall)} short of the minimum
+                {formatCurrency(data.shortfall)} short of the minimum
               </span>
             ) : null}
           </div>
           <span className='font-semibold tabular-nums'>
-            {formatMoney(data.available)}
+            {formatCurrency(data.available)}
           </span>
         </div>
         {data.partners.map((partner, index) => (
@@ -202,7 +199,7 @@ function ReadyBody({
               {percent}%
             </span>
             <span className='w-28 text-right tabular-nums'>
-              {formatMoney(partner.amount)}
+              {formatCurrency(partner.amount)}
             </span>
           </div>
         ))}
@@ -210,7 +207,7 @@ function ReadyBody({
       <div className='bg-muted/50 text-foreground/80 flex items-center justify-between gap-3 border-t px-5 py-3 text-[13px]'>
         <span>Balance left after all payouts</span>
         <span className='text-foreground font-medium tabular-nums'>
-          {formatMoney(leftAfter)}
+          {formatCurrency(leftAfter)}
         </span>
       </div>
       {data.addedAfterCloseAt ? (
@@ -307,7 +304,7 @@ export function ProfitShareCard(props: ProfitShareCardProps) {
 
   if (state.status === 'ready') {
     return (
-      <CardShell total={formatMoney(state.data.totalAmount)}>
+      <CardShell total={formatCurrency(state.data.totalAmount)}>
         <ReadyBody data={state.data} source={state.source} />
       </CardShell>
     )

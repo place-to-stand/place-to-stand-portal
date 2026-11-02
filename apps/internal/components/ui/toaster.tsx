@@ -1,12 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
-
-import { Button } from '@pts/ui/button'
-import { cn } from '@/lib/utils'
-
 import { subscribe, type ToastMessage } from './toast'
+import { ToastCard } from './toast-card'
 
 const TOAST_GAP = 12
 
@@ -52,38 +48,18 @@ export function Toaster() {
 
   return (
     <div
-      className='pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4 sm:items-end'
+      className='pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center px-4 sm:items-end'
       style={{ gap: TOAST_GAP }}
+      aria-live='polite'
     >
       {toasts.map(toast => (
-        <div
+        <ToastCard
           key={toast.id}
-          className={cn(
-            'bg-background pointer-events-auto w-full max-w-sm rounded-lg border p-4 shadow-lg transition',
-            toast.variant === 'destructive'
-              ? 'border-destructive/40 bg-destructive text-white'
-              : 'border-border'
-          )}
-          data-toast
-        >
-          <div className='flex items-start gap-3'>
-            <div className='flex-1 space-y-1'>
-              <p className='text-sm leading-none font-medium'>{toast.title}</p>
-              {toast.description ? (
-                <p className='text-sm'>{toast.description}</p>
-              ) : null}
-            </div>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={() => dismiss(toast.id)}
-              className='h-8 w-8 shrink-0'
-            >
-              <X className='h-4 w-4' />
-              <span className='sr-only'>Dismiss</span>
-            </Button>
-          </div>
-        </div>
+          title={toast.title}
+          description={toast.description}
+          variant={toast.variant}
+          onDismiss={() => dismiss(toast.id)}
+        />
       ))}
     </div>
   )

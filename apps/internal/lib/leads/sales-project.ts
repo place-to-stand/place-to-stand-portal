@@ -27,20 +27,29 @@ const SALES_PROJECT_SLUG = 'sales'
  * matching the ON CONFLICT specification" on every conflict, the exact case
  * the guard exists to absorb. The `where` clause below is load-bearing.
  */
-export async function getOrCreateSalesProject(userId: string): Promise<string> {
-  const findSalesProject = async () =>
-    db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(
-        and(
-          eq(projects.slug, SALES_PROJECT_SLUG),
-          eq(projects.type, 'INTERNAL'),
-          isNull(projects.deletedAt)
-        )
+const findSalesProject = async () =>
+  db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.slug, SALES_PROJECT_SLUG),
+        eq(projects.type, 'INTERNAL'),
+        isNull(projects.deletedAt)
       )
-      .limit(1)
+    )
+    .limit(1)
 
+/**
+ * The Sales project's id, or null when it doesn't exist yet. Read-only: for
+ * GET paths (sheet init), which must never create it.
+ */
+export async function findSalesProjectId(): Promise<string | null> {
+  const [project] = await findSalesProject()
+  return project?.id ?? null
+}
+
+export async function getOrCreateSalesProject(userId: string): Promise<string> {
   const [existingProject] = await findSalesProject()
 
   if (existingProject) {

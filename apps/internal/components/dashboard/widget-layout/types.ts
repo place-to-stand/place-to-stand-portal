@@ -1,11 +1,17 @@
+import type { SalesHomeData } from '@/lib/dashboard/sales-types'
 import type { HoursSnapshot } from '@/lib/dashboard/types'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 
-/** Server-fetched props the individual widgets need on first render. */
+/**
+ * Server-fetched props the individual widgets need on first render. The
+ * admin home fills the task and hours fields, the sales home `sales`; a
+ * widget whose data is missing renders nothing.
+ */
 export type DashboardWidgetData = {
-  tasks: AssignedTaskSummary[]
-  totalTaskCount: number
-  initialHoursSnapshot: HoursSnapshot
+  tasks?: AssignedTaskSummary[]
+  totalTaskCount?: number
+  initialHoursSnapshot?: HoursSnapshot
+  sales?: SalesHomeData
 }
 
 export const COLUMN_DROPPABLE_PREFIX = 'dashboard-column-'

@@ -1,28 +1,9 @@
 import { formatCalendarDate } from '@pts/ui/dates'
-
-const money = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
-/** Always two decimals, so columns of money line up. */
-export function formatMoney(amount: number): string {
-  return money.format(amount)
-}
+import { formatCurrency } from '@pts/ui/numbers'
 
 /** A deduction line: "−$14,572.50" (true minus sign). */
 export function formatDeduction(amount: number): string {
-  return `−${money.format(Math.abs(amount))}`
-}
-
-export function formatSignedMoney(amount: number): string {
-  return `${amount < 0 ? '−' : '+'}${money.format(Math.abs(amount))}`
-}
-
-export function formatHours(hours: number): string {
-  return hours.toFixed(2)
+  return `−${formatCurrency(Math.abs(amount))}`
 }
 
 export function formatPercent(part: number, whole: number): string {

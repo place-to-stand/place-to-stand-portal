@@ -14,7 +14,9 @@ export type { SaveLeadInput } from '@/lib/leads/save-lead-fields'
  * Browser entry point. The actual write lives in `saveLeadForActor` so the
  * CLI API can share it without this module's session coupling.
  */
-export async function saveLead(input: SaveLeadInput): Promise<LeadActionResult> {
+export async function saveLead(
+  input: SaveLeadInput
+): Promise<LeadActionResult> {
   const user = await requireCrmUser()
   assertCrmAccess(user)
 

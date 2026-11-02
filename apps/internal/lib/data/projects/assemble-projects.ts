@@ -1,5 +1,5 @@
 import type {
-  DbClient,
+  ClientCompanyView,
   DbProject,
   ProjectMemberWithUser,
   ProjectOwner,
@@ -54,8 +54,8 @@ export function assembleProjectsWithRelations({
 
   return projects.map(project => ({
     ...project,
-    client: project.client_id
-      ? (clientLookup.get(project.client_id) ?? null)
+    client: project.company_id
+      ? (clientLookup.get(project.company_id) ?? null)
       : null,
     owner: project.owner_id
       ? (ownerLookup.get(project.owner_id) ?? null)
@@ -70,13 +70,14 @@ export function assembleProjectsWithRelations({
       timeLogTotalsByProject
     ),
     githubRepos: relations.githubReposByProject.get(project.id) ?? [],
-    integrationLinks:
-      relations.integrationLinksByProject.get(project.id) ?? [],
+    integrationLinks: relations.integrationLinksByProject.get(project.id) ?? [],
   }))
 }
 
-function buildClientLookup(clients: DbClient[]): Map<string, DbClient> {
-  const clientLookup = new Map<string, DbClient>()
+function buildClientLookup(
+  clients: ClientCompanyView[]
+): Map<string, ClientCompanyView> {
+  const clientLookup = new Map<string, ClientCompanyView>()
   clients.forEach(client => {
     if (!client?.id) {
       return
@@ -111,20 +112,20 @@ function organizeMembers(
       member.deleted_at ||
       !member.user ||
       member.user.deleted_at ||
-      !member.client_id
+      !member.company_id
     ) {
       return
     }
 
-    const memberList = membersByClient.get(member.client_id) ?? []
+    const memberList = membersByClient.get(member.company_id) ?? []
     memberList.push(member)
-    membersByClient.set(member.client_id, memberList)
+    membersByClient.set(member.company_id, memberList)
   })
 
   // Then, map client members to all projects under that client
-  projectClientLookup.forEach((clientId, projectId) => {
-    if (clientId) {
-      const clientMembers = membersByClient.get(clientId) ?? []
+  projectClientLookup.forEach((companyId, projectId) => {
+    if (companyId) {
+      const clientMembers = membersByClient.get(companyId) ?? []
       const projectMembers: ProjectMemberWithUser[] = clientMembers.map(
         member => ({
           id: member.id,
@@ -180,9 +181,7 @@ function buildAcceptedTasksLookup(
 
   activeTasksByProject.forEach((tasks, projectId) => {
     const accepted = tasks
-      .filter(
-        task => task.status === 'DONE' && task.accepted_at !== null
-      )
+      .filter(task => task.status === 'DONE' && task.accepted_at !== null)
       .sort((a, b) => {
         const aTime = a.accepted_at ? Date.parse(a.accepted_at) : 0
         const bTime = b.accepted_at ? Date.parse(b.accepted_at) : 0
@@ -203,10 +202,9 @@ function buildProjectBurndown(
   const projectLogSummary = timeLogTotalsByProject.get(project.id) ?? null
   // Client-level totals come from the shared client-scoped query — every
   // project of the client counts toward the burndown, not just this one.
-  const clientTotals = clientHoursTotalsFor(clientHours, project.client_id)
+  const clientTotals = clientHoursTotalsFor(clientHours, project.company_id)
   const totalProjectLoggedHours = projectLogSummary?.totalHours ?? 0
-  const projectMonthToDateLoggedHours =
-    projectLogSummary?.monthToDateHours ?? 0
+  const projectMonthToDateLoggedHours = projectLogSummary?.monthToDateHours ?? 0
   const lastLogAt = projectLogSummary?.lastLogAt ?? null
 
   return {

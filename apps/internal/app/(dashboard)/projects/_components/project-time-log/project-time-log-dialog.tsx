@@ -9,6 +9,8 @@ import {
 } from '@pts/ui/dialog'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { ProjectTimeLogForm } from './project-time-log-form'
+import { InfoPanelDivider } from '@/components/ui/info-panel'
+import { TimeLogHoursSummary } from './time-log-hours-summary'
 import { useProjectTimeLogDialog } from '@/lib/projects/time-log/use-project-time-log-dialog'
 import type {
   ProjectTimeLogDialogParams,
@@ -45,10 +47,7 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
     onMutationSuccess,
   })
 
-  const dialogTitle = state.isEditMode ? 'Edit time log' : 'Add time log'
-  const dialogDescription = state.isEditMode
-    ? `Updates apply immediately to the burndown overview for ${state.projectLabel}.`
-    : `Entries logged here are reflected immediately in the burndown overview for ${state.projectLabel}.`
+  const dialogTitle = state.isEditMode ? 'Edit time log' : 'Create time log'
   const submitLabel = state.isEditMode ? 'Save changes' : 'Log time'
 
   return (
@@ -57,8 +56,17 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
         <DialogContent className='w-full max-w-xl'>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>{dialogDescription}</DialogDescription>
+            {/* The project shows in the box below; screen readers get it here. */}
+            <DialogDescription className='sr-only'>
+              {state.projectLabel}
+            </DialogDescription>
           </DialogHeader>
+          <TimeLogHoursSummary
+            projectId={rest.projectId}
+            projectLabel={state.projectLabel}
+            isClientProject={rest.projectType === 'CLIENT'}
+          />
+          <InfoPanelDivider />
           <ProjectTimeLogForm
             isMutating={state.isMutating}
             disableSubmit={state.disableSubmit}
@@ -93,16 +101,6 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
       </Dialog>
 
       <ConfirmDialog
-        open={Boolean(state.taskRemovalCandidate)}
-        title='Remove linked task?'
-        description='The task will no longer be associated with this log entry.'
-        confirmLabel='Remove'
-        confirmVariant='destructive'
-        confirmDisabled={state.isMutating}
-        onCancel={state.cancelTaskRemoval}
-        onConfirm={state.confirmTaskRemoval}
-      />
-      <ConfirmDialog
         open={state.overageDialog.isOpen}
         title='Hours exceed client balance'
         description={state.overageDialog.description}
@@ -124,7 +122,7 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
       />
       <ConfirmDialog
         open={state.deleteDialog.isOpen}
-        title='Archive time entry?'
+        title='Archive time log?'
         description='This removes the log from the project burndown.'
         confirmLabel='Archive'
         confirmVariant='destructive'

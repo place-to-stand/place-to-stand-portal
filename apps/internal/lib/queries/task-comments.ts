@@ -1,3 +1,4 @@
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
@@ -8,16 +9,14 @@ import {
   taskCommentUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { AppUser } from '@/lib/auth/session'
-import { ensureTaskAccess } from '@/lib/auth/permissions'
+import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, taskComments, tasks, users } from '@/lib/db/schema'
-import { NotFoundError } from '@/lib/errors/http'
-import {
-  clampLimit,
-  decodeCursor,
-  encodeCursor,
-} from '@/lib/pagination/cursor'
+import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import { notifyTaskComment } from '@/lib/notifications/in-app/events'
+import { clampLimit, decodeCursor, encodeCursor } from '@/lib/pagination/cursor'
 import type {
   ActivitySourceValue,
   TaskCommentAuthor,
@@ -65,7 +64,7 @@ function mapUserToCommentAuthor(
 }
 
 function mapCommentSelectionToTaskComment(
-  selection: CommentSelection,
+  selection: CommentSelection
 ): TaskCommentWithAuthor {
   return {
     id: selection.id,
@@ -79,7 +78,16 @@ function mapCommentSelectionToTaskComment(
   }
 }
 
-async function getCommentSelectionById(commentId: string): Promise<CommentSelection | null> {
+/** Admins may edit or delete any comment; everyone else only their own. */
+function assertCanChangeComment(user: AppUser, authorId: string | null) {
+  if (user.role !== 'ADMIN' && authorId !== user.id) {
+    throw new ForbiddenError('You can only change your own comments')
+  }
+}
+
+async function getCommentSelectionById(
+  commentId: string
+): Promise<CommentSelection | null> {
   const rows = await db
     .select({
       id: taskComments.id,
@@ -91,9 +99,9 @@ async function getCommentSelectionById(commentId: string): Promise<CommentSelect
       deletedAt: taskComments.deletedAt,
       author: {
         id: users.id,
-        fullName: users.fullName,
+        fullName: personNameSql,
         email: users.email,
-        avatarUrl: users.avatarUrl,
+        avatarUrl: personAvatarSql,
       },
     })
     .from(taskComments)
@@ -107,7 +115,7 @@ async function getCommentSelectionById(commentId: string): Promise<CommentSelect
 type CommentTaskContext = {
   title: string
   projectId: string
-  clientId: string | null
+  companyId: string | null
 }
 
 async function getCommentTaskContext(
@@ -117,7 +125,7 @@ async function getCommentTaskContext(
     .select({
       title: tasks.title,
       projectId: tasks.projectId,
-      clientId: projects.clientId,
+      companyId: projects.companyId,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
@@ -127,7 +135,11 @@ async function getCommentTaskContext(
   const row = rows[0]
 
   return row
-    ? { title: row.title, projectId: row.projectId, clientId: row.clientId ?? null }
+    ? {
+        title: row.title,
+        projectId: row.projectId,
+        companyId: row.companyId ?? null,
+      }
     : null
 }
 
@@ -150,7 +162,7 @@ async function logCommentActivity(args: {
     targetType: 'COMMENT',
     targetId: args.commentId,
     targetProjectId: context?.projectId ?? null,
-    targetClientId: context?.clientId ?? null,
+    targetCompanyId: context?.companyId ?? null,
     metadata: { taskId: args.taskId, commentId: args.commentId },
   })
 }
@@ -169,7 +181,7 @@ export type TaskCommentsPage = {
 }
 
 function buildTaskCommentsCursorCondition(
-  cursor: { createdAt?: string | null; id?: string | null } | null,
+  cursor: { createdAt?: string | null; id?: string | null } | null
 ): SQL | null {
   if (!cursor) {
     return null
@@ -188,13 +200,13 @@ function buildTaskCommentsCursorCondition(
 export async function listTaskComments(
   user: AppUser,
   taskId: string,
-  input: ListTaskCommentsInput = {},
+  input: ListTaskCommentsInput = {}
 ): Promise<TaskCommentsPage> {
-  await ensureTaskAccess(user, taskId)
+  await ensureTaskWorkAccess(user, taskId)
 
   const limit = clampLimit(input.limit, { defaultLimit: 20, maxLimit: 100 })
   const cursorPayload = decodeCursor<{ createdAt?: string; id?: string }>(
-    input.cursor,
+    input.cursor
   )
   const cursorCondition = buildTaskCommentsCursorCondition(cursorPayload)
 
@@ -219,9 +231,9 @@ export async function listTaskComments(
       deletedAt: taskComments.deletedAt,
       author: {
         id: users.id,
-        fullName: users.fullName,
+        fullName: personNameSql,
         email: users.email,
-        avatarUrl: users.avatarUrl,
+        avatarUrl: personAvatarSql,
       },
     })
     .from(taskComments)
@@ -256,9 +268,9 @@ export async function createTaskComment(
     taskId: string
     body: string
   },
-  options: TaskCommentMutationOptions = {},
+  options: TaskCommentMutationOptions = {}
 ): Promise<{ commentId: string }> {
-  await ensureTaskAccess(user, input.taskId)
+  await ensureTaskWorkAccess(user, input.taskId)
 
   const result = await db
     .insert(taskComments)
@@ -283,6 +295,20 @@ export async function createTaskComment(
     buildEvent: taskCommentCreatedEvent,
   })
 
+  const [task] = await db
+    .select({ title: tasks.title })
+    .from(tasks)
+    .where(eq(tasks.id, input.taskId))
+    .limit(1)
+  if (task) {
+    const text = htmlToPlainText(input.body).trim()
+    await notifyTaskComment(
+      user,
+      { id: input.taskId, title: task.title },
+      text.length > 140 ? `${text.slice(0, 139)}…` : text
+    )
+  }
+
   return { commentId: comment.id }
 }
 
@@ -292,7 +318,7 @@ export async function updateTaskComment(
     commentId: string
     body: string
   },
-  options: TaskCommentMutationOptions = {},
+  options: TaskCommentMutationOptions = {}
 ): Promise<void> {
   const comment = await getCommentSelectionById(input.commentId)
 
@@ -300,7 +326,8 @@ export async function updateTaskComment(
     throw new NotFoundError('Task comment not found')
   }
 
-  await ensureTaskAccess(user, comment.taskId)
+  await ensureTaskWorkAccess(user, comment.taskId)
+  assertCanChangeComment(user, comment.authorId)
 
   // Re-saving an unchanged body is a no-op: no write, no activity row.
   if (comment.body === input.body) {
@@ -327,7 +354,7 @@ export async function updateTaskComment(
 export async function softDeleteTaskComment(
   user: AppUser,
   commentId: string,
-  options: TaskCommentMutationOptions = {},
+  options: TaskCommentMutationOptions = {}
 ): Promise<void> {
   const comment = await getCommentSelectionById(commentId)
 
@@ -335,7 +362,8 @@ export async function softDeleteTaskComment(
     throw new NotFoundError('Task comment not found')
   }
 
-  await ensureTaskAccess(user, comment.taskId)
+  await ensureTaskWorkAccess(user, comment.taskId)
+  assertCanChangeComment(user, comment.authorId)
 
   const now = new Date().toISOString()
 

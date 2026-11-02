@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { Clock3 } from 'lucide-react'
+import { formatHours } from '@pts/ui/numbers'
+import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
 
 import type { InvoiceHourBlockSummary } from '@/lib/invoices/invoice-form'
 import { hourBlockHref, hourBlocksForInvoiceHref } from '@/lib/sheets/hrefs'
@@ -8,8 +10,6 @@ type InvoiceHourBlocksCellProps = {
   hourBlocks: InvoiceHourBlockSummary[]
   invoiceNumber: string | null
 }
-
-const toHours = (value: number) => `${value.toLocaleString()}h`
 
 /**
  * Hours an invoice bought once paid, linking to its hour block. An invoice
@@ -39,11 +39,13 @@ export function InvoiceHourBlocksCell({
   return (
     <Link
       href={href}
-      aria-label={`${toHours(totalHours)} in ${blockCount}`}
+      aria-label={`${formatHours(totalHours)} in ${blockCount}`}
       className='text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm hover:underline'
     >
-      <Clock3 className='h-4 w-4 shrink-0' />
-      {toHours(totalHours)}
+      <ENTITY_ICONS.hourBlock
+        className={cn(ENTITY_ACCENTS.hourBlock.icon, 'h-4 w-4 shrink-0')}
+      />
+      {formatHours(totalHours)}
     </Link>
   )
 }

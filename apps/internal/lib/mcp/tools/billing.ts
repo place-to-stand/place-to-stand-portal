@@ -102,7 +102,6 @@ export function registerBillingTools(server: McpServer) {
     title: 'List invoices',
     description:
       'List invoices, newest first. Filter by client, status or text (invoice number or client name); when hasMore is true, narrow the filters. Amounts are decimal strings in USD. get_invoice returns line items and notes.',
-    access: 'admin',
     effect: 'read',
     input: {
       client: clientRef.optional(),
@@ -118,7 +117,7 @@ export function registerBillingTools(server: McpServer) {
 
       const result = await listInvoices(user, {
         status: archived ? 'archived' : 'active',
-        clientId,
+        companyId: clientId,
         invoiceStatus: status,
         search,
         limit,
@@ -133,7 +132,6 @@ export function registerBillingTools(server: McpServer) {
     title: 'Get invoice',
     description:
       'One invoice with its line items, notes, view count and the hour blocks it bought.',
-    access: 'admin',
     effect: 'read',
     input: { invoiceId: z.string().uuid().describe('Invoice UUID.') },
     run: async ({ invoiceId }, { user }) => {
@@ -152,7 +150,6 @@ export function registerBillingTools(server: McpServer) {
     title: 'List hour blocks',
     description:
       'List prepaid hour blocks (hours a client bought), newest first, optionally for one client or by text (client name or invoice number); when hasMore is true, narrow the filters. get_client_hour_balance gives the remaining balance.',
-    access: 'admin',
     effect: 'read',
     input: {
       client: clientRef.optional(),
@@ -167,7 +164,7 @@ export function registerBillingTools(server: McpServer) {
 
       const result = await listHourBlocksForSettings(user, {
         status: archived ? 'archived' : 'active',
-        clientId,
+        companyId: clientId,
         search,
         offset: 0,
         limit,
@@ -181,7 +178,6 @@ export function registerBillingTools(server: McpServer) {
     name: 'get_client_hour_balance',
     title: 'Get client hour balance',
     description: `A client's prepaid hours for the current prepaid era: purchased, used and remaining (remaining can be negative when the client is over), with its ${RECENT_BLOCKS} most recent hour blocks. Net 30 clients have no meaningful balance.`,
-    access: 'admin',
     effect: 'read',
     input: { client: clientRef },
     run: async ({ client: reference }, { user }) => {
@@ -195,7 +191,7 @@ export function registerBillingTools(server: McpServer) {
       const [totals, blocks] = await Promise.all([
         getClientHoursTotals(db, [client.id]),
         listHourBlocksForSettings(user, {
-          clientId: client.id,
+          companyId: client.id,
           offset: 0,
           limit: RECENT_BLOCKS,
         }),
@@ -223,7 +219,6 @@ export function registerBillingTools(server: McpServer) {
     title: 'Get monthly close',
     description:
       'The monthly close report for one month: per-person payroll, origination and closer commissions, partner payouts, prepaid and net 30 billing, sales tax, the house share, the rate schedule and the profit share. A closed month comes from its frozen snapshot (source "snapshot", closedAt is the snapshot date); an open month is computed live from the database (source "live"), and its profit share is unavailable because the Mercury balance is never read here. Amounts are USD numbers.',
-    access: 'admin',
     effect: 'read',
     input: {
       year: z.number().int().min(2000).max(2100).describe('Four-digit year.'),

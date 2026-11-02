@@ -1,4 +1,9 @@
-type ToastVariant = "default" | "destructive";
+/**
+ * `default` and `success` confirm something that just happened; `info` is
+ * neutral news; `warning` is worth a look (a closed month affected);
+ * `destructive` is a failure ("Unable to …").
+ */
+export type ToastVariant = "default" | "success" | "info" | "warning" | "destructive";
 
 type Listener = (toast: ToastMessage) => void;
 

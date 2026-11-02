@@ -7,13 +7,16 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint"
   },
   "devDependencies": {
+    "@pts/eslint-config": "^0.1.0",
     "@types/node": "^26.6.5",
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@pts/ui": "^0.1.0",
     "jspdf": "^4.2.1"
   }
 }
