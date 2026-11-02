@@ -18,9 +18,9 @@ export type PortalAccessPerson = {
  * One person's portal access, for a row on the company's People list or the
  * person sheet's companies: a switch, staged and saved with the sheet. The
  * "Portal" label and the switch's state say it all (no status tooltip).
- * Turning it on for someone with no sign-in gives them one on Save (their
- * email is the sign-in), so a person without an email can't be switched on;
- * the disabled switch says why.
+ * Only someone who can already sign in can be switched on: sign-ins are made
+ * on the person sheet (Can sign in), never as a side effect here. The
+ * disabled switch says why.
  */
 export function PortalAccessControl({
   person,
@@ -38,12 +38,12 @@ export function PortalAccessControl({
   /** Off where the row labels it already ("Portal" beside the field). */
   showLabel?: boolean
 }) {
-  const noEmail = !person.email?.trim() && person.hasSignIn !== true
-  const blocked = noEmail && !hasAccess
+  // No sign-in yet (or not known yet: joining on Save): none is made here.
+  const blocked = person.hasSignIn !== true && !hasAccess
   const reason = disabled
     ? disabledReason
     : blocked
-      ? `Add an email to ${person.name} first: it is how they sign in.`
+      ? `${person.name} can’t sign in yet. Turn on Can sign in on their person sheet first.`
       : null
 
   return (

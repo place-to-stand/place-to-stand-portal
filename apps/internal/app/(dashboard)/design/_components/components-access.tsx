@@ -3,116 +3,109 @@
 import { useState } from 'react'
 
 import { Label } from '@pts/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@pts/ui/select'
-import { PersonAccessChoice } from '@/components/contacts/person-access-choice'
-import {
-  accessSummary,
-  type AccessKind,
-} from '@/lib/settings/contacts/person-access'
-import { SIGN_IN_ADMIN_ONLY } from '@/lib/settings/contacts/person-sheet-copy'
+import { Switch } from '@pts/ui/switch'
+import { RoleBadge } from '@/components/auth/role-badge'
+import { SaveSideEffect } from '@/components/sheets/save-side-effect'
+import { SheetSection } from '@/components/sheets/sheet-section'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 import { DesignSection, Specimen } from './specimen'
 
-const EMAIL = 'ada@acme.com'
+/** The heading's "Can sign in" switch, as on the person sheet. */
+function CanSignIn({
+  id,
+  checked,
+  onChange,
+}: {
+  id: string
+  checked: boolean
+  onChange?: (on: boolean) => void
+}) {
+  return (
+    <span className='flex items-center gap-2'>
+      <Switch
+        id={id}
+        checked={checked}
+        onCheckedChange={onChange}
+        disabled={!onChange}
+      />
+      <Label htmlFor={id}>Can sign in</Label>
+    </span>
+  )
+}
 
-/** The person sheet's Access section, live but saving nothing. */
+/** The person sheet's Sign-in section, live but saving nothing. */
 export function ComponentsAccess() {
-  const [kind, setKind] = useState<AccessKind>('portal')
-  const [role, setRole] = useState<'ADMIN' | 'SALES'>('ADMIN')
-  const [seen] = useState<Record<string, boolean>>({
-    acme: true,
-    beta: true,
-    cobalt: false,
-  })
-  const companies = [
-    { companyId: 'acme', name: 'Acme' },
-    { companyId: 'beta', name: 'Beta' },
-    { companyId: 'cobalt', name: 'Cobalt' },
-  ]
-  const [staffKind, setStaffKind] = useState<AccessKind>('team')
+  const [on, setOn] = useState(false)
 
   return (
     <DesignSection
       id='access'
-      title='Person access'
-      when='What can this person get into? One choice on the person sheet (No access, Client portal, Team) with one plain sentence under it. Client portal lists their client companies as checkboxes (each is that membership’s portal access); Team picks the role. Staff get No access or Team. Read-only for Sales.'
+      title='Person sign-in'
+      when='Can this person sign in, and as what? The person sheet’s Sign-in section works like a company’s Client section: a “Can sign in” switch at the right of the heading makes (or switches off) their sign-in on Save, with a caution saying so; once on, Role says what they get into (Admin, Sales: this portal; Client: the client portal, at the companies whose Portal switch is on). Read-only for Sales.'
     >
       <Specimen
-        label='Access, client contact'
-        note='components/contacts/person-access-choice · SegmentedControl from @pts/ui/segmented-control'
+        label='New sign-in'
+        note='contact-access-section.tsx · SheetSection action + SaveSideEffect'
         className='block max-w-2xl'
       >
-        <PersonAccessChoice
-          value={kind}
-          onChange={setKind}
-          summary={accessSummary({
-            kind,
-            email: EMAIL,
-            role: kind === 'team' ? role : 'CLIENT',
-            companies: companies
-              .filter(company => seen[company.companyId])
-              .map(company => company.name),
-          })}
+        <SheetSection
+          title='Sign-in'
+          icon={ENTITY_ICONS.user}
+          className='gap-4'
+          action={
+            <CanSignIn id='design-sign-in-new' checked={on} onChange={setOn} />
+          }
         >
-          {kind === 'team' ? (
-            <div className='flex flex-col gap-2 sm:max-w-xs'>
-              <Label htmlFor='design-access-role' className='w-fit'>
-                Role
-              </Label>
-              <Select
-                value={role}
-                onValueChange={next => setRole(next as 'ADMIN' | 'SALES')}
-              >
-                <SelectTrigger id='design-access-role'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='ADMIN'>Admin</SelectItem>
-                  <SelectItem value='SALES'>Sales</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {on ? (
+            <SaveSideEffect>
+              Saving creates a sign-in for Ada Lovelace at ada@acme.com and
+              emails them a link to the client portal.
+            </SaveSideEffect>
           ) : null}
-        </PersonAccessChoice>
+        </SheetSection>
       </Specimen>
       <Specimen
-        label='Access, staff person'
-        note='No client portal for people at the staff company'
+        label='Client sign-in'
+        note='Role, the email they sign in with, and what they see'
         className='block max-w-2xl'
       >
-        <PersonAccessChoice
-          value={staffKind}
-          onChange={setStaffKind}
-          kinds={['none', 'team']}
-          summary={accessSummary({
-            kind: staffKind,
-            email: 'grace@placetostand.com',
-            role: 'ADMIN',
-            companies: [],
-          })}
-        />
+        <SheetSection
+          title='Sign-in'
+          icon={ENTITY_ICONS.user}
+          className='gap-4'
+          action={<CanSignIn id='design-sign-in-client' checked />}
+        >
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+            <div className='flex flex-col gap-2'>
+              <span className='text-sm font-medium'>Role</span>
+              <span className='flex h-9 items-center'>
+                <RoleBadge role='CLIENT' />
+              </span>
+            </div>
+            <div className='flex flex-col gap-2'>
+              <span className='text-sm font-medium'>Signs in with</span>
+              <span className='flex h-9 items-center text-sm'>
+                ada@acme.com
+              </span>
+            </div>
+          </div>
+          <p className='text-muted-foreground text-sm'>
+            Sees Acme and Beta in the client portal. Turn Portal on or off on
+            each company above.
+          </p>
+        </SheetSection>
       </Specimen>
       <Specimen
-        label='Access, read-only (Sales)'
-        note='Locked, with the reason on hover'
+        label='Read-only (Sales)'
+        note='No switch: only an admin manages sign-ins'
         className='block max-w-2xl'
       >
-        <PersonAccessChoice
-          value='none'
-          lockedReason={SIGN_IN_ADMIN_ONLY}
-          summary={accessSummary({
-            kind: 'none',
-            email: EMAIL,
-            role: 'CLIENT',
-            companies: null,
-          })}
-        />
+        <SheetSection title='Sign-in' icon={ENTITY_ICONS.user}>
+          <p className='text-muted-foreground text-sm'>
+            Only an admin can see or change someone&rsquo;s sign-in.
+          </p>
+        </SheetSection>
       </Specimen>
     </DesignSection>
   )

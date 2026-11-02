@@ -24,8 +24,9 @@ type CompanyPeopleTabProps = Omit<
 /**
  * The People section (on the Details tab): the list, plus each person's Portal switch while the
  * company is (or is becoming) billed, and on a former client, whose
- * switches show as they are (access returns with billing). Turning it on
- * for someone without a sign-in gives them one on Save.
+ * switches show as they are (access returns with billing). Only someone who
+ * can already sign in can be switched on (sign-ins are made on the person
+ * sheet).
  */
 export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
   const billing = useCompanyBilling()
@@ -70,23 +71,8 @@ export function CompanyPeopleTab({ portal, ...props }: CompanyPeopleTabProps) {
       }
     : null
 
-  // Saved people switched on who have no sign-in get one, and an invite
-  // email, on Save. (Someone joining on Save might already have a sign-in,
-  // so they aren't named here.)
-  const removed = new Set(props.removedIds)
-  const invitees = showPortal
-    ? props.contacts.filter(
-        contact =>
-          access.has(contact.id) &&
-          !contact.portalAccess &&
-          !contact.hasPortalLogin &&
-          !removed.has(contact.id)
-      )
-    : []
-  // Each of them gets the note beside their own switch.
-  const inviteeIds = new Set(invitees.map(contact => contact.id))
-  const portalHintFor = (contactId: string) =>
-    inviteeIds.has(contactId) ? 'Invite emailed when you save' : null
+  // Sign-ins are made on the person sheet, so no Save here invites anyone.
+  const portalHintFor = () => null
 
   const formerNote =
     showPortal && formerClient ? (

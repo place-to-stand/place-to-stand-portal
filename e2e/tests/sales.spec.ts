@@ -58,12 +58,14 @@ test('sales sees a person with a sign-in read-only, access locked', async ({
   ).toBeVisible()
   await expect(sheet.getByPlaceholder('John Doe')).toBeDisabled()
   await expect(sheet.getByPlaceholder('contact@example.com')).toBeDisabled()
-  // Access is admin-only information: no choice, no role, no portal
+  // Sign-ins are admin-only information: no switch, no role, no portal
   // companies, just that line.
   await expect(
-    sheet.getByText('Only an admin can see or change someone’s access.')
+    sheet.getByText('Only an admin can see or change someone’s sign-in.')
   ).toBeVisible()
-  await expect(sheet.getByRole('radiogroup', { name: 'Access' })).toHaveCount(0)
+  await expect(sheet.getByRole('switch', { name: 'Can sign in' })).toHaveCount(
+    0
+  )
   await expect(sheet.getByText('Role', { exact: true })).toHaveCount(0)
   await expect(sheet.getByText('Portal access')).toHaveCount(0)
   await expect(

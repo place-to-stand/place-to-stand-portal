@@ -3,7 +3,7 @@ import { expect, test, type Page, type Request } from '@playwright/test'
 import { expectHealthy } from './helpers'
 
 /**
- * The person sheet: create and edit are the same sheet (Access included),
+ * The person sheet: create and edit are the same sheet (Sign-in included),
  * Save is one request (one server action, one transaction), and a role
  * change asks which month it starts.
  */
@@ -28,16 +28,21 @@ test('changing a role asks which month it starts', async ({ page }) => {
   await expectHealthy(page)
   await page.locator('tbody tr').first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  // A Sales sign-in is Team access.
-  await expect(sheet.getByRole('radio', { name: 'Team' })).toBeChecked()
+  // A live Sales sign-in: Can sign in on, Role Sales.
+  const canSignIn = sheet.getByRole('switch', { name: 'Can sign in' })
+  await expect(canSignIn).toHaveAttribute('aria-checked', 'true')
+  const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+  await expect(role).toContainText('Sales')
   await expect(
-    sheet.getByText('Signs in to this portal as Sales', { exact: false })
+    sheet.getByText('Sales sign in to this portal', { exact: false })
   ).toBeVisible()
 
   const roleStarts = sheet.getByRole('combobox', { name: 'Role starts' })
   await expect(roleStarts).toHaveCount(0)
 
-  await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
+  // Staff: no Client role on offer.
+  await role.click()
+  await expect(page.getByRole('option', { name: 'Client' })).toHaveCount(0)
   await page.getByRole('option', { name: 'Admin' }).click()
   await expect(roleStarts).toBeVisible()
   await expect(roleStarts).toContainText('(this month)')
@@ -53,14 +58,10 @@ test('changing a role asks which month it starts', async ({ page }) => {
   expect(await options.count()).toBeLessThanOrEqual(3)
   await page.keyboard.press('Escape')
 
-  // Staff: no client portal on offer.
-  await expect(sheet.getByRole('radio', { name: 'Client portal' })).toHaveCount(
-    0
-  )
-  // No access: no month to pick, and they can't sign in.
-  await sheet.getByRole('radio', { name: 'No access' }).click()
+  // Switched off: no role or month to pick, and they can't sign in.
+  await canSignIn.click()
   await expect(roleStarts).toHaveCount(0)
-  await expect(sheet.getByText('Can’t sign in.')).toBeVisible()
+  await expect(role).toHaveCount(0)
   await expect(
     sheet.getByText('won’t be able to sign in once you save.', { exact: false })
   ).toBeVisible()
@@ -70,7 +71,7 @@ test('changing a role asks which month it starts', async ({ page }) => {
   await expect(page.getByText('Discard changes?')).toBeVisible()
 })
 
-test('a client sign-in is Client portal access, ticked by company', async ({
+test('a client sign-in sees the companies whose Portal is on', async ({
   page,
 }) => {
   await page.goto('/people?role=CLIENT')
@@ -81,25 +82,25 @@ test('a client sign-in is Client portal access, ticked by company', async ({
   test.skip((await rows.count()) === 0, 'needs a person with a client sign-in')
   await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  const portal = sheet.getByRole('radio', { name: 'Client portal' })
-  await expect(portal).toBeChecked()
   await expect(
-    sheet.getByText('Signs in to the client portal as', { exact: false })
+    sheet.getByRole('switch', { name: 'Can sign in' })
+  ).toHaveAttribute('aria-checked', 'true')
+  const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+  await expect(role).toContainText('Client')
+  await expect(
+    sheet.getByText('in the client portal', { exact: false })
   ).toBeVisible()
   // Which companies they see: each client company card's switch, on now.
   await expect(
     sheet.getByRole('switch', { name: /^Portal access at / }).first()
   ).toBeEnabled()
 
-  // Client portal to Team is a role change: it asks which month.
-  await sheet.getByRole('radio', { name: 'Team' }).click()
-  await expect(
-    sheet.getByRole('combobox', { name: 'Role', exact: true })
-  ).toBeVisible()
+  // Client to Sales is a role change: it asks which month.
+  await role.click()
+  await page.getByRole('option', { name: 'Sales' }).click()
   await expect(
     sheet.getByRole('combobox', { name: 'Role starts' })
   ).toBeVisible()
-  await expect(sheet.getByText('Sign-in email')).toHaveCount(0)
   await page.keyboard.press('Escape')
   await expect(page.getByText('Discard changes?')).toBeVisible()
 })
@@ -122,7 +123,9 @@ test('stopping being Admin starts next month, and warns about this month', async
   )
   await rows.first().locator('td').first().click()
   const sheet = page.getByRole('dialog')
-  await expect(sheet.getByRole('radio', { name: 'Team' })).toBeChecked()
+  await expect(
+    sheet.getByRole('switch', { name: 'Can sign in' })
+  ).toHaveAttribute('aria-checked', 'true')
   const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
   await expect(role).toContainText('Admin')
 
@@ -164,17 +167,16 @@ test.describe('writes', () => {
     const beforeSave = recordServerActions(page)
     await sheet.getByPlaceholder('John Doe').fill(name)
     await sheet.getByPlaceholder('contact@example.com').fill(email)
-    // Create shows the same Access section as edit.
-    await expect(sheet.getByRole('radio', { name: 'No access' })).toBeChecked()
-    await sheet.getByRole('radio', { name: 'Client portal' }).click()
+    // Create shows the same Sign-in section as edit: off, then on.
+    const canSignIn = sheet.getByRole('switch', { name: 'Can sign in' })
+    await expect(canSignIn).toHaveAttribute('aria-checked', 'false')
+    await canSignIn.click()
+    await expect(
+      sheet.getByRole('combobox', { name: 'Role', exact: true })
+    ).toContainText('Client')
     await expect(
       sheet.getByText(
-        `Signs in to the client portal as ${email} · sees no companies yet.`
-      )
-    ).toBeVisible()
-    await expect(
-      sheet.getByText(
-        `${name} will get a client portal sign-in (${email}) and an email link when you save.`
+        `Saving creates a sign-in for ${name} at ${email} and emails them a link to the client portal.`
       )
     ).toBeVisible()
     beforeSave.stop()

@@ -30,7 +30,7 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ContactFormData } from '@/lib/settings/contacts/use-contact-sheet-state'
 
 import { ContactCompaniesSection } from './contact-companies-section'
-import { ContactAccessFields } from './contact-access-section'
+import { ContactSignInSection } from './contact-access-section'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -58,8 +58,6 @@ type ContactSheetFormProps = {
   portalUserId: string | null
   /** Their sign-in (admins only); undefined while loading. */
   signInAccount: PortalAccountSummary | null | undefined
-  /** Their live sign-in's role as saved (shown read-only to Sales). */
-  savedSignInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
   /** Months a role change can start from (with closed ones disabled). */
   roleMonths: RoleMonthOption[]
   /** The viewer manages clients: sees and edits sign-ins and portal access. */
@@ -93,7 +91,6 @@ export function ContactSheetForm({
   contactId,
   portalUserId,
   signInAccount,
-  savedSignInRole,
   roleMonths,
   canManageSignIn,
   readOnly,
@@ -318,27 +315,24 @@ export function ContactSheetForm({
                   portalReason={
                     portalSignIn
                       ? null
-                      : 'Choose Client portal under Access to turn this on.'
+                      : 'Turn on Can sign in with the Client role first (Sign-in, below).'
                   }
                 />
               )}
             />
             <Separator />
-            <SheetSection title='Access'>
-              <ContactAccessFields
-                form={form}
-                canManage={canManageSignIn}
-                account={portalUserId ? signInAccount : null}
-                hasSignIn={Boolean(portalUserId)}
-                savedRole={savedSignInRole}
-                contactId={contactId}
-                personName={typedName || personName}
-                personEmail={typedEmail}
-                roleMonths={roleMonths}
-                isPending={isPending}
-                pendingReason={pendingReason}
-              />
-            </SheetSection>
+            <ContactSignInSection
+              form={form}
+              canManage={canManageSignIn}
+              account={portalUserId ? signInAccount : null}
+              hasSignIn={Boolean(portalUserId)}
+              contactId={contactId}
+              personName={typedName || personName}
+              personEmail={typedEmail}
+              roleMonths={roleMonths}
+              isPending={isPending}
+              pendingReason={pendingReason}
+            />
           </div>
         </form>
       </div>
