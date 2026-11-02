@@ -114,6 +114,17 @@ export function ContactsTableSection({
             >
               Companies
             </SortableTableHead>
+            {seesAccess ? (
+              <SortableTableHead
+                field='signIn'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-28'
+              >
+                Role
+              </SortableTableHead>
+            ) : null}
             <SortableTableHead
               field='email'
               sort={sort}
@@ -132,17 +143,6 @@ export function ContactsTableSection({
             >
               Phone
             </SortableTableHead>
-            {seesAccess ? (
-              <SortableTableHead
-                field='signIn'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={next => update({ sort: next })}
-                className='w-28'
-              >
-                Role
-              </SortableTableHead>
-            ) : null}
             <TableHead className='w-32 text-right'>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -240,6 +240,15 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
+                {seesAccess ? (
+                  <TableCell label='Role' className='text-sm'>
+                    {contact.signInRole ? (
+                      <RoleBadge role={contact.signInRole} />
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </TableCell>
+                ) : null}
                 <TableCell className='text-muted-foreground text-sm'>
                   {contact.email ? (
                     <a
@@ -273,15 +282,6 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
-                {seesAccess ? (
-                  <TableCell label='Role' className='text-sm'>
-                    {contact.signInRole ? (
-                      <RoleBadge role={contact.signInRole} />
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                ) : null}
                 <TableCell className='text-right max-md:ml-auto'>
                   <RecordRowActions>
                     {showPreview ? (
