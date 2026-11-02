@@ -9,12 +9,12 @@
  * CLI flag or an agent naturally produces) and we store what the editor would
  * have stored. Supported: paragraphs on blank lines, `- ` / `* ` bullets,
  * `1. ` numbered lists, **bold**, *italic*, `code`, and [text](https://…)
- * links — the same inline set as client-update items, plus code spans since a
- * comment for the team often names a branch or a command. Anything else is
+ * links (code spans because a comment for the team often names a branch or a
+ * command). Anything else is
  * escaped as text. Input that already looks like HTML passes through untouched.
  */
 
-import { escapeHtml, inlineMarkdown } from '@/lib/updates/markdown'
+import { escapeHtml, inlineMarkdown } from '@/lib/cli/markdown'
 
 const HTML_BLOCK = /<(p|ul|ol|li|h[1-6]|blockquote|pre|div|br)\b/i
 const BULLET = /^[-*]\s+(.*)$/

@@ -10,7 +10,6 @@ import {
   CompanyBillingSection,
   CompanyClientReadOnly,
   CompanyProjectsSection,
-  CompanyClientUpdates,
 } from './company-sheet-sections'
 
 /** Scroll targets in the Client column (billing, projects). */
@@ -28,14 +27,12 @@ type CompanyClientColumnProps = {
   projectsCompanyId: string | null
   isEditing: boolean
   disabled: boolean
-  /** Admins editing a client or former client: its updates, always last. */
-  updatesCompanyId: string | null
 }
 
 /**
  * The company sheet's side column: Client. The Bill this company switch and
- * its billing, then its Projects, then its client updates (last). Below lg it stacks
- * under the Company column.
+ * its billing, then its Projects. Below lg it stacks under the Company
+ * column.
  */
 export function CompanyClientColumn({
   canManage,
@@ -44,7 +41,6 @@ export function CompanyClientColumn({
   projectsCompanyId,
   isEditing,
   disabled,
-  updatesCompanyId,
 }: CompanyClientColumnProps) {
   const billing = useCompanyBilling()
 
@@ -98,13 +94,6 @@ export function CompanyClientColumn({
                 }
               />
             </div>
-          </>
-        ) : null}
-        {/* The activity stream sits last, under everything else. */}
-        {updatesCompanyId ? (
-          <>
-            <Separator />
-            <CompanyClientUpdates companyId={updatesCompanyId} />
           </>
         ) : null}
       </div>

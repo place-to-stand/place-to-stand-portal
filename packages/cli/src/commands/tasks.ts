@@ -44,7 +44,7 @@ type EditOptions = {
 /**
  * Multi-paragraph text is awkward to pass as one shell argument, so every
  * free-text flag (`--body`, `--description`) accepts `-` to read stdin — a
- * heredoc, usually — like `updates draft --items -`.
+ * heredoc, usually.
  */
 function textOrStdin(value: string | undefined): string | undefined {
   return value === '-' ? readFileSync(0, 'utf8') : value
@@ -55,18 +55,22 @@ function textOrStdin(value: string | undefined): string | undefined {
  * talking to, so it adds the absolute `url` an agent can paste into a reply
  * without reconstructing it. Null when the project has no board URL.
  */
-async function withUrl<T extends Task>(task: T): Promise<T & { url: string | null }> {
+async function withUrl<T extends Task>(
+  task: T
+): Promise<T & { url: string | null }> {
   const apiUrl = await resolveApiContext()
 
   return { ...task, url: task.path ? `${apiUrl}${task.path}` : null }
 }
 
-async function withUrls<T extends Task>(tasks: T[]): Promise<(T & { url: string | null })[]> {
+async function withUrls<T extends Task>(
+  tasks: T[]
+): Promise<(T & { url: string | null })[]> {
   return Promise.all(tasks.map(withUrl))
 }
 
 /**
- * The portal URL also goes to stderr, as `updates draft` does, so a human
+ * The portal URL also goes to stderr, so a human
  * watching the terminal sees it while `pts tasks create | jq` still gets
  * clean JSON on stdout.
  */

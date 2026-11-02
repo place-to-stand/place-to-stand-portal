@@ -1,14 +1,24 @@
 import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { and, count, desc, eq, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  lte,
+  ne,
+  sql,
+} from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { notifications, taskAssignees, tasks, users } from '@/lib/db/schema'
 import { listWorkableProjectIds } from '@/lib/projects/access'
 import { myTaskHref } from '@/lib/sheets/hrefs'
-import { todayCalendarDate } from '@/lib/updates/window'
+import { companyCalendarDate } from '@pts/ui/dates'
 
 import type {
   NotificationFeed,
@@ -62,7 +72,7 @@ export async function createNotifications(rows: NewNotification[]) {
  * tasks assigned to the user on projects they can work.
  */
 async function syncDueTaskNotifications(user: AppUser) {
-  const today = todayCalendarDate()
+  const today = companyCalendarDate()
   const workable = await listWorkableProjectIds(user)
   if (workable !== null && workable.length === 0) return
 
@@ -124,7 +134,9 @@ export async function fetchNotificationFeed(
         href: notifications.href,
         readAt: notifications.readAt,
         createdAt: notifications.createdAt,
-        actorName: sql<string | null>`coalesce(${personNameSql}, ${users.email})`,
+        actorName: sql<
+          string | null
+        >`coalesce(${personNameSql}, ${users.email})`,
       })
       .from(notifications)
       .leftJoin(users, eq(users.id, notifications.actorId))
@@ -138,7 +150,10 @@ export async function fetchNotificationFeed(
   ])
 
   return {
-    items: rows.map(row => ({ ...row, type: row.type as NotificationItem['type'] })),
+    items: rows.map(row => ({
+      ...row,
+      type: row.type as NotificationItem['type'],
+    })),
     unreadCount: Number(unread?.value ?? 0),
   }
 }

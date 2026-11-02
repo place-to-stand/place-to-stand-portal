@@ -539,7 +539,6 @@ const TARGET_LABELS: Record<string, string> = {
   INVOICE: 'invoicing',
   SUBMISSION: 'website submissions',
   MONTHLY_CLOSE: 'monthly close',
-  CLIENT_UPDATE: 'client updates sent',
   PLAN: 'planning',
 }
 

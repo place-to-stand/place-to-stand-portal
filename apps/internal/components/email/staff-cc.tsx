@@ -4,7 +4,7 @@ import { EmptyState } from '@pts/ui/empty-state'
 import { Checkbox } from '@pts/ui/checkbox'
 import { Label } from '@pts/ui/label'
 
-import type { StaffMember } from '@/lib/updates/staff'
+import type { StaffMember } from '@/lib/users/staff'
 
 type StaffCcProps = {
   staff: StaffMember[]

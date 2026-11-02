@@ -17,10 +17,7 @@ import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { cn } from '@/lib/utils'
-import type {
-  CompanyService,
-  CompanyServiceId,
-} from '@/lib/types/integrations'
+import type { CompanyService, CompanyServiceId } from '@/lib/types/integrations'
 
 function BrandIcon({ icon }: { icon: { title: string; path: string } }) {
   return (
@@ -53,7 +50,7 @@ const SERVICES: Record<
   },
   resend: {
     name: 'Resend',
-    purpose: 'Invoice, client update and form emails',
+    purpose: 'Invoice and form emails',
     icon: <BrandIcon icon={siResend} />,
   },
   google_chat: {
@@ -91,13 +88,15 @@ const GROUPS: ReadonlyArray<{ label: string; ids: CompanyServiceId[] }> = [
 
 // Only a live check earns green; a variable that's merely present stays
 // quiet, so the eye lands on what needs attention.
-const STATUS: Record<CompanyService['status'], { label: string; tint: string }> =
-  {
-    connected: { label: 'Connected', tint: BADGE_TINTS.emerald },
-    configured: { label: 'Configured', tint: BADGE_TINTS.neutral },
-    not_configured: { label: 'Not set up', tint: BADGE_TINTS.neutral },
-    error: { label: 'Needs attention', tint: BADGE_TINTS.rose },
-  }
+const STATUS: Record<
+  CompanyService['status'],
+  { label: string; tint: string }
+> = {
+  connected: { label: 'Connected', tint: BADGE_TINTS.emerald },
+  configured: { label: 'Configured', tint: BADGE_TINTS.neutral },
+  not_configured: { label: 'Not set up', tint: BADGE_TINTS.neutral },
+  error: { label: 'Needs attention', tint: BADGE_TINTS.rose },
+}
 
 function ServiceRow({ service }: { service: CompanyService }) {
   const meta = SERVICES[service.id]

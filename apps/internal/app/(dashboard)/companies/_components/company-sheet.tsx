@@ -76,7 +76,7 @@ type CompanySheetProps = {
 
 /**
  * Create and edit are the same sheet, in two columns: Company (details,
- * People, Leads, Updates) and Client (the Bill this company switch and billing, then
+ * People, Leads) and Client (the Bill this company switch and billing, then
  * Projects; read-only for Sales). One Save writes all of it — the company,
  * its people, billing and portal access — in one transaction.
  */
@@ -205,8 +205,6 @@ export function CompanySheet({
       ? formerClientId
       : null)
   const showProjects = isAdmin && isEditing && Boolean(projectsCompanyId)
-  // Client updates sit on the Company column, for clients and former ones.
-  const updatesCompanyId = clientCompanyId ?? formerClientId
   // Opening the sheet at a section (a lead's Won lands on billing) is
   // handed over in memory, not a URL param. Old `?tab=` links still open
   // the sheet; the param is ignored and dropped on close.
@@ -552,9 +550,6 @@ export function CompanySheet({
                     projectsCompanyId={showProjects ? projectsCompanyId : null}
                     isEditing={isEditing}
                     disabled={fieldsDisabled}
-                    updatesCompanyId={
-                      isAdmin && isEditing ? (updatesCompanyId ?? null) : null
-                    }
                   />
                 </form>
               </CompanyBillingProvider>
