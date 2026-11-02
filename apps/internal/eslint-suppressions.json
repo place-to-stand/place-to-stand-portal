@@ -1,0 +1,387 @@
+{
+  "app/(dashboard)/companies/_components/billing/client-billing-fields.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/companies/_components/companies-table.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/companies/_components/company-sheet.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/design/_components/components-actions.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/design/_components/components-data.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/design/_components/components-feedback.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/design/_components/components-forms.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/design/_components/components-sheet.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/design/_components/patterns.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/_components/invoice-email-dialog.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/_components/invoice-line-item-row.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/_components/invoices-table-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/actions/save-invoice.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/invoice-sheet.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/settings/_components/product-catalog-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/settings/_components/tax-rates-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/leads/_components/leads-archive-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/leads/_components/leads-board.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/people/_components/contact-sheet/contact-access-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/people/_components/contact-sheet/contact-sheet-form.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/people/_components/contacts-table-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/project-sheet/github-repos-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/project-sheet/integration-links-section.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/project-sheet/project-sheet-form.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/projects-board/board-tab-content.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/projects-landing.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/task-sheet/form/task-sheet-form-fields.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/task-sheet/planning-panel.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/trigger-worker.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/task-card.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/task-sheet.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/reports/monthly-close/_components/profit-share-card.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/settings/integrations/integrations-panel.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/submissions/_components/submission-detail-sheet.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/submissions/_components/submissions-table.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/time-logs/_components/time-logs-table.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "app/api/dashboard/recent-activity/summary/route.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "components/dashboard/hours-widget/hours-widget.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "components/layout/edit-profile-dialog.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "components/my-tasks/my-tasks-board.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "components/my-tasks/my-tasks-page.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "components/ui/searchable-combobox.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "components/ui/sheet.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "components/ui/sidebar.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/activity/queries.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/auth/capabilities.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/companies/billing/actions/update-client.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/companies/billing/use-client-sheet-state/form-state.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/companies/save-company-sheet.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/companies/write.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/data/clients/index.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/data/dashboard/hours.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/data/reports/close-drift.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/data/reports/close.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/data/reports/monthly-close.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/data/tasks.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/github/client.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/invoices/use-invoice-sheet-state.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/leads/save-lead-core.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/people/actions/save-contact.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/people/person-sheet/sign-in-apply.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/people/use-contact-sheet-state.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/projects/sheet/use-project-sheet-state.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/projects/task-sheet/use-task-sheet-state.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/projects/time-log/use-project-time-log-dialog.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/companies/index.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/contacts/settings/list-contacts.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/form-submissions.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/hour-blocks.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/invoices.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/memberships.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/reports/monthly-close.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/task-comments.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/queries/time-logs/mutations.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "scripts/smoke-render-ui.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "scripts/test-form-intake.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "scripts/test-mcp.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "components/onboarding/onboarding-wizard.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  }
+}
