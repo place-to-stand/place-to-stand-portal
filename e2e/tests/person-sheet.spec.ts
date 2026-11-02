@@ -34,15 +34,15 @@ test('changing a role asks which month it starts', async ({ page }) => {
   const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
   await expect(role).toContainText('Sales')
   await expect(
-    sheet.getByText('Sales sign in to this portal', { exact: false })
+    sheet.getByText('Signs in here: leads', { exact: false })
   ).toBeVisible()
 
   const roleStarts = sheet.getByRole('combobox', { name: 'Role starts' })
   await expect(roleStarts).toHaveCount(0)
 
-  // Staff: no Client role on offer.
+  // Every role is on offer, Client included (staff can become a client).
   await role.click()
-  await expect(page.getByRole('option', { name: 'Client' })).toHaveCount(0)
+  await expect(page.getByRole('option', { name: 'Client' })).toHaveCount(1)
   await page.getByRole('option', { name: 'Admin' }).click()
   await expect(roleStarts).toBeVisible()
   await expect(roleStarts).toContainText('(this month)')
@@ -152,6 +152,67 @@ test('stopping being Admin starts next month, and warns about this month', async
 
 test.describe('writes', () => {
   test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
+
+  for (const teamRole of ['Admin', 'Sales'] as const) {
+    test(`a ${teamRole} sign-in can become a Client again`, async ({
+      page,
+    }) => {
+      const stamp = Date.now()
+      const name = `E2E ${teamRole} to client ${stamp}`
+      const email = `e2e-${teamRole.toLowerCase()}-client-${stamp}@local.test`
+
+      // A new person with a team sign-in (it puts them at the staff company).
+      await page.goto('/people?contact=new')
+      let sheet = page.getByRole('dialog')
+      await sheet.getByPlaceholder('John Doe').fill(name)
+      await sheet.getByPlaceholder('contact@example.com').fill(email)
+      await sheet.getByRole('switch', { name: 'Can sign in' }).click()
+      await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
+      await page.getByRole('option', { name: teamRole }).click()
+      await sheet.getByRole('button', { name: 'Create person' }).click()
+      await expect(sheet).toBeHidden()
+
+      // Reopen: Client is on offer, and Save says they leave the staff company.
+      await page.goto(`/people?q=${encodeURIComponent(email)}`)
+      await page.locator('tbody tr').first().locator('td').first().click()
+      sheet = page.getByRole('dialog')
+      const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
+      await expect(role).toContainText(teamRole)
+      await role.click()
+      await page.getByRole('option', { name: 'Client' }).click()
+      await expect(sheet.getByText(/a Client isn’t staff/)).toBeVisible()
+      // Leaving Admin starts next month by default (payroll): this month here.
+      const starts = sheet.getByRole('combobox', { name: 'Role starts' })
+      if (!(await starts.textContent())?.includes('(this month)')) {
+        await starts.click()
+        await page.getByRole('option', { name: /\(this month\)/ }).click()
+      }
+      await sheet.getByRole('button', { name: 'Save changes' }).click()
+      await expect(sheet).toBeHidden()
+
+      // Saved: a Client now (this month), no longer at the staff company.
+      await page.goto(`/people?q=${encodeURIComponent(email)}`)
+      const row = page.locator('tbody tr').first()
+      await expect(
+        row.locator('[data-slot="badge"]', { hasText: 'Client' })
+      ).toBeVisible()
+      await row.locator('td').first().click()
+      sheet = page.getByRole('dialog')
+      await expect(
+        sheet.getByRole('combobox', { name: 'Role', exact: true })
+      ).toContainText('Client')
+      await expect(
+        sheet.getByText('Place To Stand', { exact: true })
+      ).toHaveCount(0)
+
+      // Put it back: archive the person.
+      await sheet.getByRole('button', { name: 'Archive person' }).click()
+      await page
+        .getByRole('button', { name: /^Archive/ })
+        .last()
+        .click()
+    })
+  }
 
   test('creating a person with a client sign-in is one request on Save', async ({
     page,

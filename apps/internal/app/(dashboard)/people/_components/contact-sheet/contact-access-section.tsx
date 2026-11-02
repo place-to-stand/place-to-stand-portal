@@ -202,11 +202,14 @@ function ManagedSignIn({
   const roleChanged = Boolean(
     hasSignIn && account && enabled && role && role !== account.role
   )
-  // Staff sign in here, not to the client portal (kept while it's theirs).
-  const roles =
-    isStaff && role !== 'CLIENT'
-      ? ALL_ROLES.filter(option => option !== 'CLIENT')
-      : ALL_ROLES
+  // Every role, always: Admin and Sales put them at the staff company, and
+  // Client takes them off it again on Save (syncStaffMembership).
+  const roles = ALL_ROLES
+  const staffCompanyName =
+    companies.find(entry => entry.isStaff && !entry.archived)?.companyName ??
+    'the staff company'
+  const leavesStaff =
+    enabled && role === 'CLIENT' && isStaff && account?.role !== 'CLIENT'
   const seen = companies
     .filter(
       entry =>
@@ -223,7 +226,9 @@ function ManagedSignIn({
       ? `Saving creates a sign-in for ${who} at ${personEmail} and emails them ${role === 'CLIENT' ? 'a link to the client portal' : 'an invite'}.`
       : !live
         ? `${who} can sign in again once you save.`
-        : null
+        : leavesStaff
+          ? `Saving takes ${who} off ${staffCompanyName}: a Client isn’t staff.`
+          : null
 
   return (
     <SheetSection
