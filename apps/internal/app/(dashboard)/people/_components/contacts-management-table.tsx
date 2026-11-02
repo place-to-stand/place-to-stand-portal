@@ -13,7 +13,11 @@ import {
 } from '@/lib/people/use-contacts-table-state'
 import type { ContactSheetInput } from '@/lib/people/use-contact-sheet-state'
 import { openPortalPreview } from '@/lib/people/portal-preview'
-import { useDeepLinkNotFound } from '@/lib/sheets/use-sheet-params'
+import { emitSheetCreated } from '@/lib/sheets/created'
+import {
+  useDeepLinkNotFound,
+  useSheetParams,
+} from '@/lib/sheets/use-sheet-params'
 
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
@@ -76,6 +80,9 @@ export function ContactsManagementTable({
     handleConfirmDelete,
     handleRestore,
   } = useContactsTableState({ contacts, deepLinkedContact })
+  // Create-from-picker on this page opens this sheet, not the global one, so
+  // it takes the picker's prefill and hands the new person back the same way.
+  const { getAux } = useSheetParams()
   const showContactNotFound = useDeepLinkNotFound('contact', contactNotFound)
 
   // Guard-validated active search (R4): an empty list under a live `?q=`
@@ -151,6 +158,9 @@ export function ContactsManagementTable({
         onOpenChange={handleSheetOpenChange}
         onComplete={handleSheetComplete}
         contact={selectedContact}
+        initialName={getAux('contactName') ?? undefined}
+        initialCompanyId={getAux('contactCompanyId') ?? undefined}
+        onCreated={record => emitSheetCreated('contact', record)}
       />
     </div>
   )
