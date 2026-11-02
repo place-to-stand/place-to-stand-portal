@@ -82,7 +82,6 @@ type ActivityLogSelection = {
     targetId: string | null
     targetCompanyId: string | null
     targetProjectId: string | null
-    contextRoute: string | null
     metadata: Json
     createdAt: string
   }
@@ -105,7 +104,6 @@ const activityLogSelection = {
   targetId: activityLogs.targetId,
   targetCompanyId: activityLogs.targetCompanyId,
   targetProjectId: activityLogs.targetProjectId,
-  contextRoute: activityLogs.contextRoute,
   metadata: activityLogs.metadata,
   createdAt: activityLogs.createdAt,
 } as const
@@ -429,7 +427,6 @@ function mapToActivityLog(row: ActivityLogSelection): ActivityLogWithActor {
     target_id: log.targetId,
     target_company_id: log.targetCompanyId,
     target_project_id: log.targetProjectId,
-    context_route: log.contextRoute,
     metadata,
     created_at: log.createdAt,
     actor:
