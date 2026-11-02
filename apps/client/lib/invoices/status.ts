@@ -1,8 +1,8 @@
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
+import { INVOICE_STATUS_TINTS, statusTint } from '@pts/ui/status-tints'
 
 /**
- * Client-facing subset of the internal app's invoice status presentation
- * (`apps/internal/app/(dashboard)/invoices/_components/invoices-table-section.tsx`).
+ * Client-facing invoice labels. Colours come from `@pts/ui/status-tints`, shared
+ * with the internal portal.
  *
  * DRAFT is intentionally absent — drafts are filtered out in the query and are
  * never surfaced in the portal. SENT and VIEWED both read as "Due": the
@@ -16,13 +16,6 @@ const INVOICE_STATUS_LABELS = {
   VOID: 'Void',
 } as const
 
-const INVOICE_STATUS_TOKENS = {
-  SENT: BADGE_TINTS.sky,
-  VIEWED: BADGE_TINTS.sky,
-  PAID: BADGE_TINTS.emerald,
-  VOID: BADGE_TINTS.neutral,
-} as const
-
 type ClientInvoiceStatus = keyof typeof INVOICE_STATUS_LABELS
 
 export function getInvoiceStatusLabel(value: string): string {
@@ -32,7 +25,6 @@ export function getInvoiceStatusLabel(value: string): string {
 }
 
 export function getInvoiceStatusToken(value: string): string {
-  return value in INVOICE_STATUS_TOKENS
-    ? INVOICE_STATUS_TOKENS[value as ClientInvoiceStatus]
-    : BADGE_TINTS.neutral
+  // "Due" covers SENT and VIEWED, so both show the SENT colour.
+  return statusTint(INVOICE_STATUS_TINTS, value === 'VIEWED' ? 'SENT' : value)
 }

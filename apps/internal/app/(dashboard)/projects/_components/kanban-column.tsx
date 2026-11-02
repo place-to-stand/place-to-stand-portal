@@ -9,7 +9,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { cn } from '@/lib/utils'
@@ -111,15 +111,12 @@ export function KanbanColumn({
         </div>
         <div className='flex items-center gap-2'>
           {canShowCreateButton && onCreateTask ? (
-            <Button
+            <RowActionButton
               type='button'
-              size='icon-sm'
-              variant='ghost'
+              label={`Create task to ${label}`}
+              icon={<Plus />}
               onClick={() => onCreateTask(columnId as BoardColumnId)}
-            >
-              <Plus />
-              <span className='sr-only'>Create task to {label}</span>
-            </Button>
+            />
           ) : null}
         </div>
       </div>

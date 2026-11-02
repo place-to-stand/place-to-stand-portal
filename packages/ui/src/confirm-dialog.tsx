@@ -23,12 +23,6 @@ type ConfirmDialogProps = {
   cancelLabel?: string
   confirmVariant?: ButtonVariant
   confirmDisabled?: boolean
-  /**
-   * Kept for API compatibility (D16/R6 — 31 call sites unchanged). The
-   * alert-dialog primitive renders no close button; Cancel, Esc, and
-   * backdrop click all route through `onCancel` — never through confirm.
-   */
-  showCloseButton?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
@@ -41,8 +35,6 @@ export function ConfirmDialog({
   cancelLabel = 'Cancel',
   confirmVariant = 'default',
   confirmDisabled = false,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- accepted for API compatibility; an alert dialog has no close button
-  showCloseButton: _showCloseButton = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {

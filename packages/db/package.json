@@ -18,7 +18,7 @@
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
     "db:migrate:prod": "node scripts/migrate.mjs ../../apps/internal/.env.prod",
     "type-check": "tsc --noEmit",
-    "lint": "eslint"
+    "lint": "eslint --max-warnings=0"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",

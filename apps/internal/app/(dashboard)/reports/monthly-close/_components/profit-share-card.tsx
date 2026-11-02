@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Landmark, Lock, RefreshCw, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { toast } from '@/components/ui/use-toast'
 import type { ProfitShareData } from '@/lib/billing/profit-share'
 import type { ProfitShareState } from '@/lib/data/reports/types'
@@ -120,17 +121,17 @@ function ReadyBody({
             ) : null}
           </div>
           {source === 'live' ? (
-            <Button
+            <RowActionButton
               type='button'
               variant='ghost'
-              size='icon-sm'
               className='text-muted-foreground'
-              aria-label='Refresh Mercury balance'
+              label='Refresh Mercury balance'
               disabled={isRefreshing}
               onClick={() => startRefresh(() => router.refresh())}
-            >
-              <RefreshCw className={cn(isRefreshing && 'animate-spin')} />
-            </Button>
+              icon={
+                <RefreshCw className={cn(isRefreshing && 'animate-spin')} />
+              }
+            />
           ) : null}
           <span className='text-sm font-medium tabular-nums'>
             {formatCurrency(data.balance)}
@@ -148,7 +149,9 @@ function ReadyBody({
               reachUp={8}
             />
             <span className='flex-1'>{account.name}</span>
-            <span className='tabular-nums'>{formatCurrency(account.balance)}</span>
+            <span className='tabular-nums'>
+              {formatCurrency(account.balance)}
+            </span>
           </div>
         ))}
       </div>

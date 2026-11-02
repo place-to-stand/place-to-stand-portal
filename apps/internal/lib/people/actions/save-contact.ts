@@ -13,7 +13,6 @@ import { isAdminRole } from '@/lib/auth/roles'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/people/person-sheet-copy'
 import type { AppUser } from '@/lib/auth/session'
-import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import {
   logContactClientLinkChanges,
   type ContactClientLinkChange,
@@ -31,12 +30,6 @@ import {
   setMembershipTitle,
 } from '@/lib/queries/memberships'
 import { contactSchema, type ContactInput } from '@/lib/people/contact-service'
-
-import {
-  buildMutationResult,
-  type ContactMutationContext,
-  type ContactMutationResult,
-} from './types'
 
 type DesiredMembership = {
   companyId: string
@@ -438,50 +431,6 @@ export async function logContactSave(
     targetId: id,
     metadata: event.metadata,
   })
-}
-
-/**
- * A person save on its own (no photo or sign-in): prepare, one
- * transaction, then the activity rows.
- */
-export async function saveContactMutation(
-  context: ContactMutationContext,
-  input: ContactInput
-): Promise<ContactMutationResult> {
-  const isUpdate = Boolean(input.id)
-  return trackSettingsServerInteraction(
-    {
-      entity: 'contact',
-      mode: isUpdate ? 'edit' : 'create',
-      targetId: input.id ?? undefined,
-    },
-    async () => {
-      const { user } = context
-      const existing = input.id ? await loadExistingContact(input.id) : null
-      if (isUpdate && !existing) {
-        return buildMutationResult({ error: 'Person not found.' })
-      }
-      const prepared = await prepareContactSave(user, input, existing)
-      if ('error' in prepared) {
-        return buildMutationResult({ error: prepared.error })
-      }
-      const { plan } = prepared
-      try {
-        await db.transaction(tx => writeContactSave(tx, user, plan))
-      } catch (error) {
-        console.error('Failed to save contact', error)
-        return buildMutationResult({
-          error: isEmailConflict(error)
-            ? 'A person with this email already exists.'
-            : isUpdate
-              ? 'Unable to update person.'
-              : 'Unable to create person.',
-        })
-      }
-      await logContactSave(user, plan)
-      return buildMutationResult(isUpdate ? {} : { id: plan.contactId })
-    }
-  )
 }
 
 /**

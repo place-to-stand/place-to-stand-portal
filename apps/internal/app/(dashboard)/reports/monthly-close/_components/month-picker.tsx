@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { cn } from '@/lib/utils'
 import type { MonthCursor } from '@/lib/data/reports/types'
@@ -71,27 +72,23 @@ export function MonthPicker({
       </PopoverTrigger>
       <PopoverContent className='w-72 p-3'>
         <div className='flex items-center justify-between'>
-          <Button
+          <RowActionButton
             type='button'
             variant='ghost'
-            size='icon-sm'
-            aria-label='Previous year'
+            label='Previous year'
             disabled={year <= minCursor.year}
             onClick={() => setYear(value => value - 1)}
-          >
-            <ChevronLeft />
-          </Button>
+            icon={<ChevronLeft />}
+          />
           <span className='text-sm font-medium tabular-nums'>{year}</span>
-          <Button
+          <RowActionButton
             type='button'
             variant='ghost'
-            size='icon-sm'
-            aria-label='Next year'
+            label='Next year'
             disabled={year >= maxCursor.year}
             onClick={() => setYear(value => value + 1)}
-          >
-            <ChevronRight />
-          </Button>
+            icon={<ChevronRight />}
+          />
         </div>
         <div className='mt-2 grid grid-cols-3 gap-1'>
           {MONTHS.map((name, index) => {

@@ -12,6 +12,8 @@ type RowActionButtonProps = Omit<
   /** What the action does ("Archive client"): the tooltip and the accessible name. */
   label: string
   icon: ReactNode
+  /** `icon` (36px) only where it sits beside default-height controls. */
+  size?: 'icon-sm' | 'icon'
 }
 
 /**
@@ -23,12 +25,13 @@ export function RowActionButton({
   label,
   icon,
   variant = 'ghost',
+  size = 'icon-sm',
   ...props
 }: RowActionButtonProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant={variant} size='icon-sm' aria-label={label} {...props}>
+        <Button variant={variant} size={size} aria-label={label} {...props}>
           {icon}
         </Button>
       </TooltipTrigger>

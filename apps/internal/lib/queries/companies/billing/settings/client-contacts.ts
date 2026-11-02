@@ -238,7 +238,7 @@ export async function applyPortalAccessInTx(
   for (const contactId of changes.grant) {
     if (!(await setPortalAccess(tx, actor, contactId, companyId, true))) {
       throw new PortalAccessRefusal(
-        'Someone given portal access needs a user account with the Client role (or left this company). Turn on Can sign in, Role Client, on their person sheet first.'
+        'Someone given portal access needs a sign-in with the Client role (or left this company). Turn on Can sign in, Role Client, on their person sheet first.'
       )
     }
   }

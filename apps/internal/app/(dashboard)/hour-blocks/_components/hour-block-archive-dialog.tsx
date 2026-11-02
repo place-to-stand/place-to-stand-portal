@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 
 type HourBlockArchiveDialogProps = {
   open: boolean
@@ -14,13 +14,12 @@ export function HourBlockArchiveDialog({
   onConfirm,
 }: HourBlockArchiveDialogProps) {
   return (
-    <ConfirmDialog
+    <ArchiveConfirmDialog
       open={open}
-      title='Archive hour block?'
-      description='Archiving this block hides it from active tracking while retaining historical activity.'
-      confirmLabel='Archive'
-      confirmVariant='destructive'
-      confirmDisabled={confirmDisabled}
+      entity='hour block'
+      name='this hour block'
+      list='active hour blocks'
+      pending={confirmDisabled}
       onCancel={onCancel}
       onConfirm={onConfirm}
     />

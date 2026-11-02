@@ -10,5 +10,5 @@ import { revalidateTaskViews } from '@/lib/tasks/revalidate-task-views'
  */
 export async function revalidateProjectTaskViews() {
   await requireStaffUser()
-  await revalidateTaskViews()
+  revalidateTaskViews()
 }

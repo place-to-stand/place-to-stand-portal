@@ -6,17 +6,17 @@ The visual and copy conventions for both portals, extracted from the code and ke
 
 This folder describes; the code decides. When they disagree, the code wins and this folder is wrong: fix it in the same change.
 
-| What | Source of truth | Here |
-| --- | --- | --- |
-| Theme colors (light/dark), radius, fonts, brand and email colors | `packages/ui/src/styles/theme.css` (both portals import it) | `tokens.json` (generated) |
-| Brand colors (auth screens, logo) | `packages/ui/src/brand.tsx` (`BRAND`) | `tokens.json` (generated) |
-| Email colors | `packages/email/src/layout.ts` (`EMAIL_COLORS`) | `tokens.json` (generated) |
-| Font loading | each app's `app/layout.tsx` (next/font) | this README |
-| Components | `packages/ui/src/*` (`@pts/ui/*`), app-only ones in `apps/internal/components/ui/*` | `components/*.md` |
-| Status badge tints | `packages/ui/src/badge-tints.ts` (`BADGE_TINTS`) | this README |
-| Date formatting | `packages/ui/src/dates.ts` (`@pts/ui/dates`) | this README |
-| Hours and money formatting (pages, emails, PDFs, notifications) | `packages/ui/src/numbers.ts` (`@pts/ui/numbers`; `@pts/pdf` imports it too) | this README, `/design#dates`; `scripts/check-formatters.mjs` |
-| Entities: name, icon, colour (sidebar, sheets, badges, list cells, activity) | `apps/internal/lib/entity-accents.ts` (the registry) + `--entity-*` in `theme.css` | `## Entities` below, `/design#entities` |
+| What                                                                         | Source of truth                                                                     | Here                                                         |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Theme colors (light/dark), radius, fonts, brand and email colors             | `packages/ui/src/styles/theme.css` (both portals import it)                         | `tokens.json` (generated)                                    |
+| Brand colors (auth screens, logo)                                            | `packages/ui/src/brand.tsx` (`BRAND`)                                               | `tokens.json` (generated)                                    |
+| Email colors                                                                 | `packages/email/src/layout.ts` (`EMAIL_COLORS`)                                     | `tokens.json` (generated)                                    |
+| Font loading                                                                 | each app's `app/layout.tsx` (next/font)                                             | this README                                                  |
+| Components                                                                   | `packages/ui/src/*` (`@pts/ui/*`), app-only ones in `apps/internal/components/ui/*` | `components/*.md`                                            |
+| Status badge tints                                                           | `packages/ui/src/badge-tints.ts` (`BADGE_TINTS`)                                    | this README                                                  |
+| Date formatting                                                              | `packages/ui/src/dates.ts` (`@pts/ui/dates`)                                        | this README                                                  |
+| Hours and money formatting (pages, emails, PDFs, notifications)              | `packages/ui/src/numbers.ts` (`@pts/ui/numbers`; `@pts/pdf` imports it too)         | this README, `/design#dates`; `scripts/check-formatters.mjs` |
+| Entities: name, icon, colour (sidebar, sheets, badges, list cells, activity) | `apps/internal/lib/entity-accents.ts` (the registry) + `--entity-*` in `theme.css`  | `## Entities` below, `/design#entities`                      |
 
 `tokens.json` color values and the radius scale are written by `npm run design-tokens` (from the repo root), which reads the sources above and keeps the hand-written usage notes. `npm run lint` fails when the file is stale. Type, spacing, size, shadow and opacity entries are hand-written.
 
@@ -39,20 +39,20 @@ Each kind of record has one icon and one colour everywhere it appears: sidebar, 
 - **Add an entity** by adding it to `ENTITIES` and its `--entity-<token>` to `theme.css` (`:root`, `.dark` and `.email-paper`), then `npm run design-tokens` and a usage note. `scripts/check-entities.mjs` (run by `npm run lint`) fails on a missing icon or token, a shared icon, or under 3:1 icon-on-card contrast in either theme.
 - **Palette B, grouped by job: sales warm, work blue, money green.** Each theme gets its own step: darker in light, lighter in dark.
 
-| Group | Entity | Icon | Light | Dark |
-| --- | --- | --- | --- | --- |
-| Sales | Lead | `Handshake` | amber (62% L), 3.8:1 | amber-300, 12.4:1 |
-|  | Company | `Building2` | orange-700, 5.2:1 | orange-400, 7.5:1 |
-|  | Person | `UserRound` | rose-600, 4.5:1 | rose-400, 6.3:1 |
-|  | Sign-in | `KeyRound` | rose-800, 7.9:1 | rose-300, 9.3:1 |
-| Work | Project | `FolderKanban` | blue-600, 5.3:1 | blue-400, 6.8:1 |
-|  | Task | `ListTodo` | indigo-500, 4.6:1 | indigo-300, 8.9:1 |
-|  | Time log | `Clock` | sky-700, 5.9:1 | sky-300, 10.8:1 |
-| Money | Client (a company state) | `Briefcase` | green-800, 7.1:1 | green-500, 8.1:1 |
-|  | Invoice | `Receipt` | teal-700, 5.4:1 | teal-300, 12.2:1 |
-|  | Hour block | `Hourglass` | lime-700, 5.0:1 | lime-400, 11.7:1 |
-| Admin | Submission | `Inbox` | slate-500, 4.8:1 | slate-400, 6.8:1 |
-|  | Template | `LayoutTemplate` | stone-600, 7.6:1 | stone-300, 12.0:1 |
+| Group | Entity                   | Icon             | Light                | Dark              |
+| ----- | ------------------------ | ---------------- | -------------------- | ----------------- |
+| Sales | Lead                     | `Handshake`      | amber (62% L), 3.8:1 | amber-300, 12.4:1 |
+|       | Company                  | `Building2`      | orange-700, 5.2:1    | orange-400, 7.5:1 |
+|       | Person                   | `UserRound`      | rose-600, 4.5:1      | rose-400, 6.3:1   |
+|       | Sign-in                  | `KeyRound`       | rose-800, 7.9:1      | rose-300, 9.3:1   |
+| Work  | Project                  | `FolderKanban`   | blue-600, 5.3:1      | blue-400, 6.8:1   |
+|       | Task                     | `ListTodo`       | indigo-500, 4.6:1    | indigo-300, 8.9:1 |
+|       | Time log                 | `Clock`          | sky-700, 5.9:1       | sky-300, 10.8:1   |
+| Money | Client (a company state) | `Briefcase`      | green-800, 7.1:1     | green-500, 8.1:1  |
+|       | Invoice                  | `Receipt`        | teal-700, 5.4:1      | teal-300, 12.2:1  |
+|       | Hour block               | `Hourglass`      | lime-700, 5.0:1      | lime-400, 11.7:1  |
+| Admin | Submission               | `Inbox`          | slate-500, 4.8:1     | slate-400, 6.8:1  |
+|       | Template                 | `LayoutTemplate` | stone-600, 7.6:1     | stone-300, 12.0:1 |
 
 Contrast is the icon on `card` (WCAG 1.4.11 asks 3:1). Time log and hour block are different things: a time log is hours worked (`Clock`), an hour block is prepaid hours bought (`Hourglass`). `Mail`, `Sparkles` and `CalendarClock` stay free for email, AI and timestamps.
 
@@ -65,7 +65,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Create lead", "Save changes", "Project archived". Title Case is only for the brand name.
 - **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role; the person sheet's **User** section has a "Can sign in" switch (like a company's "Bill this company"), then their Role (Admin, Sales or Client). Icons and colours follow the entity (see **Entities** below): a company is `Building2`, a person (with or without a sign-in) is `UserRound`, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in green, with money. "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
 - **A label | value row with a line under its control** (`RecordRowField note`): the label sits level with the control, not centred on control and line together, and such rows get 16px between them.
-- **Name the control you point to.** Helper text that tells someone to use a control or section names it as on screen and marks it with `UiRef` (`components/ui/ui-ref.tsx`: medium weight, normal text colour, no quotes): "Needs a user account with the Client role. Turn on **Can sign in** below." A link is for going somewhere ("Open person"); `UiRef` is for something already on screen.
+- **Name the control you point to.** Helper text that tells someone to use a control or section names it as on screen and marks it with `UiRef` (`components/ui/ui-ref.tsx`: medium weight, normal text colour, no quotes): "Needs a sign-in with the Client role. Turn on **Can sign in** below." A link is for going somewhere ("Open person"); `UiRef` is for something already on screen.
 - **Name the entity.** Copy names the record type it acts on, using the entity names: person, company, lead, project, task, invoice, hour block, time log, plus client for a company you bill and sign-in for a person who can sign in. "User" is the person sheet's section heading for their sign-in (Jason's call, Nov 2026); elsewhere never "account" or "login", and never a vague stand-in (record, item, entry, member) when an entity is meant: "Can sign in" and "No portal access", not "Create account" or "No portal account".
 - **Create vs Add vs Link.** "Create <thing>" makes a new record (page buttons, create sheets, a picker's pinned Create row). "Add <thing>" puts an existing record on a list (Add person, Add member). There is no "Link" between a company and a client: a client is a company you bill ("Bill this company" in its sheet's Client column). Exception: on the lead sheet, the Tasks and Updates sections use "Add task" and "Add update" for new records added to that lead.
 - **The name.** The wordmark reads **Place To Stand**, with a capital T, as `BrandLogo` renders it. The favicon abbreviation is **PTS**. Some older page metadata still says "Place to Stand Portal". Use the wordmark casing in new copy.
@@ -79,6 +79,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 ## Visual foundations
 
 ### Color
+
 - **The UI is neutral: shadcn's gray oklch palette** in a light and a dark theme. The theme comes from a `.dark` class on `<html>` (the user's choice, else `prefers-color-scheme`). Build with the semantic tokens and never with raw grays:
   - `background` / `foreground` for the page and its text.
   - `card`, `popover` for raised surfaces.
@@ -101,6 +102,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Email paper.** A `.email-paper` subtree (a block in `theme.css`) re-declares the light tokens. An email being composed or reviewed then renders white with dark ink, even when the app is dark, which is how a mail client will show it. Emails use the `email-*` tokens: a dark `brand-bg` masthead over an `email-paper` body on an `email-backdrop` canvas.
 
 ### Type
+
 - **Geist (`sans`) for the entire UI.** The working size is `ui` (text-sm, 14px), and labels and buttons use `ui-medium`. Other sizes:
   - `caption` (12px) for metadata.
   - `overline` (11px, semibold, uppercase, tracking-wide) for group labels.
@@ -112,10 +114,12 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - public share-page and email headings (`share-headline`)
 
   Never use it for UI labels.
+
 - **Geist Mono (`mono`) for identifiers**: slugs (`code`), shortcut keys (`kbd`), and the uppercase `mono-label` under the brand lockup. Use `tabular-nums` for any column of numbers: hours, money, counts.
 - Headings are few. Dashboard pages title themselves through the breadcrumb in the `PageShell` header row. `page-title` is only for standalone pages.
 
 ### Space, size, radius
+
 - Tailwind's 4px scale is used as written (`space-*`). A control row shares one height: `control-md` (h-9, 36px) is the default, with `control-sm` 32px and `control-xs` 28px for dense rows and `control-lg` 40px.
 - Radii derive from one base, `radius` = 0.625rem:
   - `radius-sm` 6px: items inside menus
@@ -126,6 +130,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - The Checkbox uses 4px (`radius-checkbox`).
 
 ### Surfaces, borders, elevation
+
 - **Borders do the work.** Every element defaults to `border-border`. Cards are `card` + border + `radius-xl` + `shadow-sm`. Everything that floats over the page (searchable comboboxes, popovers, date pickers, dropdown and context menus, select lists, hover cards) is `popover` + border + `radius-md` + `shadow-popover`, one elevation token: a large soft shadow in light mode, and in dark mode a deeper shadow, a light hairline and a slightly lighter surface. Sheets and dialogs are `background` + `shadow-lg`, over a black backdrop (`overlay-sheet` 50%, `overlay-dialog` 70%).
 - **Layout.** The app shell is `muted`. Each page is a `PageShell`:
   - one compact header row (sidebar trigger, a vertical separator, the breadcrumb, then an optional right slot) on `background`, with a bottom border
@@ -136,6 +141,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 - **Entities open in sheets, not pages.** Sheets are right-side panels over the list whose width follows their layout: one column (720px, fits the full rich text toolbar) or a form beside a side column (1184px: company, lead, invoice, project, submission) (see `components/sheet.md`). They're addressed by a query param (`?task=<uuid>`, `?company=new`).
 
 ### States and motion
+
 - **Focus** on every control is `focus-visible:border-ring` plus a 3px `ring-ring/50` halo (`focus-ring`). An invalid field swaps both to `destructive` (the ring at 20%, 40% in dark).
 - **Hover.** Ghost, outline and menu items fill with `accent`. Primary and destructive fills drop to 90%. Table rows take `muted`/50.
 - **Disabled** is `opacity-50` with pointer events off (`disabled`).
@@ -149,7 +155,9 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - A sheet that remounts while already open skips its entry animation.
 
 ### Brand ground
+
 Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, because they're the handoff from the marketing site. The layout, top to bottom:
+
 - a `brand-bg` field with a 24px dot grid in `brand-border`
 - the `BrandLockup`: a 36px blueprint mark, the Space Grotesk wordmark in `brand-text`, and a lime `mono-label`
 - a square, translucent `brand-bg-panel` form panel with a `brand-border`
@@ -177,7 +185,7 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 8. **One Save, one transaction; only Save writes.** Every control inside a sheet changes the form, and Save writes the record and everything that goes with it (people, billing, sign-in, links, assignees) in one database transaction; closing with unsaved changes asks "Discard changes?". Instant actions are records of their own or act outside the app (comments, lead updates, logging time, invoice send/void, acknowledging a submission, planning, password reset): they save on their own click. Sending an invoice is blocked while it has unsaved edits. Create and edit show the same sheet. Details: `components/sheet.md`. (guard: review)
 9. **Minimal helper copy.** See Content fundamentals. (guard: review)
 10. **Dates go through `@pts/ui/dates`.** `formatCalendarDate` for dates, timestamps and month labels (`{ month: 'long', year: 'numeric' }`); `formatRelativeTime` for "3 days ago". Never `toLocaleDateString`, a bare `Intl.DateTimeFormat`, or date-fns `format()` in the UI. (guard: eslint `pts/dates-through-ui`)
-11. **Icon-only row actions use `RowActionButton`** (`@pts/ui/row-action-button`): a real tooltip plus a matching accessible name. Never `title=` as a tooltip. (guard: eslint `pts/no-title-tooltip`)
+11. **Icon-only row actions use `RowActionButton`** (`@pts/ui/row-action-button`): a real tooltip plus a matching accessible name. Never `title=` as a tooltip, and no icon-size `Button` without a tooltip (menu triggers excepted). (guard: eslint `pts/icon-button-tooltip`)
 12. **Pick a size, don't override it.** Buttons take `size` (`xs` 28px, `sm` 32px, default 36px, `icon-sm`), Avatars take `size` (`xs`–`xl`, initials scale with it; `xl` 64px is the photo upload field). No `h-*` or `text-[9px]` overrides. (guard: eslint `pts/no-size-override`)
 13. **Focus is `focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]`** on every custom interactive element. Never remove the outline without that replacement. (guard: review)
 14. **Toasts:** success is short and past tense ("Invoice sent", "Company saved"); failure is "Unable to <verb> <noun>" with the reason in the description. No "Failed to…", "Error", "…successfully", or exclamation marks. **Every sheet and dialog reports its save result, success or failure, as a toast**, never an inline error box; only a field's own error stays under the field (`FormMessage`). (guard: eslint `pts/toast-copy`; review)
@@ -189,25 +197,27 @@ Every rule here and in `components/*.md` ends with the check that guards it: `(g
 
 All of these run in `npm run lint` (and so in CI). The `pts/*` rules live in `packages/eslint-config/rules/` with RuleTester tests; each message quotes the rule it enforces.
 
-| Check | Guards |
-| --- | --- |
-| eslint `pts/no-radix` | House rule 1: Base UI only, no Radix import, no `data-[state=…]` |
-| eslint `pts/no-align-start` | House rule 4: no `align='start'` on a popup at a call site |
-| eslint `pts/save-not-gated-on-dirty` | House rule 6: Save never disabled on `isDirty` / has-changes |
-| eslint `pts/dates-through-ui` | House rule 10: no `toLocaleDateString`, bare `Intl.DateTimeFormat` or date-fns `format()` outside `@pts/ui/dates` (apps and packages) |
-| eslint `pts/no-title-tooltip` | House rule 11: no `title=` tooltip on a button |
-| eslint `pts/no-size-override` | House rule 12: no `h-*` / `text-[…]` on `Button` or `Avatar` |
-| eslint `pts/toast-copy` | House rule 14: no "Failed to", "successfully", "!" or an "Error" title in a toast |
-| eslint `pts/grid-phone-column` | House rule 15: a responsive grid writes `grid-cols-1` |
-| eslint `pts/ellipsis-character` | Copy: placeholders end with "…", not "..." |
-| eslint `pts/filter-select` | Layout: every list filter is `FilterSelect`, never a plain `Select` in a filter bar |
-| eslint `no-restricted-imports`, `no-restricted-syntax` | Entities: icons and `*-entity-*` colours only from the registry |
-| eslint `pts/drizzle-qualified-subquery` | Money: an outer column in a correlated `sql` subquery is written table-qualified |
-| eslint `pts/client-boundary`, `pts/query-layer-purity` | Layering: no server code in a `'use client'` file; no logging or permission checks in `lib/queries` (allowlist: follow-up D12) |
-| `scripts/check-badges.mjs` | `components/badge.md`: a badge's size, weight and case come from the component |
-| `scripts/check-formatters.mjs` | Content fundamentals: hours and money only through `@pts/ui/numbers` |
-| `scripts/check-entities.mjs` | Entities: every entity has an icon and a colour, icons unique, 3:1 contrast, status colours apart |
-| `scripts/check-copy.mjs` | Content fundamentals: person not "contact", companies (not clients, users or accounts) in the client portal, no "Partners", no "Delete forever" |
-| `scripts/design-tokens.mjs --check` | `tokens.json` matches the theme sources |
-| `scripts/permissions-manifest.mjs --check` | The permissions manifest is current, and every server action names its guard |
-| `scripts/check-rule-guards.mjs` | Every rule in this folder names one of the checks above, or review |
+| Check                                                  | Guards                                                                                                                                          |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| eslint `pts/no-radix`                                  | House rule 1: Base UI only, no Radix import, no `data-[state=…]`                                                                                |
+| eslint `pts/no-align-start`                            | House rule 4: no `align='start'` on a popup at a call site                                                                                      |
+| eslint `pts/save-not-gated-on-dirty`                   | House rule 6: Save never disabled on `isDirty` / has-changes                                                                                    |
+| eslint `pts/dates-through-ui`                          | House rule 10: no `toLocaleDateString`, bare `Intl.DateTimeFormat` or date-fns `format()` outside `@pts/ui/dates` (apps and packages)           |
+| eslint `pts/no-title-tooltip`                          | House rule 11: no `title=` tooltip on a button                                                                                                  |
+| eslint `pts/icon-button-tooltip`                       | House rule 11: an icon-size `Button` is a `RowActionButton` or sits in a `Tooltip` (menu triggers excepted)                                     |
+| eslint `pts/archive-confirm`                           | Archive confirms are `ArchiveConfirmDialog` (`components/dialog.md`)                                                                            |
+| eslint `pts/no-size-override`                          | House rule 12: no `h-*` / `text-[…]` on `Button` or `Avatar`                                                                                    |
+| eslint `pts/toast-copy`                                | House rule 14: no "Failed to", "successfully", "!" or an "Error" title in a toast                                                               |
+| eslint `pts/grid-phone-column`                         | House rule 15: a responsive grid writes `grid-cols-1`                                                                                           |
+| eslint `pts/ellipsis-character`                        | Copy: placeholders end with "…", not "..."                                                                                                      |
+| eslint `pts/filter-select`                             | Layout: every list filter is `FilterSelect`, never a plain `Select` in a filter bar                                                             |
+| eslint `no-restricted-imports`, `no-restricted-syntax` | Entities: icons and `*-entity-*` colours only from the registry                                                                                 |
+| eslint `pts/drizzle-qualified-subquery`                | Money: an outer column in a correlated `sql` subquery is written table-qualified                                                                |
+| eslint `pts/client-boundary`, `pts/query-layer-purity` | Layering: no server code in a `'use client'` file; no logging or permission checks in `lib/queries` (allowlist: follow-up D12)                  |
+| `scripts/check-badges.mjs`                             | `components/badge.md`: a badge's size, weight and case come from the component                                                                  |
+| `scripts/check-formatters.mjs`                         | Content fundamentals: hours and money only through `@pts/ui/numbers`                                                                            |
+| `scripts/check-entities.mjs`                           | Entities: every entity has an icon and a colour, icons unique, 3:1 contrast, status colours apart                                               |
+| `scripts/check-copy.mjs`                               | Content fundamentals: person not "contact", companies (not clients, users or accounts) in the client portal, no "Partners", no "Delete forever" |
+| `scripts/design-tokens.mjs --check`                    | `tokens.json` matches the theme sources                                                                                                         |
+| `scripts/permissions-manifest.mjs --check`             | The permissions manifest is current, and every server action names its guard                                                                    |
+| `scripts/check-rule-guards.mjs`                        | Every rule in this folder names one of the checks above, or review                                                                              |

@@ -32,7 +32,12 @@ async function authedRequest<T>(
     return first.result
   }
 
-  if (first.error?.status !== 401) {
+  if (!first.error) {
+    // `request` sets one of result and error; this can't happen.
+    throw new ApiError('The portal returned an empty response.', 500)
+  }
+
+  if (first.error.status !== 401) {
     throw first.error
   }
 

@@ -4,7 +4,7 @@ import { useMemo, type RefObject } from 'react'
 import { useDroppable, useDraggable } from '@dnd-kit/core'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -114,23 +114,17 @@ function CalendarDayCell({
   })
 
   const addButton = (
-    <Button
+    <RowActionButton
       type='button'
-      size='icon-sm'
-      variant='ghost'
       onClick={() => onCreateTask(day.key)}
       disabled={!canManageTasks}
-    >
-      <Plus />
-      <span className='sr-only'>
-        Create task for{' '}
-        {formatCalendarDate(day.key, {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        })}
-      </span>
-    </Button>
+      label={`Create task for ${formatCalendarDate(day.key, {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })}`}
+      icon={<Plus />}
+    />
   )
 
   return (

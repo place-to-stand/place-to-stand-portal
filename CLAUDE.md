@@ -47,6 +47,7 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 - **CI** (`.github/workflows/ci.yml`) runs `npm ci`, `npm run lint`, `npm run type-check` and `npm run build` on every pull request and on pushes to `main`, on the Node version in `.nvmrc`. It needs no secrets: the build gets placeholder env that satisfies both apps' `lib/env.server.ts` schemas. A new required env var must get a placeholder there too.
 - **Pre-commit** (husky → `lint-staged.config.mjs`, installed by `npm install` through the `prepare` script) runs `eslint --fix` and `prettier --write` on the staged files only, so it stays fast; type-check and build are left to CI.
 - **ESLint config** is shared: `packages/eslint-config` (`base.mjs` for packages, `next.mjs` for both apps, custom rules in `rules/`). Change rules there, not in an app.
+- **Lint fails on any warning** (`eslint --max-warnings=0` in every workspace). Files already over 300 lines are grandfathered in each workspace's `eslint-suppressions.json` (ESLint bulk suppressions); a new oversized file fails. After splitting a listed file, run `npx eslint --prune-suppressions` in that workspace. Type-aware rules (`typed()` in `base.mjs`: unawaited or misused promises, deprecated APIs, a switch missing a union member) run in every workspace; their existing hits are grandfathered the same way. Pre-commit runs eslint per workspace (`scripts/lint-staged-eslint.mjs`) so those lists apply.
 
 ### Development (from `apps/internal/` or `apps/client/`)
 - `npm run dev` - Start app with Turbopack (internal: port 3000, client: port 3001)
@@ -126,7 +127,7 @@ do not follow the bare-envelope, snake_case precedent set by `api/v1/`. Adding a
 serializer in `lib/cli/serializers/` plus a thin route; the serializers are the contract agents
 hardcode against, so adding a field is safe and renaming one is breaking.
 
-The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,review,time-logs,activity,archive}` (`/overview` was retired and redirects to `tasks`). The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
+The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,review,time-logs,activity}`, all loaded by `renderProjectTabRoute` (`[projectSlug]/_lib/project-tab-route.tsx`); `/overview` redirects to `tasks` and `/archive` to `review`. The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
 
 **Client portal** (`apps/client/app/`):
 ```

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Star } from 'lucide-react'
 
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import {
   Table,
@@ -30,7 +30,7 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { useToast } from '@/components/ui/use-toast'
 import type { CompanyListItem } from '@/lib/companies/types'
-import { archiveCompanyDescription } from '../_lib/archive-copy'
+import { archiveCompanyExtra } from '../_lib/archive-copy'
 import { archiveCompany, restoreCompany } from '../actions'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
@@ -354,16 +354,13 @@ export function CompaniesTable({
           ) : null}
         </TableBody>
       </Table>
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={Boolean(archiveTarget)}
-        title='Archive company?'
-        description={archiveCompanyDescription(
-          archiveTarget?.name,
-          Boolean(archiveTarget?.formerClient)
-        )}
-        confirmLabel='Archive company'
-        confirmVariant='destructive'
-        confirmDisabled={isPending}
+        entity='company'
+        name={archiveTarget?.name || 'this company'}
+        list='the Companies list'
+        extra={archiveCompanyExtra(Boolean(archiveTarget?.formerClient))}
+        pending={isPending}
         onCancel={() => setArchiveTarget(null)}
         onConfirm={() => archiveTarget && runAction(archiveTarget, 'archive')}
       />

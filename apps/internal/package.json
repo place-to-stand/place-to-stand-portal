@@ -7,7 +7,7 @@
     "dev:prod": "dotenv -e .env.local -e .env.prod -o -- next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings=0",
     "type-check": "next typegen && tsc --noEmit",
     "db:pull": "drizzle-kit pull --config drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",

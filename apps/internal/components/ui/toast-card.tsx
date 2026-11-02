@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority'
 import { CircleCheck, Info, TriangleAlert, X } from 'lucide-react'
 
 import { firstLineIcon } from '@pts/ui/alert'
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { cn } from '@/lib/utils'
 
 import type { ToastVariant } from './toast'
@@ -80,15 +80,12 @@ export function ToastCard({
       </div>
       {onDismiss ? (
         <div className='-mr-1.5 flex h-[1lh] shrink-0 items-center'>
-          <Button
-            variant='ghost'
-            size='icon-sm'
+          <RowActionButton
             onClick={onDismiss}
             className='text-muted-foreground hover:text-foreground'
-          >
-            <X />
-            <span className='sr-only'>Dismiss</span>
-          </Button>
+            label='Dismiss'
+            icon={<X />}
+          />
         </div>
       ) : null}
     </div>

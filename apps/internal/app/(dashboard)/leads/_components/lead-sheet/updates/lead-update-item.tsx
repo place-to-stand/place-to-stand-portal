@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { Archive, MoreHorizontal, Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import {
   DropdownMenu,
@@ -103,16 +104,14 @@ export function LeadUpdateItem({
             disabled
             reason={LEAD_UPDATE_NOT_AUTHOR_MESSAGE}
           >
-            <Button
+            <RowActionButton
               type='button'
               variant='ghost'
-              size='icon-sm'
               className='text-muted-foreground shrink-0'
               disabled
-              aria-label={actionsLabel}
-            >
-              <MoreHorizontal className='h-4 w-4' />
-            </Button>
+              label={actionsLabel}
+              icon={<MoreHorizontal />}
+            />
           </DisabledFieldTooltip>
         ) : canManage ? (
           <DropdownMenu>

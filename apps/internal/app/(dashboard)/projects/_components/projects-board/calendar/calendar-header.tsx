@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import {
   Select,
@@ -102,24 +103,22 @@ export function CalendarHeader({
           </form>
         </div>
         <div className='flex items-center gap-2'>
-          <Button
-            type='button'
+          <RowActionButton
             size='icon'
+            type='button'
             variant='ghost'
             onClick={onPrevMonth}
-            aria-label='View previous month'
-          >
-            <ChevronLeft />
-          </Button>
-          <Button
-            type='button'
+            label='View previous month'
+            icon={<ChevronLeft />}
+          />
+          <RowActionButton
             size='icon'
+            type='button'
             variant='ghost'
             onClick={onNextMonth}
-            aria-label='View next month'
-          >
-            <ChevronRight />
-          </Button>
+            label='View next month'
+            icon={<ChevronRight />}
+          />
         </div>
       </div>
     </div>

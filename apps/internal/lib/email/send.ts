@@ -61,7 +61,8 @@ async function sendViaResend(message: OutboundEmail): Promise<void> {
   )
 
   if (error) {
-    throw error
+    // Resend returns a plain object; keep its fields on a real Error.
+    throw Object.assign(new Error(error.message), error)
   }
 }
 

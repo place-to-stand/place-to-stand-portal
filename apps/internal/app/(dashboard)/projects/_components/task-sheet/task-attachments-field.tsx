@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, type ChangeEvent } from 'react'
 import { FileText, X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
@@ -151,17 +151,16 @@ export function TaskAttachmentsField({
                   : null
             }
           >
-            <Button
-              type='button'
+            <RowActionButton
               size='icon'
+              type='button'
               variant='ghost'
               className='text-muted-foreground hover:text-destructive'
               onClick={() => onRemove(attachment.key)}
-              aria-label={`Remove ${attachment.name}`}
+              label={`Remove ${attachment.name}`}
               disabled={removalDisabled}
-            >
-              <X className='h-4 w-4' />
-            </Button>
+              icon={<X />}
+            />
           </DisabledFieldTooltip>
         </li>
       )

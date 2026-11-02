@@ -45,13 +45,19 @@ function componentRules(file) {
   const lines = readFileSync(join(docs, 'components', file), 'utf8').split('\n')
   const rules = []
   lines.forEach((line, i) => {
-    if (!/^\*\*Rules\b/.test(line)) return
-    const inline = line.replace(/^\*\*Rules[^*]*\*\*:?\s*/, '').trim()
+    // `**Rules**` (bold) or a `## Rules` heading, then its bullets. A blank
+    // line before the first bullet is allowed, so no list is skipped.
+    if (!/^(?:\*\*Rules\b|#{2,4} Rules\s*$)/.test(line)) return
+    const inline = line.startsWith('#')
+      ? ''
+      : line.replace(/^\*\*Rules[^*]*\*\*:?\s*/, '').trim()
     if (inline) {
       rules.push({ where: `components/${file}:${i + 1}`, text: line })
       return
     }
-    for (let j = i + 1; j < lines.length && /^- /.test(lines[j]); j++) {
+    let j = i + 1
+    while (j < lines.length && lines[j].trim() === '') j++
+    for (; j < lines.length && /^- /.test(lines[j]); j++) {
       rules.push({ where: `components/${file}:${j + 1}`, text: lines[j] })
     }
   })

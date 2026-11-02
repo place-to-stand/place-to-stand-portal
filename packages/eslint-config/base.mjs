@@ -29,10 +29,22 @@ export const IGNORES = globalIgnores([
 export function common({ allowConsole = false } = {}) {
   return [
     {
+      // A disable or inline config that no longer does anything is an error,
+      // so stale ones can't pile up.
+      linterOptions: {
+        reportUnusedDisableDirectives: 'error',
+        reportUnusedInlineConfigs: 'error',
+      },
       plugins: { pts, '@eslint-community/eslint-comments': eslintComments },
       rules: {
         // Every eslint-disable says why: `// eslint-disable-next-line rule -- reason`.
         '@eslint-community/eslint-comments/require-description': 'error',
+        // ...names the rules it turns off, and a block disable is closed again.
+        '@eslint-community/eslint-comments/no-unlimited-disable': 'error',
+        '@eslint-community/eslint-comments/disable-enable-pair': [
+          'error',
+          { allowWholeFile: true },
+        ],
         // Logs are for problems. Report events through PostHog or the activity
         // log; return results from the route.
         'no-console': allowConsole
@@ -48,8 +60,10 @@ export function common({ allowConsole = false } = {}) {
     },
     {
       // AGENTS.md: "Files approaching 300 lines should be split by
-      // responsibility." A warning, not an error: it flags the file to split
-      // next time it's touched. Tests and generated files are exempt.
+      // responsibility." Files already over the limit are listed in each
+      // workspace's eslint-suppressions.json (ESLint bulk suppressions); a
+      // new one fails lint. Split a listed file and lint prunes its entry
+      // (`eslint --prune-suppressions`). Tests and generated files are exempt.
       files: ['**/*.{ts,tsx,mts,mjs,js}'],
       ignores: [
         '**/*.test.*',
@@ -59,7 +73,7 @@ export function common({ allowConsole = false } = {}) {
       ],
       rules: {
         'max-lines': [
-          'warn',
+          'error',
           { max: 300, skipBlankLines: true, skipComments: true },
         ],
       },
@@ -67,12 +81,47 @@ export function common({ allowConsole = false } = {}) {
   ]
 }
 
+/**
+ * Type-aware rules for every workspace. They need the TypeScript program,
+ * which is the slow part, so the list stays short and each rule catches a
+ * class of real bug:
+ * - an unawaited promise loses its error (`no-floating-promises`), and a
+ *   promise passed where a boolean or a void callback goes is never awaited
+ *   (`no-misused-promises`);
+ * - `await` on something that isn't a promise, and throwing a non-Error;
+ * - a deprecated API, caught before an upgrade removes it;
+ * - a switch over a union must name every member: a `default` doesn't count,
+ *   so a new member is a lint error, not a silent fall-through.
+ * Existing hits are grandfathered in eslint-suppressions.json.
+ */
+export function typed({ dir = process.cwd() } = {}) {
+  return [
+    {
+      files: ['**/*.{ts,tsx,mts}'],
+      // Outside every tsconfig, so there's no program to check them with.
+      ignores: ['scripts/**', '**/*.test.*', '*.config.ts'],
+      languageOptions: {
+        parserOptions: { projectService: true, tsconfigRootDir: dir },
+      },
+      rules: {
+        '@typescript-eslint/no-floating-promises': 'error',
+        '@typescript-eslint/no-misused-promises': 'error',
+        '@typescript-eslint/await-thenable': 'error',
+        '@typescript-eslint/only-throw-error': 'error',
+        '@typescript-eslint/no-deprecated': 'error',
+        '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      },
+    },
+  ]
+}
+
 /** A package that isn't a Next app. */
-export function base({ allowConsole = false } = {}) {
+export function base({ allowConsole = false, dir } = {}) {
   return [
     IGNORES,
     // The same TypeScript rules eslint-config-next/typescript gives the apps.
     ...tseslint.configs.recommended,
     ...common({ allowConsole }),
+    ...typed({ dir }),
   ]
 }

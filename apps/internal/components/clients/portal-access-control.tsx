@@ -79,7 +79,7 @@ export function PortalAccessField({
         </p>
       ) : canHaveAccess ? null : (
         <p className='text-muted-foreground text-xs'>
-          Needs a user account with the Client role.
+          Needs a sign-in with the Client role.
           {fix ? <> {fix}</> : null}
           {action ? (
             <>

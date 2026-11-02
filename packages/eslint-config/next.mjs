@@ -15,13 +15,15 @@ import { join } from 'node:path'
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 import nextTypescript from 'eslint-config-next/typescript'
 
-import { IGNORES, common } from './base.mjs'
+import { IGNORES, common, typed } from './base.mjs'
 
 export const HOUSE_RULES = {
   'pts/no-radix': 'error', // rule 1
   'pts/no-align-start': 'error', // rule 4
   'pts/save-not-gated-on-dirty': 'error', // rule 6
   'pts/no-title-tooltip': 'error', // rule 11
+  'pts/icon-button-tooltip': 'error', // rule 11
+  'pts/archive-confirm': 'error', // one archive confirmation
   'pts/no-size-override': 'error', // rule 12
   'pts/toast-copy': 'error', // rule 14
   'pts/grid-phone-column': 'error', // rule 15
@@ -92,23 +94,7 @@ export function nextApp({ dir, entityRegistry } = {}) {
       // "House rules (verified in code)"); each message quotes its rule.
       rules: HOUSE_RULES,
     },
-    {
-      // Type-aware, so only these two (the type information is the slow
-      // part): an unawaited promise loses its error; a switch over a union
-      // must handle every member.
-      files: ['**/*.{ts,tsx}'],
-      ignores: ['scripts/**'],
-      languageOptions: {
-        parserOptions: { projectService: true, tsconfigRootDir: dir },
-      },
-      rules: {
-        '@typescript-eslint/no-floating-promises': 'error',
-        '@typescript-eslint/switch-exhaustiveness-check': [
-          'error',
-          { considerDefaultExhaustiveForUnions: true },
-        ],
-      },
-    },
+    ...typed({ dir }),
     {
       // Dev scripts print their output.
       files: ['scripts/**'],

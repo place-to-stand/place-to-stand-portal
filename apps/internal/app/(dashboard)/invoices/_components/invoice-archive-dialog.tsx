@@ -1,4 +1,4 @@
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 
 type InvoiceArchiveDialogProps = {
   open: boolean
@@ -14,13 +14,12 @@ export function InvoiceArchiveDialog({
   onConfirm,
 }: InvoiceArchiveDialogProps) {
   return (
-    <ConfirmDialog
+    <ArchiveConfirmDialog
       open={open}
-      title='Archive invoice?'
-      description='Archiving this invoice hides it from active views while retaining historical records.'
-      confirmLabel='Archive'
-      confirmVariant='destructive'
-      confirmDisabled={confirmDisabled}
+      entity='invoice'
+      name='this invoice'
+      list='active invoices'
+      pending={confirmDisabled}
       onCancel={onCancel}
       onConfirm={onConfirm}
     />

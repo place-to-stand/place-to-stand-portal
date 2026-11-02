@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
-import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
 import { formatHours } from '@pts/ui/numbers'
 import { EmptyValue } from '@/components/table/empty-value'
@@ -305,13 +305,13 @@ export function TimeLogsTable({
           </>
         }
       />
-      <ConfirmDialog
+      <ArchiveConfirmDialog
         open={actions.archiveConfirm.open}
-        title='Archive time log?'
-        description='This removes the log from the project burndown.'
-        confirmLabel='Archive'
-        confirmVariant='destructive'
-        confirmDisabled={actions.isMutating}
+        entity='time log'
+        name='this time log'
+        list='time logs'
+        extra="It no longer counts toward the project's hours."
+        pending={actions.isMutating}
         onCancel={actions.archiveConfirm.cancel}
         onConfirm={actions.archiveConfirm.confirm}
       />

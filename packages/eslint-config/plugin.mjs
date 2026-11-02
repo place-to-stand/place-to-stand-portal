@@ -5,7 +5,9 @@
  */
 import drizzleQualifiedSubquery from './rules/drizzle-qualified-subquery.mjs'
 import {
+  archiveConfirm,
   datesThroughUi,
+  iconButtonTooltip,
   noAlignStart,
   noRadix,
   noSizeOverride,
@@ -28,6 +30,8 @@ export const pts = {
     'no-align-start': noAlignStart,
     'dates-through-ui': datesThroughUi,
     'no-title-tooltip': noTitleTooltip,
+    'icon-button-tooltip': iconButtonTooltip,
+    'archive-confirm': archiveConfirm,
     'no-size-override': noSizeOverride,
     'toast-copy': toastCopy,
     'grid-phone-column': gridPhoneColumn,
