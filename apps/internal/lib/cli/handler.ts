@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { ZodError } from 'zod'
 
 import type { AppUser } from '@/lib/auth/session'
+import { runAsTokenRequest } from '@/lib/auth/token-request'
 import { BadRequestError, HttpError } from '@/lib/errors/http'
 
 import { resolveCliUser } from './auth'
@@ -92,11 +93,11 @@ export function withCliAuth<TParams = Record<string, never>>(
   return async (request: NextRequest, context?: RouteContext<TParams>) => {
     try {
       const user = await resolveCliUser(request)
-      const params = context?.params
-        ? await context.params
-        : ({} as TParams)
+      const params = context?.params ? await context.params : ({} as TParams)
 
-      const result = await handler({ user, request, params })
+      const result = await runAsTokenRequest(() =>
+        handler({ user, request, params })
+      )
 
       return result instanceof NextResponse ? result : jsonOk(result)
     } catch (error) {

@@ -8,6 +8,7 @@ import type {
 import { z, ZodError } from 'zod'
 
 import { runAsAgent } from '@/lib/activity/agent-context'
+import { runAsTokenRequest } from '@/lib/auth/token-request'
 import { roleCan, rolesWith } from '@/lib/auth/capabilities'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
@@ -121,6 +122,17 @@ function jsonResult(data: Record<string, unknown>): CallToolResult {
   }
 }
 
+/** Next's redirect() throws an error whose digest starts NEXT_REDIRECT. */
+function isNextRedirect(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    String((error as { digest?: unknown }).digest ?? '').startsWith(
+      'NEXT_REDIRECT'
+    )
+  )
+}
+
 /**
  * Register one tool. Every tool goes through here so the access check, the
  * agent attribution on activity rows, error shaping and the PostHog event are
@@ -147,7 +159,7 @@ export function defineTool<Shape extends z.ZodRawShape>(
         assertToolAccess(definition.name, principal.user)
 
         const data = await runAsAgent(principal.agent, () =>
-          definition.run(args, principal)
+          runAsTokenRequest(() => definition.run(args, principal))
         )
 
         return jsonResult(data)
@@ -155,7 +167,12 @@ export function defineTool<Shape extends z.ZodRawShape>(
         failure = toToolFailure(error)
 
         if (failure.code === 'INTERNAL_ERROR') {
-          console.error(`Unhandled MCP tool error in ${definition.name}`, error)
+          // A Next redirect here means a page-only helper ran in a token
+          // request: name it, so the log doesn't read as a database fault.
+          const label = isNextRedirect(error)
+            ? 'Page redirect during MCP tool'
+            : 'Unhandled MCP tool error in'
+          console.error(`${label} ${definition.name}`, error)
           captureServerException(error, {
             distinctId: principal.user.id,
             properties: { tool: definition.name },

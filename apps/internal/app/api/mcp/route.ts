@@ -18,7 +18,16 @@ import { registerMcpTools } from '@/lib/mcp/server'
  */
 const mcpHandler = createMcpHandler(registerMcpTools, {
   serverInfo: { name: 'place-to-stand', version: '1.0.0' },
+  // The tool list is fixed per deploy, so we never send list-changed
+  // notices. Saying so matters: while `listChanged` is on (the SDK default),
+  // a client's `subscriptions/listen` POST is held open with keepalives until
+  // Vercel kills it at maxDuration (seen as 800s timeouts). Off, the SDK
+  // acknowledges the subscription and closes the stream at once.
+  capabilities: { tools: { listChanged: false } },
 })
+
+/** Every tool call is a few queries; nothing here should run for minutes. */
+export const maxDuration = 60
 
 const handler = withMcpAuth(
   async request => {
@@ -26,7 +35,11 @@ const handler = withMcpAuth(
 
     if (forbidden) {
       return Response.json(
-        { jsonrpc: '2.0', error: { code: -32001, message: forbidden }, id: null },
+        {
+          jsonrpc: '2.0',
+          error: { code: -32001, message: forbidden },
+          id: null,
+        },
         { status: 403 }
       )
     }

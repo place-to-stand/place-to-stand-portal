@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { unstable_rethrow } from 'next/navigation'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -19,6 +20,8 @@ async function bestEffort(label: string, work: () => Promise<void>) {
   try {
     await work()
   } catch (error) {
+    // A redirect or notFound from inside must still reach Next.
+    unstable_rethrow(error)
     console.error(`Failed to create ${label} notification`, error)
   }
 }
