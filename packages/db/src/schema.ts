@@ -1341,7 +1341,6 @@ export const activityLogs = pgTable(
     targetId: uuid('target_id'),
     targetCompanyId: uuid('target_company_id'),
     targetProjectId: uuid('target_project_id'),
-    contextRoute: text('context_route'),
     metadata: jsonb().default({}).notNull(),
     // Append-only: rows are never updated or soft-deleted, only pruned by the
     // retention cron, so there is no updated_at / deleted_at pair here.
