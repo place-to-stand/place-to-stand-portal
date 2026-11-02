@@ -226,7 +226,7 @@ export const CAPABILITIES = {
     description:
       'Any company, clients included: details, notes, people, titles and leads. A client’s billing, primary contact and portal access are admin-only.',
     roles: STAFF,
-    surfaces: ['app'],
+    surfaces: ['app', 'mcp'],
   },
   'contacts.manage': {
     area: 'Directory',

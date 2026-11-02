@@ -4,6 +4,7 @@ import type { McpServer } from '@modelcontextprotocol/server'
 
 import { registerActivityTools } from './tools/activity'
 import { registerBillingTools } from './tools/billing'
+import { registerCompanyTools } from './tools/companies'
 import { registerDirectoryTools } from './tools/directory'
 import { registerLeadTools } from './tools/leads'
 import { registerTaskTools } from './tools/tasks'
@@ -16,6 +17,7 @@ import { registerTimeLogTools } from './tools/time-logs'
  */
 export function registerMcpTools(server: McpServer) {
   registerDirectoryTools(server)
+  registerCompanyTools(server)
   registerTaskTools(server)
   registerLeadTools(server)
   registerActivityTools(server)

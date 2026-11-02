@@ -29,7 +29,7 @@ engagement standing) is explicitly out of scope until this one proves useful.
 | D1 | **Hosted on Vercel, inside `apps/internal`**, as a route next to the data layer — not a separate Cloudflare service. |
 | D2 | **Proper OAuth from day one**, so it works as a claude.ai custom connector. No static tokens. |
 | D3 | **The agent acts on the connecting user's behalf**, and writes record both the human and the agent. |
-| D4 | **Reads plus a fixed set of writes**: tasks (create, update), task comments, leads (create, edit, move stage, log updates). Clients and contacts are read-only. |
+| D4 | **Reads plus a fixed set of writes**: tasks (create, update), task comments, leads (create, edit, move stage, log updates), and (revised 2026-11-02) companies and people (create, edit, add or remove people, titles, primary contact) through the same saves as their sheets. Billing, terms, commission, portal access and sign-ins stay out; no archive or delete. |
 | D5 | **No time logging.** Hours stay a manual human process because they feed the shared bank account / profit share. Time logs are readable (`list_time_logs`, revised 2026-10-26). |
 | D6 | **ADMIN and SALES** (revised 2026-10-27; was "ADMIN only for v1"). SALES is admitted with exactly the portal's sales access: the CRM tools (leads, contacts and their activity), scoped the way the portal scopes them, and nothing else. Every other tool refuses a SALES caller. See "SALES access" below. |
 | D7 | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. Settings is admin-only, so SALES users have no portal settings access and cannot see or revoke their connected apps; an admin revokes a SALES user's grants in the Supabase dashboard when needed (Kris, 2026-10-27). |
@@ -156,6 +156,9 @@ tool refuses them when called: `"<tool> is available to admin users only; your r
 | `whoami` | crm | `/api/cli/v1/whoami` logic |
 | `list_clients` / `get_client` | admin | client serializer (includes hours balance, §5) + contacts + projects |
 | `list_contacts` / `get_contact` | crm | contact serializer; `list_contacts`' client filter resolves against the contacts page's own client list (`listAllActiveClients`) |
+| `list_companies` / `get_company` | crm | `listCompanies`, `getCompanyDetail` (billing fields already hidden from Sales) |
+| `create_company` / `update_company` | crm | `saveCompanySheet` with billing `none` and no portal access list; partial updates merge over the current row and pass `expectedUpdatedAt` |
+| `create_person` / `update_person` | crm | `savePersonSheet` without photo or sign-in; partial updates merge over the current row and pass `loadedUpdatedAt` |
 | `list_projects` / `get_project` | admin | project serializer (slug or UUID) |
 | `list_tasks` / `get_task` | admin | task serializer, filters: project, lead, status, assignee |
 | `list_leads` / `get_lead` | crm | lead serializer + recent lead updates |

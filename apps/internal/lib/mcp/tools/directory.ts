@@ -6,10 +6,7 @@ import { z } from 'zod'
 import type { AppUser } from '@/lib/auth/session'
 import { listUsersForCli } from '@/lib/cli/queries/users'
 import { serializeClient } from '@/lib/cli/serializers/client'
-import {
-  serializeContact,
-  serializeContactCompanies,
-} from '@/lib/cli/serializers/contact'
+import { serializeContact } from '@/lib/cli/serializers/contact'
 import { listContactMemberships } from '@/lib/queries/memberships'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import { serializeProject } from '@/lib/cli/serializers/project'
@@ -25,14 +22,11 @@ import {
 } from '@/lib/data/projects'
 import { NotFoundError } from '@/lib/errors/http'
 import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
-import {
-  getContactSheetInputById,
-  listAllActiveClients,
-  listContactClients,
-} from '@/lib/queries/contacts/settings/contact-clients'
+import { listAllActiveClients } from '@/lib/queries/contacts/settings/contact-clients'
 
 import { listLimit, page, searchText } from '../output'
 import { defineTool } from '../tool'
+import { readPerson } from './people-read'
 import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 
 const clientRef = z.string().trim().min(1).describe('Client slug or UUID.')
@@ -138,7 +132,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'list_contacts',
     title: 'List contacts',
     description:
-      'List contacts (at clients and prospects), optionally only those linked to one client.',
+      'List people (contacts) at any company, optionally only those at one client. For any company, use get_company.',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -184,28 +178,7 @@ export function registerDirectoryTools(server: McpServer) {
       'One contact and the companies they belong to (title, primary). For admins, also their portal access, sign-in and the clients they can see in the portal.',
     effect: 'read',
     input: { contactId: z.string().uuid().describe('Contact UUID.') },
-    run: async ({ contactId }, { user }) => {
-      const seesPortalAccess = canSeePortalAccess(user.role)
-      const [contact, memberships] = await Promise.all([
-        getContactSheetInputById(user, contactId),
-        listContactMemberships([contactId]),
-      ])
-      const companies = serializeContactCompanies(
-        memberships.get(contactId) ?? [],
-        { seesPortalAccess }
-      )
-      // Portal access and sign-ins are for people who manage clients.
-      if (!seesPortalAccess) {
-        const { userId: _userId, ...rest } = contact
-        void _userId
-        return { contact: rest, companies }
-      }
-      return {
-        contact,
-        companies,
-        clients: await listContactClients(user, contactId),
-      }
-    },
+    run: async ({ contactId }, { user }) => readPerson(user, contactId),
   })
 
   defineTool(server, {

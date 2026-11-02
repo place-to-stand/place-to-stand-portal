@@ -76,7 +76,7 @@ export function registerActivityTools(server: McpServer) {
     name: 'list_activity',
     title: 'List activity',
     description:
-      'The audit trail for one thing or one area, newest first: who changed what, when, and through which channel (portal, CLI or an agent). Filter by target type, a target id (a task, lead, contact…), project, client, source, actor or time window; when hasMore is true, narrow the filters. For "what happened recently" across everything, use recent_activity. Sales users must set targetType to LEAD and/or CONTACT and cannot filter by project or client.',
+      'The audit trail for one thing or one area, newest first: who changed what, when, and through which channel (portal, CLI or an agent). Filter by target type, a target id (a task, lead, contact…), project, client, source, actor or time window; when hasMore is true, narrow the filters. For "what happened recently" across everything, use recent_activity. Sales users must set targetType to LEAD, CONTACT and/or COMPANY and cannot filter by project or client.',
     effect: 'read',
     input: {
       targetType: z
@@ -138,7 +138,7 @@ export function registerActivityTools(server: McpServer) {
 
       // The portal's rule, checked before any reference is resolved so a SALES
       // caller gets the reason rather than a project or client lookup error:
-      // SALES reads LEAD and CONTACT activity only, named by targetType, and
+      // SALES reads LEAD, CONTACT and COMPANY activity only, named by targetType, and
       // never scoped by project or client. `fetchActivityLogs` re-checks it.
       if (
         !canReadActivity(user.role, {
@@ -148,7 +148,7 @@ export function registerActivityTools(server: McpServer) {
         })
       ) {
         throw new ForbiddenError(
-          'Sales users can read lead and contact activity only: set targetType to LEAD and/or CONTACT, and leave project and client unset.'
+          'Sales users can read lead, contact and company activity only: set targetType to LEAD, CONTACT and/or COMPANY, and leave project and client unset.'
         )
       }
 
@@ -196,7 +196,7 @@ export function registerActivityTools(server: McpServer) {
   defineTool(server, {
     name: 'recent_activity',
     title: 'Recent activity',
-    description: `Everything that happened across the portal in a time window, oldest first, for questions like "what happened this week?". Returns the newest ${RECENT_DEFAULT} entries by default (max ${RECENT_MAX}); truncated: true means older entries in the window were left out, so narrow the window or filter by source, actor or target type. Sales users see lead and contact activity only.`,
+    description: `Everything that happened across the portal in a time window, oldest first, for questions like "what happened this week?". Returns the newest ${RECENT_DEFAULT} entries by default (max ${RECENT_MAX}); truncated: true means older entries in the window were left out, so narrow the window or filter by source, actor or target type. Sales users see lead, contact and company activity only.`,
     effect: 'read',
     input: {
       since: windowBound.describe(
@@ -211,7 +211,7 @@ export function registerActivityTools(server: McpServer) {
         .array(z.enum(ACTIVITY_TARGET_TYPES))
         .min(1)
         .describe(
-          'Only activity on these kinds of record. For sales users it defaults to LEAD and CONTACT, the only kinds they may read.'
+          'Only activity on these kinds of record. For sales users it defaults to LEAD, CONTACT and COMPANY, the only kinds they may read.'
         )
         .optional(),
       source: source.optional(),
@@ -235,7 +235,7 @@ export function registerActivityTools(server: McpServer) {
 
       assertWindow(from, to)
 
-      // SALES reads only LEAD and CONTACT activity (`canReadActivity`). With
+      // SALES reads only LEAD, CONTACT and COMPANY activity (`canReadActivity`). With
       // no targetType that is the whole of what they may see, so default to
       // it; naming any other type is refused, as on list_activity.
       const scopedTypes =
@@ -244,7 +244,7 @@ export function registerActivityTools(server: McpServer) {
 
       if (!canReadActivity(user.role, { targetType: scopedTypes })) {
         throw new ForbiddenError(
-          'Sales users can read lead and contact activity only: leave targetType unset, or set it to LEAD and/or CONTACT.'
+          'Sales users can read lead, contact and company activity only: leave targetType unset, or set it to LEAD, CONTACT and/or COMPANY.'
         )
       }
 

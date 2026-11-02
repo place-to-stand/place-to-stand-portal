@@ -68,6 +68,9 @@ export async function createLeadFromInput(
       contactEmail: payload.email ?? null,
       contactPhone: payload.phone ?? null,
       companyName: payload.company ?? null,
+      // An id wins over the name: no fuzzy match, no duplicate company.
+      companyId: payload.companyId ?? undefined,
+      contactId: payload.contactId ?? undefined,
       companyWebsite: payload.website ?? null,
       notes: payload.notes ? toRichTextHtml(payload.notes) : null,
     },
@@ -111,6 +114,8 @@ export async function updateLeadFromInput(
       contactEmail: keep(payload.email, lead.contactEmail),
       contactPhone: keep(payload.phone, lead.contactPhone),
       companyName: keep(payload.company, lead.companyName),
+      companyId: payload.companyId,
+      contactId: payload.contactId,
       // Omitted = leave it; `website` on the read side is the company's.
       companyWebsite: payload.website,
       notes:

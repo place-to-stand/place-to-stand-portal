@@ -34,7 +34,11 @@ export async function logActivity(options: LogActivityOptions) {
     await db.insert(activityLogs).values({
       actorId: options.actorId ?? null,
       actorRole,
-      source: options.source ?? DEFAULT_SOURCE,
+      // A row written while an MCP agent acts (e.g. a company a lead save
+      // creates on the side) is the agent's, even when its core passes no
+      // source.
+      source:
+        options.source ?? (currentActivityAgent() ? 'MCP' : DEFAULT_SOURCE),
       verb: options.verb,
       summary: options.summary,
       targetType: options.targetType,
