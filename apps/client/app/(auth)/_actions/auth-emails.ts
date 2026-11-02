@@ -1,6 +1,5 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { z } from 'zod'
 
 import {
@@ -10,7 +9,7 @@ import {
   sendPasswordResetEmail,
 } from '@/lib/email/auth-emails'
 import { allowAuthEmail } from '@/lib/auth/throttle'
-import { getEnv } from '@/lib/env.server'
+import { appOrigin } from '@/lib/app-origin'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
@@ -115,7 +114,7 @@ async function dispatch(
       return
     }
 
-    const actionLink = buildConfirmLink(await resolveOrigin(), tokenHash, type)
+    const actionLink = buildConfirmLink(appOrigin(), tokenHash, type)
 
     if (type === 'recovery') {
       await sendPasswordResetEmail(parsed.data, actionLink)
@@ -149,25 +148,4 @@ function buildConfirmLink(
   const params = new URLSearchParams({ token_hash: tokenHash, type })
 
   return `${origin}/auth/confirm?${params}`
-}
-
-/**
- * The request origin is the portal itself, so it is the most accurate value and
- * needs no configuration. `APP_BASE_URL` is the fallback for contexts without
- * request headers.
- */
-async function resolveOrigin(): Promise<string> {
-  const origin = (await headers()).get('origin')
-
-  if (origin) return origin
-
-  const { APP_BASE_URL } = getEnv()
-
-  if (!APP_BASE_URL) {
-    throw new Error(
-      'Cannot build an auth link: no request origin and APP_BASE_URL is unset.'
-    )
-  }
-
-  return APP_BASE_URL
 }

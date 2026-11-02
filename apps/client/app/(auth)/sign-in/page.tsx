@@ -21,10 +21,10 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 /**
  * Stops a user who clicks twice from mailing themselves twice.
  *
- * This used to be cosmetic — hosted Supabase enforced its own emails-per-hour
- * limit underneath. Sending through the admin API bypasses that limit, so this
- * cooldown is now the only brake on repeated sends, and it is client-side only.
- * A server-side throttle is still owed.
+ * A courtesy only: the real limit is `allowAuthEmail` on the server (per
+ * address and per IP). Password sign-in is different: it goes from the browser
+ * straight to Supabase, so our own count can be skipped by calling Supabase
+ * directly. Only Supabase's CAPTCHA and per-IP limit stop that.
  */
 const MAGIC_LINK_COOLDOWN_SECONDS = 30
 

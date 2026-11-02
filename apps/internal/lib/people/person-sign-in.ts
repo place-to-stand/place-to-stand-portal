@@ -7,6 +7,7 @@ import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { contacts, users } from '@/lib/db/schema'
 import { sendPasswordResetEmail } from '@/lib/email/auth-emails'
+import { appOrigin } from '@/lib/app-origin'
 import { serverEnv } from '@/lib/env.server'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 
@@ -60,9 +61,7 @@ export async function sendPersonPasswordReset(
 
   // Client sign-ins reset on the client portal; staff on this one.
   const origin =
-    signIn.role === 'CLIENT'
-      ? serverEnv.CLIENT_PORTAL_URL
-      : (serverEnv.APP_BASE_URL ?? 'http://localhost:3000')
+    signIn.role === 'CLIENT' ? serverEnv.CLIENT_PORTAL_URL : appOrigin()
   const params = new URLSearchParams({
     token_hash: tokenHash,
     type: 'recovery',

@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+import {
+  centsToAmount,
+  invoiceTotals,
+  lineItemCents,
+} from '@/lib/invoices/invoice-totals'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
 import type { ClientPickerRow } from '@/lib/types'
 
@@ -250,25 +255,13 @@ export const createInvoiceSavePayload = (
 export const computeLineItemAmount = (
   quantity: number,
   unitPrice: number
-): number => {
-  return Math.round(quantity * unitPrice * 100) / 100
-}
+): number => centsToAmount(lineItemCents(quantity, unitPrice))
 
 export const computeInvoiceTotals = (
   lineItems: Array<{ quantity: number; unitPrice: number }>,
   taxRatePercent: number
-): { subtotal: number; taxAmount: number; total: number } => {
-  const subtotal = lineItems.reduce(
-    (sum, li) => sum + computeLineItemAmount(li.quantity, li.unitPrice),
-    0
-  )
-
-  const taxDecimal = taxRatePercent / 100
-  const taxAmount = Math.round(subtotal * taxDecimal * 100) / 100
-  const total = Math.round((subtotal + taxAmount) * 100) / 100
-
-  return { subtotal, taxAmount, total }
-}
+): { subtotal: number; taxAmount: number; total: number } =>
+  invoiceTotals(lineItems, taxRatePercent / 100)
 
 // ---------------------------------------------------------------------------
 // Re-exports for convenience

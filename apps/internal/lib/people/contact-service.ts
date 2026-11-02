@@ -9,7 +9,8 @@ export const contactSchema = z.object({
     .union([z.string().trim().email('Enter a valid email'), z.literal('')])
     .optional()
     .nullable()
-    .transform(value => (value ? value : null)),
+    // Stored lowercase: one person per address whatever its case.
+    .transform(value => (value ? value.toLowerCase() : null)),
   name: z.string().min(1, 'Name is required').max(160),
   phone: z
     .string()

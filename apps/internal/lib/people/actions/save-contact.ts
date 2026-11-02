@@ -30,10 +30,7 @@ import {
   leaveCompany,
   setMembershipTitle,
 } from '@/lib/queries/memberships'
-import {
-  contactSchema,
-  type ContactInput,
-} from '@/lib/people/contact-service'
+import { contactSchema, type ContactInput } from '@/lib/people/contact-service'
 
 import {
   buildMutationResult,
@@ -156,13 +153,13 @@ export async function loadExistingContact(
   return existing ?? null
 }
 
+/** The plain unique key and its case-blind twin (migration 0124). */
+const EMAIL_CONSTRAINTS = ['contacts_email_key', 'uq_contacts_email_lower']
+
 export function isEmailConflict(error: unknown) {
-  return (
-    error instanceof Error &&
-    String(error.message + String(error.cause ?? '')).includes(
-      'contacts_email_key'
-    )
-  )
+  if (!(error instanceof Error)) return false
+  const text = error.message + String(error.cause ?? '')
+  return EMAIL_CONSTRAINTS.some(name => text.includes(name))
 }
 
 /**
