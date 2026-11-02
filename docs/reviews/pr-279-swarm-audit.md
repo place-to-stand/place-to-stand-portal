@@ -321,6 +321,7 @@ My recommendation comes first in each. None of these is built.
   - Consolidate the seven "list clients/companies" queries.
   - Move company write logic from `queries/` to `lib/companies/`.
   - Recommended, as a follow-up.
+  - **Now guarded by lint** (`pts/query-layer-purity`): a `lib/queries` file can't import activity logging (`lib/activity/logger`, `lib/activity/events`) or permission helpers (`lib/auth/permissions`, `capabilities`, `roles`, `session`; type-only imports are fine). The 22 files that already do are allowlisted in `apps/internal/eslint.config.mjs` (`QUERY_LAYER_ALLOWLIST`): permission checks in 20 (`assertAdmin`, `assertCrmAccess`, `ensureProjectAccess`, `ensureTaskAccess`, `roleCan`) and logging in 4 (`companies.ts`, `task-comments.ts`, `contacts/settings/contact-client-link-activity.ts`, `time-logs/mutations.ts`). D12 is moving each one's checks and logging up into `lib/data`, `lib/<domain>` or the server action, then deleting its allowlist line.
 - **D14.** Commission parties: collapse user-or-contact pairs to one `contact_id`. Every user now has a person. Recommended after release.
 - **D16.** Drop `activity_logs.context_route` (never written, 4,894 / 4,894 null). Recommended.
 - **D17.** Drop 7 duplicate indexes. Recommended.

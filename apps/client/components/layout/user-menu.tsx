@@ -43,7 +43,7 @@ export function UserMenu({ email, fullName, scopedClients }: UserMenuProps) {
           size='sm'
           className='min-w-0'
           // Starts with the visible name (WCAG 2.5.3), then says what it is.
-          aria-label={`${firstName}, account menu`}
+          aria-label={`${firstName}, your menu`}
         >
           <span className='truncate'>{firstName}</span>
           <ChevronDownIcon aria-hidden='true' />

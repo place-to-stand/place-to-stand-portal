@@ -39,7 +39,7 @@ export function SupabaseListener() {
           ) {
             // Full reload on session loss drops all client state and
             // re-runs middleware — router.push would keep stale trees.
-            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full reload on session loss drops stale client state
             window.location.href = '/sign-in';
           }
         }).catch(() => {});

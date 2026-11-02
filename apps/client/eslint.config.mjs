@@ -1,17 +1,5 @@
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
-import nextTypescript from "eslint-config-next/typescript";
+import { nextApp } from '@pts/eslint-config/next'
 
-const eslintConfig = defineConfig([
-  ...nextCoreWebVitals,
-  ...nextTypescript,
-  globalIgnores([
-    "node_modules/**",
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
-
-export default eslintConfig;
+// Shared with apps/internal: packages/eslint-config/next.mjs. The client
+// portal has no entity registry, so entity colour classes are banned outright.
+export default nextApp({ dir: import.meta.dirname })

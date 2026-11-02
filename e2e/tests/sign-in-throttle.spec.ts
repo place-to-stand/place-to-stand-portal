@@ -15,7 +15,7 @@ test.skip(!process.env.E2E_WRITES, 'set E2E_WRITES=1 on a throwaway database')
 test.use({ storageState: { cookies: [], origins: [] } })
 
 const PER_EMAIL_LIMIT = 10
-const THROTTLED = 'Too many sign-in attempts. Try again in a few minutes.'
+const THROTTLED = 'Too many attempts to sign in. Try again in a few minutes.'
 const PORTAL_URL = process.env.E2E_PORTAL_URL ?? 'http://localhost:3011'
 
 function madeUpEmail() {

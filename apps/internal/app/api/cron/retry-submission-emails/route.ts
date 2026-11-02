@@ -54,12 +54,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (ids.length > 0) {
-      console.log(
-        `Retried email for ${ids.length} submission(s); ${stillQueued} still queued`
-      )
-    }
-
     // Checked after the retries so a row that just went out is not reported.
     const stuck = await listSubmissionsStuckAtThreshold()
 

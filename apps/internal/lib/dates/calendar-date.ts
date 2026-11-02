@@ -3,7 +3,6 @@ import {
   endOfMonth,
   endOfQuarter,
   endOfWeek,
-  format,
   isValid,
   parse,
   startOfMonth,
@@ -43,7 +42,8 @@ export function isCalendarDate(value: unknown): value is CalendarDate {
 
 /** `Date` (local fields) → `YYYY-MM-DD`. */
 export function toCalendarDate(date: Date): CalendarDate {
-  return format(date, CALENDAR_DATE_FORMAT)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
 /** `YYYY-MM-DD` → local-midnight `Date`; undefined for anything else. */

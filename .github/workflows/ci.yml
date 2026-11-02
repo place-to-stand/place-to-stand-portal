@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, type-check, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # No secrets: the build only needs env that passes the apps' env
+      # schemas (apps/*/lib/env.server.ts). Nothing here is real.
+      HUSKY: '0'
+      NEXT_TELEMETRY_DISABLED: '1'
+      DISABLE_POSTHOG_UPLOAD_SOURCEMAPS: 'true'
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:54322/postgres
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+      SUPABASE_SERVICE_ROLE_KEY: placeholder
+      NEXT_PUBLIC_POSTHOG_KEY: placeholder
+      NEXT_PUBLIC_POSTHOG_HOST: http://localhost:8000
+      RESEND_API_KEY: placeholder
+      RESEND_FROM_EMAIL: dev@example.test
+      RESEND_REPLY_TO_EMAIL: dev@example.test
+      AI_GATEWAY_API_KEY: placeholder
+      GOOGLE_CLIENT_ID: placeholder
+      GOOGLE_CLIENT_SECRET: placeholder
+      GOOGLE_REDIRECT_URI: http://localhost:3000/api/auth/callback/google
+      CLIENT_PORTAL_URL: http://localhost:3001
+      INTERNAL_PORTAL_URL: http://localhost:3000
+      APP_BASE_URL: http://localhost:3000
+      GITHUB_APP_ID: placeholder
+      GITHUB_APP_PRIVATE_KEY: placeholder
+      GITHUB_APP_WEBHOOK_SECRET: placeholder
+      GITHUB_APP_CLIENT_ID: placeholder
+      GITHUB_APP_CLIENT_SECRET: placeholder
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      # 32 bytes of 0x01, base64: a well-formed key that encrypts nothing real.
+      OAUTH_TOKEN_ENCRYPTION_KEY: AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm run build

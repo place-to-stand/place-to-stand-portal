@@ -27,6 +27,7 @@ export type AuthEmailResult = { ok: true }
 
 const GENERIC_RESULT: AuthEmailResult = { ok: true }
 
+// permission: public — signed out by design; throttled per address and IP, same answer for every address
 export async function requestPasswordReset(
   email: string
 ): Promise<AuthEmailResult> {
@@ -34,6 +35,7 @@ export async function requestPasswordReset(
   return GENERIC_RESULT
 }
 
+// permission: public — signed out by design; throttled per address and IP, same answer for every address
 export async function requestMagicLink(
   email: string
 ): Promise<AuthEmailResult> {
@@ -50,6 +52,7 @@ export async function requestMagicLink(
  * address. Failures are logged only: the password did change, and the form must
  * not report otherwise.
  */
+// permission: public — mails only the signed-in session's own address, never one the caller names
 export async function notifyPasswordChanged(): Promise<AuthEmailResult> {
   try {
     const {
@@ -97,9 +100,11 @@ async function dispatch(
   if (!(await allowAuthEmail(parsed.data))) return
 
   try {
-    const { data, error } = await getSupabaseServiceClient().auth.admin.generateLink(
-      { type, email: parsed.data }
-    )
+    const { data, error } =
+      await getSupabaseServiceClient().auth.admin.generateLink({
+        type,
+        email: parsed.data,
+      })
 
     const tokenHash = data?.properties?.hashed_token
 

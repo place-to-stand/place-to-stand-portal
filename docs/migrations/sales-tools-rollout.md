@@ -48,9 +48,9 @@ Each step needs Jason's go. Claude never connects to production; Jason runs ever
 5. **Tell Kris and Dave**: about 15 minutes off-hours, don't edit anything.
 
 **The window**
-6. **Merge #279** to `main`. Vercel builds both apps; don't promote yet (auto-promotion off for this deploy).
-7. **Migrate**, Jason, from `packages/db`: `npm run db:migrate:prod; echo "exit $?"` → expect `exit 0`. Then `select count(*) from drizzle.__drizzle_migrations` → 118. If it fails, nothing changed (one transaction): stop, production is still at 0088.
-8. **Promote** the internal app, then the client portal.
+6. **Migrate first**, Jason, from `packages/db`: `npm run db:migrate:prod; echo "exit $?"` → expect `exit 0` and `Rows in drizzle.__drizzle_migrations: 118`. If it fails, the script prints the real error and nothing changed (one transaction): stop, production is still at 0088.
+7. **Then merge #279** to `main`. **A merge to `main` deploys both apps to production right away** (Vercel auto-promotes), so never merge before the migration has succeeded: new code on the old schema breaks every page. (On Nov 2 the merge went first and production errored for about two minutes until the migration finished.)
+8. **Check both deployments** reached Ready: internal app, then client portal.
 
 **Right after (smoke test)**
 9. **Sign in** to the internal app as yourself: People, Companies, a person sheet (User section), a company sheet (Client section).
@@ -132,16 +132,16 @@ Steps:
    - Confirm Supabase point-in-time recovery or a fresh daily backup.
    - Take an on-demand backup or `pg_dump -Fc` of production right before the window.
    - Note the timestamp.
-4. **Build both apps** from the release commit as Vercel deployments, but don't promote them yet.
+4. **Don't merge yet.** A merge to `main` deploys to production immediately; it comes after the migration (step 8).
 5. **Open the window.** Tell staff to stop editing for about 15 minutes. Portal users are few; an off-hours window is enough.
 6. **Run the "before" checks** (section 2a) and save the output.
 7. **Migrate.** From `packages/db`, with production's `DATABASE_URL` (Jason runs it):
    ```bash
    npm run db:migrate:prod
    ```
-   - drizzle-kit can hide error text, so check the exit code is 0.
-   - Confirm `select count(*) from drizzle.__drizzle_migrations` returns 118.
-8. **Promote both deployments** together: internal app, then client portal.
+   - The script (`packages/db/scripts/migrate.mjs`) prints the real error on failure; check the exit code is 0.
+   - Confirm it reports 118 rows in `drizzle.__drizzle_migrations`.
+8. **Merge to `main`**, which deploys both apps to production: internal app, then client portal.
    - **Add Dave to the Sales project** (project members) so his Sales role sees it from the first sign-in.
 9. **Run the "after" checks** (section 2b) and the click-test (section 4, step 5) on production.
 10. **Close the window.** Keep `archive_sales_tools` for at least one billing cycle. A later migration can drop it, except `client_id_map`, which stays for good (old client ids in activity rows and links still resolve through it).

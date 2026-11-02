@@ -163,7 +163,7 @@ const buildExtensions = (
       },
     }),
     Placeholder.configure({
-      placeholder: placeholder ?? 'Write a description...',
+      placeholder: placeholder ?? 'Write a description…',
     }),
     // ImageUploadNode is intentionally not registered: there is no real
     // upload backend yet (the old handler was a stub that inserted a

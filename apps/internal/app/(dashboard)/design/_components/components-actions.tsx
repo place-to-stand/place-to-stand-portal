@@ -162,7 +162,7 @@ export function ComponentsButtons() {
           </DisabledFieldTooltip>
         </Example>
         <Example caption='EntityList: the + only comes with its list (empty: clickable; locked: disabled with a reason)'>
-          <div className='grid w-full gap-6 sm:grid-cols-2'>
+          <div className='grid w-full grid-cols-1 gap-6 sm:grid-cols-2'>
             <EntityList
               title='People'
               add={{ label: 'Add person', onAdd: noop }}

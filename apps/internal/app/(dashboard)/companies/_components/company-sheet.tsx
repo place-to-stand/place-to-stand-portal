@@ -450,7 +450,8 @@ export function CompanySheet({
                   id={COMPANY_FORM_ID}
                   onSubmit={event => {
                     event.preventDefault()
-                    handleSave()
+                    // The save reports its own result as a toast.
+                    void handleSave()
                   }}
                   className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
                 >

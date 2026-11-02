@@ -42,10 +42,10 @@ export type PermissionsRegistry = {
   totals: Record<Endpoint['kind'], number> & { all: number }
 }
 
-/** `/api/clients/[id]` or `app/(dashboard)/clients/…` → "clients". */
+/** `/api/clients/[id]`, `app/(dashboard)/clients/…` or `lib/settings/…` → "clients" / "settings". */
 function sectionOf(endpoint: Endpoint) {
   const path = endpoint.file
-    .replace(/^apps\/internal\/app\//, '')
+    .replace(/^apps\/internal\/(?:app|lib|components)\//, '')
     .split('/')
     .filter(part => !/^\(.*\)$/.test(part) && part !== 'api' && part !== 'v1')
   return path[0]?.replace(/\.tsx?$/, '') || 'other'
@@ -81,7 +81,14 @@ export function buildPermissionsRegistry(): PermissionsRegistry {
     sections.set(section, [...(sections.get(section) ?? []), endpoint])
   }
 
-  const totals = { all: endpoints.length, capability: 0, admin: 0, token: 0, public: 0, delegated: 0 }
+  const totals = {
+    all: endpoints.length,
+    capability: 0,
+    admin: 0,
+    token: 0,
+    public: 0,
+    delegated: 0,
+  }
   for (const endpoint of endpoints) totals[endpoint.kind] += 1
 
   return {

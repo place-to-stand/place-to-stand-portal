@@ -363,7 +363,8 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
     }
 
     setGeneratingVersion(1)
-    generate({
+    // generate() catches and shows its own errors (usePlanStream's error).
+    void generate({
       threadId: ensured.threadId,
       repoLinkId: selectedRepoId,
       taskTitle: task.title,
@@ -396,7 +397,8 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
     const nextVersion = latestVersion + 1
     setGeneratingVersion(nextVersion)
-    generate({
+    // generate() catches and shows its own errors (usePlanStream's error).
+    void generate({
       threadId: activeThreadId,
       repoLinkId: selectedRepoId,
       taskTitle: task.title,
@@ -458,7 +460,8 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         title: 'Plan dispatched',
         description: 'GitHub issue created with PRD instructions.',
       })
-      queryClient.invalidateQueries({
+      // Background refetch: its errors land in the query, not here.
+      void queryClient.invalidateQueries({
         queryKey: [TASK_DEPLOYMENTS_KEY, task.id],
       })
     })

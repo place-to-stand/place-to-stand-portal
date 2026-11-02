@@ -44,7 +44,7 @@ const PASSWORD_SIGN_IN: AttemptPolicy = {
 
 /** Shown when sign-in is refused. Says nothing about whether the account exists. */
 export const SIGN_IN_THROTTLED_MESSAGE =
-  'Too many sign-in attempts. Try again in a few minutes.'
+  'Too many attempts to sign in. Try again in a few minutes.'
 
 /** Trimmed and lowercased, so `A@x.com ` and `a@x.com` share one bucket. */
 export function normaliseEmail(email: string): string {

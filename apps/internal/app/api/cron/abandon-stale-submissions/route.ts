@@ -31,10 +31,6 @@ export async function GET(request: NextRequest) {
     const abandonedCount = await abandonStaleFormSubmissions(STALE_AFTER_HOURS)
 
     if (abandonedCount > 0) {
-      console.log(
-        `Abandoned ${abandonedCount} stale in-progress submission(s)`
-      )
-
       const event = submissionsAbandonedEvent({
         count: abandonedCount,
         staleAfterHours: STALE_AFTER_HOURS,

@@ -65,7 +65,8 @@ export function LeadUpdatesSection({
   }, [lead.id])
 
   useEffect(() => {
-    fetchUpdates()
+    // fetchUpdates catches and reports its own errors.
+    void fetchUpdates()
   }, [fetchUpdates])
 
   // The heading's X bumps this; the form closes as if Cancel was clicked.

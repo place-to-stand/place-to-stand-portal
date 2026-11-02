@@ -79,7 +79,7 @@ function Kv({ label, value, wide = false }: KvProps) {
   )
 }
 
-const KV_GRID = 'grid gap-x-4 gap-y-3 sm:grid-cols-2'
+const KV_GRID = 'grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2'
 
 /** "42s" under a minute, "3m 12s" above it. */
 function formatDuration(ms: number): string {
@@ -368,7 +368,7 @@ export function SubmissionDetailSheet({
         <div className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'>
           <div className='flex flex-1 flex-col overflow-hidden max-lg:contents lg:border-r'>
             <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
-              <SheetSection title='Contact'>
+              <SheetSection title='Contact details'>
                 <dl className={KV_GRID}>
                   <Kv
                     label='Name'
