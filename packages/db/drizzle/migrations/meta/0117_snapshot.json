@@ -1,5 +1,5 @@
 {
-  "id": "3ecd4ae9-d3ad-41a3-b0e4-d9692748f119",
+  "id": "78da71f6-2cbb-4df0-be37-554294fccef0",
   "prevId": "9c8d947e-07d5-43c2-8b7c-c938f268285c",
   "version": "7",
   "dialect": "postgresql",
@@ -106,9 +106,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_activity_logs_type_created_at": {
           "name": "idx_activity_logs_type_created_at",
@@ -129,9 +129,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_activity_logs_project": {
           "name": "idx_activity_logs_project",
@@ -152,9 +152,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_activity_logs_target": {
           "name": "idx_activity_logs_target",
@@ -175,24 +175,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "activity_logs_actor_id_fkey": {
           "name": "activity_logs_actor_id_fkey",
           "tableFrom": "activity_logs",
-          "tableTo": "users",
           "columnsFrom": [
             "actor_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -278,24 +278,24 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "activity_overview_cache_user_id_fkey": {
           "name": "activity_overview_cache_user_id_fkey",
           "tableFrom": "activity_overview_cache",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -384,10 +384,10 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_billing_terms_resolution": {
           "name": "idx_billing_terms_resolution",
@@ -406,38 +406,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "billing_terms_company_id_fkey": {
           "name": "billing_terms_company_id_fkey",
           "tableFrom": "billing_terms",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "billing_terms_created_by_fkey": {
           "name": "billing_terms_created_by_fkey",
           "tableFrom": "billing_terms",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -525,10 +525,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "uq_client_billing_periods_open": {
           "name": "uq_client_billing_periods_open",
@@ -541,38 +541,38 @@
             }
           ],
           "isUnique": true,
-          "where": "(ends_on IS NULL AND deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(ends_on IS NULL AND deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "client_billing_periods_company_id_fkey": {
           "name": "client_billing_periods_company_id_fkey",
           "tableFrom": "client_billing_periods",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "client_billing_periods_created_by_fkey": {
           "name": "client_billing_periods_created_by_fkey",
           "tableFrom": "client_billing_periods",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -728,51 +728,51 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "client_updates_company_id_fkey": {
           "name": "client_updates_company_id_fkey",
           "tableFrom": "client_updates",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "client_updates_created_by_id_fkey": {
           "name": "client_updates_created_by_id_fkey",
           "tableFrom": "client_updates",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "client_updates_sent_by_id_fkey": {
           "name": "client_updates_sent_by_id_fkey",
           "tableFrom": "client_updates",
-          "tableTo": "users",
           "columnsFrom": [
             "sent_by_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -849,10 +849,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "uq_commission_term_closers_user": {
           "name": "uq_commission_term_closers_user",
@@ -871,10 +871,10 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL AND closer_user_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND closer_user_id IS NOT NULL)",
+          "concurrently": false
         },
         "uq_commission_term_closers_contact": {
           "name": "uq_commission_term_closers_contact",
@@ -893,51 +893,51 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL AND closer_contact_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND closer_contact_id IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "commission_term_closers_term_id_fkey": {
           "name": "commission_term_closers_term_id_fkey",
           "tableFrom": "commission_term_closers",
-          "tableTo": "commission_terms",
           "columnsFrom": [
             "term_id"
           ],
+          "tableTo": "commission_terms",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "commission_term_closers_closer_user_id_fkey": {
           "name": "commission_term_closers_closer_user_id_fkey",
           "tableFrom": "commission_term_closers",
-          "tableTo": "users",
           "columnsFrom": [
             "closer_user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "commission_term_closers_closer_contact_id_fkey": {
           "name": "commission_term_closers_closer_contact_id_fkey",
           "tableFrom": "commission_term_closers",
-          "tableTo": "contacts",
           "columnsFrom": [
             "closer_contact_id"
           ],
+          "tableTo": "contacts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -1035,10 +1035,10 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_commission_terms_resolution": {
           "name": "idx_commission_terms_resolution",
@@ -1057,64 +1057,64 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "commission_terms_company_id_fkey": {
           "name": "commission_terms_company_id_fkey",
           "tableFrom": "commission_terms",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "commission_terms_origination_user_id_fkey": {
           "name": "commission_terms_origination_user_id_fkey",
           "tableFrom": "commission_terms",
-          "tableTo": "users",
           "columnsFrom": [
             "origination_user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "commission_terms_origination_contact_id_fkey": {
           "name": "commission_terms_origination_contact_id_fkey",
           "tableFrom": "commission_terms",
-          "tableTo": "contacts",
           "columnsFrom": [
             "origination_contact_id"
           ],
+          "tableTo": "contacts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "commission_terms_created_by_fkey": {
           "name": "commission_terms_created_by_fkey",
           "tableFrom": "commission_terms",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -1225,26 +1225,26 @@
             }
           ],
           "isUnique": true,
-          "where": "is_staff",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "is_staff",
+          "concurrently": false
         },
         "idx_companies_name_unique": {
           "name": "idx_companies_name_unique",
           "columns": [
             {
               "expression": "lower(btrim(name))",
-              "asc": true,
               "isExpression": true,
+              "asc": true,
               "nulls": "last"
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_companies_name_trgm": {
           "name": "idx_companies_name_trgm",
@@ -1258,34 +1258,34 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "gin",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "companies_created_by_fkey": {
           "name": "companies_created_by_fkey",
           "tableFrom": "companies",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "companies_slug_key": {
           "name": "companies_slug_key",
-          "nullsNotDistinct": false,
           "columns": [
             "slug"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -1379,10 +1379,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_contacts_name_trgm": {
           "name": "idx_contacts_name_trgm",
@@ -1396,9 +1396,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "gin",
-          "with": {}
+          "concurrently": false
         },
         "idx_contacts_email_trgm": {
           "name": "idx_contacts_email_trgm",
@@ -1412,25 +1412,25 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "gin",
-          "with": {}
+          "concurrently": false
         },
         "idx_contacts_email_domain": {
           "name": "idx_contacts_email_domain",
           "columns": [
             {
               "expression": "split_part(email, '@', 2)",
-              "asc": true,
               "isExpression": true,
+              "asc": true,
               "nulls": "last"
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_contacts_user_id": {
           "name": "idx_contacts_user_id",
@@ -1444,55 +1444,55 @@
             }
           ],
           "isUnique": false,
-          "where": "(user_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(user_id IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "contacts_created_by_fkey": {
           "name": "contacts_created_by_fkey",
           "tableFrom": "contacts",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "contacts_user_id_fkey": {
           "name": "contacts_user_id_fkey",
           "tableFrom": "contacts",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "contacts_email_key": {
           "name": "contacts_email_key",
-          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         "contacts_user_id_key": {
           "name": "contacts_user_id_key",
-          "nullsNotDistinct": false,
           "columns": [
             "user_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -1665,12 +1665,6 @@
         "marketing_consent": {
           "name": "marketing_consent",
           "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "heard_from": {
-          "name": "heard_from",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1877,10 +1871,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND acknowledged_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND acknowledged_at IS NULL)",
+          "concurrently": false
         },
         "idx_form_submissions_kind_status": {
           "name": "idx_form_submissions_kind_status",
@@ -1901,10 +1895,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_form_submissions_last_activity_at": {
           "name": "idx_form_submissions_last_activity_at",
@@ -1917,10 +1911,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_form_submissions_contact_email": {
           "name": "idx_form_submissions_contact_email",
@@ -1934,35 +1928,35 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND contact_email IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND contact_email IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "form_submissions_acknowledged_by_users_id_fk": {
           "name": "form_submissions_acknowledged_by_users_id_fk",
           "tableFrom": "form_submissions",
-          "tableTo": "users",
           "columnsFrom": [
             "acknowledged_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "form_submissions_session_key_key": {
           "name": "form_submissions_session_key_key",
-          "nullsNotDistinct": false,
           "columns": [
             "session_key"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -2096,10 +2090,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_github_app_installations_status": {
           "name": "idx_github_app_installations_status",
@@ -2112,48 +2106,48 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "github_app_installations_company_id_fkey": {
           "name": "github_app_installations_company_id_fkey",
           "tableFrom": "github_app_installations",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "github_app_installations_installed_by_user_id_fkey": {
           "name": "github_app_installations_installed_by_user_id_fkey",
           "tableFrom": "github_app_installations",
-          "tableTo": "users",
           "columnsFrom": [
             "installed_by_user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "github_app_installations_installation_id_key": {
           "name": "github_app_installations_installation_id_key",
-          "nullsNotDistinct": false,
           "columns": [
             "installation_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -2267,10 +2261,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_github_repo_links_repo": {
           "name": "idx_github_repo_links_repo",
@@ -2284,10 +2278,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_github_repo_links_oauth": {
           "name": "idx_github_repo_links_oauth",
@@ -2301,10 +2295,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND oauth_connection_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND oauth_connection_id IS NOT NULL)",
+          "concurrently": false
         },
         "idx_github_repo_links_installation": {
           "name": "idx_github_repo_links_installation",
@@ -2318,75 +2312,75 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND github_app_installation_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND github_app_installation_id IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "github_repo_links_project_id_fkey": {
           "name": "github_repo_links_project_id_fkey",
           "tableFrom": "github_repo_links",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "github_repo_links_oauth_connection_id_fkey": {
           "name": "github_repo_links_oauth_connection_id_fkey",
           "tableFrom": "github_repo_links",
-          "tableTo": "oauth_connections",
           "columnsFrom": [
             "oauth_connection_id"
           ],
+          "tableTo": "oauth_connections",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "github_repo_links_github_app_installation_id_fkey": {
           "name": "github_repo_links_github_app_installation_id_fkey",
           "tableFrom": "github_repo_links",
-          "tableTo": "github_app_installations",
           "columnsFrom": [
             "github_app_installation_id"
           ],
+          "tableTo": "github_app_installations",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "github_repo_links_linked_by_fkey": {
           "name": "github_repo_links_linked_by_fkey",
           "tableFrom": "github_repo_links",
-          "tableTo": "users",
           "columnsFrom": [
             "linked_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "github_repo_links_project_repo_key": {
           "name": "github_repo_links_project_repo_key",
-          "nullsNotDistinct": false,
           "columns": [
             "project_id",
             "repo_full_name"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -2478,10 +2472,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_hour_blocks_company_id": {
           "name": "idx_hour_blocks_company_id",
@@ -2495,10 +2489,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_hour_blocks_created_by": {
           "name": "idx_hour_blocks_created_by",
@@ -2512,10 +2506,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_hour_blocks_invoice_line_item_unique": {
           "name": "idx_hour_blocks_invoice_line_item_unique",
@@ -2528,38 +2522,38 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL AND invoice_line_item_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND invoice_line_item_id IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "hour_blocks_created_by_fkey": {
           "name": "hour_blocks_created_by_fkey",
           "tableFrom": "hour_blocks",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "hour_blocks_company_id_fkey": {
           "name": "hour_blocks_company_id_fkey",
           "tableFrom": "hour_blocks",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -2668,10 +2662,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_invoice_line_items_product_catalog": {
           "name": "idx_invoice_line_items_product_catalog",
@@ -2685,38 +2679,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND product_catalog_item_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND product_catalog_item_id IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "invoice_line_items_invoice_id_fkey": {
           "name": "invoice_line_items_invoice_id_fkey",
           "tableFrom": "invoice_line_items",
-          "tableTo": "invoices",
           "columnsFrom": [
             "invoice_id"
           ],
+          "tableTo": "invoices",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "invoice_line_items_product_catalog_item_id_fkey": {
           "name": "invoice_line_items_product_catalog_item_id_fkey",
           "tableFrom": "invoice_line_items",
-          "tableTo": "product_catalog_items",
           "columnsFrom": [
             "product_catalog_item_id"
           ],
+          "tableTo": "product_catalog_items",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -2893,10 +2887,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_invoices_status": {
           "name": "idx_invoices_status",
@@ -2909,10 +2903,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_invoices_created_by": {
           "name": "idx_invoices_created_by",
@@ -2926,10 +2920,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_invoices_share_token": {
           "name": "idx_invoices_share_token",
@@ -2942,10 +2936,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)",
+          "concurrently": false
         },
         "idx_invoices_stripe_checkout_session": {
           "name": "idx_invoices_stripe_checkout_session",
@@ -2958,55 +2952,55 @@
             }
           ],
           "isUnique": false,
-          "where": "(stripe_checkout_session_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(stripe_checkout_session_id IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "invoices_company_id_fkey": {
           "name": "invoices_company_id_fkey",
           "tableFrom": "invoices",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "invoices_created_by_fkey": {
           "name": "invoices_created_by_fkey",
           "tableFrom": "invoices",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "invoices_invoice_number_unique": {
           "name": "invoices_invoice_number_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "invoice_number"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         "invoices_share_token_unique": {
           "name": "invoices_share_token_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "share_token"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -3071,9 +3065,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_lead_stage_history_changed_at": {
           "name": "idx_lead_stage_history_changed_at",
@@ -3086,37 +3080,37 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "lead_stage_history_lead_id_fkey": {
           "name": "lead_stage_history_lead_id_fkey",
           "tableFrom": "lead_stage_history",
-          "tableTo": "leads",
           "columnsFrom": [
             "lead_id"
           ],
+          "tableTo": "leads",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "lead_stage_history_changed_by_fkey": {
           "name": "lead_stage_history_changed_by_fkey",
           "tableFrom": "lead_stage_history",
-          "tableTo": "users",
           "columnsFrom": [
             "changed_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3209,10 +3203,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_lead_updates_author": {
           "name": "idx_lead_updates_author",
@@ -3226,38 +3220,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "lead_updates_lead_id_fkey": {
           "name": "lead_updates_lead_id_fkey",
           "tableFrom": "lead_updates",
-          "tableTo": "leads",
           "columnsFrom": [
             "lead_id"
           ],
+          "tableTo": "leads",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "lead_updates_author_id_fkey": {
           "name": "lead_updates_author_id_fkey",
           "tableFrom": "lead_updates",
-          "tableTo": "users",
           "columnsFrom": [
             "author_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -3414,10 +3408,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_leads_assignee": {
           "name": "idx_leads_assignee",
@@ -3431,10 +3425,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_leads_company": {
           "name": "idx_leads_company",
@@ -3448,10 +3442,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND company_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND company_id IS NOT NULL)",
+          "concurrently": false
         },
         "idx_leads_contact": {
           "name": "idx_leads_contact",
@@ -3465,51 +3459,51 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND contact_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND contact_id IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "leads_assignee_id_fkey": {
           "name": "leads_assignee_id_fkey",
           "tableFrom": "leads",
-          "tableTo": "users",
           "columnsFrom": [
             "assignee_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "leads_company_id_fkey": {
           "name": "leads_company_id_fkey",
           "tableFrom": "leads",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "leads_contact_id_fkey": {
           "name": "leads_contact_id_fkey",
           "tableFrom": "leads",
-          "tableTo": "contacts",
           "columnsFrom": [
             "contact_id"
           ],
+          "tableTo": "contacts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -3607,10 +3601,10 @@
             }
           ],
           "isUnique": true,
-          "where": "(ended_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(ended_at IS NULL)",
+          "concurrently": false
         },
         "memberships_one_primary_per_company": {
           "name": "memberships_one_primary_per_company",
@@ -3623,10 +3617,10 @@
             }
           ],
           "isUnique": true,
-          "where": "(is_primary AND ended_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(is_primary AND ended_at IS NULL)",
+          "concurrently": false
         },
         "idx_memberships_company_current": {
           "name": "idx_memberships_company_current",
@@ -3639,38 +3633,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(ended_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(ended_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "memberships_contact_id_fkey": {
           "name": "memberships_contact_id_fkey",
           "tableFrom": "memberships",
-          "tableTo": "contacts",
           "columnsFrom": [
             "contact_id"
           ],
+          "tableTo": "contacts",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "memberships_company_id_fkey": {
           "name": "memberships_company_id_fkey",
           "tableFrom": "memberships",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -3765,25 +3759,25 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "monthly_close_snapshots_closed_by_fkey": {
           "name": "monthly_close_snapshots_closed_by_fkey",
           "tableFrom": "monthly_close_snapshots",
-          "tableTo": "users",
           "columnsFrom": [
             "closed_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -3890,10 +3884,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(cleared_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(cleared_at IS NULL)",
+          "concurrently": false
         },
         "idx_notifications_user_dedupe": {
           "name": "idx_notifications_user_dedupe",
@@ -3914,38 +3908,38 @@
             }
           ],
           "isUnique": true,
-          "where": "(dedupe_key IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(dedupe_key IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "notifications_user_id_fkey": {
           "name": "notifications_user_id_fkey",
           "tableFrom": "notifications",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "notifications_actor_id_fkey": {
           "name": "notifications_actor_id_fkey",
           "tableFrom": "notifications",
-          "tableTo": "users",
           "columnsFrom": [
             "actor_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -4082,10 +4076,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_oauth_connections_provider": {
           "name": "idx_oauth_connections_provider",
@@ -4098,37 +4092,37 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND status = 'ACTIVE')",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND status = 'ACTIVE')",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "oauth_connections_user_id_fkey": {
           "name": "oauth_connections_user_id_fkey",
           "tableFrom": "oauth_connections",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "oauth_connections_user_provider_account_key": {
           "name": "oauth_connections_user_provider_account_key",
-          "nullsNotDistinct": false,
           "columns": [
             "user_id",
             "provider",
             "provider_account_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -4197,24 +4191,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "plan_messages_thread_id_fkey": {
           "name": "plan_messages_thread_id_fkey",
           "tableFrom": "plan_messages",
-          "tableTo": "plan_threads",
           "columnsFrom": [
             "thread_id"
           ],
+          "tableTo": "plan_threads",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -4279,35 +4273,35 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "plan_revisions_thread_id_fkey": {
           "name": "plan_revisions_thread_id_fkey",
           "tableFrom": "plan_revisions",
-          "tableTo": "plan_threads",
           "columnsFrom": [
             "thread_id"
           ],
+          "tableTo": "plan_threads",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "plan_revisions_thread_version_key": {
           "name": "plan_revisions_thread_version_key",
-          "nullsNotDistinct": false,
           "columns": [
             "thread_id",
             "version"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -4397,24 +4391,24 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "plan_threads_session_id_fkey": {
           "name": "plan_threads_session_id_fkey",
           "tableFrom": "plan_threads",
-          "tableTo": "planning_sessions",
           "columnsFrom": [
             "session_id"
           ],
+          "tableTo": "planning_sessions",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -4488,50 +4482,50 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "planning_sessions_task_id_fkey": {
           "name": "planning_sessions_task_id_fkey",
           "tableFrom": "planning_sessions",
-          "tableTo": "tasks",
           "columnsFrom": [
             "task_id"
           ],
+          "tableTo": "tasks",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "planning_sessions_repo_link_id_fkey": {
           "name": "planning_sessions_repo_link_id_fkey",
           "tableFrom": "planning_sessions",
-          "tableTo": "github_repo_links",
           "columnsFrom": [
             "repo_link_id"
           ],
+          "tableTo": "github_repo_links",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "planning_sessions_created_by_fkey": {
           "name": "planning_sessions_created_by_fkey",
           "tableFrom": "planning_sessions",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4636,10 +4630,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND is_active = true)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND is_active = true)",
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -4756,10 +4750,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_project_integration_links_external": {
           "name": "idx_project_integration_links_external",
@@ -4779,50 +4773,50 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "project_integration_links_project_id_fkey": {
           "name": "project_integration_links_project_id_fkey",
           "tableFrom": "project_integration_links",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "project_integration_links_linked_by_fkey": {
           "name": "project_integration_links_linked_by_fkey",
           "tableFrom": "project_integration_links",
-          "tableTo": "users",
           "columnsFrom": [
             "linked_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "project_integration_links_project_provider_external_key": {
           "name": "project_integration_links_project_provider_external_key",
-          "nullsNotDistinct": false,
           "columns": [
             "project_id",
             "provider",
             "external_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -4885,62 +4879,62 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "project_members_project_id_fkey": {
           "name": "project_members_project_id_fkey",
           "tableFrom": "project_members",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "project_members_user_id_fkey": {
           "name": "project_members_user_id_fkey",
           "tableFrom": "project_members",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "project_members_created_by_fkey": {
           "name": "project_members_created_by_fkey",
           "tableFrom": "project_members",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "project_members_project_user_key": {
           "name": "project_members_project_user_key",
-          "nullsNotDistinct": false,
           "columns": [
             "project_id",
             "user_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -5050,10 +5044,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_projects_name": {
           "name": "idx_projects_name",
@@ -5067,9 +5061,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_projects_name_trgm": {
           "name": "idx_projects_name_trgm",
@@ -5083,9 +5077,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "gin",
-          "with": {}
+          "concurrently": false
         },
         "idx_projects_slug_trgm": {
           "name": "idx_projects_slug_trgm",
@@ -5099,9 +5093,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "gin",
-          "with": {}
+          "concurrently": false
         },
         "idx_projects_created_by": {
           "name": "idx_projects_created_by",
@@ -5115,10 +5109,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_projects_owner": {
           "name": "idx_projects_owner",
@@ -5132,10 +5126,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND owner_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND owner_id IS NOT NULL)",
+          "concurrently": false
         },
         "idx_projects_slug": {
           "name": "idx_projects_slug",
@@ -5149,51 +5143,51 @@
             }
           ],
           "isUnique": true,
-          "where": "(slug IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(slug IS NOT NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "projects_company_id_fkey": {
           "name": "projects_company_id_fkey",
           "tableFrom": "projects",
-          "tableTo": "companies",
           "columnsFrom": [
             "company_id"
           ],
+          "tableTo": "companies",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "projects_created_by_fkey": {
           "name": "projects_created_by_fkey",
           "tableFrom": "projects",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "projects_owner_id_fkey": {
           "name": "projects_owner_id_fkey",
           "tableFrom": "projects",
-          "tableTo": "users",
           "columnsFrom": [
             "owner_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -5251,9 +5245,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -5319,38 +5313,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "task_assignee_metadata_task_id_fkey": {
           "name": "task_assignee_metadata_task_id_fkey",
           "tableFrom": "task_assignee_metadata",
-          "tableTo": "tasks",
           "columnsFrom": [
             "task_id"
           ],
+          "tableTo": "tasks",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "task_assignee_metadata_user_id_fkey": {
           "name": "task_assignee_metadata_user_id_fkey",
           "tableFrom": "task_assignee_metadata",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -5377,15 +5371,15 @@
           "primaryKey": true,
           "notNull": true,
           "identity": {
-            "type": "byDefault",
             "name": "task_assignees_id_seq",
-            "schema": "public",
             "increment": "1",
-            "startWith": "1",
             "minValue": "1",
             "maxValue": "9223372036854776000",
+            "startWith": "1",
             "cache": "1",
-            "cycle": false
+            "cycle": false,
+            "schema": "public",
+            "type": "byDefault"
           }
         },
         "task_id": {
@@ -5427,10 +5421,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "task_assignees_one_current_per_task": {
           "name": "task_assignees_one_current_per_task",
@@ -5443,49 +5437,49 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "task_assignees_task_id_fkey": {
           "name": "task_assignees_task_id_fkey",
           "tableFrom": "task_assignees",
-          "tableTo": "tasks",
           "columnsFrom": [
             "task_id"
           ],
+          "tableTo": "tasks",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "task_assignees_user_id_fkey": {
           "name": "task_assignees_user_id_fkey",
           "tableFrom": "task_assignees",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "task_assignees_task_id_user_id_key": {
           "name": "task_assignees_task_id_user_id_key",
-          "nullsNotDistinct": false,
           "columns": [
             "task_id",
             "user_id"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -5573,10 +5567,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_task_attachments_uploaded_by": {
           "name": "idx_task_attachments_uploaded_by",
@@ -5590,38 +5584,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "task_attachments_task_id_fkey": {
           "name": "task_attachments_task_id_fkey",
           "tableFrom": "task_attachments",
-          "tableTo": "tasks",
           "columnsFrom": [
             "task_id"
           ],
+          "tableTo": "tasks",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "task_attachments_uploaded_by_fkey": {
           "name": "task_attachments_uploaded_by_fkey",
           "tableFrom": "task_attachments",
-          "tableTo": "users",
           "columnsFrom": [
             "uploaded_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -5693,10 +5687,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_task_comments_task": {
           "name": "idx_task_comments_task",
@@ -5710,38 +5704,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "task_comments_task_id_fkey": {
           "name": "task_comments_task_id_fkey",
           "tableFrom": "task_comments",
-          "tableTo": "tasks",
           "columnsFrom": [
             "task_id"
           ],
+          "tableTo": "tasks",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "task_comments_author_id_fkey": {
           "name": "task_comments_author_id_fkey",
           "tableFrom": "task_comments",
-          "tableTo": "users",
           "columnsFrom": [
             "author_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -5862,9 +5856,9 @@
             }
           ],
           "isUnique": true,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_task_deployments_task": {
           "name": "idx_task_deployments_task",
@@ -5878,50 +5872,50 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "task_deployments_task_id_fkey": {
           "name": "task_deployments_task_id_fkey",
           "tableFrom": "task_deployments",
-          "tableTo": "tasks",
           "columnsFrom": [
             "task_id"
           ],
+          "tableTo": "tasks",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "task_deployments_repo_link_id_fkey": {
           "name": "task_deployments_repo_link_id_fkey",
           "tableFrom": "task_deployments",
-          "tableTo": "github_repo_links",
           "columnsFrom": [
             "repo_link_id"
           ],
+          "tableTo": "github_repo_links",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "task_deployments_created_by_fkey": {
           "name": "task_deployments_created_by_fkey",
           "tableFrom": "task_deployments",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6063,10 +6057,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_tasks_project": {
           "name": "idx_tasks_project",
@@ -6080,10 +6074,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_tasks_project_archived": {
           "name": "idx_tasks_project_archived",
@@ -6097,10 +6091,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NOT NULL)",
+          "concurrently": false
         },
         "idx_tasks_project_status_rank": {
           "name": "idx_tasks_project_status_rank",
@@ -6128,9 +6122,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_tasks_status": {
           "name": "idx_tasks_status",
@@ -6144,10 +6138,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_tasks_updated_by": {
           "name": "idx_tasks_updated_by",
@@ -6161,10 +6155,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_tasks_lead": {
           "name": "idx_tasks_lead",
@@ -6178,10 +6172,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND lead_id IS NOT NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND lead_id IS NOT NULL)",
+          "concurrently": false
         },
         "idx_tasks_completed_at": {
           "name": "idx_tasks_completed_at",
@@ -6195,64 +6189,64 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL AND status = 'DONE'::task_status)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL AND status = 'DONE'::task_status)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "tasks_project_id_fkey": {
           "name": "tasks_project_id_fkey",
           "tableFrom": "tasks",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "tasks_lead_id_fkey": {
           "name": "tasks_lead_id_fkey",
           "tableFrom": "tasks",
-          "tableTo": "leads",
           "columnsFrom": [
             "lead_id"
           ],
+          "tableTo": "leads",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "tasks_created_by_fkey": {
           "name": "tasks_created_by_fkey",
           "tableFrom": "tasks",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "tasks_updated_by_fkey": {
           "name": "tasks_updated_by_fkey",
           "tableFrom": "tasks",
-          "tableTo": "users",
           "columnsFrom": [
             "updated_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -6324,10 +6318,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(is_active = true)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(is_active = true)",
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -6335,10 +6329,10 @@
       "uniqueConstraints": {
         "tax_rates_state_unique": {
           "name": "tax_rates_state_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "state"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -6402,10 +6396,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_time_log_tasks_unique": {
           "name": "idx_time_log_tasks_unique",
@@ -6426,38 +6420,38 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "time_log_tasks_time_log_id_fkey": {
           "name": "time_log_tasks_time_log_id_fkey",
           "tableFrom": "time_log_tasks",
-          "tableTo": "time_logs",
           "columnsFrom": [
             "time_log_id"
           ],
+          "tableTo": "time_logs",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "time_log_tasks_task_id_fkey": {
           "name": "time_log_tasks_task_id_fkey",
           "tableFrom": "time_log_tasks",
-          "tableTo": "tasks",
           "columnsFrom": [
             "task_id"
           ],
+          "tableTo": "tasks",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -6547,10 +6541,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_time_logs_user_id": {
           "name": "idx_time_logs_user_id",
@@ -6564,10 +6558,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_time_logs_logged_on": {
           "name": "idx_time_logs_logged_on",
@@ -6580,10 +6574,10 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_time_logs_project_logged_on": {
           "name": "idx_time_logs_project_logged_on",
@@ -6603,38 +6597,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "time_logs_project_id_fkey": {
           "name": "time_logs_project_id_fkey",
           "tableFrom": "time_logs",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "time_logs_user_id_fkey": {
           "name": "time_logs_user_id_fkey",
           "tableFrom": "time_logs",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         }
       },
       "compositePrimaryKeys": {},
@@ -6684,15 +6678,15 @@
         "user_dashboard_layouts_user_id_fkey": {
           "name": "user_dashboard_layouts_user_id_fkey",
           "tableFrom": "user_dashboard_layouts",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -6776,10 +6770,10 @@
             }
           ],
           "isUnique": true,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         },
         "idx_user_role_terms_resolution": {
           "name": "idx_user_role_terms_resolution",
@@ -6798,38 +6792,38 @@
             }
           ],
           "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "where": "(deleted_at IS NULL)",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "user_role_terms_user_id_fkey": {
           "name": "user_role_terms_user_id_fkey",
           "tableFrom": "user_role_terms",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "restrict"
         },
         "user_role_terms_created_by_fkey": {
           "name": "user_role_terms_created_by_fkey",
           "tableFrom": "user_role_terms",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
@@ -6906,10 +6900,10 @@
       "uniqueConstraints": {
         "users_email_key": {
           "name": "users_email_key",
-          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -7126,11 +7120,10 @@
     }
   },
   "schemas": {},
-  "sequences": {},
-  "roles": {},
-  "policies": {},
   "views": {
     "public.client_portal_access": {
+      "name": "client_portal_access",
+      "schema": "public",
       "columns": {
         "company_id": {
           "name": "company_id",
@@ -7151,12 +7144,12 @@
           "notNull": false
         }
       },
-      "name": "client_portal_access",
-      "schema": "public",
-      "isExisting": true,
-      "materialized": false
+      "materialized": false,
+      "isExisting": true
     },
     "public.current_user_with_role": {
+      "name": "current_user_with_role",
+      "schema": "public",
       "columns": {
         "id": {
           "name": "id",
@@ -7173,12 +7166,13 @@
         }
       },
       "definition": "SELECT id, role FROM users u WHERE id = auth.uid() AND deleted_at IS NULL",
-      "name": "current_user_with_role",
-      "schema": "public",
-      "isExisting": false,
-      "materialized": false
+      "materialized": false,
+      "isExisting": false
     }
   },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
   "_meta": {
     "columns": {},
     "schemas": {},

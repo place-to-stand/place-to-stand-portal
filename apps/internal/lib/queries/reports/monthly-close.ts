@@ -1,5 +1,11 @@
+import { billingTypeAsOfSql } from '@pts/db/terms'
 import { billedInMonth } from '@pts/db/client-state'
-import { personAvatarOf, personAvatarSql, personNameOf, personNameSql } from '@pts/db/names'
+import {
+  personAvatarOf,
+  personAvatarSql,
+  personNameOf,
+  personNameSql,
+} from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -25,7 +31,6 @@ import {
   timeLogs,
   users,
 } from '@/lib/db/schema'
-import { billingTypeAsOfSql } from '@/lib/queries/companies/billing/billing-terms'
 import { liveDuring, roleAsOfSql } from '@/lib/queries/users/role-terms'
 import {
   commissionTermIdAsOfSql,

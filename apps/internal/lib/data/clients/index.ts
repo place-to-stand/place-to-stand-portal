@@ -1,3 +1,4 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import {
   clientEndedAtSql,
   clientSinceSql,
@@ -6,7 +7,6 @@ import {
 import { personAvatarOf, personNameOf } from '@pts/db/names'
 import 'server-only'
 
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,

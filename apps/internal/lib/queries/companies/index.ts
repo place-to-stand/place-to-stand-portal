@@ -1,3 +1,4 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { getClientHoursTotals } from '@pts/db/hours'
 import { personNameSql } from '@pts/db/names'
 import 'server-only'
@@ -22,9 +23,11 @@ import {
   sql,
 } from 'drizzle-orm'
 
-import { listCompanyMembers, primaryContactNameSql } from '@/lib/queries/memberships'
+import {
+  listCompanyMembers,
+  primaryContactNameSql,
+} from '@/lib/queries/memberships'
 import { roleCan } from '@/lib/auth/capabilities'
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
@@ -33,7 +36,11 @@ import {
 import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
-import type { CompanyDetail, CompanyListItem, CompanyOption } from '@/lib/companies/types'
+import type {
+  CompanyDetail,
+  CompanyListItem,
+  CompanyOption,
+} from '@/lib/companies/types'
 import { db } from '@/lib/db'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { companies, contacts, leads, users } from '@/lib/db/schema'

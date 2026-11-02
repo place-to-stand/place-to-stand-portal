@@ -1,4 +1,5 @@
 'use server'
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { wasClientCompany } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
@@ -11,7 +12,6 @@ import { db } from '@/lib/db'
 import { companies, projects, timeLogs } from '@/lib/db/schema'
 import { fetchProjectsForClient, type ClientProject } from '@/lib/data/clients'
 import {
-  currentBillingTypeSql,
   currentMonthStartUtc,
   nextMonthStartUtc,
 } from '@/lib/queries/companies/billing/billing-terms'

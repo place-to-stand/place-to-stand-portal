@@ -1,3 +1,4 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { clientEndedAtSql, wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
@@ -5,7 +6,6 @@ import { asc } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { companies } from '@/lib/db/schema'
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 
 /** A company that is or was a client, as every client picker lists it. */
 export type ClientDirectoryRow = {

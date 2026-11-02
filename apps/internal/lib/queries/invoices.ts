@@ -1,7 +1,7 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { clientEndedAtSql } from '@pts/db/client-state'
 import 'server-only'
 
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   and,
   asc,
@@ -159,7 +159,6 @@ type LineItemSelectionRow = {
   updatedAt: string
   deletedAt: string | null
 }
-
 
 // ---------------------------------------------------------------------------
 // List invoices
