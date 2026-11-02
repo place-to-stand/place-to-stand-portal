@@ -12,7 +12,7 @@
     "db:pull": "drizzle-kit pull --config drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
-    "db:migrate:prod": "dotenv -e .env.prod -- drizzle-kit migrate --config drizzle.config.ts",
+    "db:migrate:prod": "node ../../packages/db/scripts/migrate.mjs .env.prod",
     "db:reset": "supabase db reset --workdir ../.. && npm run db:migrate",
     "smoke:ui": "tsx --require ./scripts/stub-styles.cjs scripts/smoke-render-ui.tsx"
   },
