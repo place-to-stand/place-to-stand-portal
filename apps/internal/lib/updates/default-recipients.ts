@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { ClientContactRow } from '@/lib/queries/clients/contacts'
+import type { ClientContactRow } from '@/lib/queries/companies/billing/contacts'
 
 import type { StaffMember } from './staff'
 import type { ClientUpdateRecipients } from './types'

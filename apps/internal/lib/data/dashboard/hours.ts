@@ -1,4 +1,4 @@
-import { clientNameSql, personAvatarSql, personNameSql } from '@pts/db/names'
+import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import {
@@ -22,7 +22,7 @@ import type { ParsedSort } from '@/lib/pagination/sort'
 import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
 import { createSearchPattern } from '@/lib/pagination/cursor'
-import { billingTypeAsOfSql } from '@/lib/queries/clients/billing-terms'
+import { billingTypeAsOfSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   companies,
   hourBlocks,
@@ -212,7 +212,7 @@ export async function fetchTimeLogPage(
         projectSlug: projects.slug,
         projectType: projects.type,
         clientCompanyId: companies.id,
-        clientName: clientNameSql,
+        clientName: companies.name,
         clientSlug: companies.slug,
         companyId: companies.id,
       })
@@ -521,7 +521,7 @@ function timeLogSortOrder(sort: ParsedSort<TimeLogSortField> | undefined) {
       return [dir(sql`lower(coalesce(${personNameSql}, ${users.email}))`)]
     case 'client':
       // Logs without a client (internal/personal projects) sort last.
-      return [sql`${clientNameSql} is null`, dir(sql`lower(${clientNameSql})`)]
+      return [sql`${companies.name} is null`, dir(sql`lower(${companies.name})`)]
     case 'project':
       return [dir(sql`lower(${projects.name})`)]
   }

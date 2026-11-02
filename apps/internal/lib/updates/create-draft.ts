@@ -10,7 +10,7 @@ import { resolveClientIdentifier } from '@/lib/data/clients'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { BadRequestError } from '@/lib/errors/http'
-import { fetchContactsForClient } from '@/lib/queries/clients/contacts'
+import { fetchContactsForClient } from '@/lib/queries/companies/billing/contacts'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import { scaffoldItems } from './assemble'

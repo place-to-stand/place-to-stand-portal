@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { userRoleTerms, users } from '@/lib/db/schema'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { setRoleTerm } from '@/lib/queries/users/role-terms'
 import { and, eq, gt, isNull } from 'drizzle-orm'
 

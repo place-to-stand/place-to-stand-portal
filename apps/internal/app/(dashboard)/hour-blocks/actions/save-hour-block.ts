@@ -19,7 +19,7 @@ import { hourBlocks } from '@/lib/db/schema'
 import {
   currentMonthStartUtc,
   resolveHourBlockBillingMonth,
-} from '@/lib/queries/clients/billing-terms'
+} from '@/lib/queries/companies/billing/billing-terms'
 import {
   getActiveClientSummary,
   getHourBlockWithClientById,

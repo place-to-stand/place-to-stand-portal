@@ -1,5 +1,7 @@
+import "server-only"
+
 export * from "./selectors"
-export * from "./access"
+export * from "./directory"
 export * from "./settings/list-clients"
 export * from "./settings/members"
 export * from "./settings/users"

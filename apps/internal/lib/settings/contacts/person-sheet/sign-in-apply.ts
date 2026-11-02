@@ -19,7 +19,7 @@ import {
   users,
 } from '@/lib/db/schema'
 import { revokeUserOauthConnections } from '@/lib/oauth/revoke-user-connections'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { setRoleTerm } from '@/lib/queries/users/role-terms'
 import {
   createAuthUser,

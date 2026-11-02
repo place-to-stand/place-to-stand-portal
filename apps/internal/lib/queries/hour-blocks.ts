@@ -1,15 +1,14 @@
-import {
-  clientEndedAtSql,
-  isClientCompany,
-  wasClientCompany,
-} from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
+import { clientEndedAtSql, isClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
 import { and, asc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
+import {
+  listClientDirectory,
+  type ClientDirectoryRow,
+} from '@/lib/queries/companies/billing/directory'
 import { db } from '@/lib/db'
 import {
   companies,
@@ -72,13 +71,6 @@ type HourBlockSelection = {
   } | null
 }
 
-type ClientSelection = {
-  id: string
-  name: string
-  companyId: string
-  deletedAt: string | null
-}
-
 // The invoice* fields are derived from the invoice line that created the
 // block: every query using this selection must leftJoin invoiceLineItems on
 // hourBlocks.invoiceLineItemId, then invoices on invoiceLineItems.invoiceId.
@@ -101,7 +93,7 @@ const hourBlockSelection = {
 
 const clientSelection = {
   id: companies.id,
-  name: clientNameSql,
+  name: companies.name,
   companyId: companies.id,
   deletedAt: clientEndedAtSql,
 } as const
@@ -184,7 +176,7 @@ const HOUR_BLOCK_SORT_DESCRIPTORS: Record<
     orderDesc: sql`${hourBlocks.hoursPurchased} DESC`,
   },
   client: nullsLastDescriptor(
-    sql`lower(${clientNameSql})`,
+    sql`lower(${companies.name})`,
     row => row.client?.name.toLowerCase() ?? ''
   ),
   invoice: nullsLastDescriptor(
@@ -228,7 +220,7 @@ export async function listHourBlocksForSettings(
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clientNameSql} ILIKE ${pattern})`
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${companies.name} ILIKE ${pattern})`
     )
   }
 
@@ -358,11 +350,7 @@ export async function listHourBlocksForSettings(
         .select({ count: sql<number>`count(*)` })
         .from(hourBlocks)
         .where(statusCondition),
-      db
-        .select(clientSelection)
-        .from(companies)
-        .where(wasClientCompany())
-        .orderBy(asc(clientNameSql)),
+      listClientDirectory(),
     ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
@@ -439,12 +427,7 @@ export async function listHourBlockClientDirectory(
 ): Promise<HourBlockClient[]> {
   assertAdmin(user)
 
-  const rows = await db
-    .select(clientSelection)
-    .from(companies)
-    .where(wasClientCompany())
-    .orderBy(asc(clientNameSql))
-
+  const rows = await listClientDirectory()
   return rows.map(mapClientRow)
 }
 
@@ -507,11 +490,13 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
   }
 }
 
-function mapClientRow(row: ClientSelection): HourBlockClient {
+function mapClientRow(
+  row: Pick<ClientDirectoryRow, 'id' | 'name' | 'deletedAt'>
+): HourBlockClient {
   return {
     id: row.id,
     name: row.name,
-    company_id: row.companyId,
+    company_id: row.id,
     deleted_at: row.deletedAt,
   }
 }

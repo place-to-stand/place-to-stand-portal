@@ -1,4 +1,3 @@
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
@@ -12,7 +11,7 @@ import {
 } from '@/lib/db/schema'
 import { hourBlocksCreatedFromInvoiceEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { resolveHourBlockBillingMonth } from '@/lib/queries/clients/billing-terms'
+import { resolveHourBlockBillingMonth } from '@/lib/queries/companies/billing/billing-terms'
 
 /**
  * Creates hour blocks for qualifying invoice line items after payment.
@@ -32,7 +31,7 @@ export async function createHourBlocksFromInvoice(
       billingType: invoices.billingType,
       invoiceNumber: invoices.invoiceNumber,
       createdBy: invoices.createdBy,
-      clientName: clientNameSql,
+      clientName: companies.name,
     })
     .from(invoices)
     .leftJoin(companies, eq(invoices.companyId, companies.id))

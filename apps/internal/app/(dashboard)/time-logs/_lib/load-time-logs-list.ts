@@ -5,7 +5,7 @@ import { fetchProjectsLite } from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
 import type { ProjectWithRelations } from '@/lib/types'
 import { readPageSize } from '@/lib/pagination/page-size.server'
-import { fetchClientDirectory } from '@/lib/queries/clients'
+import { listClientDirectory } from '@/lib/queries/companies/billing'
 import { parseTimeLogsSearchParams } from '@/lib/time-logs/filters'
 
 type SearchParams = Record<string, string | string[] | undefined>
@@ -36,7 +36,7 @@ export async function loadTimeLogsList(
         sort: params.sort,
       }),
       countTimeLogs({ archived }),
-      fetchClientDirectory(),
+      listClientDirectory(),
       fetchProjectsLite(),
       fetchAdminUsers(),
     ])

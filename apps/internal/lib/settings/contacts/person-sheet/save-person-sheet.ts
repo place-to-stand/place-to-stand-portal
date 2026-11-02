@@ -28,7 +28,7 @@ import {
 } from '@/lib/settings/contacts/person-sheet-copy'
 
 import { SignInConflictError } from '@/lib/companies/portal-sign-ins'
-import { PortalAccessRefusal } from '@/lib/queries/clients/settings/client-contacts'
+import { PortalAccessRefusal } from '@/lib/queries/companies/billing/settings/client-contacts'
 import { PortalAccessForbiddenError } from '@/lib/queries/memberships'
 
 import {

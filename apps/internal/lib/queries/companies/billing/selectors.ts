@@ -1,11 +1,10 @@
 import { clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import { companies } from '@/lib/db/schema'
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,
-} from '@/lib/queries/clients/commission-terms'
+} from '@/lib/queries/companies/billing/commission-terms'
 
 // A client is a company you bill. Commission (origination, closers) lives
 // only on the commission terms; the origination fields are the newest term's.
@@ -33,7 +32,7 @@ export type SelectClient = {
 
 export const clientFields = {
   id: companies.id,
-  name: clientNameSql,
+  name: companies.name,
   slug: companies.slug,
   notes: companies.notes,
   billingType: currentBillingTypeSql(),
@@ -49,7 +48,7 @@ export const clientFields = {
 
 export const clientGroupByColumns = [
   companies.id,
-  clientNameSql,
+  companies.name,
   companies.slug,
   companies.notes,
   companies.state,

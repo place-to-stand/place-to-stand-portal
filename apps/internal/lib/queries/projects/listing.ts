@@ -1,11 +1,12 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
-import { clientNameSql, personNameSql } from '@pts/db/names'
+import { clientEndedAtSql } from '@pts/db/client-state'
+import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, desc, eq, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin, ensureProjectAccess } from '@/lib/auth/permissions'
+import { listClientDirectory } from '@/lib/queries/companies/billing/directory'
 import { db } from '@/lib/db'
 import { companies, projects, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -109,7 +110,7 @@ export async function listProjectsForSettings(
       project: projectSelection,
       client: {
         id: companies.id,
-        name: clientNameSql,
+        name: companies.name,
         deletedAt: clientEndedAtSql,
       },
       owner: {
@@ -169,14 +170,7 @@ export async function listProjectsForSettings(
       .select({ count: sql<number>`count(*)` })
       .from(projects)
       .where(statusCondition),
-    db
-      .select({
-        id: companies.id,
-        name: clientNameSql,
-        deletedAt: clientEndedAtSql,
-      })
-      .from(companies).where(wasClientCompany())
-      .orderBy(asc(clientNameSql)),
+    listClientDirectory(),
   ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)

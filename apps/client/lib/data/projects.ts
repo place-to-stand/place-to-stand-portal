@@ -1,5 +1,4 @@
 import { wasClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
@@ -58,7 +57,7 @@ export const fetchClientProjects = cache(
           )
         ),
       db
-        .select({ id: companies.id, name: clientNameSql })
+        .select({ id: companies.id, name: companies.name })
         .from(companies)
         .where(and(wasClientCompany(), inArray(companies.id, companyIds))),
     ])

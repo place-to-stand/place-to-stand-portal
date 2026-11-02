@@ -6,7 +6,7 @@ import {
   type PersonSheetInput,
   type PersonSheetResult,
 } from '@/lib/settings/contacts/person-sheet/save-person-sheet'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { listClosedMonthStarts } from '@/lib/queries/reports/close-snapshots'
 import {
   roleMonthOptions,

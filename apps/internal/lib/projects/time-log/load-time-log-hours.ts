@@ -14,7 +14,7 @@ import {
   billingTypeAsOfSql,
   currentMonthStartUtc,
   nextMonthStartUtc,
-} from '@/lib/queries/clients/billing-terms'
+} from '@/lib/queries/companies/billing/billing-terms'
 import { getTimeLogSummariesForProjects } from '@/lib/queries/time-logs/aggregates'
 
 const UUID_PATTERN =

@@ -1,4 +1,3 @@
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
@@ -69,13 +68,13 @@ export async function buildAssignmentsForUsers(
         .select({
           userId: sql<string>`${clientPortalAccess.userId}`,
           id: companies.id,
-          name: clientNameSql,
+          name: companies.name,
           slug: companies.slug,
         })
         .from(clientPortalAccess)
         .innerJoin(companies, eq(clientPortalAccess.companyId, companies.id))
         .where(inArray(clientPortalAccess.userId, userIds))
-        .orderBy(asc(clientNameSql)),
+        .orderBy(asc(companies.name)),
       db
         .select({
           userId: projects.ownerId,

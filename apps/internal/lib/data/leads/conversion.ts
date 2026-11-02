@@ -3,8 +3,7 @@ import {
   isClientCompany,
   wasClientCompany,
 } from '@pts/db/client-state'
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
-import { clientNameSql } from '@pts/db/names'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import 'server-only'
 
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
@@ -54,7 +53,7 @@ export async function fetchLeadConversionSummary(
     db
       .select({
         id: companies.id,
-        name: clientNameSql,
+        name: companies.name,
         slug: companies.slug,
         companyId: companies.id,
         deletedAt: clientEndedAtSql,

@@ -12,7 +12,7 @@ import {
 } from '@/lib/companies/portal-sign-ins'
 import { db, type DbTx } from '@/lib/db'
 import { companies } from '@/lib/db/schema'
-import { applyPortalAccessInTx } from '@/lib/queries/clients/settings/client-contacts'
+import { applyPortalAccessInTx } from '@/lib/queries/companies/billing/settings/client-contacts'
 import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import type { ContactSavePlan } from '@/lib/settings/contacts/actions/save-contact'
 

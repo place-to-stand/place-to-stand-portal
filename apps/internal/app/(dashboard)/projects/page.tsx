@@ -16,7 +16,7 @@ import { requireStaffUser } from '@/lib/auth/session'
 import type { AppUser } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import type { LandingProject } from '@/lib/data/projects'
-import { fetchClientDirectory } from '@/lib/queries/clients'
+import { listClientDirectory } from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
@@ -52,7 +52,7 @@ export default async function ProjectsPage({
     }),
     fetchLandingProjectCounts(user.id),
     fetchClientHoursSummaries(user),
-    fetchClientDirectory(),
+    listClientDirectory(),
     fetchAdminUsers(),
   ])
   const landingClients = buildLandingClients(projects)

@@ -7,7 +7,7 @@ import { userRoleTerms, users } from '@/lib/db/schema'
 import {
   currentMonthStartUtc,
   nextMonthStartUtc,
-} from '@/lib/queries/clients/billing-terms'
+} from '@/lib/queries/companies/billing/billing-terms'
 import { hasActiveSnapshotForDate } from '@/lib/queries/reports/close-snapshots'
 
 /**

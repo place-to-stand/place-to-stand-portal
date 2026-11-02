@@ -1,8 +1,7 @@
-import { wasClientCompany, clientEndedAtSql } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
+import { clientEndedAtSql } from '@pts/db/client-state'
 import 'server-only'
 
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   and,
   asc,
@@ -17,6 +16,10 @@ import {
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
+import {
+  listClientDirectory,
+  type ClientDirectoryRow,
+} from '@/lib/queries/companies/billing/directory'
 import { db } from '@/lib/db'
 import {
   companies,
@@ -93,7 +96,7 @@ const lineItemSelection = {
 
 const clientSelection = {
   id: companies.id,
-  name: clientNameSql,
+  name: companies.name,
   slug: companies.slug,
   companyId: companies.id,
   billingType: currentBillingTypeSql(),
@@ -157,14 +160,6 @@ type LineItemSelectionRow = {
   deletedAt: string | null
 }
 
-type ClientSelectionRow = {
-  id: string
-  name: string
-  slug: string | null
-  billingType: string
-  state: string | null
-  deletedAt: string | null
-}
 
 // ---------------------------------------------------------------------------
 // List invoices
@@ -215,8 +210,8 @@ const INVOICE_SORT_ORDERINGS: Record<
   // (no client) sink to the bottom either way, and a client's own invoices
   // stay newest-first so the grouping reads like the default view.
   client: {
-    asc: sql`LOWER(${clientNameSql}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
-    desc: sql`LOWER(${clientNameSql}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
+    asc: sql`LOWER(${companies.name}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`LOWER(${companies.name}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
   },
 }
 
@@ -250,7 +245,7 @@ export async function listInvoices(
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${clientNameSql} ILIKE ${pattern})`
+      sql`(${invoices.invoiceNumber} ILIKE ${pattern} OR ${companies.name} ILIKE ${pattern})`
     )
   }
 
@@ -294,11 +289,7 @@ export async function listInvoices(
       .select({ count: sql<number>`count(*)` })
       .from(invoices)
       .where(statusCondition),
-    db
-      .select(clientSelection)
-      .from(companies)
-      .where(wasClientCompany())
-      .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
+    listClientDirectory(),
     listProductCatalogItems(),
     listTaxRates(),
   ])
@@ -385,11 +376,7 @@ export async function listInvoiceReferenceData(
   assertAdmin(user)
 
   const [clientDirectory, productCatalog, activeTaxRates] = await Promise.all([
-    db
-      .select(clientSelection)
-      .from(companies)
-      .where(wasClientCompany())
-      .orderBy(asc(clientNameSql)) as Promise<ClientSelectionRow[]>,
+    listClientDirectory(),
     listProductCatalogItems(),
     listTaxRates(),
   ])
@@ -660,7 +647,7 @@ function mapLineItemRow(row: LineItemSelectionRow): InvoiceLineItemRow {
   }
 }
 
-function mapClientRow(row: ClientSelectionRow): InvoiceClient {
+function mapClientRow(row: ClientDirectoryRow): InvoiceClient {
   return {
     id: row.id,
     name: row.name,

@@ -1,5 +1,5 @@
 import { clientEndedAtSql } from '@pts/db/client-state'
-import { clientNameSql, personNameSql } from '@pts/db/names'
+import { personNameSql } from '@pts/db/names'
 import { companies, projects, users } from '@/lib/db/schema'
 import type { ProjectStatusValue } from '@/lib/constants'
 import type { ProjectTypeValue } from '@/lib/types'
@@ -70,7 +70,7 @@ export const projectGroupByColumns = [
   projects.updatedAt,
   projects.deletedAt,
   companies.id,
-  clientNameSql,
+  companies.name,
   clientEndedAtSql,
   users.id,
   personNameSql,

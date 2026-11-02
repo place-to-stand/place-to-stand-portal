@@ -1,5 +1,4 @@
 import { wasClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, inArray } from 'drizzle-orm'
@@ -44,7 +43,7 @@ export async function logContactClientLinkChanges(
         .from(contacts)
         .where(inArray(contacts.id, contactIds)),
       db
-        .select({ id: companies.id, name: clientNameSql })
+        .select({ id: companies.id, name: companies.name })
         .from(companies)
         .where(and(wasClientCompany(), inArray(companies.id, companyIds))),
     ])

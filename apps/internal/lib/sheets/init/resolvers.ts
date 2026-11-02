@@ -1,7 +1,7 @@
 import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { clientFields } from '@/lib/queries/clients/selectors'
+import { clientFields } from '@/lib/queries/companies/billing/selectors'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
@@ -24,7 +24,7 @@ import { ForbiddenError } from '@/lib/errors/http'
 import { roleCan } from '@/lib/auth/capabilities'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
-import { fetchClientDirectory } from '@/lib/queries/clients'
+import { listClientDirectory } from '@/lib/queries/companies/billing'
 import { getContactSheetInputById } from '@/lib/queries/contacts'
 import {
   getHourBlockWithClientById,
@@ -36,7 +36,7 @@ import {
 } from '@/lib/queries/invoices'
 import { getProjectById } from '@/lib/queries/projects'
 import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
-import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
+import { fetchLatestClosersByClient } from '@/lib/queries/companies/billing/commission-terms'
 import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 
 import { NEW_SHEET_VALUE } from '../entities'
@@ -169,7 +169,7 @@ const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {
   }
 
   const [clientDirectory, adminUsersResult] = await Promise.all([
-    fetchClientDirectory(),
+    listClientDirectory(),
     fetchAdminUsers(),
   ])
 

@@ -1,6 +1,5 @@
 import { isClientCompany } from '@pts/db/client-state'
 import { isAdminRole } from '@/lib/auth/roles'
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
@@ -139,7 +138,7 @@ async function fetchClientDetails(
     .select({
       contactId: clientPortalAccess.contactId,
       clientCompanyId: companies.id,
-      clientName: clientNameSql,
+      clientName: companies.name,
       clientSlug: companies.slug,
       companyId: companies.id,
     })
@@ -148,7 +147,7 @@ async function fetchClientDetails(
     .where(
       and(inArray(clientPortalAccess.contactId, contactIds), isClientCompany())
     )
-    .orderBy(asc(clientNameSql))
+    .orderBy(asc(companies.name))
 
   const result = new Map<string, LinkedClient[]>()
   for (const row of rows) {

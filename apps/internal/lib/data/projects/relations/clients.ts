@@ -2,7 +2,7 @@ import { isClientCompany } from '@pts/db/client-state'
 import { personAvatarSql, personNameSql } from '@pts/db/names'
 import { and, eq, inArray, isNotNull } from 'drizzle-orm'
 
-import { clientFields } from '@/lib/queries/clients/selectors'
+import { clientFields } from '@/lib/queries/companies/billing/selectors'
 import { db } from '@/lib/db'
 import {
   clientPortalAccess,

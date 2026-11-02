@@ -9,7 +9,7 @@ import {
 import { fetchAdminUsers } from '@/lib/data/users'
 import { requireUser } from '@/lib/auth/session'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
-import { fetchClientDirectory } from '@/lib/queries/clients'
+import { listClientDirectory } from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
@@ -26,7 +26,7 @@ export default async function ProjectReviewRoute({
   const [liteProjects, admins, clientDirectory] = await Promise.all([
     fetchProjectsLite(),
     fetchAdminUsers(),
-    fetchClientDirectory(),
+    listClientDirectory(),
   ])
 
   const allClients: ClientPickerRow[] = clientDirectory.map(c => ({

@@ -12,7 +12,7 @@ import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
-import { fetchClientDirectory } from '@/lib/queries/clients'
+import { listClientDirectory } from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/settings/projects/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/settings/projects/project-sheet-ui-state'
 
@@ -42,7 +42,7 @@ export default async function ProjectBoardRoute({
       fetchProjectsLite(),
       isAdmin ? fetchAdminUsers() : Promise.resolve([]),
       fetchCrmUsers(),
-      isAdmin ? fetchClientDirectory() : Promise.resolve([]),
+      isAdmin ? listClientDirectory() : Promise.resolve([]),
     ])
   const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)
 

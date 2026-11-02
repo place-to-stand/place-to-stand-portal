@@ -14,7 +14,7 @@ import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
 import { roleCan } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { roleAsOfSql } from '@/lib/queries/users/role-terms'
 import { applyDueRoleTerms } from '@/lib/settings/users/services/role'
 

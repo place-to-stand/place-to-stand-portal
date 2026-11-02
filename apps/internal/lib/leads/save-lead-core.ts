@@ -36,7 +36,7 @@ import {
   findOrCreateCompanyByName,
   getLinkableCompany,
   type DeferActivity,
-} from '@/lib/queries/companies'
+} from '@/lib/companies/write'
 import { joinCompany, mainCompanyIdSql } from '@/lib/queries/memberships'
 import type { ActivitySourceValue } from '@/lib/types'
 

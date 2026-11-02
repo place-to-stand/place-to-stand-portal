@@ -7,7 +7,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, projects } from '@/lib/db/schema'
-import { fetchLatestClosersByClient } from '@/lib/queries/clients/commission-terms'
+import { fetchLatestClosersByClient } from '@/lib/queries/companies/billing/commission-terms'
 import type { ClientCloser } from '@/lib/companies/billing/closers'
 import { DEFAULT_CLIENTS_SORT } from '@/lib/companies/billing/filters'
 

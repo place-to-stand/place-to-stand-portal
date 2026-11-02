@@ -1,8 +1,7 @@
 import { clientSinceSql, isClientCompany } from '@pts/db/client-state'
-import { clientNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { currentBillingTypeSql } from '@/lib/queries/clients/billing-terms'
+import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import { sql, type SQL } from 'drizzle-orm'
 
 import { companies } from '@/lib/db/schema'
@@ -48,7 +47,7 @@ export function buildSearchCondition(search: string | null | undefined): SQL | n
   }
 
   const pattern = createSearchPattern(trimmed)
-  return sql`(${clientNameSql} ILIKE ${pattern} OR ${companies.slug} ILIKE ${pattern})`
+  return sql`(${companies.name} ILIKE ${pattern} OR ${companies.slug} ILIKE ${pattern})`
 }
 
 /** Per-sort order expressions for the archive list (PRD 004 §03, R5). */
@@ -62,8 +61,8 @@ export const CLIENT_SORT_DESCRIPTORS: Record<
   ClientSortDescriptor
 > = {
   name: {
-    orderAsc: sql`${clientNameSql} ASC`,
-    orderDesc: sql`${clientNameSql} DESC`,
+    orderAsc: sql`${companies.name} ASC`,
+    orderDesc: sql`${companies.name} DESC`,
   },
   created: {
     orderAsc: sql`${clientSinceSql} ASC`,

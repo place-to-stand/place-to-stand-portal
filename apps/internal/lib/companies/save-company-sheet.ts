@@ -55,11 +55,11 @@ import type { CompanyActionResult } from '@/lib/companies/types'
 import { isMonthClosed } from '@/lib/data/reports/close'
 import { db } from '@/lib/db'
 import { companies, contacts } from '@/lib/db/schema'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import {
   applyPortalAccessInTx,
   PortalAccessRefusal,
-} from '@/lib/queries/clients/settings/client-contacts'
+} from '@/lib/queries/companies/billing/settings/client-contacts'
 import {
   CompanySaveRefusal,
   companySaveErrorMessage,
@@ -67,7 +67,7 @@ import {
   planCompanyWrite,
   writeCompany,
   type CompanyWritePlan,
-} from '@/lib/queries/companies'
+} from '@/lib/companies/write'
 import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import {
   listCompanyMembers,

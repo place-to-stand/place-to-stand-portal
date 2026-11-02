@@ -24,7 +24,7 @@ import { isClientCompany } from '@pts/db/client-state'
 import {
   findOrCreateCompanyByName,
   getLinkableCompany,
-} from '@/lib/queries/companies'
+} from '@/lib/companies/write'
 import {
   joinCompany,
   leaveCompany,

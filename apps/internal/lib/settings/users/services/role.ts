@@ -7,7 +7,7 @@ import { and, eq, isNull, ne, sql } from 'drizzle-orm'
 
 import { db, type DbTx } from '@/lib/db'
 import { contacts, users } from '@/lib/db/schema'
-import { currentMonthStartUtc } from '@/lib/queries/clients/billing-terms'
+import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { roleAsOfSql } from '@/lib/queries/users/role-terms'
 
 import { syncStaffMembership } from './person'
