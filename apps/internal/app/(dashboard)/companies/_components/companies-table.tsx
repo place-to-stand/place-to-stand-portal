@@ -165,8 +165,9 @@ export function CompaniesTable({
                     <span className='truncate font-medium' title={company.name}>
                       {company.name}
                     </span>
-                    {/* Billed now (admins only, as on the People list). */}
-                    {seesBilling && company.companyId ? (
+                    {/* Billed now: the Client badge, for everyone (billing
+                        details stay admin-only). */}
+                    {company.companyId ? (
                       <ClientBadge className='shrink-0' />
                     ) : null}
                   </div>
