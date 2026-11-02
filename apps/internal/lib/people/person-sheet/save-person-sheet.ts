@@ -27,14 +27,12 @@ import {
   SIGN_IN_ADMIN_ONLY,
 } from '@/lib/people/person-sheet-copy'
 
-import { SignInConflictError } from '@/lib/companies/portal-sign-ins'
 import { PortalAccessRefusal } from '@/lib/queries/companies/billing/settings/client-contacts'
 import { PortalAccessForbiddenError } from '@/lib/queries/memberships'
 
 import {
   finishPersonPortalAccess,
   planPersonPortalAccess,
-  preparePortalSignIn,
   writePersonPortalAccess,
 } from './portal-access'
 import { finishSignIn, runSignInAuth, writeSignIn } from './sign-in-apply'
@@ -160,17 +158,6 @@ async function save(
       return { error: authError }
     }
   }
-  // Switched on for someone with no sign-in: a Client sign-in, unless the
-  // Sign-in fields give them one in this Save.
-  const portalSignIn = await preparePortalSignIn(plan, portal, {
-    hasSignIn: Boolean(existing?.userId) || Boolean(signInPlan?.create),
-    undo,
-  })
-  if ('error' in portalSignIn) {
-    await undo.run()
-    return { error: portalSignIn.error }
-  }
-
   try {
     await db.transaction(async tx => {
       if (plan.mode === 'update') {
@@ -195,13 +182,7 @@ async function save(
           .where(eq(contacts.id, contactId))
       }
       if (signInPlan) await writeSignIn(tx, user, signInPlan, contactId)
-      await writePersonPortalAccess(
-        tx,
-        user,
-        contactId,
-        portal,
-        portalSignIn.signIns
-      )
+      await writePersonPortalAccess(tx, user, contactId, portal)
     })
   } catch (error) {
     if (!(error instanceof SavedElsewhereError)) {
@@ -216,8 +197,7 @@ async function save(
     }
     if (
       error instanceof PortalAccessRefusal ||
-      error instanceof PortalAccessForbiddenError ||
-      error instanceof SignInConflictError
+      error instanceof PortalAccessForbiddenError
     ) {
       return { error: error.message }
     }
@@ -236,7 +216,7 @@ async function save(
   // Portal changes are logged as CONTACT_CLIENT_LINKED / UNLINKED (kept
   // from Sales), not in the person's changed fields, which Sales can read.
   await logContactSave(user, plan)
-  await finishPersonPortalAccess(user, contactId, portal, portalSignIn.signIns)
+  await finishPersonPortalAccess(user, contactId, portal)
   const warning = signInPlan
     ? await finishSignIn(user, signInPlan, {
         contactId,

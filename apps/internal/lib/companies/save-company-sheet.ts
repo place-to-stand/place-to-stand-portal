@@ -38,15 +38,6 @@ import {
   type BillingEffective,
 } from '@/lib/companies/billing/periods'
 import {
-  afterSignInsCommitted,
-  discardPreparedSignIns,
-  prepareClientSignIns,
-  SignInConflictError,
-  writeClientSignIns,
-  type PreparedSignIn,
-  type SignInRequest,
-} from '@/lib/companies/portal-sign-ins'
-import {
   companyBillingFieldsSchema,
   saveCompanySheetSchema,
   type SaveCompanySheetInput,
@@ -156,13 +147,6 @@ export async function saveCompanySheet(
   )
   if ('error' in portal) return { ok: false, error: portal.error }
 
-  let signIns: PreparedSignIn[] = []
-  if (portal.signIns.length) {
-    const prepared = await prepareClientSignIns(portal.signIns)
-    if (!prepared.ok) return prepared
-    signIns = prepared.signIns
-  }
-
   let billingPlan = billing.plan
   let committed: { companyId: string }
   let attempt = 0
@@ -238,8 +222,6 @@ export async function saveCompanySheet(
             break
         }
 
-        // Sign-ins first: portal access needs one.
-        await writeClientSignIns(tx, actor, signIns)
         if (portal.changes) {
           await applyPortalAccessInTx(tx, actor, companyId, portal.changes)
         }
@@ -249,7 +231,6 @@ export async function saveCompanySheet(
         const touched =
           !plan.unchanged ||
           billingPlan.kind !== 'none' ||
-          signIns.length > 0 ||
           Boolean(portal.changes?.grant.length || portal.changes?.revoke.length)
         if (plan.existing && touched) {
           await tx
@@ -276,11 +257,10 @@ export async function saveCompanySheet(
           }
           continue
         } catch (slugError) {
-          // Fall through: undo the prepared sign-ins and report the failure.
+          // Fall through and report the failure.
           error = slugError
         }
       }
-      await discardPreparedSignIns(signIns)
       const message = saveErrorMessage(error)
       if (!message) console.error('Failed to save the company sheet', error)
       return { ok: false, error: message ?? 'Unable to save the company.' }
@@ -289,7 +269,7 @@ export async function saveCompanySheet(
 
   // Committed: a logging or email failure must not report the save as failed.
   try {
-    await logAfterCommit(actor, plan, billingPlan, portal, signIns, committed)
+    await logAfterCommit(actor, plan, billingPlan, portal, committed)
   } catch (error) {
     console.error('Failed to log a company sheet save', error)
   }
@@ -451,8 +431,8 @@ async function planBilling(
 }
 
 /**
- * Who gains and loses portal access with this save, and who needs a sign-in
- * for it. Everyone listed must be at the company once the save's people
+ * Who gains and loses portal access with this save. Portal access never
+ * makes a sign-in (that's the person sheet's User section). Everyone listed must be at the company once the save's people
  * changes land, and the company must be billed.
  */
 async function planPortalAccess(
@@ -460,12 +440,10 @@ async function planPortalAccess(
   billing: BillingPlan,
   billingOpenBefore: boolean,
   wantedIds: string[] | undefined
-): Promise<
-  { changes: PortalPlan | null; signIns: SignInRequest[] } | { error: string }
-> {
+): Promise<{ changes: PortalPlan | null } | { error: string }> {
   // A stop leaves the switches as they are (access ends with billing).
   if (wantedIds === undefined || billing.kind === 'stop') {
-    return { changes: null, signIns: [] }
+    return { changes: null }
   }
   const billedAfter =
     billing.kind === 'start' || billing.kind === 'restart' || billingOpenBefore
@@ -525,9 +503,6 @@ async function planPortalAccess(
       grant: grant.map(member => member.contactId),
       revoke: revoke.map(member => member.contactId),
     },
-    // Portal access never makes a sign-in: that's the person sheet's
-    // Sign-in. A grant to someone without a live Client sign-in is refused.
-    signIns: [],
   }
 }
 
@@ -536,7 +511,6 @@ async function logAfterCommit(
   plan: CompanyWritePlan,
   billing: BillingPlan,
   portal: { changes: PortalPlan | null },
-  signIns: PreparedSignIn[],
   committed: { companyId: string }
 ) {
   const { companyId } = committed
@@ -583,8 +557,6 @@ async function logAfterCommit(
       break
   }
 
-  await afterSignInsCommitted(actor, signIns, companyId)
-
   await logContactClientLinkChanges(actor, [
     ...(portal.changes?.grant ?? []).map(contactId => ({
       contactId,
@@ -604,8 +576,7 @@ function saveErrorMessage(error: unknown): string | null {
     error instanceof BillingPeriodError ||
     error instanceof ClosedMonthError ||
     error instanceof PortalAccessRefusal ||
-    error instanceof PortalAccessForbiddenError ||
-    error instanceof SignInConflictError
+    error instanceof PortalAccessForbiddenError
   ) {
     return error.message
   }

@@ -9,15 +9,10 @@ export const createUserSchema = z.object({
   role: z.enum(USER_ROLES),
 })
 
-export const deleteUserSchema = z.object({
-  id: z.string().uuid(),
-})
-
 export const setUserDisabledSchema = z.object({
   id: z.string().uuid(),
   disabled: z.boolean(),
 })
 
 export type CreateUserInput = z.infer<typeof createUserSchema>
-export type DeleteUserInput = z.infer<typeof deleteUserSchema>
 export type SetUserDisabledInput = z.infer<typeof setUserDisabledSchema>

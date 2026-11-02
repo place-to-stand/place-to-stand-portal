@@ -5,18 +5,12 @@ import { and, inArray } from 'drizzle-orm'
 import { billingOpenSql } from '@pts/db/client-state'
 
 import type { AppUser } from '@/lib/auth/session'
-import {
-  afterSignInsCommitted,
-  writeClientSignIns,
-  type PreparedSignIn,
-} from '@/lib/companies/portal-sign-ins'
 import { db, type DbTx } from '@/lib/db'
 import { companies } from '@/lib/db/schema'
 import { applyPortalAccessInTx } from '@/lib/queries/companies/billing/settings/client-contacts'
 import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import type { ContactSavePlan } from '@/lib/people/actions/save-contact'
 
-import type { Undo } from './undo'
 
 /** The companies (clients) a person gains and loses portal access to. */
 export type PersonPortalPlan = { grant: string[]; revoke: string[] }
@@ -58,31 +52,15 @@ export async function planPersonPortalAccess(
 }
 
 /**
- * Portal access never makes a sign-in: the person sheet's Sign-in does
- * (Can sign in, Role Client), written before the switches in the same Save.
- * Kept as a step so the save's shape stays the same; it prepares nothing.
+ * Writes the portal switches inside the Save's transaction. Portal access
+ * never makes a sign-in: the User section does, written before this.
  */
-export async function preparePortalSignIn(
-  plan: ContactSavePlan,
-  portal: PersonPortalPlan,
-  options: { hasSignIn: boolean; undo: Undo }
-): Promise<{ signIns: PreparedSignIn[] } | { error: string }> {
-  void plan
-  void portal
-  void options
-  return { signIns: [] }
-}
-
-/** Writes the sign-in (if any) and the switches inside the Save's transaction. */
 export async function writePersonPortalAccess(
   tx: DbTx,
   actor: AppUser,
   contactId: string,
-  portal: PersonPortalPlan,
-  signIns: PreparedSignIn[]
+  portal: PersonPortalPlan
 ): Promise<void> {
-  // Sign-in first: portal access needs one.
-  await writeClientSignIns(tx, actor, signIns)
   for (const companyId of portal.grant) {
     await applyPortalAccessInTx(tx, actor, companyId, {
       grant: [contactId],
@@ -97,16 +75,12 @@ export async function writePersonPortalAccess(
   }
 }
 
-/** After the commit: the invite and the access trail on each client. */
+/** After the commit: the access trail on each client. */
 export async function finishPersonPortalAccess(
   actor: AppUser,
   contactId: string,
-  portal: PersonPortalPlan,
-  signIns: PreparedSignIn[]
+  portal: PersonPortalPlan
 ): Promise<void> {
-  if (signIns.length && portal.grant[0]) {
-    await afterSignInsCommitted(actor, signIns, portal.grant[0])
-  }
   await logContactClientLinkChanges(actor, [
     ...portal.grant.map(clientCompanyId => ({
       contactId,
