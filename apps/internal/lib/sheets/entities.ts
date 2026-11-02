@@ -1,7 +1,7 @@
 /**
  * The sheet deep-link registry.
  *
- * Every entity sheet is addressed by a single query param (`?client=<uuid>`,
+ * Every entity sheet is addressed by a single query param (`?company=<uuid>`,
  * `?task=new`, …) that works on any dashboard route. The param's position in
  * the URL is its position in the sheet stack: opening a sheet appends its
  * param, so `?lead=<id>&task=new` renders the task sheet on top of the lead
@@ -13,12 +13,10 @@
 const SHEET_ENTITY_KEYS = [
   'task',
   'lead',
-  'client',
   'contact',
   'invoice',
   'submission',
   'hour-block',
-  'user',
   'project',
   'company',
 ] as const
@@ -70,12 +68,6 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
       pathname === '/leads' ||
       (pathname === '/leads/archive' && value !== NEW_SHEET_VALUE),
   },
-  client: {
-    // Old links only: `?client=<id>` opens that company's sheet (a client is
-    // a company you bill). Billing is switched on from the company's billing (its sheet's Client column).
-    auxParams: ['tab'],
-    claimsPathname: () => false,
-  },
   contact: {
     // `contactName=` prefills the create sheet's name (create-from-picker);
     // `contactCompanyId=` its company (e.g. the lead's).
@@ -93,12 +85,6 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
   'hour-block': {
     auxParams: [],
     claimsPathname: exactPaths('/hour-blocks', '/hour-blocks/archive'),
-  },
-  user: {
-    auxParams: [],
-    // Old links only: a sign-in is managed on its person, so the global host
-    // opens `?user=<id>` as that person's sheet.
-    claimsPathname: () => false,
   },
   project: {
     // `projectCompanyId=` prefills the create sheet's client (a company's

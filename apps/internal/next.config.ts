@@ -54,16 +54,45 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  /**
+   * Every retired or index route, in one place. Next carries the query
+   * string over, so sheet params (`?contact=…`) survive. Routes whose new
+   * address needs a database lookup stay as pages: `/clients/[clientSlug]`
+   * (slug to company) and `/settings/users` (`?user=` to person). Old
+   * `?client=` / `?user=` sheet params are mapped in `proxy.ts`.
+   */
   async redirects() {
+    const to = (source: string, destination: string) => ({
+      source,
+      destination,
+      permanent: false,
+    })
     return [
-      // Contacts are called People; old links (and their ?contact= sheet
-      // params, which Next carries over) keep working.
-      { source: '/contacts', destination: '/people', permanent: false },
+      // Index routes.
+      to('/my/tasks', '/my/tasks/board'),
+      to('/reports', '/reports/monthly-close'),
+      to('/settings', '/settings/permissions'),
+      to('/settings/templates', '/settings/templates/emails'),
+      // Contacts are called People.
+      to('/contacts', '/people'),
+      to('/contacts/:path*', '/people/:path*'),
+      // A client is a company you bill.
       {
-        source: '/contacts/:path*',
-        destination: '/people/:path*',
+        source: '/clients',
+        has: [{ type: 'query' as const, key: 'search', value: '(?<q>.*)' }],
+        destination: '/companies?type=client&q=:q',
         permanent: false,
       },
+      to('/clients', '/companies?type=client'),
+      to('/clients/archive', '/companies?type=former'),
+      to('/clients/activity', '/companies/activity'),
+      // A sign-in is managed on its person.
+      to('/settings/users/archive', '/people'),
+      to('/settings/users/activity', '/people/activity'),
+      to('/settings/projects', '/projects'),
+      // The project Overview and Scope tabs are gone: the board is Tasks.
+      to('/projects/:clientSlug/:projectSlug/overview', '/projects/:clientSlug/:projectSlug/tasks'),
+      to('/projects/:clientSlug/:projectSlug/scope', '/projects/:clientSlug/:projectSlug/tasks'),
     ]
   },
   async rewrites() {

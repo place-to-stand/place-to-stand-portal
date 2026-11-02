@@ -26,7 +26,7 @@ The right-side panel where every entity is created and edited, on Base UI Dialog
 
 **Activity is collapsed.** A sheet that shows a record's history uses `SheetActivitySection` (`components/sheets/sheet-activity-section.tsx`), never a hand-built `SheetSection` around `ActivityFeed`: a closed accordion headed "Activity (12)" with a chevron on the house Accordion (`@pts/ui/accordion`, see `accordion.md`). The count is one cheap request (`GET /api/activity?count=1`, the feed's filters and access rules, a `count(*)`); the entries load only when it's opened, and unmount when it's closed. Edit only: a create sheet has no Activity. Today only the task sheet shows one.
 
-**Opening:** a sheet is addressed by one query param (`?task=<uuid>`, `?client=new`) through `useSheetParams`/`useSheetParamSelection` — never a route segment, never a hand-written URL; build links with `lib/sheets/hrefs.ts`. `open` comes from the hook's local mirror, not the raw param.
+**Opening:** a sheet is addressed by one query param (`?task=<uuid>`, `?company=new`) through `useSheetParams`/`useSheetParamSelection` — never a route segment, never a hand-written URL; build links with `lib/sheets/hrefs.ts`. `open` comes from the hook's local mirror, not the raw param.
 
 **Rules**
 - Save is always enabled; disable only while saving or on a real validation failure. Never gate on `isDirty`.

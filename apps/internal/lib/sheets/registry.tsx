@@ -29,13 +29,6 @@ const WRAPPERS: Record<SheetEntityKey, ComponentType<SheetWrapperProps>> = {
       ),
     { ssr: false }
   ),
-  client: dynamic(
-    () =>
-      import('./wrappers/client-sheet-wrapper').then(
-        module => module.ClientSheetWrapper
-      ),
-    { ssr: false }
-  ),
   contact: dynamic(
     () =>
       import('./wrappers/contact-sheet-wrapper').then(
@@ -61,13 +54,6 @@ const WRAPPERS: Record<SheetEntityKey, ComponentType<SheetWrapperProps>> = {
     () =>
       import('./wrappers/hour-block-sheet-wrapper').then(
         module => module.HourBlockSheetWrapper
-      ),
-    { ssr: false }
-  ),
-  user: dynamic(
-    () =>
-      import('./wrappers/user-sheet-wrapper').then(
-        module => module.UserSheetWrapper
       ),
     { ssr: false }
   ),

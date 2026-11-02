@@ -368,7 +368,7 @@ Sep 2026.
 
 **Sheet deep links (`lib/sheets/`):**
 
-Every entity sheet is addressed by one query param — `?client=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
+Every entity sheet is addressed by one query param — `?company=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
 
 Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never hand-roll sheet URL writes:
 - Value is a UUID or `new` (create sheet). UUID-guard before any DB cast.
@@ -376,6 +376,8 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 - **Save = done = close** for create *and* edit, matching every sheet: a successful save clears the entity param. Never transition a create sheet into edit mode (see `task-sheet-closes-on-save`).
 - Paginated/filtered list pages resolve the param server-side with `resolveSheetDeepLink()` so a link to a row on page 3 still opens, and cross-redirect between active/archive tabs.
 - Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.
+
+**Retired routes and params:** static redirects live in `apps/internal/next.config.ts` `redirects()`; only routes that need a lookup stay as redirect pages (`/clients/[clientSlug]`, `/settings/users`). Old `?client=`/`?user=` sheet params are mapped in `proxy.ts`.
 
 **Adding a deep-linkable entity:** add the param to `lib/sheets/entities.ts` (with `claimsPathname` for its host pages), a payload type + resolver in `lib/sheets/init/`, a wrapper in `lib/sheets/wrappers/`, and one line in `lib/sheets/registry.tsx`.
 

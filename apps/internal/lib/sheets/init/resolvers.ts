@@ -1,12 +1,7 @@
-import { wasClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { clientFields } from '@/lib/queries/companies/billing/selectors'
-import { and, eq, isNull } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db'
-import { companies, contacts } from '@/lib/db/schema'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -36,8 +31,6 @@ import {
 } from '@/lib/queries/invoices'
 import { getProjectById } from '@/lib/queries/projects'
 import type { ProjectWithClient } from '@/lib/settings/projects/project-sheet-form'
-import { fetchLatestClosersByClient } from '@/lib/queries/companies/billing/commission-terms'
-import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 
 import { NEW_SHEET_VALUE } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from './payloads'
@@ -47,47 +40,6 @@ type SheetInitResolver<E extends SheetInitEntity> = (
   /** Param value: a validated UUID, or `new` for create sheets. */
   id: string
 ) => Promise<SheetInitPayloads[E]>
-
-const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
-  if (id === NEW_SHEET_VALUE) {
-    return { client: null }
-  }
-
-  // The billing form self-fetches its reference data (contacts/admins) —
-  // it only needs the row (snake_case `ClientCompanyView` plus its closer split).
-  const rows = await db
-    .select(clientFields)
-    .from(companies)
-    // Former clients too: the company sheet restarts billing from their
-    // last terms.
-    .where(and(wasClientCompany(), eq(companies.id, id)))
-    .limit(1)
-
-  const row = rows[0]
-  if (!row) {
-    throw new NotFoundError('Client not found')
-  }
-
-  const closersByClient = await fetchLatestClosersByClient([row.id])
-  const client: ClientWithClosers = {
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    notes: row.notes,
-    state: row.state ?? null,
-    origination_contact_id: row.originationContactId,
-    origination_user_id: row.originationUserId,
-    billing_type: row.billingType,
-    company_id: row.companyId,
-    created_by: row.createdBy,
-    created_at: row.createdAt ?? row.updatedAt,
-    updated_at: row.updatedAt,
-    deleted_at: row.deletedAt,
-    closers: closersByClient.get(row.id) ?? [],
-  }
-
-  return { client }
-}
 
 const resolveSubmissionInit: SheetInitResolver<'submission'> = async (
   user,
@@ -145,17 +97,6 @@ const resolveInvoiceInit: SheetInitResolver<'invoice'> = async (user, id) => {
   }
 
   return { invoice, ...reference }
-}
-
-/** Old `?user=<id>` links: a sign-in is managed on its person's sheet. */
-const resolveUserInit: SheetInitResolver<'user'> = async (_user, id) => {
-  if (id === NEW_SHEET_VALUE) return { contactId: null }
-  const [person] = await db
-    .select({ id: contacts.id })
-    .from(contacts)
-    .where(and(eq(contacts.userId, id), isNull(contacts.deletedAt)))
-    .limit(1)
-  return { contactId: person?.id ?? null }
 }
 
 const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {
@@ -301,12 +242,10 @@ const RESOLVERS: {
   [E in SheetInitEntity]: SheetInitResolver<E>
 } = {
   task: resolveTaskInit,
-  client: resolveClientInit,
   submission: resolveSubmissionInit,
   contact: resolveContactInit,
   'hour-block': resolveHourBlockInit,
   invoice: resolveInvoiceInit,
-  user: resolveUserInit,
   project: resolveProjectInit,
   lead: resolveLeadInit,
   company: resolveCompanyInit,

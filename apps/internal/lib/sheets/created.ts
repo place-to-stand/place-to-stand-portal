@@ -3,14 +3,13 @@
 /**
  * Return channel for "create from inside a picker" (the sibling of
  * pending-open.ts). A picker opens a create sheet stacked above its own
- * (`?client=<id>&contact=new`); when that sheet saves, its wrapper emits the
+ * (`?company=<id>&contact=new`); when that sheet saves, its wrapper emits the
  * new record here and the host picker — still mounted underneath — selects
  * it locally. Links are persisted with the host's own save, so nothing hits
  * the server twice.
  */
 export type SheetCreatedRecords = {
   contact: { id: string; name: string; email: string | null; phone: string | null }
-  client: { id: string; name: string; slug: string }
   company: { id: string; name: string }
 }
 
@@ -22,7 +21,6 @@ type Listener<E extends SheetCreatedEntity> = (
 
 const listeners: { [E in SheetCreatedEntity]: Set<Listener<E>> } = {
   contact: new Set(),
-  client: new Set(),
   company: new Set(),
 }
 

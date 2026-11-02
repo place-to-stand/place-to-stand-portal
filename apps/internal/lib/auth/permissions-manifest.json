@@ -98,27 +98,6 @@
     "capability": null
   },
   {
-    "type": "page",
-    "name": "/clients/activity",
-    "file": "apps/internal/app/(dashboard)/clients/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/clients/archive",
-    "file": "apps/internal/app/(dashboard)/clients/archive/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/clients",
-    "file": "apps/internal/app/(dashboard)/clients/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
     "type": "action",
     "name": "loadCompanySheet",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
@@ -455,13 +434,6 @@
     "capability": "portal.sign_in"
   },
   {
-    "type": "page",
-    "name": "/my/tasks",
-    "file": "apps/internal/app/(dashboard)/my/tasks/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
     "type": "action",
     "name": "savePersonSheetAction",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
@@ -547,22 +519,8 @@
   },
   {
     "type": "page",
-    "name": "/projects/[clientSlug]/[projectSlug]/overview",
-    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/overview/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
     "name": "/projects/[clientSlug]/[projectSlug]/review",
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/review/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/projects/[clientSlug]/[projectSlug]/scope",
-    "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/scope/page.tsx",
     "kind": "admin",
     "capability": null
   },
@@ -729,22 +687,8 @@
   },
   {
     "type": "page",
-    "name": "/reports",
-    "file": "apps/internal/app/(dashboard)/reports/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
     "name": "/settings/integrations",
     "file": "apps/internal/app/(dashboard)/settings/integrations/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/settings",
-    "file": "apps/internal/app/(dashboard)/settings/page.tsx",
     "kind": "admin",
     "capability": null
   },
@@ -778,13 +722,6 @@
   },
   {
     "type": "page",
-    "name": "/settings/projects",
-    "file": "apps/internal/app/(dashboard)/settings/projects/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
     "name": "/settings/templates/emails",
     "file": "apps/internal/app/(dashboard)/settings/templates/emails/page.tsx",
     "kind": "admin",
@@ -799,29 +736,8 @@
   },
   {
     "type": "page",
-    "name": "/settings/templates",
-    "file": "apps/internal/app/(dashboard)/settings/templates/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
     "name": "/settings/templates/pdfs",
     "file": "apps/internal/app/(dashboard)/settings/templates/pdfs/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/settings/users/activity",
-    "file": "apps/internal/app/(dashboard)/settings/users/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/settings/users/archive",
-    "file": "apps/internal/app/(dashboard)/settings/users/archive/page.tsx",
     "kind": "admin",
     "capability": null
   },
