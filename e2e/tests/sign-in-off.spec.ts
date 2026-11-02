@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { expect, test, type Browser, type Page } from '@playwright/test'
+import postgres from 'postgres'
 
 /**
  * Turning off "Can sign in" really locks someone out, everywhere, and
@@ -211,3 +212,57 @@ for (const [role, home] of [
       .click()
   })
 }
+
+// A token issued before its session ended (sign-out everywhere, or an
+// orphaned sign-in taken over and re-linked) must stop working at once, not
+// when the JWT expires: both apps check the session still exists.
+test('a token whose session was ended is refused on the next request', async ({
+  page,
+  browser,
+}) => {
+  const dbUrl =
+    process.env.E2E_AUTH_DATABASE_URL ??
+    'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
+  if (!['127.0.0.1', 'localhost'].includes(new URL(dbUrl).hostname)) {
+    throw new Error('Local database only')
+  }
+  const stamp = Date.now()
+  const email = `e2e-session-end-${stamp}@local.test`
+  await page.goto('/people?contact=new')
+  const sheet = page.getByRole('dialog')
+  await sheet.getByPlaceholder('John Doe').fill(`E2E session end ${stamp}`)
+  await sheet.getByPlaceholder('contact@example.com').fill(email)
+  await sheet.getByRole('switch', { name: 'Can sign in' }).click()
+  await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
+  await page.getByRole('option', { name: 'Admin' }).click()
+  await sheet.getByRole('button', { name: 'Create person' }).click()
+  await expect(sheet).toBeHidden()
+
+  await skipFirstPasswordReset(email)
+  const user = await signIn(browser, email, '/my/home')
+  await expect(user.page).toHaveURL(/\/my\/home/)
+
+  // End their sessions server-side, as a takeover does; the access token in
+  // the cookie is still unexpired.
+  const sql = postgres(dbUrl, { max: 1 })
+  try {
+    await sql`delete from auth.sessions where user_id = (select id from auth.users where lower(email) = lower(${email}))`
+  } finally {
+    await sql.end()
+  }
+  await user.page.goto('/my/home')
+  await expect(user.page).toHaveURL(/\/sign-in/)
+  await user.context.close()
+
+  // Put it back: archive the person.
+  await page.goto(`/people?q=${encodeURIComponent(email)}`)
+  await page.locator('tbody tr').first().locator('td').first().click()
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Archive person' })
+    .click()
+  await page
+    .getByRole('button', { name: /^Archive/ })
+    .last()
+    .click()
+})

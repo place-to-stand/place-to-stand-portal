@@ -4,7 +4,7 @@ import 'server-only'
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import type { Session, User } from '@supabase/supabase-js'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import type { Database } from '@/lib/supabase/types'
 import { db } from '@/lib/db'
@@ -67,6 +67,9 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   }
 
   try {
+    if (!(await sessionIsLive(data.claims.session_id, authUserId))) {
+      return null
+    }
     const profile = await fetchUserProfile(authUserId)
 
     if (!profile) {
@@ -173,7 +176,9 @@ async function fetchUserProfile(
   return profileRows[0] ?? null
 }
 
-async function fetchUserProfileUncached(userId: string): Promise<UserProfile | null> {
+async function fetchUserProfileUncached(
+  userId: string
+): Promise<UserProfile | null> {
   // Direct query without React cache to get fresh data after sync
   const profileRows = await db
     .select({
@@ -242,9 +247,14 @@ function mapProfileToAppUser(profile: UserProfile): AppUser {
   }
 }
 
-async function syncUserProfile(authUser: User, previousEmail: string): Promise<void> {
+async function syncUserProfile(
+  authUser: User,
+  previousEmail: string
+): Promise<void> {
   try {
-    console.log(`Syncing user profile: email changed from ${previousEmail} to ${authUser.email}`)
+    console.log(
+      `Syncing user profile: email changed from ${previousEmail} to ${authUser.email}`
+    )
     const result = await ensureUserProfile(authUser)
 
     // Log only — never sign out mid-request. This runs while rendering an
@@ -319,4 +329,23 @@ export const requireRole = async (allowed: UserRole | UserRole[]) => {
   }
 
   return user
+}
+
+/**
+ * The token's Supabase session still exists. getClaims() checks only the
+ * JWT's signature and expiry, so a token issued before its session was
+ * ended (sign-out, or an orphaned sign-in taken over and re-linked to a
+ * person) would otherwise keep working until it expires. Ending a session
+ * deletes its auth.sessions row; this makes that end the token at once.
+ * (Security review, Nov 2026.)
+ */
+async function sessionIsLive(
+  sessionId: unknown,
+  userId: string
+): Promise<boolean> {
+  if (typeof sessionId !== 'string' || !sessionId) return false
+  const [row] = await db.execute<{ live: boolean }>(
+    sql`select exists (select 1 from auth.sessions s where s.id = ${sessionId}::uuid and s.user_id = ${userId}::uuid) as live`
+  )
+  return Boolean(row?.live)
 }
