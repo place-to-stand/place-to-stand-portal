@@ -1,5 +1,5 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { isClientCompany } from '@pts/db/client-state'
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import 'server-only'
 
 import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'

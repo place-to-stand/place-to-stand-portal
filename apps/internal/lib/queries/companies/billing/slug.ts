@@ -7,7 +7,7 @@ import { companies } from '@/lib/db/schema'
 
 export async function clientSlugExistsDrizzle(
   slug: string,
-  options: { excludeId?: string } = {},
+  options: { excludeId?: string } = {}
 ) {
   const conditions = [eq(companies.slug, slug)]
 
@@ -26,7 +26,7 @@ export async function clientSlugExistsDrizzle(
 
 export async function generateUniqueClientSlugDrizzle(
   base: string,
-  options: { initialCandidate?: string; startSuffix?: number } = {},
+  options: { initialCandidate?: string; startSuffix?: number } = {}
 ) {
   const normalizedBase = base || 'client'
   let candidate = options.initialCandidate ?? normalizedBase
@@ -62,4 +62,3 @@ function extractSuffixFromCandidate(candidate: string, base: string): number {
 
   return Number.isFinite(suffix) && suffix >= 2 ? suffix + 1 : 2
 }
-

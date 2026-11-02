@@ -1,6 +1,6 @@
+import { currentBillingTypeSql } from '@pts/db/terms'
 import { clientEndedAtSql, clientSinceSql } from '@pts/db/client-state'
 import { companies } from '@/lib/db/schema'
-import { currentBillingTypeSql } from '@/lib/queries/companies/billing/billing-terms'
 import {
   currentOriginationContactIdSql,
   currentOriginationUserIdSql,

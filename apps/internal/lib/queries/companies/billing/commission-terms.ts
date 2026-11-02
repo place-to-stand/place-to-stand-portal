@@ -1,6 +1,8 @@
 import { personAvatarSql, personNameSql } from '@pts/db/names'
 import 'server-only'
 
+import { commissionTermColumnAsOfSql, CURRENT_TERM } from '@pts/db/terms'
+
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { db, type DbTx } from '@/lib/db'
@@ -15,7 +17,6 @@ import {
   type ClientCloser,
   type CloserShare,
 } from '@/lib/companies/billing/closers'
-
 
 type DbOrTransaction = typeof db | DbTx
 
@@ -272,69 +273,32 @@ export async function resolveClosers(
   })
 }
 
-type CommissionColumn = 'id' | 'originationUserId' | 'originationContactId'
-
-/**
- * SQL fragment resolving one commission column as of a report period — the
- * newest `effective_from` <= period start wins, exactly like
- * `billingTypeAsOfSql`. Correlated against the outer `companies` table
- * (written table-qualified), so it is only valid inside a query that reads
- * `companies`. NULL when the resolved
- * term has no assignment (or no term exists at or before the period).
+/*
+ * Commission as of a report period or now, read through the
+ * `commission_term_as_of` SQL function (`@pts/db/terms`): the newest term
+ * starting on or before the date wins. Each is NULL when no term has started
+ * or the term leaves that column empty. Only valid in a query that reads
+ * `companies`.
  */
-function commissionColumnAsOfSql(
-  column: CommissionColumn,
-  periodStart: string
-) {
-  return sql<string | null>`(
-    SELECT ${commissionTerms[column]}
-    FROM ${commissionTerms}
-    WHERE ${commissionTerms.companyId} = ${sql.raw('"companies"."id"')}
-      AND ${commissionTerms.effectiveFrom} <= ${periodStart}
-      AND ${commissionTerms.deletedAt} IS NULL
-    ORDER BY ${commissionTerms.effectiveFrom} DESC
-    LIMIT 1
-  )`
-}
 
 /** The id of the term in effect for the period — join its closer rows on it. */
 export function commissionTermIdAsOfSql(periodStart: string) {
-  return commissionColumnAsOfSql('id', periodStart)
+  return commissionTermColumnAsOfSql('id', periodStart)
 }
 
 export function originationUserIdAsOfSql(periodStart: string) {
-  return commissionColumnAsOfSql('originationUserId', periodStart)
+  return commissionTermColumnAsOfSql('origination_user_id', periodStart)
 }
 
 export function originationContactIdAsOfSql(periodStart: string) {
-  return commissionColumnAsOfSql('originationContactId', periodStart)
+  return commissionTermColumnAsOfSql('origination_contact_id', periodStart)
 }
 
-/**
- * The client's current origination: the newest term's (latest effective
- * date, even a future one, which is what the company sheet's billing last saved).
- * Correlated against the outer `companies` table. The terms table is the one
- * place commission is stored; reports resolve by period with the `AsOf`
- * helpers above.
- */
-function latestCommissionColumnSql(column: CommissionColumn) {
-  // The outer column is written out table-qualified: drizzle drops the table
-  // name from an interpolated column inside a selected fragment, which would
-  // bind it to the terms table's own id.
-  return sql<string | null>`(
-    SELECT ${commissionTerms[column]}
-    FROM ${commissionTerms}
-    WHERE ${commissionTerms.companyId} = ${sql.raw('"companies"."id"')}
-      AND ${commissionTerms.deletedAt} IS NULL
-    ORDER BY ${commissionTerms.effectiveFrom} DESC
-    LIMIT 1
-  )`
-}
-
+/** The current origination: the newest term's, even one scheduled ahead. */
 export function currentOriginationUserIdSql() {
-  return latestCommissionColumnSql('originationUserId')
+  return commissionTermColumnAsOfSql('origination_user_id', CURRENT_TERM)
 }
 
 export function currentOriginationContactIdSql() {
-  return latestCommissionColumnSql('originationContactId')
+  return commissionTermColumnAsOfSql('origination_contact_id', CURRENT_TERM)
 }
