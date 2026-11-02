@@ -334,11 +334,7 @@ export function ContactsTableSection({
   )
 }
 
-/**
- * A company billed now, beside its name: the Client badge. Admins only, as
- * client status is billing information (the Companies list hides its Client
- * column from Sales too).
- */
+/** A company billed now, beside its name: the Client badge (everyone). */
 function CompanyClientMark({
   company,
   className,
@@ -346,7 +342,6 @@ function CompanyClientMark({
   company: { isClient: boolean } | undefined
   className?: string
 }) {
-  const { isAdmin } = useViewerAccess()
-  if (!company?.isClient || !isAdmin) return null
+  if (!company?.isClient) return null
   return <ClientBadge className={className} />
 }
