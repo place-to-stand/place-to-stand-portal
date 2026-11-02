@@ -46,7 +46,8 @@ export function PortalAccessField({
   action?: { label: string; onClick: () => void } | null
 }) {
   return (
-    <div className='flex flex-col items-start gap-2'>
+    // The note sits right of the switch, like a switch's label.
+    <div className='flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1'>
       <DisabledFieldTooltip
         disabled={disabled}
         reason={disabledReason}
