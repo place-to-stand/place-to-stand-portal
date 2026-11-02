@@ -8,10 +8,10 @@ import { nextApp } from '@pts/eslint-config/next'
  * (docs/reviews/pr-279-swarm-audit.md): delete its line here when you do.
  */
 const QUERY_LAYER_ALLOWLIST = [
-  'lib/queries/clients/settings/client-contacts.ts',
-  'lib/queries/clients/settings/list-clients.ts',
   'lib/queries/command-palette.ts',
-  'lib/queries/companies.ts',
+  'lib/queries/companies/billing/settings/client-contacts.ts',
+  'lib/queries/companies/billing/settings/list-clients.ts',
+  'lib/queries/companies/index.ts',
   'lib/queries/contacts/options.ts',
   'lib/queries/contacts/settings/contact-client-link-activity.ts',
   'lib/queries/contacts/settings/contact-clients.ts',
