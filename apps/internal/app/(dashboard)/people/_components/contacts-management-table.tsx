@@ -13,6 +13,11 @@ import {
 } from '@/lib/people/use-contacts-table-state'
 import type { ContactSheetInput } from '@/lib/people/use-contact-sheet-state'
 import { openPortalPreview } from '@/lib/people/portal-preview'
+import { emitSheetCreated } from '@/lib/sheets/created'
+import {
+  useDeepLinkNotFound,
+  useSheetParams,
+} from '@/lib/sheets/use-sheet-params'
 
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
@@ -58,7 +63,6 @@ export function ContactsManagementTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-
   const {
     sheetOpen,
     selectedContact,
@@ -76,6 +80,10 @@ export function ContactsManagementTable({
     handleConfirmDelete,
     handleRestore,
   } = useContactsTableState({ contacts, deepLinkedContact })
+  // Create-from-picker on this page opens this sheet, not the global one, so
+  // it takes the picker's prefill and hands the new person back the same way.
+  const { getAux } = useSheetParams()
+  const showContactNotFound = useDeepLinkNotFound('contact', contactNotFound)
 
   // Guard-validated active search (R4): an empty list under a live `?q=`
   // shows the filtered message, not the tab's default empty state.
@@ -89,7 +97,6 @@ export function ContactsManagementTable({
       openPortalPreview(clientPortalUrl, contact.id),
     [clientPortalUrl]
   )
-
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -107,7 +114,7 @@ export function ContactsManagementTable({
 
   return (
     <div className='space-y-4'>
-      {contactNotFound ? (
+      {showContactNotFound ? (
         <DeepLinkNotFoundNotice entity='person' onDismiss={clearSelection} />
       ) : null}
       <ConfirmDialog
@@ -151,6 +158,9 @@ export function ContactsManagementTable({
         onOpenChange={handleSheetOpenChange}
         onComplete={handleSheetComplete}
         contact={selectedContact}
+        initialName={getAux('contactName') ?? undefined}
+        initialCompanyId={getAux('contactCompanyId') ?? undefined}
+        onCreated={record => emitSheetCreated('contact', record)}
       />
     </div>
   )

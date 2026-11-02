@@ -20,7 +20,7 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { useToast } from '@/components/ui/use-toast'
 import type { DbTaskDeployment } from '@/lib/types'
-import type { WorkerCommentStatus } from '../../actions/fetch-worker-status'
+import type { WorkerCommentStatus } from '@/lib/tasks/worker-status'
 import { cancelDeployment } from '../../actions/trigger-worker'
 import { useWorkerStatus } from './use-worker-status'
 import {

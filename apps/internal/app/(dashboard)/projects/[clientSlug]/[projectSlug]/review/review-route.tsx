@@ -17,7 +17,6 @@ import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-st
 type ReviewRouteArgs = {
   clientSlug: string
   projectSlug: string
-  taskId?: string | null
   /** Whole query string, carried across the canonical-slug redirect. */
   querySuffix?: string
 }
@@ -51,7 +50,6 @@ const buildClientSlugLookup = (
 export const renderReviewRoute = async ({
   clientSlug,
   projectSlug,
-  taskId = null,
   querySuffix = '',
 }: ReviewRouteArgs): Promise<ReactElement> => {
   const user = await requireUser()
@@ -99,7 +97,6 @@ export const renderReviewRoute = async ({
 
   const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
-  const activeTaskId = taskId ?? null
 
   // The review tab renders archived tasks, so hydrate them here.
   const [hydratedProject] = await fetchProjectsWithRelationsByIds(
@@ -120,7 +117,6 @@ export const renderReviewRoute = async ({
       allClients={allClients}
       activeClientId={activeClientId}
       activeProjectId={activeProjectId}
-      activeTaskId={activeTaskId}
       initialTab='review'
     />
   )

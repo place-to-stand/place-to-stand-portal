@@ -3,11 +3,11 @@
 import type { ReactElement } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchContactOptions } from '@/app/(dashboard)/people/actions'
 import {
   EntityLinkPicker,
   type EntityLinkOption,
 } from '@/components/ui/entity-link-picker'
+import { getJson } from '@/lib/http/get-json'
 import type { ContactOption } from '@/lib/queries/contacts/options'
 import { personPhotoSrc } from '@/components/ui/user-avatar'
 
@@ -17,8 +17,10 @@ export const CONTACT_OPTIONS_QUERY_KEY = ['contactOptions'] as const
 export function useContactOptions() {
   return useQuery<ContactOption[]>({
     queryKey: CONTACT_OPTIONS_QUERY_KEY,
-    queryFn: () => fetchContactOptions(),
-    staleTime: 0,
+    queryFn: () => getJson<ContactOption[]>('/api/contacts/options'),
+    // Pickers mount with every sheet; a short window stops each open from
+    // refetching, and the company sheet's save invalidates this key.
+    staleTime: 30_000,
   })
 }
 

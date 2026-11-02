@@ -10,6 +10,7 @@ import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PersonSelector } from '@/components/my-tasks/person-selector'
 import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
 import {
+  useDeepLinkNotFound,
   useSheetParamSelection,
   useSheetParams,
 } from '@/lib/sheets/use-sheet-params'
@@ -51,6 +52,7 @@ export function LeadsWorkspace({
   // selection state opens the sheet instantly while the URL catches up.
   const { selectedId, isCreating, select, openCreate, clear } =
     useSheetParamSelection('lead')
+  const showLeadNotFound = useDeepLinkNotFound('lead', leadNotFound)
   const [initialStatus, setInitialStatus] = useState<LeadStatusValue | null>(
     null
   )
@@ -212,7 +214,7 @@ export function LeadsWorkspace({
       // Kanban board: pin to the viewport (columns scroll internally).
       contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
-      {leadNotFound && !isCreating ? (
+      {showLeadNotFound && !isCreating ? (
         <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
       {canManage ? (

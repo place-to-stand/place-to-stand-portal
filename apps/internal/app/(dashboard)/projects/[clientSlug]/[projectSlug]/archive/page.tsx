@@ -80,11 +80,12 @@ export default async function ProjectReviewRoute({
   const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
 
-  const [hydratedProject] = await fetchProjectsWithRelationsByIds([
-    project.id,
-  ], {
-    includeArchivedTasks: true,
-  })
+  const [hydratedProject] = await fetchProjectsWithRelationsByIds(
+    [project.id],
+    {
+      includeArchivedTasks: true,
+    }
+  )
   const projects = liteProjects.map(item =>
     item.id === project.id && hydratedProject ? hydratedProject : item
   )
@@ -99,7 +100,6 @@ export default async function ProjectReviewRoute({
       allClients={allClients}
       activeClientId={activeClientId}
       activeProjectId={activeProjectId}
-      activeTaskId={null}
       initialTab='review'
     />
   )

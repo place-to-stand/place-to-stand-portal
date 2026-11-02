@@ -15,7 +15,8 @@ import {
   InfoPanelStats,
 } from '@/components/ui/info-panel'
 import { balanceTone } from '@/lib/billing/balance-tone'
-import { loadTimeLogHours } from '@/lib/projects/time-log/load-time-log-hours'
+import { getJson } from '@/lib/http/get-json'
+import type { TimeLogHours } from '@/lib/projects/time-log/load-time-log-hours'
 
 export const TIME_LOG_HOURS_QUERY_KEY = 'time-log-hours' as const
 
@@ -38,7 +39,8 @@ export function TimeLogHoursSummary({
 }) {
   const { data, isLoading } = useQuery({
     queryKey: [TIME_LOG_HOURS_QUERY_KEY, projectId],
-    queryFn: () => loadTimeLogHours(projectId),
+    queryFn: () =>
+      getJson<TimeLogHours | null>(`/api/projects/${projectId}/time-log-hours`),
     enabled: isClientProject,
     staleTime: 0,
     // Dropped when the dialog closes: reopening shows fresh numbers, never

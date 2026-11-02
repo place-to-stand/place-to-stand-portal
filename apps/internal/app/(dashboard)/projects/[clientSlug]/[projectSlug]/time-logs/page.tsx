@@ -80,9 +80,7 @@ export default async function ProjectTimeLogsRoute({
   const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
 
-  const [hydratedProject] = await fetchProjectsWithRelationsByIds([
-    project.id,
-  ])
+  const [hydratedProject] = await fetchProjectsWithRelationsByIds([project.id])
   const projects = liteProjects.map(item =>
     item.id === project.id && hydratedProject ? hydratedProject : item
   )
@@ -97,9 +95,7 @@ export default async function ProjectTimeLogsRoute({
       allClients={allClients}
       activeClientId={activeClientId}
       activeProjectId={activeProjectId}
-      activeTaskId={null}
       initialTab='timeLogs'
     />
   )
 }
-

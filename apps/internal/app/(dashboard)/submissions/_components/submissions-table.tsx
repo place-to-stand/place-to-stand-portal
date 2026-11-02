@@ -25,7 +25,10 @@ import {
 } from '@pts/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
-import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
+import {
+  useDeepLinkNotFound,
+  useSheetParamSelection,
+} from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import {
@@ -148,6 +151,10 @@ export function SubmissionsTable({
     select: selectSubmission,
     clear: clearSubmission,
   } = useSheetParamSelection('submission')
+  const showNotFound = useDeepLinkNotFound(
+    'submission',
+    Boolean(deepLinkNotFound)
+  )
   const selected =
     submissions.find(submission => submission.id === selectedId) ??
     (deepLinkedSubmission && deepLinkedSubmission.id === selectedId
@@ -327,7 +334,7 @@ export function SubmissionsTable({
 
   return (
     <div className='space-y-4'>
-      {deepLinkNotFound && submissionParam ? (
+      {showNotFound && submissionParam ? (
         <DeepLinkNotFoundNotice
           entity='submission'
           onDismiss={() =>

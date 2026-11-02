@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react'
 
 import type { ProjectWithRelations } from '@/lib/types'
 import { beginBoardTabSwitch } from '@/lib/posthog/board-tab-switch'
+import { differsOnlyInParams, writeShallowUrl } from '@/lib/sheets/shallow-url'
 
 import {
   BOARD_BASE_PATH,
@@ -76,6 +77,13 @@ export const useBoardNavigation = ({
       // a pathname-only check would treat open/close as no-ops.
       const currentUrl = search ? `${pathname}?${search}` : pathname
       if (currentUrl === path) {
+        return
+      }
+
+      // Opening or closing a task on this board changes only `?task=`. The
+      // board already holds every task, so skip the server.
+      if (differsOnlyInParams(currentUrl, path, ['task'])) {
+        writeShallowUrl(path, replace ? 'replace' : 'push')
         return
       }
 

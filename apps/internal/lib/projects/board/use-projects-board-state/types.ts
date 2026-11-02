@@ -21,7 +21,6 @@ export type UseProjectsBoardStateArgs = {
   admins: DbUser[]
   activeClientId: string | null
   activeProjectId: string | null
-  activeTaskId: string | null
   currentView: BoardView
   /**
    * Server-rendered instant the Done column's rolling window measures back

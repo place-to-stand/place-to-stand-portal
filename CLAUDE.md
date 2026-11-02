@@ -381,7 +381,9 @@ Every entity sheet is addressed by one query param — `?company=<uuid>`, `?task
 
 Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never hand-roll sheet URL writes:
 - Value is a UUID or `new` (create sheet). UUID-guard before any DB cast.
-- Open = `router.push`, close = `router.replace`, always `{ scroll: false }`, unrelated params preserved.
+- Open pushes a history entry, close replaces one, never scrolling, unrelated params preserved.
+- Writes skip the server (`window.history`, `lib/sheets/shallow-url.ts`), so opening and closing a sheet never reloads the page. The one exception is `open` of a sheet the current page renders itself without `{ shallow: true }`: that goes through `router.push`, because the page may have to resolve a record it doesn't hold. Page code must therefore read the open sheet from the URL (`useSheetParams`), never from a server prop, and wrap a server "not found" flag in `useDeepLinkNotFound`.
+- Sheets, pickers and other reads load through GET routes (`getJson`, `lib/http/get-json.ts`), not server actions: Next runs server actions one at a time per tab. Keep server actions for writes.
 - **Save = done = close** for create *and* edit, matching every sheet: a successful save clears the entity param. Never transition a create sheet into edit mode (see `task-sheet-closes-on-save`).
 - Paginated/filtered list pages resolve the param server-side with `resolveSheetDeepLink()` so a link to a row on page 3 still opens, and cross-redirect between active/archive tabs.
 - Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.

@@ -10,10 +10,9 @@ const listeners = new Set<Listener>()
 
 /**
  * Announces a sheet open the instant the user acts, before the URL write
- * lands. `router.push` on a query change still round-trips to the server for
- * the RSC payload, so a host-rendered sheet that waited for `useSearchParams`
- * would visibly lag the click. The SheetHost mounts on this signal and the
- * URL reconciles a moment later.
+ * lands. Most writes skip the server, but an `open` that needs it (see
+ * `useSheetParams`) reaches `useSearchParams` only after the server answers,
+ * so the SheetHost mounts on this signal and the URL catches up after.
  */
 export const emitSheetOpen = (entity: SheetEntityKey, value: string) => {
   for (const listener of listeners) {

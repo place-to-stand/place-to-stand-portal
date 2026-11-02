@@ -4,20 +4,22 @@ import type { ReactElement } from 'react'
 
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchCompanyOptions } from '@/app/(dashboard)/companies/actions'
 import {
   EntityLinkPicker,
   type EntityLinkOption,
 } from '@/components/ui/entity-link-picker'
 import type { CompanyOption } from '@/lib/companies/types'
+import { getJson } from '@/lib/http/get-json'
 
 export const COMPANY_OPTIONS_QUERY_KEY = ['companyOptions'] as const
 
 export function useCompanyOptions() {
   return useQuery<CompanyOption[]>({
     queryKey: COMPANY_OPTIONS_QUERY_KEY,
-    queryFn: () => fetchCompanyOptions(),
-    staleTime: 0,
+    queryFn: () => getJson<CompanyOption[]>('/api/companies/options'),
+    // Pickers mount with every sheet; a short window stops each open from
+    // refetching, and the company sheet's save invalidates this key.
+    staleTime: 30_000,
   })
 }
 

@@ -6,7 +6,10 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
-import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
+import {
+  useDeepLinkNotFound,
+  useSheetParamSelection,
+} from '@/lib/sheets/use-sheet-params'
 
 import type {
   InvoiceClient,
@@ -70,6 +73,7 @@ export function InvoicesManagementTable({
   // `?invoice=` drives the sheet so an open invoice is a shareable link.
   const { selectedId, isCreating, select, clear } =
     useSheetParamSelection('invoice')
+  const showInvoiceNotFound = useDeepLinkNotFound('invoice', invoiceNotFound)
   const [deleteTarget, setDeleteTarget] = useState<InvoiceWithClient | null>(
     null
   )
@@ -257,7 +261,7 @@ export function InvoicesManagementTable({
 
   return (
     <div className='space-y-4'>
-      {invoiceNotFound ? (
+      {showInvoiceNotFound ? (
         <DeepLinkNotFoundNotice entity='invoice' onDismiss={clear} />
       ) : null}
       <InvoiceArchiveDialog

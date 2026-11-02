@@ -80,9 +80,7 @@ export default async function ProjectActivityRoute({
   const activeClientId = project.company_id ?? null
   const activeProjectId = project.id
 
-  const [hydratedProject] = await fetchProjectsWithRelationsByIds([
-    project.id,
-  ])
+  const [hydratedProject] = await fetchProjectsWithRelationsByIds([project.id])
   const projects = liteProjects.map(item =>
     item.id === project.id && hydratedProject ? hydratedProject : item
   )
@@ -97,7 +95,6 @@ export default async function ProjectActivityRoute({
       allClients={allClients}
       activeClientId={activeClientId}
       activeProjectId={activeProjectId}
-      activeTaskId={null}
       initialTab='activity'
     />
   )

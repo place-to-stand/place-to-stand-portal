@@ -1,16 +1,16 @@
-'use server'
+import 'server-only'
 
 import { eq, desc } from 'drizzle-orm'
-import { z } from 'zod'
 
 import { taskWorkerStatusChangedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { requireUser } from '@/lib/auth/session'
+import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { tasks, taskDeployments, projects } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { getRepoLinkById } from '@/lib/data/github-repos'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 import {
   listIssueComments,
   resolveRepoLinkAuth,
@@ -81,25 +81,18 @@ function extractPrUrl(comments: WorkerComment[]): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Server action
+// Loader (GET /api/task-deployments/[deploymentId]/worker-status)
 // ---------------------------------------------------------------------------
 
-const fetchSchema = z.object({
-  deploymentId: z.string().uuid(),
-})
-
 /**
- * Fetch the current worker status for a deployment by reading GitHub issue comments.
+ * Fetch the current worker status for a deployment by reading GitHub issue
+ * comments, and record a changed status on the deployment and its task.
  */
-export async function fetchWorkerStatus(input: {
+export async function loadWorkerStatus(
+  user: AppUser,
   deploymentId: string
-}): Promise<WorkerStatusResult> {
-  const user = await requireUser()
-
-  const parsed = fetchSchema.safeParse(input)
-  if (!parsed.success) return { error: 'Invalid payload.' }
-
-  const { deploymentId } = parsed.data
+): Promise<WorkerStatusResult> {
+  if (!UUID_PATTERN.test(deploymentId)) return { error: 'Invalid payload.' }
 
   // Load deployment
   const [deployment] = await db
@@ -116,7 +109,7 @@ export async function fetchWorkerStatus(input: {
   } catch (error) {
     if (error instanceof NotFoundError) return { error: 'Task not found.' }
     if (error instanceof ForbiddenError) return { error: 'Permission denied.' }
-    console.error('fetchWorkerStatus auth error', error)
+    console.error('loadWorkerStatus auth error', error)
     return { error: 'Unable to authorize request.' }
   }
 

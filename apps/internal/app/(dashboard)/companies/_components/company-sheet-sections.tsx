@@ -18,7 +18,7 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { TriangleAlert } from 'lucide-react'
 import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 
-import { loadCompanyClientWork } from '../actions'
+import { fetchCompanyClientWork } from '@/lib/companies/sheet-fetch'
 import {
   CompanyBillingFields,
   useCompanyBilling,
@@ -69,7 +69,7 @@ export function CompanyBillingSection({
   const billing = useCompanyBilling()
   const { data: work } = useQuery({
     queryKey: ['companyClientWork', companyId],
-    queryFn: () => loadCompanyClientWork(companyId!),
+    queryFn: () => fetchCompanyClientWork(companyId!),
     enabled: Boolean(companyId),
     staleTime: 0,
   })
@@ -258,7 +258,7 @@ export function CompanyProjectsSection({
   const { openNew } = useSheetParams()
   const { data: work, isLoading } = useQuery({
     queryKey: ['companyClientWork', companyId],
-    queryFn: () => loadCompanyClientWork(companyId),
+    queryFn: () => fetchCompanyClientWork(companyId),
     staleTime: 0,
   })
 
