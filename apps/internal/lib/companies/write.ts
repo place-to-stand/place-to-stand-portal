@@ -1,20 +1,19 @@
 /**
- * Company writes: the company sheet's save plan and write, archive and
- * restore, and the find-or-create a lead or contact save uses. Reads live in
+ * The company sheet's save: plan (checks and what changes), write, and log.
+ * Archive and restore are in `archive.ts`; the find-or-create a lead or
+ * contact save uses is in `find-or-create.ts`. Reads live in
  * `lib/queries/companies`.
  */
 import 'server-only'
 
-import { billingOpenSql, wasClientCompany } from '@pts/db/client-state'
+import { billingOpenSql } from '@pts/db/client-state'
 
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { z } from 'zod'
 
 import {
-  companyArchivedEvent,
   companyPrimaryContactSetEvent,
   companyCreatedEvent,
-  companyRestoredEvent,
   companyUpdatedEvent,
   contactUpdatedEvent,
 } from '@/lib/activity/events'
@@ -31,29 +30,13 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { isAdminRole } from '@/lib/auth/roles'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
-import type { CompanyActionResult } from '@/lib/companies/types'
-import {
-  companyNameSchema,
-  normalizeWebAddress,
-  saveCompanySchema,
-} from '@/lib/companies/schema'
+import { saveCompanySchema } from '@/lib/companies/schema'
 import { db, uniqueViolation, type DbTx } from '@/lib/db'
-import {
-  logContactClientLinkChanges,
-  type ContactClientLinkChange,
-} from '@/lib/queries/contacts/settings/contact-client-link-activity'
-import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-company-portal-access'
-import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import {
   CLIENT_PRIMARY_ADMIN_ONLY,
   SIGN_IN_COMPANIES_ADMIN_ONLY,
 } from '@/lib/companies/people-copy'
 import { companies, contacts } from '@/lib/db/schema'
-
-type DbExecutor = Pick<typeof db, 'select' | 'insert' | 'update'>
-
-/** Queues work (an activity write) to run once the caller's transaction commits. */
-export type DeferActivity = (task: () => Promise<unknown>) => void
 
 const DUPLICATE_NAME_ERROR = 'A company with this name already exists.'
 
@@ -418,7 +401,7 @@ export function companySaveErrorMessage(error: unknown): string | null {
  * Billed now, archived or not: SALES can't archive or restore it (restoring
  * an archived client would put it back into the open month's close).
  */
-async function companyHasClient(companyId: string) {
+export async function companyHasClient(companyId: string) {
   const [client] = await db
     .select({ id: companies.id })
     .from(companies)
@@ -481,250 +464,4 @@ async function resolvePeopleChanges(
     }
   }
   return { moves }
-}
-
-/**
- * Archiving keeps the company's contacts and leads linked, so a restore
- * brings them back. A company whose billing is still open (billed now, or
- * through the end of this month) can't be archived: stop billing first.
- * Archiving a former client switches off its people's portal access, and a
- * restore doesn't switch it back on.
- */
-export async function setCompanyArchived(
-  actor: AppUser,
-  companyId: string,
-  archived: boolean
-): Promise<CompanyActionResult> {
-  assertCrmAccess(actor)
-
-  const [existing] = await db
-    .select({
-      id: companies.id,
-      name: companies.name,
-      deletedAt: companies.deletedAt,
-      isStaff: companies.isStaff,
-    })
-    .from(companies)
-    .where(eq(companies.id, companyId))
-    .limit(1)
-
-  if (!existing) {
-    return { ok: false, error: 'Company not found.' }
-  }
-  if (Boolean(existing.deletedAt) === archived) {
-    return { ok: true, id: existing.id }
-  }
-
-  // Staff sign in as members of the agency's own company.
-  if (existing.isStaff && !isAdminRole(actor.role)) {
-    return { ok: false, error: `Only an admin can change ${existing.name}.` }
-  }
-
-  // Client records are admin-only, and a client is its company (same rule
-  // as rename and people).
-  if (
-    !roleCan(actor.role, 'clients.manage') &&
-    (await companyHasClient(existing.id))
-  ) {
-    return {
-      ok: false,
-      error: archived
-        ? 'This company is a client, so only an admin can archive it.'
-        : 'This company is a client, so only an admin can restore it.',
-    }
-  }
-
-  if (archived && (await companyHasClient(existing.id))) {
-    return { ok: false, error: ARCHIVE_BILLED_REFUSAL }
-  }
-
-  const timestamp = new Date().toISOString()
-  let accessChanges: ContactClientLinkChange[] = []
-
-  try {
-    await db.transaction(async tx => {
-      if (archived) {
-        // Re-checked under the row lock the company sheet's Save takes, so a
-        // billing restart saved meanwhile can't slip past the check above.
-        const [locked] = await tx
-          .select({ billingOpen: sql<boolean>`${billingOpenSql()}` })
-          .from(companies)
-          .where(eq(companies.id, companyId))
-          .for('update')
-        if (locked?.billingOpen) {
-          throw new CompanySaveRefusal(ARCHIVE_BILLED_REFUSAL)
-        }
-      }
-      await tx
-        .update(companies)
-        .set({ deletedAt: archived ? timestamp : null, updatedAt: timestamp })
-        .where(eq(companies.id, companyId))
-      if (!archived) return
-      // Archiving a former client ends its people's portal access, so a
-      // later restart doesn't bring it back unasked.
-      const [client] = await tx
-        .select({ id: companies.id })
-        .from(companies)
-        .where(and(eq(companies.id, companyId), wasClientCompany()))
-        .limit(1)
-      if (client) {
-        accessChanges = await revokeCompanyPortalAccess(
-          tx,
-          companyId,
-          client.id
-        )
-      }
-    })
-  } catch (error) {
-    if (error instanceof CompanySaveRefusal) {
-      return { ok: false, error: error.message }
-    }
-    if (!archived && uniqueViolation(error)) {
-      return {
-        ok: false,
-        error: 'Another company already uses this name. Rename one first.',
-      }
-    }
-    console.error('Failed to change company archive state', error)
-    return { ok: false, error: 'Unable to update the company.' }
-  }
-
-  await logActivity({
-    actorId: actor.id,
-    actorRole: actor.role,
-    targetType: 'COMPANY',
-    targetId: existing.id,
-    ...(archived
-      ? companyArchivedEvent({ name: existing.name })
-      : companyRestoredEvent({ name: existing.name })),
-  })
-  await logContactClientLinkChanges(actor, accessChanges)
-
-  return { ok: true, id: existing.id }
-}
-
-/** A live company by id, for linking a record to it. */
-export async function getLinkableCompany(
-  companyId: string,
-  executor: DbExecutor = db
-): Promise<{ id: string; name: string } | null> {
-  const [row] = await executor
-    .select({ id: companies.id, name: companies.name })
-    .from(companies)
-    .where(and(eq(companies.id, companyId), isNull(companies.deletedAt)))
-    .limit(1)
-  return row ?? null
-}
-
-/**
- * The live company with this name (case-insensitive), created when there is
- * none. Lead and contact saves call this so a typed company name always
- * lands on one shared record. Returns null for a blank name.
- */
-export async function findOrCreateCompanyByName(
-  actor: AppUser,
-  rawName: string | null | undefined,
-  options: {
-    website?: string | null
-    executor?: DbExecutor
-    /**
-     * Inside a transaction, hand the activity write to the caller to run after
-     * commit, so a rolled-back save never logs a company that doesn't exist.
-     */
-    defer?: DeferActivity
-  } = {}
-): Promise<{ id: string; name: string; created: boolean } | null> {
-  const parsedName = companyNameSchema.safeParse(rawName ?? '')
-  if (!parsedName.success) return null
-  const name = parsedName.data
-  const executor = options.executor ?? db
-
-  const findExisting = async () => {
-    const [row] = await executor
-      .select({ id: companies.id, name: companies.name })
-      .from(companies)
-      .where(
-        and(
-          sql`lower(btrim(${companies.name})) = lower(btrim(${name}))`,
-          isNull(companies.deletedAt)
-        )
-      )
-      .limit(1)
-    return row ?? null
-  }
-
-  const existing = await findExisting()
-  if (existing) return { ...existing, created: false }
-
-  const timestamp = new Date().toISOString()
-  const [inserted] = await executor
-    .insert(companies)
-    .values({
-      name,
-      website: normalizeWebAddress(options.website),
-      createdBy: actor.id,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    })
-    // Two saves racing on one new name: the loser reads the winner's row.
-    .onConflictDoNothing()
-    .returning({ id: companies.id, name: companies.name })
-
-  if (inserted) {
-    const log = () =>
-      logActivity({
-        actorId: actor.id,
-        actorRole: actor.role,
-        targetType: 'COMPANY',
-        targetId: inserted.id,
-        ...companyCreatedEvent({ name }),
-      })
-    if (options.defer) options.defer(log)
-    else await log()
-    return { ...inserted, created: true }
-  }
-
-  const raced = await findExisting()
-  return raced ? { ...raced, created: false } : null
-}
-
-/**
- * Gives a company a website when it has none. A lead save (or a submission
- * promotion) that still carries a website writes it here, since the company
- * owns it; an existing company website is never overwritten.
- */
-export async function fillCompanyWebsiteIfBlank(
-  actor: AppUser,
-  companyId: string,
-  rawWebsite: string | null | undefined,
-  options: { executor?: DbExecutor; defer?: DeferActivity } = {}
-): Promise<void> {
-  const website = normalizeWebAddress(rawWebsite)
-  if (!website) return
-  const executor = options.executor ?? db
-  const [updated] = await executor
-    .update(companies)
-    .set({ website, updatedAt: new Date().toISOString() })
-    .where(
-      and(
-        eq(companies.id, companyId),
-        sql`nullif(btrim(${companies.website}), '') is null`
-      )
-    )
-    .returning({ id: companies.id, name: companies.name })
-  if (!updated) return
-  const log = () =>
-    logActivity({
-      actorId: actor.id,
-      actorRole: actor.role,
-      targetType: 'COMPANY',
-      targetId: updated.id,
-      ...companyUpdatedEvent({
-        name: updated.name,
-        changedFields: ['website'],
-        details: { before: { website: null }, after: { website } },
-      }),
-    })
-  if (options.defer) options.defer(log)
-  else await log()
 }

@@ -25,7 +25,7 @@ import type {
   CompanyOption,
 } from '@/lib/companies/types'
 import { NotFoundError } from '@/lib/errors/http'
-import { setCompanyArchived } from '@/lib/companies/write'
+import { setCompanyArchived } from '@/lib/companies/archive'
 import { getCompanyDetail, listCompanyOptions } from '@/lib/queries/companies'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 

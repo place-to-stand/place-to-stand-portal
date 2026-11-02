@@ -37,7 +37,7 @@ import {
   toClientSlug,
 } from '@/lib/companies/billing/client-service'
 
-import { getLinkableCompany } from '@/lib/companies/write'
+import { getLinkableCompany } from '@/lib/companies/find-or-create'
 
 export type UpdateClientPayload = {
   id: string
