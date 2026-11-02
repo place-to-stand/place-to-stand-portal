@@ -39,3 +39,14 @@ export const clientSchema = z.object({
 
 /** ISO 8601, accepting both `Z` and numeric offsets. */
 export const isoDateTime = z.iso.datetime({ offset: true })
+
+/**
+ * "How did you hear about us?" Free text from the visitor ("Other: ..."), so
+ * an over-long answer is cut to fit rather than rejected: a 400 here would
+ * lose the whole submission over an optional field.
+ */
+export const heardFromText = z
+  .string()
+  .trim()
+  .max(4000)
+  .transform(value => value.slice(0, 256))

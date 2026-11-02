@@ -4,6 +4,7 @@ import type { NewFormSubmission } from '@pts/db/types'
 
 import {
   analyticsSchema,
+  heardFromText,
   attributionSchema,
   clientSchema,
   isoDateTime,
@@ -38,7 +39,7 @@ export const contactPayloadSchema = z.object({
     marketingConsent: z.boolean(),
     // "How did you hear about us?" Optional so a marketing deploy that
     // predates the field still lands.
-    heardFrom: shortText.nullable().optional(),
+    heardFrom: heardFromText.nullable().optional(),
   }),
 
   analytics: analyticsSchema,
