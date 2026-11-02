@@ -350,13 +350,14 @@ function ManagedSignIn({
               )}
             />
           ) : null}
-          {account?.scheduledRole && !roleChanged ? (
+          {enabled && account?.scheduledRole && !roleChanged ? (
             <p className='text-muted-foreground text-sm'>
               Becomes {ROLE_LABELS[account.scheduledRole.role]} from{' '}
               {monthLabel(account.scheduledRole.effectiveFrom)}.
             </p>
           ) : null}
-          {hasSignIn && account ? (
+          {/* Only a live, saved sign-in that stays on: a reset needs one. */}
+          {enabled && live && account ? (
             <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
               <span className='text-muted-foreground'>
                 Last sign-in:{' '}
