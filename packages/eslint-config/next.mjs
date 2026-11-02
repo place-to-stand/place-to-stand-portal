@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 import nextTypescript from 'eslint-config-next/typescript'
 
-import { IGNORES, common } from './base.mjs'
+import { IGNORES, common, typed } from './base.mjs'
 
 export const HOUSE_RULES = {
   'pts/no-radix': 'error', // rule 1
@@ -92,23 +92,7 @@ export function nextApp({ dir, entityRegistry } = {}) {
       // "House rules (verified in code)"); each message quotes its rule.
       rules: HOUSE_RULES,
     },
-    {
-      // Type-aware, so only these two (the type information is the slow
-      // part): an unawaited promise loses its error; a switch over a union
-      // must handle every member.
-      files: ['**/*.{ts,tsx}'],
-      ignores: ['scripts/**'],
-      languageOptions: {
-        parserOptions: { projectService: true, tsconfigRootDir: dir },
-      },
-      rules: {
-        '@typescript-eslint/no-floating-promises': 'error',
-        '@typescript-eslint/switch-exhaustiveness-check': [
-          'error',
-          { considerDefaultExhaustiveForUnions: true },
-        ],
-      },
-    },
+    ...typed({ dir }),
     {
       // Dev scripts print their output.
       files: ['scripts/**'],

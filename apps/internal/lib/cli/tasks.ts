@@ -164,7 +164,7 @@ async function finishTaskWrite(
   const warnings: string[] = []
 
   try {
-    await revalidateTaskViews()
+    revalidateTaskViews()
   } catch (error) {
     console.error('Task saved, but refreshing task pages failed', error)
     warnings.push('Saved, but portal pages may show the old task until reload.')

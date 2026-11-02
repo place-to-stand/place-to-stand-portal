@@ -1,4 +1,24 @@
 {
+  "app/(auth)/force-reset-password/force-reset-form.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "app/(auth)/forgot-password/actions.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(auth)/sign-in/actions.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/_actions/update-profile.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
   "app/(dashboard)/companies/_components/billing/client-billing-fields.tsx": {
     "max-lines": {
       "count": 1
@@ -10,6 +30,9 @@
     }
   },
   "app/(dashboard)/companies/_components/company-sheet.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
@@ -30,6 +53,12 @@
     }
   },
   "app/(dashboard)/design/_components/components-forms.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
@@ -39,12 +68,40 @@
       "count": 1
     }
   },
+  "app/(dashboard)/design/_components/foundations-colour.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/design/_components/foundations-icons.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 2
+    }
+  },
   "app/(dashboard)/design/_components/patterns.tsx": {
     "max-lines": {
       "count": 1
     }
   },
+  "app/(dashboard)/hour-blocks/actions/save-hour-block.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/hour-blocks/actions/schemas.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 4
+    }
+  },
+  "app/(dashboard)/hour-blocks/hour-block-sheet.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 2
+    }
+  },
   "app/(dashboard)/invoices/_components/invoice-email-dialog.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
@@ -59,24 +116,91 @@
       "count": 1
     }
   },
+  "app/(dashboard)/invoices/actions/email-invoice.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
+    }
+  },
   "app/(dashboard)/invoices/actions/save-invoice.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
   },
+  "app/(dashboard)/invoices/actions/schemas.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 9
+    }
+  },
   "app/(dashboard)/invoices/invoice-sheet.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 3
+    },
     "max-lines": {
       "count": 1
     }
   },
   "app/(dashboard)/invoices/settings/_components/product-catalog-section.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
   },
   "app/(dashboard)/invoices/settings/_components/tax-rates-section.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
+    }
+  },
+  "app/(dashboard)/invoices/settings/actions.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/leads/_actions/archive-lead.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/leads/_actions/move-lead.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/leads/_actions/restore-lead.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/leads/_actions/updates/delete-lead-update.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/leads/_actions/updates/update-lead-update.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/leads/_components/lead-column.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/leads/_components/lead-sheet/lead-sheet.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/leads/_components/lead-sheet/types.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
     }
   },
   "app/(dashboard)/leads/_components/leads-archive-section.tsx": {
@@ -95,12 +219,23 @@
     }
   },
   "app/(dashboard)/people/_components/contact-sheet/contact-sheet-form.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 2
+    },
     "max-lines": {
       "count": 1
     }
   },
   "app/(dashboard)/people/_components/contacts-table-section.tsx": {
     "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/kanban-column.tsx": {
+    "@typescript-eslint/no-deprecated": {
       "count": 1
     }
   },
@@ -115,7 +250,15 @@
     }
   },
   "app/(dashboard)/projects/_components/project-sheet/project-sheet-form.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
     "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/project-time-log/project-time-log-form.tsx": {
+    "@typescript-eslint/no-deprecated": {
       "count": 1
     }
   },
@@ -129,18 +272,82 @@
       "count": 1
     }
   },
+  "app/(dashboard)/projects/_components/task-sheet/comments/task-comments-components.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
   "app/(dashboard)/projects/_components/task-sheet/form/task-sheet-form-fields.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
     "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/_components/task-sheet/form/task-sheet-form.tsx": {
+    "@typescript-eslint/no-misused-promises": {
       "count": 1
     }
   },
   "app/(dashboard)/projects/_components/task-sheet/planning-panel.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
   },
+  "app/(dashboard)/projects/actions/accept-done-tasks.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/accept-task.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/change-task-due-date.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/change-task-status.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/planning.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/projects/actions/remove-task.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/restore-task.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/shared-schemas.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 5
+    }
+  },
   "app/(dashboard)/projects/actions/trigger-worker.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 4
+    },
     "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/projects/actions/unaccept-task.ts": {
+    "@typescript-eslint/no-deprecated": {
       "count": 1
     }
   },
@@ -150,7 +357,15 @@
     }
   },
   "app/(dashboard)/projects/task-sheet.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/reports/monthly-close/_components/drift-notice.tsx": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
       "count": 1
     }
   },
@@ -174,34 +389,250 @@
       "count": 1
     }
   },
+  "app/(dashboard)/submissions/actions/schemas.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
   "app/(dashboard)/time-logs/_components/time-logs-table.tsx": {
     "max-lines": {
       "count": 1
     }
   },
+  "app/(public)/share/invoices/[token]/payment-panel.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
   "app/api/dashboard/recent-activity/summary/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
     "max-lines": {
+      "count": 1
+    }
+  },
+  "app/api/integrations/[provider]/disconnect/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/integrations/connected-apps/revoke/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/integrations/stripe/route.ts": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
+  "app/api/leads/[leadId]/conversion/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/my-tasks/done-window/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
+    }
+  },
+  "app/api/my-tasks/due-date/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/my-tasks/reorder/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 4
+    }
+  },
+  "app/api/notifications/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/planning/generate/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 5
+    }
+  },
+  "app/api/planning/threads/[threadId]/revisions/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/project-members/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/projects/[projectId]/github-repos/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
+    }
+  },
+  "app/api/projects/[projectId]/tasks/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/projects/[projectId]/time-logs/[timeLogId]/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "app/api/projects/[projectId]/time-logs/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "app/api/storage/person-avatar/[contactId]/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/storage/task-attachment/[attachmentId]/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/storage/user-avatar/[userId]/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/task-comments/[commentId]/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/tasks/[taskId]/comments/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/tasks/[taskId]/deployments/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/tasks/[taskId]/planning/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/tasks/[taskId]/summary/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/tasks/[taskId]/time-logs/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/uploads/user-avatar/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/v1/tasks/[taskId]/attachments/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/v1/tasks/[taskId]/reorder/route.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "components/activity/activity-change-list.tsx": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 2
+    }
+  },
+  "components/auth/google-sign-in-button.tsx": {
+    "@typescript-eslint/no-misused-promises": {
       "count": 1
     }
   },
   "components/dashboard/hours-widget/hours-widget.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 4
+    },
     "max-lines": {
       "count": 1
     }
   },
+  "components/dashboard/my-tasks-widget/my-tasks-widget.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "components/dashboard/recent-activity-overview/use-recent-activity-summary.ts": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
+  "components/forms/avatar-upload-field.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "components/integrations/connected-accounts-list.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "components/integrations/token-integration-card.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
   "components/layout/edit-profile-dialog.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
   },
   "components/my-tasks/my-tasks-board.tsx": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
     }
   },
+  "components/my-tasks/my-tasks-calendar.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
   "components/my-tasks/my-tasks-page.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
     "max-lines": {
       "count": 1
+    }
+  },
+  "components/tiptap-ui/link-floating-menu/link-floating-menu.tsx": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "components/ui/hover-card.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
     }
   },
   "components/ui/searchable-combobox.tsx": {
@@ -219,6 +650,21 @@
       "count": 1
     }
   },
+  "hooks/use-column-scroll-persistence.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "hooks/use-scroll-persistence.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/activity/format-fact.ts": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
   "lib/activity/queries.ts": {
     "max-lines": {
       "count": 1
@@ -227,6 +673,16 @@
   "lib/auth/capabilities.ts": {
     "max-lines": {
       "count": 1
+    }
+  },
+  "lib/cli/schemas/leads.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 5
+    }
+  },
+  "lib/cli/schemas/tasks.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
     }
   },
   "lib/companies/billing/actions/update-client.ts": {
@@ -239,9 +695,24 @@
       "count": 1
     }
   },
+  "lib/companies/filters.ts": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
   "lib/companies/save-company-sheet.ts": {
     "max-lines": {
       "count": 1
+    }
+  },
+  "lib/companies/schema.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 5
+    }
+  },
+  "lib/companies/sheet-save-schema.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 4
     }
   },
   "lib/companies/write.ts": {
@@ -279,13 +750,53 @@
       "count": 1
     }
   },
+  "lib/env.server.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
+    }
+  },
+  "lib/env.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "lib/form-submissions/delivery/audience.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
   "lib/github/client.ts": {
     "max-lines": {
       "count": 1
     }
   },
+  "lib/hooks/use-unsaved-changes-warning.tsx": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/hour-blocks/hour-block-form.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/invoices/invoice-form.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
+    }
+  },
   "lib/invoices/use-invoice-sheet-state.ts": {
     "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/leads/lead-update-core.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/leads/lead-update-shared.ts": {
+    "@typescript-eslint/no-deprecated": {
       "count": 1
     }
   },
@@ -294,9 +805,59 @@
       "count": 1
     }
   },
+  "lib/leads/save-lead-fields.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 4
+    }
+  },
+  "lib/leads/use-lead-sheet-state.ts": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "lib/mcp/tools/activity.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/mcp/tools/billing.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/mcp/tools/companies.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "lib/mcp/tools/directory.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/mcp/tools/leads.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/mcp/tools/tasks.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "lib/oauth/revoke-user-connections.ts": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
   "lib/people/actions/save-contact.ts": {
     "max-lines": {
       "count": 1
+    }
+  },
+  "lib/people/contact-service.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 5
     }
   },
   "lib/people/person-sheet/sign-in-apply.ts": {
@@ -305,13 +866,61 @@
     }
   },
   "lib/people/use-contact-sheet-state.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    },
     "max-lines": {
       "count": 1
+    }
+  },
+  "lib/projects/board/state/use-board-scroll-persistence.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/projects/sheet/actions/save-project.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/projects/sheet/actions/update-project-owner.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "lib/projects/sheet/actions/update-project-status.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 1
+    }
+  },
+  "lib/projects/sheet/project-service.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 11
+    }
+  },
+  "lib/projects/sheet/project-sheet-form.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 6
     }
   },
   "lib/projects/sheet/use-project-sheet-state.ts": {
     "max-lines": {
       "count": 1
+    }
+  },
+  "lib/projects/task-sheet/hooks/use-task-attachments/index.ts": {
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "lib/projects/task-sheet/hooks/use-task-attachments/use-attachment-uploader.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    }
+  },
+  "lib/projects/task-sheet/task-sheet-schema.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 3
     }
   },
   "lib/projects/task-sheet/use-task-sheet-state.ts": {
@@ -320,6 +929,9 @@
     }
   },
   "lib/projects/time-log/use-project-time-log-dialog.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
+    },
     "max-lines": {
       "count": 1
     }
@@ -367,6 +979,16 @@
   "lib/queries/time-logs/mutations.ts": {
     "max-lines": {
       "count": 1
+    }
+  },
+  "lib/storage/task-attachments.ts": {
+    "@typescript-eslint/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
+  "lib/users/user-validation.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 2
     }
   },
   "scripts/smoke-render-ui.tsx": {

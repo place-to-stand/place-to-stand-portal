@@ -81,12 +81,47 @@ export function common({ allowConsole = false } = {}) {
   ]
 }
 
+/**
+ * Type-aware rules for every workspace. They need the TypeScript program,
+ * which is the slow part, so the list stays short and each rule catches a
+ * class of real bug:
+ * - an unawaited promise loses its error (`no-floating-promises`), and a
+ *   promise passed where a boolean or a void callback goes is never awaited
+ *   (`no-misused-promises`);
+ * - `await` on something that isn't a promise, and throwing a non-Error;
+ * - a deprecated API, caught before an upgrade removes it;
+ * - a switch over a union must name every member: a `default` doesn't count,
+ *   so a new member is a lint error, not a silent fall-through.
+ * Existing hits are grandfathered in eslint-suppressions.json.
+ */
+export function typed({ dir = process.cwd() } = {}) {
+  return [
+    {
+      files: ['**/*.{ts,tsx,mts}'],
+      // Outside every tsconfig, so there's no program to check them with.
+      ignores: ['scripts/**', '**/*.test.*', '*.config.ts'],
+      languageOptions: {
+        parserOptions: { projectService: true, tsconfigRootDir: dir },
+      },
+      rules: {
+        '@typescript-eslint/no-floating-promises': 'error',
+        '@typescript-eslint/no-misused-promises': 'error',
+        '@typescript-eslint/await-thenable': 'error',
+        '@typescript-eslint/only-throw-error': 'error',
+        '@typescript-eslint/no-deprecated': 'error',
+        '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      },
+    },
+  ]
+}
+
 /** A package that isn't a Next app. */
-export function base({ allowConsole = false } = {}) {
+export function base({ allowConsole = false, dir } = {}) {
   return [
     IGNORES,
     // The same TypeScript rules eslint-config-next/typescript gives the apps.
     ...tseslint.configs.recommended,
     ...common({ allowConsole }),
+    ...typed({ dir }),
   ]
 }
