@@ -1,5 +1,4 @@
-import { roleCan, type Capability } from '@/lib/auth/capabilities'
-import type { Database } from '@/lib/supabase/types'
+import { roleCan, type Capability, type Role } from '@/lib/auth/capabilities'
 
 /**
  * Role rules shared by server guards and client UI. Kept free of server-only
@@ -15,8 +14,6 @@ import type { Database } from '@/lib/supabase/types'
  *   opened up for SALES is admin-only by default.
  * - CLIENT: client-portal users; never let into the internal portal.
  */
-type Role = Database['public']['Enums']['user_role']
-
 // Listed A–Z wherever roles are offered: Admin, Client, Sales.
 export const ROLE_LABELS: Record<Role, string> = {
   ADMIN: 'Admin',

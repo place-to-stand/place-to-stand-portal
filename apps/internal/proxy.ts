@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-import type { Database } from '@/lib/supabase/types'
 
 const PUBLIC_PATHS = new Set([
   '/sign-in',
@@ -47,7 +46,7 @@ async function checkSupabaseAuth(req: NextRequest): Promise<{
 }> {
   const res = NextResponse.next()
 
-  const supabase = createServerClient<Database>(
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {

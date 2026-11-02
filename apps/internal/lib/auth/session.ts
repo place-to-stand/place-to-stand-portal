@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation'
 import type { Session, User } from '@supabase/supabase-js'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
-import type { Database } from '@/lib/supabase/types'
+import type { Role } from '@/lib/auth/capabilities'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
@@ -22,11 +22,19 @@ import { applyDueRoleTerms } from '@/lib/settings/users/services/role'
  * The signed-in person: their sign-in row plus their name and photo, which
  * live on the person (contacts) since 0109 and 0112.
  */
-export type AppUser = Database['public']['Tables']['users']['Row'] & {
+export type AppUser = {
+  id: string
+  email: string
+  role: Role
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+  disabled_at: string | null
+  onboarding_completed_at: string | null
   full_name: string | null
   avatar_url: string | null
 }
-export type UserRole = Database['public']['Enums']['user_role']
+export type UserRole = Role
 
 export const getSession = cache(async (): Promise<Session | null> => {
   const supabase = getSupabaseServerClient()

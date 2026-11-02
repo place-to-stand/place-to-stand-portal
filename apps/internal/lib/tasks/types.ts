@@ -2,7 +2,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { AppUser } from '@/lib/auth/session'
 import type { BaseTaskInput } from '@/app/(dashboard)/projects/actions/shared-schemas'
-import type { Database } from '@/lib/supabase/types'
 import type { ActivitySourceValue } from '@/lib/types'
 
 // A save is all or nothing: the task row, its assignee and its attachment rows
@@ -22,7 +21,7 @@ export type SaveTaskResult =
  */
 export type TaskWriteContext = {
   actor: AppUser
-  storage: SupabaseClient<Database>
+  storage: SupabaseClient
   input: BaseTaskInput
   /** Deduplicated; `syncAssignees` does not dedupe on its own. */
   assigneeIds: string[]
