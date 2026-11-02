@@ -1,10 +1,10 @@
 # Sales tools rollout: production migration plan
 
-Covers PR #279's database chain, migrations **0089 → 0115**, and the matching deploys of the internal app and the client portal. Nothing here has been run against production. This document holds no production data: the pre-flight queries produce the numbers and names to review at release time, and their expected values are shared outside the repo.
+Covers PR #279's database chain, migrations **0089 → 0116**, and the matching deploys of the internal app and the client portal. Nothing here has been run against production. This document holds no production data: the pre-flight queries produce the numbers and names to review at release time, and their expected values are shared outside the repo.
 
 ## Summary
 
-1. This PR adds 27 migrations (0089–0115) on top of 0088. Pre-flight P0 confirms production is at 0088. Afterwards `drizzle.__drizzle_migrations` holds **117** rows (90 today).
+1. This PR adds 28 migrations (0089–0116) on top of 0088. Pre-flight P0 confirms production is at 0088. Afterwards `drizzle.__drizzle_migrations` holds **118** rows (90 today).
 2. Net effect:
    - leads, contacts and clients are reorganised around **companies**;
    - people belong to companies through **memberships** (several per person allowed);
@@ -13,7 +13,8 @@ Covers PR #279's database chain, migrations **0089 → 0115**, and the matching 
    - a client is its company's billing record and takes the company's name; a user is a person's sign-in and takes the contact's name (0109);
    - then (0111) a client is simply a company you bill: `clients` folds into `companies` (`slug`, `state`, `client_since`, `client_ended_at`) and everything keyed on `client_id` keys on `company_id`. Old client ids stay in `archive_sales_tools.client_id_map` for good, and the CLI and MCP keep accepting them;
    - then (0113, 0114) when a company is billed lives in `client_billing_periods` (by month; the close counts a client in each month it was billed), read through one SQL definition (`company_is_client`, `company_billed_in`) that the portal view also uses; a sign-in's role is kept by month in `user_role_terms` (the close pays on the role in force); the staff company is marked `companies.is_staff`; hour blocks, client updates, time logs and comments can no longer be deleted with their company or sign-in; billing events move onto the company in the activity log;
-   - then (0115) security hardening: drops an unused `SECURITY DEFINER` helper (`resolve_actor_role`), revokes the Supabase API roles' access to the 0113 read functions (the app connects as the owner), and drops the broken `activity_logs` updated-at trigger.
+   - then (0115) security hardening: drops an unused `SECURITY DEFINER` helper (`resolve_actor_role`), revokes the Supabase API roles' access to the 0113 read functions (the app connects as the owner), and drops the broken `activity_logs` updated-at trigger;
+   - then (0116) the client portal view also requires the sign-in's role to be CLIENT (an Admin or Sales sign-in left with a portal flag gets no portal access).
 3. Every backfill runs **before** any drop.
 4. 0107, 0108, 0109, 0111, 0112 and 0114 copy every table and column they drop into the `archive_sales_tools` schema. 0111 also keeps companies whose client was archived archived (on the client's archive date), with their billing history.
 5. 0097 also archives the three columns it drops, and 0090 archives every lead's company name as typed before it respells them (see [Archives made before 0107](#archives-made-before-0107)).
@@ -25,31 +26,41 @@ Covers PR #279's database chain, migrations **0089 → 0115**, and the matching 
    - 0109: a client has no company, or a live user doesn't have exactly one live contact;
    - 0111: a client has no company, two clients of one company have billing or commission terms for the same month, a company has two live clients, or a client has a label;
    - 0112: a sign-in has a photo but no live person to keep it.
-7. **Rollout shape:** one short maintenance window. Run 0089–0115, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
+7. **Rollout shape:** one short maintenance window. Run 0089–0116, then immediately promote the new internal app and client portal builds. Old code can't run on the new schema, and the new code can't run before it, so a split rollout doesn't help (see [Order of steps](#1-order-of-steps)).
 8. **Rehearse first** on a Supabase branch or restored snapshot, using the same commands and checks.
 9. **Rollback:**
    - before 0107, roll back the code (the old tables are still there);
    - after 0107, rebuild from `archive_sales_tools` (SQL below) or restore the pre-migration backup.
 10. **People with access to clients at two different companies** (P1 lists them) end with a membership at each company, with portal access carried over.
 
-## Release checklist (in order)
+## Go-live runbook (in order)
 
-Each step needs Jason's go. Claude never connects to production; Jason runs every production command.
+Each step needs Jason's go. Claude never connects to production; Jason runs every production command. Rehearsed on the Nov 1, 23:13 production dump: forward run 2s, 118 migrations, 41/41 comparison checks, verify checks, 13 closed months identical to their snapshots, the portal role check, and undo back to the 0104 state with no differences.
 
-1. **Freeze.** Merge nothing else into #279. Note the release commit (`git rev-parse HEAD` on `claude/project-thread-ee2vhs`).
-2. **Pre-flight (read-only).** Jason runs section 3's queries against production, each inside `BEGIN READ ONLY; … ROLLBACK;`, and compares with the expected values.
-3. **Fresh dump.** Jason: `pg_dump -Fc "$PROD_DATABASE_URL" -f ~/Backups/pts-portal/prod-$(date +%Y%m%d-%H%M).dump` (this is also the restore point).
-4. **Rehearse locally** on that dump (local Postgres only): `scripts/rehearse-rollout.sh ~/Backups/pts-portal/prod-<stamp>.dump`. Expect: forward run exit 0 with 117 migrations, `41/41 checks pass`, `ALL CHECKS PASS`, every closed month matching its snapshot, and `UNDO differences from the 0104 state: 0`. (Run on the Oct 30 10:30 dump on Nov 1: all of these held, forward run 2s.)
-5. **Config, before the window** (no deploy needed):
-   - Stripe dashboard → the portal's webhook endpoint: add `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed` to its events.
-   - Vercel (internal app): confirm `CRON_SECRET` is set for Production; the new daily cron `/api/cron/apply-role-terms` (00:05 UTC) uses it. No other new environment variables.
-6. **Merge #279** to `main`. Vercel builds both apps; **don't promote** yet (or keep auto-promotion off for this one deploy).
-7. **Window** (about 15 minutes, off-hours; tell Kris and Dave first): run section 2a's "before" checks, then from `packages/db`: `npm run db:migrate:prod; echo "exit $?"` (expect 0), then `select count(*) from drizzle.__drizzle_migrations` (expect 117).
+**Before the window**
+1. **Freeze #279** at the release commit (`git rev-parse HEAD` on `claude/project-thread-ee2vhs`). Merge `origin/main` into it if main moved, and rerun the e2e suite.
+2. **Fresh dump** (this is also the restore point), Jason: `pg_dump "$PROD_DATABASE_URL" -Fc -f ~/Backups/pts-portal/prod-$(date +%Y%m%d-%H%M).dump`.
+3. **Rehearse on it** (local only, about 2 minutes): `scripts/rehearse-rollout.sh ~/Backups/pts-portal/prod-<stamp>.dump`. Expect `FORWARD exit=0 … migrations: 118`, `portal role checks pass`, `41/41 checks pass`, `ALL CHECKS PASS`, `drifting from their snapshot: none`, `UNDO differences from the 0104 state: 0`, and `exit 0`.
+4. **Config** (no deploy needed):
+   - Stripe dashboard → the portal's webhook endpoint: add `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`.
+   - Vercel, internal app, Production: confirm `CRON_SECRET` is set (the new daily `/api/cron/apply-role-terms` cron at 00:05 UTC uses it). No other new environment variables.
+5. **Tell Kris and Dave**: about 15 minutes off-hours, don't edit anything.
+
+**The window**
+6. **Merge #279** to `main`. Vercel builds both apps; don't promote yet (auto-promotion off for this deploy).
+7. **Migrate**, Jason, from `packages/db`: `npm run db:migrate:prod; echo "exit $?"` → expect `exit 0`. Then `select count(*) from drizzle.__drizzle_migrations` → 118. If it fails, nothing changed (one transaction): stop, production is still at 0088.
 8. **Promote** the internal app, then the client portal.
-9. **After checks** (section 2b) and the click-test on production (section 4, step 5), including: a person sheet's User section, a company's Bill this company, the People and Companies lists, the client portal as a portal user.
-10. **Tell the team** what changed (Kris, Dave): people get sign-ins from the person sheet's Can sign in; clients are companies you bill (Bill this company); Dave's Sales role sees leads, people and companies.
 
-**Rollback:** before the promote, roll back by not promoting and restoring nothing (the migration batch is one transaction: a stop leaves production at 0088). After it, see section 5 (undo SQL, or restore the step 3 dump).
+**Right after (smoke test)**
+9. **Sign in** to the internal app as yourself: People, Companies, a person sheet (User section), a company sheet (Client section).
+10. **Email test on yourself**: create a throwaway person with your own second address, switch on Can sign in (Role Client), Save. Confirm the invite arrives, the link opens the client portal, and you can set a password. Then switch it off and archive the person.
+11. **Portal check**: sign in to the client portal as one real portal user (or Preview as them) and confirm they see exactly their companies.
+12. **CLI**: `pts whoami` and `pts clients list`.
+13. **No going back after this point**: once the smoke test passes and the team starts working (new sign-ins, billing changes), rolling back loses that work. Before then, use the rollback below.
+
+**Rollback**
+- Before step 8: don't promote; restore nothing (if step 7 failed, nothing changed).
+- After step 8, before step 13: promote the previous deployments, then either run the undo SQL in section 5 (0116 → 0111, each `--single-transaction`), or restore the step 2 dump.
 
 ## Expected pre-flight values
 
@@ -88,6 +99,7 @@ Run the read-only pre-flight queries (P0–P14) and compare with the values shar
 | 0113 `billing_periods_role_terms` | Adds `client_billing_periods` (one row per stretch of billing, by month), backfilled from `client_since` / `client_ended_at`: a stretch starts at the first month anything was billed (hour blocks, client time, billing terms, or `client_since`, whichever is earliest), so no month the close counted drops out; a former client's ends in the month it stopped. Adds the SQL functions `company_billed_in`, `company_billing_open`, `company_is_client` and rebuilds `client_portal_access` on them. Adds `user_role_terms` (every sign-in's current role from Oct 2025) and `companies.is_staff` (set on the live "Place To Stand"). Changes `hour_blocks` and `client_updates` → company, and `time_logs` and `task_comments` → sign-in, from CASCADE to RESTRICT. Moves billing events (`target_type` CLIENT) onto COMPANY, keeping their ids in `client_activity_0113`. Updated-at triggers stay off. | No | — |
 | 0114 `drop_client_columns` | Archives `client_since` / `client_ended_at` (`company_client_dates_0114`), then drops them and their index. | No | Stops if the archive table already exists. |
 | 0115 `harden_functions` | Drops `resolve_actor_role` (unused `SECURITY DEFINER`; it returned any user's role to anyone with the public anon key), revokes `EXECUTE` on `company_billed_in`, `company_billing_open`, `company_is_client`, `company_was_client`, `company_client_since`, `company_billing_ends_on`, `company_billing_ended_at` and `user_role_as_of` from `PUBLIC`, `anon` and `authenticated`, and drops the `activity_logs` updated-at trigger (the table has no `updated_at`, so any UPDATE on it failed). | No | — |
+| 0116 `portal_access_client_role` | Recreates `client_portal_access` with `u.role = 'CLIENT'` added to the users join: only a live Client sign-in has portal access, as the app already enforces (`hasLiveClientSignIn`). `scripts/check-portal-role.mjs` proves it on a copy. | No | — |
 
 ### Archives made before 0107
 
@@ -127,7 +139,7 @@ Steps:
    npm run db:migrate:prod
    ```
    - drizzle-kit can hide error text, so check the exit code is 0.
-   - Confirm `select count(*) from drizzle.__drizzle_migrations` returns 117.
+   - Confirm `select count(*) from drizzle.__drizzle_migrations` returns 118.
 8. **Promote both deployments** together: internal app, then client portal.
    - **Add Dave to the Sales project** (project members) so his Sales role sees it from the first sign-in.
 9. **Run the "after" checks** (section 2b) and the click-test (section 4, step 5) on production.
@@ -479,7 +491,7 @@ Any non-empty P10 result has to be fixed in the app before release: rename, arch
 
 Option B SQL. Run it inside one transaction. Re-add constraints as they were in the pre-PR schema (`0000_supabase_baseline` and later).
 
-Undo 0115, then 0114, then 0113, first: run [`0115-undo.sql`](0115-undo.sql), [`0114-undo.sql`](0114-undo.sql) then [`0113-undo.sql`](0113-undo.sql) the same way (0115's undo restores the grants and the trigger; `resolve_actor_role` stays gone, nothing called it). They put `client_since` / `client_ended_at` back (the archived values where billing is unchanged since the release, else derived from the billing periods), restore the portal view, the CASCADE keys and the CLIENT activity targets, and drop the billing periods, role terms and staff flag. Tested on a copy: schema and every table's data come back identical.
+Undo 0116, 0115, then 0114, then 0113, first: run [`0116-undo.sql`](0116-undo.sql), [`0115-undo.sql`](0115-undo.sql), [`0114-undo.sql`](0114-undo.sql) then [`0113-undo.sql`](0113-undo.sql) the same way (0115's undo restores the grants and the trigger; `resolve_actor_role` stays gone, nothing called it). They put `client_since` / `client_ended_at` back (the archived values where billing is unchanged since the release, else derived from the billing periods), restore the portal view, the CASCADE keys and the CLIENT activity targets, and drop the billing periods, role terms and staff flag. Tested on a copy: schema and every table's data come back identical.
 
 Then undo 0112: run [`0112-undo.sql`](0112-undo.sql) the same way. It puts `users.avatar_url` back from each person's photo (and the archive) with the updated-at trigger off. Tested on a copy: `users` comes back identical (the column returns last).
 
@@ -667,7 +679,7 @@ WHERE id IN (SELECT id FROM drizzle.__drizzle_migrations ORDER BY created_at DES
 COMMIT;
 ```
 
-Memberships made through the app after the release, such as new access grants, are not carried back by Option B. Re-apply them by hand from `activity_logs`. Option B returns the database to the 0104 shape. Rehearsed on a copy of production: after the whole batch (0089–0115), the undo steps above return it to exactly the state of the same copy migrated to 0104, schema and data (`node scripts/compare-rollout.mjs` covers the forward run). Going all the way back to production's current code means Option A.
+Memberships made through the app after the release, such as new access grants, are not carried back by Option B. Re-apply them by hand from `activity_logs`. Option B returns the database to the 0104 shape. Rehearsed on a copy of production: after the whole batch (0089–0116), the undo steps above return it to exactly the state of the same copy migrated to 0104, schema and data (`node scripts/compare-rollout.mjs` covers the forward run). Going all the way back to production's current code means Option A.
 
 ## 6. Decisions for Jason, and who does what
 
