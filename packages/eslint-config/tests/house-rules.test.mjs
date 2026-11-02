@@ -73,6 +73,38 @@ run('no-title-tooltip', {
   ],
 })
 
+run('icon-button-tooltip', {
+  valid: [
+    "<RowActionButton label='Archive' icon={<Archive />} />",
+    "<Tooltip><TooltipTrigger render={<Button size='icon-sm' aria-label='Go' />} /></Tooltip>",
+    "<DropdownMenuTrigger render={<Button size='icon-sm' aria-label='Actions' />} />",
+    "<Button size='sm'>Save</Button>",
+  ],
+  invalid: [
+    {
+      code: "<Button size='icon-sm' aria-label='Remove'><X /></Button>",
+      errors: [{ messageId: 'tooltip' }],
+    },
+  ],
+})
+
+run('archive-confirm', {
+  valid: [
+    "<ConfirmDialog title='Discard changes?' />",
+    "<ArchiveConfirmDialog entity='task' name='x' list='the board' />",
+  ],
+  invalid: [
+    {
+      code: "<ConfirmDialog title='Archive time log?' />",
+      errors: [{ messageId: 'archive' }],
+    },
+    {
+      code: '<ConfirmDialog title={`Archive ${name}?`} />',
+      errors: [{ messageId: 'archive' }],
+    },
+  ],
+})
+
 run('no-size-override', {
   valid: [
     "<Button size='sm' className='w-full' />",
