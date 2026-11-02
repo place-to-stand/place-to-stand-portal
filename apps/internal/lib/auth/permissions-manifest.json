@@ -140,13 +140,6 @@
     "capability": null
   },
   {
-    "type": "action",
-    "name": "draftUpdateForClient",
-    "file": "apps/internal/app/(dashboard)/companies/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
     "type": "page",
     "name": "/companies/activity",
     "file": "apps/internal/app/(dashboard)/companies/activity/page.tsx",
@@ -819,34 +812,6 @@
     "capability": null
   },
   {
-    "type": "action",
-    "name": "saveClientUpdateDraft",
-    "file": "apps/internal/app/(dashboard)/updates/[updateId]/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "sendClientUpdateAction",
-    "file": "apps/internal/app/(dashboard)/updates/[updateId]/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "sendClientUpdateTestAction",
-    "file": "apps/internal/app/(dashboard)/updates/[updateId]/actions.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "page",
-    "name": "/updates/[updateId]",
-    "file": "apps/internal/app/(dashboard)/updates/[updateId]/page.tsx",
-    "kind": "admin",
-    "capability": null
-  },
-  {
     "type": "page",
     "name": "/preview/invoices/[invoiceId]",
     "file": "apps/internal/app/(public)/preview/invoices/[invoiceId]/page.tsx",
@@ -1046,27 +1011,6 @@
     "type": "route",
     "name": "GET /api/cli/v1/time-logs",
     "file": "apps/internal/app/api/cli/v1/time-logs/route.ts",
-    "kind": "capability",
-    "capability": "integrations.cli"
-  },
-  {
-    "type": "route",
-    "name": "GET /api/cli/v1/updates/[updateId]",
-    "file": "apps/internal/app/api/cli/v1/updates/[updateId]/route.ts",
-    "kind": "capability",
-    "capability": "integrations.cli"
-  },
-  {
-    "type": "route",
-    "name": "GET /api/cli/v1/updates",
-    "file": "apps/internal/app/api/cli/v1/updates/route.ts",
-    "kind": "capability",
-    "capability": "integrations.cli"
-  },
-  {
-    "type": "route",
-    "name": "POST /api/cli/v1/updates",
-    "file": "apps/internal/app/api/cli/v1/updates/route.ts",
     "kind": "capability",
     "capability": "integrations.cli"
   },

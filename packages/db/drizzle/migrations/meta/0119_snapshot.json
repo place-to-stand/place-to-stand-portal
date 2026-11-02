@@ -1,5 +1,5 @@
 {
-  "id": "613648e8-350c-4d40-8cf5-375ca4969879",
+  "id": "a7d1a535-bd8d-40df-807c-9a86d61a56d6",
   "prevId": "51bcc1c1-6d74-45b7-8383-54889b1900c7",
   "version": "7",
   "dialect": "postgresql",
@@ -601,201 +601,6 @@
           "value": "starts_on = date_trunc('month', starts_on)::date AND (ends_on IS NULL OR (ends_on = date_trunc('month', ends_on)::date AND ends_on >= starts_on))"
         }
       },
-      "isRLSEnabled": false
-    },
-    "public.client_updates": {
-      "name": "client_updates",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "company_id": {
-          "name": "company_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "client_update_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'DRAFT'"
-        },
-        "subject": {
-          "name": "subject",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "intro": {
-          "name": "intro",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "items": {
-          "name": "items",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
-        "closing": {
-          "name": "closing",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "period_start": {
-          "name": "period_start",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "period_end": {
-          "name": "period_end",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "recipients": {
-          "name": "recipients",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{\"to\":[],\"cc\":[]}'::jsonb"
-        },
-        "created_by_id": {
-          "name": "created_by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "sent_by_id": {
-          "name": "sent_by_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sent_at": {
-          "name": "sent_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "gmail_message_id": {
-          "name": "gmail_message_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "gmail_thread_id": {
-          "name": "gmail_thread_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "timezone('utc'::text, now())"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "idx_client_updates_company_created": {
-          "name": "idx_client_updates_company_created",
-          "columns": [
-            {
-              "expression": "company_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last",
-              "opclass": "uuid_ops"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last",
-              "opclass": "timestamptz_ops"
-            }
-          ],
-          "isUnique": false,
-          "where": "(deleted_at IS NULL)",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "client_updates_company_id_fkey": {
-          "name": "client_updates_company_id_fkey",
-          "tableFrom": "client_updates",
-          "tableTo": "companies",
-          "columnsFrom": [
-            "company_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "client_updates_created_by_id_fkey": {
-          "name": "client_updates_created_by_id_fkey",
-          "tableFrom": "client_updates",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "client_updates_sent_by_id_fkey": {
-          "name": "client_updates_sent_by_id_fkey",
-          "tableFrom": "client_updates",
-          "tableTo": "users",
-          "columnsFrom": [
-            "sent_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.commission_term_closers": {
@@ -1626,12 +1431,6 @@
         "marketing_consent": {
           "name": "marketing_consent",
           "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "heard_from": {
-          "name": "heard_from",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -6839,14 +6638,6 @@
       "values": [
         "prepaid",
         "net_30"
-      ]
-    },
-    "public.client_update_status": {
-      "name": "client_update_status",
-      "schema": "public",
-      "values": [
-        "DRAFT",
-        "SENT"
       ]
     },
     "public.form_submission_kind": {

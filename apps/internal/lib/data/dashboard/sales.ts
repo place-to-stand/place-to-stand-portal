@@ -19,7 +19,7 @@ import {
   leadDisplayFields,
 } from '@/lib/leads/lead-display'
 import { LEAD_STATUS_LABELS, type LeadStatusValue } from '@/lib/leads/constants'
-import { todayCalendarDate } from '@/lib/updates/window'
+import { companyCalendarDate } from '@pts/ui/dates'
 
 /** Stages the pipeline widget counts: everything still in play. */
 const PIPELINE_STAGES: LeadStatusValue[] = [
@@ -118,7 +118,7 @@ export async function fetchSalesHomeData(
   })
 
   return {
-    today: todayCalendarDate(),
+    today: companyCalendarDate(),
     quietLeads: quietRows.map(row =>
       toLeadItem({ ...row, status: row.status as LeadStatusValue }, now)
     ),
