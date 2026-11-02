@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useForm } from 'react-hook-form'
+import { useQueryClient } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
@@ -13,6 +14,7 @@ import {
   softDeleteContact,
 } from '@/app/(dashboard)/people/actions'
 import { getJson } from '@/lib/http/get-json'
+import { CONTACT_OPTIONS_QUERY_KEY } from '@/components/contacts/contact-link-picker'
 import type { ContactSheetData } from '@/lib/queries/contacts'
 import type { PersonSignInDetails } from '@/lib/people/person-sign-in-details'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
@@ -129,6 +131,7 @@ export function useContactSheetState({
   >(null)
 
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const isEditing = Boolean(contact?.id)
   // Sign-ins and portal access are for people who manage clients
   // (admins). undefined = loading (or none to load).
@@ -408,6 +411,11 @@ export function useContactSheetState({
           return
         }
 
+        // Person pickers cache their list for 30 seconds; show this save now.
+        void queryClient.invalidateQueries({
+          queryKey: CONTACT_OPTIONS_QUERY_KEY,
+        })
+
         toast({
           title: isEditing ? 'Person saved' : 'Person created',
           description: result.warning ?? (data.name || data.email),
@@ -435,6 +443,7 @@ export function useContactSheetState({
       form,
       canManageSignIn,
       isEditing,
+      queryClient,
       toast,
       onComplete,
       onCreated,
