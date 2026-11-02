@@ -67,7 +67,7 @@
 - **Type Safety:** Avoid `any`; model domain data with shared TypeScript types and Zod schemas to keep server-client parity.
 - **Dependency Management:** Install new packages via `npm install <package>@latest` and record rationale in PRs. Remove unused deps promptly.
 - **Component Strategy:** Use `npx shadcn@latest add <component>` before building custom UI. Extend via composition rather than heavy overrides.
-- **Database Workflow:** Manage schema updates via `drizzle-kit` migrations. Use `npm run db:generate -- --name <change>` after editing `lib/db/schema.ts` / `lib/db/relations.ts`, review the SQL, and apply with `npm run db:migrate`. `npm run db:pull` is reserved for when the database is the source of truth (e.g., emergency hotfixes); it will overwrite schema files.
+- **Database Workflow:** Manage schema updates via `drizzle-kit` migrations. Use `npm run db:generate -- --name <change>` after editing `packages/db/src/schema.ts`, review the SQL, and apply with `npm run db:migrate`. `npm run db:pull` is reserved for when the database is the source of truth (e.g., emergency hotfixes); it will overwrite schema files.
 - **Drizzle Client Usage:** Import the shared instance from `lib/db/index.ts` and schema from `lib/db/schema`.
 - **Supabase Client Scope:** The Supabase client in `lib/supabase/client.ts` is reserved strictly for auth/session handling, storage operations, and realtime subscriptions. All data queries and mutations must route through Drizzle instead.
 - **Authorization Guards:** Use the helpers in `lib/auth/permissions.ts` before executing any Drizzle query. Shared query functions live under `lib/queries/` and already compose these guards.

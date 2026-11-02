@@ -22,7 +22,7 @@ place-to-stand-portal/
 │       ├── lib/           # Auth, data fetching, utilities
 │       └── styles/        # Global CSS
 ├── packages/
-│   ├── db/                # Shared database schema, relations, and migrations (@pts/db)
+│   ├── db/                # Shared database schema and migrations (@pts/db)
 │   ├── github/            # GitHub App auth and API utilities (@pts/github)
 │   └── cli/               # `pts` admin CLI, consumes /api/cli/v1 (@pts/cli, not published)
 ├── supabase/              # Supabase config (stays at root)
@@ -58,7 +58,7 @@ Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environmen
 - `npm run db:migrate` - Apply migrations to database
 
 **Migration workflow:**
-1. Update schema files in `packages/db/src/schema.ts` and `packages/db/src/relations.ts`
+1. Update the schema in `packages/db/src/schema.ts`
 2. Run `npm run db:generate -- --name descriptive_label` from `packages/db/`
 3. Review generated SQL in `packages/db/drizzle/migrations/`
 4. Apply locally with `npm run db:migrate`, then in staging/production
@@ -172,7 +172,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 - Soft deletes via `deletedAt` timestamps on all core tables
 - `createdAt`/`updatedAt` on all records
 - PostgreSQL enums for status fields
-- Relations defined in `packages/db/src/relations.ts`
+- No Drizzle relations: queries join explicitly (the db client is created without a schema, so `db.query.*` is unavailable)
 - Both apps import schema via `@pts/db/schema`
 - **NO Row Level Security** - access control is handled in the application layer (see below)
 
@@ -421,12 +421,11 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 
 ### Creating a new table
 1. Define schema in `packages/db/src/schema.ts`
-2. Add relations in `packages/db/src/relations.ts`
-3. Generate migration: `npm run db:generate -- --name table_name` from `packages/db/`
-4. Review SQL in `packages/db/drizzle/migrations/`
-5. Apply: `npm run db:migrate`
-6. Add query functions in `apps/internal/lib/queries/`
-7. Add data layer functions in `apps/internal/lib/data/`
+2. Generate migration: `npm run db:generate -- --name table_name` from `packages/db/`
+3. Review SQL in `packages/db/drizzle/migrations/`
+4. Apply: `npm run db:migrate`
+5. Add query functions in `apps/internal/lib/queries/`
+6. Add data layer functions in `apps/internal/lib/data/`
 
 ### Adding a new server-side env var
 1. Add Zod validation to the appropriate app's `lib/env.server.ts`

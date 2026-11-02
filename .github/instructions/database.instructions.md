@@ -28,7 +28,6 @@ applyTo: "lib/db/**/*,lib/queries/**/*,drizzle/**/*"
 ## Query Patterns
 
 - Flag N+1 queries: fetching related data in loops
-- Use eager loading via Drizzle relations where beneficial
 - Sequential fetches that can be parallel should use `Promise.all()`
 - Unbounded queries (missing LIMIT) are a performance concern
 - Large result sets need pagination
@@ -49,6 +48,5 @@ applyTo: "lib/db/**/*,lib/queries/**/*,drizzle/**/*"
 
 ## Relations
 
-- Verify `lib/db/relations.ts` matches schema foreign keys
 - Check ON DELETE/ON UPDATE cascade behavior
 - Many-to-many relationships need proper join tables
