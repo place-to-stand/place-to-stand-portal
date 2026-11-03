@@ -1,7 +1,6 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PaginationControls } from '@/components/ui/pagination-controls'
@@ -16,6 +15,7 @@ import { useDeepLinkNotFound } from '@/lib/sheets/use-sheet-params'
 import { HourBlockArchiveDialog } from './hour-block-archive-dialog'
 import { HourBlocksTableSection } from './hour-blocks-table-section'
 import { HourBlockSheet } from '../hour-block-sheet'
+import { usePageParam } from '@/hooks/use-page-param'
 
 type HourBlocksManagementTableProps = {
   hourBlocks: HourBlockWithClient[]
@@ -53,8 +53,6 @@ export function HourBlocksManagementTable({
   deepLinkedHourBlock = null,
   hourBlockNotFound = false,
 }: HourBlocksManagementTableProps) {
-  const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const {
@@ -86,19 +84,7 @@ export function HourBlocksManagementTable({
     ? 'No hour blocks match the current filters.'
     : EMPTY_MESSAGES[mode]
 
-  const handlePageChange = useCallback(
-    (page: number) => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (page <= 1) {
-        params.delete('page')
-      } else {
-        params.set('page', String(page))
-      }
-      const query = params.toString()
-      router.push(query ? `${pathname}?${query}` : pathname)
-    },
-    [pathname, router, searchParams]
-  )
+  const handlePageChange = usePageParam()
 
   return (
     <div className='space-y-4'>

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { EmptyState } from '@pts/ui/empty-state'
@@ -39,6 +39,7 @@ import {
 } from '@/lib/table/clickable-row'
 
 import { useTimeLogRowActions } from '../_lib/use-time-log-row-actions'
+import { usePageParam } from '@/hooks/use-page-param'
 
 type TimeLogsTableProps = {
   items: DashboardTimeLogEntry[]
@@ -90,18 +91,11 @@ export function TimeLogsTable({
       {label}
     </SortableTableHead>
   )
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const editor = useTimeLogEditContext()
   const actions = useTimeLogRowActions()
   const isArchive = mode === 'archive'
 
-  const goToPage = (page: number) => {
-    const next = new URLSearchParams(searchParams.toString())
-    if (page > 1) next.set('page', String(page))
-    else next.delete('page')
-    router.push(`${pathname}?${next.toString()}`)
-  }
+  const goToPage = usePageParam()
 
   // A page past the end (after archiving its last row, or a stale link)
   // goes back to the last page that has rows.

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
@@ -21,6 +21,7 @@ import {
 
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
+import { usePageParam } from '@/hooks/use-page-param'
 
 type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
@@ -59,8 +60,6 @@ export function ContactsManagementTable({
   contactNotFound = false,
   clientPortalUrl = '',
 }: ContactsManagementTableProps) {
-  const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const {
@@ -98,19 +97,7 @@ export function ContactsManagementTable({
     [clientPortalUrl]
   )
 
-  const handlePageChange = useCallback(
-    (page: number) => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (page <= 1) {
-        params.delete('page')
-      } else {
-        params.set('page', String(page))
-      }
-      const query = params.toString()
-      router.push(query ? `${pathname}?${query}` : pathname)
-    },
-    [pathname, router, searchParams]
-  )
+  const handlePageChange = usePageParam()
 
   return (
     <div className='space-y-4'>
