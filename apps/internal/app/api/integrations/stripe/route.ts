@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { and, eq, ne, sql } from 'drizzle-orm'
 
+import { serverEnv } from '@/lib/env.server'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
 import { getStripe } from '@/lib/stripe/client'
@@ -108,7 +109,7 @@ async function markInvoicePaid(
 }
 
 export async function POST(request: Request) {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const webhookSecret = serverEnv.STRIPE_WEBHOOK_SECRET
 
   if (!webhookSecret) {
     console.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET is not configured')

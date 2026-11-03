@@ -8,6 +8,8 @@
  */
 import { globalIgnores } from 'eslint/config'
 import eslintComments from '@eslint-community/eslint-plugin-eslint-comments'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+import reactHooks from 'eslint-plugin-react-hooks'
 import tseslint from 'typescript-eslint'
 
 import { pts } from './plugin.mjs'
@@ -20,6 +22,14 @@ export const IGNORES = globalIgnores([
   '**/dist/**',
   '**/next-env.d.ts',
 ])
+
+/** CLAUDE.md "NEVER": no Row Level Security policies in the schema. */
+export const NO_RLS_IMPORT = {
+  name: 'drizzle-orm/pg-core',
+  importNames: ['pgPolicy'],
+  message:
+    'CLAUDE.md: this project never uses Row Level Security. Access control lives in the application layer.',
+}
 
 /**
  * Rules for every workspace, apps and packages alike. `allowConsole` for
@@ -56,7 +66,20 @@ export function common({ allowConsole = false } = {}) {
         // House rule 10: every date a person reads (pages, emails, PDFs) is
         // formatted by @pts/ui/dates.
         'pts/dates-through-ui': 'error',
+        // README → Color: tokens only. Listed exceptions are turned off by
+        // file below and in the app configs.
+        'pts/no-raw-colour': 'error',
+        // The apps add their own paths to this list (next.mjs).
+        'no-restricted-imports': ['error', { paths: [NO_RLS_IMPORT] }],
       },
+    },
+    {
+      // README → Color's listed exceptions: the badge tint source and the
+      // Switch's on state.
+      // The auth ground is always dark, so its error red is raw on purpose
+      // (auth-shell.tsx explains).
+      files: ['**/badge-tints.ts', '**/switch.tsx', '**/auth-shell.tsx'],
+      rules: { 'pts/no-raw-colour': 'off' },
     },
     {
       // AGENTS.md: "Files approaching 300 lines should be split by
@@ -123,5 +146,24 @@ export function base({ allowConsole = false, dir } = {}) {
     ...tseslint.configs.recommended,
     ...common({ allowConsole }),
     ...typed({ dir }),
+  ]
+}
+
+/**
+ * A React component library that isn't a Next app (packages/ui): the same
+ * hooks rules (React Compiler rules included) and accessibility rules the
+ * apps' components get, without the Next and app-only house rules.
+ */
+export function reactLibrary({ dir } = {}) {
+  return [
+    ...base({ dir }),
+    {
+      files: ['**/*.{ts,tsx}'],
+      ...reactHooks.configs.flat['recommended-latest'],
+    },
+    {
+      files: ['**/*.tsx'],
+      ...jsxA11y.flatConfigs.recommended,
+    },
   ]
 }

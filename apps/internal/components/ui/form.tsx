@@ -126,6 +126,7 @@ function FormLabel({
 
 /** The muted "(optional)" suffix appended by `FormLabel optional`. */
 function OptionalMarker() {
+  // eslint-disable-next-line pts/optional-label -- the one place the marker is written
   return <span className='text-muted-foreground font-normal'>(optional)</span>
 }
 

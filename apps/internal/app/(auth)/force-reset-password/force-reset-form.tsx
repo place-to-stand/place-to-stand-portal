@@ -10,6 +10,7 @@ import { completePasswordReset } from '@/app/(auth)/_actions/update-password'
 import { isSafeRedirectPath } from '@/lib/auth/safe-redirect'
 import {
   authErrorClass,
+  authFieldErrorClass,
   authFieldLabelClass,
   authInputClass,
   authPrimaryButtonClass,
@@ -134,7 +135,7 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
                     />
                   </DisabledFieldTooltip>
                 </FormControl>
-                <FormMessage className='text-red-300' />
+                <FormMessage className={authFieldErrorClass} />
               </FormItem>
             )}
           />
@@ -160,7 +161,7 @@ export function PasswordResetForm({ redirectTo, email }: Props) {
                     />
                   </DisabledFieldTooltip>
                 </FormControl>
-                <FormMessage className='text-red-300' />
+                <FormMessage className={authFieldErrorClass} />
               </FormItem>
             )}
           />

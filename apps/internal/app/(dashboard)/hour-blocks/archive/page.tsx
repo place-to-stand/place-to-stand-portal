@@ -65,7 +65,7 @@ export default async function HourBlocksArchivePage({
       fetchById: id => getHourBlockWithClientById(currentUser, id),
       tab: 'archive',
       isArchived: block => block.deleted_at !== null,
-      archiveHref: id => `/hour-blocks/archive?hour-block=${id}`,
+      archiveHref: id => hourBlockHref(id, { archived: true }),
       activeHref: hourBlockHref,
     })
 

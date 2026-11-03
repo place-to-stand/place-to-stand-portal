@@ -112,5 +112,8 @@ export const authErrorClass =
   // and the theme's `destructive` is tuned for the light page in light mode.
   'border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300'
 
+/** A field's error line on the auth ground (red for the same reason). */
+export const authFieldErrorClass = 'text-red-300'
+
 export const authNoticeClass =
   'border border-brand-border-light bg-brand-bg/60 px-3 py-2 text-sm text-brand-text-muted'

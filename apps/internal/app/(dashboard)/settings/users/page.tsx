@@ -31,6 +31,7 @@ export default async function UsersSettingsPage({
       .from(contacts)
       .where(and(eq(contacts.userId, userParam), isNull(contacts.deletedAt)))
       .limit(1)
+    // eslint-disable-next-line pts/sheet-url-through-builders -- a redirect that keeps the signIn filter beside the sheet param
     if (person) next.set('contact', person.id)
   }
 

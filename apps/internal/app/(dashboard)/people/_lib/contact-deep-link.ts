@@ -9,9 +9,6 @@ import {
   type SheetDeepLink,
 } from '@/lib/sheets/resolve-deep-link'
 
-const contactArchiveSheetHref = (id: string) =>
-  `/people/archive?contact=${id}`
-
 type ContactDeepLinkRecord = ContactSheetInput & { deletedAt: string | null }
 
 /**
@@ -31,6 +28,6 @@ export function resolveContactDeepLink(
     tab,
     isArchived: contact => contact.deletedAt !== null,
     activeHref: contactSheetHref,
-    archiveHref: contactArchiveSheetHref,
+    archiveHref: id => contactSheetHref(id, { archived: true }),
   })
 }

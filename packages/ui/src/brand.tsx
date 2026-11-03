@@ -84,14 +84,14 @@ const TONE_CLASSES: Record<
   { frame: string; dot: string; word: string }
 > = {
   theme: {
-    frame: 'border-[#65a30d]/60 dark:border-[#b5f542]/50',
-    dot: 'bg-[#65a30d] dark:bg-[#b5f542]',
+    frame: 'border-brand-lime-600/60 dark:border-brand-lime/50',
+    dot: 'bg-brand-lime-600 dark:bg-brand-lime',
     word: 'text-foreground',
   },
   brand: {
-    frame: 'border-[#b5f542]/50',
-    dot: 'bg-[#b5f542]',
-    word: 'text-[#e8e6e3]',
+    frame: 'border-brand-lime/50',
+    dot: 'bg-brand-lime',
+    word: 'text-brand-text',
   },
 }
 
@@ -121,7 +121,10 @@ export function BrandLogoMark({
       )}
       style={{ width: size, height: size, borderWidth: size >= 32 ? 2 : 1 }}
     >
-      <span className={TONE_CLASSES[tone].dot} style={{ width: dot, height: dot }} />
+      <span
+        className={TONE_CLASSES[tone].dot}
+        style={{ width: dot, height: dot }}
+      />
     </span>
   )
 }
@@ -167,11 +170,11 @@ export function BrandLogo({
  */
 export function BrandLockup({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center gap-4">
-      <BrandLogoMark size={36} tone="brand" />
-      <div className="flex flex-col items-center gap-2">
+    <div className='flex flex-col items-center gap-4'>
+      <BrandLogoMark size={36} tone='brand' />
+      <div className='flex flex-col items-center gap-2'>
         <span
-          className="text-xl font-bold tracking-tight"
+          className='text-xl font-bold tracking-tight'
           style={{
             color: BRAND.text,
             fontFamily: 'var(--font-space-grotesk, inherit)',
@@ -180,7 +183,7 @@ export function BrandLockup({ label }: { label: string }) {
           Place To Stand
         </span>
         <span
-          className="font-mono text-[11px] uppercase tracking-[0.1em]"
+          className='font-mono text-[11px] tracking-[0.1em] uppercase'
           style={{ color: BRAND.accent }}
         >
           {label}

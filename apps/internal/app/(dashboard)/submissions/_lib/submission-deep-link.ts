@@ -6,6 +6,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
 import { NotFoundError } from '@/lib/errors/http'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
+import { submissionHref } from '@/lib/sheets/hrefs'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -51,11 +52,11 @@ export async function resolveSubmissionDeepLink(
   const archived = submission.deletedAt !== null
 
   if (archived && tab === 'active') {
-    redirect(`/submissions/archive?submission=${submission.id}`)
+    redirect(submissionHref(submission.id, { archived: true }))
   }
 
   if (!archived && tab === 'archive') {
-    redirect(`/submissions?submission=${submission.id}`)
+    redirect(submissionHref(submission.id))
   }
 
   return { submission, notFound: false }

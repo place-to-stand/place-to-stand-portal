@@ -3,6 +3,7 @@
 import { useTransition } from 'react'
 import { CheckIcon, ChevronDownIcon, EyeIcon } from 'lucide-react'
 
+import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import {
   DropdownMenu,
@@ -40,9 +41,9 @@ export function ViewAsBanner({
     availableContacts.find(c => c.id === viewingAsContactId) ?? null
 
   return (
-    <div className='border-b border-amber-500/40 bg-amber-500/10'>
+    <div className='border-warning/40 bg-warning/10 border-b'>
       <div className='mx-auto flex h-11 max-w-5xl items-center gap-3 px-4'>
-        <span className='flex items-center gap-1.5 text-xs font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-500'>
+        <span className='text-warning flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase'>
           <EyeIcon className='size-3.5' aria-hidden='true' />
           Admin preview
         </span>
@@ -52,11 +53,11 @@ export function ViewAsBanner({
             asChild
             disabled={isPending || availableContacts.length === 0}
           >
-            {/* The amber edge ties the control to the preview band. */}
+            {/* The warning edge ties the control to the preview band. */}
             <Button
               variant='outline'
               size='sm'
-              className='border-amber-500/40 dark:border-amber-500/40'
+              className='border-warning/40 dark:border-warning/40'
             >
               {selectedContact?.name ?? 'Choose a person to preview'}
               <ChevronDownIcon aria-hidden='true' />
@@ -86,9 +87,7 @@ export function ViewAsBanner({
                 />
                 <span className='min-w-0 flex-1 truncate'>{contact.name}</span>
                 {contact.isPromoted && (
-                  <span className='shrink-0 rounded border border-amber-500/40 px-1 py-px text-[10px] leading-none font-semibold text-amber-700 dark:text-amber-500'>
-                    Portal
-                  </span>
+                  <Badge variant='secondary'>Portal</Badge>
                 )}
               </DropdownMenuItem>
             ))}

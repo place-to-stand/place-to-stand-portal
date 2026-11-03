@@ -6,6 +6,7 @@ import { AppProviders } from '@/components/providers/app-providers'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
 import { ViewportScrollReset } from '@/components/layout/viewport-scroll-reset'
 import { cn } from '@/lib/utils'
+import { serverEnv } from '@/lib/env.server'
 
 import './globals.css'
 
@@ -27,7 +28,7 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_BASE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(serverEnv.APP_BASE_URL ?? 'http://localhost:3000'),
   title: {
     default: 'Place To Stand Portal',
     template: '%s | Place To Stand Portal',

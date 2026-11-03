@@ -2,6 +2,9 @@ import 'server-only'
 
 import { createDb } from '@pts/db/client'
 
+// Read directly, not through serverEnv: scripts and drizzle tooling import
+// the db without the rest of the app's env.
+// eslint-disable-next-line pts/env-through-schema -- see the comment above
 const databaseUrl = process.env.DATABASE_URL
 
 if (!databaseUrl) {

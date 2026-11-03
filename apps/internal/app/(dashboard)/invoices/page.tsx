@@ -60,7 +60,7 @@ export default async function InvoicesPage({
       tab: 'active',
       isArchived: invoice => Boolean(invoice.deleted_at),
       activeHref: invoiceHref,
-      archiveHref: id => `/invoices/archive?invoice=${id}`,
+      archiveHref: id => invoiceHref(id, { archived: true }),
     })
 
   return (
