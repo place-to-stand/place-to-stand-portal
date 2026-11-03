@@ -113,6 +113,8 @@ export type TaskListRequest = {
   status?: SelectTask['status']
   /** Assignee email or UUID. */
   assignee?: string
+  /** Archived tasks instead of live ones. */
+  archived?: boolean
   limit: number
 }
 
@@ -123,7 +125,7 @@ export type TaskListRequest = {
  */
 export async function listTasksForAgent(
   user: AppUser,
-  { project, lead, status, assignee, limit }: TaskListRequest
+  { project, lead, status, assignee, archived, limit }: TaskListRequest
 ): Promise<{ items: CliTask[]; hasMore: boolean }> {
   const [projectId, assigneeIds] = await Promise.all([
     project ? resolveProjectId(user, project) : undefined,
@@ -135,6 +137,7 @@ export async function listTasksForAgent(
     leadId: lead,
     status,
     assigneeId: assigneeIds[0],
+    archived,
     limit: limit + 1,
   })
   const shown = rows.slice(0, limit)

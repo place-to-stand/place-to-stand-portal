@@ -55,10 +55,10 @@ export type ToolDefinition<Shape extends z.ZodRawShape> = {
   description: string
   input: Shape
   /**
-   * Writes are never destructive — v1 has no delete, archive or restore — so
-   * the only annotation that varies between them is idempotency.
+   * `destructive` is archive and restore: marked so the client asks the
+   * person before each call. Nothing is ever deleted for good.
    */
-  effect: 'read' | 'write' | 'idempotent-write'
+  effect: 'read' | 'write' | 'idempotent-write' | 'destructive'
   run: (
     args: z.output<z.ZodObject<Shape>>,
     principal: McpPrincipal
@@ -79,6 +79,12 @@ const ANNOTATIONS: Record<
   'idempotent-write': {
     readOnlyHint: false,
     destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+  destructive: {
+    readOnlyHint: false,
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: false,
   },

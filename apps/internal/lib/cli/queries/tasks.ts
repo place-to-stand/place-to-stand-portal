@@ -1,6 +1,15 @@
 import 'server-only'
 
-import { and, desc, eq, exists, inArray, isNull, sql } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNull,
+  sql,
+  isNotNull,
+} from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
@@ -19,6 +28,8 @@ export type CliTaskFilters = {
   leadId?: string
   status?: SelectTask['status']
   assigneeId?: string
+  /** Archived tasks instead of live ones. */
+  archived?: boolean
   limit: number
 }
 
@@ -121,7 +132,7 @@ export async function fetchBoardLocationsByProject(
  */
 export async function listTasksForCli(
   user: AppUser,
-  { projectId, leadId, status, assigneeId, limit }: CliTaskFilters
+  { projectId, leadId, status, assigneeId, archived, limit }: CliTaskFilters
 ): Promise<SelectTask[]> {
   if (!isProjectStaff(user)) {
     throw new ForbiddenError('Project access required')
@@ -134,7 +145,9 @@ export async function listTasksForCli(
     return []
   }
 
-  const conditions = [isNull(tasks.deletedAt)]
+  const conditions = [
+    archived ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
+  ]
 
   if (workable) {
     conditions.push(inArray(tasks.projectId, workable))

@@ -41,6 +41,15 @@ export const MCP_TOOL_CAPABILITIES = {
   get_monthly_close: 'billing.manage',
   get_company_billing: 'clients.manage',
   list_time_logs: 'billing.manage',
+  archive_lead: 'leads.manage',
+  restore_lead: 'leads.manage',
+  archive_task: 'projects.view_member',
+  // Admin-only inside the tool (the board's Review tab is admin-only).
+  restore_task: 'projects.view_member',
+  archive_company: 'companies.manage',
+  restore_company: 'companies.manage',
+  archive_person: 'contacts.manage',
+  restore_person: 'contacts.manage',
 } as const satisfies Record<string, McpCapability>
 
 export type McpToolName = keyof typeof MCP_TOOL_CAPABILITIES
