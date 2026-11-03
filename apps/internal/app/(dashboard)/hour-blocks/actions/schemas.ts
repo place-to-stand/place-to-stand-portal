@@ -1,14 +1,19 @@
 import { z } from 'zod'
 
 import { HOUR_BLOCK_NOTES_MAX_LENGTH } from '@/lib/hour-blocks/hour-block-form'
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
 
 export const hourBlockSchema = z.object({
   id: z.string().uuid().optional(),
   companyId: z.string().uuid('Select a client'),
   hoursPurchased: z
     .number()
-    .int('Hours purchased must be a whole number.')
-    .positive('Hours purchased must be greater than zero'),
+    .positive('Hours purchased must be greater than zero')
+    .max(999_999, 'Hours purchased is too large.')
+    .refine(isQuarterHours, QUARTER_HOURS_MESSAGE),
   notes: z
     .string()
     .trim()

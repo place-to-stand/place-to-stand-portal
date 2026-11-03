@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -437,6 +441,8 @@ export function useProjectTimeLogDialog(
         parsedHours = Number.parseFloat(trimmedHours)
         if (!Number.isFinite(parsedHours) || parsedHours <= 0) {
           nextErrors.hours = 'Enter a valid number of hours greater than zero.'
+        } else if (!isQuarterHours(parsedHours)) {
+          nextErrors.hours = QUARTER_HOURS_MESSAGE
         }
       }
 

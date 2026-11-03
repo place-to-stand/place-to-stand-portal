@@ -1,22 +1,34 @@
 import { z } from 'zod'
 
-const lineItemSchema = z.object({
-  id: z.string().uuid().optional(),
-  productCatalogItemId: z.string().uuid().optional().nullable(),
-  description: z.string().min(1, 'Description is required.'),
-  // Stored at 2 decimals. The line amount and the invoice totals are worked
-  // out on the server from these (save-invoice.ts), never taken from the form.
-  quantity: z
-    .number()
-    .positive('Quantity must be greater than zero.')
-    .max(999_999, 'Quantity is too large.'),
-  unitPrice: z
-    .number()
-    .min(0, 'Unit price cannot be negative.')
-    .max(9_999_999_999, 'Unit price is too large.'),
-  createsHourBlock: z.boolean(),
-  sortOrder: z.number().int(),
-})
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
+
+const lineItemSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    productCatalogItemId: z.string().uuid().optional().nullable(),
+    description: z.string().min(1, 'Description is required.'),
+    // Stored at 2 decimals. The line amount and the invoice totals are worked
+    // out on the server from these (save-invoice.ts), never taken from the form.
+    quantity: z
+      .number()
+      .positive('Quantity must be greater than zero.')
+      .max(999_999, 'Quantity is too large.'),
+    unitPrice: z
+      .number()
+      .min(0, 'Unit price cannot be negative.')
+      .max(9_999_999_999, 'Unit price is too large.'),
+    createsHourBlock: z.boolean(),
+    sortOrder: z.number().int(),
+  })
+  // A paid hour-block line becomes a block, which counts in quarter hours
+  // (chk_invoice_line_items_hour_block_quarters).
+  .refine(line => !line.createsHourBlock || isQuarterHours(line.quantity), {
+    message: QUARTER_HOURS_MESSAGE,
+    path: ['quantity'],
+  })
 
 export const invoiceSchema = z.object({
   id: z.string().uuid().optional(),

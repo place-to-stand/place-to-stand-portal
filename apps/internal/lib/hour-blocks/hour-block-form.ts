@@ -1,3 +1,7 @@
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
 import { z } from 'zod'
 
 import type { ClientPickerRow } from '@/lib/types'
@@ -10,8 +14,8 @@ export const hourBlockFormSchema = z.object({
   companyId: z.string().uuid('Select a client'),
   hoursPurchased: z.coerce
     .number()
-    .int('Hours purchased must be a whole number.')
-    .positive('Hours purchased must be greater than zero'),
+    .positive('Hours purchased must be greater than zero')
+    .refine(isQuarterHours, QUARTER_HOURS_MESSAGE),
   notes: z
     .string()
     .trim()

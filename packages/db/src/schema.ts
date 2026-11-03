@@ -770,7 +770,11 @@ export const hourBlocks = pgTable(
       'chk_hour_blocks_billing_month_month_start',
       sql`billing_month = date_trunc('month', billing_month)::date`
     ),
-    check('chk_hour_blocks_hours_purchased', sql`hours_purchased > 0`),
+    // Quarter hours, like time logs (lib/time-logs/quarter-hours.ts).
+    check(
+      'chk_hour_blocks_hours_purchased',
+      sql`hours_purchased > 0 AND hours_purchased % 0.25 = 0`
+    ),
     // Created in 0042; declared here so the schema matches the database.
     // The callback runs after the module loads, so the later table resolves.
     foreignKey({
@@ -1122,6 +1126,8 @@ export const timeLogs = pgTable(
       name: 'time_logs_user_id_fkey',
     }).onDelete('restrict'),
     check('time_logs_hours_check', sql`hours > (0)::numeric`),
+    // Quarter hours (lib/time-logs/quarter-hours.ts).
+    check('chk_time_logs_hours_quarters', sql`hours % 0.25 = 0`),
   ]
 )
 
@@ -2048,6 +2054,11 @@ export const invoiceLineItems = pgTable(
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
+    // A paid hour-block line becomes a block, which counts in quarter hours.
+    check(
+      'chk_invoice_line_items_hour_block_quarters',
+      sql`NOT creates_hour_block OR quantity % 0.25 = 0`
+    ),
     index('idx_invoice_line_items_invoice_id')
       .using('btree', table.invoiceId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),

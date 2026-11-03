@@ -1,5 +1,6 @@
 'use client'
 
+import { HOURS_STEP } from '@/lib/time-logs/quarter-hours'
 import { useCallback, useEffect, useRef } from 'react'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -173,7 +174,7 @@ export function HourBlockSheet({
                                 {...field}
                                 value={field.value ?? ''}
                                 type='number'
-                                step='1'
+                                step={HOURS_STEP}
                                 min='1'
                                 inputMode='numeric'
                                 disabled={hoursField.disabled}

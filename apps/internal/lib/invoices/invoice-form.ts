@@ -1,3 +1,7 @@
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
 import { z } from 'zod'
 
 import {
@@ -90,14 +94,20 @@ export type InvoiceWithLineItems = InvoiceWithClient & {
 // Zod schemas
 // ---------------------------------------------------------------------------
 
-const invoiceLineItemFormSchema = z.object({
-  id: z.string().uuid().optional(),
-  productCatalogItemId: z.string().uuid().optional().nullable(),
-  description: z.string().min(1, 'Description is required'),
-  quantity: z.coerce.number().positive('Quantity must be positive'),
-  unitPrice: z.coerce.number().min(0, 'Unit price must be zero or positive'),
-  createsHourBlock: z.boolean().default(false),
-})
+const invoiceLineItemFormSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    productCatalogItemId: z.string().uuid().optional().nullable(),
+    description: z.string().min(1, 'Description is required'),
+    quantity: z.coerce.number().positive('Quantity must be positive'),
+    unitPrice: z.coerce.number().min(0, 'Unit price must be zero or positive'),
+    createsHourBlock: z.boolean().default(false),
+  })
+  // The paid line becomes an hour block, which counts in quarter hours.
+  .refine(line => !line.createsHourBlock || isQuarterHours(line.quantity), {
+    message: QUARTER_HOURS_MESSAGE,
+    path: ['quantity'],
+  })
 
 export const invoiceFormSchema = z.object({
   companyId: z.string().uuid('Select a client'),
