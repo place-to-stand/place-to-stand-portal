@@ -31,7 +31,10 @@ import { normalizeRichTextContent } from '@/lib/projects/task-sheet/task-sheet-u
 import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-state'
 import { cn } from '@/lib/utils'
 
+import type { TaskLead } from '@/lib/types'
+
 import { TaskAttachmentsField } from '../task-attachments-field'
+import { TaskLeadField } from './task-lead-field'
 
 export type TaskSheetFormFieldsProps = {
   form: UseFormReturn<TaskSheetFormValues>
@@ -55,6 +58,8 @@ export type TaskSheetFormFieldsProps = {
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
   isSheetOpen: boolean
+  /** The linked lead, shown above the description. */
+  lead: TaskLead | null
 }
 
 export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
@@ -281,6 +286,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
           }}
         />
       </div>
+      <TaskLeadField lead={props.lead} />
       <FormField
         control={form.control}
         name='description'

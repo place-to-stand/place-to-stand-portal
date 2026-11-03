@@ -438,6 +438,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   maxAttachmentSize={maxAttachmentSize}
                   attachmentsDisabledReason={attachmentsDisabledReason}
                   isDragActive={!dropDisabled && isDragActive}
+                  lead={props.task?.lead ?? null}
                 />
                 {/* Time is only tracked against client work — internal and
                     personal projects have no billing target for it. */}
