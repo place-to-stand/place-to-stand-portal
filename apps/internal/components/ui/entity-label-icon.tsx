@@ -25,7 +25,11 @@ export function EntityLabelIcon({
   return (
     <Icon
       aria-hidden
-      className={cn('size-3.5 shrink-0', ENTITY_ACCENTS[entity].icon, className)}
+      className={cn(
+        'size-3.5 shrink-0',
+        ENTITY_ACCENTS[entity].icon,
+        className
+      )}
     />
   )
 }

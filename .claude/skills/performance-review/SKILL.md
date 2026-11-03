@@ -12,6 +12,7 @@ Analyze code for performance issues targeting Core Web Vitals (LCP < 2.5s, FID <
 Review the specified files or components for:
 
 ### 1. React/Next.js Performance
+
 - Unnecessary client components (should be server components)
 - Missing `React.memo()`, `useMemo()`, `useCallback()` where beneficial
 - Large component re-renders (check dependency arrays)
@@ -20,6 +21,7 @@ Review the specified files or components for:
 - Improper use of `use client` directive
 
 ### 2. Data Fetching
+
 - N+1 query patterns in Drizzle queries
 - Missing `Promise.all()` for parallel fetches
 - Overfetching data (selecting unused columns)
@@ -28,18 +30,21 @@ Review the specified files or components for:
 - Missing or improper TanStack Query configuration
 
 ### 3. Bundle Size
+
 - Large dependencies imported synchronously
 - Missing code splitting opportunities
 - Importing entire libraries vs. specific modules
 - Dead code that should be removed
 
 ### 4. Database Performance
+
 - Missing indexes on filtered/joined columns
 - Inefficient query patterns
 - Large result sets without pagination
 - Missing connection pooling considerations
 
 ### 5. Rendering Performance
+
 - Layout thrashing (reading then writing DOM)
 - Missing virtualization for long lists (TanStack Virtual)
 - Large images without optimization
@@ -47,6 +52,7 @@ Review the specified files or components for:
 - CSS that causes reflows
 
 ### 6. Caching
+
 - Missing cache headers on API routes
 - Opportunities for static generation
 - Missing revalidation strategies
@@ -55,6 +61,7 @@ Review the specified files or components for:
 ## Output Format
 
 For each finding:
+
 ```
 [IMPACT: HIGH|MEDIUM|LOW]
 File: path/to/file.ts:lineNumber
@@ -75,6 +82,7 @@ Estimated Impact: Expected improvement
 ## Post-Review
 
 Generate a summary with:
+
 - Quick wins (low effort, high impact)
 - Medium-term optimizations
 - Architectural improvements for long-term

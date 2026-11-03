@@ -36,17 +36,29 @@ export default defineConfig({
   projects: [
     {
       name: 'admin',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome', storageState: path.join(__dirname, '.auth/admin.json') },
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        storageState: path.join(__dirname, '.auth/admin.json'),
+      },
       testIgnore: /sales\.spec|phone\.spec/,
     },
     {
       name: 'sales',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome', storageState: path.join(__dirname, '.auth/sales.json') },
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chrome',
+        storageState: path.join(__dirname, '.auth/sales.json'),
+      },
       testMatch: /sales\.spec/,
     },
     {
       name: 'phone',
-      use: { ...devices['Pixel 7'], channel: 'chrome', storageState: path.join(__dirname, '.auth/admin.json') },
+      use: {
+        ...devices['Pixel 7'],
+        channel: 'chrome',
+        storageState: path.join(__dirname, '.auth/admin.json'),
+      },
       testMatch: /phone\.spec/,
     },
   ],

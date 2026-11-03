@@ -52,6 +52,7 @@ The share URL format: `${origin}/share/invoices/${shareToken}`
 ### Quick Copy
 
 In the invoice list table, each row has a "Copy Link" action button that:
+
 1. If sharing is already enabled: copies the URL to clipboard immediately
 2. If sharing is not enabled: opens the share dialog
 
@@ -74,6 +75,7 @@ Uses the existing `app/(public)/layout.tsx` — same branded header, centered co
 7. Render `<PublicInvoice>` component
 
 **Metadata:**
+
 ```typescript
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -105,12 +107,7 @@ export async function recordInvoiceView(invoiceId: string) {
     await db
       .update(invoices)
       .set({ status: 'VIEWED', updatedAt: sql`NOW()` })
-      .where(
-        and(
-          eq(invoices.id, invoiceId),
-          eq(invoices.status, sql`'SENT'`)
-        )
-      )
+      .where(and(eq(invoices.id, invoiceId), eq(invoices.status, sql`'SENT'`)))
   }
 
   return result.previousCount
@@ -141,12 +138,14 @@ File: `app/(public)/share/invoices/[token]/public-invoice.tsx`
 A client component that renders a **traditional invoice document layout** — formal, printable, resembling a standard business invoice.
 
 ### Document Header
+
 - Place to Stand branding / logo (top left)
 - "INVOICE" title (top right)
 - Invoice number (e.g., `INV-0042`)
 - Issue date and due date
 
 ### Bill To Section
+
 - Client name
 - (Future: client billing address, contact info)
 
@@ -154,21 +153,24 @@ A client component that renders a **traditional invoice document layout** — fo
 
 A formal itemized table:
 
-| # | Description | Qty | Unit Price | Amount |
-|---|-------------|-----|------------|--------|
-| 1 | Development Hours | 10 | $200.00 | $2,000.00 |
-| 2 | Server Hosting (March) | 1 | $45.00 | $45.00 |
+| #   | Description            | Qty | Unit Price | Amount    |
+| --- | ---------------------- | --- | ---------- | --------- |
+| 1   | Development Hours      | 10  | $200.00    | $2,000.00 |
+| 2   | Server Hosting (March) | 1   | $45.00     | $45.00    |
 
 ### Totals Section
+
 - Subtotal
 - Tax rate (e.g., "Tax (8.75%)")
 - Tax amount
 - **Total** (bold, larger, prominent)
 
 ### Notes Section
+
 - Optional notes from the invoice (displayed below totals if present)
 
 ### Payment Section
+
 - **Status: SENT or VIEWED** → prominent "Pay Now" button → redirects to Stripe Checkout
 - **Status: PAID** → green "Paid" badge with payment date, no pay button
 - **Status: VOID** → "This invoice has been voided" message, muted styling, no pay button

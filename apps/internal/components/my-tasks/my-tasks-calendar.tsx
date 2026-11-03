@@ -2,7 +2,11 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { startOfDay, startOfMonth } from 'date-fns'
-import { DndContext, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
+import {
+  DndContext,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 
 import { CalendarHeader } from '@/app/(dashboard)/projects/_components/projects-board/calendar/calendar-header'
 import { CalendarGrid } from '@/app/(dashboard)/projects/_components/projects-board/calendar/calendar-grid'
@@ -268,4 +272,3 @@ function getTimestamp(value: string | null | undefined) {
   const parsed = Date.parse(value)
   return Number.isNaN(parsed) ? null : parsed
 }
-

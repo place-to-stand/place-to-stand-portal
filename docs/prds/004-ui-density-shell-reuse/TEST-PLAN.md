@@ -44,6 +44,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **01.16** Mobile (<768px): header wraps gracefully; breadcrumb truncates (no horizontal scroll); user menu reachable
 
 **Edge cases:**
+
 - [ ] **01.E1** Deep-link an invalid client slug → existing 404/redirect behavior unchanged (breadcrumb doesn't crash on missing record)
 - [ ] **01.E2** Palette search with a `%`/`_` in the query → no error/500; results may broaden (fuzzy `createSearchPattern` semantics are intentional — W3 decision); a >100-char query is rejected cleanly by validation (W5)
 - [ ] **01.E3** `⌘K` while the palette is open → closes (toggle), no stacking
@@ -78,6 +79,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **03.14** Old filter components deleted; leads archive gets its FilterSelects; no view lost a pre-PRD filter capability
 
 **Edge cases:**
+
 - [ ] **03.E1** Combine search + filter + sort + pagination on one view (users) → all four round-trip through the URL together; reload reproduces the exact view
 - [ ] **03.E2** Filter change while on page N of results → returns to first page (no stale-cursor 500/empty)
 - [ ] **03.E3** Rapid typing then immediate navigation away → no state bleed into the next view
@@ -101,6 +103,7 @@ Update after each coding session. All tests run as an **ADMIN** user in the inte
 - [ ] **04.12** Full-app smoke after section completion: create/edit a task, log time, archive/restore a record, send nothing — no console errors on the main flows
 
 **Edge cases:**
+
 - [ ] **04.E1** Theme toggle rapidly while `/design` open → no unstyled flash in migrated components
 - [ ] **04.E2** Keyboard-only pass on one migrated dialog + select + dropdown → focus trap, arrow nav, `Esc` all correct (Base UI parity)
 

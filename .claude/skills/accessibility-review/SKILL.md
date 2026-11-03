@@ -12,6 +12,7 @@ Audit components and pages for WCAG 2.1 AA compliance as specified in AGENTS.md.
 Review the specified files for:
 
 ### 1. Semantic HTML
+
 - Proper heading hierarchy (h1 -> h2 -> h3, no skipping)
 - Use of semantic elements (nav, main, article, section, aside)
 - Lists for list content (ul, ol, dl)
@@ -19,6 +20,7 @@ Review the specified files for:
 - Tables with proper headers and scope
 
 ### 2. Keyboard Accessibility
+
 - All interactive elements focusable
 - Logical tab order
 - Visible focus indicators (check for `outline-none` without replacement)
@@ -27,6 +29,7 @@ Review the specified files for:
 - Escape key closes modals/dialogs
 
 ### 3. ARIA Usage
+
 - ARIA only when semantic HTML insufficient
 - Proper ARIA roles, states, and properties
 - ARIA labels on icon-only buttons
@@ -34,6 +37,7 @@ Review the specified files for:
 - Proper dialog/modal ARIA patterns
 
 ### 4. Forms
+
 - Labels associated with inputs (htmlFor/id or wrapping)
 - Error messages linked to fields (aria-describedby)
 - Required fields indicated (aria-required)
@@ -41,6 +45,7 @@ Review the specified files for:
 - Autocomplete attributes where appropriate
 
 ### 5. Visual Design
+
 - Color contrast ratios (4.5:1 text, 3:1 UI components)
 - Not relying on color alone for meaning
 - Respects `prefers-reduced-motion`
@@ -48,11 +53,13 @@ Review the specified files for:
 - Text resizable to 200% without loss
 
 ### 6. Images & Media
+
 - Alt text on images (empty alt="" for decorative)
 - Captions/transcripts for video/audio
 - No auto-playing media with sound
 
 ### 7. Component-Specific (shadcn/Radix)
+
 - Radix primitives used correctly (they handle a11y)
 - Custom overrides don't break accessibility
 - Tooltips accessible to keyboard users
@@ -61,6 +68,7 @@ Review the specified files for:
 ## Output Format
 
 For each finding:
+
 ```
 [WCAG: 1.1.1|2.1.1|etc] [LEVEL: A|AA|AAA]
 File: path/to/component.tsx:lineNumber
@@ -80,6 +88,7 @@ Fix: Code example or recommendation
 ## Post-Review
 
 Generate:
+
 - Findings grouped by WCAG principle (Perceivable, Operable, Understandable, Robust)
 - Priority fixes (Level A before AA)
 - Component-specific recommendations

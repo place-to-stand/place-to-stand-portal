@@ -112,10 +112,7 @@ export async function getProductCatalogItemById(
     .select(productCatalogSelection)
     .from(productCatalogItems)
     .where(
-      and(
-        eq(productCatalogItems.id, id),
-        isNull(productCatalogItems.deletedAt)
-      )
+      and(eq(productCatalogItems.id, id), isNull(productCatalogItems.deletedAt))
     )
     .limit(1)
 
@@ -165,7 +162,9 @@ export async function updateProductCatalogItem(
     .update(productCatalogItems)
     .set({
       ...(input.name !== undefined && { name: input.name }),
-      ...(input.description !== undefined && { description: input.description }),
+      ...(input.description !== undefined && {
+        description: input.description,
+      }),
       ...(input.unitPrice !== undefined && { unitPrice: input.unitPrice }),
       ...(input.unitLabel !== undefined && { unitLabel: input.unitLabel }),
       ...(input.createsHourBlockDefault !== undefined && {
@@ -179,10 +178,7 @@ export async function updateProductCatalogItem(
       updatedAt: now,
     })
     .where(
-      and(
-        eq(productCatalogItems.id, id),
-        isNull(productCatalogItems.deletedAt)
-      )
+      and(eq(productCatalogItems.id, id), isNull(productCatalogItems.deletedAt))
     )
     .returning(productCatalogSelection)
 

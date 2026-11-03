@@ -16,10 +16,11 @@ Read ALL files in the PRD directory. Use AskUserQuestion to surface anything tha
 Do NOT silently pick an interpretation. Ask.
 
 **Output the completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | {N ambiguities found}, {N resolved via AskUserQuestion} |
-| 2 | Pending | — |
+
+| Step | Status  | Output                                                  |
+| ---- | ------- | ------------------------------------------------------- |
+| 1    | Done    | {N ambiguities found}, {N resolved via AskUserQuestion} |
+| 2    | Pending | —                                                       |
 
 ## Step 2 — Fix and verify
 
@@ -38,9 +39,10 @@ After all questions are answered, do the full consistency audit:
 Report ALL inconsistencies found, fix them, then confirm the PRD is clean.
 
 **Output the final completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | {N inconsistencies found}, {N fixed}, clean: yes/no |
+
+| Step | Status | Output                                              |
+| ---- | ------ | --------------------------------------------------- |
+| 1    | Done   | ...                                                 |
+| 2    | Done   | {N inconsistencies found}, {N fixed}, clean: yes/no |
 
 $ARGUMENTS

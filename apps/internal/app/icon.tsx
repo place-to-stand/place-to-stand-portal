@@ -12,22 +12,19 @@ export default function Icon() {
   // Production serves the marketing site's asset byte-for-byte; only dev
   // pays for satori, to composite the DEV band on top.
   if (!isDev) {
-    return new Response(
-      Buffer.from(BRAND_ICON_PNG_BASE64, 'base64'),
-      { headers: { 'Content-Type': contentType } }
-    )
+    return new Response(Buffer.from(BRAND_ICON_PNG_BASE64, 'base64'), {
+      headers: { 'Content-Type': contentType },
+    })
   }
 
   return new ImageResponse(
-    (
-      <BrandOgMark
-        src={`data:image/png;base64,${BRAND_ICON_PNG_BASE64}`}
-        width={size.width}
-        height={size.height}
-        bandFontSize={54}
-        bandPadding={12}
-      />
-    ),
+    <BrandOgMark
+      src={`data:image/png;base64,${BRAND_ICON_PNG_BASE64}`}
+      width={size.width}
+      height={size.height}
+      bandFontSize={54}
+      bandPadding={12}
+    />,
     { ...size }
   )
 }

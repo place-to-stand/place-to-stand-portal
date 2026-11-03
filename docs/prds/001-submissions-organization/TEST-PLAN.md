@@ -98,14 +98,14 @@ Update after each coding session. Check items only after verifying in the runnin
 
 ## Summary
 
-| Section | Tests | Auto-tested | Manual |
-|---------|-------|-------------|--------|
-| Prerequisites | 5 | 5 | 0 |
-| 01 Schema & migration | 7 | 7 | 0 |
-| 02 Page shell & tabs | 8 | 8 | 0 |
-| 03 Acknowledge & unread | 13 | 12 | 1 |
-| 04 Archive & restore | 10 | 9 | 1 |
-| 05 Activity | 9 | 9 | 0 |
-| 06 Nav badge | 9 | 8 | 1 |
-| Regression | 7 | 7 | 0 |
-| **Total** | **68** | **65** | **3** |
+| Section                 | Tests  | Auto-tested | Manual |
+| ----------------------- | ------ | ----------- | ------ |
+| Prerequisites           | 5      | 5           | 0      |
+| 01 Schema & migration   | 7      | 7           | 0      |
+| 02 Page shell & tabs    | 8      | 8           | 0      |
+| 03 Acknowledge & unread | 13     | 12          | 1      |
+| 04 Archive & restore    | 10     | 9           | 1      |
+| 05 Activity             | 9      | 9           | 0      |
+| 06 Nav badge            | 9      | 8           | 1      |
+| Regression              | 7      | 7           | 0      |
+| **Total**               | **68** | **65**      | **3**  |

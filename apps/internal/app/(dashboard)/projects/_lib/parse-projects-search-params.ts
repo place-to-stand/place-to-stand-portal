@@ -80,12 +80,13 @@ export function parseProjectsLandingSearchParams(
   return {
     statuses,
     search,
-    filtersActive: search !== null || (statusParam !== null && !statusIsDefault),
+    filtersActive:
+      search !== null || (statusParam !== null && !statusIsDefault),
   }
 }
 
 export function parseProjectsSearchParams(
-  params: RawParams,
+  params: RawParams
 ): ParsedProjectsSearchParams {
   const searchQuery = extractParam(params.q)
   const page = Math.max(

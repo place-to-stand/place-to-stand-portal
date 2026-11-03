@@ -25,4 +25,3 @@ export function buildMemberOptions(
       avatarUrl: candidate.avatarUrl,
     }))
 }
-

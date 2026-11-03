@@ -333,11 +333,6 @@
       "count": 1
     }
   },
-  "lib/tasks/schemas.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 5
-    }
-  },
   "app/(dashboard)/projects/actions/trigger-worker.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 4
@@ -409,9 +404,6 @@
   },
   "app/api/dashboard/recent-activity/summary/route.ts": {
     "@typescript-eslint/no-deprecated": {
-      "count": 1
-    },
-    "max-lines": {
       "count": 1
     }
   },
@@ -984,6 +976,11 @@
   "lib/storage/task-attachments.ts": {
     "@typescript-eslint/switch-exhaustiveness-check": {
       "count": 1
+    }
+  },
+  "lib/tasks/schemas.ts": {
+    "@typescript-eslint/no-deprecated": {
+      "count": 5
     }
   },
   "lib/users/user-validation.ts": {

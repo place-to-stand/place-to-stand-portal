@@ -19,9 +19,7 @@ export function InvoicesAddButton({
       entity='invoice'
       label='Create invoice'
       className={className}
-      disabledReason={
-        !hasClients ? INVOICE_MISSING_CLIENT_REASON : null
-      }
+      disabledReason={!hasClients ? INVOICE_MISSING_CLIENT_REASON : null}
     />
   )
 }

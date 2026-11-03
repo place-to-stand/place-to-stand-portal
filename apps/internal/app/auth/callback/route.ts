@@ -1,53 +1,51 @@
 // permission: public — sign-in callback
-import { canUseInternalPortal } from "@/lib/auth/roles";
-import { safeRedirectPath } from "@/lib/auth/safe-redirect";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { eq } from "drizzle-orm";
+import { canUseInternalPortal } from '@/lib/auth/roles'
+import { safeRedirectPath } from '@/lib/auth/safe-redirect'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { eq } from 'drizzle-orm'
 
-import { ensureUserProfile } from "@/lib/auth/profile";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { ensureUserProfile } from '@/lib/auth/profile'
+import { db } from '@/lib/db'
+import { users } from '@/lib/db/schema'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
  * Handles PKCE code exchange for magic links and other email-based auth flows.
  * Supabase redirects here with a `code` query param after verifying an email token.
  */
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const code = searchParams.get("code");
-  const redirectTo = searchParams.get("redirect_to") ?? "/";
+  const searchParams = request.nextUrl.searchParams
+  const code = searchParams.get('code')
+  const redirectTo = searchParams.get('redirect_to') ?? '/'
 
   if (!code) {
     return NextResponse.redirect(
-      new URL("/sign-in?error=missing_code", request.url)
-    );
+      new URL('/sign-in?error=missing_code', request.url)
+    )
   }
 
-  const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  const supabase = getSupabaseServerClient()
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    console.error("Failed to exchange auth code for session", error);
+    console.error('Failed to exchange auth code for session', error)
     return NextResponse.redirect(
-      new URL("/sign-in?error=exchange_failed", request.url)
-    );
+      new URL('/sign-in?error=exchange_failed', request.url)
+    )
   }
 
   if (data.user) {
-    const result = await ensureUserProfile(data.user);
+    const result = await ensureUserProfile(data.user)
 
     // Two distinct rejections, deliberately not collapsed into one role check.
     // "No account" and "wrong app" are different facts and get different pages;
     // a bare role check alone would be true for both.
-    if (result === "not_provisioned") {
+    if (result === 'not_provisioned') {
       // Sign out rather than leaving a valid session that resolves to no profile —
       // otherwise every subsequent request re-runs this redirect.
-      await supabase.auth.signOut();
-      return NextResponse.redirect(
-        new URL("/account-not-set-up", request.url)
-      );
+      await supabase.auth.signOut()
+      return NextResponse.redirect(new URL('/account-not-set-up', request.url))
     }
 
     // The internal portal is staff-only (ADMIN, SALES). Portal (CLIENT) users belong on the
@@ -56,18 +54,18 @@ export async function GET(request: NextRequest) {
       .select({ role: users.role })
       .from(users)
       .where(eq(users.id, data.user.id))
-      .limit(1);
+      .limit(1)
 
     if (!canUseInternalPortal(profile?.role)) {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut()
       return NextResponse.redirect(
-        new URL("/sign-in?notice=client-portal", request.url)
-      );
+        new URL('/sign-in?notice=client-portal', request.url)
+      )
     }
   }
 
   // Only allow relative redirects to prevent open redirect attacks
-  const safePath = safeRedirectPath(redirectTo);
+  const safePath = safeRedirectPath(redirectTo)
 
-  return NextResponse.redirect(new URL(safePath, request.url));
+  return NextResponse.redirect(new URL(safePath, request.url))
 }

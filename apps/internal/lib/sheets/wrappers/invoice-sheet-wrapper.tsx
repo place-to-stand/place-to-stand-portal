@@ -7,7 +7,11 @@ import { InvoiceSheet } from '@/app/(dashboard)/invoices/invoice-sheet'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function InvoiceSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
+export function InvoiceSheetWrapper({
+  value,
+  open,
+  onRequestClose,
+}: SheetWrapperProps) {
   const router = useRouter()
   const data = useSheetInit('invoice', value)
 

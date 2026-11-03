@@ -32,6 +32,7 @@ Phase 4.5 extends the AI Suggestions panel to support PR generation after task c
 ## Files Created
 
 ### Data Layer
+
 - `lib/data/pr-suggestions/index.ts`
   - `getPendingPRSuggestions(projectId?)` - List pending PR suggestions
   - `getPRSuggestionById(id)` - Get single suggestion with relations
@@ -39,6 +40,7 @@ Phase 4.5 extends the AI Suggestions panel to support PR generation after task c
   - `rejectPRSuggestion(id, userId, reason?)` - Marks as rejected
 
 ### API Routes
+
 - `app/api/pr-suggestions/[suggestionId]/approve/route.ts`
   - POST to approve PR suggestion and create on GitHub
   - Accepts optional modifications (title, body, branch, baseBranch)
@@ -48,6 +50,7 @@ Phase 4.5 extends the AI Suggestions panel to support PR generation after task c
   - POST to reject PR suggestion
 
 ### UI Components
+
 - `app/(dashboard)/projects/_components/ai-suggestions/pr-generation-prompt.tsx`
   - Shows after task creation when GitHub repos are available
   - Success icon, task title, repo selector (if multiple), Generate/Skip buttons
@@ -63,12 +66,14 @@ Phase 4.5 extends the AI Suggestions panel to support PR generation after task c
 ## Files Modified
 
 ### API
+
 - `app/api/projects/[projectId]/ai-suggestions/create-task/route.ts`
   - Added import for `getProjectRepos`
   - Returns `githubRepos` array alongside task creation result
   - Enables PR generation flow for projects with linked repos
 
 ### State Management
+
 - `lib/projects/board/state/use-ai-suggestions-sheet.ts`
   - Added types: `GitHubRepoInfo`, `CreatedTaskInfo`
   - Added state: `createdTaskInfo`, `isGeneratingPR`, `isApprovingPR`, `prSuggestion`
@@ -76,6 +81,7 @@ Phase 4.5 extends the AI Suggestions panel to support PR generation after task c
   - Modified `handleCreateTask` to capture GitHub repos from response
 
 ### UI Integration
+
 - `app/(dashboard)/projects/_components/ai-suggestions/ai-suggestions-sheet.tsx`
   - Added imports for `PRGenerationPrompt` and `PRPreviewDialog`
   - Added computed states: `showPRPrompt`, `showPRPreview`

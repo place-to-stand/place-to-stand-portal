@@ -29,6 +29,7 @@ Supabase has identified 140 instances where multiple permissive RLS policies exi
 ### Root Cause Pattern
 
 Most tables follow this pattern:
+
 - **Admin policy**: Uses `using` + `with check` which applies to ALL operations
 - **Member policies**: Operation-specific policies (`for select`, `for insert`, etc.)
 
@@ -37,7 +38,9 @@ This creates multiple permissive policies for the same operation.
 ## Execution Plan
 
 ### Phase 1: Simple Tables (Week 1)
+
 Start with tables that have only 1 duplicate policy:
+
 - `client_members`
 - `users`
 - `task_assignees`
@@ -45,17 +48,23 @@ Start with tables that have only 1 duplicate policy:
 - `hour_blocks`
 
 ### Phase 2: Medium Complexity (Week 2)
+
 Tables with 2 duplicate policies:
+
 - `clients`
 - `projects`
 
 ### Phase 3: Higher Complexity (Week 3)
+
 Tables with 3-4 duplicate policies:
+
 - `tasks`
 - `activity_logs`
 
 ### Phase 4: Most Complex (Week 4)
+
 Tables with complex permission logic:
+
 - `task_comments`
 - `task_attachments`
 - `time_logs`
@@ -64,6 +73,7 @@ Tables with complex permission logic:
 ## Example Consolidation
 
 ### Before (2 policies for SELECT):
+
 ```sql
 create policy "Admins full access" on clients
   using (is_admin()) with check (is_admin());
@@ -73,6 +83,7 @@ create policy "Members read clients" on clients
 ```
 
 ### After (1 policy for SELECT):
+
 ```sql
 drop policy if exists "Admins full access" on clients;
 drop policy if exists "Members read clients" on clients;
@@ -103,12 +114,14 @@ create policy "Users view clients" on clients
 
 **Risk**: Breaking access controls
 **Mitigation**:
+
 - Test thoroughly in dev/staging
 - Monitor closely after each deployment
 - Have rollback plan ready
 
 **Risk**: Performance degradation
 **Mitigation**:
+
 - Test query plans before/after
 - Monitor query performance metrics
 - Use helper functions to optimize policy evaluation
@@ -128,4 +141,3 @@ create policy "Users view clients" on clients
 - Incremental approach is critical for success
 - Each consolidation should be thoroughly tested
 - Allow 24-48 hours monitoring between deployments
-

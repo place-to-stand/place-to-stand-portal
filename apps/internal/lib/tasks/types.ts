@@ -8,8 +8,7 @@ import type { ActivitySourceValue } from '@/lib/types'
 // commit in one transaction. `taskId` means everything landed; `error` means
 // nothing did, so retrying is safe.
 export type SaveTaskResult =
-  | { taskId: string; error?: undefined }
-  | { error: string; taskId?: undefined }
+  { taskId: string; error?: undefined } | { error: string; taskId?: undefined }
 
 /**
  * Everything the create and update branches share, resolved once by

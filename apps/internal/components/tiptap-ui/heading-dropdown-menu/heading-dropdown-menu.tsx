@@ -1,32 +1,31 @@
-"use client"
+'use client'
 
-import { forwardRef, useCallback, useState } from "react"
+import { forwardRef, useCallback, useState } from 'react'
 
 // --- Icons ---
-import { ChevronDownIcon } from "@/components/tiptap-icons/chevron-down-icon"
+import { ChevronDownIcon } from '@/components/tiptap-icons/chevron-down-icon'
 
 // --- Hooks ---
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 // --- Tiptap UI ---
-import { HeadingButton } from "@/components/tiptap-ui/heading-button"
-import type { UseHeadingDropdownMenuConfig } from "@/components/tiptap-ui/heading-dropdown-menu"
-import { useHeadingDropdownMenu } from "@/components/tiptap-ui/heading-dropdown-menu"
+import { HeadingButton } from '@/components/tiptap-ui/heading-button'
+import type { UseHeadingDropdownMenuConfig } from '@/components/tiptap-ui/heading-dropdown-menu'
+import { useHeadingDropdownMenu } from '@/components/tiptap-ui/heading-dropdown-menu'
 
 // --- UI Primitives ---
-import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
-import { Button, ButtonGroup } from "@/components/tiptap-ui-primitive/button"
+import type { ButtonProps } from '@/components/tiptap-ui-primitive/button'
+import { Button, ButtonGroup } from '@/components/tiptap-ui-primitive/button'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/tiptap-ui-primitive/dropdown-menu"
-import { Card, CardBody } from "@/components/tiptap-ui-primitive/card"
+} from '@/components/tiptap-ui-primitive/dropdown-menu'
+import { Card, CardBody } from '@/components/tiptap-ui-primitive/card'
 
 export interface HeadingDropdownMenuProps
-  extends Omit<ButtonProps, "type">,
-    UseHeadingDropdownMenuConfig {
+  extends Omit<ButtonProps, 'type'>, UseHeadingDropdownMenuConfig {
   /**
    * Callback for when the dropdown opens or closes
    */
@@ -77,21 +76,21 @@ export const HeadingDropdownMenu = forwardRef<
       <DropdownMenu modal open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
           <Button
-            type="button"
-            data-style="ghost"
-            data-active-state={isActive ? "on" : "off"}
-            role="button"
+            type='button'
+            data-style='ghost'
+            data-active-state={isActive ? 'on' : 'off'}
+            role='button'
             tabIndex={-1}
             disabled={!canToggle}
             data-disabled={!canToggle}
-            aria-label="Format text as heading"
+            aria-label='Format text as heading'
             aria-pressed={isActive}
-            tooltip="Heading"
+            tooltip='Heading'
             {...buttonProps}
             ref={ref}
           >
-            <Icon className="tiptap-button-icon" />
-            <ChevronDownIcon className="tiptap-button-dropdown-small" />
+            <Icon className='tiptap-button-icon' />
+            <ChevronDownIcon className='tiptap-button-dropdown-small' />
           </Button>
         </DropdownMenuTrigger>
 
@@ -99,7 +98,7 @@ export const HeadingDropdownMenu = forwardRef<
           <Card>
             <CardBody>
               <ButtonGroup>
-                {levels.map((level) => (
+                {levels.map(level => (
                   <DropdownMenuItem key={`heading-${level}`} asChild>
                     <HeadingButton
                       editor={editor}
@@ -118,6 +117,6 @@ export const HeadingDropdownMenu = forwardRef<
   }
 )
 
-HeadingDropdownMenu.displayName = "HeadingDropdownMenu"
+HeadingDropdownMenu.displayName = 'HeadingDropdownMenu'
 
 export default HeadingDropdownMenu

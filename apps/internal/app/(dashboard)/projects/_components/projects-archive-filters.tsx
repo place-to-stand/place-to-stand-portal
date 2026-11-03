@@ -8,7 +8,9 @@ type ProjectsArchiveFiltersProps = {
   search?: string
 }
 
-export function ProjectsArchiveFilters({ search }: ProjectsArchiveFiltersProps) {
+export function ProjectsArchiveFilters({
+  search,
+}: ProjectsArchiveFiltersProps) {
   const { update, hasActiveFilters, reset } = useListParams({
     basePath: '/projects/archive',
     resetKeys: ['page'],

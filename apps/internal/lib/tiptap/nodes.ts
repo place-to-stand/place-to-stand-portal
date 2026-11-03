@@ -1,7 +1,7 @@
-import type { Node as TiptapNode } from "@tiptap/pm/model"
-import type { Editor } from "@tiptap/react"
+import type { Node as TiptapNode } from '@tiptap/pm/model'
+import type { Editor } from '@tiptap/react'
 
-import { isValidPosition } from "./selection"
+import { isValidPosition } from './selection'
 
 /**
  * Finds a node at the specified position with error handling

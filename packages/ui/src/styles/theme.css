@@ -23,7 +23,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   /* Floating surfaces (pickers, menus, selects, popovers): a large soft lift. */
-  --popover-shadow: 0 16px 40px -8px oklch(0 0 0 / 0.2), 0 4px 12px -4px oklch(0 0 0 / 0.12);
+  --popover-shadow:
+    0 16px 40px -8px oklch(0 0 0 / 0.2), 0 4px 12px -4px oklch(0 0 0 / 0.12);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
@@ -53,9 +54,9 @@
   --sidebar-ring: oklch(0.708 0 0);
   /* Entity colours (palette B, grouped by job): icon on card ≥ 3:1 in both themes. */
   --entity-task: oklch(58.5% 0.233 277.1);
-  --entity-lead: oklch(62.0% 0.175 55.0);
+  --entity-lead: oklch(62% 0.175 55);
   --entity-project: oklch(54.6% 0.245 262.9);
-  --entity-time-log: oklch(50.0% 0.134 242.7);
+  --entity-time-log: oklch(50% 0.134 242.7);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
   --entity-sign-in: oklch(45.5% 0.188 13.7);
@@ -76,7 +77,9 @@
   --popover: oklch(0.235 0 0);
   --popover-foreground: oklch(0.985 0 0);
   /* Shadows barely show on dark: a deeper shadow plus a light hairline. */
-  --popover-shadow: 0 0 0 1px oklch(1 0 0 / 0.06), 0 18px 44px -8px oklch(0 0 0 / 0.7), 0 6px 14px -4px oklch(0 0 0 / 0.5);
+  --popover-shadow:
+    0 0 0 1px oklch(1 0 0 / 0.06), 0 18px 44px -8px oklch(0 0 0 / 0.7),
+    0 6px 14px -4px oklch(0 0 0 / 0.5);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
@@ -109,13 +112,13 @@
   --entity-lead: oklch(87.9% 0.169 91.6);
   --entity-project: oklch(70.7% 0.165 254.6);
   --entity-time-log: oklch(82.8% 0.111 230.3);
-  --entity-company: oklch(75.0% 0.183 55.9);
+  --entity-company: oklch(75% 0.183 55.9);
   --entity-person: oklch(71.2% 0.194 13.4);
-  --entity-sign-in: oklch(81.0% 0.117 11.6);
+  --entity-sign-in: oklch(81% 0.117 11.6);
   --entity-client: oklch(72.3% 0.219 149.6);
   --entity-invoice: oklch(85.5% 0.138 181.1);
   --entity-hour-block: oklch(84.1% 0.238 128.8);
-  --entity-submission: oklch(70.4% 0.040 256.8);
+  --entity-submission: oklch(70.4% 0.04 256.8);
   --entity-template: oklch(86.9% 0.005 56.4);
 }
 
@@ -133,7 +136,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   /* Floating surfaces (pickers, menus, selects, popovers): a large soft lift. */
-  --popover-shadow: 0 16px 40px -8px oklch(0 0 0 / 0.2), 0 4px 12px -4px oklch(0 0 0 / 0.12);
+  --popover-shadow:
+    0 16px 40px -8px oklch(0 0 0 / 0.2), 0 4px 12px -4px oklch(0 0 0 / 0.12);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
@@ -150,9 +154,9 @@
   --ring: oklch(0.708 0 0);
   /* Entity colours stay light here too (the /design light preview). */
   --entity-task: oklch(58.5% 0.233 277.1);
-  --entity-lead: oklch(62.0% 0.175 55.0);
+  --entity-lead: oklch(62% 0.175 55);
   --entity-project: oklch(54.6% 0.245 262.9);
-  --entity-time-log: oklch(50.0% 0.134 242.7);
+  --entity-time-log: oklch(50% 0.134 242.7);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
   --entity-sign-in: oklch(45.5% 0.188 13.7);
@@ -206,10 +210,10 @@
 
   /* Each app loads these with next/font; the fallbacks cover a missing load. */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
-    monospace;
-  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui,
-    sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display:
+    var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   /* Entity colours: text-entity-lead, border-entity-lead/35, … */
   --color-entity-task: var(--entity-task);
   --color-entity-lead: var(--entity-lead);

@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react'
 
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from '@/components/ui/toaster'
 
-import { ReactQueryProvider } from "./react-query-provider";
-import { PostHogProvider } from "./posthog-provider";
-import { ThemeProvider } from "./theme-provider";
+import { ReactQueryProvider } from './react-query-provider'
+import { PostHogProvider } from './posthog-provider'
+import { ThemeProvider } from './theme-provider'
 
 type Props = {
-  children: ReactNode;
-};
+  children: ReactNode
+}
 
 export function AppProviders({ children }: Props) {
   return (
@@ -22,5 +22,5 @@ export function AppProviders({ children }: Props) {
         </ReactQueryProvider>
       </ThemeProvider>
     </PostHogProvider>
-  );
+  )
 }

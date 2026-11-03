@@ -7,6 +7,7 @@ All 2 Phase 3 migrations have been created and are ready for testing and deploym
 ## Migrations Created
 
 ### 1. `20251107120008_consolidate_tasks_rls.sql`
+
 - **Table**: `tasks`
 - **Change**: Consolidated all operations (SELECT, INSERT, UPDATE, DELETE)
 - **Policies**: 2 → 4 (but eliminates duplicates for all operations)
@@ -20,6 +21,7 @@ All 2 Phase 3 migrations have been created and are ready for testing and deploym
     - "Users delete tasks" (delete - consolidated)
 
 ### 2. `20251107120009_consolidate_activity_logs_rls.sql`
+
 - **Table**: `activity_logs`
 - **Change**: Consolidated SELECT, INSERT, and UPDATE operations
 - **Policies**: 4 → 4 (but eliminates duplicates for SELECT, INSERT, UPDATE)
@@ -37,12 +39,14 @@ All 2 Phase 3 migrations have been created and are ready for testing and deploym
 ## Pattern Applied
 
 ### Tasks Table
+
 1. **Consolidate SELECT**: Admin OR project member (via helper function)
 2. **Consolidate INSERT**: Admin OR project member with edit permission
 3. **Consolidate UPDATE**: Admin OR project member with edit permission
 4. **Consolidate DELETE**: Admin OR project member with edit permission
 
 ### Activity Logs Table
+
 1. **Consolidate SELECT**: Admin OR (user viewing own logs OR project member OR client member)
 2. **Consolidate INSERT**: Admin OR user inserting own logs
 3. **Consolidate UPDATE**: Admin only (for restore/archive operations)
@@ -51,11 +55,13 @@ All 2 Phase 3 migrations have been created and are ready for testing and deploym
 ## Key Features
 
 ### Tasks Table
+
 - **Uses helper functions**: Leverages `user_is_project_member` and `user_can_edit_project` for cleaner policies
 - **Permission-based access**: Different permissions for view vs create/update/delete
 - **All operations consolidated**: Eliminates duplicates for all 4 operations
 
 ### Activity Logs Table
+
 - **Complex access patterns**: Multiple ways to access logs (own logs, project logs, client logs)
 - **Actor-based access**: Users can insert/view their own activity logs
 - **Context-based access**: Project and client members can view relevant logs
@@ -66,6 +72,7 @@ All 2 Phase 3 migrations have been created and are ready for testing and deploym
 For each migration, verify:
 
 ### Tasks Table
+
 - [ ] Admin can SELECT all tasks
 - [ ] Project member can SELECT tasks in their projects
 - [ ] Unauthorized user cannot SELECT tasks
@@ -76,6 +83,7 @@ For each migration, verify:
 - [ ] Query performance is maintained or improved
 
 ### Activity Logs Table
+
 - [ ] Admin can SELECT all activity logs
 - [ ] User can SELECT their own activity logs
 - [ ] Project member can SELECT logs for their projects
@@ -96,6 +104,7 @@ For each migration, verify:
 ### Recommended Order
 
 1. **Test locally**:
+
    ```bash
    supabase db reset
    # Verify all tests pass
@@ -131,21 +140,27 @@ Each migration includes rollback instructions in comments. If issues arise:
 ## Complexity Notes
 
 ### Tasks Table
+
 The tasks table consolidation is complex because:
+
 - It consolidates all 4 operations (SELECT, INSERT, UPDATE, DELETE)
 - Different permissions for view (project membership) vs modify (edit permission)
 - Uses helper functions for cleaner policy logic
 - Critical table with high query volume
 
 ### Activity Logs Table
+
 The activity_logs table consolidation is complex because:
+
 - Multiple access patterns (own logs, project logs, client logs)
 - Actor-based access control (users can only insert their own logs)
 - Context-based access (project/client membership for viewing)
 - Admin-only modifications (update/delete restricted to admins)
 
 ### Helper Functions
+
 Both migrations rely on helper functions:
+
 - Tasks: `user_is_project_member`, `user_can_edit_project`
 - Activity Logs: Direct membership checks (project_members, client_members)
 
@@ -154,11 +169,13 @@ These functions/checks are optimized to avoid performance issues.
 ## Performance Considerations
 
 ### Tasks Table
+
 - High query volume table - consolidation should provide noticeable performance improvement
 - Helper functions are `security definer` and optimized
 - Policy conditions are evaluated efficiently
 
 ### Activity Logs Table
+
 - Moderate query volume - consolidation should improve performance
 - Multiple EXISTS subqueries - ensure indexes are present on:
   - `project_members(project_id, user_id)` where `deleted_at is null`
@@ -182,4 +199,3 @@ These functions/checks are optimized to avoid performance issues.
 - Helper functions from previous migrations are reused appropriately
 - Tasks table is critical - test thoroughly before production deployment
 - Activity logs table has complex access patterns - verify all scenarios work correctly
-

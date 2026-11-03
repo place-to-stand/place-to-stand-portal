@@ -41,8 +41,8 @@ when `totalProjectCount > activeCount` (D9).
 - Group into `projectsMap`; on each `ClientWithMetrics` set:
   - `allProjects: ClientProjectSummary[]` (new)
   - `activeProjects` — derived by filtering `allProjects` on `ACTIVE`/`ONBOARDING` (existing
-    consumers keep working; the definition of *active* is unchanged: status ∈ {ACTIVE, ONBOARDING}
-    ∧ `deletedAt IS NULL`; *total* = `deletedAt IS NULL`, any status — includes ON_HOLD and
+    consumers keep working; the definition of _active_ is unchanged: status ∈ {ACTIVE, ONBOARDING}
+    ∧ `deletedAt IS NULL`; _total_ = `deletedAt IS NULL`, any status — includes ON_HOLD and
     COMPLETED)
 - Counts (`projectCount`, `activeProjectCount`, ~L108–116) stay as SQL aggregates — don't re-derive
   from the lists; they're already correct and used elsewhere.
@@ -64,7 +64,7 @@ when `totalProjectCount > activeCount` (D9).
   wrap the `<ul>` in `max-h-80 overflow-y-auto`. The payload growth (all non-deleted projects for
   every client on the page) is accepted — same query count, admin-only page.
 - Links: same builder as active items (L29, L60–64) — `slug ?? id` fallbacks,
-  `` href={`/projects/${clientPath}/${projectPath}/tasks`} `` for **all** statuses (D9).
+  ``href={`/projects/${clientPath}/${projectPath}/tasks`}`` for **all** statuses (D9).
 - **(W8) Coordinate the two hovers — the timers guarantee overlap otherwise.** The shared wrapper
   ([components/ui/hover-card.tsx](../../../apps/internal/components/ui/hover-card.tsx) — popover-based,
   `OPEN_DELAY = 50` / `CLOSE_DELAY = 200`) means sliding between triggers shows both cards for
@@ -109,6 +109,7 @@ when `totalProjectCount > activeCount` (D9).
 ## Files
 
 **Modified:**
+
 - `apps/internal/lib/data/clients/index.ts` (type + query + assembly)
 - `apps/internal/app/(dashboard)/clients/_components/active-projects-cell.tsx`
 - `apps/internal/app/(dashboard)/clients/_components/clients-landing.tsx` (pass `allProjects`)

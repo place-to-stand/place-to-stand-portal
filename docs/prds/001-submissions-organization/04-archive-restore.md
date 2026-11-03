@@ -53,7 +53,7 @@ export async function setFormSubmissionArchived(id: string, archived: boolean) {
       and(
         eq(formSubmissions.id, id),
         archived
-          ? isNull(formSubmissions.deletedAt)   // archive: only active rows
+          ? isNull(formSubmissions.deletedAt) // archive: only active rows
           : isNotNull(formSubmissions.deletedAt) // restore: only archived rows
       )
     )

@@ -16,6 +16,7 @@ This guide provides step-by-step instructions for consolidating multiple permiss
 ### Phase 1: Preparation
 
 1. **Review current policies**:
+
    ```sql
    -- Run in Supabase SQL Editor
    SELECT
@@ -50,6 +51,7 @@ For each table, follow these steps:
 #### Step 2: Write Consolidation Logic
 
 **Pattern for SELECT operations:**
+
 ```sql
 -- Drop old policies
 drop policy if exists "Old policy 1" on public.table_name;
@@ -67,6 +69,7 @@ create policy "Users view table_name" on public.table_name
 ```
 
 **Pattern for INSERT/UPDATE/DELETE:**
+
 ```sql
 -- If admin-only modifications
 create policy "Admins manage table_name" on public.table_name
@@ -90,6 +93,7 @@ create policy "Users manage table_name" on public.table_name
 #### Step 3: Test Locally
 
 1. **Apply migration**:
+
    ```bash
    supabase db reset  # in local dev
    # or
@@ -97,6 +101,7 @@ create policy "Users manage table_name" on public.table_name
    ```
 
 2. **Verify policies**:
+
    ```sql
    SELECT policyname, cmd, qual, with_check
    FROM pg_policies
@@ -140,6 +145,7 @@ create policy "Users manage table_name" on public.table_name
 Execute consolidations in this order (simplest to most complex):
 
 ### ✅ Phase 1: Simple Tables (Week 1)
+
 1. `client_members` - 1 duplicate (SELECT)
 2. `users` - 1 duplicate (SELECT)
 3. `task_assignees` - 1 duplicate (SELECT)
@@ -147,14 +153,17 @@ Execute consolidations in this order (simplest to most complex):
 5. `hour_blocks` - 1 duplicate (SELECT)
 
 ### ✅ Phase 2: Medium Complexity (Week 2)
+
 6. `clients` - 1 duplicate (SELECT)
 7. `projects` - 2 duplicates (SELECT, UPDATE)
 
 ### ✅ Phase 3: Higher Complexity (Week 3)
+
 8. `tasks` - 4 duplicates (SELECT, INSERT, UPDATE, DELETE)
 9. `activity_logs` - 3 duplicates (SELECT, INSERT, UPDATE)
 
 ### ✅ Phase 4: Most Complex (Week 4)
+
 10. `task_comments` - 3 duplicates (SELECT, INSERT, UPDATE)
 11. `task_attachments` - 3 duplicates (SELECT, INSERT, UPDATE)
 12. `time_logs` - 3 duplicates (SELECT, INSERT, UPDATE)
@@ -180,6 +189,7 @@ For each consolidation, verify:
 ## Common Patterns
 
 ### Pattern 1: Admin + Member Read Access
+
 ```sql
 -- Before: 2 policies
 -- After: 1 policy
@@ -191,6 +201,7 @@ create policy "Users view table" on public.table
 ```
 
 ### Pattern 2: Admin + Member Modify Access
+
 ```sql
 -- Before: 2 policies (admin for all, member for specific op)
 -- After: 1 policy per operation
@@ -203,6 +214,7 @@ create policy "Users modify table" on public.table
 ```
 
 ### Pattern 3: Admin + Author Modify Access
+
 ```sql
 -- Before: 2 policies (admin for all, author for update)
 -- After: 1 policy
@@ -224,6 +236,7 @@ create policy "Users update table" on public.table
 If issues arise:
 
 1. **Immediately revert migration**:
+
    ```sql
    -- Drop new policies
    drop policy if exists "New policy name" on public.table_name;
@@ -263,4 +276,3 @@ If issues arise:
 - Check example migrations from the legacy `EXAMPLE_*.sql` scripts (repository history)
 - Review analysis in `docs/rls-policy-analysis.md`
 - Consult Supabase RLS documentation: https://supabase.com/docs/guides/database/postgres/row-level-security
-

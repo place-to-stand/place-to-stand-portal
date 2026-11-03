@@ -4,13 +4,13 @@ Phase 0 requires capturing pre-optimization baselines for the newly instrumented
 
 ## 1. Events to Verify
 
-| Event | Trigger | Notes |
-| --- | --- | --- |
-| `task_sheet.open` | Task sheet opened (create or edit) | Includes `mode`, `projectId`, `taskId` |
-| `board.tab_switch` | Board/backlog/calendar/review tab change | Emits `from`, `to`, `activeTab`, `status` |
-| `dashboard.refresh` | “My Tasks” realtime refreshes | `trigger: realtime`, result `updated`/`removed` |
-| `idle.resume` | Window refocus or visibility resume | `trigger: focus|visibilitychange`, hidden duration |
-| `settings.save` | Clients, projects, hour blocks, users | `entity`, `mode`, `targetId`, duration |
+| Event               | Trigger                                  | Notes                                           |
+| ------------------- | ---------------------------------------- | ----------------------------------------------- |
+| `task_sheet.open`   | Task sheet opened (create or edit)       | Includes `mode`, `projectId`, `taskId`          |
+| `board.tab_switch`  | Board/backlog/calendar/review tab change | Emits `from`, `to`, `activeTab`, `status`       |
+| `dashboard.refresh` | “My Tasks” realtime refreshes            | `trigger: realtime`, result `updated`/`removed` |
+| `idle.resume`       | Window refocus or visibility resume      | `trigger: focus                                 | visibilitychange`, hidden duration |
+| `settings.save`     | Clients, projects, hour blocks, users    | `entity`, `mode`, `targetId`, duration          |
 
 Confirm each event appears in PostHog Live View after a manual interaction in staging.
 
@@ -59,4 +59,3 @@ Document alert URLs in this file once configured.
 ---
 
 **Reminder:** re-run this checklist after each major Phase 1/2 milestone to track improvements against the baseline.
-

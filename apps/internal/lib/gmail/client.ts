@@ -18,7 +18,11 @@ export class OAuthReconnectRequiredError extends Error {
   }
 }
 
-type GetAccessTokenResult = { accessToken: string; expiresAt?: Date | null; connectionId: string }
+type GetAccessTokenResult = {
+  accessToken: string
+  expiresAt?: Date | null
+  connectionId: string
+}
 
 interface GmailClientOptions {
   connectionId?: string
@@ -45,7 +49,12 @@ async function getGoogleConnection(userId: string, connectionId?: string) {
   const [row] = await db
     .select()
     .from(oauthConnections)
-    .where(and(eq(oauthConnections.userId, userId), eq(oauthConnections.provider, 'GOOGLE')))
+    .where(
+      and(
+        eq(oauthConnections.userId, userId),
+        eq(oauthConnections.provider, 'GOOGLE')
+      )
+    )
     .limit(1)
   return row ?? null
 }
@@ -58,7 +67,11 @@ async function getValidAccessToken(
   if (!conn) throw new Error('Google account not connected')
 
   // Check if connection is already marked as needing reauth
-  if (conn.status === 'EXPIRED' || conn.status === 'REVOKED' || conn.status === 'PENDING_REAUTH') {
+  if (
+    conn.status === 'EXPIRED' ||
+    conn.status === 'REVOKED' ||
+    conn.status === 'PENDING_REAUTH'
+  ) {
     throw new OAuthReconnectRequiredError(
       'Gmail connection needs to be reconnected',
       conn.id,
@@ -67,11 +80,17 @@ async function getValidAccessToken(
   }
 
   const now = Date.now()
-  const exp = conn.accessTokenExpiresAt ? new Date(conn.accessTokenExpiresAt).getTime() : undefined
+  const exp = conn.accessTokenExpiresAt
+    ? new Date(conn.accessTokenExpiresAt).getTime()
+    : undefined
   const needsRefresh = !!exp && exp - now < 5 * 60 * 1000 // under 5 minutes left
 
   if (!needsRefresh) {
-    return { accessToken: decryptToken(conn.accessToken), expiresAt: exp ? new Date(exp) : null, connectionId: conn.id }
+    return {
+      accessToken: decryptToken(conn.accessToken),
+      expiresAt: exp ? new Date(exp) : null,
+      connectionId: conn.id,
+    }
   }
 
   if (!conn.refreshToken) {
@@ -86,18 +105,29 @@ async function getValidAccessToken(
 
   try {
     const refreshed = await refreshAccessToken(decryptToken(conn.refreshToken))
-    const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+    const newExpiresAt = new Date(
+      Date.now() + refreshed.expires_in * 1000
+    ).toISOString()
     const newEncryptedAccess = encryptToken(refreshed.access_token)
 
     await db
       .update(oauthConnections)
-      .set({ accessToken: newEncryptedAccess, accessTokenExpiresAt: newExpiresAt, updatedAt: new Date().toISOString() })
+      .set({
+        accessToken: newEncryptedAccess,
+        accessTokenExpiresAt: newExpiresAt,
+        updatedAt: new Date().toISOString(),
+      })
       .where(eq(oauthConnections.id, conn.id))
 
-    return { accessToken: refreshed.access_token, expiresAt: new Date(newExpiresAt), connectionId: conn.id }
+    return {
+      accessToken: refreshed.access_token,
+      expiresAt: new Date(newExpiresAt),
+      connectionId: conn.id,
+    }
   } catch (error) {
     // Token refresh failed - mark connection as needing reauth
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error'
     await markConnectionNeedsReauth(conn.id, errorMessage)
     throw new OAuthReconnectRequiredError(
       `Gmail token refresh failed: ${errorMessage}`,
@@ -110,7 +140,10 @@ async function getValidAccessToken(
 /**
  * Mark a connection as needing re-authentication
  */
-async function markConnectionNeedsReauth(connectionId: string, reason: string): Promise<void> {
+async function markConnectionNeedsReauth(
+  connectionId: string,
+  reason: string
+): Promise<void> {
   const syncState = {
     lastError: reason,
     lastErrorAt: new Date().toISOString(),
@@ -163,10 +196,7 @@ export interface SendEmailResult {
  * Build an RFC 2822 MIME message for sending via Gmail.
  * Handles multipart/mixed for attachments and multipart/alternative for HTML+text.
  */
-function buildMimeMessage(
-  from: string,
-  params: SendEmailParams
-): string {
+function buildMimeMessage(from: string, params: SendEmailParams): string {
   const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).slice(2)}`
   const altBoundary = `----=_Alt_${Date.now()}_${Math.random().toString(36).slice(2)}`
 
@@ -177,7 +207,9 @@ function buildMimeMessage(
   lines.push(`To: ${params.to.join(', ')}`)
   if (params.cc?.length) lines.push(`Cc: ${params.cc.join(', ')}`)
   if (params.bcc?.length) lines.push(`Bcc: ${params.bcc.join(', ')}`)
-  lines.push(`Subject: =?UTF-8?B?${Buffer.from(params.subject).toString('base64')}?=`)
+  lines.push(
+    `Subject: =?UTF-8?B?${Buffer.from(params.subject).toString('base64')}?=`
+  )
   lines.push(`MIME-Version: 1.0`)
 
   // Threading headers for replies
@@ -200,7 +232,9 @@ function buildMimeMessage(
 
     if (hasHtml && hasText) {
       // multipart/alternative for HTML + text
-      lines.push(`Content-Type: multipart/alternative; boundary="${altBoundary}"`)
+      lines.push(
+        `Content-Type: multipart/alternative; boundary="${altBoundary}"`
+      )
       lines.push('')
       lines.push(`--${altBoundary}`)
       lines.push('Content-Type: text/plain; charset="UTF-8"')
@@ -274,7 +308,10 @@ export async function sendEmail(
   params: SendEmailParams,
   options?: GmailClientOptions
 ): Promise<SendEmailResult> {
-  const { accessToken, connectionId } = await getValidAccessToken(userId, options?.connectionId)
+  const { accessToken, connectionId } = await getValidAccessToken(
+    userId,
+    options?.connectionId
+  )
 
   // Get sender email from connection
   const conn = await getGoogleConnection(userId, connectionId)
@@ -296,14 +333,17 @@ export async function sendEmail(
     body.threadId = params.threadId
   }
 
-  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
+  const res = await fetch(
+    'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  )
 
   if (!res.ok) {
     const errorText = await res.text()

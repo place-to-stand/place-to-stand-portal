@@ -45,7 +45,7 @@ and activity logging come for free by reusing the dialog + its mutation hook.
 Return rows shaped for the section AND for seeding the dialog's edit mode — the edit dialog expects
 the full `TimeLogEntry` (`TimeLogWithUser & { linked_tasks }`, see
 [lib/projects/time-log/types.ts](../../../apps/internal/lib/projects/time-log/types.ts) ~L44–55),
-including the log's *other* linked tasks.
+including the log's _other_ linked tasks.
 
 **(C6) Prerequisite refactor — the hydration path must be extracted first.** There is no reusable
 hydration helper today: the linked-task fetch, `linkedTasksByLog` map, and row→`TimeLogEntry`
@@ -76,7 +76,7 @@ payloads, NOT an `{ ok, data }` envelope)**:
 - zod `paramsSchema = z.object({ taskId: z.string().uuid() })` over `await context.params` → 400
 - Calls `listTaskTimeLogs(user, taskId)` — the guard (`ensureTaskAccess`) lives **inside the
   query** (R3). **(I5)** the admin assert is transitive via `ensureProjectAccess`, and it can throw
-  `NotFoundError` for the task *or* project; catch `HttpError` generically and map `error.status`
+  `NotFoundError` for the task _or_ project; catch `HttpError` generically and map `error.status`
   (as the sibling routes do), don't assume a fixed 403/404 pair
 - Returns bare `{ entries, totalHours }`
 
@@ -103,7 +103,7 @@ exists and the task's project is resolvable (`taskProject` is computed in the sh
 - Loading: small skeleton; error: quiet inline message (the sheet must not break).
 - **Log time disabled states (D4, C5):** disabled with tooltip when (a) the form's project field
   differs from the persisted `task.projectId` (unsaved project change — the DB check
-  `time_log_tasks_project_match` in `packages/db/src/schema.ts` ~L867–870 makes the *persisted*
+  `time_log_tasks_project_match` in `packages/db/src/schema.ts` ~L867–870 makes the _persisted_
   project authoritative; watch the form's project value and compare), or (b) the task is
   **archived/deleted**. **Accepted tasks keep the button enabled** — the pre-linked task bypasses
   the selector's eligibility filter (owner decision, C5): "should apply to all tasks." The section
@@ -124,7 +124,7 @@ non-optional), which both My Tasks (`projects` prop) and the board already hold 
   (inline JSX props on `<ProjectTimeLogDialog>`), NOT in `use-board-time-log-dialogs.ts` (that hook
   is open/close/mode state only). Extract a helper in `lib/projects/time-log/` with signature
   roughly `(project: ProjectWithRelations, extras: { tasks, currentUserId, admins }) =>
-  ProjectTimeLogDialogParams`. Note the board passes `tasks` from `activeProjectTasks` (wired in
+ProjectTimeLogDialogParams`. Note the board passes `tasks` from `activeProjectTasks` (wired in
   `use-projects-board-view-model.ts` ~L201–209), which may be view-filtered — from the task sheet
   pass `taskProject.tasks` and verify the divergence is acceptable.
 - **(W4) Build the params LAZILY, inside the `props.task &&` branch.** The lead overlay's
@@ -175,7 +175,7 @@ non-optional), which both My Tasks (`projects` prop) and the board already hold 
   constraints are the invariants this UI leans on.
 - **(R6) Server-side task-eligibility validation.** The button-disable and eligibility filter are
   client-only; the write API accepts arbitrary `taskIds` and `createTimeLog` checks only project
-  access — a task archived or soft-deleted *after* the dialog opens (or a hand-crafted request)
+  access — a task archived or soft-deleted _after_ the dialog opens (or a hand-crafted request)
   could still be linked. Add in-transaction validation to `createTimeLog`/`updateTimeLog`
   (`apps/internal/lib/queries/time-logs/mutations.ts`): every linked task must exist, belong to the
   log's project, have `deletedAt IS NULL`, and not be status `ARCHIVED`; **accepted tasks are
@@ -208,11 +208,13 @@ non-optional), which both My Tasks (`projects` prop) and the board already hold 
 ## Files
 
 **New:**
+
 - `apps/internal/app/api/tasks/[taskId]/time-logs/route.ts`
 - `apps/internal/app/(dashboard)/projects/_components/task-sheet/time-log-section.tsx`
 - `apps/internal/app/(dashboard)/projects/_components/task-sheet/use-task-time-logs.ts`
 
 **Modified:**
+
 - `apps/internal/lib/queries/time-logs/read.ts` — extract `hydrateTimeLogEntries` (+ `deletedAt` bug fix, C6), add `listTaskTimeLogs` (guard inside, R3)
 - `apps/internal/lib/queries/time-logs/mutations.ts` — in-transaction linked-task eligibility validation (R6)
 - `apps/internal/lib/projects/time-log/use-project-time-log-dialog.ts` (+ `types.ts`) — `initialLinkedTaskIds` seeding effect + baseline (C5), delete wiring (W5)

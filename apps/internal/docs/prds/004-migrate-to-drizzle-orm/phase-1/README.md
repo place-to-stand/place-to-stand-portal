@@ -12,7 +12,7 @@
 - Added a shared Drizzle client at `lib/db/index.ts`, along with schema and relations re-exports for application consumption.
 - Introduced `drizzle.config.ts` so CLI commands share a single source of truth for database credentials, schema path, and migration output.
 - Ran `npx drizzle-kit introspect` against Supabase, promoting the generated schema and relations into `lib/db/` and seeding a baseline journal entry under `drizzle/migrations/meta/_journal.json`.
-- Created a temporary verification route at `app/api/test-drizzle/route.ts` that performs a `SELECT` against `clients` to confirm connectivity. *(Removed in Phase 4.)*
+- Created a temporary verification route at `app/api/test-drizzle/route.ts` that performs a `SELECT` against `clients` to confirm connectivity. _(Removed in Phase 4.)_
 
 ---
 
@@ -26,7 +26,7 @@
 ## Verification Checklist
 
 - `npx drizzle-kit introspect` completes without errors.
-- Hitting `GET /api/test-drizzle` while the Next.js dev server is running returns `{ ok: true, ... }` and includes a sample client when data exists. *(Historical note—endpoint removed in Phase 4.)*
+- Hitting `GET /api/test-drizzle` while the Next.js dev server is running returns `{ ok: true, ... }` and includes a sample client when data exists. _(Historical note—endpoint removed in Phase 4.)_
 - ESLint and TypeScript checks pass (`npm run lint`, `npm run type-check`).
 
 ---
@@ -36,4 +36,3 @@
 - Catalogue existing RLS policies into application-layer authorization helpers.
 - Scaffold domain-specific query modules under `lib/queries/`.
 - Remove the temporary test route once production code paths rely on the new data layer.
-

@@ -32,14 +32,14 @@ export async function GET(
     if (error instanceof HttpError) {
       return NextResponse.json(
         { error: error.message },
-        { status: error.status },
+        { status: error.status }
       )
     }
 
     console.error('Failed to load task time logs', error)
     return NextResponse.json(
       { error: 'Unable to load time logs.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

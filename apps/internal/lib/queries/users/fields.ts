@@ -25,4 +25,3 @@ export const userFields = {
 export const userSortExpression = sql<string>`
   coalesce(nullif(${personNameSql}, ''), ${users.email}, '')
 `
-

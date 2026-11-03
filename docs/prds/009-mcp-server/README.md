@@ -24,28 +24,28 @@ engagement standing) is explicitly out of scope until this one proves useful.
 
 ## Decisions (Kris, 2026-10-19)
 
-| # | Decision |
-| --- | --- |
-| D1 | **Hosted on Vercel, inside `apps/internal`**, as a route next to the data layer — not a separate Cloudflare service. |
-| D2 | **Proper OAuth from day one**, so it works as a claude.ai custom connector. No static tokens. |
-| D3 | **The agent acts on the connecting user's behalf**, and writes record both the human and the agent. |
-| D4 | **Reads plus a fixed set of writes**: tasks (create, update), task comments, leads (create, edit, move stage, log updates), and (revised 2026-11-02) companies and people (create, edit, add or remove people, titles, primary contact) through the same saves as their sheets. Billing, terms, commission, portal access and sign-ins stay out; no archive or delete. |
-| D5 | **No time logging.** Hours stay a manual human process because they feed the shared bank account / profit share. Time logs are readable (`list_time_logs`, revised 2026-10-26). |
-| D6 | **ADMIN and SALES** (revised 2026-10-27; was "ADMIN only for v1"). SALES is admitted with exactly the portal's sales access: the CRM tools (leads, companies, people and their activity) and (revised 2026-11-03) the task tools on the projects they are a member of, scoped the way the portal scopes them, and nothing else. Every other tool refuses a SALES caller. See "SALES access" below. |
-| D7 | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. Settings is admin-only, so SALES users have no portal settings access and cannot see or revoke their connected apps; an admin revokes a SALES user's grants in the Supabase dashboard when needed (Kris, 2026-10-27). |
-| D8 | **Client-facing MCP is deferred.** Nothing is exposed to CLIENT users. |
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Hosted on Vercel, inside `apps/internal`**, as a route next to the data layer — not a separate Cloudflare service.                                                                                                                                                                                                                                                                               |
+| D2  | **Proper OAuth from day one**, so it works as a claude.ai custom connector. No static tokens.                                                                                                                                                                                                                                                                                                      |
+| D3  | **The agent acts on the connecting user's behalf**, and writes record both the human and the agent.                                                                                                                                                                                                                                                                                                |
+| D4  | **Reads plus a fixed set of writes**: tasks (create, update), task comments, leads (create, edit, move stage, log updates), and (revised 2026-11-02) companies and people (create, edit, add or remove people, titles, primary contact) through the same saves as their sheets. Billing, terms, commission, portal access and sign-ins stay out; no archive or delete.                             |
+| D5  | **No time logging.** Hours stay a manual human process because they feed the shared bank account / profit share. Time logs are readable (`list_time_logs`, revised 2026-10-26).                                                                                                                                                                                                                    |
+| D6  | **ADMIN and SALES** (revised 2026-10-27; was "ADMIN only for v1"). SALES is admitted with exactly the portal's sales access: the CRM tools (leads, companies, people and their activity) and (revised 2026-11-03) the task tools on the projects they are a member of, scoped the way the portal scopes them, and nothing else. Every other tool refuses a SALES caller. See "SALES access" below. |
+| D7  | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. Settings is admin-only, so SALES users have no portal settings access and cannot see or revoke their connected apps; an admin revokes a SALES user's grants in the Supabase dashboard when needed (Kris, 2026-10-27).                                                    |
+| D8  | **Client-facing MCP is deferred.** Nothing is exposed to CLIENT users.                                                                                                                                                                                                                                                                                                                             |
 
 **Answered during the build (Kris, 2026-10-20)**
 
-| # | Decision |
-| --- | --- |
-| D9 | **Billing is read-only** (was Q1; revised 2026-10-26, which reversed "no invoices in v1, not even read-only"). Invoices, hour blocks and the monthly close are readable; nothing creates, sends, voids or closes them. The monthly close never calls Mercury: a closed month is served from its snapshot, and an open month's profit share is reported unavailable. |
-| D10 | **`list_tasks` matches the CLI** (was Q2): every project, other admins' PERSONAL projects included. |
-| D11 | **Agent attribution lives in the activity log only** (was Q4). No column on `task_comments` or `tasks`. |
-| D13 | **Hard allow-list of redirect hosts at consent** (was Q3): codes go only to `https://claude.ai`, `https://claude.com` or a loopback address (Claude Code, MCP Inspector). The security review found an MCP access token is a full Supabase session for the admin, so warn-and-allow would let a phished click hand an attacker the account. |
-| D14 | **Timestamps in CLI and MCP output are ISO 8601 UTC** (`isoTimestamp`, `lib/cli/serializers/timestamp.ts`), matching what `occurredAt` input takes. Date-only fields stay `YYYY-MM-DD`. |
-| D15 | **The connected-apps card ships in this PR** (§6), so an admin can revoke without the Supabase dashboard. |
-| D12 | **One PostHog event per tool call:** `mcp.tool_call`, dot style like the other server events, with properties `tool`, `outcome` (`ok` / `error`), `error_code`, `duration_ms`, `agent_name`. `distinct_id` is the user id. |
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D9  | **Billing is read-only** (was Q1; revised 2026-10-26, which reversed "no invoices in v1, not even read-only"). Invoices, hour blocks and the monthly close are readable; nothing creates, sends, voids or closes them. The monthly close never calls Mercury: a closed month is served from its snapshot, and an open month's profit share is reported unavailable. |
+| D10 | **`list_tasks` matches the CLI** (was Q2): every project, other admins' PERSONAL projects included.                                                                                                                                                                                                                                                                 |
+| D11 | **Agent attribution lives in the activity log only** (was Q4). No column on `task_comments` or `tasks`.                                                                                                                                                                                                                                                             |
+| D13 | **Hard allow-list of redirect hosts at consent** (was Q3): codes go only to `https://claude.ai`, `https://claude.com` or a loopback address (Claude Code, MCP Inspector). The security review found an MCP access token is a full Supabase session for the admin, so warn-and-allow would let a phished click hand an attacker the account.                         |
+| D14 | **Timestamps in CLI and MCP output are ISO 8601 UTC** (`isoTimestamp`, `lib/cli/serializers/timestamp.ts`), matching what `occurredAt` input takes. Date-only fields stay `YYYY-MM-DD`.                                                                                                                                                                             |
+| D15 | **The connected-apps card ships in this PR** (§6), so an admin can revoke without the Supabase dashboard.                                                                                                                                                                                                                                                           |
+| D12 | **One PostHog event per tool call:** `mcp.tool_call`, dot style like the other server events, with properties `tool`, `outcome` (`ok` / `error`), `error_code`, `duration_ms`, `agent_name`. `distinct_id` is the user id.                                                                                                                                          |
 
 ## Non-goals
 
@@ -110,9 +110,9 @@ and the MCP route call:
 
 ```ts
 type ApiPrincipal = {
-  user: AppUser              // the human; same AppUser the rest of the app uses
+  user: AppUser // the human; same AppUser the rest of the app uses
   channel: 'CLI' | 'MCP'
-  agent: { clientId: string; name: string } | null   // MCP only, from the token's client_id
+  agent: { clientId: string; name: string } | null // MCP only, from the token's client_id
 }
 ```
 
@@ -120,7 +120,7 @@ type ApiPrincipal = {
   `must_reset_password`, active profile. The role check differs: the CLI admits ADMIN only, the
   MCP admits `INTERNAL_ROLES` (ADMIN, SALES — D6); a CLIENT token gets 403.
 - MCP tokens are OAuth-issued, so they carry a `client_id`; the resolver looks up the registered
-  client's name (cached per instance). A token *without* a `client_id` is rejected on `/api/mcp`,
+  client's name (cached per instance). A token _without_ a `client_id` is rejected on `/api/mcp`,
   so a CLI session token cannot be replayed against the MCP.
 - **Attribution follows the CLI precedent.** CLI writes log `activity_logs.source = 'CLI'` with
   `actor_id` = the human. MCP writes log:
@@ -140,7 +140,7 @@ Each tool declares its input (Zod), its required access, and MCP annotations
 for confirmation.
 
 ```ts
-type ToolAccess = 'admin' | 'crm'   // 'crm' = assertCrmAccess (ADMIN or SALES)
+type ToolAccess = 'admin' | 'crm' // 'crm' = assertCrmAccess (ADMIN or SALES)
 ```
 
 Since 2026-11-03 each tool names a capability instead (`lib/mcp/tool-capabilities.ts`, checked
@@ -153,36 +153,36 @@ tool refuses them when called: `"<tool> is available to admin users only; your r
 
 **Reads**
 
-| Tool | Access | Backs onto |
-| --- | --- | --- |
-| `whoami` | crm | `/api/cli/v1/whoami` logic |
-| `list_clients` / `get_client` | admin | client companies (billed): client serializer (hours balance, originator, closers, §5) + portal access people + projects |
-| `get_company_billing` | admin | billing periods, billing-type terms and commission terms with closers, oldest first (D9: read-only) |
-| `list_submissions` / `get_submission` | admin | website form inbox; `source` is `describeAttribution`; acknowledging and promoting stay in the portal |
-| `list_contacts` / `get_contact` | crm | contact serializer; `list_contacts`' client filter resolves against the contacts page's own client list (`listAllActiveClients`) |
-| `list_companies` / `get_company` | crm | `listCompanies`, `getCompanyDetail` (billing fields already hidden from Sales) |
-| `create_company` / `update_company` | crm | `saveCompanySheet` with billing `none` and no portal access list; partial updates merge over the current row and pass `expectedUpdatedAt` |
-| `create_person` / `update_person` | crm | `savePersonSheet` without photo or sign-in; partial updates merge over the current row and pass `loadedUpdatedAt` |
-| `list_projects` / `get_project` | admin | project serializer (slug or UUID) |
-| `list_tasks` / `get_task` | member | `listTasksForAgent` (shared with the CLI), filters: project, lead, status, assignee |
-| `list_leads` / `get_lead` | crm | lead serializer + recent lead updates |
-| `list_users` | crm (SALES: CRM staff only) | user serializer (for resolving assignees and owners) |
-| `list_activity` / `recent_activity` | crm (both scoped by `canReadActivity`) | `fetchActivityLogs` / `fetchActivityLogsSince`, filters: target, project, client, source, actor, since/until (`recent_activity`: one time window, oldest first, `truncated` flag; target type, source, actor) |
-| `list_time_logs` | admin | `listTimeLogs`, filters: project, user, work-date range; `totalCount` / `totalHours` over every match (D5) |
-| `list_invoices` / `get_invoice` | admin | invoice serializer, filters: client, status, text; no share token or Stripe ids (D9) |
-| `list_hour_blocks` / `get_client_hour_balance` | admin | hour-block queries, filters: client, text; + client hours totals (D9) |
-| `get_monthly_close` | admin | `fetchMonthlyCloseForAgent`: snapshot or live, never Mercury, no bank account identifiers (D9) |
+| Tool                                           | Access                                 | Backs onto                                                                                                                                                                                                    |
+| ---------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `whoami`                                       | crm                                    | `/api/cli/v1/whoami` logic                                                                                                                                                                                    |
+| `list_clients` / `get_client`                  | admin                                  | client companies (billed): client serializer (hours balance, originator, closers, §5) + portal access people + projects                                                                                       |
+| `get_company_billing`                          | admin                                  | billing periods, billing-type terms and commission terms with closers, oldest first (D9: read-only)                                                                                                           |
+| `list_submissions` / `get_submission`          | admin                                  | website form inbox; `source` is `describeAttribution`; acknowledging and promoting stay in the portal                                                                                                         |
+| `list_contacts` / `get_contact`                | crm                                    | contact serializer; `list_contacts`' client filter resolves against the contacts page's own client list (`listAllActiveClients`)                                                                              |
+| `list_companies` / `get_company`               | crm                                    | `listCompanies`, `getCompanyDetail` (billing fields already hidden from Sales)                                                                                                                                |
+| `create_company` / `update_company`            | crm                                    | `saveCompanySheet` with billing `none` and no portal access list; partial updates merge over the current row and pass `expectedUpdatedAt`                                                                     |
+| `create_person` / `update_person`              | crm                                    | `savePersonSheet` without photo or sign-in; partial updates merge over the current row and pass `loadedUpdatedAt`                                                                                             |
+| `list_projects` / `get_project`                | admin                                  | project serializer (slug or UUID)                                                                                                                                                                             |
+| `list_tasks` / `get_task`                      | member                                 | `listTasksForAgent` (shared with the CLI), filters: project, lead, status, assignee                                                                                                                           |
+| `list_leads` / `get_lead`                      | crm                                    | lead serializer + recent lead updates                                                                                                                                                                         |
+| `list_users`                                   | crm (SALES: CRM staff only)            | user serializer (for resolving assignees and owners)                                                                                                                                                          |
+| `list_activity` / `recent_activity`            | crm (both scoped by `canReadActivity`) | `fetchActivityLogs` / `fetchActivityLogsSince`, filters: target, project, client, source, actor, since/until (`recent_activity`: one time window, oldest first, `truncated` flag; target type, source, actor) |
+| `list_time_logs`                               | admin                                  | `listTimeLogs`, filters: project, user, work-date range; `totalCount` / `totalHours` over every match (D5)                                                                                                    |
+| `list_invoices` / `get_invoice`                | admin                                  | invoice serializer, filters: client, status, text; no share token or Stripe ids (D9)                                                                                                                          |
+| `list_hour_blocks` / `get_client_hour_balance` | admin                                  | hour-block queries, filters: client, text; + client hours totals (D9)                                                                                                                                         |
+| `get_monthly_close`                            | admin                                  | `fetchMonthlyCloseForAgent`: snapshot or live, never Mercury, no bank account identifiers (D9)                                                                                                                |
 
 **Writes**
 
-| Tool | Access | Backs onto |
-| --- | --- | --- |
-| `create_task` | member | `lib/cli/tasks.ts` create path |
-| `update_task` | member | status, title, description, assignees, due date, project |
-| `add_task_comment` | member | CLI comment path (same markdown subset and escaping) |
-| `create_lead` | crm | `lib/cli/leads.ts` create path |
-| `update_lead` | crm | fields + stage move (writes `lead_stage_history`) |
-| `add_lead_update` | crm | CLI lead-updates path (calls, emails, texts, meetings) |
+| Tool               | Access | Backs onto                                               |
+| ------------------ | ------ | -------------------------------------------------------- |
+| `create_task`      | member | `lib/cli/tasks.ts` create path                           |
+| `update_task`      | member | status, title, description, assignees, due date, project |
+| `add_task_comment` | member | CLI comment path (same markdown subset and escaping)     |
+| `create_lead`      | crm    | `lib/cli/leads.ts` create path                           |
+| `update_lead`      | crm    | fields + stage move (writes `lead_stage_history`)        |
+| `add_lead_update`  | crm    | CLI lead-updates path (calls, emails, texts, meetings)   |
 
 Writes run the same validation, `ensure*Access` checks and activity logging as the CLI routes.
 Where a CLI route has that logic inline, it is lifted into `lib/cli/` first so both channels share
@@ -198,20 +198,20 @@ cannot flood the model's context.
 SALES reaches through the MCP exactly what the portal gives SALES: the CRM. The rules are the
 portal's own (`lib/auth/roles.ts`, `lib/auth/permissions.ts`); the MCP adds none.
 
-| Tool | SALES | Portal rule it mirrors |
-| --- | --- | --- |
-| `whoami` | allowed (self only) | any signed-in user sees their own profile |
-| `list_leads` / `get_lead` | allowed, every active lead | `fetchLeadsBoard` (`assertCrmAccess`, no per-owner scoping) |
-| `create_lead` / `update_lead` / `add_lead_update` | allowed | `saveLeadForActor`, `createLeadUpdateForActor` (`assertCrmAccess`) |
-| assignments: `create_task` / `update_task` `assigneeIds`, `create_lead` / `update_lead` `assignee` | staff only, for every role | `resolveAssigneeIds` resolves only `fetchCrmUsers` (ADMIN, SALES): no role, on the MCP or the CLI, can assign a CLIENT user (2026-10-27) |
-| read filters: `list_leads` / `list_tasks` `assignee`, activity `actor`, `list_time_logs` `user` | CRM staff only | `resolveUserIds` resolves only `fetchCrmUsers` for SALES (admins: any active user); anyone else reads as "no active user matches" |
-| `list_contacts` / `get_contact`, company and person tools | allowed | `/people` and `/companies`, the same sheet saves; billing and portal access hidden |
-| `list_activity` | LEAD, CONTACT and COMPANY activity only; `targetType` required; no `project` / `client` filter | `canReadActivity` (checked up front with a clear error, and again in `fetchActivityLogs`) |
-| `recent_activity` | LEAD, CONTACT and COMPANY activity only; `targetType` defaults to those for SALES, and naming any other type is refused | `canReadActivity`, enforced inside `fetchActivityLogsSince` (2026-10-27) |
-| `list_tasks` / `get_task` / `create_task` / `update_task` / `add_task_comment` | allowed on projects they are a member of (and their own personal boards); a lead task with no project goes to the Sales project, which must already exist (revised 2026-11-03) | the board and My Tasks: `listWorkableProjectIds`, `ensureTaskWorkAccess`, `ensureProjectWorkAccess`, `saveTaskForActor` |
-| `list_clients` / `get_client` / `get_company_billing` / `list_projects` / `get_project` / `list_submissions` / `get_submission` | denied | admin-only pages and data |
-| `list_users` | allowed, CRM staff (ADMIN, SALES) only | `fetchCrmUsers`, the lead assignee picker (2026-10-27) |
-| `list_time_logs`, `list_invoices` / `get_invoice`, `list_hour_blocks` / `get_client_hour_balance`, `get_monthly_close` | denied | admin-only pages and data |
+| Tool                                                                                                                            | SALES                                                                                                                                                                          | Portal rule it mirrors                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `whoami`                                                                                                                        | allowed (self only)                                                                                                                                                            | any signed-in user sees their own profile                                                                                                |
+| `list_leads` / `get_lead`                                                                                                       | allowed, every active lead                                                                                                                                                     | `fetchLeadsBoard` (`assertCrmAccess`, no per-owner scoping)                                                                              |
+| `create_lead` / `update_lead` / `add_lead_update`                                                                               | allowed                                                                                                                                                                        | `saveLeadForActor`, `createLeadUpdateForActor` (`assertCrmAccess`)                                                                       |
+| assignments: `create_task` / `update_task` `assigneeIds`, `create_lead` / `update_lead` `assignee`                              | staff only, for every role                                                                                                                                                     | `resolveAssigneeIds` resolves only `fetchCrmUsers` (ADMIN, SALES): no role, on the MCP or the CLI, can assign a CLIENT user (2026-10-27) |
+| read filters: `list_leads` / `list_tasks` `assignee`, activity `actor`, `list_time_logs` `user`                                 | CRM staff only                                                                                                                                                                 | `resolveUserIds` resolves only `fetchCrmUsers` for SALES (admins: any active user); anyone else reads as "no active user matches"        |
+| `list_contacts` / `get_contact`, company and person tools                                                                       | allowed                                                                                                                                                                        | `/people` and `/companies`, the same sheet saves; billing and portal access hidden                                                       |
+| `list_activity`                                                                                                                 | LEAD, CONTACT and COMPANY activity only; `targetType` required; no `project` / `client` filter                                                                                 | `canReadActivity` (checked up front with a clear error, and again in `fetchActivityLogs`)                                                |
+| `recent_activity`                                                                                                               | LEAD, CONTACT and COMPANY activity only; `targetType` defaults to those for SALES, and naming any other type is refused                                                        | `canReadActivity`, enforced inside `fetchActivityLogsSince` (2026-10-27)                                                                 |
+| `list_tasks` / `get_task` / `create_task` / `update_task` / `add_task_comment`                                                  | allowed on projects they are a member of (and their own personal boards); a lead task with no project goes to the Sales project, which must already exist (revised 2026-11-03) | the board and My Tasks: `listWorkableProjectIds`, `ensureTaskWorkAccess`, `ensureProjectWorkAccess`, `saveTaskForActor`                  |
+| `list_clients` / `get_client` / `get_company_billing` / `list_projects` / `get_project` / `list_submissions` / `get_submission` | denied                                                                                                                                                                         | admin-only pages and data                                                                                                                |
+| `list_users`                                                                                                                    | allowed, CRM staff (ADMIN, SALES) only                                                                                                                                         | `fetchCrmUsers`, the lead assignee picker (2026-10-27)                                                                                   |
+| `list_time_logs`, `list_invoices` / `get_invoice`, `list_hour_blocks` / `get_client_hour_balance`, `get_monthly_close`          | denied                                                                                                                                                                         | admin-only pages and data                                                                                                                |
 
 Writes by a SALES user log `actor_role = 'SALES'`, `source = 'MCP'` and the agent, like an
 admin's.
@@ -295,6 +295,7 @@ restart Supabase once (`supabase stop && supabase start`) after pulling, then ru
    them.
 
    It deletes everything it wrote, including its OAuth clients.
+
 3. **Claude Code against localhost.**
    `claude mcp add --transport http pts-local http://localhost:3000/api/mcp`, then `/mcp` to sign
    in. First test with a real model picking tools, so it checks that tool names, descriptions and
@@ -319,9 +320,9 @@ restart Supabase once (`supabase stop && supabase start`) after pulling, then ru
 
 Q1–Q4 are answered (D9–D11, D13).
 
-| # | Question |
-| --- | --- |
-| Q6 | **Agent identity granularity** — the OAuth client ("Claude") is all we get from the token. Is that enough, or do we want an optional `agentLabel` argument on writes (e.g. "Claude Code — acme-site repo")? Either way the name is self-reported at registration (the spike connected as "Claude Code (pts-local)"), so it is a label for attribution, never something to authorize on. *v1 ships the client name only.* |
+| #   | Question                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Q6  | **Agent identity granularity** — the OAuth client ("Claude") is all we get from the token. Is that enough, or do we want an optional `agentLabel` argument on writes (e.g. "Claude Code — acme-site repo")? Either way the name is self-reported at registration (the spike connected as "Claude Code (pts-local)"), so it is a label for attribution, never something to authorize on. _v1 ships the client name only._ |
 
 ## Implementation notes (2026-10-20)
 

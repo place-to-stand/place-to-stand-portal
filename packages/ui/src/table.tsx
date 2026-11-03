@@ -161,8 +161,11 @@ function TableCell({
         // One row height for every list: a 28px content box (a td's height
         // is its minimum), so text-only and group rows match rows with
         // 28px buttons whatever the border model adds.
-        density === 'compact' ? 'box-content h-7 px-2 py-1.5' : 'box-content h-7 p-2',
-        stack && 'max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:first:basis-full max-md:box-border',
+        density === 'compact'
+          ? 'box-content h-7 px-2 py-1.5'
+          : 'box-content h-7 p-2',
+        stack &&
+          'max-md:box-border max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:first:basis-full',
         showLabel && 'max-md:flex max-md:items-center max-md:gap-1.5',
         className
       )}

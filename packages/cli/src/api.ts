@@ -132,10 +132,7 @@ export type PortalMeta = {
 }
 
 export async function fetchPortalMeta(apiUrl: string): Promise<PortalMeta> {
-  const { result, error } = await request<PortalMeta>(
-    apiUrl,
-    'api/cli/v1/meta'
-  )
+  const { result, error } = await request<PortalMeta>(apiUrl, 'api/cli/v1/meta')
 
   if (error) {
     throw error

@@ -4,7 +4,8 @@ import 'server-only'
 import { and, eq, gt, gte, isNull, lte, or, sql } from 'drizzle-orm'
 
 import { db, type DbTx } from '@/lib/db'
-import { companies,
+import {
+  companies,
   hourBlocks,
   monthlyCloseSnapshots,
   projects,
@@ -238,7 +239,5 @@ export async function listClosedMonthStarts(): Promise<string[]> {
     })
     .from(monthlyCloseSnapshots)
     .where(isNull(monthlyCloseSnapshots.deletedAt))
-  return rows.map(
-    row => `${row.year}-${String(row.month).padStart(2, '0')}-01`
-  )
+  return rows.map(row => `${row.year}-${String(row.month).padStart(2, '0')}-01`)
 }

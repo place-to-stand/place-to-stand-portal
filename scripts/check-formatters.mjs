@@ -102,7 +102,10 @@ const errors = []
 if (isMain) {
   for (const dir of DIRS) {
     for (const file of files(join(root, dir))) {
-      for (const { line, label } of checkFormatters(readFileSync(file, 'utf8'), file)) {
+      for (const { line, label } of checkFormatters(
+        readFileSync(file, 'utf8'),
+        file
+      )) {
         errors.push(`${file.slice(root.length)}:${line}: ${label}`)
       }
     }
@@ -117,8 +120,7 @@ if (!isMain) {
   )
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
-}
-else
+} else
   console.log(
     'Formatters: hours, money and percentages come only from @pts/ui/numbers'
   )

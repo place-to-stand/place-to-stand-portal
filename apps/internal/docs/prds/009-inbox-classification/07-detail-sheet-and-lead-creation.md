@@ -19,6 +19,7 @@ This is a lightweight addition to the existing sheet — no structural changes t
 ## Lead Creation in Triage
 
 When the Lead track is selected in triage and no existing lead matches, the user clicks **"Create Lead"** which opens the existing lead creation sheet (same one used on `/leads`). The sheet pre-fills:
+
 - **Name** from the sender's `fromName`
 - **Email** from the sender's `fromEmail`
 - **Source** set to `EMAIL`

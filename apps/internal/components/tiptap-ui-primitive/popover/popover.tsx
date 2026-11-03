@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
-import { cn } from "@/lib/tiptap-utils"
-import "@/components/tiptap-ui-primitive/popover/popover.scss"
+import * as React from 'react'
+import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
+import { cn } from '@/lib/tiptap-utils'
+import '@/components/tiptap-ui-primitive/popover/popover.scss'
 
 /**
  * Vendored TipTap primitive, rebased from Radix onto Base UI. The export
@@ -29,16 +29,18 @@ function PopoverTrigger({
     )
   }
 
-  return <PopoverPrimitive.Trigger {...props}>{children}</PopoverPrimitive.Trigger>
+  return (
+    <PopoverPrimitive.Trigger {...props}>{children}</PopoverPrimitive.Trigger>
+  )
 }
 
 function PopoverContent({
   className,
-  align = "center",
+  align = 'center',
   sideOffset = 4,
   ...props
-}: Omit<PopoverPrimitive.Popup.Props, "className"> &
-  Pick<PopoverPrimitive.Positioner.Props, "align" | "sideOffset"> & {
+}: Omit<PopoverPrimitive.Popup.Props, 'className'> &
+  Pick<PopoverPrimitive.Positioner.Props, 'align' | 'sideOffset'> & {
     // Base UI also accepts a state callback here; every consumer passes a
     // plain string, and cn() only takes strings.
     className?: string
@@ -48,10 +50,10 @@ function PopoverContent({
       <PopoverPrimitive.Positioner
         align={align}
         sideOffset={sideOffset}
-        className="pointer-events-auto isolate z-50"
+        className='pointer-events-auto isolate z-50'
       >
         <PopoverPrimitive.Popup
-          className={cn("tiptap-popover", className)}
+          className={cn('tiptap-popover', className)}
           {...props}
         />
       </PopoverPrimitive.Positioner>

@@ -65,8 +65,7 @@ export interface LinkMainProps {
 }
 
 export interface LinkPopoverProps
-  extends Omit<ButtonProps, 'type'>,
-    UseLinkPopoverConfig {
+  extends Omit<ButtonProps, 'type'>, UseLinkPopoverConfig {
   /**
    * Callback for when the popover opens or closes.
    */
@@ -128,7 +127,9 @@ const LinkMain: React.FC<LinkMainProps> = ({
     }
   }
 
-  const handleContainerKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleContainerKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>
+  ) => {
     if (event.key === 'Escape') {
       event.preventDefault()
       onClose?.()

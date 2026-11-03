@@ -106,7 +106,7 @@ Specifics:
   on the `task` prop).
 - **(W1, R1) Double-submit guard — there is NO existing `isSubmitting` guard, and `isPending` is
   NOT sufficient.** The only protection today is `submitDisabled = isPending || !canManage ||
-  isUploading` (~L328) gating the button and ⌘S (`canSave`) — but `isPending` is **render state**:
+isUploading` (~L328) gating the button and ⌘S (`canSave`) — but `isPending` is **render state**:
   two submit callbacks firing in the same render window both observe it as `false`, and
   `createdTaskIdRef` is set only after the first request succeeds — too late to stop a second
   in-flight request. Use a **synchronous in-flight ref**: set `submitLockRef.current = true` as the
@@ -154,10 +154,13 @@ and at that instant `activeTaskId` is still null → the sheet visibly starts cl
 ```ts
 const justCreatedTaskIdRef = useRef<string | null>(null)
 
-const handleTaskCreated = useCallback((taskId: string) => {
-  justCreatedTaskIdRef.current = taskId
-  router.push(buildViewPath(view, taskId))   // buildViewPath: local useCallback ~L187–195 (keeps ?assignee=)
-}, [router, view])
+const handleTaskCreated = useCallback(
+  (taskId: string) => {
+    justCreatedTaskIdRef.current = taskId
+    router.push(buildViewPath(view, taskId)) // buildViewPath: local useCallback ~L187–195 (keeps ?assignee=)
+  },
+  [router, view]
+)
 
 // In the render-time re-sync: while justCreatedTaskIdRef.current is set, keep the sheet open;
 // once activeTaskId === justCreatedTaskIdRef.current, clear the ref AND setCreateTaskContext(null).
@@ -170,7 +173,7 @@ const handleTaskCreated = useCallback((taskId: string) => {
 **Project board** — [apps/internal/lib/projects/board/state/use-board-sheet-state.ts](../../../apps/internal/lib/projects/board/state/use-board-sheet-state.ts):
 
 **(C3) Mirror `handleEditTask` (~L157–176), not just its navigation call.** `handleEditTask` sets
-`setRouteTaskId(task.id)` and `setPendingTaskId(task.id)` *before* `navigateToProject` —
+`setRouteTaskId(task.id)` and `setPendingTaskId(task.id)` _before_ `navigateToProject` —
 `pendingTaskId` is what stops the sync effect (~L98–100) from closing the sheet during navigation.
 Additionally, the sync effect only sets `sheetTask` when `findTaskAcrossProjects(projects, id)`
 finds it — and the fresh task isn't in `projects` until `router.refresh()` lands:
@@ -195,7 +198,7 @@ pass `closeOnSave` — behavior identical to today. No `onTaskCreated`.
 ## Architecture notes
 
 - The sheet's open/close model is hybrid (URL owns the active task, local state owns visibility,
-  re-synced during render). This section leans into that: create→edit is *just navigation*, no new
+  re-synced during render). This section leans into that: create→edit is _just navigation_, no new
   state machine.
 - My Tasks defers unmount 300ms for the close animation (~L158–183) — untouched; the sheet never
   closes on this path anymore.
@@ -219,6 +222,7 @@ pass `closeOnSave` — behavior identical to today. No `onTaskCreated`.
 ## Files
 
 **Modified:**
+
 - `apps/internal/app/(dashboard)/projects/actions/save-task.ts` (local `SaveTaskResult`)
 - `apps/internal/lib/projects/task-sheet/use-task-sheet-state.ts`
 - `apps/internal/lib/projects/task-sheet/hooks/use-task-sheet-form.ts` (only if re-baseline logic lives here)

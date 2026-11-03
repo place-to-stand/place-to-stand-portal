@@ -196,12 +196,12 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
 
 ### Other Stripe Events
 
-| Event | Handling |
-|-------|----------|
-| `checkout.session.completed` | Process payment (see above) |
-| `checkout.session.expired` | Clear stale session ID (see above) |
+| Event                           | Handling                                                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `checkout.session.completed`    | Process payment (see above)                                                                                 |
+| `checkout.session.expired`      | Clear stale session ID (see above)                                                                          |
 | `payment_intent.payment_failed` | **Ignored** — Stripe Checkout handles retry UI on-page. If the customer leaves, it's effectively an expiry. |
-| All other events | Return 200, ignore silently |
+| All other events                | Return 200, ignore silently                                                                                 |
 
 We do NOT need stored DECLINED/ERROR invoice statuses. Stripe Checkout handles payment retries natively on the hosted page (customer can try a different card). From our perspective, either they pay (→ PAID) or they don't (stays SENT/VIEWED).
 
@@ -243,21 +243,21 @@ The CLI provides a webhook signing secret (`whsec_...`) for local testing.
 
 ### Checkout Creation Errors
 
-| Error | Response | Action |
-|-------|----------|--------|
-| Invoice not found | 404 | Return error |
-| Invalid status (DRAFT/PAID/VOID) | 400 | Return error with status explanation |
-| Sharing not enabled | 400 | Return error |
-| Stripe API error | 500 | Log error, return generic message |
+| Error                            | Response | Action                               |
+| -------------------------------- | -------- | ------------------------------------ |
+| Invoice not found                | 404      | Return error                         |
+| Invalid status (DRAFT/PAID/VOID) | 400      | Return error with status explanation |
+| Sharing not enabled              | 400      | Return error                         |
+| Stripe API error                 | 500      | Log error, return generic message    |
 
 ### Webhook Errors
 
-| Error | Response | Action |
-|-------|----------|--------|
-| Invalid signature | 400 | Return error, do not process |
-| Unknown event type | 200 | Ignore silently (Stripe sends many event types) |
-| Invoice not found | 200 | Log warning, return 200 (don't trigger retries for missing data) |
-| DB error during processing | 500 | Return 500 (Stripe will retry) |
+| Error                      | Response | Action                                                           |
+| -------------------------- | -------- | ---------------------------------------------------------------- |
+| Invalid signature          | 400      | Return error, do not process                                     |
+| Unknown event type         | 200      | Ignore silently (Stripe sends many event types)                  |
+| Invoice not found          | 200      | Log warning, return 200 (don't trigger retries for missing data) |
+| DB error during processing | 500      | Return 500 (Stripe will retry)                                   |
 
 ## Webhook Reliability
 
@@ -269,6 +269,7 @@ The CLI provides a webhook signing secret (`whsec_...`) for local testing.
 4. **No heavy side effects** — v1 has no PDF generation, no email sends on payment (notifications deferred)
 
 **Future: Queue if needed.** If webhook processing becomes heavier (PDF generation, email delivery, multi-step workflows), consider:
+
 - `waitUntil()` from Vercel for fire-and-forget background work
 - Inngest or Trigger.dev for reliable, retryable background jobs
 - A dead-letter pattern for failed processing

@@ -51,11 +51,17 @@ export async function GET(
     return NextResponse.json(result, { status: 200 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to list task comments', error)
-    return NextResponse.json({ error: 'Unable to load comments.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Unable to load comments.' },
+      { status: 500 }
+    )
   }
 }
 
@@ -81,7 +87,10 @@ export async function POST(
     payload = createBodySchema.parse(await request.json())
   } catch (error) {
     console.error('Invalid create task comment payload', error)
-    return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Invalid request payload.' },
+      { status: 400 }
+    )
   }
 
   try {
@@ -93,10 +102,16 @@ export async function POST(
     return NextResponse.json({ commentId }, { status: 201 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to create task comment', error)
-    return NextResponse.json({ error: 'Unable to add comment.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Unable to add comment.' },
+      { status: 500 }
+    )
   }
 }

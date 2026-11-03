@@ -139,7 +139,14 @@ export function renderEmail(
 ): RenderedEmail {
   return {
     subject,
-    text: renderText({ heading, paragraphs, action, note, footerLead, replyTo }),
+    text: renderText({
+      heading,
+      paragraphs,
+      action,
+      note,
+      footerLead,
+      replyTo,
+    }),
     html: renderHtml({
       preheader,
       label,

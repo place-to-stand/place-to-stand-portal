@@ -3,6 +3,7 @@
 A short note that something just happened, in the bottom corner (bottom centre on a phone). It goes away by itself after 4 seconds, or with its close button. From `apps/internal/components/ui/use-toast`: `toast({ title, description?, variant? })`. The look is `ToastCard` (`components/ui/toast-card.tsx`); it is shown on `/design#feedback`, with every kind visible.
 
 **Kinds:**
+
 - `default` / `success`: confirms something that just happened. Green `CircleCheck`.
 - `destructive`: a failure. Red `TriangleAlert`, red title, a light red wash.
 - `warning`: it worked, but something needs a look (a closed month affected). Amber `TriangleAlert`, a light amber wash.

@@ -10,6 +10,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 ## Scope
 
 ### 1. Logic Errors
+
 - Off-by-one errors in loops/arrays
 - Incorrect boolean logic
 - Missing edge cases
@@ -17,6 +18,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 - Race conditions in async code
 
 ### 2. State Management Issues
+
 - Stale closures in useEffect/useCallback
 - Missing dependency array items
 - State updates on unmounted components
@@ -24,6 +26,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 - Derived state that should be computed
 
 ### 3. Data Handling
+
 - Array mutations instead of immutable updates
 - Object reference equality issues
 - Missing data validation
@@ -31,6 +34,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 - Timezone handling errors with date-fns
 
 ### 4. Async/Await Pitfalls
+
 - Unhandled promise rejections
 - Missing try/catch blocks
 - Parallel execution that should be sequential
@@ -38,6 +42,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 - Missing loading/error states
 
 ### 5. React-Specific Issues
+
 - Missing keys in lists
 - Conditional hooks (violates rules of hooks)
 - Memory leaks (uncleared intervals, subscriptions)
@@ -45,6 +50,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 - Re-render loops
 
 ### 6. API & Database
+
 - Missing error handling on fetch calls
 - Incorrect HTTP methods
 - Missing request validation
@@ -52,6 +58,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 - Missing transaction boundaries
 
 ### 7. Type Coercion Issues
+
 - Loose equality (== vs ===)
 - Implicit type conversions
 - parseInt without radix
@@ -60,6 +67,7 @@ Systematically analyze code for bugs, logic errors, and potential runtime issues
 ## Output Format
 
 For each finding:
+
 ```
 [SEVERITY: CRITICAL|HIGH|MEDIUM|LOW]
 [TYPE: LOGIC|STATE|DATA|ASYNC|REACT|API|TYPES]
@@ -81,6 +89,7 @@ Fix: Code snippet or approach
 ## Bug Categories by Likelihood
 
 High probability areas:
+
 - Recently changed code
 - Complex conditional logic
 - Async operations
@@ -90,6 +99,7 @@ High probability areas:
 ## Post-Review
 
 Generate:
+
 - Critical bugs requiring immediate fix
 - Medium-priority bugs for next sprint
 - Low-priority improvements

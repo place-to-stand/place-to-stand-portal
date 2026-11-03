@@ -15,14 +15,14 @@ Findings with an obvious fix were fixed in seven helper branches and merged. Any
 
 Finding ids are prefixed by the review that raised them:
 
-| Prefix | Review |
-| --- | --- |
-| C/W/I | Engineering |
-| P/PW/PI | Product |
-| S | External security |
-| R | Internal roles |
-| U | UI/flow |
-| D | Database |
+| Prefix  | Review            |
+| ------- | ----------------- |
+| C/W/I   | Engineering       |
+| P/PW/PI | Product           |
+| S       | External security |
+| R       | Internal roles    |
+| U       | UI/flow           |
+| D       | Database          |
 
 Hands-on checklist: [pr-279-test-plan.md](pr-279-test-plan.md).
 
@@ -32,15 +32,15 @@ Hands-on checklist: [pr-279-test-plan.md](pr-279-test-plan.md).
 
 The rehearsal used a read-only production dump taken 30 Oct 2026 (public, drizzle and auth schemas). It was restored only into local databases. Nothing ran against production.
 
-| Check | Result |
-| --- | --- |
-| Forward 0089 → 0115 on the fresh copy | Applies in about 2 s; two runs, line-identical output |
-| `compare-rollout.mjs` (41 checks): per-client billing, terms, commissions, hour blocks, invoices, memberships, sign-ins | 41 / 41 pass |
-| `verify-migration.py`: row counts; 21 untouched tables byte-identical; every money value kept; auth untouched; every constraint and FK; client state = old live clients; one open period per live client; role terms; one person per sign-in | ALL CHECKS PASS |
-| Monthly close, every month Oct 2025 → Oct 2026: old code on the old schema vs new code on the migrated schema | All 13 months identical (billing in, payouts, payroll rows) |
-| Saved close snapshots vs recomputed totals | No drift |
-| Undo 0115 → 0111 back to the 0110 schema | 0 differences |
-| Browser suite on the migrated copy | 76 pass read-only, 84 with writes, 4 skipped (need live Gmail/GitHub) |
+| Check                                                                                                                                                                                                                                        | Result                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Forward 0089 → 0115 on the fresh copy                                                                                                                                                                                                        | Applies in about 2 s; two runs, line-identical output                 |
+| `compare-rollout.mjs` (41 checks): per-client billing, terms, commissions, hour blocks, invoices, memberships, sign-ins                                                                                                                      | 41 / 41 pass                                                          |
+| `verify-migration.py`: row counts; 21 untouched tables byte-identical; every money value kept; auth untouched; every constraint and FK; client state = old live clients; one open period per live client; role terms; one person per sign-in | ALL CHECKS PASS                                                       |
+| Monthly close, every month Oct 2025 → Oct 2026: old code on the old schema vs new code on the migrated schema                                                                                                                                | All 13 months identical (billing in, payouts, payroll rows)           |
+| Saved close snapshots vs recomputed totals                                                                                                                                                                                                   | No drift                                                              |
+| Undo 0115 → 0111 back to the 0110 schema                                                                                                                                                                                                     | 0 differences                                                         |
+| Browser suite on the migrated copy                                                                                                                                                                                                           | 76 pass read-only, 84 with writes, 4 skipped (need live Gmail/GitHub) |
 
 **Re-run after every fix was merged** (32172cfb, same dump):
 
@@ -64,33 +64,33 @@ Known and harmless (both were already in production before this PR):
 
 ## 2. Security findings by severity
 
-| Sev | Id | Finding | Status |
-| --- | --- | --- | --- |
-| High | S1 | An auth account someone signed up for themselves was reused (and kept its password) when an admin later granted that email a sign-in | **Fixed**: the account is taken over first (new random password, sessions revoked). Email sign-up is already off in production (checked 30 Oct) |
-| High | S2 / R3 | A client-portal user could attach another organisation's GitHub App installation by guessing its id **Deferred until after release** (known gap: no code change in this PR) |
-| Medium | S3 | Open redirect after sign-in via `/\evil.com` | **Fixed** (shared safe-redirect helper, 6 sites + reset form) |
-| Medium | S4 | Stored XSS: Sales uploads HTML as an "image", sets the type to text/html, an admin opens it | **Fixed** (type allowlist; non-images download; sandbox CSP) |
-| Medium | S5 | Stripe payment amount never checked against the invoice total (pay old total after an edit → marked PAID) | **Fixed** (reuse only matching intents; webhook requires full amount) |
-| Medium | R1 | Sales could rename any person, including admins, through a lead save | **Fixed** |
-| Medium | R2 / W2 | Sales could archive or rename the staff company, breaking every later role change | **Fixed** (admin only; archived staff company is found and restored) |
-| Medium | R4 | Sales can add a person to a client company through a lead save | **Decision** |
-| Medium | R5 | Sales could move people with sign-ins between companies via the company sheet | **Fixed** |
-| Low | S6 | Avatar save could move any file in the photo bucket | **Fixed** |
-| Low | S7 | Anyone with the public key could call SECURITY DEFINER functions | **Fixed** in 0115 (revoked; dead functions dropped). The Data API is already off in production (checked 30 Oct) |
-| Low | S8 / R12 / I4 | Scheduled role changes weren't applied on CLI, MCP or the client portal until the nightly cron | **Fixed** |
-| Low | S9 | Editor sanitizer failed open | **Fixed** (also nested children) |
-| Low | S10 | No app-side throttle on password sign-in | **Fixed**: 10 attempts per email and 30 per IP every 15 min, in both portals; refuses sign-in if the database is down. **Known gap:** someone calling Supabase directly with the public key skips the app's count (Supabase's own per-IP limit still applies). Closing that needs a Supabase-side control, such as a password-verification Auth hook or CAPTCHA on sign-in. That's a later decision |
-| Low | R6 | Sales could set titles on client people | **Fixed** |
-| Low | R7 | Sales can read and edit client notes | **Decision** |
-| Low | R8 | Sales could archive a client's primary contact | **Fixed** |
-| Low | R9 | Sales could restore an archived person with a sign-in | **Fixed** |
-| Low | R10 | Sales moving a Won lead back clears the admin's conversion link | **Decision** |
-| Low | R11 | Portal-invite events visible to Sales | **Fixed** |
-| Low | R13 | Confirming an auth email change could un-archive a sign-in | **Fixed** |
-| Low | R14 | Anyone can edit or delete anyone's lead update | **Decision** |
-| Info | S11 / R15 | Malformed ids caused 500s in the client portal | **Fixed** (UUID checks) |
-| Info | S12 | Unauthenticated cache-revalidation server actions | **Fixed** |
-| Info | S13 | CLI accepts MCP tokens (same user) | Accepted |
+| Sev    | Id            | Finding                                                                                                                                                                     | Status                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| High   | S1            | An auth account someone signed up for themselves was reused (and kept its password) when an admin later granted that email a sign-in                                        | **Fixed**: the account is taken over first (new random password, sessions revoked). Email sign-up is already off in production (checked 30 Oct)                                                                                                                                                                                                                                                     |
+| High   | S2 / R3       | A client-portal user could attach another organisation's GitHub App installation by guessing its id **Deferred until after release** (known gap: no code change in this PR) |
+| Medium | S3            | Open redirect after sign-in via `/\evil.com`                                                                                                                                | **Fixed** (shared safe-redirect helper, 6 sites + reset form)                                                                                                                                                                                                                                                                                                                                       |
+| Medium | S4            | Stored XSS: Sales uploads HTML as an "image", sets the type to text/html, an admin opens it                                                                                 | **Fixed** (type allowlist; non-images download; sandbox CSP)                                                                                                                                                                                                                                                                                                                                        |
+| Medium | S5            | Stripe payment amount never checked against the invoice total (pay old total after an edit → marked PAID)                                                                   | **Fixed** (reuse only matching intents; webhook requires full amount)                                                                                                                                                                                                                                                                                                                               |
+| Medium | R1            | Sales could rename any person, including admins, through a lead save                                                                                                        | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Medium | R2 / W2       | Sales could archive or rename the staff company, breaking every later role change                                                                                           | **Fixed** (admin only; archived staff company is found and restored)                                                                                                                                                                                                                                                                                                                                |
+| Medium | R4            | Sales can add a person to a client company through a lead save                                                                                                              | **Decision**                                                                                                                                                                                                                                                                                                                                                                                        |
+| Medium | R5            | Sales could move people with sign-ins between companies via the company sheet                                                                                               | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | S6            | Avatar save could move any file in the photo bucket                                                                                                                         | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | S7            | Anyone with the public key could call SECURITY DEFINER functions                                                                                                            | **Fixed** in 0115 (revoked; dead functions dropped). The Data API is already off in production (checked 30 Oct)                                                                                                                                                                                                                                                                                     |
+| Low    | S8 / R12 / I4 | Scheduled role changes weren't applied on CLI, MCP or the client portal until the nightly cron                                                                              | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | S9            | Editor sanitizer failed open                                                                                                                                                | **Fixed** (also nested children)                                                                                                                                                                                                                                                                                                                                                                    |
+| Low    | S10           | No app-side throttle on password sign-in                                                                                                                                    | **Fixed**: 10 attempts per email and 30 per IP every 15 min, in both portals; refuses sign-in if the database is down. **Known gap:** someone calling Supabase directly with the public key skips the app's count (Supabase's own per-IP limit still applies). Closing that needs a Supabase-side control, such as a password-verification Auth hook or CAPTCHA on sign-in. That's a later decision |
+| Low    | R6            | Sales could set titles on client people                                                                                                                                     | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | R7            | Sales can read and edit client notes                                                                                                                                        | **Decision**                                                                                                                                                                                                                                                                                                                                                                                        |
+| Low    | R8            | Sales could archive a client's primary contact                                                                                                                              | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | R9            | Sales could restore an archived person with a sign-in                                                                                                                       | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | R10           | Sales moving a Won lead back clears the admin's conversion link                                                                                                             | **Decision**                                                                                                                                                                                                                                                                                                                                                                                        |
+| Low    | R11           | Portal-invite events visible to Sales                                                                                                                                       | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | R13           | Confirming an auth email change could un-archive a sign-in                                                                                                                  | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Low    | R14           | Anyone can edit or delete anyone's lead update                                                                                                                              | **Decision**                                                                                                                                                                                                                                                                                                                                                                                        |
+| Info   | S11 / R15     | Malformed ids caused 500s in the client portal                                                                                                                              | **Fixed** (UUID checks)                                                                                                                                                                                                                                                                                                                                                                             |
+| Info   | S12           | Unauthenticated cache-revalidation server actions                                                                                                                           | **Fixed**                                                                                                                                                                                                                                                                                                                                                                                           |
+| Info   | S13           | CLI accepts MCP tokens (same user)                                                                                                                                          | Accepted                                                                                                                                                                                                                                                                                                                                                                                            |
 
 **One thing to confirm on release (S1):** the takeover signs the reused account out by deleting its rows from `auth.sessions` and `auth.refresh_tokens`. On standard Supabase the `postgres` role has DELETE there, and the local copy matches. If production lacked that grant, the save would fail with an error rather than link the account (fails closed).
 
@@ -98,51 +98,51 @@ Known and harmless (both were already in production before this PR):
 
 ## 3. Fixed
 
-| Area | Fix | Commit |
-| --- | --- | --- |
-| Money | W5 / I1: company save locks the company and re-checks the closed month inside the transaction | 7a8370b1 |
-| Money | W11 / D2: as-of billing and commission subqueries name their table | b91e2a44 |
-| Money | D29: dashboard counts prepaid hours by billing month, as the close does | b2f571cc |
-| Money | D3: "is a client now" read through one helper everywhere | 601a8d69 |
-| Money | S5: Stripe amounts must match the invoice | 23772e8a |
-| Activity | W10: stop/restart billing log clear lines ("last month billed …", "cancelled the scheduled stop") | 7a8370b1 |
-| Activity | W9: a lead save that restores an archived person is logged | 3959049c |
-| Roles | W7: scheduled role changes skip archived sign-ins and are logged | 7a8370b1 |
-| Roles | D13: dev `make-me-admin` writes the role term | 8ea180c3 |
-| Roles | I2: a new sign-in's first role term skips a closed month | b72d31d2 |
-| Sign-ins | W8: restoring a client sign-in lifts the off switch and ban | b72d31d2 |
-| Sign-ins | I6: portal sign-ins no longer write a role into auth metadata | b72d31d2 |
-| Sign-ins | I7: a slug-retry failure no longer leaks prepared auth users | 7a8370b1 |
-| Permissions | R1, R2, R5, R6, R8, R9, R11 (see §2) | 3959049c, ddfc660b, bee50c09, b529a024 |
-| Security | S1, S3, S4, S6, S8, S9, S11, S12, R13 (see §2) | cb3a6596 … 5ec0f193 |
-| Data | W1 / D1: project owner links to the right person | 2d9f72df |
-| Data | W2: staff company found even when archived | 4787691a |
-| Database | 0115: helper SQL functions not callable through the API; dead definer functions and a broken `activity_logs` trigger dropped (undo file included) | eece82c4 |
-| Dead code | W6 / U1: old client mutation stack (could bypass the sheet's guards); U7 unused Gmail helpers; U3, U5, U6 unused exports and params; D9 `website.ts`; D5 partial | 253c2b49, 4a99550b, 2444c24b, b6add3df, dfdb2f9e, ce35e1e8, 3ff33b17 |
-| Copy | PW10, PI5, PI6 client portal; PI2, PI3, U35 sheet copy; U34 pickers ("Search people…", "Staff"); P3 invite line on the People tab | 53445246, b26de7f2, 2f833398, 5f23f7a2 |
-| Docs | D28 / W12 CLAUDE.md client state; U36 `/design` specimens; D25 shared `activeCompanySql` | 949d8509, ede4e772, e9ec6274 |
-| Tooling | `verify-migration.py` in the rehearsal | c25ef91a |
+| Area        | Fix                                                                                                                                                              | Commit                                                               |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Money       | W5 / I1: company save locks the company and re-checks the closed month inside the transaction                                                                    | 7a8370b1                                                             |
+| Money       | W11 / D2: as-of billing and commission subqueries name their table                                                                                               | b91e2a44                                                             |
+| Money       | D29: dashboard counts prepaid hours by billing month, as the close does                                                                                          | b2f571cc                                                             |
+| Money       | D3: "is a client now" read through one helper everywhere                                                                                                         | 601a8d69                                                             |
+| Money       | S5: Stripe amounts must match the invoice                                                                                                                        | 23772e8a                                                             |
+| Activity    | W10: stop/restart billing log clear lines ("last month billed …", "cancelled the scheduled stop")                                                                | 7a8370b1                                                             |
+| Activity    | W9: a lead save that restores an archived person is logged                                                                                                       | 3959049c                                                             |
+| Roles       | W7: scheduled role changes skip archived sign-ins and are logged                                                                                                 | 7a8370b1                                                             |
+| Roles       | D13: dev `make-me-admin` writes the role term                                                                                                                    | 8ea180c3                                                             |
+| Roles       | I2: a new sign-in's first role term skips a closed month                                                                                                         | b72d31d2                                                             |
+| Sign-ins    | W8: restoring a client sign-in lifts the off switch and ban                                                                                                      | b72d31d2                                                             |
+| Sign-ins    | I6: portal sign-ins no longer write a role into auth metadata                                                                                                    | b72d31d2                                                             |
+| Sign-ins    | I7: a slug-retry failure no longer leaks prepared auth users                                                                                                     | 7a8370b1                                                             |
+| Permissions | R1, R2, R5, R6, R8, R9, R11 (see §2)                                                                                                                             | 3959049c, ddfc660b, bee50c09, b529a024                               |
+| Security    | S1, S3, S4, S6, S8, S9, S11, S12, R13 (see §2)                                                                                                                   | cb3a6596 … 5ec0f193                                                  |
+| Data        | W1 / D1: project owner links to the right person                                                                                                                 | 2d9f72df                                                             |
+| Data        | W2: staff company found even when archived                                                                                                                       | 4787691a                                                             |
+| Database    | 0115: helper SQL functions not callable through the API; dead definer functions and a broken `activity_logs` trigger dropped (undo file included)                | eece82c4                                                             |
+| Dead code   | W6 / U1: old client mutation stack (could bypass the sheet's guards); U7 unused Gmail helpers; U3, U5, U6 unused exports and params; D9 `website.ts`; D5 partial | 253c2b49, 4a99550b, 2444c24b, b6add3df, dfdb2f9e, ce35e1e8, 3ff33b17 |
+| Copy        | PW10, PI5, PI6 client portal; PI2, PI3, U35 sheet copy; U34 pickers ("Search people…", "Staff"); P3 invite line on the People tab                                | 53445246, b26de7f2, 2f833398, 5f23f7a2                               |
+| Docs        | D28 / W12 CLAUDE.md client state; U36 `/design` specimens; D25 shared `activeCompanySql`                                                                         | 949d8509, ede4e772, e9ec6274                                         |
+| Tooling     | `verify-migration.py` in the rehearsal                                                                                                                           | c25ef91a                                                             |
 
 Second wave (product, UI and data-layer cleanups with an obvious answer):
 
-| Area | Fix | Commit |
-| --- | --- | --- |
-| Billing tab | PW1 / U15: one "which month" picker. Stop is "Last month billed: October 2026 (this month) / September 2026 (last month)"; start is "First month billed". Labels use UTC, like the server | 35286dae, a7b88fd6 |
-| Billing tab | PW5: plain help text ("October's close uses the new type"); PW13: "Terms" and "Tax state"; PI8: "Their people can use the portal now." when billing starts next month | 4a915261, e34d67f6, d40848c0 |
-| Company sheet | PW8: Projects tab only for clients, or former clients with projects; "Create project" opens the project sheet prefilled with the company; a project with no slug isn't a dead link | 70a3a288 |
-| Company sheet | Sales sees the staff company's Archive action disabled with the reason (the server already refused) | 91700e23 |
-| Leads | PW6: a Won drag on the board opens the company's Billing tab for admins; PW7: a refused Won drag opens the lead with the error on Company | e9df311a, 3df262bb |
-| People | PW11: company filter lists every company ("All companies"); a non-client filters by who works there | fde059b5 |
-| People | U27: client row shows one portal note, not a tooltip too | 79fcb3d3 |
-| Sheets | U23: edit sheets are titled with the record's name and show the entity icon | 447a099c |
-| Sheets | U17: one archive confirmation ("Archive project?" … "Its history stays.") | a91e429c |
-| Sheets | U19 / U20: shared empty states; "Add … after you save" sections | e72a6297, 7032613a |
-| Sheets | U25: footer props renamed to archive* (no behaviour change) | 63030d33 |
-| Components | U11 / U16 / U13: shared project and invoice record rows, one project status badge, one staff-or-person picker | d53e9479, 449dc58a, 8c173910 |
-| Routing | U4: dead `?client=` params removed; `/settings/users?user=new` opens a new person | 237a1e50 |
-| Caching | I11: company and person saves refresh the hour blocks, close, users, projects and leads pages | e710e25f |
-| Data layer | D4, D7, D8, D11, D26, D28, U22, D6: simpler name subqueries, honest type names, one transaction type, one unique-violation helper, dead `saveCompany` and `/api/clients` removed | 17ccff3d … 8ec3dda1 |
-| Tests | e2e follows the new labels; the project save test no longer races the refresh | bd8e7cfa, 32172cfb |
+| Area          | Fix                                                                                                                                                                                       | Commit                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Billing tab   | PW1 / U15: one "which month" picker. Stop is "Last month billed: October 2026 (this month) / September 2026 (last month)"; start is "First month billed". Labels use UTC, like the server | 35286dae, a7b88fd6           |
+| Billing tab   | PW5: plain help text ("October's close uses the new type"); PW13: "Terms" and "Tax state"; PI8: "Their people can use the portal now." when billing starts next month                     | 4a915261, e34d67f6, d40848c0 |
+| Company sheet | PW8: Projects tab only for clients, or former clients with projects; "Create project" opens the project sheet prefilled with the company; a project with no slug isn't a dead link        | 70a3a288                     |
+| Company sheet | Sales sees the staff company's Archive action disabled with the reason (the server already refused)                                                                                       | 91700e23                     |
+| Leads         | PW6: a Won drag on the board opens the company's Billing tab for admins; PW7: a refused Won drag opens the lead with the error on Company                                                 | e9df311a, 3df262bb           |
+| People        | PW11: company filter lists every company ("All companies"); a non-client filters by who works there                                                                                       | fde059b5                     |
+| People        | U27: client row shows one portal note, not a tooltip too                                                                                                                                  | 79fcb3d3                     |
+| Sheets        | U23: edit sheets are titled with the record's name and show the entity icon                                                                                                               | 447a099c                     |
+| Sheets        | U17: one archive confirmation ("Archive project?" … "Its history stays.")                                                                                                                 | a91e429c                     |
+| Sheets        | U19 / U20: shared empty states; "Add … after you save" sections                                                                                                                           | e72a6297, 7032613a           |
+| Sheets        | U25: footer props renamed to archive* (no behaviour change)                                                                                                                               | 63030d33                     |
+| Components    | U11 / U16 / U13: shared project and invoice record rows, one project status badge, one staff-or-person picker                                                                             | d53e9479, 449dc58a, 8c173910 |
+| Routing       | U4: dead `?client=` params removed; `/settings/users?user=new` opens a new person                                                                                                         | 237a1e50                     |
+| Caching       | I11: company and person saves refresh the hour blocks, close, users, projects and leads pages                                                                                             | e710e25f                     |
+| Data layer    | D4, D7, D8, D11, D26, D28, U22, D6: simpler name subqueries, honest type names, one transaction type, one unique-violation helper, dead `saveCompany` and `/api/clients` removed          | 17ccff3d … 8ec3dda1          |
+| Tests         | e2e follows the new labels; the project save test no longer races the refresh                                                                                                             | bd8e7cfa, 32172cfb           |
 
 **Small calls made while fixing (say if you want any changed):**
 
@@ -166,41 +166,41 @@ Second wave (product, UI and data-layer cleanups with an obvious answer):
 
 Every decision below has been answered. What was built is on the PR branch, at 048cb978. The original write-ups follow the table for reference.
 
-| Id | Answer | Built |
-| --- | --- | --- |
-| C1 | Prepaid hour blocks count in the month bought; a new client's first terms are dated from the first billed month | d4175ed0 |
-| W4 | Archiving a company that's still billed is refused: "Stop billing first." | 64154745 |
-| P1 + P2 | Stopping billing leaves portal flags alone. The portal ends access when billing ends, and a restart brings back the people who had it | c105123f |
-| P5 | Moving someone away from Admin defaults to next month, with a payroll note if this month is picked | 87ce686c |
-| PW2 | A Net 30 "last month" stop warns about hours logged this month that won't be billed | 00557799 |
-| PW3 | Final billed month: the switch stays on, "Billing stops after <month>", Keep billing, terms editable | cd661d7a |
-| PW4 | Restarting a former client shows its last terms, saved in the same Save | 92d0f925 |
-| W3 | Company and person sheets refuse a save made over someone else's newer save | 0d0eb8f9, 2febb4f0 |
-| I10 | Payroll counts all client work by month worked (code comment) | b851f130 |
-| S1, S7 | Already off in production (email sign-up, Data API) | none needed |
-| S2 / R3 | Deferred until after release: a known gap | not built |
-| S10 | Password sign-in limit: 10 per email and 30 per IP every 15 min, in both portals. Gap: a direct-to-Supabase call skips it | d7ad6310 … 25489a71 |
-| R4 | Sales builds the directory, clients included, from any sheet. Billing, portal access, a client's primary contact, people with a user and the staff company stay admin-only. A membership Sales makes never has portal access (enforced in `setPortalAccess`) | e1233712 |
-| R7 | Company notes are open to Sales on every company | e1233712 (wording) |
-| Primary contact | Sales may set it on non-clients; admin-only once the company is billed | e1233712 |
-| R10 | A Won lead moved back keeps its conversion | 7180f6cb |
-| R14 | Only the author or an admin edits or archives a lead update | 863dbba4 |
-| P4 | Portal switch per client company on the person sheet (admin only) | 358d8473 |
-| PW12 | Sidebar unchanged | none needed |
-| PI1 | Role month list: next month, this month, and the latest open earlier month | 9d645dfe |
-| PI4 | Client portal account menu shows the first name | eb296044 |
-| PI7 | Client badge next to the company name; the list still opens on All | bd262dbd |
-| PI9 | Net 30 Hours page: this month's hours, then earlier months as lines | 39cd07eb |
-| U29 | People list: Clients column gone; client companies carry the badge | e5be7904 |
-| U30 | "Delete forever" removed everywhere. Submissions lose their privacy erase: an erasure request now needs a manual DB step | ab42fc99 … c110e3ca |
-| U31 | Lead sheet: one caution, "<Person> is not yet at <Company>. Saving adds <Person> to <Company>." | 4c84b449 |
-| U25 | Restore only from archive lists | 3479d460 |
-| U12 | Related records always stack a sheet | f4ba603e |
-| U18 | Save results, success or failure, are toasts on every sheet; field errors stay on fields | 9c2d4124 |
-| U24 | Two sheet widths (narrow, wide), one tab style, comments a section at the bottom | 5072dd6f |
-| U21 | One `formatHours` ("1.5h") and `formatCurrency` ("$1,234.00") everywhere, with a lint guard | 07ea9719 … 9594c04a |
-| U2, U8, U9, U10, D2, D5–D27, D14, D16–D19, D22, D23 | Approved as small follow-up PRs after release; any production schema drop needs Jason's go-ahead each time | later |
-| D30 | Keep the unused columns | none needed |
+| Id                                                  | Answer                                                                                                                                                                                                                                                       | Built               |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| C1                                                  | Prepaid hour blocks count in the month bought; a new client's first terms are dated from the first billed month                                                                                                                                              | d4175ed0            |
+| W4                                                  | Archiving a company that's still billed is refused: "Stop billing first."                                                                                                                                                                                    | 64154745            |
+| P1 + P2                                             | Stopping billing leaves portal flags alone. The portal ends access when billing ends, and a restart brings back the people who had it                                                                                                                        | c105123f            |
+| P5                                                  | Moving someone away from Admin defaults to next month, with a payroll note if this month is picked                                                                                                                                                           | 87ce686c            |
+| PW2                                                 | A Net 30 "last month" stop warns about hours logged this month that won't be billed                                                                                                                                                                          | 00557799            |
+| PW3                                                 | Final billed month: the switch stays on, "Billing stops after <month>", Keep billing, terms editable                                                                                                                                                         | cd661d7a            |
+| PW4                                                 | Restarting a former client shows its last terms, saved in the same Save                                                                                                                                                                                      | 92d0f925            |
+| W3                                                  | Company and person sheets refuse a save made over someone else's newer save                                                                                                                                                                                  | 0d0eb8f9, 2febb4f0  |
+| I10                                                 | Payroll counts all client work by month worked (code comment)                                                                                                                                                                                                | b851f130            |
+| S1, S7                                              | Already off in production (email sign-up, Data API)                                                                                                                                                                                                          | none needed         |
+| S2 / R3                                             | Deferred until after release: a known gap                                                                                                                                                                                                                    | not built           |
+| S10                                                 | Password sign-in limit: 10 per email and 30 per IP every 15 min, in both portals. Gap: a direct-to-Supabase call skips it                                                                                                                                    | d7ad6310 … 25489a71 |
+| R4                                                  | Sales builds the directory, clients included, from any sheet. Billing, portal access, a client's primary contact, people with a user and the staff company stay admin-only. A membership Sales makes never has portal access (enforced in `setPortalAccess`) | e1233712            |
+| R7                                                  | Company notes are open to Sales on every company                                                                                                                                                                                                             | e1233712 (wording)  |
+| Primary contact                                     | Sales may set it on non-clients; admin-only once the company is billed                                                                                                                                                                                       | e1233712            |
+| R10                                                 | A Won lead moved back keeps its conversion                                                                                                                                                                                                                   | 7180f6cb            |
+| R14                                                 | Only the author or an admin edits or archives a lead update                                                                                                                                                                                                  | 863dbba4            |
+| P4                                                  | Portal switch per client company on the person sheet (admin only)                                                                                                                                                                                            | 358d8473            |
+| PW12                                                | Sidebar unchanged                                                                                                                                                                                                                                            | none needed         |
+| PI1                                                 | Role month list: next month, this month, and the latest open earlier month                                                                                                                                                                                   | 9d645dfe            |
+| PI4                                                 | Client portal account menu shows the first name                                                                                                                                                                                                              | eb296044            |
+| PI7                                                 | Client badge next to the company name; the list still opens on All                                                                                                                                                                                           | bd262dbd            |
+| PI9                                                 | Net 30 Hours page: this month's hours, then earlier months as lines                                                                                                                                                                                          | 39cd07eb            |
+| U29                                                 | People list: Clients column gone; client companies carry the badge                                                                                                                                                                                           | e5be7904            |
+| U30                                                 | "Delete forever" removed everywhere. Submissions lose their privacy erase: an erasure request now needs a manual DB step                                                                                                                                     | ab42fc99 … c110e3ca |
+| U31                                                 | Lead sheet: one caution, "<Person> is not yet at <Company>. Saving adds <Person> to <Company>."                                                                                                                                                              | 4c84b449            |
+| U25                                                 | Restore only from archive lists                                                                                                                                                                                                                              | 3479d460            |
+| U12                                                 | Related records always stack a sheet                                                                                                                                                                                                                         | f4ba603e            |
+| U18                                                 | Save results, success or failure, are toasts on every sheet; field errors stay on fields                                                                                                                                                                     | 9c2d4124            |
+| U24                                                 | Two sheet widths (narrow, wide), one tab style, comments a section at the bottom                                                                                                                                                                             | 5072dd6f            |
+| U21                                                 | One `formatHours` ("1.5h") and `formatCurrency` ("$1,234.00") everywhere, with a lint guard                                                                                                                                                                  | 07ea9719 … 9594c04a |
+| U2, U8, U9, U10, D2, D5–D27, D14, D16–D19, D22, D23 | Approved as small follow-up PRs after release; any production schema drop needs Jason's go-ahead each time                                                                                                                                                   | later               |
+| D30                                                 | Keep the unused columns                                                                                                                                                                                                                                      | none needed         |
 
 **Asks made while deciding, also built:**
 
@@ -228,29 +228,29 @@ My recommendation comes first in each. None of these is built.
   - How it happens: billing starts "next month", or a client is stopped "now" and then pays its last invoice. Either way the block lands in an unbilled month and is never counted, although its sales tax still is.
   - Production has no such rows today.
   - **Recommend:** count prepaid hour blocks whenever they're bought (they're cash), and date each company's first terms from its first billed month.
-  - *Other:* move the block forward to the first billed month and refuse one when there's none.
+  - _Other:_ move the block forward to the first billed month and refuse one when there's none.
 - **W4. Archiving a company with billing open leaves it billed in every close,** and the sheet then can't stop it.
   - **Recommend:** refuse with "Stop billing first".
-  - *Other:* archiving also stops billing from next month.
+  - _Other:_ archiving also stops billing from next month.
 - **P1. "Bill through the end of this month" cuts the client's portal immediately,** while they're still billed for the month.
   - **Recommend:** keep access until billing ends (the database view already does this; skip the separate revoke).
-  - *Other:* keep, and warn in the stop line.
+  - _Other:_ keep, and warn in the stop line.
 - **P2. Restarting billing doesn't bring back portal access.**
   - **Recommend:** turn access back on for the people who had it when billing stopped.
-  - *Other:* show the Portal switches under the restart line.
+  - _Other:_ show the Portal switches under the restart line.
 - **P5. Moving someone away from Admin defaults to "this month",** which takes their hours out of this month's payroll.
   - **Recommend:** default to next month when demoting from Admin, with a note if this month is picked.
-  - *Other:* keep.
+  - _Other:_ keep.
 - **PW2. "Stop now" when hours were logged or a block was sold this month** leaves that work unbilled.
   - **Recommend:** a warning under the choice ("12 hrs logged this month won't be billed").
 - **PW3. In a client's final billed month the switch reads "off" and the terms can't be edited.**
   - **Recommend:** keep the switch on with "Billing stops after October 2026. [Keep billing]" and the fields editable.
-  - *Other:* keep.
+  - _Other:_ keep.
 - **PW4. Restarting a former client can't change its terms in the same Save.**
   - **Recommend:** show the terms, filled with the last ones, when restarting.
 - **W3. Two admins saving the same company or person: the last save silently wins,** and the activity "before" is wrong.
   - **Recommend:** refuse a save if the record changed since it was opened ("Someone else saved this. Reload.").
-  - *Other:* write only changed fields.
+  - _Other:_ write only changed fields.
 - **I10. Time on a client project in an unbilled month counts toward payroll but not Billing in.**
   - **Recommend:** keep (payroll is work-based), and I'll add a comment saying so.
 
@@ -263,10 +263,10 @@ My recommendation comes first in each. None of these is built.
   - **Recommend:** for non-admins, link the lead but skip joining a client company, as the person and company sheets already do.
 - **R7. Sales can read and edit notes on client companies.**
   - **Recommend:** hide them from Sales on billed companies if the notes hold billing context.
-  - *Other:* accept, and fix the capability description.
+  - _Other:_ accept, and fix the capability description.
 - **R10. Sales moving a Won lead back clears the admin's conversion link.**
   - **Recommend:** allow the move but keep the link.
-  - *Other:* refuse the move for non-admins.
+  - _Other:_ refuse the move for non-admins.
 - **R14. Anyone can edit or delete anyone's lead update.**
   - **Recommend:** author or admin only, like task comments.
 
@@ -275,7 +275,7 @@ My recommendation comes first in each. None of these is built.
 - **P4 / PW9 / U28. Portal access.**
   - The person sheet has no Portal control, and a Client sign-in can be created with no company access: the person gets an invite and lands on "not set up".
   - **Recommend:** a Portal switch per client company on the person sheet, the same control as the company People tab.
-  - *Other:* refuse a Client sign-in without portal access somewhere.
+  - _Other:_ refuse a Client sign-in without portal access somewhere.
 - **PW12. Nav.**
   - **Recommend:** a "Billing" group with Invoices, Hour blocks and Monthly close (now under Sales and Reports). Sales users see no change.
 - **PI1. Role month list (about 14 options, mostly disabled).**

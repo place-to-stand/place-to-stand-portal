@@ -9,7 +9,7 @@
 
 `components/ui/` (38 files) sits at stock shadcn "new-york" density with a few divergences — some deliberate and worth keeping, some stale:
 
-- [button.tsx](../../../apps/internal/components/ui/button.tsx) (**73 importers**): fixed heights removed in favor of padding — buttons run ~2px *taller* than shadcn spec (`default` ~38px vs 36, `sm` ~34 vs 32). The custom `xs`/`icon-sm`/`icon-lg` sizes are good and load-bearing.
+- [button.tsx](../../../apps/internal/components/ui/button.tsx) (**73 importers**): fixed heights removed in favor of padding — buttons run ~2px _taller_ than shadcn spec (`default` ~38px vs 36, `sm` ~34 vs 32). The custom `xs`/`icon-sm`/`icon-lg` sizes are good and load-bearing.
 - [tabs.tsx](../../../apps/internal/components/ui/tabs.tsx) (**20 importers**): stale pre-v4 shadcn — `forwardRef` pattern, `TabsList h-10 p-1` vs current `h-9 p-[3px]`, triggers `px-3 py-1.5` vs `px-2 py-1`. Keep the added hover affordance + `cursor-pointer`.
 - [skeleton.tsx](../../../apps/internal/components/ui/skeleton.tsx): stale (`bg-muted`, no `data-slot`).
 - Table styling has **four competing header treatments** (`bg-muted/40` default · review tab `bg-muted/30 text-xs uppercase py-3` · monthly-close `bg-muted/50 h-8 text-[10px] first:pl-5` · invoice-settings unstyled) and two container radii (`rounded-xl` vs `rounded-lg`).
@@ -28,7 +28,7 @@ shadcn's documented monorepo layout, matching the existing `@pts/db`/`@pts/githu
 - `cn` moves into the package (`@pts/ui/cn`); `apps/internal/lib/utils.ts` re-exports it during migration so existing imports keep working. Shared UI hooks (`use-mobile`) move likewise.
 - Internal app wiring: `transpilePackages: ['@pts/ui']` in [next.config.ts](../../../apps/internal/next.config.ts); Tailwind v4 `@source '../../../packages/ui/src'` in `globals.css` so the package's classes are scanned; `@pts/ui` workspace dep in `apps/internal/package.json`.
 - **Migration rule (the checklist property):** a component moves `components/ui/x.tsx` → `packages/ui/src/x.tsx` **in the same commit that refreshes/migrates it** (steps 2–3 below), and all its internal-app imports flip to `@pts/ui/x`. `@/components/ui/*` = not yet done; `@pts/ui/*` = done. No half-moved components; `components/ui/` is empty (or reduced to the deliberately-unported bespoke set) when this section completes.
-- The client portal does **not** import `@pts/ui` in this PRD (D12/D15); its five copies are untouched. **Guardrail (PI3): while `@pts/ui` exists unadopted by the client portal, no *new* component copies land in `apps/client/components/ui/`** — the drift is frozen at five until adoption (see [06-future-scope.md](06-future-scope.md)).
+- The client portal does **not** import `@pts/ui` in this PRD (D12/D15); its five copies are untouched. **Guardrail (PI3): while `@pts/ui` exists unadopted by the client portal, no _new_ component copies land in `apps/client/components/ui/`** — the drift is frozen at five until adoption (see [06-future-scope.md](06-future-scope.md)).
 
 ### 1. Radix consolidation (mechanical, first)
 

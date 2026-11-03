@@ -15,7 +15,7 @@ all vs admin vs client users (use submissions as example)." Per the structure Q&
 The pattern to copy is
 [submissions-filters.tsx](<../../../apps/internal/app/(dashboard)/submissions/_components/submissions-filters.tsx>) —
 the app's only searchParams-driven dropdown-filter component: shadcn `Select`s, an `'all'` sentinel
-mapping to *param removed*, server-side filtering, a `basePath` prop serving both the main and
+mapping to _param removed_, server-side filtering, a `basePath` prop serving both the main and
 archive tabs, and a boolean prop hiding tab-irrelevant filters.
 
 ## Fix
@@ -83,7 +83,8 @@ Extend the input type (L26–31) with `role?: UserRoleValue; access?: UserAccess
 ```ts
 if (input.role) baseConditions.push(eq(users.role, input.role))
 if (input.access === 'enabled') baseConditions.push(isNull(users.disabledAt))
-if (input.access === 'disabled') baseConditions.push(isNotNull(users.disabledAt))
+if (input.access === 'disabled')
+  baseConditions.push(isNotNull(users.disabledAt))
 ```
 
 **(I4)** `eq` (and `isNotNull`) are **not currently imported** in this file — add them to the
@@ -131,7 +132,7 @@ must not count as an active filter (an empty unfiltered list would otherwise sho
   added (the existing belt-and-braces `deleted_at` pass at ~L52–58 stays as-is).
 - Invalid param values (e.g. `?role=SUPERADMIN`) fail the type guard → treated as unset, matching
   submissions.
-- Access is orthogonal to the Users/Archive tabs: a disabled user is still *active* (not archived).
+- Access is orthogonal to the Users/Archive tabs: a disabled user is still _active_ (not archived).
   No schema changes.
 
 ## Acceptance criteria
@@ -150,10 +151,12 @@ must not count as an active filter (an empty unfiltered list would otherwise sho
 ## Files
 
 **New:**
+
 - `apps/internal/app/(dashboard)/settings/users/_components/users-filters.tsx`
 - `apps/internal/lib/settings/users/filters.ts` (W10 naming; also hosts `parseUsersSearchParams`, I4)
 
 **Modified:**
+
 - `apps/internal/lib/queries/users/settings.ts`
 - `apps/internal/app/(dashboard)/settings/users/page.tsx`
 - `apps/internal/app/(dashboard)/settings/users/archive/page.tsx`

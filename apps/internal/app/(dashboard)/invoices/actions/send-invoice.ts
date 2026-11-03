@@ -19,22 +19,18 @@ import { INVOICES_PATH } from './helpers'
  * out (`emailInvoice` is the path that sends one); the link goes live and its
  * token comes back so the button can copy it.
  */
-export async function sendInvoiceAction(
-  input: SendInput,
-): Promise<SendResult> {
+export async function sendInvoiceAction(input: SendInput): Promise<SendResult> {
   return trackSettingsServerInteraction(
     {
       entity: 'invoice',
       mode: 'send',
       targetId: input.id,
     },
-    async () => performSendInvoice(input),
+    async () => performSendInvoice(input)
   )
 }
 
-async function performSendInvoice(
-  input: SendInput,
-): Promise<SendResult> {
+async function performSendInvoice(input: SendInput): Promise<SendResult> {
   const user = await requireUser()
   assertAdmin(user)
 
@@ -73,10 +69,7 @@ async function performSendInvoice(
     console.error('Failed to send invoice', error)
 
     return {
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Unable to send invoice.',
+      error: error instanceof Error ? error.message : 'Unable to send invoice.',
     }
   }
 }

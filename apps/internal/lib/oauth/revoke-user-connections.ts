@@ -52,7 +52,10 @@ export async function revokeUserOauthConnections(userId: string): Promise<{
     })
     .from(oauthConnections)
     .where(
-      and(eq(oauthConnections.userId, userId), isNull(oauthConnections.deletedAt))
+      and(
+        eq(oauthConnections.userId, userId),
+        isNull(oauthConnections.deletedAt)
+      )
     )
 
   if (connections.length === 0) {
@@ -90,7 +93,10 @@ export async function revokeUserOauthConnections(userId: string): Promise<{
       updatedAt: now,
     })
     .where(
-      and(eq(oauthConnections.userId, userId), isNull(oauthConnections.deletedAt))
+      and(
+        eq(oauthConnections.userId, userId),
+        isNull(oauthConnections.deletedAt)
+      )
     )
 
   return { revoked: connections.length }

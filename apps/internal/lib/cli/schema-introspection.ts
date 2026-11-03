@@ -86,9 +86,7 @@ export function listTables(): CliTableSummary[] {
 }
 
 export function describeTable(tableName: string): CliTableDetail | null {
-  const match = tables().find(
-    table => getTableConfig(table).name === tableName
-  )
+  const match = tables().find(table => getTableConfig(table).name === tableName)
 
   return match ? describe(match) : null
 }

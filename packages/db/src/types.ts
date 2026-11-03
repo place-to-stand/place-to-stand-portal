@@ -36,7 +36,9 @@ import type {
 // Select types (for reading from DB)
 export type User = InferSelectModel<typeof users>
 export type ClientBillingTerm = InferSelectModel<typeof billingTerms>
-export type MonthlyCloseSnapshot = InferSelectModel<typeof monthlyCloseSnapshots>
+export type MonthlyCloseSnapshot = InferSelectModel<
+  typeof monthlyCloseSnapshots
+>
 export type Project = InferSelectModel<typeof projects>
 export type Task = InferSelectModel<typeof tasks>
 export type Lead = InferSelectModel<typeof leads>
@@ -48,7 +50,9 @@ export type TaskAssignee = InferSelectModel<typeof taskAssignees>
 export type TaskAssigneeMetadata = InferSelectModel<typeof taskAssigneeMetadata>
 export type ActivityLog = InferSelectModel<typeof activityLogs>
 export type OauthConnection = InferSelectModel<typeof oauthConnections>
-export type GithubAppInstallation = InferSelectModel<typeof githubAppInstallations>
+export type GithubAppInstallation = InferSelectModel<
+  typeof githubAppInstallations
+>
 export type GithubRepoLink = InferSelectModel<typeof githubRepoLinks>
 export type TaskDeployment = InferSelectModel<typeof taskDeployments>
 export type PlanningSession = InferSelectModel<typeof planningSessions>
@@ -63,7 +67,9 @@ export type ProductCatalogItem = InferSelectModel<typeof productCatalogItems>
 export type TaxRate = InferSelectModel<typeof taxRates>
 export type TimeLogTask = InferSelectModel<typeof timeLogTasks>
 export type LeadStageHistory = InferSelectModel<typeof leadStageHistory>
-export type ActivityOverviewCache = InferSelectModel<typeof activityOverviewCache>
+export type ActivityOverviewCache = InferSelectModel<
+  typeof activityOverviewCache
+>
 export type FormSubmission = InferSelectModel<typeof formSubmissions>
 
 // Insert types (for writing to DB)
@@ -78,7 +84,9 @@ export type NewTaskAttachment = InferInsertModel<typeof taskAttachments>
 export type NewTaskAssignee = InferInsertModel<typeof taskAssignees>
 export type NewActivityLog = InferInsertModel<typeof activityLogs>
 export type NewOauthConnection = InferInsertModel<typeof oauthConnections>
-export type NewGithubAppInstallation = InferInsertModel<typeof githubAppInstallations>
+export type NewGithubAppInstallation = InferInsertModel<
+  typeof githubAppInstallations
+>
 export type NewGithubRepoLink = InferInsertModel<typeof githubRepoLinks>
 export type NewTaskDeployment = InferInsertModel<typeof taskDeployments>
 export type NewPlanningSession = InferInsertModel<typeof planningSessions>

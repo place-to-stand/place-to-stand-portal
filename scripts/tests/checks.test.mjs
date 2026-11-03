@@ -11,7 +11,10 @@ const lines = found => found.map(f => f.line)
 
 test('badges: size, weight and case come from the Badge', () => {
   assert.deepEqual(checkBadges("<Badge variant='secondary'>App</Badge>"), [])
-  assert.deepEqual(checkBadges("<Badge className='gap-1 shrink-0'>x</Badge>"), [])
+  assert.deepEqual(
+    checkBadges("<Badge className='gap-1 shrink-0'>x</Badge>"),
+    []
+  )
   const found = checkBadges(
     "<div />\n<Badge className='uppercase text-sm'>x</Badge>"
   )
@@ -26,7 +29,8 @@ test('formatters: hours, money and percents are never glued on', () => {
     'style={{ width: `${w}%` }} // format-check: allow',
     '// a comment about ${n}h is fine',
   ]
-  for (const line of ok) assert.deepEqual(checkFormatters(line, 'a.ts'), [], line)
+  for (const line of ok)
+    assert.deepEqual(checkFormatters(line, 'a.ts'), [], line)
 
   const bad = [
     'const a = `${hours}h`',

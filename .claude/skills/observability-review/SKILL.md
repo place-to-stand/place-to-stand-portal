@@ -10,6 +10,7 @@ Assess the ability to understand, debug, and monitor the application in producti
 ## Scope
 
 ### 1. Logging Coverage (per AGENTS.md)
+
 - Structured logs with context (user id, request id)
 - Sensitive data redacted before logging
 - Appropriate log levels (error, warn, info, debug)
@@ -17,6 +18,7 @@ Assess the ability to understand, debug, and monitor the application in producti
 - No excessive logging impacting performance
 
 ### 2. Error Tracking (Sentry)
+
 - Sentry configured per AGENTS.md
 - Performance traces for slow APIs
 - Breadcrumb data for client errors
@@ -25,6 +27,7 @@ Assess the ability to understand, debug, and monitor the application in producti
 - User context attached to errors
 
 ### 3. Analytics (PostHog)
+
 - Event tracking via `lib/posthog/client.ts` (client) and `lib/posthog/server.ts` (server)
 - Feature flags with UPPERCASE_WITH_UNDERSCORE naming
 - Custom properties in enums/const objects when reused
@@ -32,24 +35,28 @@ Assess the ability to understand, debug, and monitor the application in producti
 - Key user actions tracked
 
 ### 4. Activity System (per CLAUDE.md)
+
 - Activity logging via `lib/activity/events/`
 - Domain-specific handlers (tasks, projects, clients, etc.)
 - Overview cache (`activity_overview_cache`) maintained
 - Audit trail for compliance
 
 ### 5. Health Monitoring
+
 - API endpoint health checks
 - Database connection monitoring
 - External service health (Supabase, Resend)
 - Queue processing status (Supabase Queues)
 
 ### 6. Debugging Capabilities
+
 - Can reproduce issues from error reports?
 - Request tracing from client to database?
 - State inspection available?
 - Time-based correlation possible?
 
 ### 7. Alerting Readiness
+
 - Critical errors trigger notifications?
 - Performance degradation detectable?
 - Failed background jobs visible?
@@ -58,6 +65,7 @@ Assess the ability to understand, debug, and monitor the application in producti
 ## Observability Gaps Analysis
 
 For each area, identify:
+
 - What we CAN see today
 - What we CANNOT see
 - Impact of blind spots
@@ -88,13 +96,15 @@ Effort: LOW|MEDIUM|HIGH
 
 ```typescript
 // Structured logging with context
-console.log(JSON.stringify({
-  level: 'info',
-  action: 'task_created',
-  userId: user.id,
-  taskId: task.id,
-  timestamp: new Date().toISOString()
-}))
+console.log(
+  JSON.stringify({
+    level: 'info',
+    action: 'task_created',
+    userId: user.id,
+    taskId: task.id,
+    timestamp: new Date().toISOString(),
+  })
+)
 
 // Activity event logging
 import { logTaskCreated } from '@/lib/activity/events/tasks'
@@ -105,7 +115,7 @@ import { posthogServer } from '@/lib/posthog/server'
 posthogServer.capture({
   distinctId: userId,
   event: 'task_completed',
-  properties: { taskId, projectId }
+  properties: { taskId, projectId },
 })
 ```
 
@@ -120,6 +130,7 @@ posthogServer.capture({
 ## Post-Review
 
 Generate:
+
 - Observability coverage map
 - Blind spot inventory
 - Recommended instrumentation additions

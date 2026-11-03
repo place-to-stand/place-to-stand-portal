@@ -14,8 +14,7 @@ import {
 } from '@/lib/queries/dashboard/layout'
 
 type SaveDashboardLayoutResult =
-  | { success: true; layout: DashboardLayout }
-  | { success: false; error: string }
+  { success: true; layout: DashboardLayout } | { success: false; error: string }
 
 /**
  * Persist the viewer's home widget arrangement. The layout is normalized

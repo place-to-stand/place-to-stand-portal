@@ -12,7 +12,7 @@ Filters exist on exactly three views, in two incompatible idioms:
 - **Users** ([users-filters.tsx](<../../../apps/internal/app/(dashboard)/settings/users/_components/users-filters.tsx>)) + **Submissions** ([submissions-filters.tsx](<../../../apps/internal/app/(dashboard)/submissions/_components/submissions-filters.tsx>)): URL-param single-`Select`s, server-filtered. The `updateParams` closure is **byte-for-byte duplicated** (users ~L42–57 ≡ submissions ~L48–63), differing only in the pagination reset key (`cursor`+`dir` vs `page`).
 - **Projects** ([project-status-filter.tsx](../../../apps/internal/components/projects/project-status-filter.tsx) + [projects-landing.tsx](<../../../apps/internal/app/(dashboard)/projects/_components/projects-landing.tsx>) ~L127–172): bespoke multi-select popover, **client-side** filtering, URL logic living in the consumer, and the control renders above only one of the three sections it filters.
 
-Beyond those three: **zero sort controls** anywhere (ordering hardcoded per query, coupled to keyset cursors), **zero search inputs** — though `?q=` parsing + `buildSearchCondition` already exist server-side for clients ([list-clients.ts](../../../apps/internal/lib/queries/clients/settings/list-clients.ts) ~L50), contacts ([list-contacts.ts](../../../apps/internal/lib/queries/contacts/settings/list-contacts.ts) ~L37), and projects ([listing.ts](../../../apps/internal/lib/queries/projects/listing.ts) ~L96–97) with no UI attached. The record count sits *outside* the card while filters sit *inside*; only users derives a filtered empty state.
+Beyond those three: **zero sort controls** anywhere (ordering hardcoded per query, coupled to keyset cursors), **zero search inputs** — though `?q=` parsing + `buildSearchCondition` already exist server-side for clients ([list-clients.ts](../../../apps/internal/lib/queries/clients/settings/list-clients.ts) ~L50), contacts ([list-contacts.ts](../../../apps/internal/lib/queries/contacts/settings/list-contacts.ts) ~L37), and projects ([listing.ts](../../../apps/internal/lib/queries/projects/listing.ts) ~L96–97) with no UI attached. The record count sits _outside_ the card while filters sit _inside_; only users derives a filtered empty state.
 
 ## Design
 
@@ -31,19 +31,20 @@ One toolbar system, one URL-state hook, rolled out to every management table. Th
 ```ts
 const { filters, sort, update, hasActiveFilters } = useListParams({
   basePath: '/settings/users',
-  resetKeys: ['cursor', 'dir'],          // or ['page'] for offset views
-  filters: {                              // R2: filter/search keys are declared SEPARATELY from sort
-    role:   { guard: isUserRole },        // no default → default = unset
+  resetKeys: ['cursor', 'dir'], // or ['page'] for offset views
+  filters: {
+    // R2: filter/search keys are declared SEPARATELY from sort
+    role: { guard: isUserRole }, // no default → default = unset
     access: { guard: isUserAccess },
-    q:      { guard: 'string' },
+    q: { guard: 'string' },
     // projects example — an IMPLICIT default that must not count as "active":
     // status: { guard: isProjectStatusList, default: ['ONBOARDING', 'ACTIVE'] },
   },
-  sort: { guard: isUserSort, default: 'name:asc' },   // never contributes to hasActiveFilters
+  sort: { guard: isUserSort, default: 'name:asc' }, // never contributes to hasActiveFilters
 })
 ```
 
-Collapses the duplicated `updateParams` closures; `update({ role })` clones `URLSearchParams`, sets/deletes, clears `resetKeys`, `router.push`es. **`hasActiveFilters` (R2):** derived from the `filters` map only — a key is active iff its guard-validated value differs from its declared (or unset) default. `sort` is excluded by construction: changing only the sort must never trigger `Showing N of M` or filtered-empty messaging. Implicit defaults (projects' clean-URL ONBOARDING+ACTIVE) normalize to inactive; explicitly choosing a *different* status set is active. Invalid values fail the guard and don't count (the PRD-003 R4 lesson). Consumed by the toolbar *and* by tables for filtered empty states.
+Collapses the duplicated `updateParams` closures; `update({ role })` clones `URLSearchParams`, sets/deletes, clears `resetKeys`, `router.push`es. **`hasActiveFilters` (R2):** derived from the `filters` map only — a key is active iff its guard-validated value differs from its declared (or unset) default. `sort` is excluded by construction: changing only the sort must never trigger `Showing N of M` or filtered-empty messaging. Implicit defaults (projects' clean-URL ONBOARDING+ACTIVE) normalize to inactive; explicitly choosing a _different_ status set is active. Invalid values fail the guard and don't count (the PRD-003 R4 lesson). Consumed by the toolbar _and_ by tables for filtered empty states.
 
 ### Components — `components/table-toolbar/`
 
@@ -58,15 +59,15 @@ Collapses the duplicated `updateParams` closures; `update({ role })` clones `URL
 
 The control is the column header itself (`SortableTableHead`, above) — the per-field server cost is identical to any other control, and the allowlist is expressed by which columns receive the sortable affordance. Columns without a cursor variant simply stay plain `TableHead`.
 
-**Per-sort descriptor contract (R5).** An order expression + cursor condition is not enough: keyset cursors also **encode the active sort field's value** (existing cursors carry fixed payloads like `{name, id}` — `lib/pagination/cursor.ts`), so sorting by created/updated without changing cursor *generation* compares against absent or unrelated values, producing duplicated, skipped, or empty pages. Each allowlisted sort field therefore supplies a complete descriptor:
+**Per-sort descriptor contract (R5).** An order expression + cursor condition is not enough: keyset cursors also **encode the active sort field's value** (existing cursors carry fixed payloads like `{name, id}` — `lib/pagination/cursor.ts`), so sorting by created/updated without changing cursor _generation_ compares against absent or unrelated values, producing duplicated, skipped, or empty pages. Each allowlisted sort field therefore supplies a complete descriptor:
 
 ```ts
 type SortDescriptor = {
-  field: string                          // 'name' | 'created' | …
-  orderBy(dir: 'asc' | 'desc'): SQL[]    // includes the id tie-breaker, both directions
-  encodeCursor(row): CursorPayload       // carries { <field value>, id } — typed per field
-  cursorCondition(payload, dir): SQL     // comparison predicate incl. tie-breaker
-  nullable?: boolean                     // if true: explicit NULLS LAST + null-aware condition
+  field: string // 'name' | 'created' | …
+  orderBy(dir: 'asc' | 'desc'): SQL[] // includes the id tie-breaker, both directions
+  encodeCursor(row): CursorPayload // carries { <field value>, id } — typed per field
+  cursorCondition(payload, dir): SQL // comparison predicate incl. tie-breaker
+  nullable?: boolean // if true: explicit NULLS LAST + null-aware condition
 }
 ```
 
@@ -74,7 +75,7 @@ Rules: (a) the deterministic `id` tie-breaker is mandatory in both `orderBy` and
 
 ## Implementation / rollout order
 
-1. **Hook + components**, converting **users** and **submissions** in the same PR (both filters already exist — pure refactor, snapshot-equal behavior). Empty-state derivation moves onto `hasActiveFilters` (users keeps parity; submissions *gains* the correct filtered message).
+1. **Hook + components**, converting **users** and **submissions** in the same PR (both filters already exist — pure refactor, snapshot-equal behavior). Empty-state derivation moves onto `hasActiveFilters` (users keeps parity; submissions _gains_ the correct filtered message).
 2. **Projects** — idiom unification: `ProjectStatusFilter` becomes `FilterSelect mode='multi'`; the URL logic in `projects-landing.tsx` ~L127–172 is deleted in favor of `useListParams`; **filtering moves server-side** into the projects listing query (status array predicate), preserving `DEFAULT_STATUS_FILTER = ['ONBOARDING','ACTIVE']` and the explicit-`none` sentinel. The FilterBar moves **above the section stack** — one control visibly governing all three sections (Client/Internal/Personal), ending today's scope mismatch where it sits above only the Client Projects table (resolved during consistency review).
 3. **Search first pass** (D7): wire `SearchInput` on clients, contacts, projects (server support already live — UI-only).
 4. **Remaining views**: clients, contacts, hour-blocks, invoices, leads-archive get `FilterSelect`s appropriate to their columns (status/type/billing where enums exist), `SortableTableHead` on allowlisted columns (+ cursor variants for keyset views), and `SearchInput` as search conditions are added per entity (users, invoices, hour-blocks — name/email, invoice number/client, client respectively). Note (W2): `buildSearchCondition` is **per-entity** — copies exist in `lib/queries/{clients,contacts}/settings/pagination.ts`, and projects inlines the shared primitive `createSearchPattern` (`lib/pagination/cursor.ts:73`); new entities get their own condition built on `createSearchPattern`. All search keeps the fuzzy whitespace→`%` semantics, no wildcard escaping (W3 decision).

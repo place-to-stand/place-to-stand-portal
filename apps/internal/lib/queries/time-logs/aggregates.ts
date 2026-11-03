@@ -14,7 +14,7 @@ type ProjectTimeLogAggregateRow = {
 }
 
 export async function getTimeLogSummariesForProjects(
-  projectIds: readonly string[],
+  projectIds: readonly string[]
 ): Promise<Map<string, TimeLogSummary>> {
   if (!projectIds.length) {
     return new Map()
@@ -39,7 +39,7 @@ export async function getTimeLogSummariesForProjects(
     })
     .from(timeLogs)
     .where(
-      and(inArray(timeLogs.projectId, projectIds), isNull(timeLogs.deletedAt)),
+      and(inArray(timeLogs.projectId, projectIds), isNull(timeLogs.deletedAt))
     )
     .groupBy(timeLogs.projectId)) as ProjectTimeLogAggregateRow[]
 
@@ -57,4 +57,3 @@ export async function getTimeLogSummariesForProjects(
 
   return summaries
 }
-

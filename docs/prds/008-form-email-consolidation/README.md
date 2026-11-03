@@ -28,12 +28,12 @@ Three problems fall out of that split:
 
 ## Decisions (Jason, 2026-09-17)
 
-| # | Decision |
-| --- | --- |
-| D1 | **Portal unreachable → the visitor sees an error** pointing at `hello@placetostandagency.com`. No fallback send on the site; the site ends up with no email code and no Resend key. |
-| D2 | **The marketing-consent audience add moves to the portal** (`RESEND_AUDIENCE_ID` is already in `apps/internal/.env.example`, unused). |
-| D3 | **Visitor-facing emails take the portal shell** (dark masthead). The site's light wordmark/lime-rule audit shell is deleted. |
-| D4 | **Everything ships together**: email move and table/sheet scannability in one portal PR. |
+| #   | Decision                                                                                                                                                                            |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Portal unreachable → the visitor sees an error** pointing at `hello@placetostandagency.com`. No fallback send on the site; the site ends up with no email code and no Resend key. |
+| D2  | **The marketing-consent audience add moves to the portal** (`RESEND_AUDIENCE_ID` is already in `apps/internal/.env.example`, unused).                                               |
+| D3  | **Visitor-facing emails take the portal shell** (dark masthead). The site's light wordmark/lime-rule audit shell is deleted.                                                        |
+| D4  | **Everything ships together**: email move and table/sheet scannability in one portal PR.                                                                                            |
 
 ## Design
 
@@ -71,6 +71,7 @@ as-is, the beacon would become an open relay: anyone could POST a victim's addre
 send branded mail to it.
 
 Site changes:
+
 - `sendAudit` (already BotID-gated) receives the full progress payload from the client
   (`buildCapturedPayload` in `use-audit.ts`), validates it with `auditProgressSchema` from the
   shared module `place-to-stand/src/lib/audit/progress-schema.ts`, takes the lead from the
@@ -89,12 +90,12 @@ tombstoned, and the lease in §4 is won.
 
 Migrations (additive) on `form_submissions`:
 
-| Column | Meaning |
-| --- | --- |
-| `delivery_requested_at timestamptz` | Set (COALESCE, never cleared) when a payload arrives with `deliver: true`. |
-| `team_email_claimed_at` / `confirmation_email_claimed_at timestamptz` | Expiring lease (10 min) taken before a send. *(Added after review — the stamp alone made a crash mid-send look sent.)* |
-| `team_notified_at timestamptz` | Team notification accepted by Resend. |
-| `confirmation_sent_at timestamptz` | Visitor confirmation accepted by Resend. |
+| Column                                                                | Meaning                                                                                                                |
+| --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `delivery_requested_at timestamptz`                                   | Set (COALESCE, never cleared) when a payload arrives with `deliver: true`.                                             |
+| `team_email_claimed_at` / `confirmation_email_claimed_at timestamptz` | Expiring lease (10 min) taken before a send. _(Added after review — the stamp alone made a crash mid-send look sent.)_ |
+| `team_notified_at timestamptz`                                        | Team notification accepted by Resend.                                                                                  |
+| `confirmation_sent_at timestamptz`                                    | Visitor confirmation accepted by Resend.                                                                               |
 
 None are PII; `destroyFormSubmission` leaves them alone. There is no snake-case twin type for
 submissions; `FormSubmissionRecord` spreads the row, so the columns flow through unchanged.
@@ -107,7 +108,7 @@ provider response is deduplicated provider-side.
 
 **Sweep:** `GET /api/cron/retry-submission-emails` (`verifyIntakeToken` with `CRON_SECRET`, same
 as the existing crons) retries rows where `delivery_requested_at` is between 5 minutes and 72
-hours old and an *applicable* stamp is NULL (an audit captured without a result has no
+hours old and an _applicable_ stamp is NULL (an audit captured without a result has no
 confirmation to send and is not re-selected). Past 72h the sheet says "Not sent — retry window
 passed". Schedule `*/15 * * * *` (the team is on Vercel Pro, which allows sub-daily crons —
 confirmed 2026-09-18). Constants live in `apps/internal/lib/form-submissions/delivery/constants.ts`,
@@ -139,12 +140,12 @@ team notifications (contact rows, source block, repeat line) live in
 strings, never DB or Zod types. The block renderer renders an href only for `http(s):` /
 `mailto:` and the PostHog replay link only for `https://*.posthog.com` — both are visitor-supplied.
 
-| Template | To | Reply-To | Subject |
-| --- | --- | --- | --- |
-| `contactNotificationEmail` | team | visitor | `[Contact] Jane Doe · Acme — Website redesign` (subject parts pass through `subjectSafe`, W1) |
-| `contactConfirmationEmail` | visitor | team | `Thanks for contacting Place To Stand` |
-| `auditNotificationEmail` | team | visitor | `[Audit] Jane Doe · Acme — Scale phase` |
-| `auditResultsEmail` | visitor | team | `Your Place To Stand Opportunity Audit` |
+| Template                   | To      | Reply-To | Subject                                                                                       |
+| -------------------------- | ------- | -------- | --------------------------------------------------------------------------------------------- |
+| `contactNotificationEmail` | team    | visitor  | `[Contact] Jane Doe · Acme — Website redesign` (subject parts pass through `subjectSafe`, W1) |
+| `contactConfirmationEmail` | visitor | team     | `Thanks for contacting Place To Stand`                                                        |
+| `auditNotificationEmail`   | team    | visitor  | `[Audit] Jane Doe · Acme — Scale phase`                                                       |
+| `auditResultsEmail`        | visitor | team     | `Your Place To Stand Opportunity Audit`                                                       |
 
 The audit templates render from the stored `result` and `responses` JSON, which are already
 self-describing (prompt, labels, phase name + tagline, recommendations with taglines + reasons)
@@ -153,6 +154,7 @@ self-describing (prompt, labels, phase name + tagline, recommendations with tagl
 older payloads still land, and audits stored before then simply render without them.
 
 **Team notification layout, top to bottom:**
+
 1. **Open in portal** button → `/submissions?submission=<id>` (`submissionHref` in
    `apps/internal/lib/sheets/hrefs.ts` on `serverEnv.APP_BASE_URL`, falling back to the
    `GOOGLE_REDIRECT_URI` origin; this link survives archive/restore).
@@ -170,7 +172,7 @@ older payloads still land, and audits stored before then simply render without t
 `RESEND_AUDIENCE_ID` becomes a real optional var. All three go in `apps/internal/lib/env.server.ts`,
 `turbo.json` → `passThroughEnv`, `apps/internal/.env.example`, and Vercel.
 
-**Audience add (D2):** when *this request* sent the confirmation (not on a replay that lost the
+**Audience add (D2):** when _this request_ sent the confirmation (not on a replay that lost the
 lease) and `marketing_consent` is true, call `resend.contacts.create` — production only,
 best-effort, "already exists" swallowed. Logic moves verbatim from the site
 (`apps/internal/lib/form-submissions/delivery/audience.ts`).
@@ -265,15 +267,15 @@ Rollback is the site PR revert alone; the portal can stay deployed.
 
 ## Deliberately cut (do not scope-creep back in)
 
-| Cut | Note |
-| --- | --- |
-| Attribution columns on `leads` / carry-over on promote | Real gap (promotion discards UTMs) — separate PRD. |
-| "Create lead" action in the submission sheet | Same PRD as above. |
-| Removing the dead `leads-intake` route | Done separately (Sep 2026), not part of this PRD. |
+| Cut                                                                                                    | Note                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Attribution columns on `leads` / carry-over on promote                                                 | Real gap (promotion discards UTMs) — separate PRD.                                                                                     |
+| "Create lead" action in the submission sheet                                                           | Same PRD as above.                                                                                                                     |
+| Removing the dead `leads-intake` route                                                                 | Done separately (Sep 2026), not part of this PRD.                                                                                      |
 | Unifying the two `sendEmail` helpers (`apps/internal/lib/email/send.ts` vs `packages/email` transport) | Flagged in the transport header already; not needed here — intake uses the internal helper, which gained an optional `idempotencyKey`. |
-| Dead-letter state / operator retry for emails unsent after 72h | Reviewer suggestion; the sheet says "Not sent — retry window passed" and the row stays unread, which is the backstop. |
-| More sortable columns | Only `received` stays sortable. |
-| Google Chat notification on new submission | Not requested. |
+| Dead-letter state / operator retry for emails unsent after 72h                                         | Reviewer suggestion; the sheet says "Not sent — retry window passed" and the row stays unread, which is the backstop.                  |
+| More sortable columns                                                                                  | Only `received` stays sortable.                                                                                                        |
+| Google Chat notification on new submission                                                             | Not requested.                                                                                                                         |
 
 ## Verification
 
@@ -282,9 +284,9 @@ Neither repo has a test runner, so "unit" checks are throwaway `tsx` scripts, no
 - Scripts: `describeAttribution` 14-case table; block renderer href guard + escaping; site
   `auditBeaconSchema` refuses `captured`, nulls a lead, strips `deliver` (6 cases).
 - `apps/internal/scripts/test-form-intake.ts --deliver` against a local server + Mailpit: contact
-  + audit with `deliver`, replayed payload (no second email, no quota spent), throttle (4th new
-  submission records but does not send), `completed` + `deliver` ignored, an older `captured` push
-  beating a newer beacon, unscored audit skipping its confirmation.
+  - audit with `deliver`, replayed payload (no second email, no quota spent), throttle (4th new
+    submission records but does not send), `completed` + `deliver` ignored, an older `captured` push
+    beating a newer beacon, unscored audit skipping its confirmation.
 - Sweep, by hand with a local `CRON_SECRET`: a released/expired lease is re-sent, a live lease is
   left alone, a pre-cutover row and a tombstone are never selected, a request older than 72h is
   not selected, a second pass is a no-op, unauthenticated calls get 401.

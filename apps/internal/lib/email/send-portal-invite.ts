@@ -1,22 +1,22 @@
-import "server-only";
+import 'server-only'
 
 import {
   adminInviteEmail,
   portalInviteEmail,
   type RenderedEmail,
-} from "@pts/email";
+} from '@pts/email'
 
-import { serverEnv } from "@/lib/env.server";
-import { sendEmail } from "@/lib/email/send";
+import { serverEnv } from '@/lib/env.server'
+import { sendEmail } from '@/lib/email/send'
 
 /** Matches `otp_expiry` in `supabase/config.toml` (3600s). */
-const LINK_EXPIRY_MINUTES = 60;
+const LINK_EXPIRY_MINUTES = 60
 
 export type SendPortalInviteArgs = {
-  to: string;
-  fullName?: string | null;
-  actionLink: string;
-};
+  to: string
+  fullName?: string | null
+  actionLink: string
+}
 
 /** Client portal invite: a one-time sign-in link into the client portal. */
 export async function sendPortalInviteEmail({
@@ -33,16 +33,16 @@ export async function sendPortalInviteEmail({
       expiresInMinutes: LINK_EXPIRY_MINUTES,
       replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
     })
-  );
+  )
 }
 
 export type SendAdminInviteArgs = {
-  to: string;
-  fullName?: string | null;
-  temporaryPassword: string;
+  to: string
+  fullName?: string | null
+  temporaryPassword: string
   /** Base URL of the admin app — NOT the client portal. */
-  baseUrl: string;
-};
+  baseUrl: string
+}
 
 /** Admin invite: a temporary password, reset on first sign-in. */
 export async function sendAdminInviteEmail({
@@ -60,7 +60,7 @@ export async function sendAdminInviteEmail({
       signInUrl: `${baseUrl}/sign-in`,
       replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
     })
-  );
+  )
 }
 
 async function send(to: string, { subject, text, html }: RenderedEmail) {
@@ -71,5 +71,5 @@ async function send(to: string, { subject, text, html }: RenderedEmail) {
     subject,
     text,
     html,
-  });
+  })
 }

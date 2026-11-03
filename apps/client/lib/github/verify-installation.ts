@@ -5,7 +5,10 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { githubAppInstallations } from '@pts/db/schema'
 import { getGitHubAppEnv } from '@/lib/env.server'
-import { getInstallationById, isInstallationNotFoundError } from '@pts/github/app-auth'
+import {
+  getInstallationById,
+  isInstallationNotFoundError,
+} from '@pts/github/app-auth'
 
 const VERIFY_INTERVAL_MS = 24 * 60 * 60 * 1000 // 1 day
 
@@ -31,7 +34,8 @@ export async function ensureInstallationVerified(installation: {
 }): Promise<{ removed: boolean }> {
   const dueForCheck =
     !installation.lastVerifiedAt ||
-    Date.now() - new Date(installation.lastVerifiedAt).getTime() > VERIFY_INTERVAL_MS
+    Date.now() - new Date(installation.lastVerifiedAt).getTime() >
+      VERIFY_INTERVAL_MS
 
   if (!dueForCheck) {
     return { removed: false }

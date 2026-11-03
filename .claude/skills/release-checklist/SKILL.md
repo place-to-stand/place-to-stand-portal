@@ -10,6 +10,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 ## Pre-Release Verification
 
 ### 1. Build Health
+
 - [ ] `npm run build` completes without errors
 - [ ] `npm run type-check` passes (TypeScript strict mode)
 - [ ] `npm run lint` passes with no errors
@@ -17,6 +18,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 - [ ] Bundle size within acceptable limits
 
 ### 2. Database Migrations (per CLAUDE.md workflow)
+
 - [ ] All migrations generated with `npm run db:generate -- --name <change>`
 - [ ] Migration SQL reviewed in `drizzle/migrations/`
 - [ ] Migrations applied to staging: `npm run db:migrate`
@@ -25,6 +27,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 - [ ] Schema changes backward compatible (or coordinated deploy)
 
 ### 3. Environment Configuration
+
 - [ ] All required env vars documented in `.env.example`
 - [ ] No hardcoded secrets in codebase
 - [ ] Environment parity: dev/staging/prod configs aligned
@@ -32,42 +35,49 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 - [ ] Supabase project settings updated if needed
 
 ### 4. Feature Flags (per AGENTS.md)
+
 - [ ] New features behind flags if risky
 - [ ] Flag defaults appropriate for production
 - [ ] Gradual rollout plan defined
 - [ ] Kill switch ready for new features
 
 ### 5. API Compatibility
+
 - [ ] Breaking API changes versioned under `/api/v{n}`
 - [ ] Deprecated endpoints still functional
 - [ ] Response contracts unchanged or backward compatible
 - [ ] Webhook integrations tested (contact-submissions, audit-responses, stripe)
 
 ### 6. Authentication & Authorization
+
 - [ ] New pages call `requirePage('<capability>')` and new API routes `authorizeRoute('<capability>')`
 - [ ] Permission checks via `ensureClientAccess()` verified
 - [ ] No new privilege escalation paths
 - [ ] Session handling unchanged or tested
 
 ### 7. Data Integrity
+
 - [ ] Soft delete patterns maintained
 - [ ] No orphaned records from new relationships
 - [ ] Activity logging added for new mutations
 - [ ] Existing data compatible with schema changes
 
 ### 8. Performance Verification
+
 - [ ] No N+1 queries introduced
 - [ ] Large lists virtualized (TanStack Virtual)
 - [ ] Images optimized via Supabase transforms
 - [ ] Caching headers on new API routes
 
 ### 9. Observability (per AGENTS.md)
+
 - [ ] Structured logging for new server actions
 - [ ] Sentry error boundaries on new routes
 - [ ] PostHog events for new user actions
 - [ ] No sensitive data in logs
 
 ### 10. Rollback Readiness
+
 - [ ] Previous deployment tagged/noted
 - [ ] Database rollback plan if migrations fail
 - [ ] Feature flags can disable new functionality
@@ -76,6 +86,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 ## Deployment Process
 
 ### Staging Verification
+
 1. Deploy to Vercel preview
 2. Run smoke tests on preview URL
 3. Verify new features work as expected
@@ -83,6 +94,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 5. Test with both ADMIN and CLIENT roles
 
 ### Production Deployment
+
 1. Merge to main branch
 2. Monitor Vercel deployment
 3. Verify production URL
@@ -90,6 +102,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 5. Monitor PostHog for anomalies
 
 ### Post-Deployment
+
 - [ ] Smoke test critical paths
 - [ ] Verify database migrations applied
 - [ ] Check external integrations (email, webhooks)
@@ -102,17 +115,21 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 # Release Checklist: [Feature/Version]
 
 ## Summary
+
 - Release date: YYYY-MM-DD
 - Key changes: [list]
 - Risk level: LOW|MEDIUM|HIGH
 
 ## Verification Status
+
 [Checklist with pass/fail status]
 
 ## Rollback Plan
+
 [Steps to revert if issues found]
 
 ## Stakeholder Communication
+
 [Who to notify, what to communicate]
 ```
 

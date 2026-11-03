@@ -27,15 +27,15 @@ export function NavRow({
         'flex items-center justify-between gap-3 p-4',
         // Task-card tone. Hover falls back to the recessed column tone, which
         // is darker in both themes, so pressing reads the same way either way.
-        'bg-surface-2 transition-colors hover:bg-surface-1 active:bg-surface-1'
+        'bg-surface-2 hover:bg-surface-1 active:bg-surface-1 transition-colors'
       )}
     >
-      <span className="min-w-0 font-medium text-card-foreground">{title}</span>
-      <span className="flex min-w-0 items-center gap-2">
+      <span className='text-card-foreground min-w-0 font-medium'>{title}</span>
+      <span className='flex min-w-0 items-center gap-2'>
         {meta}
         <ChevronRightIcon
-          className="size-4 shrink-0 text-muted-foreground"
-          aria-hidden="true"
+          className='text-muted-foreground size-4 shrink-0'
+          aria-hidden='true'
         />
       </span>
     </Link>

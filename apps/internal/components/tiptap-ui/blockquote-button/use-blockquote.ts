@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useState } from "react"
-import type { Editor } from "@tiptap/react"
-import { NodeSelection, TextSelection } from "@tiptap/pm/state"
+import { useCallback, useEffect, useState } from 'react'
+import type { Editor } from '@tiptap/react'
+import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
 // --- Hooks ---
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 // --- Icons ---
-import { BlockquoteIcon } from "@/components/tiptap-icons/blockquote-icon"
+import { BlockquoteIcon } from '@/components/tiptap-icons/blockquote-icon'
 
 // --- UI Utils ---
 import {
@@ -17,9 +17,9 @@ import {
   isNodeTypeSelected,
   isValidPosition,
   selectionWithinConvertibleTypes,
-} from "@/lib/tiptap-utils"
+} from '@/lib/tiptap-utils'
 
-export const BLOCKQUOTE_SHORTCUT_KEY = "mod+shift+b"
+export const BLOCKQUOTE_SHORTCUT_KEY = 'mod+shift+b'
 
 /**
  * Configuration for the blockquote functionality
@@ -49,32 +49,32 @@ export function canToggleBlockquote(
 ): boolean {
   if (!editor || !editor.isEditable) return false
   if (
-    !isNodeInSchema("blockquote", editor) ||
-    isNodeTypeSelected(editor, ["image"])
+    !isNodeInSchema('blockquote', editor) ||
+    isNodeTypeSelected(editor, ['image'])
   )
     return false
 
   if (!turnInto) {
-    return editor.can().toggleWrap("blockquote")
+    return editor.can().toggleWrap('blockquote')
   }
 
   // Ensure selection is in nodes we're allowed to convert
   if (
     !selectionWithinConvertibleTypes(editor, [
-      "paragraph",
-      "heading",
-      "bulletList",
-      "orderedList",
-      "taskList",
-      "blockquote",
-      "codeBlock",
+      'paragraph',
+      'heading',
+      'bulletList',
+      'orderedList',
+      'taskList',
+      'blockquote',
+      'codeBlock',
     ])
   )
     return false
 
   // Either we can wrap in blockquote directly on the selection,
   // or we can clear formatting/nodes to arrive at a blockquote.
-  return editor.can().toggleWrap("blockquote") || editor.can().clearNodes()
+  return editor.can().toggleWrap('blockquote') || editor.can().clearNodes()
 }
 
 /**
@@ -127,9 +127,9 @@ export function toggleBlockquote(editor: Editor | null): boolean {
         .clearNodes()
     }
 
-    const toggle = editor.isActive("blockquote")
-      ? chain.lift("blockquote")
-      : chain.wrapIn("blockquote")
+    const toggle = editor.isActive('blockquote')
+      ? chain.lift('blockquote')
+      : chain.wrapIn('blockquote')
 
     toggle.run()
 
@@ -151,9 +151,9 @@ export function shouldShowButton(props: {
   const { editor, hideWhenUnavailable } = props
 
   if (!editor) return false
-  if (!isNodeInSchema("blockquote", editor)) return false
+  if (!isNodeInSchema('blockquote', editor)) return false
 
-  if (hideWhenUnavailable && editor.isEditable && !editor.isActive("code")) {
+  if (hideWhenUnavailable && editor.isEditable && !editor.isActive('code')) {
     return canToggleBlockquote(editor)
   }
 
@@ -213,17 +213,17 @@ export function useBlockquote(config?: UseBlockquoteConfig) {
 
     const updateState = () => {
       setIsVisible(shouldShowButton({ editor, hideWhenUnavailable }))
-      setIsActive(editor.isActive("blockquote") || false)
+      setIsActive(editor.isActive('blockquote') || false)
     }
 
     updateState()
 
-    editor.on("selectionUpdate", updateState)
-    editor.on("transaction", updateState)
+    editor.on('selectionUpdate', updateState)
+    editor.on('transaction', updateState)
 
     return () => {
-      editor.off("selectionUpdate", updateState)
-      editor.off("transaction", updateState)
+      editor.off('selectionUpdate', updateState)
+      editor.off('transaction', updateState)
     }
   }, [editor, hideWhenUnavailable])
 
@@ -242,7 +242,7 @@ export function useBlockquote(config?: UseBlockquoteConfig) {
     isActive,
     handleToggle,
     canToggle,
-    label: "Blockquote",
+    label: 'Blockquote',
     shortcutKeys: BLOCKQUOTE_SHORTCUT_KEY,
     Icon: BlockquoteIcon,
   }

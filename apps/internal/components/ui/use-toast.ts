@@ -1,15 +1,18 @@
-import { useCallback } from "react";
+import { useCallback } from 'react'
 
-import { toast as dispatchToast, type ToastOptions } from "@/components/ui/toast";
+import {
+  toast as dispatchToast,
+  type ToastOptions,
+} from '@/components/ui/toast'
 
-export { type ToastOptions };
+export { type ToastOptions }
 
 export function useToast() {
   const toast = useCallback((options: ToastOptions) => {
-    dispatchToast(options);
-  }, []);
+    dispatchToast(options)
+  }, [])
 
-  return { toast };
+  return { toast }
 }
 
-export const toast = dispatchToast;
+export const toast = dispatchToast

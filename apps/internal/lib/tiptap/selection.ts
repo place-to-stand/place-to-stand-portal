@@ -1,5 +1,5 @@
-import { AllSelection, NodeSelection, TextSelection } from "@tiptap/pm/state"
-import type { Editor } from "@tiptap/react"
+import { AllSelection, NodeSelection, TextSelection } from '@tiptap/pm/state'
+import type { Editor } from '@tiptap/react'
 
 /**
  * Checks if a value is a valid number (not null, undefined, or NaN)
@@ -7,7 +7,7 @@ import type { Editor } from "@tiptap/react"
  * @returns boolean indicating if the value is a valid number
  */
 export function isValidPosition(pos: number | null | undefined): pos is number {
-  return typeof pos === "number" && pos >= 0
+  return typeof pos === 'number' && pos >= 0
 }
 
 /**
@@ -71,7 +71,7 @@ export function selectionWithinConvertibleTypes(
 
   if (selection instanceof TextSelection || selection instanceof AllSelection) {
     let valid = true
-    state.doc.nodesBetween(selection.from, selection.to, (node) => {
+    state.doc.nodesBetween(selection.from, selection.to, node => {
       if (node.isTextblock && !allowed.has(node.type.name)) {
         valid = false
         return false // stop early

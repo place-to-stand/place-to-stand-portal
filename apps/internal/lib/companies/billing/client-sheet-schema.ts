@@ -1,8 +1,6 @@
 import { z } from 'zod'
 
-import {
-  CLIENT_BILLING_TYPE_VALUES
-} from './billing-types'
+import { CLIENT_BILLING_TYPE_VALUES } from './billing-types'
 
 export const clientSheetFormSchema = z.object({
   /** Display only: a client is named after its company. */

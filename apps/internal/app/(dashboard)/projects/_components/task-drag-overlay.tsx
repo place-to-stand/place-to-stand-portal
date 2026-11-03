@@ -11,9 +11,7 @@ type TaskDragOverlayProps = {
     task: TaskWithRelations
   ) => Array<{ id: string; name: string; avatarUrl: string | null }>
   variant?: 'board' | 'calendar'
-  getTaskCardOptions?: (
-    task: TaskWithRelations
-  ) =>
+  getTaskCardOptions?: (task: TaskWithRelations) =>
     | {
         context?: TaskContextDetails
       }
@@ -27,7 +25,7 @@ export function TaskDragOverlay({
   getTaskCardOptions,
 }: TaskDragOverlayProps) {
   const assignees = draggingTask ? renderAssignees(draggingTask) : []
-  const options = draggingTask ? getTaskCardOptions?.(draggingTask) ?? {} : {}
+  const options = draggingTask ? (getTaskCardOptions?.(draggingTask) ?? {}) : {}
 
   return (
     <DragOverlay dropAnimation={null}>

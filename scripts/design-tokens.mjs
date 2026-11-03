@@ -38,7 +38,9 @@ function cssBlock(css, selector) {
   if (start === -1) throw new Error(`theme.css: no "${selector}" block`)
   const end = css.indexOf('\n}', start)
   const vars = new Map()
-  for (const match of css.slice(start, end).matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+  for (const match of css
+    .slice(start, end)
+    .matchAll(/--([\w-]+):\s*([^;]+);/g)) {
     vars.set(match[1], match[2].trim())
   }
   return vars
@@ -46,7 +48,9 @@ function cssBlock(css, selector) {
 
 /** `key: '#hex'` pairs of `export const NAME = { … }` in a TS source. */
 function tsColorConst(source, name, file) {
-  const match = source.match(new RegExp(`export const ${name} = \\{([\\s\\S]*?)\\n\\}`))
+  const match = source.match(
+    new RegExp(`export const ${name} = \\{([\\s\\S]*?)\\n\\}`)
+  )
   if (!match) throw new Error(`${file}: no "export const ${name}"`)
   return new Map(
     [...match[1].matchAll(/(\w+):\s*'([^']+)'/g)].map(m => [m[1], m[2]])
@@ -71,7 +75,11 @@ function sourceColors() {
 
   // BRAND.accent is the lime; gridDot is the same color as border.
   const brandNames = { accent: 'brand-lime', gridDot: null }
-  const brand = tsColorConst(read('packages/ui/src/brand.tsx'), 'BRAND', 'brand.tsx')
+  const brand = tsColorConst(
+    read('packages/ui/src/brand.tsx'),
+    'BRAND',
+    'brand.tsx'
+  )
   for (const [key, value] of brand) {
     const name = key in brandNames ? brandNames[key] : `brand-${kebab(key)}`
     if (name) colors.set(name, value)
@@ -95,10 +103,14 @@ function sourceColors() {
  */
 function staticColorMismatches(css, colors) {
   const problems = []
-  for (const [, name, value] of css.matchAll(/--color-((?:brand|email)-[\w-]+):\s*([^;]+);/g)) {
+  for (const [, name, value] of css.matchAll(
+    /--color-((?:brand|email)-[\w-]+):\s*([^;]+);/g
+  )) {
     const expected = colors.get(name)
     if (expected !== undefined && expected !== value.trim()) {
-      problems.push(`${name}: theme.css has ${value.trim()}, source has ${expected}`)
+      problems.push(
+        `${name}: theme.css has ${value.trim()}, source has ${expected}`
+      )
     }
   }
   return problems
@@ -108,7 +120,8 @@ function staticColorMismatches(css, colors) {
 function sourceRadii(css, base) {
   const basePx = parseFloat(remToPx(base))
   const radii = new Map([['radius', `${basePx}px`]])
-  const pattern = /--(radius-\w+):\s*(?:calc\(var\(--radius\)\s*([+-])\s*(\d+)px\)|var\(--radius\));/g
+  const pattern =
+    /--(radius-\w+):\s*(?:calc\(var\(--radius\)\s*([+-])\s*(\d+)px\)|var\(--radius\));/g
   for (const [, name, sign, offset] of css.matchAll(pattern)) {
     const px = sign ? basePx + (sign === '+' ? 1 : -1) * Number(offset) : basePx
     radii.set(name, `${px}px`)
@@ -151,7 +164,9 @@ function build(current) {
     ...current,
     color: syncFamily(current.color, colors, ownsColor),
     radius: syncFamily(current.radius, sourceRadii(css, radiusBase), name =>
-      ['radius', 'radius-sm', 'radius-md', 'radius-lg', 'radius-xl'].includes(name)
+      ['radius', 'radius-sm', 'radius-md', 'radius-lg', 'radius-xl'].includes(
+        name
+      )
     ),
   }
 }
@@ -169,9 +184,13 @@ if (process.argv.includes('--check')) {
   console.log('design tokens: up to date')
 } else {
   writeFileSync(TOKENS_PATH, `${JSON.stringify(next, null, 2)}\n`)
-  const todos = next.color.tokens.filter(token => token.usage === NEW_TOKEN_USAGE)
+  const todos = next.color.tokens.filter(
+    token => token.usage === NEW_TOKEN_USAGE
+  )
   console.log(
     `design tokens: wrote ${TOKENS_PATH.replace(`${ROOT}/`, '')}` +
-      (todos.length ? ` (${todos.length} new, add usage notes: ${todos.map(t => t.name).join(', ')})` : '')
+      (todos.length
+        ? ` (${todos.length} new, add usage notes: ${todos.map(t => t.name).join(', ')})`
+        : '')
   )
 }

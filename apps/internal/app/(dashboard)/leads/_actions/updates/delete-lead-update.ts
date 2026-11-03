@@ -58,7 +58,10 @@ export async function deleteLeadUpdate(
 
   // Only the author or an admin (`leads.edit_others_updates`).
   if (
-    !canChangeLeadUpdate({ role: user.role, userId: user.id }, existing.authorId)
+    !canChangeLeadUpdate(
+      { role: user.role, userId: user.id },
+      existing.authorId
+    )
   ) {
     return { success: false, error: LEAD_UPDATE_NOT_AUTHOR_MESSAGE }
   }

@@ -60,4 +60,3 @@ All tests run as an ADMIN user in `apps/internal/`. "The report" = `/reports/mon
 - [x] **X.2** CLIENT-role user: no new surfaces leak (report stays admin-only; no warnings in portal) <!-- auto-tested -->
 - [x] **X.3** End-to-end for the real switch: change billing type with next-month boundary (01) → log time this month (counts as Net 30) → close this month (03) → next month, buy a 5h block (counts as Prepaid) → prior closed month untouched, no drift <!-- auto-tested -->
 - [x] **X.4** Grep check: no `clients.billingType` reads remain under `apps/internal/lib/queries/reports/` or `apps/internal/lib/data/reports/` (02 acceptance criterion) <!-- verified 2026-08-07: zero matches -->
-

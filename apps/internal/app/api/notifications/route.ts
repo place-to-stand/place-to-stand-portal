@@ -33,14 +33,20 @@ async function requireViewer() {
 export async function GET(request: NextRequest) {
   const user = await requireViewer()
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    )
   }
 
   const parsed = querySchema.safeParse(
     Object.fromEntries(request.nextUrl.searchParams)
   )
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: 'Invalid filter.' }, { status: 400 })
+    return NextResponse.json(
+      { ok: false, error: 'Invalid filter.' },
+      { status: 400 }
+    )
   }
 
   try {
@@ -58,12 +64,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const user = await requireViewer()
   if (!user) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json(
+      { ok: false, error: 'Unauthorized' },
+      { status: 401 }
+    )
   }
 
   const parsed = actionSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) {
-    return NextResponse.json({ ok: false, error: 'Invalid request.' }, { status: 400 })
+    return NextResponse.json(
+      { ok: false, error: 'Invalid request.' },
+      { status: 400 }
+    )
   }
 
   const { action, ids } = parsed.data

@@ -7,7 +7,7 @@ import { getInvoiceById } from '@/lib/queries/invoices'
 import type { InvoiceWithLineItems } from '@/lib/invoices/invoice-form'
 
 export async function getInvoiceDetails(
-  id: string,
+  id: string
 ): Promise<InvoiceWithLineItems | null> {
   const user = await requireUser()
   assertAdmin(user)

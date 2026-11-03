@@ -26,9 +26,7 @@ type LoginOptions = {
  * The password flow stays for automation, where no browser can be opened.
  */
 function wantsPasswordFlow(options: LoginOptions): boolean {
-  return Boolean(
-    options.password || options.email || process.env.PTS_PASSWORD
-  )
+  return Boolean(options.password || options.email || process.env.PTS_PASSWORD)
 }
 
 async function passwordLogin(

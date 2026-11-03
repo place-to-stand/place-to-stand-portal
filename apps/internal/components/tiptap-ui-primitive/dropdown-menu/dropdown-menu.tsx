@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import * as React from "react"
-import { Menu as MenuPrimitive } from "@base-ui/react/menu"
-import { cn } from "@/lib/tiptap-utils"
-import "@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss"
+import * as React from 'react'
+import { Menu as MenuPrimitive } from '@base-ui/react/menu'
+import { cn } from '@/lib/tiptap-utils'
+import '@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss'
 
 /**
  * Vendored TipTap primitive, rebased from Radix onto Base UI. The export
@@ -80,11 +80,8 @@ function DropdownMenuItem({
   return <MenuPrimitive.Item {...props}>{children}</MenuPrimitive.Item>
 }
 
-type DropdownMenuContentProps = Omit<
-  MenuPrimitive.Popup.Props,
-  "className"
-> &
-  Pick<MenuPrimitive.Positioner.Props, "align" | "side" | "sideOffset"> & {
+type DropdownMenuContentProps = Omit<MenuPrimitive.Popup.Props, 'className'> &
+  Pick<MenuPrimitive.Positioner.Props, 'align' | 'side' | 'sideOffset'> & {
     // Base UI also accepts a state callback here; every consumer passes a
     // plain string, and cn() only takes strings.
     className?: string
@@ -94,19 +91,21 @@ function DropdownMenuSubContent({
   className,
   ...props
 }: DropdownMenuContentProps) {
-  return <MenuPopup className={cn("tiptap-dropdown-menu", className)} {...props} />
+  return (
+    <MenuPopup className={cn('tiptap-dropdown-menu', className)} {...props} />
+  )
 }
 
 function DropdownMenuContent({
   className,
   // Left-aligned by default, like every popup (house rule 4).
-  align = "start",
+  align = 'start',
   sideOffset = 4,
   ...props
 }: DropdownMenuContentProps) {
   return (
     <MenuPopup
-      className={cn("tiptap-dropdown-menu", className)}
+      className={cn('tiptap-dropdown-menu', className)}
       align={align}
       sideOffset={sideOffset}
       {...props}
@@ -138,7 +137,7 @@ function MenuPopup({
         align={align}
         side={side}
         sideOffset={sideOffset}
-        className="pointer-events-auto isolate z-50 outline-none"
+        className='pointer-events-auto isolate z-50 outline-none'
       >
         <MenuPrimitive.Popup
           className={className}

@@ -5,10 +5,7 @@ export const taskSheetFormSchema = z.object({
   description: z.string().optional().nullable(),
   status: z.enum(['ON_DECK', 'IN_PROGRESS', 'BLOCKED', 'DONE'] as const),
   dueOn: z.string().optional(),
-  projectId: z
-    .string()
-    .min(1, 'Project is required')
-    .uuid('Select a project'),
+  projectId: z.string().min(1, 'Project is required').uuid('Select a project'),
   assigneeId: z.string().uuid().optional().nullable(),
   leadId: z.string().uuid().optional().nullable(),
 })

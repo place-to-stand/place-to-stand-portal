@@ -59,7 +59,9 @@ export function ProjectStatusCell({
   }
 
   if (disabled) {
-    return <ProjectStatusBadge status={optimisticStatus} className={className} />
+    return (
+      <ProjectStatusBadge status={optimisticStatus} className={className} />
+    )
   }
 
   return (

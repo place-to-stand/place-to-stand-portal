@@ -7,6 +7,7 @@ Supabase is flagging 140 instances where multiple permissive RLS policies exist 
 ## Root Cause Analysis
 
 When multiple permissive policies exist for the same operation (e.g., SELECT), PostgreSQL evaluates them with OR logic:
+
 - Policy 1: `admin_check()`
 - Policy 2: `member_check()`
 - Result: `admin_check() OR member_check()`
@@ -40,6 +41,7 @@ We'll consolidate policies incrementally, table by table, to minimize risk:
 ## Priority Order
 
 ### Phase 1: Low-Risk, Simple Tables (Start Here)
+
 These tables have straightforward policies and minimal dependencies:
 
 1. **activity_overview_cache** - 4 separate policies for same user operations
@@ -47,6 +49,7 @@ These tables have straightforward policies and minimal dependencies:
 3. **client_members** - Simple membership policies
 
 ### Phase 2: Medium Complexity
+
 Tables with more complex logic but well-defined boundaries:
 
 4. **activity_logs** - Multiple policies for different access patterns
@@ -54,6 +57,7 @@ Tables with more complex logic but well-defined boundaries:
 6. **project_members** - Admin + member view policies
 
 ### Phase 3: Higher Complexity
+
 Tables with complex business logic and multiple access patterns:
 
 7. **clients** - Admin + member read policies
@@ -62,6 +66,7 @@ Tables with complex business logic and multiple access patterns:
 10. **hour_blocks** - Admin + member view policies
 
 ### Phase 4: Most Complex
+
 Tables with multiple operations and complex permission checks:
 
 11. **task_comments** - Admin + multiple member policies (read, create, update)
@@ -87,11 +92,13 @@ For each consolidation:
 ## Rollback Plan
 
 Each migration should:
+
 - Drop old policies before creating new ones
 - Be idempotent (can be run multiple times safely)
 - Include rollback instructions in comments
 
 If issues arise:
+
 1. Revert the migration immediately
 2. Restore previous policies
 3. Investigate the root cause
@@ -103,4 +110,3 @@ If issues arise:
 - Maintain all existing access controls
 - Improve query performance (reduce policy evaluation overhead)
 - Zero security regressions
-

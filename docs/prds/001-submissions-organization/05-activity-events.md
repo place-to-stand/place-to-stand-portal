@@ -120,7 +120,7 @@ Verified (I1): `apps/internal/components/activity/activity-feed-item.tsx` render
 
 - Text columns for `verb`/`target_type` mean old rows and new verbs coexist without migration; the union type is the single source of truth at compile time.
 - `targetClientId: null` is deliberate — a form submission has no client linkage. If a submission is ever promoted to a lead (future scope), the lead events carry the linkage from there.
-- Intake upserts (webhook writes) are **not** logged — no actor, high volume, and the transcript's need is auditing *admin* actions only.
+- Intake upserts (webhook writes) are **not** logged — no actor, high volume, and the transcript's need is auditing _admin_ actions only.
 
 ## Acceptance criteria
 

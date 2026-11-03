@@ -1,21 +1,20 @@
-"use client"
+'use client'
 
-import { forwardRef, Fragment, useMemo } from "react"
+import { forwardRef, Fragment, useMemo } from 'react'
 
 // --- Shared UI ---
 // Toolbar tooltips use the portal-wide tooltip so their offset, arrow and
 // colours match every other tooltip instead of a separate floating-ui copy.
-import { Tooltip, TooltipContent, TooltipTrigger } from "@pts/ui/tooltip"
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 // --- Lib ---
-import { cn, parseShortcutKeys } from "@/lib/tiptap-utils"
+import { cn, parseShortcutKeys } from '@/lib/tiptap-utils'
 
-import "@/components/tiptap-ui-primitive/button/button-colors.scss"
-import "@/components/tiptap-ui-primitive/button/button-group.scss"
-import "@/components/tiptap-ui-primitive/button/button.scss"
+import '@/components/tiptap-ui-primitive/button/button-colors.scss'
+import '@/components/tiptap-ui-primitive/button/button-group.scss'
+import '@/components/tiptap-ui-primitive/button/button.scss'
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string
   showTooltip?: boolean
   tooltip?: React.ReactNode
@@ -28,11 +27,11 @@ export const ShortcutDisplay: React.FC<{ shortcuts: string[] }> = ({
   if (shortcuts.length === 0) return null
 
   return (
-    <div className="text-center">
+    <div className='text-center'>
       {shortcuts.map((key, index) => (
         <Fragment key={index}>
-          {index > 0 && <kbd className="tiptap-shortcut-key">+</kbd>}
-          <kbd className="tiptap-shortcut-key">{key}</kbd>
+          {index > 0 && <kbd className='tiptap-shortcut-key'>+</kbd>}
+          <kbd className='tiptap-shortcut-key'>{key}</kbd>
         </Fragment>
       ))}
     </div>
@@ -47,7 +46,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       tooltip,
       showTooltip = true,
       shortcutKeys,
-      "aria-label": ariaLabel,
+      'aria-label': ariaLabel,
       ...props
     },
     ref
@@ -60,7 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     if (!tooltip || !showTooltip) {
       return (
         <button
-          className={cn("tiptap-button", className)}
+          className={cn('tiptap-button', className)}
           ref={ref}
           aria-label={ariaLabel}
           {...props}
@@ -74,7 +73,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Tooltip delayDuration={200}>
         <TooltipTrigger asChild>
           <button
-            className={cn("tiptap-button", className)}
+            className={cn('tiptap-button', className)}
             ref={ref}
             aria-label={ariaLabel}
             {...props}
@@ -82,7 +81,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {children}
           </button>
         </TooltipTrigger>
-        <TooltipContent className="text-center font-medium">
+        <TooltipContent className='text-center font-medium'>
           {tooltip}
           <ShortcutDisplay shortcuts={shortcuts} />
         </TooltipContent>
@@ -91,26 +90,26 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   }
 )
 
-Button.displayName = "Button"
+Button.displayName = 'Button'
 
 export const ButtonGroup = forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    orientation?: "horizontal" | "vertical"
+  React.ComponentProps<'div'> & {
+    orientation?: 'horizontal' | 'vertical'
   }
->(({ className, children, orientation = "vertical", ...props }, ref) => {
+>(({ className, children, orientation = 'vertical', ...props }, ref) => {
   return (
     <div
       ref={ref}
-      className={cn("tiptap-button-group", className)}
+      className={cn('tiptap-button-group', className)}
       data-orientation={orientation}
-      role="group"
+      role='group'
       {...props}
     >
       {children}
     </div>
   )
 })
-ButtonGroup.displayName = "ButtonGroup"
+ButtonGroup.displayName = 'ButtonGroup'
 
 export default Button

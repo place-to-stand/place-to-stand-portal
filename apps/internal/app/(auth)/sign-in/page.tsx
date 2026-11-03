@@ -1,45 +1,45 @@
 // permission: public — signing in
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
-import { AuthShell } from "@pts/ui/auth-shell";
+import { AuthShell } from '@pts/ui/auth-shell'
 
-import { getCurrentUser } from "@/lib/auth/session";
-import { serverEnv } from "@/lib/env.server";
+import { getCurrentUser } from '@/lib/auth/session'
+import { serverEnv } from '@/lib/env.server'
 
-import { ClientPortalNotice } from "./client-portal-notice";
-import { SignInForm } from "./sign-in-form";
+import { ClientPortalNotice } from './client-portal-notice'
+import { SignInForm } from './sign-in-form'
 
 export const metadata: Metadata = {
   title: 'Sign in',
-};
+}
 
 export default async function SignInPage({
   searchParams,
 }: PageProps<'/sign-in'>) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser()
   if (user) {
-    redirect("/");
+    redirect('/')
   }
 
   const resolvedSearchParams = (await searchParams) as {
-    redirect?: string;
-    notice?: string;
-  };
-  const redirectTo = resolvedSearchParams?.redirect;
+    redirect?: string
+    notice?: string
+  }
+  const redirectTo = resolvedSearchParams?.redirect
   const showClientPortalNotice =
-    resolvedSearchParams?.notice === "client-portal";
+    resolvedSearchParams?.notice === 'client-portal'
 
   return (
     <AuthShell
-      label="Internal Portal"
-      title="Welcome back"
-      description="Sign in with your work email to manage your projects."
+      label='Internal Portal'
+      title='Welcome back'
+      description='Sign in with your work email to manage your projects.'
     >
       {showClientPortalNotice ? (
         <ClientPortalNotice clientPortalUrl={serverEnv.CLIENT_PORTAL_URL} />
       ) : null}
       <SignInForm redirectTo={redirectTo} />
     </AuthShell>
-  );
+  )
 }

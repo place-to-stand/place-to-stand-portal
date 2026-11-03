@@ -11,7 +11,9 @@ export type RepoLinkActor = Pick<AppUser, 'id' | 'role'>
 /**
  * Get repos linked to a project
  */
-export async function getProjectRepos(projectId: string): Promise<GitHubRepoLink[]> {
+export async function getProjectRepos(
+  projectId: string
+): Promise<GitHubRepoLink[]> {
   return db
     .select()
     .from(githubRepoLinks)
@@ -205,15 +207,14 @@ export async function unlinkRepo(
 /**
  * Get a single repo link by ID
  */
-export async function getRepoLinkById(linkId: string): Promise<GitHubRepoLink | null> {
+export async function getRepoLinkById(
+  linkId: string
+): Promise<GitHubRepoLink | null> {
   const [link] = await db
     .select()
     .from(githubRepoLinks)
     .where(
-      and(
-        eq(githubRepoLinks.id, linkId),
-        isNull(githubRepoLinks.deletedAt)
-      )
+      and(eq(githubRepoLinks.id, linkId), isNull(githubRepoLinks.deletedAt))
     )
     .limit(1)
 

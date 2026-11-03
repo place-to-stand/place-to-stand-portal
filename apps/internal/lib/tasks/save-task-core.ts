@@ -1,9 +1,6 @@
 import 'server-only'
 
-import {
-  baseTaskSchema,
-  type BaseTaskInput,
-} from '@/lib/tasks/schemas'
+import { baseTaskSchema, type BaseTaskInput } from '@/lib/tasks/schemas'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskAttachmentBucket } from '@/lib/storage/task-attachments'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
@@ -54,7 +51,5 @@ export async function saveTaskForActor(
     source,
   }
 
-  return id
-    ? updateTaskForActor(id, context)
-    : createTaskForActor(context)
+  return id ? updateTaskForActor(id, context) : createTaskForActor(context)
 }

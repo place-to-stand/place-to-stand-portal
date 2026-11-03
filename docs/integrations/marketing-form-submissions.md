@@ -30,10 +30,10 @@ Submissions first. Leads are promoted from Submissions by hand in the portal.
 Base URL is the internal portal host — the same host the current `PORTAL_LEADS_ENDPOINT`
 points at.
 
-| Purpose | Method + path | Auth header |
-| --- | --- | --- |
-| Opportunity Audit progress | `POST /api/integrations/audit-responses` | `Authorization: Bearer <AUDIT_INTAKE_TOKEN>` |
-| Contact form | `POST /api/integrations/contact-submissions` | `Authorization: Bearer <CONTACT_INTAKE_TOKEN>` |
+| Purpose                         | Method + path                                  | Auth header                                    |
+| ------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| Opportunity Audit progress      | `POST /api/integrations/audit-responses`       | `Authorization: Bearer <AUDIT_INTAKE_TOKEN>`   |
+| Contact form                    | `POST /api/integrations/contact-submissions`   | `Authorization: Bearer <CONTACT_INTAKE_TOKEN>` |
 | Subscribe (blog / mailing list) | `POST /api/integrations/subscribe-submissions` | `Authorization: Bearer <CONTACT_INTAKE_TOKEN>` |
 
 `Content-Type: application/json` on all three.
@@ -47,12 +47,12 @@ the portal's Vercel project.
 
 ### Responses
 
-| Status | Body | Meaning |
-| --- | --- | --- |
-| `200` | `{"ok":true,"data":{"id":"…","emails":{"team":"sent","confirmation":"sent"},"details":"skipped"}}` | Accepted. `id` is `null` when a stale beacon is intentionally discarded — see [§5](#5-idempotency-and-ordering). `emails` and `details` are described in [§6.1](#61-email-delivery-deliver). |
-| `400` | `{"ok":false,"error":"..."}` | Malformed JSON, or payload failed validation. `error` is the first validation message. |
-| `401` | `{"error":"Unauthorized"}` | Missing, malformed, or mismatched bearer token. |
-| `500` | `{"ok":false,"error":"..."}` | Token not configured portal-side, or a database failure. Safe to retry. |
+| Status | Body                                                                                               | Meaning                                                                                                                                                                                      |
+| ------ | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`  | `{"ok":true,"data":{"id":"…","emails":{"team":"sent","confirmation":"sent"},"details":"skipped"}}` | Accepted. `id` is `null` when a stale beacon is intentionally discarded — see [§5](#5-idempotency-and-ordering). `emails` and `details` are described in [§6.1](#61-email-delivery-deliver). |
+| `400`  | `{"ok":false,"error":"..."}`                                                                       | Malformed JSON, or payload failed validation. `error` is the first validation message.                                                                                                       |
+| `401`  | `{"error":"Unauthorized"}`                                                                         | Missing, malformed, or mismatched bearer token.                                                                                                                                              |
+| `500`  | `{"ok":false,"error":"..."}`                                                                       | Token not configured portal-side, or a database failure. Safe to retry.                                                                                                                      |
 
 Senders should branch on the HTTP status only. The body is for logs.
 
@@ -96,39 +96,39 @@ Notes:
 type AuditStatus = 'in_progress' | 'completed' | 'captured' | 'abandoned'
 
 type AuditTrigger =
-  | 'started'        // visitor clicked Start
+  | 'started' // visitor clicked Start
   | 'step_completed' // finished one of the wizard sections
-  | 'scored'         // results generated
-  | 'captured'       // email-capture form submitted successfully
-  | 'abandoned'      // explicitly backed out of the wizard
-  | 'pagehide'       // sendBeacon fired as the tab closed
-  | 'feedback'       // results-page feedback card voted or sent
+  | 'scored' // results generated
+  | 'captured' // email-capture form submitted successfully
+  | 'abandoned' // explicitly backed out of the wizard
+  | 'pagehide' // sendBeacon fired as the tab closed
+  | 'feedback' // results-page feedback card voted or sent
 
 interface AuditResponseItem {
-  questionId: string   // 'industry' | 'revenue' | 'ops-management' | ...
-  sectionId: string    // 'business' | 'operations' | 'challenges' | 'readiness'
-  prompt: string       // the question text as shown
+  questionId: string // 'industry' | 'revenue' | 'ops-management' | ...
+  sectionId: string // 'business' | 'operations' | 'challenges' | 'readiness'
+  prompt: string // the question text as shown
   type: 'single' | 'multi' | 'text'
-  value: string | string[] | null   // raw option id(s), free text, or null if unanswered
-  labels: string[]                  // human-readable option labels, [] if unanswered
+  value: string | string[] | null // raw option id(s), free text, or null if unanswered
+  labels: string[] // human-readable option labels, [] if unanswered
 }
 
 interface AuditProgressPayload {
-  sessionId: string    // UUID v4 — idempotency key, stable for the whole session
+  sessionId: string // UUID v4 — idempotency key, stable for the whole session
   status: AuditStatus
   trigger: AuditTrigger
   sourceDetail: string // 'https://placetostandagency.com/audit'
 
-  startedAt: string            // ISO 8601
-  updatedAt: string            // ISO 8601 — ordering key, see §5
+  startedAt: string // ISO 8601
+  updatedAt: string // ISO 8601 — ordering key, see §5
   completedAt: string | null
 
   progress: {
-    furthestStepIndex: number  // 0-based, max step reached
+    furthestStepIndex: number // 0-based, max step reached
     stepsTotal: number
     answeredCount: number
     questionsTotal: number
-    percentComplete: number    // integer 0-100
+    percentComplete: number // integer 0-100
     durationMs: number
   }
 
@@ -137,16 +137,16 @@ interface AuditProgressPayload {
 
   // null until the audit is scored
   result: {
-    phaseId: string            // 'foundation' | 'launch' | 'growth' | ...
+    phaseId: string // 'foundation' | 'launch' | 'growth' | ...
     phaseName: string
-    phaseTagline?: string      // optional (PRD 008): shown in the visitor's results email
+    phaseTagline?: string // optional (PRD 008): shown in the visitor's results email
     summary: string
     generatedBy: 'rules' | 'ai'
     phaseScores: Record<string, number>
     recommendations: Array<{
-      serviceId: string        // 'workflow-automation' | 'internal-tools' | ...
+      serviceId: string // 'workflow-automation' | 'internal-tools' | ...
       serviceName: string
-      tagline?: string         // optional (PRD 008): shown under the service name in email
+      tagline?: string // optional (PRD 008): shown under the service name in email
       score: number
       reasons: string[]
     }>
@@ -170,13 +170,13 @@ interface AuditProgressPayload {
   feedback?: {
     helpful: boolean | null
     comment: string | null
-    submittedAt: string          // ISO 8601, stamped at send time
+    submittedAt: string // ISO 8601, stamped at send time
   } | null
 
   analytics: {
     posthogDistinctId: string | null
     posthogSessionId: string | null
-    posthogReplayUrl: string | null   // deep link to the session recording
+    posthogReplayUrl: string | null // deep link to the session recording
   }
 
   attribution: {
@@ -187,15 +187,15 @@ interface AuditProgressPayload {
     utmContent: string | null
     gclid: string | null
     referrer: string | null
-    landingPath: string | null        // e.g. '/audit'
+    landingPath: string | null // e.g. '/audit'
   }
 
   client: {
     viewport: 'mobile' | 'tablet' | 'desktop' | null
     screenWidth: number | null
-    timezone: string | null           // IANA, e.g. 'America/Denver'
-    language: string | null           // e.g. 'en-US'
-    userAgent: string | null          // set server-side from the request header
+    timezone: string | null // IANA, e.g. 'America/Denver'
+    language: string | null // e.g. 'en-US'
+    userAgent: string | null // set server-side from the request header
   }
 }
 ```
@@ -213,44 +213,67 @@ interface AuditProgressPayload {
   "updatedAt": "2026-07-30T18:05:35.902Z",
   "completedAt": null,
   "progress": {
-    "furthestStepIndex": 1, "stepsTotal": 4, "answeredCount": 4,
-    "questionsTotal": 8, "percentComplete": 50, "durationMs": 84681
+    "furthestStepIndex": 1,
+    "stepsTotal": 4,
+    "answeredCount": 4,
+    "questionsTotal": 8,
+    "percentComplete": 50,
+    "durationMs": 84681
   },
   "responses": [
-    { "questionId": "industry", "sectionId": "business",
-      "prompt": "What industry are you in?", "type": "single",
-      "value": "tech-saas", "labels": ["Tech / SaaS"] },
-    { "questionId": "bottlenecks", "sectionId": "challenges",
-      "prompt": "Where do things bog down?", "type": "multi",
-      "value": null, "labels": [] }
+    {
+      "questionId": "industry",
+      "sectionId": "business",
+      "prompt": "What industry are you in?",
+      "type": "single",
+      "value": "tech-saas",
+      "labels": ["Tech / SaaS"]
+    },
+    {
+      "questionId": "bottlenecks",
+      "sectionId": "challenges",
+      "prompt": "Where do things bog down?",
+      "type": "multi",
+      "value": null,
+      "labels": []
+    }
   ],
   "result": null,
   "lead": null,
   "analytics": {
-    "posthogDistinctId": "0198c3f2-...", "posthogSessionId": "0198c3f2-...",
+    "posthogDistinctId": "0198c3f2-...",
+    "posthogSessionId": "0198c3f2-...",
     "posthogReplayUrl": "https://us.posthog.com/project/123/replay/0198c3f2-..."
   },
   "attribution": {
-    "utmSource": "google", "utmMedium": "cpc", "utmCampaign": "ai-audit-q3",
-    "utmTerm": null, "utmContent": null, "gclid": "Cj0KCQ...",
-    "referrer": "https://www.google.com/", "landingPath": "/audit"
+    "utmSource": "google",
+    "utmMedium": "cpc",
+    "utmCampaign": "ai-audit-q3",
+    "utmTerm": null,
+    "utmContent": null,
+    "gclid": "Cj0KCQ...",
+    "referrer": "https://www.google.com/",
+    "landingPath": "/audit"
   },
   "client": {
-    "viewport": "desktop", "screenWidth": 1440,
-    "timezone": "America/Denver", "language": "en-US",
+    "viewport": "desktop",
+    "screenWidth": 1440,
+    "timezone": "America/Denver",
+    "language": "en-US",
     "userAgent": "Mozilla/5.0 ..."
   }
 }
 ```
+
 </details>
 
 ### 4.2 Contact — `POST /api/integrations/contact-submissions`
 
 ```ts
 interface ContactSubmissionPayload {
-  submissionId: string  // UUID v4 — idempotency key
-  sourceDetail: string  // 'https://placetostandagency.com/'
-  submittedAt: string   // ISO 8601
+  submissionId: string // UUID v4 — idempotency key
+  sourceDetail: string // 'https://placetostandagency.com/'
+  submittedAt: string // ISO 8601
 
   contact: {
     name: string
@@ -266,10 +289,18 @@ interface ContactSubmissionPayload {
   }
 
   // identical shapes to the audit payload
-  analytics:   { posthogDistinctId, posthogSessionId, posthogReplayUrl }
-  attribution: { utmSource, utmMedium, utmCampaign, utmTerm, utmContent,
-                 gclid, referrer, landingPath }
-  client:      { viewport, screenWidth, timezone, language, userAgent }
+  analytics: { posthogDistinctId; posthogSessionId; posthogReplayUrl }
+  attribution: {
+    utmSource
+    utmMedium
+    utmCampaign
+    utmTerm
+    utmContent
+    gclid
+    referrer
+    landingPath
+  }
+  client: { viewport; screenWidth; timezone; language; userAgent }
 }
 ```
 
@@ -277,19 +308,27 @@ interface ContactSubmissionPayload {
 
 ```ts
 interface SubscribeSubmissionPayload {
-  submissionId: string  // UUID v4 — idempotency key
-  sourceDetail: string  // the page signed up from: 'https://placetostandagency.com/blog/some-post'
-  submittedAt: string   // ISO 8601
+  submissionId: string // UUID v4 — idempotency key
+  sourceDetail: string // the page signed up from: 'https://placetostandagency.com/blog/some-post'
+  submittedAt: string // ISO 8601
 
   subscriber: {
     email: string
   }
 
   // identical shapes to the audit and contact payloads
-  analytics:   { posthogDistinctId, posthogSessionId, posthogReplayUrl }
-  attribution: { utmSource, utmMedium, utmCampaign, utmTerm, utmContent,
-                 gclid, referrer, landingPath }
-  client:      { viewport, screenWidth, timezone, language, userAgent }
+  analytics: { posthogDistinctId; posthogSessionId; posthogReplayUrl }
+  attribution: {
+    utmSource
+    utmMedium
+    utmCampaign
+    utmTerm
+    utmContent
+    gclid
+    referrer
+    landingPath
+  }
+  client: { viewport; screenWidth; timezone; language; userAgent }
 }
 ```
 
@@ -306,13 +345,13 @@ endpoints, with `emails` and `details` always `skipped`.
 Deliberately mixed, so that a taxonomy change on the marketing side can never cause silent
 data loss:
 
-| Strict — a bad value returns `400` | Lenient — any non-empty string accepted |
-| --- | --- |
-| `status`, `trigger` | `result.phaseId` |
-| `responses[].type` | `result.recommendations[].serviceId` |
-| `client.viewport` | `responses[].questionId`, `responses[].sectionId` |
-| `sessionId` / `submissionId` must be a valid UUID | |
-| all timestamps must be ISO 8601 | |
+| Strict — a bad value returns `400`                | Lenient — any non-empty string accepted           |
+| ------------------------------------------------- | ------------------------------------------------- |
+| `status`, `trigger`                               | `result.phaseId`                                  |
+| `responses[].type`                                | `result.recommendations[].serviceId`              |
+| `client.viewport`                                 | `responses[].questionId`, `responses[].sectionId` |
+| `sessionId` / `submissionId` must be a valid UUID |                                                   |
+| all timestamps must be ISO 8601                   |                                                   |
 
 Adding a sixth phase or a new service on the marketing side needs **no** portal change.
 
@@ -323,7 +362,7 @@ Unknown top-level keys are ignored rather than rejected.
 ## 5. Idempotency and ordering
 
 Audit beacons race. `sendBeacon` on `pagehide` has no delivery-ordering guarantee, so a stale
-`abandoned` beacon can and does arrive *after* `captured`. The portal resolves this
+`abandoned` beacon can and does arrive _after_ `captured`. The portal resolves this
 atomically on write. Four rules apply:
 
 1. **Upsert on `sessionId`.** All beacons for one session update a single row.
@@ -344,7 +383,7 @@ Three things the portal cannot do for you:
 1. **`sessionId` must be stable for the entire audit session.** Generate it once when the
    wizard starts and persist it (e.g. `sessionStorage`). A fresh UUID per beacon creates a new
    row per beacon instead of updating one.
-2. **`updatedAt` must increase monotonically.** Stamp it at *send* time, not render time. It
+2. **`updatedAt` must increase monotonically.** Stamp it at _send_ time, not render time. It
    is the ordering key; a beacon that goes backwards is silently dropped by rule 2.
 3. **`responses` must always be the complete question set**, with unanswered entries present
    and `value: null`. The array is stored wholesale, so sending only answered questions would
@@ -352,15 +391,15 @@ Three things the portal cannot do for you:
 
 ### When to send
 
-| Trigger | When |
-| --- | --- |
-| `started` | visitor begins the wizard |
-| `step_completed` | each section is finished |
-| `scored` | results generated (`status: 'completed'`, `result` populated) |
-| `captured` | email-capture succeeds (`status: 'captured'`, `lead` populated) |
-| `abandoned` | visitor explicitly exits the wizard |
-| `pagehide` | `pagehide` / `visibilitychange → hidden`, via `sendBeacon` |
-| `feedback` | visitor votes or sends a comment on the results page (`feedback` populated, status unchanged) |
+| Trigger          | When                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| `started`        | visitor begins the wizard                                                                     |
+| `step_completed` | each section is finished                                                                      |
+| `scored`         | results generated (`status: 'completed'`, `result` populated)                                 |
+| `captured`       | email-capture succeeds (`status: 'captured'`, `lead` populated)                               |
+| `abandoned`      | visitor explicitly exits the wizard                                                           |
+| `pagehide`       | `pagehide` / `visibilitychange → hidden`, via `sendBeacon`                                    |
+| `feedback`       | visitor votes or sends a comment on the results page (`feedback` populated, status unchanged) |
 
 Retries are safe at any point — the upsert is idempotent.
 
@@ -389,10 +428,10 @@ flags unread, the lease on the email is released, and `/api/cron/retry-submissio
 it for up to 72 hours (`RETRY_MAX_AGE_HOURS`); after that the sheet says "Not sent — retry window
 passed". `emails.team` / `emails.confirmation` in the response report what happened:
 
-| Value | Meaning |
-| --- | --- |
-| `sent` | Delivered by this request, or already delivered by an earlier one. |
-| `queued` | Not sent by this request — the send failed, or another request holds the lease; the retry sweep owns it. |
+| Value     | Meaning                                                                                                                                                                                                                             |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sent`    | Delivered by this request, or already delivered by an earlier one.                                                                                                                                                                  |
+| `queued`  | Not sent by this request — the send failed, or another request holds the lease; the retry sweep owns it.                                                                                                                            |
 | `skipped` | Delivery not requested, the row is not an eligible captured lead, the address is over the throttle (3 new submissions per 15 minutes; replays are free), or — for the confirmation — an audit was captured without a stored result. |
 
 **Exactly once.** Each email has a lease (`*_email_claimed_at`, expires after 10 minutes) and a
@@ -413,7 +452,7 @@ flushes whatever that row owes.
 **Audit: details added after the capture.** The site captures an email alone, then may re-send
 the `captured` push (with `deliver: true`) carrying a name, company and note. The notification is
 already stamped by then, so it cannot carry them. Instead, when a delivering push gives a row a
-name, company or note it lacked or said differently, *after* its team notification went out (or
+name, company or note it lacked or said differently, _after_ its team notification went out (or
 while it was being sent), the portal sends a short follow-up to the team inbox
 (`auditDetailsEmail`). If the notification has not gone out yet it is still owed, renders from the
 row, and carries the details itself, so no follow-up is sent. The snapshot is read before the

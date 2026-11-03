@@ -1,4 +1,9 @@
-import { ApiError, request, type ApiResult, type RequestOptions } from './api.js'
+import {
+  ApiError,
+  request,
+  type ApiResult,
+  type RequestOptions,
+} from './api.js'
 import { refreshCredentials } from './auth.js'
 import { readCredentials } from './config.js'
 import { resolveApiContext } from './context.js'

@@ -31,7 +31,9 @@ export function verifyIntakeToken(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const providedBuffer = Buffer.from(providedAuth.slice('Bearer '.length).trim())
+  const providedBuffer = Buffer.from(
+    providedAuth.slice('Bearer '.length).trim()
+  )
   const configuredBuffer = Buffer.from(configuredToken)
 
   const tokensMatch =

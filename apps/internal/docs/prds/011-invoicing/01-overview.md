@@ -91,6 +91,7 @@ Following the project's established pattern, derived states like "overdue" are c
 ### Proposals (PRD sharing pattern)
 
 Invoices reuse the proposals sharing infrastructure:
+
 - Same `shareToken` / `shareEnabled` column pattern
 - Same enable/disable API route pattern
 - Same public page layout (`app/(public)/`)
@@ -101,6 +102,7 @@ The key difference: invoices add a Stripe payment action instead of a signature 
 ### Hour Blocks
 
 Currently, hour blocks have an optional `invoiceNumber` text field that stores a freeform string. This PRD:
+
 - Adds an `invoiceId` UUID FK to the `hour_blocks` table
 - Auto-creates hour block records when invoices with billable hour line items are paid via Stripe
 - Preserves the existing `invoiceNumber` field for backwards compatibility with manually-entered records
@@ -108,6 +110,7 @@ Currently, hour blocks have an optional `invoiceNumber` text field that stores a
 ### Activity System
 
 Follows the established activity pattern:
+
 - New `INVOICE` target type
 - New verbs: `INVOICE_CREATED`, `INVOICE_UPDATED`, `INVOICE_SENT`, `INVOICE_VIEWED`, `INVOICE_PAID`, `INVOICE_VOIDED`, `INVOICE_SHARED`, `INVOICE_UNSHARED`, `INVOICE_ARCHIVED`, `INVOICE_RESTORED`
 - Event handlers in `lib/activity/events/invoices.ts`

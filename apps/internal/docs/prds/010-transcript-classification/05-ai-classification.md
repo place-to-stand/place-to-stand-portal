@@ -21,7 +21,7 @@ export type TranscriptClassificationResult = {
     clientName: string
     projectId?: string
     projectName?: string
-    confidence: number  // 0-1
+    confidence: number // 0-1
     reasoning: string
   }>
   leadMatches: Array<{
@@ -36,9 +36,14 @@ export type TranscriptClassificationResult = {
 export async function classifyTranscript(params: {
   title: string
   participantNames: string[]
-  contentSnippet: string    // First ~2000 chars of transcript
+  contentSnippet: string // First ~2000 chars of transcript
   clients: Array<{ id: string; name: string }>
-  projects: Array<{ id: string; name: string; clientId: string; clientName: string }>
+  projects: Array<{
+    id: string
+    name: string
+    clientId: string
+    clientName: string
+  }>
   leads: Array<{ id: string; contactName: string; companyName: string | null }>
 }): Promise<TranscriptClassificationResult>
 ```
@@ -66,6 +71,7 @@ Return ranked matches with confidence scores and reasoning.
 ```
 
 **User prompt** includes:
+
 - Transcript title
 - Participant names (comma-separated)
 - Content snippet (first ~2000 chars)
@@ -75,17 +81,17 @@ Return ranked matches with confidence scores and reasoning.
 
 ### Differences from Email Classification
 
-| Aspect | Email | Transcript |
-|--------|-------|------------|
-| Input signal | From/To/CC emails, subject, snippet | Title, participant names, content snippet |
-| Matching basis | Email addresses → contacts | Names + content mentions → entities |
-| Content length | Short snippet | ~2000 char excerpt from potentially long transcript |
+| Aspect         | Email                               | Transcript                                          |
+| -------------- | ----------------------------------- | --------------------------------------------------- |
+| Input signal   | From/To/CC emails, subject, snippet | Title, participant names, content snippet           |
+| Matching basis | Email addresses → contacts          | Names + content mentions → entities                 |
+| Content length | Short snippet                       | ~2000 char excerpt from potentially long transcript |
 
 > **Decision:** Both email and transcript classification include leads directly in a single AI prompt (alongside clients/projects). The existing email classification currently uses a separate `suggestLeadMatch()` step — this should be updated to include leads in the main `classifyEmailThread()` prompt as part of this PRD, aligning both flows. **This is Phase 4b** — a separate sub-task from transcript classification (Phase 4a) because it refactors production email triage. Test email classification independently before and after.
 
 ### Known Accuracy Limitations
 
-Transcript AI confidence scores will likely be **lower on average** than email scores. Email classification matches on email addresses (deterministic — `jane@acme.co` maps to a known contact). Transcript classification matches on participant *names* ("Jane") which are ambiguous — "Sarah" could be from Client A or Client B.
+Transcript AI confidence scores will likely be **lower on average** than email scores. Email classification matches on email addresses (deterministic — `jane@acme.co` maps to a known contact). Transcript classification matches on participant _names_ ("Jane") which are ambiguous — "Sarah" could be from Client A or Client B.
 
 This is a known tradeoff accepted for v1. Accuracy improves significantly with [Participant Email Resolution](./07-future-enhancements.md) (future enhancement).
 
@@ -118,6 +124,7 @@ ai_analyzed_at            — When analysis ran (NULL = not yet analyzed)
 ### Re-Analysis
 
 If a user wants to re-analyze (e.g., after adding a new client):
+
 - Clear `ai_analyzed_at` to NULL
 - Clear all `ai_suggested_*` fields
 - Next analyze call will re-run the AI
@@ -147,16 +154,18 @@ export async function GET(
   return NextResponse.json({
     ok: true,
     analyzed: !!transcript.aiAnalyzedAt,
-    suggestion: transcript.aiAnalyzedAt ? {
-      clientId: transcript.aiSuggestedClientId,
-      clientName: transcript.aiSuggestedClientName,
-      projectId: transcript.aiSuggestedProjectId,
-      projectName: transcript.aiSuggestedProjectName,
-      leadId: transcript.aiSuggestedLeadId,
-      leadName: transcript.aiSuggestedLeadName,
-      confidence: transcript.aiConfidence,
-      analyzedAt: transcript.aiAnalyzedAt,
-    } : null,
+    suggestion: transcript.aiAnalyzedAt
+      ? {
+          clientId: transcript.aiSuggestedClientId,
+          clientName: transcript.aiSuggestedClientName,
+          projectId: transcript.aiSuggestedProjectId,
+          projectName: transcript.aiSuggestedProjectName,
+          leadId: transcript.aiSuggestedLeadId,
+          leadName: transcript.aiSuggestedLeadName,
+          confidence: transcript.aiConfidence,
+          analyzedAt: transcript.aiAnalyzedAt,
+        }
+      : null,
   })
 }
 ```
@@ -217,7 +226,8 @@ export async function POST(
   // Store top match in cache fields — pick the highest-confidence match overall
   const topClient = result.clientMatches[0]
   const topLead = result.leadMatches[0]
-  const topConfidence = Math.max(topClient?.confidence ?? 0, topLead?.confidence ?? 0) || null
+  const topConfidence =
+    Math.max(topClient?.confidence ?? 0, topLead?.confidence ?? 0) || null
 
   await updateTranscript(transcriptId, {
     aiSuggestedClientId: topClient?.clientId ?? null,
@@ -233,7 +243,7 @@ export async function POST(
   return NextResponse.json({
     ok: true,
     cached: false,
-    suggestion: { /* same shape as above with fresh values */ },
+    suggestion: {/* same shape as above with fresh values */},
     // Also return full ranked matches for the UI
     clientMatches: result.clientMatches,
     leadMatches: result.leadMatches,
@@ -269,6 +279,7 @@ For already-analyzed transcripts, show a "Re-analyze" button (calls POST with `{
 ### Classification Panel Pre-Population
 
 When the user opens the classification panel, pre-select dropdowns based on cached AI suggestions:
+
 - If `aiSuggestedClientId` → pre-select that client
 - If `aiSuggestedProjectId` → pre-select that project
 - If `aiSuggestedLeadId` → pre-select the lead track with that lead
@@ -295,7 +306,8 @@ User can accept the suggestion (one click) or change it.
 
 > **Caution:** This refactors production email triage. Test independently.
 >
-> **Important:** The existing DB-based matchers (`suggestClientMatch()`, `suggestLeadMatch()` in `lib/email/suggestions.ts`) are fast deterministic lookups by email address. They run per-request on the triage route and are **not being replaced**. Phase 4b adds leads to the *AI* classification prompt (the on-demand analysis that runs when users click "Analyze"). Both systems coexist:
+> **Important:** The existing DB-based matchers (`suggestClientMatch()`, `suggestLeadMatch()` in `lib/email/suggestions.ts`) are fast deterministic lookups by email address. They run per-request on the triage route and are **not being replaced**. Phase 4b adds leads to the _AI_ classification prompt (the on-demand analysis that runs when users click "Analyze"). Both systems coexist:
+>
 > - **DB matchers** (fast, per-request): match by email address → high confidence
 > - **AI classification** (slow, cached): match by content/names → probabilistic
 

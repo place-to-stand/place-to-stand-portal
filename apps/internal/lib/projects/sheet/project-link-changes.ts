@@ -106,7 +106,8 @@ export async function prepareProjectLinkChanges(args: {
   ) {
     // Already unlinked elsewhere, or not this project's: reload and retry.
     return {
-      error: 'The project’s links changed since you opened it. Reopen it and try again.',
+      error:
+        'The project’s links changed since you opened it. Reopen it and try again.',
     }
   }
 
@@ -233,7 +234,12 @@ export async function writeProjectLinkChanges(
     if (created) written.linkedRepos.push(repo.repoFullName)
   }
   for (const option of prepared.integrationAdds) {
-    const { created } = await writeIntegrationLink(tx, projectId, option, actorId)
+    const { created } = await writeIntegrationLink(
+      tx,
+      projectId,
+      option,
+      actorId
+    )
     if (created) written.linkedIntegrations.push(option)
   }
 

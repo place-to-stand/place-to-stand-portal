@@ -12,11 +12,11 @@ Rather than relying on the Meet API (which requires a `conferenceId` from a know
 
 Three parallel Drive API queries, deduped by file ID:
 
-| Query | Target |
-|-------|--------|
+| Query                                                                                 | Target                              |
+| ------------------------------------------------------------------------------------- | ----------------------------------- |
 | `name contains 'Notes by Gemini' AND mimeType='application/vnd.google-apps.document'` | Gemini auto-generated meeting notes |
-| `name contains 'Transcript' AND mimeType='application/vnd.google-apps.document'` | Explicit transcript documents |
-| `name contains 'Meeting notes' AND mimeType='application/vnd.google-apps.document'` | Manual meeting notes |
+| `name contains 'Transcript' AND mimeType='application/vnd.google-apps.document'`      | Explicit transcript documents       |
+| `name contains 'Meeting notes' AND mimeType='application/vnd.google-apps.document'`   | Manual meeting notes                |
 
 Each query returns up to 100 results sorted by `modifiedTime desc`. Results are deduped by Drive file ID before processing. No `modifiedTime` filter is applied — dedup handles already-seen documents (see Sync Behavior).
 
@@ -52,9 +52,9 @@ export type DiscoveredTranscript = {
   title: string
   content: string | null
   source: 'DRIVE_SEARCH'
-  meetingDate: string | null  // ISO timestamp
+  meetingDate: string | null // ISO timestamp
   participantNames: string[]
-  modifiedTime: string        // For change detection
+  modifiedTime: string // For change detection
 }
 
 /**
@@ -68,6 +68,7 @@ export async function discoverTranscriptsFromDrive(
 ```
 
 **Reuses:**
+
 - `getValidAccessToken()` from `lib/gmail/client.ts` — OAuth token management
 - Drive API search pattern from `lib/google/meet.ts:searchGeminiNotes()` — generalized for multiple queries
 - `extractTextFromGoogleDoc()` pattern from `lib/google/meet.ts:fetchGeminiNotesContent()` — content extraction
@@ -78,12 +79,12 @@ export async function discoverTranscriptsFromDrive(
 
 ```typescript
 export type TranscriptSyncResult = {
-  discovered: number    // Total docs found in Drive
-  created: number       // New transcripts inserted
-  updated: number       // Existing transcripts with updated content
-  skipped: number       // Already up-to-date
-  analyzed: number      // New transcripts auto-analyzed by AI
-  errors: string[]      // Any error messages
+  discovered: number // Total docs found in Drive
+  created: number // New transcripts inserted
+  updated: number // Existing transcripts with updated content
+  skipped: number // Already up-to-date
+  analyzed: number // New transcripts auto-analyzed by AI
+  errors: string[] // Any error messages
 }
 
 /**
@@ -146,8 +147,8 @@ type GmailSyncState = {
   lastErrorAt?: string
   needsReauth?: boolean
   syncType?: 'full' | 'incremental'
-  lastTranscriptSyncAt?: string  // NEW: last transcript sync time
-  lastTranscriptError?: string   // NEW: last transcript sync error
+  lastTranscriptSyncAt?: string // NEW: last transcript sync time
+  lastTranscriptError?: string // NEW: last transcript sync error
 }
 ```
 
@@ -155,13 +156,13 @@ type GmailSyncState = {
 
 The sync must gracefully handle API failures without corrupting state:
 
-| Scenario | Behavior |
-|----------|----------|
-| Connection missing Drive/Docs scopes | Skip connection, log warning. Check `hasDocsScopes()` before attempting sync. |
-| OAuth token revoked / expired | Mark `needsReauth: true` in syncState, skip connection. Surface reconnect banner in inbox UI. |
-| Drive API quota exceeded (429) | Log error, do NOT update `lastTranscriptSyncAt` (retry next cycle). |
-| Docs API failure for single doc | Log error, continue with remaining docs. Include in `errors[]` array of sync result. |
-| Content extraction returns empty | Insert transcript with `content: null`. It can still be classified by title/participants. |
+| Scenario                             | Behavior                                                                                      |
+| ------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Connection missing Drive/Docs scopes | Skip connection, log warning. Check `hasDocsScopes()` before attempting sync.                 |
+| OAuth token revoked / expired        | Mark `needsReauth: true` in syncState, skip connection. Surface reconnect banner in inbox UI. |
+| Drive API quota exceeded (429)       | Log error, do NOT update `lastTranscriptSyncAt` (retry next cycle).                           |
+| Docs API failure for single doc      | Log error, continue with remaining docs. Include in `errors[]` array of sync result.          |
+| Content extraction returns empty     | Insert transcript with `content: null`. It can still be classified by title/participants.     |
 
 ## Auto-Analyze on Sync (wired after Phase 4a)
 

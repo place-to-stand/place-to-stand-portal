@@ -1,4 +1,4 @@
-'use client';
+'use client'
 
 import { startClientInteraction } from './client'
 import { INTERACTION_EVENTS } from './types'
@@ -39,4 +39,3 @@ export function finishSettingsInteraction(
     ...(outcome.properties ?? {}),
   })
 }
-

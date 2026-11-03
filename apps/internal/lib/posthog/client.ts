@@ -1,20 +1,18 @@
-'use client';
+'use client'
 
-import posthog from "posthog-js";
+import posthog from 'posthog-js'
 
 import {
   type InteractionMetadata,
   type InteractionProperties,
   startInteraction,
-} from "@/lib/perf/interaction-marks";
-import type {
-  InteractionEventName
-} from "@/lib/posthog/types";
+} from '@/lib/perf/interaction-marks'
+import type { InteractionEventName } from '@/lib/posthog/types'
 
 type InteractionOptions = {
-  metadata?: InteractionMetadata;
-  baseProperties?: InteractionProperties;
-};
+  metadata?: InteractionMetadata
+  baseProperties?: InteractionProperties
+}
 
 export function startClientInteraction(
   name: InteractionEventName,
@@ -27,7 +25,7 @@ export function startClientInteraction(
         duration,
         ...(options?.baseProperties ?? {}),
         ...(properties ?? {}),
-      });
+      })
     },
-  });
+  })
 }

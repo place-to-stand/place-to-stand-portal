@@ -1,17 +1,19 @@
-"use client"
+'use client'
 
-import { useMemo } from "react"
+import { useMemo } from 'react'
 
-import { useProjectsBoardState } from "@/lib/projects/board/use-projects-board-state"
-import { useBoardScrollPersistence } from "@/lib/projects/board/state/use-board-scroll-persistence"
-import { useBoardTimeLogDialogs } from "@/lib/projects/board/state/use-board-time-log-dialogs"
-import { useProjectsBoardDerivedState } from "@/lib/projects/board/state/use-projects-board-derived-state"
-import { createRenderAssignees } from "@/lib/projects/board/board-selectors"
-import { useToast } from "@/components/ui/use-toast"
+import { useProjectsBoardState } from '@/lib/projects/board/use-projects-board-state'
+import { useBoardScrollPersistence } from '@/lib/projects/board/state/use-board-scroll-persistence'
+import { useBoardTimeLogDialogs } from '@/lib/projects/board/state/use-board-time-log-dialogs'
+import { useProjectsBoardDerivedState } from '@/lib/projects/board/state/use-projects-board-derived-state'
+import { createRenderAssignees } from '@/lib/projects/board/board-selectors'
+import { useToast } from '@/components/ui/use-toast'
 
-import { useProjectsBoardReviewActions } from "../_hooks/use-projects-board-review-actions"
+import { useProjectsBoardReviewActions } from '../_hooks/use-projects-board-review-actions'
 
-export type UseProjectsBoardCoreStateArgs = Parameters<typeof useProjectsBoardState>[0]
+export type UseProjectsBoardCoreStateArgs = Parameters<
+  typeof useProjectsBoardState
+>[0]
 
 export function useProjectsBoardCoreState({
   currentView,
@@ -58,4 +60,3 @@ export function useProjectsBoardCoreState({
     timeLogDialogs,
   }
 }
-

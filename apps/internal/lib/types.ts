@@ -31,7 +31,9 @@ type SnakeCase<S extends string> = S extends `${infer Head}${infer Tail}`
  * shows up here instead of drifting from a hand-written copy.
  */
 type SnakeRow<T extends Table> = {
-  [K in keyof InferSelectModel<T> as SnakeCase<K & string>]: InferSelectModel<T>[K]
+  [
+    K in keyof InferSelectModel<T> as SnakeCase<K & string>
+  ]: InferSelectModel<T>[K]
 }
 
 /**

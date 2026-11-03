@@ -165,9 +165,15 @@ export function drawStamp(
 
   if (detail) {
     setType(doc, FONTS.label, 11, ink)
-    drawText(doc, detail.toUpperCase(), center, top + padY + labelCap + detailBlock, {
-      align: 'center',
-      charSpace: detailSpace,
-    })
+    drawText(
+      doc,
+      detail.toUpperCase(),
+      center,
+      top + padY + labelCap + detailBlock,
+      {
+        align: 'center',
+        charSpace: detailSpace,
+      }
+    )
   }
 }

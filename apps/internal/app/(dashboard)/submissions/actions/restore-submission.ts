@@ -36,7 +36,9 @@ export async function restoreSubmission(
   }
 
   if (existing.destroyedAt !== null) {
-    return { error: 'Submission was permanently deleted and cannot be restored.' }
+    return {
+      error: 'Submission was permanently deleted and cannot be restored.',
+    }
   }
 
   if (existing.deletedAt === null) {

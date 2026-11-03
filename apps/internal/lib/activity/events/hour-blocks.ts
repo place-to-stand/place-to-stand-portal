@@ -31,7 +31,9 @@ export const hourBlocksCreatedFromInvoiceEvent = (args: {
 }): ActivityEvent => ({
   verb: ActivityVerbs.HOUR_BLOCK_CREATED,
   summary: `Created ${args.count} hour block${args.count === 1 ? '' : 's'} (${formatHours(args.totalHours)})${
-    args.invoiceNumber ? ` from invoice ${args.invoiceNumber}` : ' from a paid invoice'
+    args.invoiceNumber
+      ? ` from invoice ${args.invoiceNumber}`
+      : ' from a paid invoice'
   }`,
   metadata: toMetadata({
     count: args.count,

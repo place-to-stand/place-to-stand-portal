@@ -10,7 +10,11 @@ import { useSheetParams } from '../use-sheet-params'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
-export function ProjectSheetWrapper({ value, open, onRequestClose }: SheetWrapperProps) {
+export function ProjectSheetWrapper({
+  value,
+  open,
+  onRequestClose,
+}: SheetWrapperProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const { getAux } = useSheetParams()

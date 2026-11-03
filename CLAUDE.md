@@ -36,6 +36,7 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 ## Commands
 
 ### Development (from repo root)
+
 - `npm run dev` - Start all apps via Turbo
 - `npm run build` - Build all apps via Turbo
 - `npm run lint` - Lint all apps via Turbo
@@ -44,12 +45,14 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 - `npm run design-tokens` - Regenerate `docs/design-system/tokens.json` from the theme sources (`npm run lint` checks it)
 
 ### CI and pre-commit
-- **CI** (`.github/workflows/ci.yml`) runs `npm ci`, `npm run lint`, `npm run type-check` and `npm run build` on every pull request and on pushes to `main`, on the Node version in `.nvmrc`. It needs no secrets: the build gets placeholder env that satisfies both apps' `lib/env.server.ts` schemas. A new required env var must get a placeholder there too.
+
+- **CI** (`.github/workflows/ci.yml`) runs `npm ci`, `npm run format:check` (prettier on the whole repo; `npm run format` fixes it), `npm run lint`, `npm run type-check`, `npm run test` and `npm run build` on every pull request and on pushes to `main`, on the Node version in `.nvmrc`. It needs no secrets: the build gets placeholder env that satisfies both apps' `lib/env.server.ts` schemas. A new required env var must get a placeholder there too.
 - **Pre-commit** (husky → `lint-staged.config.mjs`, installed by `npm install` through the `prepare` script) runs `eslint --fix` and `prettier --write` on the staged files only, so it stays fast; type-check and build are left to CI.
 - **ESLint config** is shared: `packages/eslint-config` (`base.mjs` for packages, `next.mjs` for both apps, custom rules in `rules/`). Change rules there, not in an app.
 - **Lint fails on any warning** (`eslint --max-warnings=0` in every workspace). Files already over 300 lines are grandfathered in each workspace's `eslint-suppressions.json` (ESLint bulk suppressions); a new oversized file fails. After splitting a listed file, run `npx eslint --prune-suppressions` in that workspace. Type-aware rules (`typed()` in `base.mjs`: unawaited or misused promises, deprecated APIs, a switch missing a union member) run in every workspace; their existing hits are grandfathered the same way. Pre-commit runs eslint per workspace (`scripts/lint-staged-eslint.mjs`) so those lists apply.
 
 ### Development (from `apps/internal/` or `apps/client/`)
+
 - `npm run dev` - Start app with Turbopack (internal: port 3000, client: port 3001)
 - `npm run build` - Build app with Turbopack
 - `npm start` - Start production server
@@ -57,6 +60,7 @@ The two main apps are `apps/internal/` (internal portal) and `apps/client/` (cli
 - `npm run type-check` - Run TypeScript compiler checks (no emit)
 
 ### Database (Drizzle ORM)
+
 Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environment.
 
 - `npm run db:pull` - Introspect database schema into schema file (use sparingly, only when DB is source of truth)
@@ -64,6 +68,7 @@ Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environmen
 - `npm run db:migrate` - Apply migrations to database
 
 **Migration workflow:**
+
 1. Update the schema in `packages/db/src/schema.ts`
 2. Run `npm run db:generate -- --name descriptive_label` from `packages/db/`
 3. Review generated SQL in `packages/db/drizzle/migrations/`
@@ -73,13 +78,16 @@ Run these from `apps/internal/`. Ensure `DATABASE_URL` is set in your environmen
 The baseline migration (`packages/db/drizzle/migrations/0000_supabase_baseline.sql`) captures existing Supabase schema. Run `npm run db:migrate` once after configuring `DATABASE_URL` to register existing state.
 
 ### Turbo Environment Variables
+
 Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` are passed to build tasks. When adding a new server-side env var:
+
 1. Add it to the appropriate app's `lib/env.server.ts` schema (`apps/internal/` or `apps/client/`)
 2. Add it to `turbo.json` → `tasks.build.passThroughEnv` (secrets that shouldn't bust cache) or `tasks.build.env` (vars that should invalidate cache)
 
 ## Architecture Overview
 
 ### Tech Stack
+
 - **Monorepo**: Turborepo with npm workspaces
 - **Framework**: Next.js 16 (App Router) with Turbopack
 - **Database**: PostgreSQL via Supabase with Drizzle ORM (schema in `packages/db`)
@@ -96,6 +104,7 @@ Turbo v2 uses strict mode by default — only env vars listed in `turbo.json` ar
 ### Route Organization
 
 **Internal portal** (`apps/internal/app/`):
+
 ```
 ├── (auth)/           # Sign-in, forgot/force-reset password (unauthenticated)
 ├── (dashboard)/      # Protected routes
@@ -130,6 +139,7 @@ hardcode against, so adding a field is safe and renaming one is breaking.
 The project workspace is tabbed: `/projects/[clientSlug]/[projectSlug]/{tasks,review,time-logs,activity}`, all loaded by `renderProjectTabRoute` (`[projectSlug]/_lib/project-tab-route.tsx`); `/overview` redirects to `tasks` and `/archive` to `review`. The task board lives on the `tasks` tab, and the task sheet opens over it via the `?task=<uuid>` query param — never a route segment (see **Sheet deep links** below). Board links come from `buildBoardPath`, which keeps the board mounted across task selection instead of remounting it the way the retired trailing-segment URLs did.
 
 **Client portal** (`apps/client/app/`):
+
 ```
 ├── (auth)/           # Sign-in, forgot/force-reset password (unauthenticated)
 ├── (portal)/         # Protected routes (force-dynamic)
@@ -145,6 +155,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 ### Database Schema
 
 **Core tables** (`packages/db/src/schema.ts`):
+
 - `contacts` - People (UI: "People"). The person's name lives here; `contacts.user_id` links their sign-in
 - `users` - A person's sign-in: auth id, sign-in email, role (ADMIN, SALES, CLIENT), disabled/archived, onboarding. No name or photo: read them from the person with `personNameSql` / `personAvatarSql` (`@pts/db/names`). Every live user has exactly one live contact; staff are at the "Place To Stand" company
 - `companies` - Every business (UI: "Companies"). A company you bill is a client: when it is billed lives in `client_billing_periods` (one row per stretch, by month), read only through the SQL functions behind `@pts/db/client-state` (`isClientCompany()`, `wasClientCompany()`, `billedInMonth()`); `slug` and `state` serve its projects and invoices; `is_staff` marks the agency's own company. Everything billed keys on `company_id`
@@ -175,6 +186,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 - `activity_logs` + `activity_overview_cache` - Activity audit trail
 
 **Key patterns:**
+
 - UUIDs for primary keys
 - Soft deletes via `deletedAt` timestamps on all core tables
 - `createdAt`/`updatedAt` on all records
@@ -199,6 +211,7 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
    - Uses React `cache()` for automatic deduplication
 
 **Access control:**
+
 - **Every check names a capability** from `lib/auth/capabilities.ts` (what each role may do; Settings → Roles & permissions shows it). Pages call `requirePage('<capability>')`, which redirects (SALES without it to `/leads`, CLIENT to `CLIENT_PORTAL_URL`). API routes call `authorizeRoute('<capability>')` (`lib/auth/guard.ts`), which answers 401/403 JSON, never a redirect; only OAuth navigations under `app/api/auth/**` keep the redirecting guards. Code below them uses `assertCan(user, '<capability>')` (throws ForbiddenError) or `roleCan(user.role, '<capability>')` for a branch. CLIENT-role users are rejected at sign-in. Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
 - Never compare the signed-in user's role to a literal (`user.role === 'ADMIN'`): add or use a capability. Comparing another person's role (a list of people) is data and fine. Lint enforces both (`pts/no-role-literal`, `pts/api-route-guard`)
 - What Sales may see of billing is an allowlist: activity verbs are classified in `lib/activity/verb-audience.ts` (type-check fails on an unclassified verb), and project payloads pick the client fields members see (`lib/projects/viewer-scope.ts`)
@@ -209,11 +222,13 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
 **CRITICAL: No Row Level Security (RLS)**
 
 This project does NOT use PostgreSQL Row Level Security. All access control is handled in the application layer via:
+
 - Permission helpers in `apps/internal/lib/auth/permissions.ts`
 - Query functions in `apps/internal/lib/queries/` that enforce scoping
 - Data layer in `apps/internal/lib/data/` that assembles and filters results
 
 **NEVER:**
+
 - Add `ENABLE ROW LEVEL SECURITY` to any table
 - Create `CREATE POLICY` statements in migrations
 - Use `pgPolicy()` in Drizzle schema definitions
@@ -221,6 +236,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 - Create helper functions like `is_admin()` for RLS
 
 **Why:**
+
 - Application-layer access control is easier to test and debug
 - RLS policies create hidden complexity and hard-to-trace permission issues
 - Supabase RLS requires `auth.uid()` which couples DB to auth provider
@@ -229,17 +245,20 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 ### Authentication & Permissions
 
 **Session management** (`apps/internal/lib/auth/session.ts`):
+
 - `getSession()` - Retrieve Supabase session
 - `getCurrentUser()` - Combine Supabase auth with database user record
 - `requirePage(capability)` - Page and server-action guard; redirects signed-out users to sign in, CLIENT sessions to the client portal and other staff without the capability to `/leads`. `requireUser()` is `requirePage('portal.admin')`, `requireCrmUser()` is `requirePage('portal.sign_in')`
 - `authorizeRoute(capability)` (`lib/auth/guard.ts`) - API route guard; returns `{ user, denied }`, where `denied` is a 401/403 JSON response
 
 **Permission helpers** (`apps/internal/lib/auth/permissions.ts`) — all take the `AppUser` object, not a bare user id:
+
 - `assertCan(user, capability)` - Throws ForbiddenError without the capability
 - `assertAdmin(user)` - `assertCan(user, 'portal.admin')`
 - `ensure{Project,Task,TimeLog}Access(user, id)` - Assert admin + verify the entity exists and is not soft-deleted (NotFoundError)
 
 **Roles:**
+
 - `ADMIN` - Full access to the internal portal
 - `SALES` - The CRM (leads) and the directory: creates and edits companies and people, client companies included (their name, notes, people and titles), and puts people at any company from any sheet. Making a company a client and anything billing (start, stop, terms, commission), a client's primary contact, portal access, people who can sign in and the staff company stay admin-only. A membership Sales creates always starts without portal access (`setPortalAccess` refuses anyone without `clients.manage`)
 - `CLIENT` - Client-portal users only; blocked from the internal portal at sign-in (redirected to `CLIENT_PORTAL_URL`). The role still exists so the internal portal can create/manage portal users.
@@ -247,11 +266,13 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 ### State Management
 
 **Server-first pattern:**
+
 - React Server Components for initial render
 - Server Actions in `_actions/` directories (marked with `'use server'`)
 - Use TanStack React Query only for client-side mutations and polling
 
 **Providers** (`apps/internal/components/providers/`):
+
 - `ReactQueryProvider` - Client-side cache
 - `PostHogProvider` - Analytics
 - `ThemeProvider` - Dark/light mode
@@ -260,6 +281,7 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 ### Error Handling
 
 Use standardized error classes from `apps/internal/lib/errors/http.ts`:
+
 - `UnauthorizedError` - 401, user not authenticated
 - `ForbiddenError` - 403, user lacks permission
 - `NotFoundError` - 404, resource not found
@@ -272,17 +294,19 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 
 **Design system rule:** before any UI work, read `docs/design-system/` and open `/design` in the internal portal. Any change to a shared component, a token or an entity updates `docs/design-system/` and `/design` in the same commit. Entities (each record type's name, icon and colour) live only in the registry, `apps/internal/lib/entity-accents.ts`: use `ENTITY_ICONS` / `ENTITY_ACCENTS`, never import an entity icon from `lucide-react` or write an `*-entity-*` class elsewhere. `npm run lint` enforces it (eslint, plus `scripts/check-entities.mjs` for missing icons or colours, shared icons and 3:1 contrast in both themes). A sheet's list of related records (heading, +, clickable empty state, preview cards) is always `EntityList` (`apps/internal/components/sheets/entity-list.tsx`); eslint blocks importing `SectionAddButton` anywhere else.
 
-**Rules name their guard:** every house rule and component rule in `docs/design-system/` ends with what enforces it, `(guard: eslint \`pts/…\`)`, `(guard: scripts/<check>.mjs)` or `(guard: review)`, and `scripts/check-rule-guards.mjs` (in `npm run lint`) fails on one that doesn't. A new preference lands with its guard, ideally a lint rule in `packages/eslint-config/rules/`; the README's "Which check guards which rule" table lists them all.
+**Rules name their guard:** every house rule and component rule in `docs/design-system/` ends with what enforces it, `(guard: eslint \`pts/…\`)`, `(guard: scripts/<check>.mjs)`or`(guard: review)`, and `scripts/check-rule-guards.mjs`(in`npm run lint`) fails on one that doesn't. A new preference lands with its guard, ideally a lint rule in `packages/eslint-config/rules/`; the README's "Which check guards which rule" table lists them all.
 
 **Sheet save rule:** every sheet saves in one server action and one database transaction, and only when Save is clicked: controls inside a sheet change the form and nothing else. Instant actions are their own records or act outside the app (comments, lead updates, logging time, invoice send/void, submission acknowledge, planning, password reset) and save on their own click. Create and edit show the same sheet: data that needs the new record's id is collected in the form and written in the same transaction. See `docs/design-system/components/sheet.md`.
 
 **Component library:**
+
 - Radix UI primitives in `apps/internal/components/ui/`
 - Custom business components in `apps/internal/components/` organized by feature
 - Rich text editor: TipTap with extensions (highlight, link, image, typography, etc.)
 - Drag-and-drop: `@dnd-kit` for kanban boards and task ordering
 
 **Form handling:**
+
 - React Hook Form for state
 - Zod for validation (schemas alongside forms)
 - Custom hook: `useSheetFormControls()` for modal/drawer forms with history
@@ -290,10 +314,12 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 ### File Storage
 
 **Supabase Storage setup:**
+
 - **Bucket: `user-avatars`** - Private bucket with authenticated access (must be created manually); paths are stored on `contacts.avatar_url`
 - **Bucket: `task-attachments`** - Task files
 
 **Storage utilities:**
+
 - `apps/internal/lib/storage/avatar.ts` - Upload/delete user avatars
 - `apps/internal/lib/storage/task-attachments.ts` - Upload/delete task files
 - Signed URLs generated for secure access
@@ -301,12 +327,14 @@ API responses follow `{ ok: boolean, data?: T, error?: string }` pattern.
 ### Activity System
 
 **Event tracking** (`apps/internal/lib/activity/events/`):
+
 - Domain-specific event handlers: `tasks.ts`, `projects.ts`, `clients.ts`, `contacts.ts`, `leads.ts`, `invoices.ts`, `time-logs.ts`, `users.ts`, `hour-blocks.ts`
 - Centralized in `apps/internal/lib/activity/events.ts`
 - Activity feed with highlights computation
 - Overview cache for performance (`activity_overview_cache` table)
 
 **Usage:**
+
 ```typescript
 import { logTaskCreated } from '@/lib/activity/events/tasks'
 await logTaskCreated(taskId, userId)
@@ -315,16 +343,19 @@ await logTaskCreated(taskId, userId)
 ### PostHog Analytics
 
 **Configuration:**
+
 - Never hallucinate API keys; use keys from `.env` file
 - Event tracking via `apps/internal/lib/posthog/client.ts` (client-side) and `apps/internal/lib/posthog/server.ts` (server-side)
 - Feature flags stored in enums/const objects with UPPERCASE_WITH_UNDERSCORE naming
 - Gate flag-dependent code on value validation checks
 
 **Error tracking (both apps):**
-- `capture_exceptions` only sees *uncaught* errors. Anything an explicit error boundary renders (`global-error.tsx`, any `error.tsx`) counts as handled and is only `console.error`ed in production, so every boundary must call `posthog.captureException(error, { digest: error.digest })` itself
+
+- `capture_exceptions` only sees _uncaught_ errors. Anything an explicit error boundary renders (`global-error.tsx`, any `error.tsx`) counts as handled and is only `console.error`ed in production, so every boundary must call `posthog.captureException(error, { digest: error.digest })` itself
 - Server render/route/action errors go through `onRequestError` in each app's `instrumentation.ts`; the `digest` joins them to the browser-side capture
 
 **Rules:**
+
 - Use each feature flag in as few places as possible
 - For custom properties referenced in 2+ files/callsites, use enum or const object
 - Consult developer before creating new event/property names (naming consistency is essential)
@@ -336,6 +367,7 @@ The marketing site's forms land in `form_submissions` and surface at `/submissio
 creates a lead directly — leads are promoted from a submission by hand.
 
 **Endpoints:**
+
 - `POST /api/integrations/contact-submissions` — one-shot contact form; token `CONTACT_INTAKE_TOKEN`
 - `POST /api/integrations/audit-responses` — Opportunity Audit progress beacons, upserted on `sessionId`; token `AUDIT_INTAKE_TOKEN`
 - `POST /api/integrations/subscribe-submissions` — one-shot blog/mailing-list signup (email only, consent implied, added to the Resend audience on first insert, no emails sent); token `CONTACT_INTAKE_TOKEN` (shared with the contact form)
@@ -343,11 +375,12 @@ creates a lead directly — leads are promoted from a submission by hand.
 **Authentication:** Bearer token checked by `verifyIntakeToken` (`lib/integrations/verify-intake-token.ts`). All three paths are on the `proxy.ts` allowlist, so each route must verify its own token.
 
 **Setup:**
+
 1. Generate a token per endpoint (subscribe reuses the contact token): `openssl rand -hex 32`
 2. Store the same values under the same names in this app and in the marketing site, which also needs `PORTAL_API_BASE_URL`
 
 **Email (PRD 008):** the marketing site sends no email. A payload with `deliver: true` makes the
-portal send the team notification and the visitor's confirmation *after* recording the row
+portal send the team notification and the visitor's confirmation _after_ recording the row
 (`lib/form-submissions/delivery/`). Each send takes an expiring lease (`*_email_claimed_at`),
 sends with a Resend idempotency key, and stamps `team_notified_at` / `confirmation_sent_at` only on
 acceptance, so neither a crash nor a replay can double-send or fake a send; failed sends are retried
@@ -369,26 +402,29 @@ Sep 2026.
 ### Key Patterns & Conventions
 
 **Soft deletes:**
+
 - All core entities use `deletedAt` timestamps
 - Active records: `WHERE deletedAt IS NULL`
 - Archive/restore via setting/clearing `deletedAt`
 - Never hard delete records (preserve historical data): there is no "Delete forever" anywhere (UI, server actions, API, CLI, MCP), only archive and restore
 
 **Slug-based URLs:**
+
 - Projects: `[clientSlug]/[projectSlug]`
 - Slugs generated from names with uniqueness constraints
 - Redirect logic ensures canonical URLs
 
 **Sheet deep links (`lib/sheets/`):**
 
-Every entity sheet is addressed by one query param — `?company=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on *any* dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
+Every entity sheet is addressed by one query param — `?company=<uuid>`, `?task=new`, `?lead=<uuid>&task=new` — never by a route segment. A param opens its sheet on _any_ dashboard route: canonical list pages render their own instance (instant open), and the global `SheetHost` in `(dashboard)/layout.tsx` covers every other route by fetching `GET /api/sheets/init`. Param order in the URL is the sheet stack order, so a sheet can open another sheet (`?lead=<id>&task=new`).
 
 Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never hand-roll sheet URL writes:
+
 - Value is a UUID or `new` (create sheet). UUID-guard before any DB cast.
 - Open pushes a history entry, close replaces one, never scrolling, unrelated params preserved.
 - Writes skip the server (`window.history`, `lib/sheets/shallow-url.ts`), so opening and closing a sheet never reloads the page. The one exception is `open` of a sheet the current page renders itself without `{ shallow: true }`: that goes through `router.push`, because the page may have to resolve a record it doesn't hold. Page code must therefore read the open sheet from the URL (`useSheetParams`), never from a server prop, and wrap a server "not found" flag in `useDeepLinkNotFound`.
 - Sheets, pickers and other reads load through GET routes (`getJson`, `lib/http/get-json.ts`), not server actions: Next runs server actions one at a time per tab. Keep server actions for writes.
-- **Save = done = close** for create *and* edit, matching every sheet: a successful save clears the entity param. Never transition a create sheet into edit mode (see `task-sheet-closes-on-save`).
+- **Save = done = close** for create _and_ edit, matching every sheet: a successful save clears the entity param. Never transition a create sheet into edit mode (see `task-sheet-closes-on-save`).
 - Paginated/filtered list pages resolve the param server-side with `resolveSheetDeepLink()` so a link to a row on page 3 still opens, and cross-redirect between active/archive tabs.
 - Generate links with the builders in `lib/sheets/hrefs.ts` (board task links come from `buildBoardPath`), never string-concatenated inline.
 
@@ -397,17 +433,20 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 **Adding a deep-linkable entity:** add the param to `lib/sheets/entities.ts` (with `claimsPathname` for its host pages), a payload type + resolver in `lib/sheets/init/`, a wrapper in `lib/sheets/wrappers/`, and one line in `lib/sheets/registry.tsx`.
 
 **Sort order tracking:**
+
 - `task_assignee_metadata` table preserves assignee order
 - `rank` field on tasks for custom board ordering
 - Separate from database-native ordering
 
 **Type safety:**
+
 - TypeScript strict mode
 - Zod schemas for runtime validation
 - Type generation from Drizzle schema
 - Server-only imports: Mark with `'server-only'` to prevent client-side execution
 
 **Performance:**
+
 - React Compiler enabled (`apps/internal/next.config.ts`)
 - Parallel data loading with `Promise.all()`
 - TanStack Virtual for long lists
@@ -416,6 +455,7 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 ## Common Workflows
 
 ### Adding a new task status
+
 1. Update `taskStatus` enum in `packages/db/src/schema.ts`
 2. Run `npm run db:generate -- --name add_task_status` from `packages/db/`
 3. Review generated migration
@@ -424,12 +464,14 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 6. Update `apps/internal/lib/projects/task-status.ts` if status logic changes
 
 ### Creating a new protected route
+
 1. Add page under `apps/internal/app/(dashboard)/your-route/page.tsx`
 2. Call `requirePage('<capability>')` in the Server Component
 3. Fetch data using functions from `apps/internal/lib/data/`
 4. Add navigation link if needed
 
 ### Adding a new API endpoint
+
 1. Create route in `apps/internal/app/api/your-endpoint/route.ts`
 2. Export handler: `export async function POST(req: Request) { ... }`
 3. Start with `const { user, denied } = await authorizeRoute('<capability>'); if (denied) return denied`
@@ -437,6 +479,7 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 5. Return standardized responses: `{ ok: true, data }` or `{ ok: false, error }`
 
 ### Creating a new table
+
 1. Define schema in `packages/db/src/schema.ts`
 2. Generate migration: `npm run db:generate -- --name table_name` from `packages/db/`
 3. Review SQL in `packages/db/drizzle/migrations/`
@@ -445,16 +488,19 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 6. Add data layer functions in `apps/internal/lib/data/`
 
 ### Adding a new server-side env var
+
 1. Add Zod validation to the appropriate app's `lib/env.server.ts`
 2. Add to `turbo.json` → `tasks.build.passThroughEnv` (or `env` if it should bust cache)
 3. Add to the correct Vercel project settings for all required environments
 4. Add to the app's `.env.example`
 
 **Cross-app env vars:**
+
 - `CLIENT_PORTAL_URL` (internal app) — full URL of the client portal (e.g. `https://clients.placetostandagency.com`)
 - `GITHUB_APP_*` (client app) — GitHub App credentials for repo integration
 
 ### Logging activity events
+
 1. Create event handler in `apps/internal/lib/activity/events/domain.ts`
 2. Export handler from `apps/internal/lib/activity/events.ts`
 3. Call handler after mutations: `await logTaskUpdated(taskId, userId, changes)`
@@ -463,12 +509,14 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 ## Development Standards
 
 See `AGENTS.md` for comprehensive development practices including:
+
 - LLM implementation workflow (read first, clarify scope, design before code)
 - Development practices (modular architecture, SRP, DRY, git hygiene)
 - Non-functional requirements (accessibility, performance, security)
 - Observability and operations guidelines
 
 **Key guardrails from AGENTS.md:**
+
 - Do not hand-edit dependencies, lockfiles, or migrations — use the CLIs so `package-lock.json` and the schema stay in sync. Other `package.json` config (scripts, workspace fields) is fine to edit.
 - Always run `npm run build`, `npm run lint`, `npm run type-check` from the repo root (runs via Turbo) for touched surfaces
 - Prefer existing modules, utilities, and shadcn components before building new
@@ -479,31 +527,35 @@ See `AGENTS.md` for comprehensive development practices including:
 Custom skills available for code quality reviews. Invoke with `/skill-name`:
 
 ### Code Quality Reviews
-| Skill | Purpose | When to Use |
-|-------|---------|-------------|
-| `/security-review` | OWASP Top 10, auth/authz audit | Before merging security-sensitive changes |
-| `/performance-review` | Core Web Vitals, React patterns | After adding components or data fetching |
-| `/db-review` | Schema normalization, indexing | After schema changes or new tables |
-| `/accessibility-review` | WCAG 2.1 AA compliance | After UI changes |
-| `/refactor` | Dead code, duplication, complexity | During cleanup sprints |
-| `/bug-hunt` | Logic errors, async issues, edge cases | Investigating bugs or reviewing complex logic |
+
+| Skill                   | Purpose                                | When to Use                                   |
+| ----------------------- | -------------------------------------- | --------------------------------------------- |
+| `/security-review`      | OWASP Top 10, auth/authz audit         | Before merging security-sensitive changes     |
+| `/performance-review`   | Core Web Vitals, React patterns        | After adding components or data fetching      |
+| `/db-review`            | Schema normalization, indexing         | After schema changes or new tables            |
+| `/accessibility-review` | WCAG 2.1 AA compliance                 | After UI changes                              |
+| `/refactor`             | Dead code, duplication, complexity     | During cleanup sprints                        |
+| `/bug-hunt`             | Logic errors, async issues, edge cases | Investigating bugs or reviewing complex logic |
 
 ### System Health Reviews
-| Skill | Purpose | When to Use |
-|-------|---------|-------------|
-| `/architecture-review` | Module boundaries, coupling, data flow | Planning features, system feels tangled |
-| `/dependency-audit` | npm security, outdated packages, licenses | Before releases, security hygiene |
-| `/observability-review` | Logging, error tracking, monitoring | After incidents, debugging is hard |
-| `/tech-debt-inventory` | Catalog and prioritize technical debt | Planning cycles, quarterly reviews |
+
+| Skill                   | Purpose                                   | When to Use                             |
+| ----------------------- | ----------------------------------------- | --------------------------------------- |
+| `/architecture-review`  | Module boundaries, coupling, data flow    | Planning features, system feels tangled |
+| `/dependency-audit`     | npm security, outdated packages, licenses | Before releases, security hygiene       |
+| `/observability-review` | Logging, error tracking, monitoring       | After incidents, debugging is hard      |
+| `/tech-debt-inventory`  | Catalog and prioritize technical debt     | Planning cycles, quarterly reviews      |
 
 ### Documentation & Release
-| Skill | Purpose | When to Use |
-|-------|---------|-------------|
-| `/test-plan` | Manual test case generation | Before releases or feature completion |
-| `/docs` | API/component documentation | After adding public interfaces |
-| `/release-checklist` | Pre-deploy verification, rollback plan | Before production deployments |
+
+| Skill                | Purpose                                | When to Use                           |
+| -------------------- | -------------------------------------- | ------------------------------------- |
+| `/test-plan`         | Manual test case generation            | Before releases or feature completion |
+| `/docs`              | API/component documentation            | After adding public interfaces        |
+| `/release-checklist` | Pre-deploy verification, rollback plan | Before production deployments         |
 
 **Built-in PR review** (via plugins):
+
 - `/review-pr` - Comprehensive PR review using multiple specialized agents
 - `/code-review` - Single-pass code review
 
@@ -529,14 +581,14 @@ Custom skills available for code quality reviews. Invoke with `/skill-name`:
 
 The following specialized agents are available via the Task tool:
 
-| Agent | Purpose |
-|-------|---------|
-| `feature-dev:code-reviewer` | Reviews for bugs, security, code quality |
-| `feature-dev:code-explorer` | Deep codebase analysis and architecture mapping |
-| `feature-dev:code-architect` | Designs feature architectures with implementation blueprints |
-| `pr-review-toolkit:code-reviewer` | Reviews against project guidelines |
-| `pr-review-toolkit:silent-failure-hunter` | Finds inadequate error handling |
-| `pr-review-toolkit:code-simplifier` | Simplifies code while preserving functionality |
-| `pr-review-toolkit:pr-test-analyzer` | Reviews test coverage quality |
-| `Explore` | Fast codebase exploration (files, patterns, architecture) |
-| `Plan` | Software architect for implementation planning |
+| Agent                                     | Purpose                                                      |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| `feature-dev:code-reviewer`               | Reviews for bugs, security, code quality                     |
+| `feature-dev:code-explorer`               | Deep codebase analysis and architecture mapping              |
+| `feature-dev:code-architect`              | Designs feature architectures with implementation blueprints |
+| `pr-review-toolkit:code-reviewer`         | Reviews against project guidelines                           |
+| `pr-review-toolkit:silent-failure-hunter` | Finds inadequate error handling                              |
+| `pr-review-toolkit:code-simplifier`       | Simplifies code while preserving functionality               |
+| `pr-review-toolkit:pr-test-analyzer`      | Reviews test coverage quality                                |
+| `Explore`                                 | Fast codebase exploration (files, patterns, architecture)    |
+| `Plan`                                    | Software architect for implementation planning               |

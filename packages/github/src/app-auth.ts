@@ -15,9 +15,7 @@ async function importPrivateKey(pem: string) {
 
   // Convert PKCS#1 to PKCS#8 via Node crypto
   const keyObject = createPrivateKey({ key: pem, format: 'pem' })
-  const pkcs8Pem = keyObject
-    .export({ type: 'pkcs8', format: 'pem' })
-    .toString()
+  const pkcs8Pem = keyObject.export({ type: 'pkcs8', format: 'pem' }).toString()
   return importPKCS8(pkcs8Pem, 'RS256')
 }
 
@@ -114,9 +112,7 @@ export async function getInstallationById(
 
   if (!response.ok) {
     const error = await response.text()
-    throw new Error(
-      `Failed to get installation (${response.status}): ${error}`
-    )
+    throw new Error(`Failed to get installation (${response.status}): ${error}`)
   }
 
   return response.json()

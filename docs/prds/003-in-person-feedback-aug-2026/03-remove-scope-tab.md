@@ -26,16 +26,16 @@ enums in a migration (D6 — data drops too; source documents remain in Google D
 
 ### 1. Files to DELETE outright
 
-| Path | What it is |
-|------|-----------|
-| `apps/internal/app/(dashboard)/projects/_components/scope/` (whole dir: `scope-tab-content.tsx`, `sow-card.tsx`, `sow-document-renderer.tsx`, `sow-section-list.tsx`, `sow-sync-button.tsx`, `sow-picker-button.tsx`, `use-google-picker.ts`) | Scope tab UI |
-| `apps/internal/components/scope/sow-status-cell.tsx` (leaves `components/scope/` empty — remove the dir) | Status cell (SOW-only, not shared) |
-| `apps/internal/lib/scope/sow-status.ts` (remove the `lib/scope/` dir) | Status enums/labels/tokens |
-| `apps/internal/app/(dashboard)/projects/actions/sow.ts` | Server actions (`linkSow`, `syncSow`, `updateSowStatus`, …) |
-| `apps/internal/lib/queries/sow.ts` | All 14 SOW query functions (I1) |
-| `apps/internal/lib/google/` (whole dir: `docs.ts`, `sow-parser.ts`, `sow-parser-types.ts`, `sow-snapshot.ts`) | Google Docs integration — zero non-SOW consumers (D8). Its dep on `lib/gmail/client.ts` (`getValidAccessToken`) is outbound-only; **keep** `lib/gmail/` |
-| `apps/internal/app/api/google/picker-token/route.ts` (leaves `app/api/google/` empty — remove the dir; do **NOT** touch `app/api/auth/google/`, `app/api/auth/callback/google/`, or `app/api/integrations/google/*`) | Picker token endpoint, sole caller was `use-google-picker.ts` |
-| `apps/internal/types/google-picker.d.ts` | `google.picker` ambient types, only used by the picker hook. **(I1)** It's the *only* file in `apps/internal/types/` — remove the dir too (tsconfig uses a blanket `**/*.ts` include; safe). **(I1)** `sow-parser-types.ts` contains no literal "sow" string — delete it **by path**, the final grep sweep will not catch a leftover. |
+| Path                                                                                                                                                                                                                                          | What it is                                                                                                                                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/internal/app/(dashboard)/projects/_components/scope/` (whole dir: `scope-tab-content.tsx`, `sow-card.tsx`, `sow-document-renderer.tsx`, `sow-section-list.tsx`, `sow-sync-button.tsx`, `sow-picker-button.tsx`, `use-google-picker.ts`) | Scope tab UI                                                                                                                                                                                                                                                                                                                          |
+| `apps/internal/components/scope/sow-status-cell.tsx` (leaves `components/scope/` empty — remove the dir)                                                                                                                                      | Status cell (SOW-only, not shared)                                                                                                                                                                                                                                                                                                    |
+| `apps/internal/lib/scope/sow-status.ts` (remove the `lib/scope/` dir)                                                                                                                                                                         | Status enums/labels/tokens                                                                                                                                                                                                                                                                                                            |
+| `apps/internal/app/(dashboard)/projects/actions/sow.ts`                                                                                                                                                                                       | Server actions (`linkSow`, `syncSow`, `updateSowStatus`, …)                                                                                                                                                                                                                                                                           |
+| `apps/internal/lib/queries/sow.ts`                                                                                                                                                                                                            | All 14 SOW query functions (I1)                                                                                                                                                                                                                                                                                                       |
+| `apps/internal/lib/google/` (whole dir: `docs.ts`, `sow-parser.ts`, `sow-parser-types.ts`, `sow-snapshot.ts`)                                                                                                                                 | Google Docs integration — zero non-SOW consumers (D8). Its dep on `lib/gmail/client.ts` (`getValidAccessToken`) is outbound-only; **keep** `lib/gmail/`                                                                                                                                                                               |
+| `apps/internal/app/api/google/picker-token/route.ts` (leaves `app/api/google/` empty — remove the dir; do **NOT** touch `app/api/auth/google/`, `app/api/auth/callback/google/`, or `app/api/integrations/google/*`)                          | Picker token endpoint, sole caller was `use-google-picker.ts`                                                                                                                                                                                                                                                                         |
+| `apps/internal/types/google-picker.d.ts`                                                                                                                                                                                                      | `google.picker` ambient types, only used by the picker hook. **(I1)** It's the _only_ file in `apps/internal/types/` — remove the dir too (tsconfig uses a blanket `**/*.ts` include; safe). **(I1)** `sow-parser-types.ts` contains no literal "sow" string — delete it **by path**, the final grep sweep will not catch a leftover. |
 
 ### 2. Files to EDIT (surgical removals)
 
@@ -55,7 +55,7 @@ enums in a migration (D6 — data drops too; source documents remain in Google D
   pass-throughs `scopeHref` L159, `scopeDisabled` L163 (L160–162 are the other tabs' — keep).
 - `_components/projects-board/projects-board-tabs-section.tsx` — remove `'scopeHref'` (~L13) /
   `'scopeDisabled'` (~L17) from `NavigationProps`, the `ScopeProps` type (~L73–76), `scope:
-  ScopeProps` (~L86), destructured `scope` (~L102), `{...scope}` spread (~L115).
+ScopeProps` (~L86), destructured `scope` (~L102), `{...scope}` spread (~L115).
 - `_hooks/use-projects-board-navigation.ts` — remove `scopeHref` (~L14) / `scopeDisabled` (~L18)
   from `ProjectsBoardNavigation`. **(W7) The computation block is also non-contiguous:** delete
   `scopeHref` **L58–60** and `scopeDisabled` **L64** only — **L61–63 are
@@ -64,9 +64,17 @@ enums in a migration (D6 — data drops too; source documents remain in Google D
   the `scope: { scopeProjectId: … }` block (~L184–186); and **carefully** edit ~L73:
   ```ts
   // BEFORE — compound conditional; delete ONLY the scope clause:
-  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' || initialTab === 'scope' ? 'board' : initialTab
+  const currentBoardView =
+    initialTab === 'timeLogs' ||
+    initialTab === 'overview' ||
+    initialTab === 'scope'
+      ? 'board'
+      : initialTab
   // AFTER:
-  const currentBoardView = initialTab === 'timeLogs' || initialTab === 'overview' ? 'board' : initialTab
+  const currentBoardView =
+    initialTab === 'timeLogs' || initialTab === 'overview'
+      ? 'board'
+      : initialTab
   ```
   A careless delete here breaks the `timeLogs`/`overview` → `'board'` fallback every other tab
   depends on.
@@ -81,7 +89,9 @@ matching the sibling tab pages' named-`PageProps` convention (I1; deliberately d
 ```ts
 import { redirect } from 'next/navigation'
 
-type PageProps = { params: Promise<{ clientSlug: string; projectSlug: string }> }
+type PageProps = {
+  params: Promise<{ clientSlug: string; projectSlug: string }>
+}
 
 export default async function ProjectScopeRoute({ params }: PageProps) {
   const { clientSlug, projectSlug } = await params
@@ -99,6 +109,7 @@ live-behavior change, deferred to [06-future-scope.md](06-future-scope.md).
 `sow_snapshots` + `sow_sections` schema bullet (~L145).
 
 **Verified during review (I1) — no action needed, listed so nobody re-litigates:**
+
 - `apps/internal/lib/db/schema.ts` is a one-line `export * from '@pts/db/schema'` — **no SOW blocks
   to remove there**; the `packages/db` edits flow through automatically.
 - No picker-specific env vars exist anywhere (the picker route reads only the shared
@@ -118,6 +129,7 @@ the precise strings — do not loosen `picker-token` to `picker` (~25 unrelated 
 tables. (The AI-planning banner at ~1425 stays.)
 
 `packages/db/src/relations.ts`:
+
 - Remove `projectSows, sowSnapshots, sowSections` from the schema import (~L36–38)
 - Remove `sows: many(projectSows)` inside `projectsRelations` (~L260 — single line; keep the block)
 - Delete the SOW relations banner + three relation blocks (~L539–583; `formSubmissionsRelations`

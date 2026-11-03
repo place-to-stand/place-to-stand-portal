@@ -13,11 +13,11 @@ import { AuthShell, authLinkClass } from '@pts/ui/auth-shell'
 export default function AccountNotSetUpPage() {
   return (
     <AuthShell
-      label="Client Portal"
+      label='Client Portal'
       title="You're not set up yet"
       description="We couldn't find portal access for that email. If you're expecting access, contact your Place To Stand team and we'll set you up."
       footer={
-        <a href="/sign-in" className={authLinkClass}>
+        <a href='/sign-in' className={authLinkClass}>
           Back to sign in
         </a>
       }

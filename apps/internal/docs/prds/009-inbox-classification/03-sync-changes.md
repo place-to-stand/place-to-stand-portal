@@ -9,6 +9,7 @@
 The Gmail sync in `lib/email/sync.ts` currently auto-links threads to leads when the sender email matches `leads.contactEmail` (via `matchThreadToLead()` → `linkThreadToLead()`). **This auto-linking must be removed.**
 
 After this change, sync does one thing: **ingest messages into threads**. It does not write `clientId`, `projectId`, or `leadId`. All linking happens through:
+
 - Triage mode (accept with link selection) — see [04-triage-mode.md](./04-triage-mode.md)
 - Thread detail sheet (existing linking panels) — see [07-detail-sheet-and-lead-creation.md](./07-detail-sheet-and-lead-creation.md)
 

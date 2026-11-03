@@ -10,43 +10,51 @@ Comprehensive audit of project dependencies for security, maintenance, and effic
 ## Scope
 
 ### 1. Security Vulnerabilities
+
 - Run `npm audit` for known vulnerabilities
 - Check severity levels (critical, high, medium, low)
 - Identify transitive dependency risks
 - Review Dependabot/security advisories if available
 
 ### 2. Outdated Packages
+
 - Compare current vs latest versions
 - Identify packages with major version gaps
 - Check for deprecated packages
 - Review changelogs for breaking changes
 
 ### 3. Unused Dependencies
+
 - Dependencies in package.json not imported anywhere
 - devDependencies that should be dependencies (or vice versa)
 - Duplicate functionality (multiple packages doing same thing)
 - Per AGENTS.md: "Remove unused deps promptly"
 
 ### 4. License Compliance
+
 - Identify licenses of all dependencies
 - Flag copyleft licenses (GPL, AGPL) if problematic
 - Check for license compatibility
 - Document any commercial license requirements
 
 ### 5. Bundle Impact Analysis
+
 - Large dependencies affecting client bundle
 - Dependencies that should be dynamically imported
 - Server-only packages accidentally in client bundle
 - Tree-shaking effectiveness
 
 ### 6. Supply Chain Risk
+
 - Packages with very few maintainers
 - Packages with no recent updates (abandoned)
 - Packages with suspicious update patterns
 - Typosquatting risks
 
 ### 7. Core Dependency Health (project-specific)
+
 Check health of key dependencies:
+
 - **Next.js** - Framework updates, security patches
 - **Drizzle ORM** - Database layer stability
 - **Supabase client** - Auth/storage compatibility
@@ -68,6 +76,7 @@ Check health of key dependencies:
 ## Output Format
 
 ### Security Findings
+
 ```
 [SEVERITY: CRITICAL|HIGH|MEDIUM|LOW]
 Package: package-name@version
@@ -77,6 +86,7 @@ Fix: Upgrade path or mitigation
 ```
 
 ### Outdated Packages
+
 ```
 Package: package-name
 Current: x.y.z
@@ -86,6 +96,7 @@ Action: Upgrade/Hold/Investigate
 ```
 
 ### Unused Dependencies
+
 ```
 Package: package-name
 Type: dependency|devDependency
@@ -94,6 +105,7 @@ Action: Remove from package.json
 ```
 
 ### Bundle Impact
+
 ```
 Package: package-name
 Size: XXkB (gzipped)
@@ -111,6 +123,7 @@ Issue: Should be server-only / dynamically imported
 ## Post-Audit
 
 Generate:
+
 - Security remediation priority list
 - Safe upgrade commands
 - Packages to remove

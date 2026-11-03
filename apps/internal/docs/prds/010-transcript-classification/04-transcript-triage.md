@@ -27,10 +27,20 @@ Transcripts get a **top-level tab** in the inbox, alongside Triage and Emails:
 ```typescript
 type InboxNavTab = 'triage' | 'emails' | 'transcripts'
 
-const INBOX_TABS: Array<{ label: string; value: InboxNavTab; href: string; adminOnly?: boolean }> = [
+const INBOX_TABS: Array<{
+  label: string
+  value: InboxNavTab
+  href: string
+  adminOnly?: boolean
+}> = [
   { label: 'Triage', value: 'triage', href: '/my/inbox/triage' },
   { label: 'Emails', value: 'emails', href: '/my/inbox/emails' },
-  { label: 'Transcripts', value: 'transcripts', href: '/my/inbox/transcripts', adminOnly: true },
+  {
+    label: 'Transcripts',
+    value: 'transcripts',
+    href: '/my/inbox/transcripts',
+    adminOnly: true,
+  },
 ]
 ```
 
@@ -84,6 +94,7 @@ export default async function TranscriptsPage({ params }: { params: Promise<{ vi
 ```
 
 Views follow the same URL pattern as emails:
+
 - `/my/inbox/transcripts` → unclassified (default)
 - `/my/inbox/transcripts/classified` → classified
 - `/my/inbox/transcripts/dismissed` → dismissed
@@ -93,6 +104,7 @@ Views follow the same URL pattern as emails:
 **New file:** `app/(dashboard)/my/inbox/_components/transcript-list-view.tsx`
 
 Layout:
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  [Unclassified (12)] [Classified (45)] [Dismissed (8)]  │  ← Sub-tabs
@@ -117,6 +129,7 @@ Layout:
 **New file:** `app/(dashboard)/my/inbox/_components/transcript-row.tsx`
 
 Each row displays:
+
 - **Title** (from document title)
 - **Meeting date** (formatted, or "Date unknown" if not extracted)
 - **Participants** (truncated list of speaker names)
@@ -128,6 +141,7 @@ Each row displays:
 > **Performance note:** Transcript rows are rendered from list query data which excludes the `content` column. Content is only fetched when the user expands the detail panel.
 
 For classified transcripts, show the classification badge instead of actions:
+
 - "Client: Acme Corp → Website Redesign" with an "Edit" button to reclassify
 
 ## Transcript Detail Panel
@@ -135,6 +149,7 @@ For classified transcripts, show the classification badge instead of actions:
 **New file:** `app/(dashboard)/my/inbox/_components/transcript-detail-panel.tsx`
 
 Expandable panel (or slide-out sheet) showing:
+
 - Full transcript text in a scrollable pre-formatted view
 - Meeting metadata: date, duration, participants
 - Link to original Google Doc (driveFileUrl)
@@ -147,6 +162,7 @@ Expandable panel (or slide-out sheet) showing:
 Reuse the pattern from `thread-classification-panel.tsx`:
 
 Three tracks:
+
 1. **Client Track** — select client, optionally select project
 2. **Internal Track** — select internal/personal project
 3. **Lead Track** — select lead
@@ -196,6 +212,7 @@ Use negative margin + padding to expand the clickable area without affecting lay
 **Transcripts tab** — sync button triggers transcript sync only. Display last transcript sync time. Calls `POST /api/integrations/transcripts/sync`. Auto-sync every 60s (user is actively on this tab, faster refresh is expected).
 
 When the user manually syncs, show a toast with results:
+
 - Triage: "Sync complete — {N} new emails, {M} new transcripts"
 - Emails: "Sync complete — emails synced successfully"
 - Transcripts: "Sync complete — {N} new transcripts found"

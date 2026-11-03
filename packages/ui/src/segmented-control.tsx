@@ -60,7 +60,7 @@ function SegmentedControl<T extends string>({
             'text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] outline-none select-none',
             'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
             'not-data-checked:hover:bg-muted/60 not-data-checked:hover:text-foreground',
-            'data-checked:bg-background data-checked:shadow-sm dark:data-checked:border-input dark:data-checked:bg-input/30 dark:data-checked:text-foreground',
+            'data-checked:bg-background dark:data-checked:border-input dark:data-checked:bg-input/30 dark:data-checked:text-foreground data-checked:shadow-sm',
             'data-disabled:cursor-not-allowed data-disabled:opacity-50 data-disabled:not-data-checked:hover:bg-transparent',
             // The chosen option stays readable when the whole group is locked.
             'data-checked:data-disabled:opacity-80'

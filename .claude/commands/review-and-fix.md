@@ -7,21 +7,23 @@ Run a comprehensive multi-reviewer pass on the current branch's open PR, then co
 Use `gh pr view` to get the current branch's open PR number. Use `gh pr diff` to understand the full scope of changes. Identify the base branch.
 
 **Output the completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | {PR number, base branch, file count} |
-| 2-6 | Pending | — |
+
+| Step | Status  | Output                               |
+| ---- | ------- | ------------------------------------ |
+| 1    | Done    | {PR number, base branch, file count} |
+| 2-6  | Pending | —                                    |
 
 ## Step 2 — Fetch existing PR comments
 
 Use `gh api repos/{owner}/{repo}/pulls/{pr_number}/comments` to get any existing review comments (from Copilot, teammates, or prior reviews). Collect these as the first set of findings. Summarize each comment (file, line, finding).
 
 **Output the completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | {PR number, base branch, file count} |
-| 2 | Done | {N existing comments collected} |
-| 3-6 | Pending | — |
+
+| Step | Status  | Output                               |
+| ---- | ------- | ------------------------------------ |
+| 1    | Done    | {PR number, base branch, file count} |
+| 2    | Done    | {N existing comments collected}      |
+| 3-6  | Pending | —                                    |
 
 ## Step 3 — Run parallel reviews
 
@@ -40,12 +42,13 @@ Both Codex skills expand into foreground instructions that run the codex compani
 **CRITICAL: Never set `run_in_background: true` and never background the Codex runs. Block until ALL THREE reviews have returned output. Do NOT proceed to Step 4 until you have all three.**
 
 **Output the completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | ... |
-| 3 | Done | {N findings from code-review}, {N findings from standard}, {N findings from adversarial} |
-| 4-6 | Pending | — |
+
+| Step | Status  | Output                                                                                   |
+| ---- | ------- | ---------------------------------------------------------------------------------------- |
+| 1    | Done    | ...                                                                                      |
+| 2    | Done    | ...                                                                                      |
+| 3    | Done    | {N findings from code-review}, {N findings from standard}, {N findings from adversarial} |
+| 4-6  | Pending | —                                                                                        |
 
 ## Step 4 — Converge and deduplicate
 
@@ -59,11 +62,12 @@ Combine ALL findings from:
 Deduplicate findings that point to the same issue. Group by file. Count unique findings.
 
 **Output the completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1-3 | Done | ... |
-| 4 | Done | {N unique findings after dedup} |
-| 5-6 | Pending | — |
+
+| Step | Status  | Output                          |
+| ---- | ------- | ------------------------------- |
+| 1-3  | Done    | ...                             |
+| 4    | Done    | {N unique findings after dedup} |
+| 5-6  | Pending | —                               |
 
 ## Step 5 — Triage findings
 
@@ -87,9 +91,10 @@ After the user confirms the triage:
 5. If there were PR comments from teammates/Copilot, reply to each resolved comment using `gh api` to indicate it was addressed
 
 **Output the final completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1-5 | Done | ... |
-| 6 | Done | {N fixes applied}, {commit hash}, {N comments replied to} |
+
+| Step | Status | Output                                                    |
+| ---- | ------ | --------------------------------------------------------- |
+| 1-5  | Done   | ...                                                       |
+| 6    | Done   | {N fixes applied}, {commit hash}, {N comments replied to} |
 
 $ARGUMENTS

@@ -21,7 +21,10 @@ export type PortalAccountSummary = {
   deletedAt: string | null
   lastSignInAt: string | null
   /** A role change dated after this month, still to come. */
-  scheduledRole: { role: 'ADMIN' | 'SALES' | 'CLIENT'; effectiveFrom: string } | null
+  scheduledRole: {
+    role: 'ADMIN' | 'SALES' | 'CLIENT'
+    effectiveFrom: string
+  } | null
 }
 
 /**
@@ -52,7 +55,10 @@ export async function getPortalAccountSummary(
       .limit(1),
     fetchLastSignIns([userId]),
     db
-      .select({ role: userRoleTerms.role, effectiveFrom: userRoleTerms.effectiveFrom })
+      .select({
+        role: userRoleTerms.role,
+        effectiveFrom: userRoleTerms.effectiveFrom,
+      })
       .from(userRoleTerms)
       .where(
         and(
@@ -81,7 +87,7 @@ export async function getPortalAccountSummary(
  * served page by id rather than joining the auth schema into the list query.
  */
 export async function fetchLastSignIns(
-  userIds: string[],
+  userIds: string[]
 ): Promise<Map<string, string>> {
   if (!userIds.length) return new Map()
 
@@ -91,8 +97,8 @@ export async function fetchLastSignIns(
   }>(
     sql`SELECT id, last_sign_in_at FROM auth.users WHERE id IN (${sql.join(
       userIds.map(id => sql`${id}::uuid`),
-      sql`, `,
-    )})`,
+      sql`, `
+    )})`
   )
 
   const lastSignIns = new Map<string, string>()

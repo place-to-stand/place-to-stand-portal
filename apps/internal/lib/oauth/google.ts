@@ -138,9 +138,12 @@ export async function getGoogleUserInfo(
  * Logs failures for monitoring but doesn't throw - caller handles soft delete regardless
  */
 export async function revokeToken(token: string): Promise<void> {
-  const response = await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
-    method: 'POST',
-  })
+  const response = await fetch(
+    `https://oauth2.googleapis.com/revoke?token=${token}`,
+    {
+      method: 'POST',
+    }
+  )
 
   if (!response.ok) {
     // Log for monitoring - token may already be invalid/expired

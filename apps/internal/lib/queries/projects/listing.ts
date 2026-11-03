@@ -12,10 +12,7 @@ import { companies, projects, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { PAGE_SIZE_LIMITS } from '@/lib/pagination/page-size'
 import { clampLimit, createSearchPattern } from '@/lib/pagination/cursor'
-import {
-  DEFAULT_PROJECTS_SORT,
-  type ProjectSortField,
-} from './sort'
+import { DEFAULT_PROJECTS_SORT, type ProjectSortField } from './sort'
 
 import {
   projectFields,
@@ -32,7 +29,7 @@ import {
 
 export async function getProjectById(
   user: AppUser,
-  projectId: string,
+  projectId: string
 ): Promise<SelectProject> {
   await ensureProjectAccess(user, projectId)
 
@@ -49,14 +46,16 @@ export async function getProjectById(
   return result[0]
 }
 
-
 // PRD 004 §03 (R5): per-sort order expressions for the settings/archive list.
 type ProjectSortDescriptor = {
   orderAsc: SQL
   orderDesc: SQL
 }
 
-const PROJECT_SORT_DESCRIPTORS: Record<ProjectSortField, ProjectSortDescriptor> = {
+const PROJECT_SORT_DESCRIPTORS: Record<
+  ProjectSortField,
+  ProjectSortDescriptor
+> = {
   name: {
     orderAsc: sql`${projects.name} ASC`,
     orderDesc: sql`${projects.name} DESC`,
@@ -69,7 +68,7 @@ const PROJECT_SORT_DESCRIPTORS: Record<ProjectSortField, ProjectSortDescriptor> 
 
 export async function listProjectsForSettings(
   user: AppUser,
-  input: ListProjectsForSettingsInput = {},
+  input: ListProjectsForSettingsInput = {}
 ): Promise<ProjectsSettingsResult> {
   assertAdmin(user)
 
@@ -88,7 +87,7 @@ export async function listProjectsForSettings(
   if (searchQuery) {
     const pattern = createSearchPattern(searchQuery)
     baseConditions.push(
-      sql`(${projects.name} ILIKE ${pattern} OR ${projects.slug} ILIKE ${pattern})`,
+      sql`(${projects.name} ILIKE ${pattern} OR ${projects.slug} ILIKE ${pattern})`
     )
   }
 
@@ -152,26 +151,27 @@ export async function listProjectsForSettings(
           email: row.owner.email,
         }
       : row.project.createdBy
-          ? {
-              id: row.project.createdBy,
-              fullName: null,
-              email: null,
-            }
-          : null,
+        ? {
+            id: row.project.createdBy,
+            fullName: null,
+            email: null,
+          }
+        : null,
   }))
 
-  const [totalResult, unfilteredTotalResult, clientDirectory] = await Promise.all([
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(projects)
-      .where(baseConditions.length ? and(...baseConditions) : undefined),
-    // Status-scoped only — the `M` in `Showing N of M` (PRD 004 §03).
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(projects)
-      .where(statusCondition),
-    listClientDirectory(),
-  ])
+  const [totalResult, unfilteredTotalResult, clientDirectory] =
+    await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(projects)
+        .where(baseConditions.length ? and(...baseConditions) : undefined),
+      // Status-scoped only — the `M` in `Showing N of M` (PRD 004 §03).
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(projects)
+        .where(statusCondition),
+      listClientDirectory(),
+    ])
 
   const totalCount = Number(totalResult[0]?.count ?? 0)
   const unfilteredTotalCount = Number(unfilteredTotalResult[0]?.count ?? 0)
@@ -189,9 +189,7 @@ export async function listProjectsForSettings(
 
 export type {
   ListProjectsForSettingsInput,
-  
   ProjectsSettingsListItem,
   ProjectsSettingsResult,
   SelectProject,
 } from './listing-helpers'
-

@@ -303,8 +303,7 @@ if (!isMain) {
   )
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
-}
-else
+} else
   console.log(
     'Copy: person not contact, companies in the client portal, no Partners or Delete forever'
   )

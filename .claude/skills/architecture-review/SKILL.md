@@ -10,12 +10,14 @@ Evaluate overall system design for maintainability, scalability, and adherence t
 ## Scope
 
 ### 1. Module Boundaries (per AGENTS.md)
+
 - Features grouped by domain inside `/app` and `/components`
 - Shared utilities properly placed under `/lib`
 - Clear separation between UI, state management, data fetching, and business logic
 - No circular dependencies between modules
 
 ### 2. Data Layer Architecture (per CLAUDE.md)
+
 - Two-layer approach consistency:
   - `lib/queries/` - Low-level Drizzle operations
   - `lib/data/` - Business logic assembly with permissions
@@ -24,36 +26,42 @@ Evaluate overall system design for maintainability, scalability, and adherence t
 - Parallel data loading with `Promise.all()` where appropriate
 
 ### 3. Route Organization
+
 - Consistent patterns in `app/(dashboard)/` routes
 - Slug-based URL conventions maintained
 - Server Components vs Client Components properly split
 - Server Actions in `_actions/` directories
 
 ### 4. Coupling Analysis
+
 - Feature modules should be independently deployable in concept
 - Shared components shouldn't have feature-specific logic
 - Database schema changes shouldn't require touching many features
 - Look for "shotgun surgery" patterns
 
 ### 5. Cohesion Evaluation
+
 - Related functionality grouped together
 - Single Responsibility Principle at module level
 - Files approaching 300 lines indicate need to split (per AGENTS.md)
 - Functions exceeding 50 lines need decomposition
 
 ### 6. API Design (per AGENTS.md)
+
 - RESTful patterns followed
 - Versioned under `/api/v{n}`
 - Consistent request/response contracts
 - Typed responses with Zod validation
 
 ### 7. State Management Patterns
+
 - Server-first pattern consistency
 - TanStack React Query only for client mutations/polling
 - Provider composition in `components/providers/`
 - No state duplication between server and client
 
 ### 8. Error Handling Architecture
+
 - Standardized error classes from `lib/errors/http.ts`
 - Consistent `{ ok: boolean, data?, error? }` API responses
 - React Query retry policies for external calls
@@ -91,6 +99,7 @@ Migration Effort: LOW|MEDIUM|HIGH
 ## Post-Review
 
 Generate:
+
 - Architecture diagram of current state
 - Dependency heat map (high coupling areas)
 - Recommended refactoring roadmap

@@ -74,7 +74,11 @@ export function usePlanStream() {
 
       const reader = response.body?.getReader()
       if (!reader) {
-        setState(prev => ({ ...prev, isGenerating: false, error: 'No response body' }))
+        setState(prev => ({
+          ...prev,
+          isGenerating: false,
+          error: 'No response body',
+        }))
         return
       }
 

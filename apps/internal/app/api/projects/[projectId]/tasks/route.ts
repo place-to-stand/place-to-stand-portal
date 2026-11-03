@@ -28,19 +28,22 @@ export async function GET(
   try {
     const tasks = await listProjectTaskCollectionsWithRelations(
       user,
-      parsedParams.data.projectId,
+      parsedParams.data.projectId
     )
 
     return NextResponse.json(tasks, { status: 200 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to load project tasks', error)
     return NextResponse.json(
       { error: 'Unable to load project tasks.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

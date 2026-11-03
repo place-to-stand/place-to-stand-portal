@@ -22,12 +22,16 @@ export async function GET(request: NextRequest) {
   const redirectTo = searchParams.get('redirect_to') ?? '/'
 
   if (!tokenHash || !type) {
-    return NextResponse.redirect(new URL('/sign-in?error=invalid_link', request.url))
+    return NextResponse.redirect(
+      new URL('/sign-in?error=invalid_link', request.url)
+    )
   }
 
   // Only accept the types we actually issue, rather than casting whatever arrives.
   if (!isSupportedOtpType(type)) {
-    return NextResponse.redirect(new URL('/sign-in?error=invalid_link', request.url))
+    return NextResponse.redirect(
+      new URL('/sign-in?error=invalid_link', request.url)
+    )
   }
 
   const supabase = getSupabaseServerClient()
@@ -75,9 +79,7 @@ export async function GET(request: NextRequest) {
 
   // For email changes, redirect to a success page or the dashboard
   if (type === 'email_change') {
-    return NextResponse.redirect(
-      new URL('/?email_changed=true', request.url)
-    )
+    return NextResponse.redirect(new URL('/?email_changed=true', request.url))
   }
 
   // Relative paths only. Without this, `?redirect_to=//evil.com` (or

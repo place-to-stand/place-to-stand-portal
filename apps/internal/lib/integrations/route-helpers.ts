@@ -7,7 +7,10 @@ import {
   type IntegrationProvider,
 } from '@/lib/types/integrations'
 
-import { IntegrationNotConnectedError, InvalidIntegrationTokenError } from './connections'
+import {
+  IntegrationNotConnectedError,
+  InvalidIntegrationTokenError,
+} from './connections'
 
 /**
  * Resolves the `[provider]` segment of `/api/integrations/[provider]/...`.

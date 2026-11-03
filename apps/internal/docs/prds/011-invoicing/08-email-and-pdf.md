@@ -73,6 +73,7 @@ Place to Stand
 ```
 
 **Attachments:**
+
 - `{invoiceNumber}.pdf` — the generated invoice PDF
 
 ### Recipient
@@ -136,7 +137,10 @@ async function sendInvoiceEmail(params: {
     from: `Place To Stand <${serverEnv.RESEND_FROM_EMAIL}>`,
     to: params.to,
     subject: `Invoice ${params.invoice.invoiceNumber} from Place to Stand — ${formatCurrency(params.invoice.total)}`,
-    react: InvoiceSentEmail({ invoice: params.invoice, shareUrl: params.shareUrl }),
+    react: InvoiceSentEmail({
+      invoice: params.invoice,
+      shareUrl: params.shareUrl,
+    }),
     attachments: [
       {
         filename: `${params.invoice.invoiceNumber}.pdf`,
@@ -151,12 +155,12 @@ async function sendInvoiceEmail(params: {
 
 ## Error Handling
 
-| Scenario | Behavior |
-|----------|----------|
-| PDF generation fails | Log error, send email without attachment (include link only) |
-| Email delivery fails | Log error, invoice still marked SENT. Admin can re-share manually. |
-| No client contacts | Log warning, skip email. Invoice is still sent and shareable via link. |
-| Resend rate limit | Fire-and-forget — Resend queues internally. If truly rejected, logged. |
+| Scenario             | Behavior                                                               |
+| -------------------- | ---------------------------------------------------------------------- |
+| PDF generation fails | Log error, send email without attachment (include link only)           |
+| Email delivery fails | Log error, invoice still marked SENT. Admin can re-share manually.     |
+| No client contacts   | Log warning, skip email. Invoice is still sent and shareable via link. |
+| Resend rate limit    | Fire-and-forget — Resend queues internally. If truly rejected, logged. |
 
 ## Implementation Checklist (Phase 6)
 

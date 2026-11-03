@@ -48,7 +48,8 @@ export function toPlanningModelTier(value: unknown): PlanningModelTier {
  * AI SDK gateway, e.g. 'anthropic/claude-sonnet-4-6'.
  */
 export function resolveGatewayModel(tier: PlanningModelTier): string {
-  const id = TIER_LATEST_MODEL_ID[tier] ?? TIER_LATEST_MODEL_ID[DEFAULT_PLANNING_TIER]
+  const id =
+    TIER_LATEST_MODEL_ID[tier] ?? TIER_LATEST_MODEL_ID[DEFAULT_PLANNING_TIER]
   return `anthropic/${id}`
 }
 

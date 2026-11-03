@@ -1,25 +1,27 @@
-"use client"
+'use client'
 
-import { forwardRef, useCallback } from "react"
+import { forwardRef, useCallback } from 'react'
 
 // --- Lib ---
-import { parseShortcutKeys } from "@/lib/tiptap-utils"
+import { parseShortcutKeys } from '@/lib/tiptap-utils'
 
 // --- Hooks ---
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 // --- UI Primitives ---
-import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
-import { Button } from "@/components/tiptap-ui-primitive/button"
-import { Badge } from "@/components/tiptap-ui-primitive/badge"
+import type { ButtonProps } from '@/components/tiptap-ui-primitive/button'
+import { Button } from '@/components/tiptap-ui-primitive/button'
+import { Badge } from '@/components/tiptap-ui-primitive/badge'
 
 // --- Tiptap UI ---
-import type { ListType, UseListConfig } from "@/components/tiptap-ui/list-button"
-import { LIST_SHORTCUT_KEYS, useList } from "@/components/tiptap-ui/list-button"
+import type {
+  ListType,
+  UseListConfig,
+} from '@/components/tiptap-ui/list-button'
+import { LIST_SHORTCUT_KEYS, useList } from '@/components/tiptap-ui/list-button'
 
 export interface ListButtonProps
-  extends Omit<ButtonProps, "type">,
-    UseListConfig {
+  extends Omit<ButtonProps, 'type'>, UseListConfig {
   /**
    * Optional text to display alongside the icon.
    */
@@ -92,10 +94,10 @@ export const ListButton = forwardRef<HTMLButtonElement, ListButtonProps>(
 
     return (
       <Button
-        type="button"
-        data-style="ghost"
-        data-active-state={isActive ? "on" : "off"}
-        role="button"
+        type='button'
+        data-style='ghost'
+        data-active-state={isActive ? 'on' : 'off'}
+        role='button'
         tabIndex={-1}
         disabled={!canToggle}
         data-disabled={!canToggle}
@@ -108,8 +110,8 @@ export const ListButton = forwardRef<HTMLButtonElement, ListButtonProps>(
       >
         {children ?? (
           <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <Icon className='tiptap-button-icon' />
+            {text && <span className='tiptap-button-text'>{text}</span>}
             {showShortcut && (
               <ListShortcutBadge type={type} shortcutKeys={shortcutKeys} />
             )}
@@ -120,4 +122,4 @@ export const ListButton = forwardRef<HTMLButtonElement, ListButtonProps>(
   }
 )
 
-ListButton.displayName = "ListButton"
+ListButton.displayName = 'ListButton'

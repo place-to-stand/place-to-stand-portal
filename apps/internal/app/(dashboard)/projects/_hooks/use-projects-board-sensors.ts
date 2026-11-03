@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import { useMemo } from "react"
-import { MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { useMemo } from 'react'
+import { MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 
 /**
  * Mouse drags start after 8px of travel. Touch drags start on a short

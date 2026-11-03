@@ -4,21 +4,21 @@
 
 ## Status Summary
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Phase 1: Data Model & Sync | Not started | |
-| Phase 2: Inbox Views | Not started | Depends on Phase 1 |
-| Phase 3: Triage Mode UI | Not started | Depends on Phase 1 |
+| Phase                                 | Status      | Notes              |
+| ------------------------------------- | ----------- | ------------------ |
+| Phase 1: Data Model & Sync            | Not started |                    |
+| Phase 2: Inbox Views                  | Not started | Depends on Phase 1 |
+| Phase 3: Triage Mode UI               | Not started | Depends on Phase 1 |
 | Phase 4: Detail Sheet & Lead Creation | Not started | Depends on Phase 1 |
-| Phase 5: Batch Actions & Metrics | Not started | Depends on Phase 2 |
+| Phase 5: Batch Actions & Metrics      | Not started | Depends on Phase 2 |
 
 ## Key Files Modified
 
 _Updated as implementation proceeds._
 
 | File | Phase | Change |
-|------|-------|--------|
-| | | |
+| ---- | ----- | ------ |
+|      |       |        |
 
 ## Session Log
 
@@ -40,14 +40,18 @@ _Template for new entries:_
 **Duration**: [approximate]
 
 **Completed:**
+
 - [ item ]
 
 **Decisions made:**
+
 - [ any decisions that came up during implementation ]
 
 **Blockers / Issues:**
+
 - [ any problems encountered ]
 
 **Next session:**
+
 - [ what to pick up next ]
 ```

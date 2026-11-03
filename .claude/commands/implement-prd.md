@@ -13,12 +13,13 @@ Implement the specified PRD. If a specific section is given, implement just that
 5. **Enumerate every section** the PRD contains. Print a table listing each section file, its dependencies, and its planned implementation order. This is the **implementation plan** — you will execute every row.
 
 **Output the completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | All N sections enumerated: {01-name, 02-name, ...}. Pre-impl items remaining: {list or "none"}. |
-| 2 | Pending | — |
-| 3 | Pending | — |
-| 4 | Pending | — |
+
+| Phase | Status  | Output                                                                                          |
+| ----- | ------- | ----------------------------------------------------------------------------------------------- |
+| 1     | Done    | All N sections enumerated: {01-name, 02-name, ...}. Pre-impl items remaining: {list or "none"}. |
+| 2     | Pending | —                                                                                               |
+| 3     | Pending | —                                                                                               |
+| 4     | Pending | —                                                                                               |
 
 ## Phase 2 — Implement every section
 
@@ -27,11 +28,13 @@ Implement the specified PRD. If a specific section is given, implement just that
 For each section file (`01-xxx.md`, `02-xxx.md`, ... `0N-xxx.md`):
 
 ### Before coding the section:
+
 1. Read the full section file — understand the problem, decisions, implementation details, and acceptance criteria.
 2. Read ALL existing files that will be modified (understand before changing).
 3. Check for any C/W/I/UF codes referenced in the section and plan to address them inline.
 
 ### During coding:
+
 - Follow all patterns and conventions in CLAUDE.md and AGENTS.md.
 - Match existing code style in adjacent files, in the correct workspace (`apps/internal`, `apps/client`, `packages/db`, `packages/github`).
 - Schema changes: edit `packages/db/src/schema.ts` + `relations.ts`, generate with `npm run db:generate -- --name <label>` from `packages/db/`, review the SQL, apply with `npm run db:migrate`. Keep the snake-case `DbClient`/`DbProject`/`DbUser` twins in `apps/internal/lib/types.ts` in sync.
@@ -40,6 +43,7 @@ For each section file (`01-xxx.md`, `02-xxx.md`, ... `0N-xxx.md`):
 - The acceptance criteria are the definition of done.
 
 ### After coding each section:
+
 1. Run `npm run type-check` from the repo root — must pass (zero errors).
 2. Run `npm run lint` from the repo root — must pass.
 3. Update PROGRESS.md: every acceptance criterion in that section's block gets `[x]` if implemented OR a `<!-- deferred: {reason} -->` annotation if blocked. No silent `[ ]`.
@@ -48,13 +52,14 @@ For each section file (`01-xxx.md`, `02-xxx.md`, ... `0N-xxx.md`):
 **Manual-step convention:** If an acceptance criterion legitimately can't be done by code-writing alone (e.g., a `drizzle-kit generate` column-rename needs an interactive TTY, a Supabase Storage bucket needs manual creation, prod env vars need to be set in Vercel for both apps), leave the item `[ ]` but append `<!-- MANUAL STEP for the user: {what to do, where} -->`. Do NOT mark it as deferred — the work is real, just not for the model.
 
 ### After every section commits to PROGRESS:
+
 Output the section completion table:
 
-| Section | Status | type-check | lint | PROGRESS updated | TEST-PLAN updated |
-|---------|--------|-----------|------|-----------------|-------------------|
-| 01 | Done | pass | pass | yes | yes |
-| 02 | Done / Deferred (reason) | ... | ... | ... | ... |
-| ... | ... | ... | ... | ... | ... |
+| Section | Status                   | type-check | lint | PROGRESS updated | TEST-PLAN updated |
+| ------- | ------------------------ | ---------- | ---- | ---------------- | ----------------- |
+| 01      | Done                     | pass       | pass | yes              | yes               |
+| 02      | Done / Deferred (reason) | ...        | ...  | ...              | ...               |
+| ...     | ...                      | ...        | ...  | ...              | ...               |
 
 ### Anti-patterns to avoid
 
@@ -93,11 +98,12 @@ Output the section completion table:
 6. Report the commit hash + branch + push result in the final table.
 
 **Output the final completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | All N sections processed: {N done, N deferred, N manual-step-required} |
-| 3 | Done | type-check ✓, lint ✓, PROGRESS untagged = 0, manual steps for user: {N items} |
-| 4 | Done | Committed {hash} on {branch}, pushed ✓ {(updates PR #N | no PR yet — run /submit-prd)} |
+
+| Phase | Status | Output                                                                        |
+| ----- | ------ | ----------------------------------------------------------------------------- |
+| 1     | Done   | ...                                                                           |
+| 2     | Done   | All N sections processed: {N done, N deferred, N manual-step-required}        |
+| 3     | Done   | type-check ✓, lint ✓, PROGRESS untagged = 0, manual steps for user: {N items} |
+| 4     | Done   | Committed {hash} on {branch}, pushed ✓ {(updates PR #N                        | no PR yet — run /submit-prd)} |
 
 $ARGUMENTS

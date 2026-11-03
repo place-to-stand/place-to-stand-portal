@@ -3,10 +3,7 @@ import 'server-only'
 import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import {
-  assertCrmAccess,
-  ensureProjectAccess,
-} from '@/lib/auth/permissions'
+import { assertCrmAccess, ensureProjectAccess } from '@/lib/auth/permissions'
 import { listWorkableProjectIds } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { taskAssignees, tasks } from '@/lib/db/schema'

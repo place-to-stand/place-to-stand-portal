@@ -22,21 +22,25 @@ Automation exercised 73 of 82 test items end-to-end against the local dev stack 
 ## 🟧 Section B — Not automatable (require human/external context)
 
 ### Race conditions / timing
+
 - [ ] **B1. (01.4)** Rapid double-click Save (or ⌘S twice fast) during create → exactly one task. The synchronous `submitLockRef` guards the same-render window; automation can't click faster than one render. Hammer the Create button and count rows.
 - [ ] **B2. (01.E3)** Kill the network mid-save (DevTools offline) → error state with the form intact, retry works, and a post-insert partial failure transitions to edit mode without duplicating on retry.
 - [ ] **B3. (02.E3)** Force the time-logs GET to fail (DevTools request blocking on `/api/tasks/*/time-logs`) → the Time section shows its quiet inline error while the rest of the sheet stays fully usable.
 
 ### Visual / "feel" judgments
+
 - [ ] **B4. (01.11)** Watch the create→edit transition closely: no flicker of the sheet closing, no frame with an empty project field (C2/W15). Automation asserted end states only.
 - [ ] **B7. (R.3)** Board drag-and-drop smoothness, rank ordering, and assignee ordering — feel-based; untouched code paths but worth a drag.
 
 ### Real external systems
+
 - [ ] **B5. (03.5)** Google OAuth connect + reconnect from Settings → Integrations (Gmail/Calendar). The scope removal deleted only the dead `GOOGLE_DOCS_SCOPES` pair; `GOOGLE_SCOPES` is untouched — confirm a real consent flow still round-trips.
 - [ ] **B6. (03.6)** Gmail features (email-attachment sync) unaffected — needs a live Gmail connection.
 
 ## 🟩 Section C — Gut-check items (passed automation, eyeball for polish)
 
 ### §01 — Task sheet stays open
+
 - [ ] **C1. (01.1–01.3, 01.5)** Create from My Tasks and from the board: sheet stays open, header flips to "Edit task", URL gains the id, saving again updates (row counts verified in DB).
 - [ ] **C2. (01.6, 01.7)** Edit save via button and ⌘S re-baselines (closing right after doesn't prompt); a dirty close still prompts to discard.
 - [ ] **C3. (01.8, 01.9)** Archive-from-sheet closes the sheet; the lead task overlay still closes on save.
@@ -44,6 +48,7 @@ Automation exercised 73 of 82 test items end-to-end against the local dev stack 
 - [ ] **C5. (01.E1, 01.E4, 01.E5)** Delegated create (assigned to another admin) transitions cleanly; deep links to out-of-set tasks open in edit mode; `not-a-uuid` renders the board without a 500.
 
 ### §02 — Time logs on the task sheet
+
 - [ ] **C6. (02.1–02.5, 02.11)** Time section lists logs with correct totals, empty states, and the pre-linked Log time flow — all from My Tasks. Check the toast, spacing, and row typography feel right.
 - [ ] **C7. (02.6, 02.7)** Multi-task logs appear on every linked task's sheet; row-click edit updates the list.
 - [ ] **C8. (02.8)** The dialog's new Delete button (confirm-guarded) — also present when the dialog opens from the Time Logs tab. Check button placement feels right (left of Save).
@@ -52,17 +57,21 @@ Automation exercised 73 of 82 test items end-to-end against the local dev stack 
 - [ ] **C11. (02.E1, 02.E2, 02.E4–02.E7)** Zero-hours validation, closed-month warning toast (July 2026), logging for another user, refetch-on-reopen after external edits, unsaved task edits surviving a time-log save (C4 rule), and the server-side 400 for archived-task links.
 
 ### §03 — Scope removal
+
 - [ ] **C12. (03.1, 03.2, 03.7, 03.E1)** Tab bar has no Scope; `/scope` (with or without query) redirects to `/tasks`; every remaining tab deep-links. Migration verified applied + idempotent (03.4, 03.E2); grep sweep and build gates clean (03.3, 03.8).
 
 ### §04 — Total-projects hover
+
 - [ ] **C13. (04.1–04.5, 04.7)** Total card lists all 15 non-deleted Acme projects alphabetically with status badges; COMPLETED links load their boards; zero-active branch has the hover; total==active shows no affordance; deleted projects appear nowhere. Eyeball badge colors/tones per status.
 - [ ] **C14. (04.6, 04.E1, 04.E3, 04.E4)** Hover coordination (opening one card closes the other, no stale-timer wipe), scrollable `max-h-80` list, keyboard Enter activation, contacts linked-clients hover unchanged.
 
 ### §05 — Users filters
+
 - [ ] **C15. (05.1–05.9)** Role + Access dropdowns (archive tab: role only), counts follow filters, URL round-trips through reload/back/forward, pagination preserves filters and filter changes clear the cursor, filtered empty-state message. Check dropdown widths/spacing against the submissions page.
 - [ ] **C16. (05.E1, 05.E3)** Invalid params ignored (no false "no users match" message); stale cursor + filter renders a sane page.
 
 ### Permissions & regressions
+
 - [ ] **C17. (P.1–P.3)** CLIENT sign-in is rejected with a "client portal" pointer; the by-task time-logs API returns 404 for soft-deleted tasks / 400 for invalid ids / 200 for live ones (after fix F1); unauthenticated hits are denied by the middleware (307 to sign-in rather than a literal 401 — the route's own 401 is a second layer).
 - [ ] **C18. (R.1, R.2, R.4–R.8)** User sheet still closes on save; burndown Add + Time Logs tab flows unchanged (edit dialog now also has Delete); submissions filters untouched; contacts hover untouched; clients page loads fast; monthly-close page loads; TIME_LOG_CREATED + task activity events recorded for every save.
 
@@ -70,18 +79,18 @@ Automation exercised 73 of 82 test items end-to-end against the local dev stack 
 
 ## ✏️ Fixes applied during autotest
 
-| # | Issue | File | Commit |
-|---|-------|------|--------|
-| F1 | `listTaskTimeLogs` used `ensureTaskAccess(..., { includeArchived: true })`, so `GET /api/tasks/{id}/time-logs` returned 200 for soft-deleted tasks; P.2 requires 404. Dropped the option (status-ARCHIVED tasks still pass — they aren't soft-deleted). | `apps/internal/lib/queries/time-logs/read.ts` | b4522fa |
-| F2 | Access toggle: on a partial failure (DB flag set, auth-ban step failed) the hook returned before `router.refresh()`, so a filtered list kept showing the stale row while the toast said access changed. Error branch now refreshes too. | `apps/internal/lib/settings/users/state/user-mutation/use-set-user-disabled-action.ts` | (this commit) |
+| #   | Issue                                                                                                                                                                                                                                                   | File                                                                                   | Commit        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------- |
+| F1  | `listTaskTimeLogs` used `ensureTaskAccess(..., { includeArchived: true })`, so `GET /api/tasks/{id}/time-logs` returned 200 for soft-deleted tasks; P.2 requires 404. Dropped the option (status-ARCHIVED tasks still pass — they aren't soft-deleted). | `apps/internal/lib/queries/time-logs/read.ts`                                          | b4522fa       |
+| F2  | Access toggle: on a partial failure (DB flag set, auth-ban step failed) the hook returned before `router.refresh()`, so a filtered list kept showing the stale row while the toast said access changed. Error branch now refreshes too.                 | `apps/internal/lib/settings/users/state/user-mutation/use-set-user-disabled-action.ts` | (this commit) |
 
 ---
 
 ## Summary counts
 
-| Section | Count |
-|---------|-------|
-| A — High priority follow-ups | 2 |
-| B — Not automatable | 7 |
-| C — Gut-check (auto-pass) | 18 groups (73 auto-passed items) |
-| **Total original test items** | **82** |
+| Section                       | Count                            |
+| ----------------------------- | -------------------------------- |
+| A — High priority follow-ups  | 2                                |
+| B — Not automatable           | 7                                |
+| C — Gut-check (auto-pass)     | 18 groups (73 auto-passed items) |
+| **Total original test items** | **82**                           |

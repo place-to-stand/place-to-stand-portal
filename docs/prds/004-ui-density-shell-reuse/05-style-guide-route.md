@@ -20,7 +20,7 @@ A static, admin-gated `/design` route group in `(dashboard)` — protected by th
 
 1. **Foundations** — color tokens (all `--*` theme vars as swatches, light/dark), radius scale, type scale, the object-identity entity colors from `design-system.md`.
 2. **Primitives** — every `components/ui/*` component, all variants × sizes × states (default/hover/disabled/loading where applicable): buttons (incl. `xs`/`icon-sm`/`icon-lg`), badges, inputs/textarea/select/checkbox/switch (+`sm`)/label/form messages, tabs, tooltip, popover, dropdown, dialog/alert-dialog/confirm-dialog, sheet (all 5 sizes), avatar, skeleton, progress, separator, toast (trigger buttons), pagination-controls (both modes), searchable-combobox, phone-input, hover-card, disabled-field-tooltip, breadcrumb.
-3. **Shell specimens** — `TabsNav`, breadcrumb variants (1/2/3 segments), the toolbar row with count + primary action, `PageShell` header itself (the page *is* rendered in it).
+3. **Shell specimens** — `TabsNav`, breadcrumb variants (1/2/3 segments), the toolbar row with count + primary action, `PageShell` header itself (the page _is_ rendered in it).
 
 **Grows with later sections (the labs land as their subjects do — the page is the acceptance surface, not a blocker):**
 

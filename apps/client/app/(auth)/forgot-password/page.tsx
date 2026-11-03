@@ -40,15 +40,15 @@ export default function ForgotPasswordPage() {
   if (sent) {
     return (
       <AuthShell
-        label="Client Portal"
-        title="Check your email"
+        label='Client Portal'
+        title='Check your email'
         description={
           <>
             We sent a password reset link to <strong>{email}</strong>.
           </>
         }
         footer={
-          <a href="/sign-in" className={authLinkClass}>
+          <a href='/sign-in' className={authLinkClass}>
             Back to sign in
           </a>
         }
@@ -60,35 +60,35 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      label="Client Portal"
-      title="Reset password"
+      label='Client Portal'
+      title='Reset password'
       description="Enter your email and we'll send a reset link."
       footer={
-        <a href="/sign-in" className={authLinkClass}>
+        <a href='/sign-in' className={authLinkClass}>
           Back to sign in
         </a>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className='space-y-4'>
         {error && <div className={authErrorClass}>{error}</div>}
 
-        <div className="space-y-2">
-          <label htmlFor="email" className={authFieldLabelClass}>
+        <div className='space-y-2'>
+          <label htmlFor='email' className={authFieldLabelClass}>
             Email
           </label>
           <input
-            id="email"
-            type="email"
+            id='email'
+            type='email'
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
             className={authInputClass}
-            placeholder="you@example.com"
+            placeholder='you@example.com'
           />
         </div>
 
         <button
-          type="submit"
+          type='submit'
           disabled={loading}
           className={authPrimaryButtonClass}
         >

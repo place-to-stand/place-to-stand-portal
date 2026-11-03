@@ -12,12 +12,14 @@ Analyze database schema design, normalization, and query patterns for PostgreSQL
 Review schema files and queries for:
 
 ### 1. Normalization Analysis
+
 - First Normal Form (1NF): Atomic values, no repeating groups
 - Second Normal Form (2NF): No partial dependencies on composite keys
 - Third Normal Form (3NF): No transitive dependencies
 - Identify intentional denormalization and validate reasoning
 
 ### 2. Schema Design
+
 - Appropriate data types (varchar lengths, numeric precision)
 - Proper use of PostgreSQL enums vs. lookup tables
 - UUID vs. serial for primary keys (project uses UUIDs)
@@ -26,6 +28,7 @@ Review schema files and queries for:
 - Proper foreign key relationships
 
 ### 3. Indexing Strategy
+
 - Missing indexes on foreign keys
 - Missing indexes on frequently filtered columns
 - Missing composite indexes for common query patterns
@@ -33,23 +36,27 @@ Review schema files and queries for:
 - Missing partial indexes for soft-delete patterns (`WHERE deleted_at IS NULL`)
 
 ### 4. Soft Delete Consistency
+
 - All core tables should have `deletedAt` timestamp (per CLAUDE.md)
 - Queries consistently filter `WHERE deletedAt IS NULL`
 - Cascade behavior on soft deletes
 
 ### 5. Relationship Patterns
+
 - Verify relations in `lib/db/relations.ts` match schema
 - Many-to-many join table design
 - Proper ON DELETE/ON UPDATE behaviors
 - Missing relationships that should exist
 
 ### 6. Query Patterns
+
 - N+1 queries in `lib/queries/`
 - Missing eager loading opportunities
 - Inefficient joins
 - Unbounded queries (missing LIMIT)
 
 ### 7. Migration Safety
+
 - Migrations that could lock tables
 - Backwards-incompatible changes
 - Missing data migrations for schema changes
@@ -59,6 +66,7 @@ Review schema files and queries for:
 **This project NEVER uses RLS.** All access control is handled in the application layer.
 
 **Flag as 🔴 CRITICAL if found:**
+
 - `ENABLE ROW LEVEL SECURITY` in any migration
 - `CREATE POLICY` statements in migrations
 - `pgPolicy()` calls in `lib/db/schema.ts`
@@ -66,6 +74,7 @@ Review schema files and queries for:
 - Helper functions like `is_admin()` for RLS
 
 **Why RLS is prohibited:**
+
 - Application-layer access control is easier to test and debug
 - RLS creates hidden complexity and hard-to-trace permission issues
 - Supabase RLS requires `auth.uid()` which couples DB to auth provider
@@ -74,9 +83,11 @@ Review schema files and queries for:
 **If RLS is found:** Immediately flag and recommend removal. This is a blocking issue.
 
 ### 9. Column Usage Audit
+
 **Goal:** Prevent storing data that isn't immediately being used. Every column should have a purpose.
 
 **Exempt columns (standard audit fields):**
+
 - `id` (primary key)
 - `createdAt`, `created_at`
 - `updatedAt`, `updated_at`
@@ -84,19 +95,23 @@ Review schema files and queries for:
 - Foreign key columns (e.g., `userId`, `projectId`, `clientId`)
 
 **For each non-exempt column, verify it is:**
+
 - Used in a query (SELECT, WHERE, ORDER BY, GROUP BY) in `lib/queries/` or `lib/data/`
 - OR displayed in a UI component (check `components/` and `app/`)
 - OR used in API responses or server actions
 
 **Flags:**
+
 - 🔴 **UNUSED**: Column exists but no evidence of usage anywhere
 - 🟡 **WRITE-ONLY**: Column is written to but never read/displayed
 - 🟢 **ACTIVE**: Column is both written and read/displayed
 
 ### 10. Enum Value Usage Audit
+
 **Goal:** Ensure all enum values are actively used. Unused enum values create confusion and maintenance burden.
 
 **For each PostgreSQL enum type in the schema, verify:**
+
 - All values are used in at least one of:
   - Query filters (WHERE status = 'VALUE')
   - UI rendering (status labels, colors, icons)
@@ -104,11 +119,13 @@ Review schema files and queries for:
   - API responses or form options
 
 **Flags:**
+
 - 🔴 **UNUSED VALUE**: Enum value exists but has no usage
 - 🟡 **DEPRECATED**: Value exists for historical data only (document if intentional)
 - 🟢 **ACTIVE**: Value is actively used in queries and UI
 
 **Document findings for each enum:**
+
 ```
 Enum: taskStatus
 Values: [BACKLOG, ON_DECK, IN_PROGRESS, IN_REVIEW, BLOCKED, DONE, ARCHIVED]
@@ -120,6 +137,7 @@ Usage Analysis:
 ## Output Format
 
 For each finding:
+
 ```
 [TYPE: NORMALIZATION|INDEXING|DESIGN|QUERY|MIGRATION|RLS_VIOLATION|UNUSED_COLUMN|UNUSED_ENUM]
 Location: table/file reference
@@ -130,6 +148,7 @@ Migration Required: Yes/No
 ```
 
 For column/enum usage audit, include a summary table:
+
 ```
 ## Column Usage Summary
 
@@ -175,6 +194,7 @@ For column/enum usage audit, include a summary table:
 ## Post-Review
 
 Generate:
+
 - Schema diagram recommendations
 - Index creation SQL statements
 - Migration plan for improvements

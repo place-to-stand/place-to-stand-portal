@@ -33,7 +33,9 @@ export async function pinTaskToTopOfAssigneeBoards(
   const assignees = await executor
     .select({ userId: taskAssignees.userId })
     .from(taskAssignees)
-    .where(and(eq(taskAssignees.taskId, taskId), isNull(taskAssignees.deletedAt)))
+    .where(
+      and(eq(taskAssignees.taskId, taskId), isNull(taskAssignees.deletedAt))
+    )
 
   if (!assignees.length) {
     return

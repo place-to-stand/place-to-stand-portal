@@ -7,4 +7,3 @@ export const MY_TASK_STATUS_VALUES = BOARD_COLUMNS.map(
 ) as MyTaskStatus[]
 
 export const MY_TASK_BOARD_COLUMNS = BOARD_COLUMNS
-

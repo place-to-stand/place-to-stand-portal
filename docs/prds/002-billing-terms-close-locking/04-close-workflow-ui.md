@@ -10,12 +10,12 @@ Extend [apps/internal/lib/data/reports/monthly-close.ts](../../../apps/internal/
 
 ```ts
 export type MonthlyCloseView = {
-  report: MonthlyCloseReport      // snapshot report when closed, live otherwise
+  report: MonthlyCloseReport // snapshot report when closed, live otherwise
   close: {
     status: 'open' | 'closed'
     closedAt?: string
     closedByName?: string | null
-    drift?: CloseDrift | null     // only computed for closed months
+    drift?: CloseDrift | null // only computed for closed months
   }
 }
 ```
@@ -28,9 +28,15 @@ export type MonthlyCloseView = {
 export type CloseDrift = {
   hasDrift: boolean
   deltas: Array<{
-    section: 'prepaidBilling' | 'net30Billing' | 'payroll' | 'origination' | 'closer' | 'partnerPayouts'
-    label: string                 // section, or "section · payee/client" for row-level diffs
-    snapshotValue: number         // hours or dollars, per the row
+    section:
+      | 'prepaidBilling'
+      | 'net30Billing'
+      | 'payroll'
+      | 'origination'
+      | 'closer'
+      | 'partnerPayouts'
+    label: string // section, or "section · payee/client" for row-level diffs
+    snapshotValue: number // hours or dollars, per the row
     liveValue: number
   }>
   lateRecords: Array<{
@@ -38,14 +44,14 @@ export type CloseDrift = {
     id: string
     clientName: string | null
     hours: number
-    eventDate: string             // logged_on / billing_month date
-    recordedAt: string            // created_at, updated_at, or deleted_at — whichever tripped
+    eventDate: string // logged_on / billing_month date
+    recordedAt: string // created_at, updated_at, or deleted_at — whichever tripped
     change: 'added' | 'modified' | 'deleted'
   }>
 }
 ```
 
-- **Canonical comparison (F2)** — hours-only totals miss real drift (hours moved between users, a closer swap, offsetting ±edits all change *who gets paid* with section totals unchanged). Compare a canonical projection of snapshot vs live: per-section `totalHours` **and** `totalAmount`; per-client rows of the two billing sections; per-payee `partnerPayouts` rows (keyed `kind:id`, comparing each amount column). Any difference (numbers rounded to 2 decimals — hours are NUMERIC(8,2)) → `hasDrift`, with row-level deltas labeled "Origination · Acme" / "Payouts · Jane".
+- **Canonical comparison (F2)** — hours-only totals miss real drift (hours moved between users, a closer swap, offsetting ±edits all change _who gets paid_ with section totals unchanged). Compare a canonical projection of snapshot vs live: per-section `totalHours` **and** `totalAmount`; per-client rows of the two billing sections; per-payee `partnerPayouts` rows (keyed `kind:id`, comparing each amount column). Any difference (numbers rounded to 2 decimals — hours are NUMERIC(8,2)) → `hasDrift`, with row-level deltas labeled "Origination · Acme" / "Payouts · Jane".
 - **Late records** (new query in `apps/internal/lib/queries/reports/close-snapshots.ts`): time logs with `logged_on` in the month AND (`created_at > closed_at` OR `updated_at > closed_at` OR `deleted_at > closed_at`); hour blocks with `billing_month` in the month (F7) AND (`created_at > closed_at` OR `updated_at > closed_at` OR `deleted_at > closed_at`). A webhook-created block can land in an early-closed current month, so hour blocks can now be `'added'` too.
 - **Prerequisite (F1)**: `updateTimeLog` and `softDeleteTimeLog` in [apps/internal/lib/queries/time-logs/mutations.ts](../../../apps/internal/lib/queries/time-logs/mutations.ts) do **not** currently set `updatedAt` — both must add `updatedAt: new Date().toISOString()` to their `.set()` calls (matching the hour-block actions' existing pattern) or the `updated_at` predicate never fires. The `deleted_at > closed_at` check covers soft-deletes independently as belt-and-braces.
 - `hasDrift` is driven by the **comparison**; `lateRecords` is best-effort attribution. A delta with no matching records (e.g. a billing-term change or partner reassignment) renders as "cause unknown — compare sections manually".
