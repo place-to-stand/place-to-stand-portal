@@ -8,6 +8,7 @@ import { listWorkableProjectIds } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { taskAssignees, tasks } from '@/lib/db/schema'
 import type { RawTaskWithRelations } from '@/lib/data/projects/types'
+import { loadTaskLeads } from '@/lib/data/projects/relations/task-leads'
 
 type TaskWithRelationsSelection = {
   id: string
@@ -148,6 +149,7 @@ async function queryTasksWithRelations(
 
   const taskIds = taskRows.map(row => row.id)
 
+  const leadsById = await loadTaskLeads(taskRows.map(row => row.leadId))
   const assigneeRows = (await db
     .select({
       taskId: taskAssignees.taskId,
@@ -192,6 +194,7 @@ async function queryTasksWithRelations(
     comment_count: Number(row.commentCount ?? 0),
     attachment_count: Number(row.attachmentCount ?? 0),
     logged_hours: Number(row.loggedHours ?? 0),
+    lead: (row.leadId && leadsById.get(row.leadId)) || null,
   }))
 }
 

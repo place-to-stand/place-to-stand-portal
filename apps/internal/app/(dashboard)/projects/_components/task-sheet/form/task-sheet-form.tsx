@@ -40,6 +40,7 @@ type TaskSheetFormProps = {
   maxAttachmentSize: number
   attachmentsDisabledReason: string | null
   isDragActive: boolean
+  lead: TaskSheetFormFieldsProps['lead']
 }
 
 export function TaskSheetForm(props: TaskSheetFormProps) {
@@ -65,6 +66,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     maxAttachmentSize,
     attachmentsDisabledReason,
     isDragActive,
+    lead,
   } = props
 
   const attachmentsDisabled = isPending || !canManage
@@ -120,6 +122,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           acceptedAttachmentTypes={acceptedAttachmentTypes}
           maxAttachmentSize={maxAttachmentSize}
           isSheetOpen={isSheetOpen}
+          lead={lead}
         />
       </form>
     </Form>

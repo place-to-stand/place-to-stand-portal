@@ -147,6 +147,16 @@ export type TaskWithRelations = DbTask & {
    */
   loggedHours: number
   attachments?: DbTaskAttachment[]
+  /** The lead the task is linked to, while that lead is live. */
+  lead?: TaskLead | null
+}
+
+/** A task's linked lead, as its card and sheet show it. */
+export type TaskLead = {
+  id: string
+  name: string
+  status: LeadStatusValue
+  assigneeName: string | null
 }
 export type TaskCommentAuthor = {
   id: string
@@ -172,6 +182,7 @@ type ProjectBurndownSummary = {
   lastLogAt: string | null
 }
 
+import type { LeadStatusValue } from '@/lib/leads/constants'
 import type { ProjectIntegrationLinkSummary } from '@/lib/types/integrations'
 
 export type GitHubRepoLinkSummary = {

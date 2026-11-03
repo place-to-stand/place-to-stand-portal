@@ -12,6 +12,9 @@ import {
 
 import type { RawTaskWithRelations } from '../types'
 import type { SelectTask } from '@/lib/queries/tasks/common'
+import type { TaskLead } from '@/lib/types'
+
+import { loadTaskLeads } from './task-leads'
 
 export type TaskRow = {
   id: string
@@ -35,6 +38,7 @@ export type TaskRow = {
   commentCount: number
   attachmentCount: number
   loggedHours: number
+  lead: TaskLead | null
 }
 
 export type TaskAssigneeRow = {
@@ -106,57 +110,63 @@ export async function loadTaskRows(
   // Two grouped queries replace the old per-row correlated subqueries,
   // which executed 2 index probes per task row per request.
   const taskIds = rows.map(row => row.id)
-  const [commentCounts, attachmentCounts, loggedHours, assigneeRows] =
-    await Promise.all([
-      db
-        .select({
-          taskId: taskCommentsTable.taskId,
-          count: sql<number>`count(*)`,
-        })
-        .from(taskCommentsTable)
-        .where(
-          and(
-            inArray(taskCommentsTable.taskId, taskIds),
-            isNull(taskCommentsTable.deletedAt)
-          )
+  const [
+    commentCounts,
+    attachmentCounts,
+    loggedHours,
+    assigneeRows,
+    leadsById,
+  ] = await Promise.all([
+    db
+      .select({
+        taskId: taskCommentsTable.taskId,
+        count: sql<number>`count(*)`,
+      })
+      .from(taskCommentsTable)
+      .where(
+        and(
+          inArray(taskCommentsTable.taskId, taskIds),
+          isNull(taskCommentsTable.deletedAt)
         )
-        .groupBy(taskCommentsTable.taskId),
-      db
-        .select({
-          taskId: taskAttachmentsTable.taskId,
-          count: sql<number>`count(*)`,
-        })
-        .from(taskAttachmentsTable)
-        .where(
-          and(
-            inArray(taskAttachmentsTable.taskId, taskIds),
-            isNull(taskAttachmentsTable.deletedAt)
-          )
+      )
+      .groupBy(taskCommentsTable.taskId),
+    db
+      .select({
+        taskId: taskAttachmentsTable.taskId,
+        count: sql<number>`count(*)`,
+      })
+      .from(taskAttachmentsTable)
+      .where(
+        and(
+          inArray(taskAttachmentsTable.taskId, taskIds),
+          isNull(taskAttachmentsTable.deletedAt)
         )
-        .groupBy(taskAttachmentsTable.taskId),
-      // Sum numeric(8,2) in SQL, never by accumulating floats in JS. A log
-      // linked to several tasks contributes fully to each -- the same shape the
-      // task sheet's own total uses, so a card can't contradict its sheet.
-      db
-        .select({
-          taskId: timeLogTasksTable.taskId,
-          hours: sql<string>`coalesce(sum(${timeLogsTable.hours}), 0)`,
-        })
-        .from(timeLogTasksTable)
-        .innerJoin(
-          timeLogsTable,
-          eq(timeLogTasksTable.timeLogId, timeLogsTable.id)
+      )
+      .groupBy(taskAttachmentsTable.taskId),
+    // Sum numeric(8,2) in SQL, never by accumulating floats in JS. A log
+    // linked to several tasks contributes fully to each -- the same shape the
+    // task sheet's own total uses, so a card can't contradict its sheet.
+    db
+      .select({
+        taskId: timeLogTasksTable.taskId,
+        hours: sql<string>`coalesce(sum(${timeLogsTable.hours}), 0)`,
+      })
+      .from(timeLogTasksTable)
+      .innerJoin(
+        timeLogsTable,
+        eq(timeLogTasksTable.timeLogId, timeLogsTable.id)
+      )
+      .where(
+        and(
+          inArray(timeLogTasksTable.taskId, taskIds),
+          isNull(timeLogTasksTable.deletedAt),
+          isNull(timeLogsTable.deletedAt)
         )
-        .where(
-          and(
-            inArray(timeLogTasksTable.taskId, taskIds),
-            isNull(timeLogTasksTable.deletedAt),
-            isNull(timeLogsTable.deletedAt)
-          )
-        )
-        .groupBy(timeLogTasksTable.taskId),
-      loadTaskAssigneeRows(taskIds),
-    ])
+      )
+      .groupBy(timeLogTasksTable.taskId),
+    loadTaskAssigneeRows(taskIds),
+    loadTaskLeads(rows.map(row => row.leadId)),
+  ])
 
   const commentCountByTask = new Map(
     commentCounts.map(row => [row.taskId, Number(row.count)])
@@ -174,6 +184,7 @@ export async function loadTaskRows(
       commentCount: commentCountByTask.get(row.id) ?? 0,
       attachmentCount: attachmentCountByTask.get(row.id) ?? 0,
       loggedHours: loggedHoursByTask.get(row.id) ?? 0,
+      lead: (row.leadId && leadsById.get(row.leadId)) || null,
     })),
     assigneeRows,
   }
@@ -243,6 +254,7 @@ export function mapTaskRowsToRaw(
       comment_count: Number(row.commentCount ?? 0),
       attachment_count: Number(row.attachmentCount ?? 0),
       logged_hours: Number(row.loggedHours ?? 0),
+      lead: row.lead,
     } as RawTaskWithRelations
 
     return normalized

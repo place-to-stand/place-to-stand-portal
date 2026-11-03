@@ -22,6 +22,7 @@ import {
 } from '@/components/cards/card-assignee-avatars'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { cn } from '@/lib/utils'
 import type {
   ProjectTypeValue,
@@ -42,6 +43,8 @@ type TaskContextDetails = {
   projectHref?: string | null
   layout?: 'inline' | 'stacked'
   projectType?: ProjectTypeValue
+  /** Leave out the lead line (the lead's own sheet lists its tasks). */
+  hideLead?: boolean
 }
 
 type TaskCardProps = {
@@ -69,6 +72,7 @@ function CardContent({
     ? getTaskDueMeta(task.due_on, { status: task.status })
     : null
   const isCompleted = task.status === 'DONE'
+  const lead = context?.hideLead ? null : task.lead
 
   return (
     <>
@@ -84,6 +88,7 @@ function CardContent({
           it never adds a row of its own. */}
       <div className='mt-4 flex items-end justify-between gap-3'>
         <div className='flex min-w-0 flex-1 flex-col gap-2'>
+          {lead ? <CardLeadLink lead={lead} /> : null}
           {context?.clientLabel || context?.projectLabel ? (
             <div
               className={cn(
@@ -363,6 +368,25 @@ export function TaskCardPreview({
     >
       <CardContent task={task} assignees={assignees} context={context} />
     </div>
+  )
+}
+
+/** The linked lead; a click stacks its sheet over the board. */
+function CardLeadLink({ lead }: { lead: { id: string; name: string } }) {
+  const { open } = useSheetParams()
+  return (
+    <button
+      type='button'
+      className='text-muted-foreground hover:text-foreground inline-flex max-w-full min-w-0 cursor-pointer items-center gap-1 self-start text-xs underline-offset-4 transition hover:underline'
+      onClick={event => {
+        event.stopPropagation()
+        open('lead', lead.id)
+      }}
+      onKeyDown={event => event.stopPropagation()}
+    >
+      <ENTITY_ICONS.lead className='h-3.5 w-3.5 shrink-0' aria-hidden />
+      <span className='truncate'>{lead.name}</span>
+    </button>
   )
 }
 

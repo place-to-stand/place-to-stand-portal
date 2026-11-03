@@ -1,4 +1,4 @@
-import type { DbClientMember, DbTask, DbUser } from '@/lib/types'
+import type { DbClientMember, DbTask, DbUser, TaskLead } from '@/lib/types'
 export type MemberWithUser = DbClientMember & { user: DbUser | null }
 
 type RawTaskAttachment = {
@@ -20,6 +20,7 @@ export type RawTaskWithRelations = DbTask & {
   attachment_count?: number | null
   logged_hours?: number | null
   attachments?: RawTaskAttachment[] | null
+  lead?: TaskLead | null
 }
 
 export type TimeLogSummary = {
