@@ -2,7 +2,7 @@ import { wasClientCompany } from '@pts/db/client-state'
 import { and, eq, or } from 'drizzle-orm'
 import { notFound, redirect } from 'next/navigation'
 
-import { requireUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { companies } from '@/lib/db/schema'
 import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
@@ -17,7 +17,7 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 export default async function ClientDetailPage({
   params,
 }: PageProps<'/clients/[clientSlug]'>) {
-  await requireUser()
+  await requirePage('clients.manage')
   const { clientSlug } = await params
   const id = UUID_PATTERN.test(clientSlug)
     ? await companyIdForLegacyClientId(clientSlug)

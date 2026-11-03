@@ -1,13 +1,13 @@
 ---
-applyTo: "app/api/**/*"
+applyTo: 'app/api/**/*'
 ---
 
 # API Route Review Guidelines
 
 ## Authentication & Authorization
 
-- All protected endpoints MUST call `getCurrentUser()` or `requireUser()`
-- Admin-only endpoints MUST use `assertAdmin()` or `requireRole('ADMIN')`
+- Protected endpoints MUST start with `authorizeRoute('<capability>')` (`apps/internal/lib/auth/guard.ts`), which answers 401/403 JSON; never a redirecting guard (`requirePage`, `requireUser`) outside `app/api/auth/**`
+- Narrower checks use `assertCan(user, '<capability>')` or `roleCan(user.role, '<capability>')`, never `user.role === '<ROLE>'`
 - Client-scoped data MUST verify access via `ensureClientAccess()`
 - RLS is DISABLED - never assume database-level protection
 

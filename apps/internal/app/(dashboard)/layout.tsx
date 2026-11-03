@@ -1,31 +1,33 @@
-import { Suspense, type ReactNode } from "react";
-import { cookies } from "next/headers";
+import { Suspense, type ReactNode } from 'react'
+import { cookies } from 'next/headers'
 
-import { AppShell } from "@/components/layout/app-shell";
-import { requireCrmUser } from "@/lib/auth/session";
-import { fetchUnacknowledgedSubmissionCount } from "@/lib/data/form-submissions";
-import { SheetHost } from "@/lib/sheets/sheet-host";
+import { AppShell } from '@/components/layout/app-shell'
+import { roleCan } from '@/lib/auth/capabilities'
+import { requirePage } from '@/lib/auth/session'
+import { fetchUnacknowledgedSubmissionCount } from '@/lib/data/form-submissions'
+import { SheetHost } from '@/lib/sheets/sheet-host'
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: ReactNode;
+  children: ReactNode
 }) {
   // The shell admits CRM staff (ADMIN, SALES). Each page guards itself:
-  // admin-only pages call requireUser(), which sends SALES users to their home page.
-  const user = await requireCrmUser();
+  // each calls requirePage(<capability>), which sends SALES users without it to their home page.
+  const user = await requirePage('portal.sign_in')
   // D6 (PRD 001): server-fetched unacknowledged count; refreshed via
   // revalidatePath('/', 'layout') from the submissions actions. Submissions
   // are admin-only, so SALES users get no badge.
-  const unacknowledgedSubmissionsCount =
-    user.role === "ADMIN"
-      ? await fetchUnacknowledgedSubmissionCount(user)
-      : 0;
+  const unacknowledgedSubmissionsCount = roleCan(
+    user.role,
+    'submissions.manage'
+  )
+    ? await fetchUnacknowledgedSubmissionCount(user)
+    : 0
   // PRD 004 §02: SSR-read collapse state so the sidebar renders in the right
   // mode on first paint (the ui/sidebar primitive writes this cookie on toggle).
-  const cookieStore = await cookies();
-  const sidebarDefaultOpen =
-    cookieStore.get("sidebar_state")?.value !== "false";
+  const cookieStore = await cookies()
+  const sidebarDefaultOpen = cookieStore.get('sidebar_state')?.value !== 'false'
 
   return (
     <AppShell
@@ -40,5 +42,5 @@ export default async function DashboardLayout({
         <SheetHost />
       </Suspense>
     </AppShell>
-  );
+  )
 }

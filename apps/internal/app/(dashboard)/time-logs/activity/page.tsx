@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { ActivitySection } from '@/components/activity/activity-section'
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { LogTimeButton } from '../_components/log-time-button'
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 }
 
 export default async function TimeLogsActivityPage() {
-  await requireRole('ADMIN')
+  await requirePage('activity.read_all')
   const logTimeProjects = await loadLogTimeProjects()
 
   return (

@@ -8,6 +8,7 @@ import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { projectMembers, projects, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import { roleCan } from '@/lib/auth/capabilities'
 
 /**
  * Who may see and work a project's tasks.
@@ -26,7 +27,7 @@ import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
  */
 
 export function isProjectStaff(user: AppUser | null | undefined): boolean {
-  return !!user && (user.role === 'ADMIN' || user.role === 'SALES')
+  return !!user && roleCan(user.role, 'projects.view_member')
 }
 
 /**
@@ -35,7 +36,7 @@ export function isProjectStaff(user: AppUser | null | undefined): boolean {
  */
 export const listWorkableProjectIds = cache(
   async (user: AppUser): Promise<string[] | null> => {
-    if (user.role === 'ADMIN') return null
+    if (roleCan(user.role, 'projects.view_all')) return null
     if (!isProjectStaff(user)) return []
 
     const rows = await db
@@ -85,7 +86,7 @@ export async function ensureProjectWorkAccess(
     throw new NotFoundError('Project not found')
   }
 
-  if (user.role === 'ADMIN') return
+  if (roleCan(user.role, 'projects.view_all')) return
 
   const ids = await listWorkableProjectIds(user)
   if (ids !== null && !ids.includes(projectId)) {

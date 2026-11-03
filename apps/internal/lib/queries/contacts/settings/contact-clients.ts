@@ -4,7 +4,7 @@ import 'server-only'
 import { asc, desc, eq, and, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, clientPortalAccess, contacts } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
@@ -65,7 +65,7 @@ export type ContactSheetData = {
 export async function listAllActiveClients(
   user: AppUser
 ): Promise<ClientOption[]> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   const rows = await db
     .select({
@@ -92,7 +92,7 @@ export async function listAllActiveClients(
 export async function listCompanyFilterOptions(
   user: AppUser
 ): Promise<ClientOption[]> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   const rows = await db
     .select({
@@ -118,7 +118,7 @@ export async function listContactClients(
   user: AppUser,
   contactId: string
 ): Promise<ClientOption[]> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   const rows = await db
     .select({
@@ -144,7 +144,7 @@ export async function getContactSheetData(
   user: AppUser,
   contactId: string
 ): Promise<ContactSheetData> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   const [byContact, [person]] = await Promise.all([
     listContactMemberships([contactId], undefined, { includeArchived: true }),
@@ -198,7 +198,7 @@ export async function getContactSheetInputById(
   user: AppUser,
   contactId: string
 ): Promise<ContactSheetInputRow> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   const rows = await db
     .select({
@@ -229,7 +229,7 @@ export async function getContactDeepLinkRowById(
   user: AppUser,
   contactId: string
 ): Promise<ContactDeepLinkRow | null> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   const rows = await db
     .select({

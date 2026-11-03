@@ -55,11 +55,20 @@ export const CAPABILITIES = {
     roles: STAFF,
     surfaces: ['app'],
   },
+  'portal.admin': {
+    area: 'Portal',
+    label: 'Admin-only pages and actions',
+    description:
+      'Everything no narrower permission covers. New pages start here.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app'],
+  },
   'portal.command_palette': {
     area: 'Portal',
     label: 'Search everything (command palette)',
-    description: 'Results are limited to what the role can open.',
-    roles: STAFF,
+    description:
+      'Search results across every record. Pages still open from the menu.',
+    roles: ADMIN_ONLY,
     surfaces: ['app'],
   },
 
@@ -235,6 +244,14 @@ export const CAPABILITIES = {
       'People at any company, clients included, and which companies they’re at. Someone who can sign in, and archiving a client’s primary contact, are admin-only.',
     roles: STAFF,
     surfaces: ['app', 'mcp', 'cli'],
+  },
+  'directory.staff_company': {
+    area: 'Directory',
+    label: 'Edit the staff company',
+    description:
+      'Place To Stand’s own company: who is on staff and their titles. Staff sign in through it.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app', 'mcp'],
   },
   'clients.manage': {
     area: 'Directory',

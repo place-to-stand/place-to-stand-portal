@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { ActivitySection } from '@/components/activity/activity-section'
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 }
 
 export default async function SubmissionsActivityPage() {
-  await requireRole('ADMIN')
+  await requirePage('submissions.manage')
 
   return (
     <PageShell

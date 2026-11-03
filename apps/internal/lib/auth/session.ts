@@ -14,7 +14,7 @@ import { isTokenRequest } from '@/lib/auth/token-request'
 import { ForbiddenError, UnauthorizedError } from '@/lib/errors/http'
 import { ensureUserProfile } from '@/lib/auth/profile'
 import { serverEnv } from '@/lib/env.server'
-import { roleCan } from '@/lib/auth/capabilities'
+import { roleCan, type Capability } from '@/lib/auth/capabilities'
 import { SALES_HOME_PATH } from '@/lib/auth/roles'
 import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { roleAsOfSql } from '@/lib/queries/users/role-terms'
@@ -136,7 +136,7 @@ export const getCurrentStaff = async (): Promise<AppUser | null> => {
  */
 export const getCurrentAdmin = async (): Promise<AppUser | null> => {
   const user = await getCurrentUser()
-  return user?.role === 'ADMIN' ? user : null
+  return roleCan(user?.role, 'portal.admin') ? user : null
 }
 
 type UserProfile = {
@@ -295,34 +295,15 @@ function guardRedirect(
   redirect(path)
 }
 
-export const requireUser = async () => {
-  const user = await getCurrentUser()
-
-  if (!user) {
-    // A session with no active user: sign it out, or /sign-in bounces back.
-    guardRedirect('/auth/sign-out', 'unauthenticated')
-  }
-
-  // Admin-only by default. SALES staff get only the CRM pages, which call
-  // `requireCrmUser()` instead; anywhere else sends them to their home page.
-  if (user.role === 'SALES') {
-    guardRedirect(SALES_HOME_PATH)
-  }
-
-  // Portal (CLIENT) users belong in the client portal — send any lingering
-  // session there rather than to a 403.
-  if (user.role !== 'ADMIN') {
-    guardRedirect(serverEnv.CLIENT_PORTAL_URL)
-  }
-
-  return user
-}
-
 /**
- * Guard for the CRM pages (leads, contacts) and the dashboard shell: admits
- * ADMIN and SALES. Use `requireUser()` for everything else.
+ * The page guard: the signed-in user when their role holds `capability`
+ * (`lib/auth/capabilities.ts`). Otherwise it redirects: no session signs out,
+ * staff without the capability go to their home page, and anyone who can't
+ * use the internal portal (CLIENT) goes to the client portal. Pages and
+ * layouts only: API routes use `authorizeRoute` (`lib/auth/guard.ts`), which
+ * answers 401/403 JSON instead.
  */
-export const requireCrmUser = async () => {
+export const requirePage = async (capability: Capability) => {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -330,31 +311,31 @@ export const requireCrmUser = async () => {
     guardRedirect('/auth/sign-out', 'unauthenticated')
   }
 
+  if (roleCan(user.role, capability)) {
+    return user
+  }
+
+  // Portal (CLIENT) users belong in the client portal: send any lingering
+  // session there rather than to a 403.
   if (!roleCan(user.role, 'portal.sign_in')) {
     guardRedirect(serverEnv.CLIENT_PORTAL_URL)
   }
 
-  return user
+  guardRedirect(SALES_HOME_PATH)
 }
 
 /**
- * Guard for the task-board surfaces opened to project members (boards, task
- * sheet, My tasks): admits ADMIN and SALES. It does NOT check project access;
- * pair it with `ensureProjectWorkAccess` / `ensureTaskWorkAccess` or a query
- * scoped by `listWorkableProjectIds`.
+ * Admin-only by default: for the pages and actions no narrower capability
+ * covers yet. SALES go to their home page, CLIENT users to the client portal.
  */
-export const requireStaffUser = requireCrmUser
+export const requireUser = () => requirePage('portal.admin')
 
-export const requireRole = async (allowed: UserRole | UserRole[]) => {
-  const user = await requireUser()
-  const roles = Array.isArray(allowed) ? allowed : [allowed]
-
-  if (!roles.includes(user.role)) {
-    guardRedirect('/unauthorized')
-  }
-
-  return user
-}
+/**
+ * Anyone who can use the internal portal (ADMIN and SALES). It does NOT
+ * check project access; pair it with `ensureProjectWorkAccess` /
+ * `ensureTaskWorkAccess` or a query scoped by `listWorkableProjectIds`.
+ */
+export const requireCrmUser = () => requirePage('portal.sign_in')
 
 /**
  * The token's Supabase session still exists. getClaims() checks only the

@@ -8,13 +8,14 @@ import {
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
 import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
-import { requireStaffUser, requireUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import { listClientDirectory } from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export const projectTabMetadata: Metadata = {
   title: 'Projects',
@@ -69,8 +70,10 @@ export async function renderProjectTabRoute({
     searchParams,
   ])
   const isBoard = tab === 'board'
-  const user = isBoard ? await requireStaffUser() : await requireUser()
-  const isAdmin = user.role === 'ADMIN'
+  const user = await requirePage(
+    isBoard ? 'projects.view_member' : 'projects.admin_tabs'
+  )
+  const isAdmin = roleCan(user.role, 'projects.manage')
 
   const [allLiteProjects, admins, boardAssignees, clientDirectory] =
     await Promise.all([

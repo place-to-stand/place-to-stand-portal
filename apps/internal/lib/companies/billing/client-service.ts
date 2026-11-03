@@ -7,6 +7,7 @@ import {
   generateUniqueClientSlugDrizzle,
 } from '@/lib/queries/companies/billing'
 import type { CloserShare } from '@/lib/companies/billing/closers'
+import { roleCan } from '@/lib/auth/capabilities'
 
 /**
  * Verifies that any user IDs referenced by origination / closer fields
@@ -50,7 +51,7 @@ export async function assertClientPartnerUserRoles(params: {
       if (user.deletedAt !== null) {
         return { error: 'Selected partner user is archived.' }
       }
-      if (user.role !== 'ADMIN' && user.role !== 'SALES') {
+      if (!roleCan(user.role, 'portal.sign_in')) {
         return {
           error: 'Only PTS staff users can be set as origination or closer.',
         }

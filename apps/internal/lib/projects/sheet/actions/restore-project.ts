@@ -2,7 +2,7 @@
 
 import { eq } from 'drizzle-orm'
 
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectRestoredEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
@@ -22,7 +22,7 @@ import {
 export async function restoreProject(
   input: RestoreProjectInput
 ): Promise<ProjectActionResult> {
-  const user = await requireRole('ADMIN')
+  const user = await requirePage('projects.manage')
   return trackSettingsServerInteraction(
     {
       entity: 'project',

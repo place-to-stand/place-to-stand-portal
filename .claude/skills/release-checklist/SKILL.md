@@ -44,7 +44,7 @@ Comprehensive pre-deployment verification to ensure safe, successful releases.
 - [ ] Webhook integrations tested (contact-submissions, audit-responses, stripe)
 
 ### 6. Authentication & Authorization
-- [ ] New routes protected with `requireUser()` or `requireRole()`
+- [ ] New pages call `requirePage('<capability>')` and new API routes `authorizeRoute('<capability>')`
 - [ ] Permission checks via `ensureClientAccess()` verified
 - [ ] No new privilege escalation paths
 - [ ] Session handling unchanged or tested

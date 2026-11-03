@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskArchivedEvent } from '@/lib/activity/events'
-import { requireStaffUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, taskAttachments, tasks } from '@/lib/db/schema'
@@ -16,11 +16,12 @@ import type { Json } from '@/lib/types/json'
 
 import { revalidateProjectTaskViews } from './shared'
 import type { ActionResult } from './action-types'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export async function removeTask(input: {
   taskId: string
 }): Promise<ActionResult> {
-  const user = await requireStaffUser()
+  const user = await requirePage('projects.view_member')
   const parsed = z
     .object({
       taskId: z.string().uuid(),
@@ -76,21 +77,20 @@ export async function removeTask(input: {
   // Archiving deletes the task's files for good. Only admins may do that;
   // a task another staff member archives keeps its files, so an admin
   // restore brings everything back.
-  const attachmentRows =
-    user.role !== 'ADMIN'
-      ? []
-      : await db
-          .select({
-            id: taskAttachments.id,
-            storagePath: taskAttachments.storagePath,
-          })
-          .from(taskAttachments)
-          .where(
-            and(
-              eq(taskAttachments.taskId, taskId),
-              isNull(taskAttachments.deletedAt)
-            )
+  const attachmentRows = !roleCan(user.role, 'projects.manage')
+    ? []
+    : await db
+        .select({
+          id: taskAttachments.id,
+          storagePath: taskAttachments.storagePath,
+        })
+        .from(taskAttachments)
+        .where(
+          and(
+            eq(taskAttachments.taskId, taskId),
+            isNull(taskAttachments.deletedAt)
           )
+        )
 
   if (attachmentRows.length) {
     await db

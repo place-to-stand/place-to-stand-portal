@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskStatusChangedEvent } from '@/lib/activity/events'
-import { requireStaffUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
@@ -22,7 +22,7 @@ export async function changeTaskStatus(input: {
   taskId: string
   status: (typeof TASK_STATUSES)[number]
 }): Promise<ActionResult> {
-  const user = await requireStaffUser()
+  const user = await requirePage('projects.view_member')
   const parsed = z
     .object({
       taskId: z.string().uuid(),

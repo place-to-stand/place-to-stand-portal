@@ -42,10 +42,6 @@ export const SALES_SHEET_ENTITIES: ReadonlySet<string> = new Set([
   'project',
 ])
 
-export function isAdminRole(role: Role | null | undefined): boolean {
-  return role === 'ADMIN'
-}
-
 export function canUseInternalPortal(role: Role | null | undefined): boolean {
   return roleCan(role, 'portal.sign_in')
 }

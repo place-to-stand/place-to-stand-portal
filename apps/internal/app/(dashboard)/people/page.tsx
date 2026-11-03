@@ -2,8 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireCrmUser } from '@/lib/auth/session'
-import { isAdminRole } from '@/lib/auth/roles'
+import { requirePage } from '@/lib/auth/session'
 import {
   listContactsForSettings,
   listCompanyFilterOptions,
@@ -18,6 +17,7 @@ import { ContactsFilters } from './_components/contacts-filters'
 import { ContactsManagementTable } from './_components/contacts-management-table'
 import { resolveContactDeepLink } from './_lib/contact-deep-link'
 import { mapContactToTableRow } from './_lib/map-contact-to-table-row'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export const metadata: Metadata = {
   title: 'People',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export default async function ContactsPage({
   searchParams,
 }: PageProps<'/people'>) {
-  const user = await requireCrmUser()
+  const user = await requirePage('contacts.manage')
   const params = await searchParams
   const pageSize = await readPageSize()
   const {
@@ -36,7 +36,7 @@ export default async function ContactsPage({
     signIn,
     sort,
   } = parseContactsSearchParams(params)
-  const isAdmin = isAdminRole(user.role)
+  const isAdmin = roleCan(user.role, 'settings.users')
   const offset = (currentPage - 1) * pageSize
 
   // Share links: `?contact=<id>` opens the edit sheet even when the row sits

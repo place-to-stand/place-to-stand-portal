@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listHourBlocksForSettings } from '@/lib/queries/hour-blocks'
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 }
 
 export default async function HourBlocksActivityPage() {
-  const currentUser = await requireRole('ADMIN')
+  const currentUser = await requirePage('activity.read_all')
 
   const { clients } = await listHourBlocksForSettings(currentUser, {
     status: 'active',

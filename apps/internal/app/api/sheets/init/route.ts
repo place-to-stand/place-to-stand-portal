@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 
-import { requireCrmUser } from '@/lib/auth/session'
 import { SALES_SHEET_ENTITIES } from '@/lib/auth/roles'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { isValidSheetParamValue } from '@/lib/sheets/entities'
@@ -8,6 +7,8 @@ import {
   isSheetInitEntity,
   resolveSheetInit,
 } from '@/lib/sheets/init/resolvers'
+import { authorizeRoute } from '@/lib/auth/guard'
+import { roleCan } from '@/lib/auth/capabilities'
 
 /**
  * GET /api/sheets/init?entity=<key>&id=<uuid|new>
@@ -18,7 +19,8 @@ import {
  */
 export async function GET(request: Request) {
   try {
-    const user = await requireCrmUser()
+    const { user, denied } = await authorizeRoute('portal.sign_in')
+    if (denied) return denied
 
     const url = new URL(request.url)
     const entity = url.searchParams.get('entity') ?? ''
@@ -33,7 +35,10 @@ export async function GET(request: Request) {
 
     // SALES staff may open CRM sheets, plus tasks on projects they work
     // (the task resolver checks membership).
-    if (user.role !== 'ADMIN' && !SALES_SHEET_ENTITIES.has(entity)) {
+    if (
+      !roleCan(user.role, 'portal.admin') &&
+      !SALES_SHEET_ENTITIES.has(entity)
+    ) {
       return NextResponse.json(
         { ok: false, error: 'Forbidden' },
         { status: 403 }

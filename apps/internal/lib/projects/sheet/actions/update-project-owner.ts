@@ -3,7 +3,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
@@ -31,7 +31,7 @@ export type UpdateProjectOwnerInput = z.infer<typeof updateProjectOwnerSchema>
 export async function updateProjectOwner(
   input: UpdateProjectOwnerInput
 ): Promise<ProjectActionResult> {
-  const user = await requireRole('ADMIN')
+  const user = await requirePage('projects.manage')
   const parsed = updateProjectOwnerSchema.safeParse(input)
 
   if (!parsed.success) {

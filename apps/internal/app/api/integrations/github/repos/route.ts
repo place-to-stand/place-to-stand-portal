@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { listInstallationRepos, type GitHubRepo } from '@pts/github'
-import { requireRole } from '@/lib/auth/session'
 import { listUserRepos, getDefaultConnectionId } from '@/lib/github/client'
 import { getActiveInstallationForProject } from '@/lib/github/app-installations'
 import { serverEnv } from '@/lib/env.server'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 interface RepoListItem {
   id: number
@@ -41,7 +41,8 @@ function toRepoListItem(
 }
 
 export async function GET(request: NextRequest) {
-  const user = await requireRole('ADMIN')
+  const { user, denied } = await authorizeRoute('integrations.manage')
+  if (denied) return denied
   const { searchParams } = new URL(request.url)
   const connectionId = searchParams.get('connectionId') ?? undefined
   const projectId = searchParams.get('projectId') ?? undefined
@@ -51,10 +52,17 @@ export async function GET(request: NextRequest) {
   // Repos the staff member has access to via their own connected GitHub account.
   let effectiveConnectionId: string | null = null
   try {
-    effectiveConnectionId = connectionId ?? await getDefaultConnectionId(user.id)
+    effectiveConnectionId =
+      connectionId ?? (await getDefaultConnectionId(user.id))
     if (effectiveConnectionId) {
-      const oauthRepos = await listUserRepos(user.id, { connectionId: effectiveConnectionId })
-      repos.push(...oauthRepos.map(r => toRepoListItem(r, 'oauth', effectiveConnectionId!)))
+      const oauthRepos = await listUserRepos(user.id, {
+        connectionId: effectiveConnectionId,
+      })
+      repos.push(
+        ...oauthRepos.map(r =>
+          toRepoListItem(r, 'oauth', effectiveConnectionId!)
+        )
+      )
     }
   } catch (error) {
     console.error('Error fetching OAuth GitHub repos:', error)
@@ -73,12 +81,16 @@ export async function GET(request: NextRequest) {
             serverEnv.GITHUB_APP_ID,
             serverEnv.GITHUB_APP_PRIVATE_KEY
           )
-          repos.push(...appRepos.map(r => toRepoListItem(r, 'app', installation.id)))
+          repos.push(
+            ...appRepos.map(r => toRepoListItem(r, 'app', installation.id))
+          )
         } catch (error) {
           console.error('Error fetching GitHub App installation repos:', error)
         }
       } else {
-        console.error('GITHUB_APP_ID / GITHUB_APP_PRIVATE_KEY not configured on internal app')
+        console.error(
+          'GITHUB_APP_ID / GITHUB_APP_PRIVATE_KEY not configured on internal app'
+        )
       }
     }
   }

@@ -3,6 +3,7 @@
  * (a house rule in docs/design-system/README.md, or a past bug) and says what
  * to write instead.
  */
+import { apiRouteGuard, noRoleLiteral } from './rules/auth.mjs'
 import drizzleQualifiedSubquery from './rules/drizzle-qualified-subquery.mjs'
 import {
   archiveConfirm,
@@ -40,5 +41,7 @@ export const pts = {
     'filter-select': filterSelect,
     'client-boundary': clientBoundary,
     'query-layer-purity': queryLayerPurity,
+    'api-route-guard': apiRouteGuard,
+    'no-role-literal': noRoleLiteral,
   },
 }

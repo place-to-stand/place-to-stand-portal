@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { PageShell } from '@/components/layout/page-shell'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 
 import { LEADS_TABS } from '../_lib/tabs'
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 }
 
 export default async function LeadsActivityPage() {
-  const user = await requireCrmUser()
+  const user = await requirePage('activity.read_crm')
   assertCrmAccess(user)
 
   return (

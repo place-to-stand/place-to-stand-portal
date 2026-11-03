@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
-import { requireStaffUser } from '@/lib/auth/session'
 import { listWorkableProjectIds } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import {
@@ -15,6 +14,8 @@ import {
   MY_TASK_STATUS_VALUES,
   type MyTaskStatus,
 } from '@/lib/projects/tasks/my-tasks-constants'
+import { authorizeRoute } from '@/lib/auth/guard'
+import { roleCan } from '@/lib/auth/capabilities'
 
 const reorderPayloadSchema = z.object({
   taskId: z.string().uuid(),
@@ -26,7 +27,8 @@ const reorderPayloadSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const user = await requireStaffUser()
+  const { user, denied } = await authorizeRoute('projects.view_member')
+  if (denied) return denied
 
   let payload: z.infer<typeof reorderPayloadSchema>
 
@@ -69,10 +71,7 @@ export async function POST(request: Request) {
   }
 
   const uniqueTaskIds = Array.from(
-    new Set([
-      ...payload.targetOrder,
-      ...(payload.sourceOrder ?? []),
-    ])
+    new Set([...payload.targetOrder, ...(payload.sourceOrder ?? [])])
   )
 
   if (!uniqueTaskIds.length) {
@@ -86,7 +85,7 @@ export async function POST(request: Request) {
   // assignee's rows, defaulting to self. Sales users reorder only their own
   // board, and only tasks on projects they can work.
   if (
-    user.role !== 'ADMIN' &&
+    !roleCan(user.role, 'projects.view_all') &&
     payload.assigneeId &&
     payload.assigneeId !== user.id
   ) {
@@ -230,4 +229,3 @@ async function upsertSortOrders({
       })
   }
 }
-

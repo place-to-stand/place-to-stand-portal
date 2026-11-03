@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { HomeDashboard } from '@/components/dashboard/home-dashboard'
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import type { DashboardWidgetId } from '@/lib/dashboard/layout'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import { fetchHoursSnapshot } from '@/lib/data/dashboard/hours'
@@ -19,7 +19,7 @@ const SALES_WIDGETS: readonly DashboardWidgetId[] = ['pipeline', 'quiet-leads']
 export default async function HomePage() {
   // Every staff role lands here, so this page must not use requireUser,
   // which would send non-admins straight back.
-  const user = await requireCrmUser()
+  const user = await requirePage('dashboard.home')
   const layout = await fetchDashboardLayout(user)
 
   // Load what every widget in the layout needs, hidden ones included: the

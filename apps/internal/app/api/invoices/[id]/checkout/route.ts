@@ -2,18 +2,19 @@ import { NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
 
 import { appOrigin } from '@/lib/app-origin'
-import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
 import { getStripe } from '@/lib/stripe/client'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function POST(
   _request: Request,
   { params }: RouteContext<'/api/invoices/[id]/checkout'>
 ) {
   try {
-    const user = await requireUser()
+    const { user, denied } = await authorizeRoute('billing.manage')
+    if (denied) return denied
     assertAdmin(user)
 
     const { id } = await params

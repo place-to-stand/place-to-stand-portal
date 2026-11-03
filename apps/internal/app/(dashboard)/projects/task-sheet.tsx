@@ -609,7 +609,7 @@ export function TaskSheet(props: TaskSheetProps) {
           {...buildProjectTimeLogDialogParams(taskProject, {
             tasks: taskProject.tasks,
             currentUserId: props.currentUserId,
-            admins: props.admins.filter(user => user.role === 'ADMIN'),
+            admins: props.admins.filter(person => person.role === 'ADMIN'),
           })}
           mode={timeLogDialogMode}
           timeLogEntry={editingTimeLogEntry}

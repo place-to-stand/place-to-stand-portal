@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
-import { requireCrmUser } from '@/lib/auth/session'
 import { listLeadUpdates } from '@/lib/queries/lead-updates'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
  * GET /api/leads/[leadId]/updates
@@ -14,7 +14,8 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/leads/[leadId]/updates'>
 ) {
-  const user = await requireCrmUser()
+  const { user, denied } = await authorizeRoute('leads.manage')
+  if (denied) return denied
   const { leadId } = await params
 
   try {

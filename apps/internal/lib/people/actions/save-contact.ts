@@ -8,8 +8,7 @@ import {
   contactUpdatedEvent,
 } from '@/lib/activity/events/contacts'
 import { roleCan } from '@/lib/auth/capabilities'
-import { assertCrmAccess } from '@/lib/auth/permissions'
-import { isAdminRole } from '@/lib/auth/roles'
+import { assertCan } from '@/lib/auth/permissions'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/people/person-sheet-copy'
 import type { AppUser } from '@/lib/auth/session'
@@ -170,7 +169,7 @@ export async function prepareContactSave(
     return { error: parsed.error.issues[0]?.message ?? 'Invalid person data.' }
   }
   try {
-    assertCrmAccess(user)
+    assertCan(user, 'contacts.manage')
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : 'CRM access required.',
@@ -235,7 +234,7 @@ export async function prepareContactSave(
 
   // Someone who can sign in is edited by admins only: their email is their
   // login and their companies decide what they can see.
-  if (existing.userId && !isAdminRole(user.role)) {
+  if (existing.userId && !roleCan(user.role, 'settings.users')) {
     return { error: PERSON_WITH_SIGN_IN_ADMIN_ONLY }
   }
 
@@ -490,7 +489,7 @@ async function staffCompanyError(
   user: AppUser,
   plan: MembershipPlan
 ): Promise<string | null> {
-  if (isAdminRole(user.role)) return null
+  if (roleCan(user.role, 'directory.staff_company')) return null
   const companyIds = [
     ...plan.join.map(join => join.companyId),
     ...plan.leave,

@@ -1,129 +1,150 @@
-import "server-only";
+import 'server-only'
 
-import { randomUUID } from "node:crypto";
+import { roleCan } from '@/lib/auth/capabilities'
+import { randomUUID } from 'node:crypto'
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-import type { UserRoleValue } from "@/lib/types";
+import type { UserRoleValue } from '@/lib/types'
 
-type AvatarBucketClient = SupabaseClient;
+type AvatarBucketClient = SupabaseClient
 
 type MoveOptions = {
-  client: AvatarBucketClient;
-  path: string;
-  userId: string;
-};
+  client: AvatarBucketClient
+  path: string
+  userId: string
+}
 
 type DeleteOptions = {
-  client: AvatarBucketClient;
-  path: string;
-};
+  client: AvatarBucketClient
+  path: string
+}
 
 type GeneratePathOptions = {
-  actorId: string;
-  targetUserId?: string | null;
-  extension: string;
-};
+  actorId: string
+  targetUserId?: string | null
+  extension: string
+}
 
-export const AVATAR_BUCKET = "user-avatars";
-export const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+export const AVATAR_BUCKET = 'user-avatars'
+export const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024 // 2MB
 export const ACCEPTED_AVATAR_MIME_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-] as const;
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const
 
-const PENDING_PREFIX = "avatars/pending";
-const USER_PREFIX = "avatars";
+const PENDING_PREFIX = 'avatars/pending'
+const USER_PREFIX = 'avatars'
 // A person's photo (contacts.avatar_url): anyone can have one.
-const PERSON_PREFIX = "avatars/people";
+const PERSON_PREFIX = 'avatars/people'
 const ACCEPTED_AVATAR_EXTENSIONS: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+}
 
 export async function ensureAvatarBucket(client: AvatarBucketClient) {
-  const { data, error } = await client.storage.getBucket(AVATAR_BUCKET);
+  const { data, error } = await client.storage.getBucket(AVATAR_BUCKET)
 
   if (data && !error) {
-    return;
+    return
   }
 
-  if (error && !error.message?.toLowerCase().includes("not found")) {
-    throw error;
+  if (error && !error.message?.toLowerCase().includes('not found')) {
+    throw error
   }
 
-  const { error: createError } = await client.storage.createBucket(AVATAR_BUCKET, {
-    public: false,
-    fileSizeLimit: `${Math.floor(MAX_AVATAR_FILE_SIZE / 1024)}KB`,
-    allowedMimeTypes: [...ACCEPTED_AVATAR_MIME_TYPES],
-  });
+  const { error: createError } = await client.storage.createBucket(
+    AVATAR_BUCKET,
+    {
+      public: false,
+      fileSizeLimit: `${Math.floor(MAX_AVATAR_FILE_SIZE / 1024)}KB`,
+      allowedMimeTypes: [...ACCEPTED_AVATAR_MIME_TYPES],
+    }
+  )
 
-  if (createError && !createError.message?.toLowerCase().includes("already exists")) {
-    throw createError;
+  if (
+    createError &&
+    !createError.message?.toLowerCase().includes('already exists')
+  ) {
+    throw createError
   }
 }
 
 export function resolveAvatarExtension(mimeType: string) {
-  return ACCEPTED_AVATAR_EXTENSIONS[mimeType as keyof typeof ACCEPTED_AVATAR_EXTENSIONS];
+  return ACCEPTED_AVATAR_EXTENSIONS[
+    mimeType as keyof typeof ACCEPTED_AVATAR_EXTENSIONS
+  ]
 }
 
 function inferAvatarExtensionFromPath(path: string) {
-  const segments = path.split(".");
-  return segments.length > 1 ? segments.pop() ?? null : null;
+  const segments = path.split('.')
+  return segments.length > 1 ? (segments.pop() ?? null) : null
 }
 
 const STAGED_UPLOAD =
-  /^avatars\/pending\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.[a-z0-9]+$/i;
+  /^avatars\/pending\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.[a-z0-9]+$/i
 
 /** A path the upload route staged for this actor (generateAvatarPath). */
 export function isStagedUploadOf(path: string, actorId: string) {
-  const match = path.match(STAGED_UPLOAD);
-  return Boolean(match && match[1] === actorId);
+  const match = path.match(STAGED_UPLOAD)
+  return Boolean(match && match[1] === actorId)
 }
 
-export function generateAvatarPath({ actorId, targetUserId, extension }: GeneratePathOptions) {
-  const folder = targetUserId ? `${USER_PREFIX}/${targetUserId}` : `${PENDING_PREFIX}/${actorId}`;
-  return `${folder}/${randomUUID()}.${extension}`;
+export function generateAvatarPath({
+  actorId,
+  targetUserId,
+  extension,
+}: GeneratePathOptions) {
+  const folder = targetUserId
+    ? `${USER_PREFIX}/${targetUserId}`
+    : `${PENDING_PREFIX}/${actorId}`
+  return `${folder}/${randomUUID()}.${extension}`
 }
 
-export async function moveAvatarToUserFolder({ client, path, userId }: MoveOptions) {
+export async function moveAvatarToUserFolder({
+  client,
+  path,
+  userId,
+}: MoveOptions) {
   if (!path) {
-    return null;
+    return null
   }
 
   if (path.startsWith(`${USER_PREFIX}/${userId}/`)) {
-    return path;
+    return path
   }
 
-  const extension = inferAvatarExtensionFromPath(path) ?? "jpg";
-  const destination = `${USER_PREFIX}/${userId}/${randomUUID()}.${extension}`;
+  const extension = inferAvatarExtensionFromPath(path) ?? 'jpg'
+  const destination = `${USER_PREFIX}/${userId}/${randomUUID()}.${extension}`
 
-  await ensureAvatarBucket(client);
+  await ensureAvatarBucket(client)
 
-  const { error } = await client.storage.from(AVATAR_BUCKET).move(path, destination);
+  const { error } = await client.storage
+    .from(AVATAR_BUCKET)
+    .move(path, destination)
 
   if (error) {
-    throw error;
+    throw error
   }
 
-  return destination;
+  return destination
 }
 
 export async function deleteAvatarObject({ client, path }: DeleteOptions) {
   if (!path) {
-    return;
+    return
   }
 
-  await ensureAvatarBucket(client);
+  await ensureAvatarBucket(client)
 
-  const { error } = await client.storage.from(AVATAR_BUCKET).remove([path]);
+  const { error } = await client.storage.from(AVATAR_BUCKET).remove([path])
 
   if (error) {
-    throw error;
+    throw error
   }
 }
 
@@ -136,7 +157,7 @@ export function isUserAvatarPath(
   path: string | null | undefined,
   userId: string
 ): path is string {
-  return !!path && path.startsWith(`${USER_PREFIX}/${userId}/`);
+  return !!path && path.startsWith(`${USER_PREFIX}/${userId}/`)
 }
 
 export function canManageAvatarPath({
@@ -145,32 +166,32 @@ export function canManageAvatarPath({
   path,
   targetUserId,
 }: {
-  actorId: string;
-  actorRole: UserRoleValue;
-  path: string;
-  targetUserId?: string | null;
+  actorId: string
+  actorRole: UserRoleValue
+  path: string
+  targetUserId?: string | null
 }) {
   if (!path) {
-    return false;
+    return false
   }
 
-  if (actorRole === "ADMIN") {
-    return true;
+  if (roleCan(actorRole, 'settings.users')) {
+    return true
   }
 
   if (targetUserId && targetUserId === actorId) {
-    return true;
+    return true
   }
 
   if (path.startsWith(`${USER_PREFIX}/${actorId}/`)) {
-    return true;
+    return true
   }
 
   if (path.startsWith(`${PENDING_PREFIX}/${actorId}/`)) {
-    return true;
+    return true
   }
 
-  return false;
+  return false
 }
 
 /** Moves a staged upload into the person's folder (contacts.avatar_url). */
@@ -179,24 +200,26 @@ export async function moveAvatarToPersonFolder({
   path,
   contactId,
 }: {
-  client: AvatarBucketClient;
-  path: string;
-  contactId: string;
+  client: AvatarBucketClient
+  path: string
+  contactId: string
 }) {
   if (path.startsWith(`${PERSON_PREFIX}/${contactId}/`)) {
-    return path;
+    return path
   }
 
-  const extension = inferAvatarExtensionFromPath(path) ?? "jpg";
-  const destination = `${PERSON_PREFIX}/${contactId}/${randomUUID()}.${extension}`;
+  const extension = inferAvatarExtensionFromPath(path) ?? 'jpg'
+  const destination = `${PERSON_PREFIX}/${contactId}/${randomUUID()}.${extension}`
 
-  await ensureAvatarBucket(client);
+  await ensureAvatarBucket(client)
 
-  const { error } = await client.storage.from(AVATAR_BUCKET).move(path, destination);
+  const { error } = await client.storage
+    .from(AVATAR_BUCKET)
+    .move(path, destination)
 
   if (error) {
-    throw error;
+    throw error
   }
 
-  return destination;
+  return destination
 }

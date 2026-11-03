@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 
-import { requireRole } from '@/lib/auth/session'
 import {
   getIntegrationLinkById,
   unlinkExternalProject,
 } from '@/lib/data/project-integration-links'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function DELETE(
   _request: Request,
@@ -12,7 +12,8 @@ export async function DELETE(
     params,
   }: RouteContext<'/api/projects/[projectId]/integration-links/[linkId]'>
 ) {
-  const user = await requireRole('ADMIN')
+  const { user, denied } = await authorizeRoute('projects.manage')
+  if (denied) return denied
   const { projectId, linkId } = await params
 
   const link = await getIntegrationLinkById(linkId)

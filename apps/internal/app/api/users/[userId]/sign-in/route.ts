@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
 import { loadPersonSignInDetails } from '@/lib/people/person-sign-in-details'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /** GET /api/users/<id>/sign-in: a person's sign-in for their sheet (admins). */
 export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/users/[userId]/sign-in'>
 ) {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('settings.users')
+  if (denied) return denied
   const { userId } = await params
   if (!UUID_PATTERN.test(userId)) {
     return NextResponse.json(

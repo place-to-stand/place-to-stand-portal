@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server'
 
 import { inArray } from 'drizzle-orm'
 
-import { requireCrmUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
@@ -11,6 +10,7 @@ import { listLeadTasksWithRelations } from '@/lib/queries/tasks/relations'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { findSalesProjectId } from '@/lib/leads/sales-project'
 import { listWorkableProjectIds } from '@/lib/projects/access'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
  * GET /api/leads/[leadId]/tasks
@@ -24,7 +24,8 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/leads/[leadId]/tasks'>
 ) {
-  const user = await requireCrmUser()
+  const { user, denied } = await authorizeRoute('leads.tasks')
+  if (denied) return denied
   const { leadId } = await params
 
   if (!UUID_PATTERN.test(leadId)) {

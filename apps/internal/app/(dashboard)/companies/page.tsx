@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import {
   applyCompanyListParams,
   parseCompaniesSearchParams,
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default async function CompaniesPage({
   searchParams,
 }: PageProps<'/companies'>) {
-  const user = await requireCrmUser()
+  const user = await requirePage('companies.manage')
   const params = await searchParams
   const listParams = parseCompaniesSearchParams(params)
 

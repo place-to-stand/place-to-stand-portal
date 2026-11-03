@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { assertAdmin } from '@/lib/auth/permissions'
-import { requireUser } from '@/lib/auth/session'
 import { fetchCompanyServices } from '@/lib/integrations/company-services'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
  * Status of every company service configured in the server environment
@@ -10,7 +10,8 @@ import { fetchCompanyServices } from '@/lib/integrations/company-services'
  * balances, not just a status.
  */
 export async function GET() {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('integrations.manage')
+  if (denied) return denied
   assertAdmin(user)
 
   const services = await fetchCompanyServices()

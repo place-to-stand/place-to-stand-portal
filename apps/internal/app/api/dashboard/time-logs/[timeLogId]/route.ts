@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { fetchProjectsWithRelationsByIds } from '@/lib/data/projects'
 import { getTimeLogEntryById } from '@/lib/queries/time-logs/read'
 import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-params'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -22,7 +22,8 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/dashboard/time-logs/[timeLogId]'>
 ) {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('billing.manage')
+  if (denied) return denied
   const { timeLogId } = await params
 
   // UUID-guard before any DB cast, matching the sheet deep-link convention.

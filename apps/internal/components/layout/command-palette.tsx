@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/command'
 import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
 import type { PaletteSearchResult } from '@/lib/queries/command-palette'
 import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
@@ -111,7 +112,8 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 
 function CommandPalette() {
   const { open, setOpen } = useCommandPalette()
-  const { role, isAdmin } = useViewerAccess()
+  const { role } = useViewerAccess()
+  const canSearch = roleCan(role, 'portal.command_palette')
   const navGroups = useMemo(
     () => (role ? filterNavGroupsForRole(NAV_GROUPS, role) : []),
     [role]
@@ -124,7 +126,7 @@ function CommandPalette() {
   // Record search spans companies and projects, so it is admin-only; SALES
   // staff get page navigation only.
   const recordSearchEnabled =
-    isAdmin && open && debouncedQuery.length >= MIN_QUERY_LENGTH
+    canSearch && open && debouncedQuery.length >= MIN_QUERY_LENGTH
 
   const { data: records, isFetching } = useQuery({
     queryKey: ['command-palette-search', debouncedQuery],
@@ -140,7 +142,7 @@ function CommandPalette() {
   // land: the debounce window (trimmed !== debounced) plus the fetch
   // itself. While true, the empty state must not claim "No results".
   const isSearchPending =
-    isAdmin &&
+    canSearch &&
     open &&
     trimmedQuery.length >= MIN_QUERY_LENGTH &&
     (trimmedQuery !== debouncedQuery || isFetching)

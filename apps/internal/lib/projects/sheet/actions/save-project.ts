@@ -4,7 +4,7 @@ import { ensureClientCompany } from '@/lib/companies/billing/ensure-client-compa
 import { eq } from 'drizzle-orm'
 
 import { creatableProjectTypes, roleCan } from '@/lib/auth/capabilities'
-import { requireStaffUser, type AppUser } from '@/lib/auth/session'
+import { type AppUser, requirePage } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectCreatedEvent, projectUpdatedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
@@ -55,7 +55,7 @@ type RelatedWrites = {
 export async function saveProject(
   input: ProjectInput
 ): Promise<ProjectActionResult> {
-  const user = await requireStaffUser()
+  const user = await requirePage('projects.view_member')
   const parsed = projectSchema.safeParse(input)
   const canManage = roleCan(user.role, 'projects.manage')
 

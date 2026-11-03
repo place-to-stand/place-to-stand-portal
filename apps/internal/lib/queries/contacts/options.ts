@@ -2,7 +2,7 @@ import 'server-only'
 
 import { asc, isNull, sql } from 'drizzle-orm'
 
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
@@ -25,7 +25,7 @@ export type ContactOption = {
 export async function listContactOptions(
   user: AppUser
 ): Promise<ContactOption[]> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   return db
     .select({

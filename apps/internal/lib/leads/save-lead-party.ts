@@ -12,7 +12,6 @@ import {
   contactUpdatedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
-import { isAdminRole } from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
 import type { DbTx } from '@/lib/db'
 import { companies, contacts } from '@/lib/db/schema'
@@ -25,6 +24,7 @@ import { joinCompany, mainCompanyIdSql } from '@/lib/queries/memberships'
 
 import type { SaveLeadResult } from './save-lead-core'
 import type { NormalizedLead } from './save-lead-fields'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export type SaveContext = {
   tx: DbTx
@@ -107,7 +107,7 @@ export async function resolveLeadContact(
     userId: contacts.userId,
   }
   const timestamp = new Date().toISOString()
-  const isAdmin = isAdminRole(actor.role)
+  const isAdmin = roleCan(actor.role, 'settings.users')
   // Someone who can sign in is edited by admins only (their companies decide
   // what they can see), as on the person sheet. A lead save still links
   // them; it just leaves them be. A client's other people are Sales'

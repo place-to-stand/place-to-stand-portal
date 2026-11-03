@@ -3,13 +3,13 @@ import { Buffer } from 'node:buffer'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireStaffUser } from '@/lib/auth/session'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { getTaskAttachmentForDownload } from '@/lib/queries/task-attachments'
 import { ensureTaskAttachmentBucket } from '@/lib/storage/task-attachments'
 import { TASK_ATTACHMENT_BUCKET } from '@/lib/storage/task-attachment-constants'
 import { HttpError } from '@/lib/errors/http'
 import { buildContentDispositionHeader } from '@/lib/http/content-disposition'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /** Types a browser may render in place; anything else is downloaded. */
 const INLINE_MIME_TYPES = new Set([
@@ -28,7 +28,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext<'/api/storage/task-attachment/[attachmentId]'>
 ) {
-  const actor = await requireStaffUser()
+  const { user: actor, denied } = await authorizeRoute('projects.view_member')
+  if (denied) return denied
   const parsedParams = paramsSchema.safeParse(await context.params)
 
   if (!parsedParams.success) {

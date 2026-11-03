@@ -199,8 +199,10 @@ Portal access is read from the `client_portal_access` view: a contact's membersh
    - Uses React `cache()` for automatic deduplication
 
 **Access control:**
-- The internal portal is **admin-only by default**: `requireUser()` / `assertAdmin()` admit ADMIN only. SALES users reach just the CRM (leads, contacts), which opts in with `requireCrmUser()` / `assertCrmAccess()`; anywhere else `requireUser()` sends them to `/leads`. CLIENT-role users are rejected at sign-in and redirected to the client portal (`CLIENT_PORTAL_URL`). Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
-- Mutations and API routes still guard with `assertAdmin()`/`requireRole('ADMIN')` as defense-in-depth
+- **Every check names a capability** from `lib/auth/capabilities.ts` (what each role may do; Settings → Roles & permissions shows it). Pages call `requirePage('<capability>')`, which redirects (SALES without it to `/leads`, CLIENT to `CLIENT_PORTAL_URL`). API routes call `authorizeRoute('<capability>')` (`lib/auth/guard.ts`), which answers 401/403 JSON, never a redirect; only OAuth navigations under `app/api/auth/**` keep the redirecting guards. Code below them uses `assertCan(user, '<capability>')` (throws ForbiddenError) or `roleCan(user.role, '<capability>')` for a branch. CLIENT-role users are rejected at sign-in. Shared rules (nav, activity types, sheet entities) live in `lib/auth/roles.ts`
+- Never compare the signed-in user's role to a literal (`user.role === 'ADMIN'`): add or use a capability. Comparing another person's role (a list of people) is data and fine. Lint enforces both (`pts/no-role-literal`, `pts/api-route-guard`)
+- What Sales may see of billing is an allowlist: activity verbs are classified in `lib/activity/verb-audience.ts` (type-check fails on an unclassified verb), and project payloads pick the client fields members see (`lib/projects/viewer-scope.ts`)
+- `scripts/permissions-manifest.mjs` (`npm run lint`) reads each endpoint's guard from code, comments stripped, and fails on a capability that doesn't exist. Where the guard runs in code an export calls, put `// permission: <capability> — <why>` on the export
 - `ensure*Access` helpers verify the target entity exists (NotFound) before mutations
 - Client-scoped access lives exclusively in `apps/client/` (via the `client_portal_access` view)
 
@@ -229,11 +231,12 @@ This project does NOT use PostgreSQL Row Level Security. All access control is h
 **Session management** (`apps/internal/lib/auth/session.ts`):
 - `getSession()` - Retrieve Supabase session
 - `getCurrentUser()` - Combine Supabase auth with database user record
-- `requireUser()` - Guard protected routes; redirects unauthenticated users to `/sign-in` and non-ADMIN sessions to the client portal
-- `requireRole()` - Role-based access control (defense-in-depth on admin pages)
+- `requirePage(capability)` - Page and server-action guard; redirects signed-out users to sign in, CLIENT sessions to the client portal and other staff without the capability to `/leads`. `requireUser()` is `requirePage('portal.admin')`, `requireCrmUser()` is `requirePage('portal.sign_in')`
+- `authorizeRoute(capability)` (`lib/auth/guard.ts`) - API route guard; returns `{ user, denied }`, where `denied` is a 401/403 JSON response
 
 **Permission helpers** (`apps/internal/lib/auth/permissions.ts`) — all take the `AppUser` object, not a bare user id:
-- `assertAdmin(user)` - Throws ForbiddenError if not admin
+- `assertCan(user, capability)` - Throws ForbiddenError without the capability
+- `assertAdmin(user)` - `assertCan(user, 'portal.admin')`
 - `ensure{Project,Task,TimeLog}Access(user, id)` - Assert admin + verify the entity exists and is not soft-deleted (NotFoundError)
 
 **Roles:**
@@ -422,15 +425,15 @@ Conventions, all enforced by `useSheetParams`/`useSheetParamSelection` — never
 
 ### Creating a new protected route
 1. Add page under `apps/internal/app/(dashboard)/your-route/page.tsx`
-2. Use `requireUser()` or `requireRole()` in Server Component
+2. Call `requirePage('<capability>')` in the Server Component
 3. Fetch data using functions from `apps/internal/lib/data/`
 4. Add navigation link if needed
 
 ### Adding a new API endpoint
 1. Create route in `apps/internal/app/api/your-endpoint/route.ts`
 2. Export handler: `export async function POST(req: Request) { ... }`
-3. Use `getCurrentUser()` for auth
-4. Apply permission checks with `assertAdmin()` (plus `ensure*Access()` for entity existence)
+3. Start with `const { user, denied } = await authorizeRoute('<capability>'); if (denied) return denied`
+4. Check narrower permissions with `assertCan()` / `roleCan()` (plus `ensure*Access()` for entity existence)
 5. Return standardized responses: `{ ok: true, data }` or `{ ok: false, error }`
 
 ### Creating a new table

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { userRoleTerms, users } from '@/lib/db/schema'
 import { currentMonthStartUtc } from '@/lib/queries/companies/billing/billing-terms'
 import { setRoleTerm } from '@/lib/queries/users/role-terms'
 import { and, eq, gt, isNull } from 'drizzle-orm'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function POST() {
   // Hard guard: never available in production
@@ -13,7 +13,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Not available' }, { status: 404 })
   }
 
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('portal.sign_in')
+  if (denied) return denied
   const effectiveFrom = currentMonthStartUtc()
 
   // users.role and the role history move together, so the close and

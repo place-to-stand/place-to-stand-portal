@@ -27,6 +27,7 @@ import type { ActivitySourceValue, UserRoleValue } from '@/lib/types'
 import type { Json } from '@/lib/types/json'
 
 import { attachActivityReferences } from './references'
+import { NON_BILLING_VERBS } from './verb-audience'
 import type {
   ActivityLogWithActor,
   ActivityQueryFilters,
@@ -41,26 +42,15 @@ import type {
 const RETIRED_VERBS = ['PROJECT_VIEWED', 'CLIENT_VIEWED']
 
 /**
- * Billing and portal-access events. They sit on the company (target COMPANY
- * since 0113), so a company feed shows them; anyone who can't manage clients
- * (Sales) never sees them, or the billing behind them.
+ * Billing and portal-access events sit on the company (target COMPANY since
+ * 0113). Anyone who can't manage clients (Sales) reads only the verbs
+ * `ACTIVITY_VERB_AUDIENCE` marks `any`, so an unclassified or retired verb
+ * stays hidden from them.
  */
-const BILLING_VERBS = [
-  'CLIENT_CREATED',
-  'CLIENT_UPDATED',
-  'CLIENT_ARCHIVED',
-  'CLIENT_RESTORED',
-  'CLIENT_DELETED',
-  'CONTACT_CLIENT_LINKED',
-  'CONTACT_CLIENT_UNLINKED',
-  // Says a person got a portal sign-in, which Sales can't see either.
-  'CONTACT_INVITED_TO_PORTAL',
-]
-
 function billingScope(user: AppUser) {
   return roleCan(user.role, 'clients.manage')
     ? undefined
-    : notInArray(activityLogs.verb, BILLING_VERBS)
+    : inArray(activityLogs.verb, [...NON_BILLING_VERBS])
 }
 
 const DEFAULT_PAGE_SIZE = 25
@@ -124,7 +114,7 @@ async function canReadActivityFor(
   filters: ActivityQueryFilters
 ): Promise<boolean> {
   if (canReadActivity(user.role, filters)) return true
-  if (user.role !== 'SALES') return false
+  if (!roleCan(user.role, 'projects.view_member')) return false
   if (filters.projectId || filters.companyId || !filters.targetId) return false
 
   const types =

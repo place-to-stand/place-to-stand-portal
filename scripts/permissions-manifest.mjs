@@ -20,6 +20,10 @@
  * guard isn't recognised, unless a `// permission: <capability>` comment
  * sits on it. A server action is a public POST endpoint; "guarded in code
  * it calls" is too easy to get wrong there.
+ *
+ * Only code counts: comments are stripped before guards are matched, except
+ * a `// permission:` line on an export or heading its file, and every
+ * capability named (in code or a declaration) must exist in capabilities.ts.
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -38,36 +42,80 @@ const CLIENT_GUARDS = [/\/\/\s*permission:\s*[a-z_.]+/, /\brequireClientUser\(/]
 /** A file whose first statement is the 'use server' directive. */
 const USE_SERVER = /^(?:\s|\/\/[^\n]*\n|\/\*[\s\S]*?\*\/)*['"]use server['"]/
 
-/** Guard call → what it enforces. First match in a function body wins. */
+/**
+ * Guard call → what it enforces. The earliest guard call in a function body
+ * wins, so the guard that runs first is the one shown. Comments are stripped
+ * before matching, so a comment that names a guard never counts.
+ */
 const GUARDS = [
-  { re: /\/\/\s*permission:\s*([a-z_.]+)/, kind: 'capability', fromMatch: 1 },
   {
-    re: /\b(?:assertCan|requireCapability)\([^,)]*?,?\s*'([a-z_.]+)'/,
+    re: /\b(?:requirePage|authorizeRoute)\(\s*(?:isBoard\s*\?\s*)?['"]([a-z_.]+)['"]/,
     kind: 'capability',
     fromMatch: 1,
   },
   {
-    re: /\broleCan\([^,]+,\s*'([a-z_.]+)'\)/,
+    re: /\bassertCan\([^,()]+,\s*['"]([a-z_.]+)['"]\)/,
     kind: 'capability',
     fromMatch: 1,
+  },
+  {
+    // A branch more often than a gate: counts only when nothing stronger runs.
+    re: /\broleCan\([^,()]+,\s*['"]([a-z_.]+)['"]\)/,
+    kind: 'capability',
+    fromMatch: 1,
+    strength: 1,
   },
   { re: /\bwithCliAuth\b/, kind: 'capability', capability: 'integrations.cli' },
   { re: /\b(?:verifyIntakeToken|CRON_SECRET)\b/, kind: 'token' },
   {
-    re: /\b(?:requireRole\(\s*'ADMIN'|assertAdmin\(|requireUser\(\)|getCurrentAdmin\(|ensure(?:Project|Task|TimeLog)Access\()/,
-    kind: 'admin',
+    re: /\brequireCrmUser\(/,
+    kind: 'capability',
+    capability: 'portal.sign_in',
   },
   {
-    re: /\b(?:requireCrmUser|assertCrmAccess|getCurrentCrmUser)\(/,
+    // Signed in, nothing more; a roleCan after it is the real check.
+    re: /\bgetCurrentStaff\(/,
+    kind: 'capability',
+    capability: 'portal.sign_in',
+    strength: 0,
+  },
+  {
+    re: /\b(?:assertCrmAccess)\(/,
     kind: 'capability',
     capability: 'leads.manage',
   },
   {
-    re: /\b(?:requireStaffUser|getCurrentStaff)\(/,
-    kind: 'capability',
-    capability: 'portal.sign_in',
+    re: /\b(?:assertAdmin\(|requireUser\(\)|getCurrentAdmin\(|ensure(?:Project|Task|TimeLog)Access\()/,
+    kind: 'admin',
   },
 ]
+
+/**
+ * An explicit declaration on an export, for code whose guard runs in what it
+ * calls: `// permission: <capability> — <why>` (or `public`) on its own line.
+ * The capability must exist in capabilities.ts.
+ */
+const PERMISSION_COMMENT = /^[ \t]*\/\/\s*permission:\s*([a-z_.]+)/m
+
+/** The same declaration heading a file: applies to every export in it. */
+const FILE_PERMISSION_COMMENT =
+  /^(?:\s*(?:['"]use server['"];?|\/\/(?!\s*permission:)[^\n]*))*\s*\/\/\s*permission:\s*([a-z_.]+)/
+
+const KNOWN_CAPABILITIES = new Set(
+  [
+    ...readFileSync(
+      join(root, 'apps/internal/lib/auth/capabilities.ts'),
+      'utf8'
+    ).matchAll(/^\s+'([a-z_]+\.[a-z_]+)':\s*\{/gm),
+  ].map(match => match[1])
+)
+
+/** Source with comments blanked (strings and template text are kept). */
+function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, match => match.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1')
+}
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 
@@ -107,25 +155,98 @@ function exportedFunctions(source) {
   }))
 }
 
-function guardFor(body, fileText) {
-  for (const text of [body, fileText]) {
-    for (const guard of GUARDS) {
-      const match = text.match(guard.re)
-      if (match) {
-        if (guard.fromMatch && match[guard.fromMatch] === 'public') {
-          return { kind: 'public', capability: null, inferredFromFile: false }
-        }
-        return {
-          kind: guard.kind,
-          capability:
-            guard.capability ??
-            (guard.fromMatch ? match[guard.fromMatch] : null),
-          inferredFromFile: text === fileText && text !== body,
-        }
+const badDeclarations = []
+
+/** Top-level function and const declarations of a file, by name. */
+function localHelpers(source) {
+  const code = stripComments(source)
+  const re =
+    /^(?:export\s+)?(?:(?:async\s+)?function\s+(\w+)|const\s+(\w+)\s*=\s*(?:cache\()?(?:async\s*)?(?:\(|function))/gm
+  const marks = []
+  let match
+  while ((match = re.exec(code))) {
+    marks.push({ name: match[1] ?? match[2], index: match.index })
+  }
+  const helpers = new Map()
+  marks.forEach((mark, i) => {
+    helpers.set(
+      mark.name,
+      code.slice(mark.index, marks[i + 1]?.index ?? code.length)
+    )
+  })
+  return helpers
+}
+
+/** Every guard call in `code`, following same-file helpers it calls. */
+function guardCalls(code, helpers, depth = 0) {
+  const calls = []
+  for (const guard of GUARDS) {
+    const re = new RegExp(guard.re.source, 'g')
+    let match
+    while ((match = re.exec(code)))
+      calls.push({ index: match.index, guard, match })
+  }
+  if (depth < 3) {
+    for (const [name, helperBody] of helpers) {
+      if (helperBody === code) continue
+      const call = new RegExp(`\\b${name}\\(`).exec(code)
+      if (!call) continue
+      for (const inner of guardCalls(helperBody, helpers, depth + 1)) {
+        calls.push({ ...inner, index: call.index })
       }
     }
   }
-  return { kind: 'delegated', capability: null, inferredFromFile: false }
+  return calls
+}
+
+const capabilityOf = ({ guard, match }) =>
+  guard.capability ?? (guard.fromMatch ? match[guard.fromMatch] : null)
+
+/**
+ * The guard to show: the earliest gate (requirePage, authorizeRoute,
+ * assertCan, …). With no gate, the earliest roleCan, else getCurrentStaff.
+ */
+function firstGuard(code, helpers) {
+  const calls = guardCalls(code, helpers).sort((a, b) => a.index - b.index)
+  const strength = call => call.guard.strength ?? 2
+  for (const level of [2, 1, 0]) {
+    const call = calls.find(c => strength(c) === level)
+    if (call) return call
+  }
+  return undefined
+}
+
+/**
+ * What guards one export. In order: a `// permission:` line on the export,
+ * the earliest gate in its body (or in a same-file helper it calls), a
+ * `// permission:` line heading the file, then a bare roleCan check.
+ */
+function guardFor(body, file, source) {
+  const declared = body.match(PERMISSION_COMMENT)
+  if (declared) return declaredGuard(declared[1], file)
+
+  const helpers = localHelpers(source)
+  const found = firstGuard(stripComments(body), helpers)
+  const header = source.match(FILE_PERMISSION_COMMENT)
+  // A file's declaration beats a bare roleCan branch, not a real gate.
+  if (header && (!found || (found.guard.strength ?? 2) < 2)) {
+    return declaredGuard(header[1], file)
+  }
+  if (!found) return { kind: 'delegated', capability: null }
+
+  const capability = capabilityOf(found)
+  if (capability && !KNOWN_CAPABILITIES.has(capability)) {
+    badDeclarations.push(`${file}: ${capability}`)
+  }
+  return { kind: found.guard.kind, capability }
+}
+
+function declaredGuard(capability, file) {
+  if (capability === 'public') return { kind: 'public', capability: null }
+  if (!KNOWN_CAPABILITIES.has(capability)) {
+    badDeclarations.push(`${file}: permission: ${capability}`)
+  }
+  return { kind: 'capability', capability }
 }
 
 const entries = []
@@ -141,7 +262,7 @@ for (const file of walk(appDir).sort()) {
         type: 'route',
         name: `${fn.name} ${toRoute(file).replace(/^\/api/, '/api')}`,
         file: rel,
-        ...guardFor(fn.body, source),
+        ...guardFor(fn.body, rel, source),
       })
     }
   } else if (base === 'page.tsx') {
@@ -152,7 +273,7 @@ for (const file of walk(appDir).sort()) {
       type: 'page',
       name: toRoute(file) || '/',
       file: rel,
-      ...guardFor(fn.body, source),
+      ...guardFor(fn.body, rel, source),
     })
   } else if (USE_SERVER.test(source)) {
     for (const fn of exportedFunctions(source)) {
@@ -160,7 +281,7 @@ for (const file of walk(appDir).sort()) {
         type: 'action',
         name: fn.name,
         file: rel,
-        ...guardFor(fn.body, source),
+        ...guardFor(fn.body, rel, source),
       })
     }
   }
@@ -176,7 +297,7 @@ for (const file of walk(internalDir).sort()) {
       type: 'action',
       name: fn.name,
       file: rel,
-      ...guardFor(fn.body, source),
+      ...guardFor(fn.body, rel, source),
     })
   }
 }
@@ -188,9 +309,9 @@ for (const entry of entries) {
   while (dir.startsWith(appDir)) {
     try {
       const layout = readFileSync(join(dir, 'layout.tsx'), 'utf8')
-      const guard = guardFor(layout, layout)
+      const guard = guardFor(layout, relative(root, dir), layout)
       if (guard.kind !== 'delegated') {
-        Object.assign(entry, guard, { inferredFromFile: true })
+        Object.assign(entry, guard)
         break
       }
     } catch {}
@@ -198,12 +319,7 @@ for (const entry of entries) {
   }
 }
 
-const manifest =
-  JSON.stringify(
-    entries.map(({ inferredFromFile, ...entry }) => entry),
-    null,
-    2
-  ) + '\n'
+const manifest = JSON.stringify(entries, null, 2) + '\n'
 
 const unguarded = entries
   .filter(entry => entry.type === 'action' && entry.kind === 'delegated')
@@ -218,10 +334,18 @@ for (const file of walk(clientDir).sort()) {
   }
 }
 
+if (badDeclarations.length) {
+  console.error(
+    'Guards that name a capability capabilities.ts does not define:'
+  )
+  for (const line of badDeclarations) console.error(`  - ${line}`)
+  process.exit(1)
+}
+
 if (process.argv.includes('--check')) {
   if (unguarded.length) {
     console.error(
-      "Server actions without a recognised guard (they'd show as \"Guarded in code it calls\"). Call a guard this script knows (requireUser, requireRole('ADMIN'), assertCan(user, '<capability>'), requireCrmUser, requireStaffUser, … in apps/internal; requireClientUser in apps/client), or put `// permission: <capability> — <why>` on the export (`public` for a deliberately open one):"
+      "Server actions without a recognised guard (they'd show as \"Guarded in code it calls\"). Call a guard this script knows (requirePage('<capability>'), authorizeRoute('<capability>'), assertCan(user, '<capability>'), assertAdmin(user), … in apps/internal; requireClientUser in apps/client), or put `// permission: <capability> — <why>` on the export (`public` for a deliberately open one):"
     )
     for (const line of unguarded) console.error(`  - ${line}`)
     process.exit(1)

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
-import { requireUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { getInvoiceById } from '@/lib/queries/invoices'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
@@ -24,7 +24,7 @@ export default async function InvoicePreviewPage({
   const { invoiceId } = await params
   if (!UUID_PATTERN.test(invoiceId)) notFound()
 
-  const user = await requireUser()
+  const user = await requirePage('billing.manage')
   const invoice = await getInvoiceById(user, invoiceId)
   if (!invoice || invoice.deleted_at) notFound()
 

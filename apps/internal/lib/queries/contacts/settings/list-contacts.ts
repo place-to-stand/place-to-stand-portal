@@ -1,11 +1,10 @@
 import { isClientCompany } from '@pts/db/client-state'
-import { isAdminRole } from '@/lib/auth/roles'
 import 'server-only'
 
 import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, clientPortalAccess, contacts } from '@/lib/db/schema'
 import { type PageInfo } from '@/lib/pagination/cursor'
@@ -15,10 +14,7 @@ import {
   type SortCursorPayload,
   type SortDirection,
 } from '@/lib/pagination/sort'
-import {
-  DEFAULT_CONTACTS_SORT,
-  type SignInFilter,
-} from '@/lib/people/filters'
+import { DEFAULT_CONTACTS_SORT, type SignInFilter } from '@/lib/people/filters'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import {
   listContactMemberships,
@@ -49,6 +45,7 @@ import type {
   LinkedClient,
   ListContactsForSettingsInput,
 } from './types'
+import { roleCan } from '@/lib/auth/capabilities'
 
 type ContactMetricsResult = SelectContact &
   ContactProfile & {
@@ -254,7 +251,7 @@ export async function listContactsForSettings(
   user: AppUser,
   input: ListContactsForSettingsInput = {}
 ): Promise<ContactsSettingsResult> {
-  assertCrmAccess(user)
+  assertCan(user, 'contacts.manage')
 
   const direction = resolveContactDirection(input.direction)
   const limit = resolvePaginationLimit(input.limit)
@@ -342,7 +339,7 @@ export async function listContactsForSettings(
     normalizedRows,
     clientsMap,
     membershipsMap,
-    isAdminRole(user.role)
+    roleCan(user.role, 'clients.manage')
   ).map(item =>
     seesAccess
       ? item

@@ -15,7 +15,7 @@ import {
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { roleCan } from '@/lib/auth/capabilities'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { startClientBillingInTx } from '@/lib/companies/billing/actions/create-client'
 import { stopClientBillingInTx } from '@/lib/companies/billing/actions/soft-delete-client'
@@ -109,7 +109,7 @@ export async function saveCompanySheet(
   actor: AppUser,
   input: SaveCompanySheetInput
 ): Promise<CompanyActionResult> {
-  assertCrmAccess(actor)
+  assertCan(actor, 'companies.manage')
 
   const parsed = saveCompanySheetSchema.safeParse(input)
   if (!parsed.success) {

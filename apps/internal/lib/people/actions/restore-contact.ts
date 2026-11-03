@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { logActivity } from '@/lib/activity/logger'
 import { roleCan } from '@/lib/auth/capabilities'
 import { contactRestoredEvent } from '@/lib/activity/events/contacts'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
@@ -38,7 +38,7 @@ export async function restoreContactMutation(
     async () => {
       const { user } = context
       try {
-        assertCrmAccess(user)
+        assertCan(user, 'contacts.manage')
       } catch (error) {
         if (error instanceof Error) {
           return buildMutationResult({ error: error.message })

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { getInvoiceById, listInvoices } from '@/lib/queries/invoices'
 import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
@@ -18,16 +18,19 @@ export const metadata: Metadata = {
   title: 'Invoices',
 }
 
-
 export default async function InvoicesPage({
   searchParams,
 }: PageProps<'/invoices'>) {
-  const currentUser = await requireRole('ADMIN')
+  const currentUser = await requirePage('billing.manage')
   const params = await searchParams
   const pageSize = await readPageSize()
 
-  const { page: currentPage, status, search, sort } =
-    parseInvoicesSearchParams(params)
+  const {
+    page: currentPage,
+    status,
+    search,
+    sort,
+  } = parseInvoicesSearchParams(params)
   const offset = (currentPage - 1) * pageSize
 
   const {

@@ -19,6 +19,7 @@ import {
 } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
+import { assertCan } from '@/lib/auth/permissions'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { TimeLogSortField } from '@/lib/time-logs/filters'
 import { db } from '@/lib/db'
@@ -46,6 +47,9 @@ export async function fetchHoursSnapshot(
   user: AppUser,
   cursor: MonthCursor
 ): Promise<HoursSnapshot> {
+  // Agency-wide hours: checked here too, so a reuse from a Sales page can't
+  // leak them.
+  assertCan(user, 'widget.hours')
   const bounds = await resolveSnapshotBounds()
   const normalizedCursor = normalizeMonth(cursor.year, cursor.month)
   const clampedCursor = clampMonthCursor(

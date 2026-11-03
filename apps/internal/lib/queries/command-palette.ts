@@ -5,7 +5,7 @@ import 'server-only'
 import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertAdmin } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, contacts, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
@@ -53,7 +53,7 @@ export async function searchCommandPalette(
   user: AppUser,
   query: string
 ): Promise<PaletteSearchResult> {
-  assertAdmin(user)
+  assertCan(user, 'portal.command_palette')
 
   const pattern = createSearchPattern(query)
 

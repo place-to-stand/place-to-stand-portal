@@ -6,7 +6,7 @@ import {
   type MyTasksInitialEntry,
   type MyTasksView,
 } from '@/components/my-tasks/my-tasks-page'
-import { requireStaffUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
 import {
   fetchProjectsLite,
@@ -28,6 +28,7 @@ import {
   DONE_WINDOW_WEEKS,
   resolveDoneWindowStart,
 } from '@/lib/projects/tasks/done-window'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export const metadata: Metadata = {
   title: 'My tasks',
@@ -47,8 +48,8 @@ export default async function MyTasksViewRoute({
   params,
   searchParams,
 }: PageProps<'/my/tasks/[view]'>) {
-  const user = await requireStaffUser()
-  const isAdmin = user.role === 'ADMIN'
+  const user = await requirePage('projects.view_member')
+  const isAdmin = roleCan(user.role, 'projects.view_all')
   const resolvedParams = await params
   const resolvedSearchParams = (await searchParams) as PageSearchParams
   const viewParam = resolvedParams.view

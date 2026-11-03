@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 
-import { requireCrmUser } from '@/lib/auth/session'
 import { loadCompanySheet } from '@/lib/companies/sheet-loaders'
 import { NEW_SHEET_VALUE } from '@/lib/sheets/entities'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
  * GET /api/companies/<id|new>/sheet: what the company sheet shows. `data` is
@@ -12,7 +12,8 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/companies/[companyId]/sheet'>
 ) {
-  const user = await requireCrmUser()
+  const { user, denied } = await authorizeRoute('companies.manage')
+  if (denied) return denied
   const { companyId } = await params
   const data = await loadCompanySheet(
     user,

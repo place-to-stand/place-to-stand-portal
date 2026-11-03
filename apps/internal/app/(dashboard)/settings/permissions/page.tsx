@@ -16,7 +16,7 @@ import {
   type CapabilityWithEndpoints,
 } from '@/lib/auth/permissions-registry'
 import { ROLE_LABELS } from '@/lib/auth/roles'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { cn } from '@/lib/utils'
 
@@ -42,7 +42,7 @@ const GRID =
  * `npm run lint`). Changing a permission is a code change; this page follows.
  */
 export default async function PermissionsPage() {
-  await requireRole('ADMIN')
+  await requirePage('settings.permissions')
   const registry = buildPermissionsRegistry()
   const roleTotals = PERMISSION_ROLES.map(role => ({
     role,

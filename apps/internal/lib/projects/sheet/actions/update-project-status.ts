@@ -3,7 +3,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectUpdatedEvent } from '@/lib/activity/events'
 import {
@@ -29,7 +29,7 @@ export type UpdateProjectStatusInput = z.infer<typeof updateProjectStatusSchema>
 export async function updateProjectStatus(
   input: UpdateProjectStatusInput
 ): Promise<ProjectActionResult> {
-  const user = await requireRole('ADMIN')
+  const user = await requirePage('projects.manage')
   const parsed = updateProjectStatusSchema.safeParse(input)
 
   if (!parsed.success) {

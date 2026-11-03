@@ -1,25 +1,18 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 
-import { getCurrentAdmin } from '@/lib/auth/session'
+import { authorizeRoute } from '@/lib/auth/guard'
 import { HttpError } from '@/lib/errors/http'
 import { searchCommandPalette } from '@/lib/queries/command-palette'
 
-// W5: validate before querying. R1: explicit null → 401 before any
-// admin assertion (getCurrentAdmin returns AppUser | null).
+// Validate before querying.
 const querySchema = z.object({
   q: z.string().trim().min(2).max(100),
 })
 
 export async function GET(request: NextRequest) {
-  const user = await getCurrentAdmin()
-
-  if (!user) {
-    return NextResponse.json(
-      { ok: false, error: 'Unauthorized' },
-      { status: 401 }
-    )
-  }
+  const { user, denied } = await authorizeRoute('portal.command_palette')
+  if (denied) return denied
 
   const parsed = querySchema.safeParse({
     q: request.nextUrl.searchParams.get('q') ?? '',

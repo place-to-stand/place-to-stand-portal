@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireRole } from '@/lib/auth/session'
 import { getProjectRepos, linkRepoToProject } from '@/lib/data/github-repos'
 import { getActiveInstallationForProject } from '@/lib/github/app-installations'
 import { resolveRepoForLink } from '@/lib/github/resolve-repo-link'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const linkSchema = z.object({
-  repoFullName: z.string().regex(/^[^/]+\/[^/]+$/, 'Invalid repo format (expected owner/repo)'),
+  repoFullName: z
+    .string()
+    .regex(/^[^/]+\/[^/]+$/, 'Invalid repo format (expected owner/repo)'),
   connectionId: z.string().uuid().optional(),
   githubAppInstallationId: z.string().uuid().optional(),
 })
@@ -15,7 +17,8 @@ export async function GET(
   request: NextRequest,
   { params }: RouteContext<'/api/projects/[projectId]/github-repos'>
 ) {
-  await requireRole('ADMIN')
+  const { denied } = await authorizeRoute('projects.manage')
+  if (denied) return denied
   const { projectId } = await params
 
   const repos = await getProjectRepos(projectId)
@@ -31,7 +34,8 @@ export async function POST(
   request: NextRequest,
   { params }: RouteContext<'/api/projects/[projectId]/github-repos'>
 ) {
-  const user = await requireRole('ADMIN')
+  const { user, denied } = await authorizeRoute('projects.manage')
+  if (denied) return denied
   const { projectId } = await params
 
   const body = await request.json()
@@ -63,6 +67,9 @@ export async function POST(
     return NextResponse.json({ success: true, link })
   } catch (error) {
     console.error('Error linking repo:', error)
-    return NextResponse.json({ error: 'Failed to link repository' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to link repository' },
+      { status: 500 }
+    )
   }
 }

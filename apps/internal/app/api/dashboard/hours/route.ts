@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireUser } from '@/lib/auth/session'
 import {
   fetchHoursSnapshot,
   fetchMyMonthTimeLogs,
 } from '@/lib/data/dashboard/hours'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const schema = z.object({
   year: z.number().int().min(2000).max(3000),
@@ -19,7 +19,8 @@ const schema = z.object({
 })
 
 export async function POST(request: Request) {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('widget.hours')
+  if (denied) return denied
 
   let payload: z.infer<typeof schema>
   try {

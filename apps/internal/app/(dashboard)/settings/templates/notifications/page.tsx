@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+import { requirePage } from '@/lib/auth/session'
+
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { buildNotificationCatalog } from '@/lib/notifications/catalog'
@@ -11,7 +13,8 @@ export const metadata: Metadata = {
   title: 'Templates | Settings',
 }
 
-export default function NotificationTemplatesPage() {
+export default async function NotificationTemplatesPage() {
+  await requirePage('settings.templates')
   const entries = buildNotificationCatalog()
 
   return (

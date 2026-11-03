@@ -1,6 +1,6 @@
 'use server'
 
-import { requireStaffUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { revalidateTaskViews } from '@/lib/tasks/revalidate-task-views'
 
 /**
@@ -9,6 +9,6 @@ import { revalidateTaskViews } from '@/lib/tasks/revalidate-task-views'
  * `revalidateTaskViews` instead: this guard needs a cookie session.
  */
 export async function revalidateProjectTaskViews() {
-  await requireStaffUser()
+  await requirePage('projects.view_member')
   revalidateTaskViews()
 }

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, isNull } from 'drizzle-orm'
 
-import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { getActiveInstallationForProject } from '@/lib/github/app-installations'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function GET(request: NextRequest) {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('integrations.manage')
+  if (denied) return denied
   const projectId = request.nextUrl.searchParams.get('projectId')
 
   // Fetch all GitHub accounts for this user (multi-account support)

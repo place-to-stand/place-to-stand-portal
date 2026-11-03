@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
 
-import { requireStaffUser } from '@/lib/auth/session'
 import { listWorkableProjectIds } from '@/lib/projects/access'
 import { listAssignedTaskSummaries } from '@/lib/data/tasks'
 import {
   HIDE_PARAM,
   parseHiddenProjectTypes,
 } from '@/lib/my-tasks/project-scope'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function GET(request: Request) {
-  const user = await requireStaffUser()
+  const { user, denied } = await authorizeRoute('projects.view_member')
+  if (denied) return denied
   const { searchParams } = new URL(request.url)
 
   const limitParam = searchParams.get('limit')
@@ -42,4 +43,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

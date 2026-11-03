@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireRole } from '@/lib/auth/session'
 import { listBranches } from '@/lib/github/client'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
  * GET /api/github/repos/[owner]/[repo]/branches
@@ -10,7 +10,8 @@ export async function GET(
   request: NextRequest,
   { params }: RouteContext<'/api/github/repos/[owner]/[repo]/branches'>
 ) {
-  const user = await requireRole('ADMIN')
+  const { user, denied } = await authorizeRoute('projects.manage')
+  if (denied) return denied
   const { owner, repo } = await params
 
   try {

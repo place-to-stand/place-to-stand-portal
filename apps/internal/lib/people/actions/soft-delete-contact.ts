@@ -4,7 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { logActivity } from '@/lib/activity/logger'
 import { contactArchivedEvent } from '@/lib/activity/events/contacts'
 import { roleCan } from '@/lib/auth/capabilities'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { companies, contacts, memberships, users } from '@/lib/db/schema'
@@ -44,7 +44,7 @@ export async function softDeleteContactMutation(
     async () => {
       const { user } = context
       try {
-        assertCrmAccess(user)
+        assertCan(user, 'contacts.manage')
       } catch (error) {
         if (error instanceof Error) {
           return buildMutationResult({ error: error.message })
