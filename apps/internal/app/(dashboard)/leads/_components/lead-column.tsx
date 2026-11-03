@@ -14,6 +14,7 @@ import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 
 import { LeadCard } from './lead-card'
+import { pagePanelClass } from '@/components/layout/page-panel'
 
 type LeadColumnProps = {
   columnId: LeadStatusValue
@@ -70,14 +71,15 @@ export function LeadColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'bg-background flex min-h-0 w-80 shrink-0 flex-col gap-3 overflow-hidden rounded-xl border p-3 shadow-sm transition',
+        pagePanelClass,
+        'flex min-h-0 w-80 shrink-0 flex-col gap-3 overflow-hidden p-3 transition',
         highlight && 'ring-primary ring-2'
       )}
     >
       <div className='flex items-center justify-between gap-2'>
         <div className='flex items-center gap-3'>
           <LeadStatusBadge status={columnId} label={label} />
-          <span className='text-muted-foreground text-[10px]'>
+          <span className='text-muted-foreground text-micro font-semibold tabular-nums'>
             {leads.length}
           </span>
         </div>

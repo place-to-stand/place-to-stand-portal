@@ -13,6 +13,7 @@ import { InvoicesAddButton } from './_components/invoices-add-button'
 import { InvoicesFilters } from './_components/invoices-filters'
 import { InvoicesManagementTable } from './_components/invoices-management-table'
 import { INVOICES_TABS } from './_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Invoices',
@@ -75,7 +76,7 @@ export default async function InvoicesPage({
       }}
       primaryAction={<InvoicesAddButton clients={clients} />}
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <InvoicesFilters basePath='/invoices' status={status} search={search} />
         <InvoicesManagementTable
           invoices={items}
@@ -91,7 +92,7 @@ export default async function InvoicesPage({
           deepLinkedInvoice={deepLinkedInvoice}
           invoiceNotFound={invoiceNotFound}
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

@@ -17,6 +17,7 @@ import type {
 } from './projects-landing'
 import { ProjectsLandingFilters } from './projects-landing-filters'
 import { PROJECTS_TABS } from '../_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export type ProjectsLandingAdminSectionProps = {
   projects: LandingProject[]
@@ -79,7 +80,7 @@ export function ProjectsLandingAdminSection({
         <ProjectsAddButton clients={clients} allowWithoutClients={memberView} />
       }
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <ProjectsLandingFilters statuses={statuses} search={search} />
         <ProjectsLanding
           projects={projects}
@@ -91,7 +92,7 @@ export function ProjectsLandingAdminSection({
           filtersActive={filtersActive}
           readOnly={memberView}
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

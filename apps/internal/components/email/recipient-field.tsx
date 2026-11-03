@@ -103,7 +103,7 @@ export function RecipientField({
             <span
               key={email}
               title={email}
-              className='bg-muted inline-flex h-6.5 max-w-full items-center gap-1.5 rounded-full border pr-0.5 pl-2.5 text-[13px] font-medium'
+              className='bg-muted inline-flex h-6.5 max-w-full items-center gap-1.5 rounded-full border pr-0.5 pl-2.5 text-sm font-medium'
             >
               <span className='truncate'>{name}</span>
               <button
@@ -119,7 +119,7 @@ export function RecipientField({
           )
         })}
         {error ? (
-          <span className='text-destructive text-[13px]'>{error}</span>
+          <span className='text-destructive text-sm'>{error}</span>
         ) : null}
       </div>
       <Popover

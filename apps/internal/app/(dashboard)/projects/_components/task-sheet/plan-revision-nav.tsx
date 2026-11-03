@@ -60,7 +60,7 @@ export function PlanRevisionNav({
   return (
     <div className='flex items-center gap-1'>
       {shortModel && (
-        <span className='text-muted-foreground mr-0.5 text-[10px] font-medium'>
+        <span className='text-muted-foreground text-micro mr-0.5 font-medium'>
           {shortModel}
         </span>
       )}

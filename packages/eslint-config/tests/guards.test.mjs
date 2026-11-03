@@ -19,6 +19,20 @@ const tester = new RuleTester({
 
 const run = (id, cases) => tester.run(id, pts.rules[id], cases)
 
+run('one-page-panel', {
+  valid: [
+    "const c = 'rounded-xl border p-4'",
+    "const c = 'rounded-lg border shadow-sm'",
+  ],
+  invalid: [
+    {
+      code: "const c = 'bg-background rounded-xl border p-4 shadow-sm'",
+      errors: 1,
+    },
+    { code: 'const c = `bg-card ${x} rounded-xl border shadow-sm`', errors: 1 },
+  ],
+})
+
 run('no-raw-colour', {
   valid: [
     "const c = 'bg-warning/10 text-destructive border-brand-lime/50'",

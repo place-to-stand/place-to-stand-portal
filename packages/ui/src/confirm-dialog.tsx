@@ -25,6 +25,8 @@ type ConfirmDialogProps = {
   confirmDisabled?: boolean
   onConfirm: () => void
   onCancel: () => void
+  /** Extra body below the description, e.g. a summary of what will happen. */
+  children?: React.ReactNode
 }
 
 export function ConfirmDialog({
@@ -37,6 +39,7 @@ export function ConfirmDialog({
   confirmDisabled = false,
   onConfirm,
   onCancel,
+  children,
 }: ConfirmDialogProps) {
   // While it fades out, keep showing what it opened with: a caller that
   // derives the copy from state it clears on close would otherwise flash
@@ -79,6 +82,7 @@ export function ConfirmDialog({
             </AlertDialogDescription>
           ) : null}
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <Button type='button' variant='outline' onClick={onCancel}>
             {content.cancelLabel}

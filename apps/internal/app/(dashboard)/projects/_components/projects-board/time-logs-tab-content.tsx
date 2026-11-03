@@ -8,6 +8,7 @@ import type { ProjectsBoardActiveProject } from './board-tab-content'
 import { ProjectTimeLogHistoryContent } from '../project-time-log/project-time-log-history-content'
 import { useProjectTimeLogHistory } from '@/lib/projects/time-log/use-project-time-log-history'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type TimeLogsTabContentProps = {
   isActive: boolean
@@ -47,7 +48,7 @@ export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
       value='timeLogs'
       className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <div className='space-y-1'>
           <h3 className='text-lg font-semibold'>Project time logs</h3>
           <p className='text-muted-foreground text-sm'>
@@ -60,7 +61,7 @@ export function TimeLogsTabContent(props: TimeLogsTabContentProps) {
             onEditEntry={onEditEntry}
           />
         </div>
-      </section>
+      </PagePanel>
 
       <ConfirmDialog
         open={Boolean(historyState.deleteState.pendingEntry)}

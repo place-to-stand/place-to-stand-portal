@@ -8,6 +8,7 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 
 import { LEADS_TABS } from '../_lib/tabs'
 import { ActivitySection } from '@/components/activity/activity-section'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Lead activity',
@@ -24,13 +25,13 @@ export default async function LeadsActivityPage() {
       activeTab='activity'
       primaryAction={<SheetCreateButton entity='lead' label='Create lead' />}
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <ActivitySection
           targetType='LEAD'
           emptyState='No recent lead activity.'
           description='Audit lead creation, edits, archives, and deletions in one place.'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

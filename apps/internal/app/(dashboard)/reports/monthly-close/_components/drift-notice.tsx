@@ -4,6 +4,14 @@ import { useTransition } from 'react'
 import { TriangleAlert } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@pts/ui/table'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { toast } from '@/components/ui/use-toast'
 import type { CloseDrift } from '@/lib/data/reports/close'
@@ -114,7 +122,7 @@ export function DriftNotice({
             >
               Live data differs from the {displayMonth} close
             </h2>
-            <p className='text-foreground/80 text-[13px]'>
+            <p className='text-foreground/80 text-sm'>
               {causes.length > 0
                 ? `${causes.join(' ')}${moreCauses > 0 ? ` And ${moreCauses} more late change${moreCauses === 1 ? '' : 's'}.` : ''}`
                 : 'No late time logs or hour blocks explain this. A change with no late record is usually a billing term, partner assignment, or Mercury transaction posted after the close.'}
@@ -131,54 +139,56 @@ export function DriftNotice({
         </Button>
       </div>
       <div className='bg-card border-destructive/20 border-t'>
-        <table className='w-full table-fixed text-[13px]'>
-          <thead>
-            <tr className='border-b'>
-              <th className='text-muted-foreground h-8 pr-2 pl-11 text-left text-xs font-medium'>
+        <Table density='compact' className='table-fixed'>
+          <TableHeader>
+            <TableRow className='hover:bg-transparent'>
+              <TableHead className='text-muted-foreground pl-11 text-xs font-medium'>
                 Changed
-              </th>
-              <th className='text-muted-foreground w-32 px-2 text-right text-xs font-medium'>
+              </TableHead>
+              <TableHead className='text-muted-foreground w-32 text-right text-xs font-medium'>
                 At close
-              </th>
-              <th className='text-muted-foreground w-32 px-2 text-right text-xs font-medium'>
+              </TableHead>
+              <TableHead className='text-muted-foreground w-32 text-right text-xs font-medium'>
                 Live
-              </th>
-              <th className='text-muted-foreground w-32 pr-5 pl-2 text-right text-xs font-medium'>
+              </TableHead>
+              <TableHead className='text-muted-foreground w-32 pr-5 text-right text-xs font-medium'>
                 Difference
-              </th>
-            </tr>
-          </thead>
-          <tbody className='divide-border/50 divide-y'>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {visible.map(delta => (
-              <tr key={`${delta.section}:${delta.label}:${delta.unit}`}>
-                <td className='py-1.5 pr-2 pl-11'>{delta.label}</td>
-                <td className='text-muted-foreground px-2 py-1.5 text-right tabular-nums'>
+              <TableRow key={`${delta.section}:${delta.label}:${delta.unit}`}>
+                <TableCell className='pl-11 whitespace-normal'>
+                  {delta.label}
+                </TableCell>
+                <TableCell className='text-muted-foreground text-right tabular-nums'>
                   {formatValue(delta.snapshotValue, delta.unit)}
-                </td>
-                <td className='px-2 py-1.5 text-right tabular-nums'>
+                </TableCell>
+                <TableCell className='text-right tabular-nums'>
                   {formatValue(delta.liveValue, delta.unit)}
-                </td>
-                <td className='py-1.5 pr-5 pl-2 text-right font-medium tabular-nums'>
+                </TableCell>
+                <TableCell className='pr-5 text-right font-medium tabular-nums'>
                   {formatDifference(
                     delta.liveValue - delta.snapshotValue,
                     delta.unit
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
             {hiddenCount > 0 ? (
-              <tr>
-                <td
+              <TableRow className='hover:bg-transparent'>
+                <TableCell
                   colSpan={4}
-                  className='text-muted-foreground py-2 pr-5 pl-11 text-xs'
+                  className='text-muted-foreground pr-5 pl-11 text-xs'
                 >
                   …and {hiddenCount} more difference
                   {hiddenCount === 1 ? '' : 's'} not shown.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : null}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </section>
   )

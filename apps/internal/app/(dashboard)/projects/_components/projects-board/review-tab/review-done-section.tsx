@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import type { RenderAssigneeFn } from '../../../../../../lib/projects/board/board-selectors'
 import type { ReviewActionKind } from './review-tab.types'
 import { ReviewTaskDataCells } from './review-task-data-cells'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type ReviewDoneSectionProps = {
   tasks: TaskWithRelations[]
@@ -54,7 +55,7 @@ export function ReviewDoneSection({
   isReviewActionPending,
 }: ReviewDoneSectionProps) {
   return (
-    <section className='bg-background rounded-xl border shadow-sm'>
+    <PagePanel flush>
       <div className='border-b px-4 py-3'>
         <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
           <div className='flex flex-col gap-2'>
@@ -182,6 +183,6 @@ export function ReviewDoneSection({
           </TableBody>
         </Table>
       </div>
-    </section>
+    </PagePanel>
   )
 }

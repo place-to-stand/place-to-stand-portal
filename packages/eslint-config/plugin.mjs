@@ -25,6 +25,7 @@ import {
   envThroughSchema,
   noHardDelete,
   noRawColour,
+  onePagePanel,
   optionalLabel,
   sheetUrlThroughBuilders,
 } from './rules/guards.mjs'
@@ -51,6 +52,7 @@ export const pts = {
     'api-route-guard': apiRouteGuard,
     'no-role-literal': noRoleLiteral,
     'no-raw-colour': noRawColour,
+    'one-page-panel': onePagePanel,
     'sheet-url-through-builders': sheetUrlThroughBuilders,
     'no-hard-delete': noHardDelete,
     'optional-label': optionalLabel,

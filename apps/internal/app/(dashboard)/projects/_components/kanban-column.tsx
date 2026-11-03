@@ -20,6 +20,7 @@ import {
 } from '@/lib/projects/task-status'
 
 import { TaskCard, type TaskContextDetails } from '../task-card'
+import { pagePanelClass } from '@/components/layout/page-panel'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -96,7 +97,8 @@ export function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'bg-background flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden rounded-xl border p-3 shadow-sm transition',
+        pagePanelClass,
+        'flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden p-3 transition',
         highlight && 'ring-primary ring-2'
       )}
     >
@@ -105,7 +107,7 @@ export function KanbanColumn({
           <Badge variant='outline' className={cn(statusToken)}>
             {displayLabel}
           </Badge>
-          <span className='text-muted-foreground text-[10px]'>
+          <span className='text-muted-foreground text-micro font-semibold tabular-nums'>
             {tasks.length}
           </span>
         </div>

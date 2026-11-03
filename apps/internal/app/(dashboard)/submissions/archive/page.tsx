@@ -19,6 +19,7 @@ import { SubmissionsTable } from '../_components/submissions-table'
 import { resolveSubmissionDeepLink } from '../_lib/submission-deep-link'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
 import { firstParam } from '@/lib/pagination/params'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Submission archive',
@@ -75,7 +76,7 @@ export default async function SubmissionsArchivePage({
         filteredTotal: totalCount,
       }}
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <SubmissionsFilters
           search={search}
           activeKind={kind}
@@ -94,7 +95,7 @@ export default async function SubmissionsArchivePage({
           deepLinkedSubmission={deepLink.submission}
           deepLinkNotFound={deepLink.notFound}
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

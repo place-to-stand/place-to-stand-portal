@@ -80,7 +80,7 @@ export function InvoiceDocument({ invoice, isPaid, isVoid }: Props) {
           ) : null}
           {/* Lime stays on a dark ground: the total sits in a brand-bg band. */}
           <div className='bg-brand-bg text-brand-text mt-1 flex items-baseline justify-between px-3.5 py-3'>
-            <span className='text-brand-lime font-mono text-[11px] tracking-[0.1em] uppercase'>
+            <span className='text-brand-lime text-overline font-mono tracking-[0.1em] uppercase'>
               {totalLabel}
             </span>
             <span
@@ -98,13 +98,13 @@ export function InvoiceDocument({ invoice, isPaid, isVoid }: Props) {
       {invoice.notes ? (
         <div className='mt-7 flex flex-col gap-2 sm:mt-10 sm:gap-2.5'>
           <span className={SECTION_LABEL}>Notes</span>
-          <p className='text-email-ink max-w-[520px] text-[13px] leading-[1.55] whitespace-pre-wrap sm:text-sm'>
+          <p className='text-email-ink max-w-[520px] text-sm leading-[1.55] whitespace-pre-wrap sm:text-sm'>
             {invoice.notes}
           </p>
         </div>
       ) : null}
 
-      <div className='border-email-rule text-email-muted mt-7 flex justify-between border-t pt-3 font-mono text-[10px] tracking-[0.1em] uppercase sm:mt-12 sm:pt-3.5 sm:text-[11px]'>
+      <div className='border-email-rule text-email-muted text-micro sm:text-overline mt-7 flex justify-between border-t pt-3 font-mono tracking-[0.1em] uppercase sm:mt-12 sm:pt-3.5'>
         <span>Place To Stand · placetostandagency.com</span>
         <span className='hidden sm:inline'>{invoice.invoice_number}</span>
       </div>
@@ -160,7 +160,7 @@ function StatusStamp({
         {tone === 'paid' ? 'Paid' : 'Void'}
       </span>
       {detail ? (
-        <span className='font-mono text-[10px] tracking-[0.1em] uppercase'>
+        <span className='text-micro font-mono tracking-[0.1em] uppercase'>
           {detail}
         </span>
       ) : null}

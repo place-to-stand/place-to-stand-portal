@@ -32,7 +32,7 @@ export function MetricCard({
       >
         {value}
       </span>
-      <span className='text-muted-foreground text-[10px] leading-tight'>
+      <span className='text-muted-foreground text-micro leading-tight'>
         {label}
       </span>
     </div>

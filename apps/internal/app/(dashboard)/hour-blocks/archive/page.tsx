@@ -17,6 +17,7 @@ import { HourBlocksFilters } from '../_components/hour-blocks-filters'
 import { HourBlocksManagementTable } from '../_components/hour-blocks-management-table'
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
 import { firstParam } from '@/lib/pagination/params'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Hour block archive',
@@ -79,7 +80,7 @@ export default async function HourBlocksArchivePage({
       }}
       primaryAction={<HourBlocksAddButton clients={clients} />}
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <HourBlocksFilters
           basePath='/hour-blocks/archive'
           search={search}
@@ -101,7 +102,7 @@ export default async function HourBlocksArchivePage({
           deepLinkedHourBlock={deepLinkedHourBlock}
           hourBlockNotFound={hourBlockNotFound}
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

@@ -9,6 +9,7 @@ import { listTaxRates } from '@/lib/queries/tax-rates'
 import { INVOICES_TABS } from '../_lib/tabs'
 import { ProductCatalogSection } from './_components/product-catalog-section'
 import { TaxRatesSection } from './_components/tax-rates-section'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Invoice settings',
@@ -28,12 +29,12 @@ export default async function InvoiceSettingsPage() {
       tabs={INVOICES_TABS}
       activeTab='settings'
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <div className='space-y-10'>
           <ProductCatalogSection initialItems={products} />
           <TaxRatesSection initialRates={taxRates} />
         </div>
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

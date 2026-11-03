@@ -3,6 +3,7 @@ import { ActivityFeed } from '@/components/activity/activity-feed'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { NO_SELECTION_MESSAGE } from './projects-board-tabs.constants'
 import type { ProjectsBoardActiveProject } from './board-tab-content'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export type ActivityTabContentProps = {
   isActive: boolean
@@ -25,7 +26,7 @@ export function ActivityTabContent(props: ActivityTabContentProps) {
       {!activeProject ? (
         <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       ) : (
-        <section className='bg-background rounded-xl border p-4 shadow-sm'>
+        <PagePanel>
           <div className='space-y-1'>
             <h3 className='text-lg font-semibold'>Project activity</h3>
             <p className='text-muted-foreground text-sm'>
@@ -40,7 +41,7 @@ export function ActivityTabContent(props: ActivityTabContentProps) {
               emptyState='No project activity yet.'
             />
           </div>
-        </section>
+        </PagePanel>
       )}
     </TabsContent>
   )

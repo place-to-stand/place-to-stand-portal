@@ -85,7 +85,7 @@ export function ActivityFeed({
     <div className={cn('space-y-6', className)}>
       {groups.map(group => (
         <section key={group.key} aria-label={group.label}>
-          <h4 className='text-muted-foreground mb-3 text-[11px] font-semibold tracking-wide uppercase'>
+          <h4 className='text-muted-foreground text-overline mb-3 font-semibold tracking-wide uppercase'>
             {group.label}
           </h4>
           {/* The rail is drawn once per day group and sits behind each item's icon node. */}
@@ -155,7 +155,8 @@ function groupByDay(logs: ActivityLogWithActor[]): DayGroup[] {
     if (key === todayKey) return 'Today'
     if (key === yesterdayKey) return 'Yesterday'
 
-    const sameYear = formatCalendarDate(value, { year: 'numeric' }) === currentYear
+    const sameYear =
+      formatCalendarDate(value, { year: 'numeric' }) === currentYear
 
     return (
       formatCalendarDate(value, {

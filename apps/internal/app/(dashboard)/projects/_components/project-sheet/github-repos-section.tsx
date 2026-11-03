@@ -17,6 +17,7 @@ import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { toast } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'
+import { Badge } from '@pts/ui/badge'
 
 export type RepoSource = 'oauth' | 'app'
 
@@ -375,9 +376,7 @@ export function GitHubReposSection({
                 <div className='text-muted-foreground flex items-center gap-2 pl-6 text-xs'>
                   <span>{repo.defaultBranch}</span>
                   {repo.githubAppInstallationId && (
-                    <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
-                      App
-                    </span>
+                    <Badge variant='secondary'>App</Badge>
                   )}
                 </div>
               </div>
@@ -406,9 +405,7 @@ export function GitHubReposSection({
                 />
                 <span className='truncate'>{repo.repoFullName}</span>
                 {repo.source === 'app' && (
-                  <span className='bg-muted rounded-sm px-1.5 py-0.5 text-[10px] font-medium'>
-                    App
-                  </span>
+                  <Badge variant='secondary'>App</Badge>
                 )}
               </div>
               <div className='text-warning pl-6 text-xs'>Pending save</div>

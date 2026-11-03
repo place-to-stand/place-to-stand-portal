@@ -17,6 +17,7 @@ import {
   TemplateSection,
 } from './template-gallery-parts'
 import { EMAIL_GROUP_LABELS } from './template-labels'
+import { PagePanel } from '@/components/layout/page-panel'
 
 /**
  * Read-only catalog of every outbound email as a gallery of live thumbnails,
@@ -30,9 +31,9 @@ export function EmailsGallery({ entries }: { entries: EmailTemplateEntry[] }) {
 
   if (entries.length === 0) {
     return (
-      <section className='bg-background text-muted-foreground rounded-xl border p-6 text-sm shadow-sm'>
+      <PagePanel className='text-muted-foreground text-sm'>
         No email templates are registered.
-      </section>
+      </PagePanel>
     )
   }
 
@@ -51,7 +52,7 @@ export function EmailsGallery({ entries }: { entries: EmailTemplateEntry[] }) {
   )
 
   return (
-    <section className='bg-background flex flex-col gap-6 rounded-xl border p-4 shadow-sm'>
+    <PagePanel className='flex flex-col gap-6'>
       <TemplateFilters value={filters} onChange={setFilters} />
 
       {sections.length === 0 ? (
@@ -93,7 +94,7 @@ export function EmailsGallery({ entries }: { entries: EmailTemplateEntry[] }) {
           if (!open) setOpenId(null)
         }}
       />
-    </section>
+    </PagePanel>
   )
 }
 

@@ -88,7 +88,7 @@ export function Code({
   return (
     <code
       className={cn(
-        'text-muted-foreground font-mono text-[11px] leading-tight',
+        'text-muted-foreground text-overline font-mono leading-tight',
         className
       )}
     >

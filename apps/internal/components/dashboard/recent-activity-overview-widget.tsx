@@ -74,7 +74,7 @@ export function RecentActivityOverviewWidget({
             {modelLabel ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className='ml-auto font-mono text-[10px]'>
+                  <span className='text-micro ml-auto font-mono'>
                     {modelLabel}
                   </span>
                 </TooltipTrigger>

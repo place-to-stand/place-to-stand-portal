@@ -18,17 +18,7 @@ import {
   Send,
 } from 'lucide-react'
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@pts/ui/alert-dialog'
+import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Button } from '@pts/ui/button'
 import { cn } from '@pts/ui/cn'
 import {
@@ -157,6 +147,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
   } = usePlanningSession(task.id, selectedRepoId)
   // True while Start planning creates the session and first thread.
   const [isStartingThread, setIsStartingThread] = useState(false)
+  const [confirmingDispatch, setConfirmingDispatch] = useState(false)
 
   // Effective model tier: user selection overrides thread default
   const activeModel = selectedModel ?? toPlanningModelTier(activeThread?.model)
@@ -655,46 +646,32 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         !isQuestionsResponse &&
         displayContent && (
           <div className='bg-muted/30 flex items-center gap-2 border-t px-4 py-4'>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  size='sm'
-                  disabled={isDispatchPending || versionAlreadyDispatched}
-                  className='flex-1'
-                >
-                  {isDispatchPending ? (
-                    <Loader2 className='animate-spin' />
-                  ) : (
-                    <Play />
-                  )}
-                  {versionAlreadyDispatched
-                    ? `Plan ${currentVersionLabel} dispatched`
-                    : `Dispatch plan ${currentVersionLabel}`}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Dispatch plan {currentVersionLabel}?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will create a GitHub issue and start the worker with{' '}
-                    <span className='font-medium'>{dispatchModelLabel}</span> to
-                    implement the plan on{' '}
-                    <span className='font-medium'>
-                      {selectedRepo?.repoFullName}
-                    </span>
-                    .
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDispatch}>
-                    Dispatch
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Button
+              size='sm'
+              disabled={isDispatchPending || versionAlreadyDispatched}
+              className='flex-1'
+              onClick={() => setConfirmingDispatch(true)}
+            >
+              {isDispatchPending ? (
+                <Loader2 className='animate-spin' />
+              ) : (
+                <Play />
+              )}
+              {versionAlreadyDispatched
+                ? `Plan ${currentVersionLabel} dispatched`
+                : `Dispatch plan ${currentVersionLabel}`}
+            </Button>
+            <ConfirmDialog
+              open={confirmingDispatch}
+              title={`Dispatch plan ${currentVersionLabel}?`}
+              description={`This will create a GitHub issue and start the worker with ${dispatchModelLabel} to implement the plan on ${selectedRepo?.repoFullName ?? 'the linked repository'}.`}
+              confirmLabel='Dispatch'
+              onConfirm={() => {
+                setConfirmingDispatch(false)
+                handleDispatch()
+              }}
+              onCancel={() => setConfirmingDispatch(false)}
+            />
             <ModelMenu
               value={dispatchModel}
               onChange={setDispatchModel}

@@ -17,6 +17,7 @@ import { ContactsFilters } from '../_components/contacts-filters'
 import { ContactsManagementTable } from '../_components/contacts-management-table'
 import { resolveContactDeepLink } from '../_lib/contact-deep-link'
 import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'People archive',
@@ -89,7 +90,7 @@ export default async function ContactsArchivePage({
         <SheetCreateButton entity='contact' label='Create person' />
       }
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <ContactsFilters
           basePath='/people/archive'
           search={search}
@@ -108,7 +109,7 @@ export default async function ContactsArchivePage({
           contactNotFound={deepLink.notFound}
           clientPortalUrl={serverEnv.CLIENT_PORTAL_URL ?? ''}
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

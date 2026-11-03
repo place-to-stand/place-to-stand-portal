@@ -1,6 +1,7 @@
 import type { StripeFeesState } from '@/lib/stripe/fees'
 
 import { formatCurrency, formatPercent } from '@pts/ui/numbers'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type StripeFeesCardProps = {
   state: StripeFeesState
@@ -46,9 +47,10 @@ export function StripeFeesCard({
   const memo = `Stripe fees ${monthLabel}; payouts were booked net`
 
   return (
-    <section
+    <PagePanel
       aria-labelledby='stripe-fees-title'
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      flush
+      className='overflow-hidden'
     >
       <div className='flex items-center justify-between gap-4 border-b px-5 py-3.5'>
         <h2 id='stripe-fees-title' className='text-base font-semibold'>
@@ -86,14 +88,14 @@ export function StripeFeesCard({
             debit={data.totalFees}
           />
           <Line label='Services Revenue' credit={data.totalFees} />
-          <dl className='mx-5 mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]'>
+          <dl className='mx-5 mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-sm'>
             <dt className='text-muted-foreground'>Date</dt>
             <dd>{entryDate}</dd>
             <dt className='text-muted-foreground'>Memo</dt>
             <dd className='select-all'>{memo}</dd>
           </dl>
 
-          <div className='mx-5 mt-3 space-y-1 border-t pt-3 text-[13px]'>
+          <div className='mx-5 mt-3 space-y-1 border-t pt-3 text-sm'>
             <div className='flex justify-between gap-3'>
               <span className='text-muted-foreground'>
                 Payments collected · {data.paymentCount}
@@ -124,6 +126,6 @@ export function StripeFeesCard({
           </div>
         </div>
       ) : null}
-    </section>
+    </PagePanel>
   )
 }

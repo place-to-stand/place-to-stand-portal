@@ -19,6 +19,7 @@ import { filterArchivedLeads } from '../_lib/archive-filters'
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
 import { firstParam } from '@/lib/pagination/params'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Lead archive',
@@ -72,14 +73,14 @@ export default async function LeadsArchivePage({
       }}
       primaryAction={<SheetCreateButton entity='lead' label='Create lead' />}
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <LeadsArchiveSection
           leads={archivedLeads}
           assignees={assignees}
           senderName={user.full_name ?? user.email ?? ''}
           leadNotFound={leadNotFound}
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

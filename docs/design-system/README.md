@@ -105,8 +105,9 @@ Place To Stand is a small software agency. This system describes its two Next.js
 
 - **Geist (`sans`) for the entire UI.** The working size is `ui` (text-sm, 14px), and labels and buttons use `ui-medium`. Other sizes:
   - `caption` (12px) for metadata.
-  - `overline` (11px, semibold, uppercase, tracking-wide) for group labels.
-  - `micro` (10px) for count pills.
+  - `overline` (11px, semibold, uppercase, tracking-wide) for group labels: the `text-overline` utility.
+  - `micro` (10px, semibold, tabular-nums) for count pills: the `text-micro` utility.
+  - Nothing else: no `text-[10px]`, `text-[11px]` or `text-[13px]`. The two utilities live in `theme.css` `@theme`, and `cn` knows they are sizes. (guard: review)
   - Inputs use `body` (16px) below the `md` breakpoint so iOS doesn't zoom, then 14px.
 - **Space Grotesk (`font-display`) is the brand face**, used only for:
   - the wordmark (`wordmark`: bold, tracking-tight, leading-none)
@@ -131,7 +132,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 
 ### Surfaces, borders, elevation
 
-- **Borders do the work.** Every element defaults to `border-border`. Cards are `card` + border + `radius-xl` + `shadow-sm`. Everything that floats over the page (searchable comboboxes, popovers, date pickers, dropdown and context menus, select lists, hover cards) is `popover` + border + `radius-md` + `shadow-popover`, one elevation token: a large soft shadow in light mode, and in dark mode a deeper shadow, a light hairline and a slightly lighter surface. Sheets and dialogs are `background` + `shadow-lg`, over a black backdrop (`overlay-sheet` 50%, `overlay-dialog` 70%).
+- **Borders do the work.** Every element defaults to `border-border`. Cards are `card` + border + `radius-xl` + `shadow-sm`. A page panel (the surface under a list, a report card, a board column, a home widget) is `PagePanel` from `components/layout/page-panel.tsx`: `background` + border + `radius-xl` + `shadow-sm`, padded `p-4` unless `flush`; where it can't be a `<section>`, use `pagePanelClass`. (guard: eslint `pts/one-page-panel`) Everything that floats over the page (searchable comboboxes, popovers, date pickers, dropdown and context menus, select lists, hover cards) is `popover` + border + `radius-md` + `shadow-popover`, one elevation token: a large soft shadow in light mode, and in dark mode a deeper shadow, a light hairline and a slightly lighter surface. Sheets and dialogs are `background` + `shadow-lg`, over a black backdrop (`overlay-sheet` 50%, `overlay-dialog` 70%).
 - **Layout.** The app shell is `muted`. Each page is a `PageShell`:
   - one compact header row (sidebar trigger, a vertical separator, the breadcrumb, then an optional right slot) on `background`, with a bottom border
   - an optional toolbar row (tabs, the count, one primary action). Tabs sit at the left at their own width and scroll sideways once they outgrow the screen; the count sits right, beside the primary action
@@ -216,6 +217,7 @@ All of these run in `npm run lint` (and so in CI). The `pts/*` rules live in `pa
 | eslint `pts/client-boundary`, `pts/query-layer-purity` | Layering: no server code in a `'use client'` file; no logging or permission checks in `lib/queries` (allowlist: follow-up D12)                  |
 | eslint `pts/no-raw-colour`                             | Color: no raw palette shade (`amber-500`) or hex (`[#65a30d]`) in a class; exceptions turned off by file in the eslint config                   |
 | eslint `pts/optional-label`                            | `components/input.md`: optional fields use `<FormLabel optional>`, never a hand-written "(optional)"                                            |
+| eslint `pts/one-page-panel`                            | Borders: page panels are `PagePanel` / `pagePanelClass`, never a copy of their classes (internal app)                                           |
 | eslint `pts/sheet-url-through-builders`                | CLAUDE.md sheet deep links: no hand-built `?task=` / `?invoice=` URLs outside `lib/sheets/hrefs.ts`                                             |
 | eslint `pts/no-hard-delete`                            | CLAUDE.md soft deletes: no `db.delete(table)` or `DELETE FROM` on a record table (allow list in `next.mjs`)                                     |
 | eslint `pts/env-through-schema`                        | Server env vars read through `serverEnv` (`lib/env.server.ts`), not `process.env`                                                               |

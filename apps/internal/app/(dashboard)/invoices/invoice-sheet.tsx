@@ -108,6 +108,8 @@ export function InvoiceSheet({
     handleConfirmDelete,
     handleAddLineItem,
     handleRemoveLineItem,
+    handleRestoreLineItem,
+    keptLineItemCount,
     handleMoveLineItem,
     handleProductSelect,
   } = useInvoiceSheetState({
@@ -502,7 +504,8 @@ export function InvoiceSheet({
                                   catalogItemMap={catalogItemMap}
                                   onProductSelect={handleProductSelect}
                                   onRemove={handleRemoveLineItem}
-                                  canRemove={fieldArray.fields.length > 1}
+                                  onRestore={handleRestoreLineItem}
+                                  canRemove={keptLineItemCount > 1}
                                   disabled={
                                     standardField.disabled || isReadOnly
                                   }

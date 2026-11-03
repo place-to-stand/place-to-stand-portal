@@ -8,6 +8,7 @@ import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { CompaniesFilters } from './companies-filters'
 import { CompaniesPagination } from './companies-pagination'
 import { CompaniesTable } from './companies-table'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export function CompaniesPageBody({
   mode,
@@ -47,7 +48,7 @@ export function CompaniesPageBody({
         <SheetCreateButton entity='company' label='Create company' />
       }
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <CompaniesFilters
           search={params.search}
           type={params.type}
@@ -74,7 +75,7 @@ export function CompaniesPageBody({
           totalItems={filteredCount}
           pageSize={pagination.pageSize}
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

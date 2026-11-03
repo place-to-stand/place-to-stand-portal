@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 import { formatCurrency } from '@pts/ui/numbers'
 import { PayeeAvatar } from './payee-avatar'
 import type { PayoutColumn, PayoutTable } from './payout-rows'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type PartnerPayoutsTableProps = {
   table: PayoutTable
@@ -66,9 +67,10 @@ export function PartnerPayoutsTable({
     })
 
   return (
-    <section
+    <PagePanel
       aria-labelledby='partner-payouts-title'
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      flush
+      className='overflow-hidden'
     >
       <div className='flex items-center justify-between gap-4 px-5 py-3.5'>
         <h2 id='partner-payouts-title' className='text-base font-semibold'>
@@ -118,7 +120,7 @@ export function PartnerPayoutsTable({
               return (
                 <Fragment key={row.key}>
                   <TableRow className={cn(isOpen && 'bg-muted/30 border-b-0')}>
-                    <TableCell className='py-2.5 pl-3 whitespace-normal'>
+                    <TableCell className='pl-3 whitespace-normal'>
                       <div className='flex items-center gap-2'>
                         <RowActionButton
                           type='button'
@@ -161,27 +163,15 @@ export function PartnerPayoutsTable({
                         <TableRow
                           key={`${line.column}:${index}`}
                           className={cn(
-                            'bg-muted/30 hover:bg-muted/30 text-muted-foreground text-[13px]',
+                            'bg-muted/30 hover:bg-muted/30 text-muted-foreground text-sm',
                             index < row.details.length - 1 && 'border-b-0'
                           )}
                         >
-                          <TableCell
-                            className={cn(
-                              'py-1 pl-23 whitespace-normal',
-                              index === row.details.length - 1 && 'pb-3'
-                            )}
-                          >
+                          <TableCell className='pl-23 whitespace-normal'>
                             {line.label}
                           </TableCell>
                           {columns.map(column => (
-                            <TableCell
-                              key={column}
-                              className={cn(
-                                MONEY_CELL,
-                                'py-1',
-                                index === row.details.length - 1 && 'pb-3'
-                              )}
-                            >
+                            <TableCell key={column} className={MONEY_CELL}>
                               {column === line.column
                                 ? formatCurrency(line.amount)
                                 : null}
@@ -197,7 +187,7 @@ export function PartnerPayoutsTable({
           </TableBody>
           <TableFooter>
             <TableRow className='hover:bg-transparent'>
-              <TableCell className='py-3 pl-12 font-medium'>Total</TableCell>
+              <TableCell className='pl-12 font-medium'>Total</TableCell>
               {columns.map(column => (
                 <TableCell
                   key={column}
@@ -213,6 +203,6 @@ export function PartnerPayoutsTable({
           </TableFooter>
         </Table>
       )}
-    </section>
+    </PagePanel>
   )
 }

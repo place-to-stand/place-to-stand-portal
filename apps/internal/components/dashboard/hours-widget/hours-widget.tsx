@@ -383,7 +383,7 @@ function StatCard({ label, value, variant = 'primary' }: StatCardProps) {
         variant === 'muted' && 'bg-muted/50'
       )}
     >
-      <p className='text-muted-foreground text-[10px] leading-tight font-medium tracking-wide uppercase'>
+      <p className='text-muted-foreground text-micro leading-tight font-medium tracking-wide uppercase'>
         {label}
       </p>
       <p className='text-foreground mt-0.5 text-xl leading-tight font-semibold tabular-nums'>

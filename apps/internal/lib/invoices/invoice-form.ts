@@ -98,16 +98,38 @@ const invoiceLineItemFormSchema = z
   .object({
     id: z.string().uuid().optional(),
     productCatalogItemId: z.string().uuid().optional().nullable(),
-    description: z.string().min(1, 'Description is required'),
-    quantity: z.coerce.number().positive('Quantity must be positive'),
-    unitPrice: z.coerce.number().min(0, 'Unit price must be zero or positive'),
+    description: z.string(),
+    quantity: z.coerce.number(),
+    unitPrice: z.coerce.number(),
     createsHourBlock: z.boolean().default(false),
+    /**
+     * Removed in the sheet, dropped on Save: the card stays as "Pending
+     * removal" with Undo until then. Never sent to the server.
+     */
+    removed: z.boolean().optional(),
   })
-  // The paid line becomes an hour block, which counts in quarter hours.
-  .refine(line => !line.createsHourBlock || isQuarterHours(line.quantity), {
-    message: QUARTER_HOURS_MESSAGE,
-    path: ['quantity'],
+  // A line pending removal is not checked: it is about to go.
+  .superRefine((line, ctx) => {
+    if (line.removed) return
+    const issue = (path: string, message: string) =>
+      ctx.addIssue({ code: 'custom', path: [path], message })
+    if (line.description.length < 1) {
+      issue('description', 'Description is required')
+    }
+    if (!(line.quantity > 0)) issue('quantity', 'Quantity must be positive')
+    // The paid line becomes an hour block, which counts in quarter hours.
+    else if (line.createsHourBlock && !isQuarterHours(line.quantity)) {
+      issue('quantity', QUARTER_HOURS_MESSAGE)
+    }
+    if (!(line.unitPrice >= 0)) {
+      issue('unitPrice', 'Unit price must be zero or positive')
+    }
   })
+
+/** The lines that will be saved: everything not pending removal. */
+export const keptLineItems = <T extends { removed?: boolean }>(
+  lines: readonly T[]
+): T[] => lines.filter(line => !line.removed)
 
 export const invoiceFormSchema = z.object({
   companyId: z.string().uuid('Select a client'),
@@ -115,7 +137,9 @@ export const invoiceFormSchema = z.object({
   taxRate: z.coerce.number().min(0).max(100).default(0),
   lineItems: z
     .array(invoiceLineItemFormSchema)
-    .min(1, 'At least one line item is required'),
+    .refine(lines => keptLineItems(lines).length > 0, {
+      message: 'At least one line item is required',
+    }),
 })
 
 export type InvoiceLineItemFormValues = z.infer<
@@ -225,23 +249,22 @@ export const createInvoiceSavePayload = (
   values: InvoiceFormValues,
   invoice: InvoiceWithLineItems | null
 ): InvoiceSavePayload => {
-  const lineItems: InvoiceLineItemSavePayload[] = values.lineItems.map(
-    (li, index) => {
-      const amount = computeLineItemAmount(li.quantity, li.unitPrice)
-      return {
-        id: li.id,
-        productCatalogItemId: li.productCatalogItemId ?? null,
-        description: li.description.trim(),
-        quantity: li.quantity,
-        unitPrice: li.unitPrice,
-        amount,
-        sortOrder: index,
-        createsHourBlock: li.createsHourBlock,
-      }
+  const kept = keptLineItems(values.lineItems)
+  const lineItems: InvoiceLineItemSavePayload[] = kept.map((li, index) => {
+    const amount = computeLineItemAmount(li.quantity, li.unitPrice)
+    return {
+      id: li.id,
+      productCatalogItemId: li.productCatalogItemId ?? null,
+      description: li.description.trim(),
+      quantity: li.quantity,
+      unitPrice: li.unitPrice,
+      amount,
+      sortOrder: index,
+      createsHourBlock: li.createsHourBlock,
     }
-  )
+  })
 
-  const totals = computeInvoiceTotals(values.lineItems, values.taxRate)
+  const totals = computeInvoiceTotals(kept, values.taxRate)
 
   return {
     id: invoice?.id,

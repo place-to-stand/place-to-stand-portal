@@ -429,7 +429,7 @@ export function ComponentsOverlays() {
       <Specimen label='Command palette' className='block'>
         <p className='text-muted-foreground text-sm'>
           The palette (components/ui/command.tsx) is mounted app-wide: press{' '}
-          <kbd className='bg-muted rounded border px-1.5 py-0.5 font-mono text-[11px]'>
+          <kbd className='bg-muted text-overline rounded border px-1.5 py-0.5 font-mono'>
             ⌘K
           </kbd>{' '}
           to open the real one.

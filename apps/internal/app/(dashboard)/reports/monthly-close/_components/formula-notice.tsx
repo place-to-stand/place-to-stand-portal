@@ -9,11 +9,20 @@ import {
   CollapsibleTrigger,
 } from '@pts/ui/collapsible'
 import { formatCalendarDate } from '@pts/ui/dates'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@pts/ui/table'
 import type { PartnerRateSchedule } from '@/lib/billing/partner-rates'
 import { cn } from '@/lib/utils'
 
 import { formatShare } from './format'
 import { formatCurrency } from '@pts/ui/numbers'
+import { pagePanelClass } from '@/components/layout/page-panel'
 
 type FormulaNoticeProps = {
   displayMonth: string
@@ -87,7 +96,7 @@ export function FormulaNotice({
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      className={cn(pagePanelClass, 'overflow-hidden')}
     >
       <CollapsibleTrigger className='focus-visible:ring-ring/50 flex w-full cursor-pointer items-center gap-2.5 px-5 py-3.5 text-left outline-none focus-visible:ring-[3px]'>
         <Info className='text-muted-foreground size-4 shrink-0' />
@@ -95,7 +104,7 @@ export function FormulaNotice({
           <span className='text-sm font-semibold'>
             {displayMonth} uses an older payout formula
           </span>
-          <span className='text-muted-foreground text-[13px]'>
+          <span className='text-muted-foreground text-sm'>
             In effect {day(rates.effectiveFrom)}
             {endsOn ? ` to ${day(endsOn)}` : ''}. The current formula started{' '}
             {day(latestRates.effectiveFrom)}.
@@ -109,39 +118,36 @@ export function FormulaNotice({
         />
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <table className='w-full table-fixed border-t text-sm'>
-          <thead>
-            <tr className='bg-muted/50 border-b'>
-              <th className='text-muted-foreground h-8 pr-2 pl-11 text-left text-xs font-medium'>
+        <Table density='compact' className='table-fixed border-t'>
+          <TableHeader>
+            <TableRow className='bg-muted/50 hover:bg-muted/50'>
+              <TableHead className='text-muted-foreground pl-11 text-xs font-medium'>
                 Share of {formatCurrency(rates.billablePerHour)}/hr
-              </th>
-              <th className='text-muted-foreground w-56 px-2 text-right text-xs font-medium'>
+              </TableHead>
+              <TableHead className='text-muted-foreground w-56 text-right text-xs font-medium'>
                 {displayMonth}
-              </th>
-              <th className='text-muted-foreground w-56 pr-5 pl-2 text-right text-xs font-medium'>
+              </TableHead>
+              <TableHead className='text-muted-foreground w-56 pr-5 text-right text-xs font-medium'>
                 Current, since {day(latestRates.effectiveFrom)}
-              </th>
-            </tr>
-          </thead>
-          <tbody className='divide-border/50 divide-y'>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map(row => (
-              <tr key={row.label}>
-                <th
-                  scope='row'
-                  className='py-2 pr-2 pl-11 text-left font-normal'
-                >
+              <TableRow key={row.label}>
+                <TableCell className='pl-11 whitespace-normal'>
                   {row.label}
-                </th>
-                <td className='px-2 py-2 text-right font-medium tabular-nums'>
+                </TableCell>
+                <TableCell className='text-right font-medium tabular-nums'>
                   {row.month}
-                </td>
-                <td className='text-muted-foreground py-2 pr-5 pl-2 text-right tabular-nums'>
+                </TableCell>
+                <TableCell className='text-muted-foreground pr-5 text-right tabular-nums'>
                   {row.current}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!rates.internalOriginationPayable ? (
           <p className='bg-muted/50 text-muted-foreground border-t py-3 pr-5 pl-11 text-xs'>
             Internal originators weren&apos;t paid this period, so their share

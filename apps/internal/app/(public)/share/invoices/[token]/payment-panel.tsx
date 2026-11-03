@@ -256,7 +256,7 @@ function PaymentForm({
             <>Pay {formatCurrency(total)}</>
           )}
         </button>
-        <p className='text-brand-text-muted flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.08em]'>
+        <p className='text-brand-text-muted text-overline flex items-center justify-center gap-2 font-mono tracking-[0.08em]'>
           <Lock className='size-3.5' strokeWidth={1.5} />
           Secured by Stripe
         </p>

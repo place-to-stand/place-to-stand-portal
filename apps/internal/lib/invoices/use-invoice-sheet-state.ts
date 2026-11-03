@@ -40,6 +40,7 @@ import {
   createInvoiceSavePayload,
   invoiceFormSchema,
   INVOICE_FORM_FIELDS,
+  keptLineItems,
   type InvoiceClient,
   type InvoiceFormValues,
   type InvoiceLineItemFormValues,
@@ -107,6 +108,9 @@ export type UseInvoiceSheetStateReturn = {
   handleConfirmDelete: () => void
   handleAddLineItem: () => void
   handleRemoveLineItem: (index: number) => void
+  handleRestoreLineItem: (index: number) => void
+  /** Lines that will be saved (not pending removal). */
+  keptLineItemCount: number
   handleMoveLineItem: (fromIndex: number, toIndex: number) => void
   handleProductSelect: (index: number, productId: string) => void
 }
@@ -204,7 +208,7 @@ export function useInvoiceSheetState({
   })
 
   const totals = useMemo(() => {
-    const items = (watchedLineItems ?? []).map(
+    const items = keptLineItems(watchedLineItems ?? []).map(
       (li: InvoiceLineItemFormValues) => ({
         quantity: li.quantity ?? 0,
         unitPrice: li.unitPrice ?? 0,
@@ -533,12 +537,31 @@ export function useInvoiceSheetState({
     fieldArray.append(createEmptyLineItem())
   }, [fieldArray])
 
+  const keptLineItemCount = keptLineItems(watchedLineItems ?? []).length
+
+  // Removing leaves the card as "Pending removal" until Save; Undo restores it.
+  const setLineItemRemoved = useCallback(
+    (index: number, removed: boolean) => {
+      form.setValue(`lineItems.${index}.removed`, removed, {
+        shouldDirty: true,
+      })
+      // Any errors on the line no longer apply while it is going.
+      if (removed) form.clearErrors(`lineItems.${index}`)
+    },
+    [form]
+  )
+
   const handleRemoveLineItem = useCallback(
     (index: number) => {
-      if (fieldArray.fields.length <= 1) return
-      fieldArray.remove(index)
+      if (keptLineItems(form.getValues('lineItems')).length <= 1) return
+      setLineItemRemoved(index, true)
     },
-    [fieldArray]
+    [form, setLineItemRemoved]
+  )
+
+  const handleRestoreLineItem = useCallback(
+    (index: number) => setLineItemRemoved(index, false),
+    [setLineItemRemoved]
   )
 
   const handleMoveLineItem = useCallback(
@@ -652,6 +675,8 @@ export function useInvoiceSheetState({
     handleConfirmDelete,
     handleAddLineItem,
     handleRemoveLineItem,
+    handleRestoreLineItem,
+    keptLineItemCount,
     handleMoveLineItem,
     handleProductSelect,
   }

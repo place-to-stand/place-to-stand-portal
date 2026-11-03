@@ -160,10 +160,10 @@ function ValueButton({ label, value }: { label: string; value: string }) {
       type='button'
       onClick={() => copy(value)}
       className={cn(
-        'text-muted-foreground hover:text-foreground flex min-w-0 items-baseline gap-2 text-left font-mono text-[11px] transition-colors'
+        'text-muted-foreground hover:text-foreground text-overline flex min-w-0 items-baseline gap-2 text-left font-mono transition-colors'
       )}
     >
-      <span className='w-9 shrink-0 font-sans text-[10px] tracking-wide uppercase'>
+      <span className='text-micro w-9 shrink-0 font-sans tracking-wide uppercase'>
         {label}
       </span>
       <span className='truncate'>{value}</span>

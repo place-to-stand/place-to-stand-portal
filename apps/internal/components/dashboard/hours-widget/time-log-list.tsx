@@ -46,7 +46,7 @@ export function TimeLogList({
         the widget read as a stack of boxes.
       */}
       <div className='flex items-center justify-between pt-4 pb-2'>
-        <h3 className='text-muted-foreground text-[11px] font-semibold tracking-wide uppercase'>
+        <h3 className='text-muted-foreground text-overline font-semibold tracking-wide uppercase'>
           My time logs
         </h3>
         <span className='text-muted-foreground text-xs tabular-nums'>
@@ -147,7 +147,7 @@ function TimeLogRow({
           </span>
           {/* Secondary line: when it happened and where it landed. */}
           <div className='text-muted-foreground mt-0.5 flex min-w-0 items-center gap-1.5 text-xs'>
-            <span className='bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none tabular-nums'>
+            <span className='bg-muted text-muted-foreground text-micro shrink-0 rounded px-1.5 py-0.5 leading-none tabular-nums'>
               {dateLabel}
             </span>
             {entry.clientName ? (

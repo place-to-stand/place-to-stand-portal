@@ -171,13 +171,13 @@ function SideBySide({ before, after }: { before: string; after: string }) {
   return (
     <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
       <div>
-        <p className='text-muted-foreground mb-1 text-[11px] font-semibold tracking-wide uppercase'>
+        <p className='text-muted-foreground text-overline mb-1 font-semibold tracking-wide uppercase'>
           Before
         </p>
         <p className='text-muted-foreground'>{before}</p>
       </div>
       <div>
-        <p className='text-muted-foreground mb-1 text-[11px] font-semibold tracking-wide uppercase'>
+        <p className='text-muted-foreground text-overline mb-1 font-semibold tracking-wide uppercase'>
           After
         </p>
         <p>{after}</p>

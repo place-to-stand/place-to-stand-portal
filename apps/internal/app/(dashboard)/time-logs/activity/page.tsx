@@ -8,6 +8,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { LogTimeButton } from '../_components/log-time-button'
 import { loadLogTimeProjects } from '../_lib/load-time-logs-list'
 import { TIME_LOGS_TABS } from '../_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Time log activity',
@@ -24,13 +25,13 @@ export default async function TimeLogsActivityPage() {
       activeTab='activity'
       primaryAction={<LogTimeButton projects={logTimeProjects} />}
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <ActivitySection
           targetType='TIME_LOG'
           emptyState='No recent time log activity.'
           description='Audit time logs, edits, archives, and restores in one place.'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }
