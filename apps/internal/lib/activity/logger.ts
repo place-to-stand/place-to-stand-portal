@@ -15,7 +15,8 @@ export type LogActivityOptions = {
   source?: ActivitySourceValue
   verb: ActivityVerb
   summary: string
-  targetType: ActivityTargetType | string
+  // Checked by chk_activity_logs_target_type: an unlisted value fails the insert.
+  targetType: ActivityTargetType
   targetId?: string | null
   targetCompanyId?: string | null
   targetProjectId?: string | null

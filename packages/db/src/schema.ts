@@ -166,10 +166,10 @@ export const users = pgTable(
     // dropped users.full_name): read it with personNameSql (@pts/db/names).
     role: userRole().default('CLIENT').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     // Blocks portal sign-in without archiving: the user stays in active lists
@@ -220,10 +220,10 @@ export const companies = pgTable(
     isStaff: boolean('is_staff').default(false).notNull(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -263,10 +263,10 @@ export const contacts = pgTable(
     createdBy: uuid('created_by'),
     userId: uuid('user_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -319,14 +319,14 @@ export const memberships = pgTable(
     isPrimary: boolean('is_primary').default(false).notNull(),
     portalAccess: boolean('portal_access').default(false).notNull(),
     startedAt: timestamp('started_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     endedAt: timestamp('ended_at', { withTimezone: true, mode: 'string' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
@@ -368,10 +368,10 @@ export const projects = pgTable(
     createdBy: uuid('created_by'),
     ownerId: uuid('owner_id'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     slug: text(),
@@ -441,7 +441,7 @@ export const projectMembers = pgTable(
     userId: uuid('user_id').notNull(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -484,10 +484,10 @@ export const tasks = pgTable(
     createdBy: uuid('created_by'),
     updatedBy: uuid('updated_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     acceptedAt: timestamp('accepted_at', {
@@ -577,7 +577,7 @@ export const taskAssignees = pgTable(
     taskId: uuid('task_id').notNull(),
     userId: uuid('user_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -610,10 +610,10 @@ export const taskAssigneeMetadata = pgTable(
     userId: uuid('user_id').notNull(),
     sortOrder: integer('sort_order').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -646,10 +646,10 @@ export const taskComments = pgTable(
     authorId: uuid('author_id').notNull(),
     body: text().notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -684,10 +684,10 @@ export const taskAttachments = pgTable(
     fileSize: bigint('file_size', { mode: 'number' }).notNull(),
     uploadedBy: uuid('uploaded_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -707,7 +707,7 @@ export const taskAttachments = pgTable(
       columns: [table.uploadedBy],
       foreignColumns: [users.id],
       name: 'task_attachments_uploaded_by_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('restrict'),
   ]
 )
 
@@ -716,15 +716,15 @@ export const hourBlocks = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     hoursPurchased: numeric('hours_purchased', {
-      precision: 6,
+      precision: 8,
       scale: 2,
     }).notNull(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
     companyId: uuid('company_id').notNull(),
@@ -770,9 +770,14 @@ export const hourBlocks = pgTable(
       'chk_hour_blocks_billing_month_month_start',
       sql`billing_month = date_trunc('month', billing_month)::date`
     ),
-    // Note: FK constraint for
-    // invoiceLineItemId -> invoice_line_items.id added in migration
-    // to avoid forward reference (invoices table defined later in this file)
+    check('chk_hour_blocks_hours_purchased', sql`hours_purchased > 0`),
+    // Created in 0042; declared here so the schema matches the database.
+    // The callback runs after the module loads, so the later table resolves.
+    foreignKey({
+      columns: [table.invoiceLineItemId],
+      foreignColumns: [invoiceLineItems.id],
+      name: 'hour_blocks_invoice_line_item_id_fkey',
+    }).onDelete('set null'),
   ]
 )
 
@@ -789,14 +794,14 @@ export const monthlyCloseSnapshots = pgTable(
      * it is by definition detectable as late (created_at > closed_at).
      */
     closedAt: timestamp('closed_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     closedBy: uuid('closed_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -827,10 +832,10 @@ export const billingTerms = pgTable(
     effectiveFrom: date('effective_from').notNull(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -873,10 +878,10 @@ export const clientBillingPeriods = pgTable(
     endsOn: date('ends_on'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -884,7 +889,9 @@ export const clientBillingPeriods = pgTable(
     index('idx_client_billing_periods_company')
       .using('btree', table.companyId.asc(), table.startsOn.desc())
       .where(sql`(deleted_at IS NULL)`),
-    // At most one open-ended stretch per company.
+    // At most one open-ended stretch per company. Live stretches never
+    // overlap: excl_client_billing_periods_overlap (0126, btree_gist), which
+    // drizzle can't declare.
     uniqueIndex('uq_client_billing_periods_open')
       .on(table.companyId)
       .where(sql`(ends_on IS NULL AND deleted_at IS NULL)`),
@@ -920,10 +927,10 @@ export const userRoleTerms = pgTable(
     effectiveFrom: date('effective_from').notNull(),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -963,10 +970,10 @@ export const commissionTerms = pgTable(
     originationContactId: uuid('origination_contact_id'),
     createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1026,10 +1033,10 @@ export const commissionTermClosers = pgTable(
       scale: 2,
     }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1081,10 +1088,10 @@ export const timeLogs = pgTable(
       .notNull(),
     note: text(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1125,10 +1132,10 @@ export const timeLogTasks = pgTable(
     timeLogId: uuid('time_log_id').notNull(),
     taskId: uuid('task_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1204,10 +1211,10 @@ export const leads = pgTable(
     }),
 
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1252,7 +1259,7 @@ export const leadStageHistory = pgTable(
     fromStatus: leadStatus('from_status'),
     toStatus: leadStatus('to_status').notNull(),
     changedAt: timestamp('changed_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     changedBy: uuid('changed_by'),
   },
@@ -1297,14 +1304,14 @@ export const leadUpdates = pgTable(
      * Defaults to now() so quick same-day logging needs no extra input.
      */
     occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     authorId: uuid('author_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1356,10 +1363,16 @@ export const activityLogs = pgTable(
     // Append-only: rows are never updated or soft-deleted, only pruned by the
     // retention cron, so there is no updated_at / deleted_at pair here.
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
+    // The same list as ACTIVITY_TARGET_TYPES (apps/internal/lib/activity/
+    // types.ts), plus PROPOSAL, which old rows still carry.
+    check(
+      'chk_activity_logs_target_type',
+      sql`target_type IN ('TASK', 'PROJECT', 'CLIENT', 'CONTACT', 'COMPANY', 'LEAD', 'SUBMISSION', 'COMMENT', 'TIME_LOG', 'HOUR_BLOCK', 'INVOICE', 'MONTHLY_CLOSE', 'USER', 'SETTINGS', 'PLAN', 'PROPOSAL')`
+    ),
     index('idx_activity_logs_created_at').using(
       'btree',
       table.createdAt.desc().nullsFirst().op('timestamptz_ops')
@@ -1396,7 +1409,7 @@ export const activityLogs = pgTable(
       columns: [table.actorId],
       foreignColumns: [users.id],
       name: 'activity_logs_actor_id_fkey',
-    }).onDelete('cascade'),
+    }).onDelete('set null'),
   ]
 )
 
@@ -1408,17 +1421,17 @@ export const activityOverviewCache = pgTable(
     timeframeDays: smallint('timeframe_days').notNull(),
     summary: jsonb().notNull(),
     cachedAt: timestamp('cached_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     expiresAt: timestamp('expires_at', {
       withTimezone: true,
       mode: 'string',
     }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
@@ -1467,10 +1480,10 @@ export const oauthConnections = pgTable(
       mode: 'string',
     }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1531,14 +1544,22 @@ export const githubAppInstallations = pgTable(
       mode: 'string',
     }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
   table => [
+    check(
+      'chk_github_app_installations_account_type',
+      sql`account_type IN ('Organization', 'User')`
+    ),
+    check(
+      'chk_github_app_installations_repository_selection',
+      sql`repository_selection IN ('all', 'selected')`
+    ),
     unique('github_app_installations_installation_id_key').on(
       table.installationId
     ),
@@ -1576,10 +1597,10 @@ export const githubRepoLinks = pgTable(
     isActive: boolean('is_active').default(true).notNull(),
     linkedBy: uuid('linked_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1664,10 +1685,10 @@ export const projectIntegrationLinks = pgTable(
     metadata: jsonb().default({}).notNull(),
     linkedBy: uuid('linked_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1721,13 +1742,15 @@ export const taskDeployments = pgTable(
     mode: text(),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
+    // A repo link's cascade delete finds its rows without a scan.
+    index('idx_task_deployments_repo_link').on(table.repoLinkId),
     uniqueIndex('idx_task_deployments_plan_id').using(
       'btree',
       table.planId.asc().nullsLast().op('text_ops')
@@ -1777,13 +1800,14 @@ export const planningSessions = pgTable(
     status: planningSessionStatus().default('active').notNull(),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
+    index('idx_planning_sessions_repo_link').on(table.repoLinkId),
     index('idx_planning_sessions_task').using(
       'btree',
       table.taskId.asc().nullsLast().op('uuid_ops')
@@ -1821,7 +1845,7 @@ export const planThreads = pgTable(
     partialContent: text('partial_content'),
     generationError: text('generation_error'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
@@ -1846,7 +1870,7 @@ export const planRevisions = pgTable(
     content: text().notNull(),
     feedback: text(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
@@ -1871,10 +1895,11 @@ export const planMessages = pgTable(
     content: text().notNull(),
     metadata: jsonb(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
+    check('chk_plan_messages_role', sql`role IN ('user', 'assistant')`),
     index('idx_plan_messages_thread').using(
       'btree',
       table.threadId.asc().nullsLast().op('uuid_ops'),
@@ -1907,10 +1932,10 @@ export const productCatalogItems = pgTable(
     minQuantity: integer('min_quantity'),
     sortOrder: integer('sort_order').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1921,27 +1946,19 @@ export const productCatalogItems = pgTable(
   ]
 )
 
-export const taxRates = pgTable(
-  'tax_rates',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    state: varchar({ length: 2 }).notNull().unique(),
-    rate: numeric({ precision: 5, scale: 4 }).notNull(),
-    label: varchar({ length: 100 }).notNull(),
-    isActive: boolean('is_active').notNull().default(true),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
-      .notNull(),
-  },
-  table => [
-    index('idx_tax_rates_state')
-      .using('btree', table.state.asc())
-      .where(sql`(is_active = true)`),
-  ]
-)
+export const taxRates = pgTable('tax_rates', {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  state: varchar({ length: 2 }).notNull().unique(),
+  rate: numeric({ precision: 5, scale: 4 }).notNull(),
+  label: varchar({ length: 100 }).notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+    .default(sql`now()`)
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+    .default(sql`now()`)
+    .notNull(),
+})
 
 export const invoices = pgTable(
   'invoices',
@@ -1971,10 +1988,10 @@ export const invoices = pgTable(
     stripePaymentIntentId: text('stripe_payment_intent_id'),
     paidAt: timestamp('paid_at', { withTimezone: true, mode: 'string' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -1988,11 +2005,6 @@ export const invoices = pgTable(
     index('idx_invoices_created_by')
       .using('btree', table.createdBy.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
-    index('idx_invoices_share_token')
-      .using('btree', table.shareToken.asc())
-      .where(
-        sql`(deleted_at IS NULL AND share_token IS NOT NULL AND share_enabled = true)`
-      ),
     index('idx_invoices_stripe_checkout_session')
       .using('btree', table.stripeCheckoutSessionId.asc())
       .where(sql`(stripe_checkout_session_id IS NOT NULL)`),
@@ -2028,10 +2040,10 @@ export const invoiceLineItems = pgTable(
     sortOrder: integer('sort_order').notNull().default(0),
     createsHourBlock: boolean('creates_hour_block').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -2247,10 +2259,10 @@ export const formSubmissions = pgTable(
     }),
 
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
   },
@@ -2297,11 +2309,11 @@ export const rateLimitBuckets = pgTable(
       withTimezone: true,
       mode: 'string',
     })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     count: integer().default(0).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
@@ -2335,10 +2347,11 @@ export const notifications = pgTable(
     /** Cleared from the widget; kept for history. */
     clearedAt: timestamp('cleared_at', { withTimezone: true, mode: 'string' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
+    index('idx_notifications_actor').on(table.actorId),
     index('idx_notifications_user_feed')
       .using(
         'btree',
@@ -2378,10 +2391,10 @@ export const userDashboardLayouts = pgTable(
     userId: uuid('user_id').primaryKey().notNull(),
     layout: jsonb().notNull(),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-      .default(sql`timezone('utc'::text, now())`)
+      .default(sql`now()`)
       .notNull(),
   },
   table => [
@@ -2400,7 +2413,8 @@ export const userDashboardLayouts = pgTable(
 /**
  * Who can see which client in the client portal, derived from memberships:
  * a current, portal-enabled membership at the client's company, held by a
- * live Client sign-in (0116: role CLIENT, not switched off or archived).
+ * live Client sign-in (role CLIENT in force from user_role_terms, 0126; not
+ * switched off or archived).
  * The one source both portals read; there is nothing to keep in sync.
  */
 export const clientPortalAccess = pgView('client_portal_access', {

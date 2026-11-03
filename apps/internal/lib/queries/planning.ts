@@ -217,7 +217,8 @@ export async function getMessages(threadId: string) {
 
 export async function appendMessage(
   threadId: string,
-  role: string,
+  // chk_plan_messages_role
+  role: 'user' | 'assistant',
   content: string,
   metadata?: Record<string, unknown>
 ) {
