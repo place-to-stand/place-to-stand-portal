@@ -444,7 +444,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                   name='ownerId'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel entity='contact'>Project owner</FormLabel>
+                      <FormLabel entity='user'>Project owner</FormLabel>
                       <FormControl>
                         <DisabledFieldTooltip
                           disabled={fieldState.owner.disabled}

@@ -103,7 +103,7 @@ function FormLabel({
   optional?: boolean
   /**
    * The entity a picker field picks: its registry icon, in its colour, leads
-   * the label ("[icon] Company"). Assignees are `user` (a sign-in); owners and members are `contact`.
+   * the label ("[icon] Company"). Pickers that list only sign-ins (assignee, owner, member) are `user`.
    */
   entity?: AccentEntity
 }) {

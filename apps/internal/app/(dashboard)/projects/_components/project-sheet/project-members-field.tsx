@@ -139,7 +139,7 @@ export function ProjectMembersField({
         return (
           <SheetRecordRow
             key={member.id}
-            icon={ENTITY_ICONS.contact}
+            icon={ENTITY_ICONS.user}
             title={name}
             description={member.fullName ? member.email : null}
             pendingRemoval={
