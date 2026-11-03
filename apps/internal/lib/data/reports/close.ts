@@ -24,7 +24,7 @@ import {
   updateSnapshotReport,
 } from '@/lib/queries/reports/close-snapshots'
 
-import { fetchMonthlyCloseReport } from './monthly-close'
+import { fetchMonthlyCloseReport, fetchReportBounds } from './monthly-close'
 import { computeDeltas, computeProfitShareDeltas } from './close-drift'
 import {
   buildProfitShare,
@@ -864,14 +864,20 @@ export async function fetchMonthlyCloseView(
   // Started up front so the Mercury round trip overlaps the database reads.
   const balance = applies ? loadMonthEndBalance(year, month) : null
 
-  // Always derived: cursors for month navigation, and the live half of the
-  // drift comparison. React cache() dedupes within the request.
-  const [live, snapshot] = await Promise.all([
-    fetchMonthlyCloseReport(startDate, endDate),
+  // The live report is the open month itself, and the live half of a closed
+  // month's drift. A closed month renders from its snapshot without waiting
+  // for it: only the navigation cursors are read up front, and drift streams.
+  // React cache() dedupes within the request.
+  const livePromise = fetchMonthlyCloseReport(startDate, endDate)
+  // Handled below on every path; this keeps an early failure from being
+  // reported as unhandled before then.
+  livePromise.catch(() => {})
+  const [bounds, snapshot] = await Promise.all([
+    fetchReportBounds(),
     getActiveSnapshot(year, month),
   ])
 
-  const liveShare = async () =>
+  const liveShare = async (live: MonthlyCloseReport) =>
     balance
       ? liveProfitShare(
           year,
@@ -882,16 +888,18 @@ export async function fetchMonthlyCloseView(
       : ({ status: 'inactive' } as const)
 
   if (!snapshot) {
+    const live = await livePromise
     return {
       report: live,
       close: { status: 'open' },
-      profitShare: await liveShare(),
+      profitShare: await liveShare(live),
     }
   }
 
   const parsed = parseSnapshotReport(snapshot.report)
 
   if (!parsed.ok) {
+    const live = await livePromise
     return {
       report: live,
       close: {
@@ -901,29 +909,34 @@ export async function fetchMonthlyCloseView(
         snapshotError: parsed.error,
         drift: null,
       },
-      profitShare: await liveShare(),
+      profitShare: await liveShare(live),
     }
   }
 
   // Closes frozen before sales tax was tracked fall back to the live figure;
-  // comparing live against itself keeps it out of drift.
+  // comparing live against itself keeps it out of drift. Only those wait for
+  // the live report.
   const salesTaxIsLive = parsed.report.salesTax === undefined
   const frozen: SnapshotReport = {
     ...parsed.report,
-    salesTax: parsed.report.salesTax ?? live.salesTax,
+    salesTax: parsed.report.salesTax ?? (await livePromise).salesTax,
   }
 
-  const drift = computeDrift(frozen, live, {
-    year,
-    month,
-    closedAt: snapshot.closedAt,
-    frozenProfitShare: parsed.profitShare,
-    balance,
-  }).catch((error: unknown) => {
-    // A failed drift check must not take the frozen report down with it.
-    console.error('Monthly close drift check failed', error)
-    return null
-  })
+  const drift = livePromise
+    .then(live =>
+      computeDrift(frozen, live, {
+        year,
+        month,
+        closedAt: snapshot.closedAt,
+        frozenProfitShare: parsed.profitShare,
+        balance,
+      })
+    )
+    .catch((error: unknown) => {
+      // A failed drift check must not take the frozen report down with it.
+      console.error('Monthly close drift check failed', error)
+      return null
+    })
 
   const profitShare: ProfitShareState = parsed.profitShare
     ? { status: 'ready', data: parsed.profitShare, source: 'snapshot' }
@@ -934,8 +947,8 @@ export async function fetchMonthlyCloseView(
   return {
     report: {
       ...frozen,
-      minCursor: live.minCursor,
-      maxCursor: live.maxCursor,
+      minCursor: bounds.min,
+      maxCursor: bounds.max,
     },
     close: {
       status: 'closed',
