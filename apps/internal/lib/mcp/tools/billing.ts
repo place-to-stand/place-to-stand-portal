@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { McpServer } from '@modelcontextprotocol/server'
 import { clientHoursTotalsFor, getClientHoursTotals } from '@pts/db/hours'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { serializeHourBlock } from '@/lib/cli/serializers/hour-block'
@@ -16,6 +17,7 @@ import {
   type AgentProfitShareState,
 } from '@/lib/data/reports/close'
 import { db } from '@/lib/db'
+import { companies } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { INVOICE_STATUS_VALUES } from '@/lib/invoices/filters'
 import {
@@ -23,11 +25,20 @@ import {
   listHourBlocksForSettings,
 } from '@/lib/queries/hour-blocks'
 import { getInvoiceById, listInvoices } from '@/lib/queries/invoices'
+import { fetchCompanyBillingHistory } from '@/lib/data/clients/billing-history'
+import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 
 import { listLimit, searchText } from '../output'
 import { defineTool } from '../tool'
 
-const clientRef = z.string().trim().min(1).describe('Client slug or UUID.')
+const clientRef = z
+  .string()
+  .trim()
+  .min(1)
+  .describe('Client company slug or UUID (a company that is billed).')
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const archived = z
   .boolean()
@@ -210,6 +221,40 @@ export function registerBillingTools(server: McpServer) {
         hoursRemaining: balance.remaining,
         recentBlocks: blocks.items.map(serializeHourBlock),
         hasMoreBlocks: blocks.totalCount > blocks.items.length,
+      }
+    },
+  })
+
+  defineTool(server, {
+    name: 'get_company_billing',
+    title: 'Get company billing history',
+    description:
+      'When a company was billed and on what terms: its billing periods (first and last billed month; endsOn null means still billed), its billing type (prepaid or net_30) by the month each change took effect, and its commission terms (originator and closers with their shares) by effective month. All oldest first. Read-only: billing is changed on the company sheet in the portal.',
+    effect: 'read',
+    input: {
+      company: z
+        .string()
+        .trim()
+        .min(1)
+        .describe('Company UUID, or a client slug.'),
+    },
+    run: async ({ company: reference }, { user }) => {
+      const id = UUID_PATTERN.test(reference)
+        ? await companyIdForLegacyClientId(reference)
+        : null
+      const [company] = await db
+        .select({ id: companies.id, name: companies.name })
+        .from(companies)
+        .where(id ? eq(companies.id, id) : eq(companies.slug, reference))
+        .limit(1)
+
+      if (!company) {
+        throw new NotFoundError('Company not found.')
+      }
+
+      return {
+        company,
+        ...(await fetchCompanyBillingHistory(user, company.id)),
       }
     },
   })

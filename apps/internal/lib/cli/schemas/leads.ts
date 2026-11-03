@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { LEAD_SOURCE_TYPES, LEAD_STATUS_VALUES } from '@/lib/leads/constants'
 import { LEAD_UPDATE_TYPES } from '@/lib/leads/updates'
 
+import { cliListQuerySchema } from './listing'
+
 const leadStatusSchema = z.enum(LEAD_STATUS_VALUES)
 const leadSourceSchema = z.enum(LEAD_SOURCE_TYPES)
 
@@ -103,11 +105,9 @@ export const cliUpdateLeadSchema = z
     message: 'Provide at least one field to update.',
   })
 
-export const cliLeadListQuerySchema = z.object({
+export const cliLeadListQuerySchema = cliListQuerySchema.extend({
   status: leadStatusSchema.optional(),
   assignee: z.string().trim().min(1).optional(),
-  search: z.string().trim().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
 })
 
 export const cliCreateLeadUpdateFields = {

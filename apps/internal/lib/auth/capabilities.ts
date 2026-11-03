@@ -138,7 +138,7 @@ export const CAPABILITIES = {
     description:
       'Create, edit and move tasks, comment and attach files, on projects you’re a member of and your personal boards.',
     roles: STAFF,
-    surfaces: ['app'],
+    surfaces: ['app', 'mcp'],
     scope: { SALES: { detail: 'Only projects they are a member of.' } },
   },
   'projects.create': {
@@ -164,14 +164,14 @@ export const CAPABILITIES = {
     description:
       'Logged hours, billing terms, portal users, GitHub and integration links. Hidden from members.',
     roles: ADMIN_ONLY,
-    surfaces: ['app', 'mcp', 'cli'],
+    surfaces: ['app'],
   },
   'projects.admin_tabs': {
     area: 'Projects & tasks',
     label: 'Project admin tabs',
     description: 'Time logs, review, overview and planning.',
     roles: ADMIN_ONLY,
-    surfaces: ['app', 'mcp', 'cli'],
+    surfaces: ['app'],
   },
   'tasks.move_off_client_project': {
     area: 'Projects & tasks',
@@ -201,7 +201,7 @@ export const CAPABILITIES = {
     label: 'Tasks on leads',
     description: 'Lead tasks live in the Sales project.',
     roles: STAFF,
-    surfaces: ['app', 'mcp', 'cli'],
+    surfaces: ['app'],
     scope: {
       SALES: { detail: 'Only if they are a member of the Sales project.' },
     },
@@ -225,7 +225,7 @@ export const CAPABILITIES = {
     label: 'Website form submissions',
     description: 'Contact and audit form inbox.',
     roles: ADMIN_ONLY,
-    surfaces: ['app'],
+    surfaces: ['app', 'mcp'],
   },
 
   // Directory
@@ -243,7 +243,7 @@ export const CAPABILITIES = {
     description:
       'People at any company, clients included, and which companies they’re at. Someone who can sign in, and archiving a client’s primary contact, are admin-only.',
     roles: STAFF,
-    surfaces: ['app', 'mcp', 'cli'],
+    surfaces: ['app', 'mcp'],
   },
   'directory.staff_company': {
     area: 'Directory',
@@ -348,6 +348,17 @@ export const CAPABILITIES = {
 } as const satisfies Record<string, CapabilityDefinition>
 
 export type Capability = keyof typeof CAPABILITIES
+
+/**
+ * Capabilities whose row says they are enforced on the MCP. A tool may only
+ * require one of these (`MCP_TOOL_CAPABILITIES` checks it at type-check), so
+ * the Roles & permissions page can't claim less than the tools enforce.
+ */
+export type McpCapability = {
+  [K in Capability]: 'mcp' extends (typeof CAPABILITIES)[K]['surfaces'][number]
+    ? K
+    : never
+}[Capability]
 
 export const CAPABILITY_AREAS: readonly CapabilityArea[] = [
   'Portal',

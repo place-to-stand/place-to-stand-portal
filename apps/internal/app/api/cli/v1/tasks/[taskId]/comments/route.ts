@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-import { jsonOk, readJsonBody, withCliAuth } from '@/lib/cli/handler'
+import {
+  jsonOk,
+  readJsonBody,
+  withCliAuth,
+  parseQuery,
+} from '@/lib/cli/handler'
 import { cliCreateCommentSchema } from '@/lib/cli/schemas/tasks'
 import { serializeComment } from '@/lib/cli/serializers/comment'
 import { addTaskComment } from '@/lib/cli/tasks'
@@ -13,9 +18,7 @@ const listQuerySchema = z.object({
 })
 
 export const GET = withCliAuth<Params>(async ({ user, request, params }) => {
-  const query = listQuerySchema.parse(
-    Object.fromEntries(new URL(request.url).searchParams)
-  )
+  const query = parseQuery(request, listQuerySchema)
 
   const page = await listTaskComments(user, params.taskId, {
     limit: query.limit,

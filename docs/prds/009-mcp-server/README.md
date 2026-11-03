@@ -31,7 +31,7 @@ engagement standing) is explicitly out of scope until this one proves useful.
 | D3 | **The agent acts on the connecting user's behalf**, and writes record both the human and the agent. |
 | D4 | **Reads plus a fixed set of writes**: tasks (create, update), task comments, leads (create, edit, move stage, log updates), and (revised 2026-11-02) companies and people (create, edit, add or remove people, titles, primary contact) through the same saves as their sheets. Billing, terms, commission, portal access and sign-ins stay out; no archive or delete. |
 | D5 | **No time logging.** Hours stay a manual human process because they feed the shared bank account / profit share. Time logs are readable (`list_time_logs`, revised 2026-10-26). |
-| D6 | **ADMIN and SALES** (revised 2026-10-27; was "ADMIN only for v1"). SALES is admitted with exactly the portal's sales access: the CRM tools (leads, contacts and their activity), scoped the way the portal scopes them, and nothing else. Every other tool refuses a SALES caller. See "SALES access" below. |
+| D6 | **ADMIN and SALES** (revised 2026-10-27; was "ADMIN only for v1"). SALES is admitted with exactly the portal's sales access: the CRM tools (leads, companies, people and their activity) and (revised 2026-11-03) the task tools on the projects they are a member of, scoped the way the portal scopes them, and nothing else. Every other tool refuses a SALES caller. See "SALES access" below. |
 | D7 | **Users manage their connected apps in Settings > Integrations**, alongside their Vercel / Supabase / GitHub connections. Settings is admin-only, so SALES users have no portal settings access and cannot see or revoke their connected apps; an admin revokes a SALES user's grants in the Supabase dashboard when needed (Kris, 2026-10-27). |
 | D8 | **Client-facing MCP is deferred.** Nothing is exposed to CLIENT users. |
 
@@ -143,8 +143,10 @@ for confirmation.
 type ToolAccess = 'admin' | 'crm'   // 'crm' = assertCrmAccess (ADMIN or SALES)
 ```
 
-`admin` tools run `assertAdmin`, `crm` tools `assertCrmAccess` (ADMIN or SALES), before
-anything else (`lib/mcp/tool.ts`). The data helpers behind a `crm` tool still apply the portal's
+Since 2026-11-03 each tool names a capability instead (`lib/mcp/tool-capabilities.ts`, checked
+in `lib/mcp/tool.ts`); `admin` below means an admin-only capability, `crm` a staff one, and
+`member` `projects.view_member`. A tool may only name a capability whose Roles & permissions row
+lists the MCP (`McpCapability`, checked at type-check). The data helpers behind a `crm` tool still apply the portal's
 scoping for SALES (below). The server registers one tool list for every caller (the handler is
 built before any token is read), so `tools/list` shows a SALES user every tool, and an `admin`
 tool refuses them when called: `"<tool> is available to admin users only; your role is Sales."`
@@ -154,13 +156,15 @@ tool refuses them when called: `"<tool> is available to admin users only; your r
 | Tool | Access | Backs onto |
 | --- | --- | --- |
 | `whoami` | crm | `/api/cli/v1/whoami` logic |
-| `list_clients` / `get_client` | admin | client serializer (includes hours balance, §5) + contacts + projects |
+| `list_clients` / `get_client` | admin | client companies (billed): client serializer (hours balance, originator, closers, §5) + portal access people + projects |
+| `get_company_billing` | admin | billing periods, billing-type terms and commission terms with closers, oldest first (D9: read-only) |
+| `list_submissions` / `get_submission` | admin | website form inbox; `source` is `describeAttribution`; acknowledging and promoting stay in the portal |
 | `list_contacts` / `get_contact` | crm | contact serializer; `list_contacts`' client filter resolves against the contacts page's own client list (`listAllActiveClients`) |
 | `list_companies` / `get_company` | crm | `listCompanies`, `getCompanyDetail` (billing fields already hidden from Sales) |
 | `create_company` / `update_company` | crm | `saveCompanySheet` with billing `none` and no portal access list; partial updates merge over the current row and pass `expectedUpdatedAt` |
 | `create_person` / `update_person` | crm | `savePersonSheet` without photo or sign-in; partial updates merge over the current row and pass `loadedUpdatedAt` |
 | `list_projects` / `get_project` | admin | project serializer (slug or UUID) |
-| `list_tasks` / `get_task` | admin | task serializer, filters: project, lead, status, assignee |
+| `list_tasks` / `get_task` | member | `listTasksForAgent` (shared with the CLI), filters: project, lead, status, assignee |
 | `list_leads` / `get_lead` | crm | lead serializer + recent lead updates |
 | `list_users` | crm (SALES: CRM staff only) | user serializer (for resolving assignees and owners) |
 | `list_activity` / `recent_activity` | crm (both scoped by `canReadActivity`) | `fetchActivityLogs` / `fetchActivityLogsSince`, filters: target, project, client, source, actor, since/until (`recent_activity`: one time window, oldest first, `truncated` flag; target type, source, actor) |
@@ -173,9 +177,9 @@ tool refuses them when called: `"<tool> is available to admin users only; your r
 
 | Tool | Access | Backs onto |
 | --- | --- | --- |
-| `create_task` | admin | `lib/cli/tasks.ts` create path |
-| `update_task` | admin | status, title, description, assignees, due date, project |
-| `add_task_comment` | admin | CLI comment path (same markdown subset and escaping) |
+| `create_task` | member | `lib/cli/tasks.ts` create path |
+| `update_task` | member | status, title, description, assignees, due date, project |
+| `add_task_comment` | member | CLI comment path (same markdown subset and escaping) |
 | `create_lead` | crm | `lib/cli/leads.ts` create path |
 | `update_lead` | crm | fields + stage move (writes `lead_stage_history`) |
 | `add_lead_update` | crm | CLI lead-updates path (calls, emails, texts, meetings) |
@@ -201,11 +205,11 @@ portal's own (`lib/auth/roles.ts`, `lib/auth/permissions.ts`); the MCP adds none
 | `create_lead` / `update_lead` / `add_lead_update` | allowed | `saveLeadForActor`, `createLeadUpdateForActor` (`assertCrmAccess`) |
 | assignments: `create_task` / `update_task` `assigneeIds`, `create_lead` / `update_lead` `assignee` | staff only, for every role | `resolveAssigneeIds` resolves only `fetchCrmUsers` (ADMIN, SALES): no role, on the MCP or the CLI, can assign a CLIENT user (2026-10-27) |
 | read filters: `list_leads` / `list_tasks` `assignee`, activity `actor`, `list_time_logs` `user` | CRM staff only | `resolveUserIds` resolves only `fetchCrmUsers` for SALES (admins: any active user); anyone else reads as "no active user matches" |
-| `list_contacts` / `get_contact` | allowed, read-only | `/contacts` page, `listContactsForSettings`, `getContactSheetInputById`, `listContactClients`, client filter from `listAllActiveClients` |
-| `list_activity` | LEAD and CONTACT activity only; `targetType` required; no `project` / `client` filter | `canReadActivity` (checked up front with a clear error, and again in `fetchActivityLogs`) |
-| `recent_activity` | LEAD and CONTACT activity only; `targetType` defaults to both for SALES, and naming any other type is refused | `canReadActivity`, enforced inside `fetchActivityLogsSince` (2026-10-27) |
-| `list_tasks` / `get_task` / `create_task` / `update_task` / `add_task_comment` | denied | tasks are admin-only, lead tasks included (`/api/leads/[leadId]/tasks` is `requireRole('ADMIN')`; the lead sheet hides tasks from SALES) |
-| `list_clients` / `get_client` / `list_projects` / `get_project` | denied | `requireUser()` / `assertAdmin()` pages and data |
+| `list_contacts` / `get_contact`, company and person tools | allowed | `/people` and `/companies`, the same sheet saves; billing and portal access hidden |
+| `list_activity` | LEAD, CONTACT and COMPANY activity only; `targetType` required; no `project` / `client` filter | `canReadActivity` (checked up front with a clear error, and again in `fetchActivityLogs`) |
+| `recent_activity` | LEAD, CONTACT and COMPANY activity only; `targetType` defaults to those for SALES, and naming any other type is refused | `canReadActivity`, enforced inside `fetchActivityLogsSince` (2026-10-27) |
+| `list_tasks` / `get_task` / `create_task` / `update_task` / `add_task_comment` | allowed on projects they are a member of (and their own personal boards); a lead task with no project goes to the Sales project, which must already exist (revised 2026-11-03) | the board and My Tasks: `listWorkableProjectIds`, `ensureTaskWorkAccess`, `ensureProjectWorkAccess`, `saveTaskForActor` |
+| `list_clients` / `get_client` / `get_company_billing` / `list_projects` / `get_project` / `list_submissions` / `get_submission` | denied | admin-only pages and data |
 | `list_users` | allowed, CRM staff (ADMIN, SALES) only | `fetchCrmUsers`, the lead assignee picker (2026-10-27) |
 | `list_time_logs`, `list_invoices` / `get_invoice`, `list_hour_blocks` / `get_client_hour_balance`, `get_monthly_close` | denied | admin-only pages and data |
 
@@ -281,9 +285,9 @@ restart Supabase once (`supabase stop && supabase start`) after pulling, then ru
      token are all rejected;
    - a SALES user is admitted and gets exactly the "SALES access" table: CRM reads and writes
      succeed and are scoped (`list_users`, assignees and actors limited to CRM staff;
-     `list_activity` and `recent_activity` limited to LEAD and CONTACT), every admin tool and
-     every out-of-scope activity query is refused with no data, and refused task writes change
-     nothing;
+     `list_activity` and `recent_activity` limited to LEAD, CONTACT and COMPANY; task tools
+     limited to member projects), every admin tool and every out-of-scope activity query is
+     refused with no data, and refused task writes change nothing;
    - no role can assign a CLIENT user: admin `create_task` / `update_task` / `create_lead` /
      `update_lead` and the CLI's task and lead create are refused and write nothing.
 

@@ -682,7 +682,7 @@
   },
   "lib/cli/schemas/tasks.ts": {
     "@typescript-eslint/no-deprecated": {
-      "count": 3
+      "count": 1
     }
   },
   "lib/companies/billing/actions/update-client.ts": {

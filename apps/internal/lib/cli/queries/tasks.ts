@@ -2,12 +2,16 @@ import 'server-only'
 
 import { and, desc, eq, exists, inArray, isNull, sql } from 'drizzle-orm'
 
-import { assertAdmin } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { companies, projects, taskAssignees, tasks } from '@/lib/db/schema'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
-import { getTaskById } from '@/lib/queries/tasks/basic'
+import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
+import {
+  ensureTaskWorkAccess,
+  isProjectStaff,
+  listWorkableProjectIds,
+} from '@/lib/projects/access'
 import { taskFields, type SelectTask } from '@/lib/queries/tasks/common'
 
 export type CliTaskFilters = {
@@ -119,9 +123,22 @@ export async function listTasksForCli(
   user: AppUser,
   { projectId, leadId, status, assigneeId, limit }: CliTaskFilters
 ): Promise<SelectTask[]> {
-  assertAdmin(user)
+  if (!isProjectStaff(user)) {
+    throw new ForbiddenError('Project access required')
+  }
+
+  // Admins see every project; Sales only the projects they can work (the
+  // same set as the board and My Tasks).
+  const workable = await listWorkableProjectIds(user)
+  if (workable && !workable.length) {
+    return []
+  }
 
   const conditions = [isNull(tasks.deletedAt)]
+
+  if (workable) {
+    conditions.push(inArray(tasks.projectId, workable))
+  }
 
   if (projectId) {
     conditions.push(eq(tasks.projectId, projectId))
@@ -168,15 +185,28 @@ export type TaskEditSnapshot = {
 }
 
 /**
- * Current state of a task, for merging a partial update on top of.
- * `getTaskById` supplies the access check and the soft-delete filter.
+ * Current state of a task, for merging a partial update on top of. The
+ * board's guard: admins reach any task, Sales only tasks on projects they
+ * can work.
  */
 export async function loadTaskForEdit(
   user: AppUser,
   taskId: string
 ): Promise<TaskEditSnapshot> {
-  const task = await getTaskById(user, taskId)
-  const assignees = await fetchAssigneeIdsByTask([taskId])
+  await ensureTaskWorkAccess(user, taskId)
+
+  const [[task], assignees] = await Promise.all([
+    db
+      .select(taskFields)
+      .from(tasks)
+      .where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)))
+      .limit(1),
+    fetchAssigneeIdsByTask([taskId]),
+  ])
+
+  if (!task) {
+    throw new NotFoundError('Task not found')
+  }
 
   return { task, assigneeIds: assignees.get(taskId) ?? [] }
 }

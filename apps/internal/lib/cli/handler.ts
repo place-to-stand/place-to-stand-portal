@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { NextResponse, type NextRequest } from 'next/server'
-import { ZodError } from 'zod'
+import { ZodError, type z } from 'zod'
 
 import type { AppUser } from '@/lib/auth/session'
 import { runAsTokenRequest } from '@/lib/auth/token-request'
@@ -19,6 +19,14 @@ export async function readJsonBody(request: NextRequest): Promise<unknown> {
   } catch {
     throw new BadRequestError('Request body must be valid JSON.')
   }
+}
+
+/** A GET route's query string, parsed with its schema (ZodError → 400). */
+export function parseQuery<T extends z.ZodType>(
+  request: NextRequest,
+  schema: T
+): z.output<T> {
+  return schema.parse(Object.fromEntries(new URL(request.url).searchParams))
 }
 
 export type CliHandlerArgs<TParams> = {

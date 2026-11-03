@@ -1,4 +1,4 @@
-import { jsonOk, withCliAuth } from '@/lib/cli/handler'
+import { jsonOk, withCliAuth, parseQuery } from '@/lib/cli/handler'
 import { cliListQuerySchema } from '@/lib/cli/schemas/listing'
 import { serializeContact } from '@/lib/cli/serializers/contact'
 import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
@@ -6,9 +6,7 @@ import { listContactMemberships } from '@/lib/queries/memberships'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 
 export const GET = withCliAuth(async ({ user, request }) => {
-  const query = cliListQuerySchema.parse(
-    Object.fromEntries(new URL(request.url).searchParams)
-  )
+  const query = parseQuery(request, cliListQuerySchema)
 
   const result = await listContactsForSettings(user, {
     search: query.search ?? null,

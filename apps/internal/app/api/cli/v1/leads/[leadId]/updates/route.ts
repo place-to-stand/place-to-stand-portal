@@ -1,4 +1,9 @@
-import { jsonOk, readJsonBody, withCliAuth } from '@/lib/cli/handler'
+import {
+  jsonOk,
+  readJsonBody,
+  withCliAuth,
+  parseQuery,
+} from '@/lib/cli/handler'
 import { addLeadUpdate } from '@/lib/cli/leads'
 import { getLeadForCli } from '@/lib/cli/queries/leads'
 import {
@@ -11,9 +16,7 @@ import { listLeadUpdates } from '@/lib/queries/lead-updates'
 type Params = { leadId: string }
 
 export const GET = withCliAuth<Params>(async ({ user, request, params }) => {
-  const query = cliLeadUpdateListQuerySchema.parse(
-    Object.fromEntries(new URL(request.url).searchParams)
-  )
+  const query = parseQuery(request, cliLeadUpdateListQuerySchema)
 
   // Existence check first, so an unknown lead is a 404 rather than an empty
   // list that looks like "no updates yet".
