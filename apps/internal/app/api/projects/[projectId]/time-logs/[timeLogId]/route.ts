@@ -1,3 +1,7 @@
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -12,12 +16,15 @@ import {
 
 const updateBodySchema = z.object({
   userId: z.string().uuid(),
-  hours: z.number().positive(),
+  hours: z.number().positive().refine(isQuarterHours, QUARTER_HOURS_MESSAGE),
   loggedOn: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/u, 'loggedOn must be in YYYY-MM-DD format'),
   note: z
-    .union([z.string().trim().max(2000, 'Notes must be 2000 characters or fewer.'), z.null()])
+    .union([
+      z.string().trim().max(2000, 'Notes must be 2000 characters or fewer.'),
+      z.null(),
+    ])
     .transform(value => (value === null || value.length === 0 ? null : value))
     .optional(),
   taskIds: z.array(z.string().uuid()).optional(),
@@ -48,13 +55,16 @@ export async function DELETE(
     return NextResponse.json(warning ? { ok: true, warning } : { ok: true })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to delete time log', error)
     return NextResponse.json(
       { error: 'Unable to delete time log.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
@@ -80,7 +90,10 @@ export async function POST(
   }
 
   if (!actionBodySchema.safeParse(body).success) {
-    return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Invalid request payload.' },
+      { status: 400 }
+    )
   }
 
   try {
@@ -91,13 +104,16 @@ export async function POST(
     return NextResponse.json(warning ? { ok: true, warning } : { ok: true })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to restore time log', error)
     return NextResponse.json(
       { error: 'Unable to restore time log.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
@@ -179,13 +195,16 @@ export async function PATCH(
     return NextResponse.json(warning ? { timeLogId, warning } : { timeLogId })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to update time log', error)
     return NextResponse.json(
       { error: 'Unable to update time log.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

@@ -1,13 +1,14 @@
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { getCurrentAdmin } from '@/lib/auth/session'
 import { closedMonthWarning } from '@/lib/data/reports/close'
 import { HttpError } from '@/lib/errors/http'
-import {
-  createTimeLog,
-  listProjectTimeLogs,
-} from '@/lib/queries/time-logs'
+import { createTimeLog, listProjectTimeLogs } from '@/lib/queries/time-logs'
 
 const listQuerySchema = z.object({
   limit: z
@@ -21,12 +22,15 @@ const listQuerySchema = z.object({
 
 const createBodySchema = z.object({
   userId: z.string().uuid(),
-  hours: z.number().positive(),
+  hours: z.number().positive().refine(isQuarterHours, QUARTER_HOURS_MESSAGE),
   loggedOn: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/u, 'loggedOn must be in YYYY-MM-DD format'),
   note: z
-    .union([z.string().trim().max(2000, 'Notes must be 2000 characters or fewer.'), z.null()])
+    .union([
+      z.string().trim().max(2000, 'Notes must be 2000 characters or fewer.'),
+      z.null(),
+    ])
     .transform(value => (value === null || value.length === 0 ? null : value))
     .optional(),
   taskIds: z.array(z.string().uuid()).optional(),
@@ -51,27 +55,26 @@ export async function GET(
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'Invalid query parameters.' },
-      { status: 400 },
+      { status: 400 }
     )
   }
 
   try {
-    const result = await listProjectTimeLogs(
-      user,
-      projectId,
-      parsed.data.limit,
-    )
+    const result = await listProjectTimeLogs(user, projectId, parsed.data.limit)
 
     return NextResponse.json(result)
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to list project time logs', error)
     return NextResponse.json(
       { error: 'Unable to load time logs.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
@@ -148,19 +151,21 @@ export async function POST(
     // PRD 002 section 05: non-blocking, admin-only closed-month warning.
     const warning = await closedMonthWarning(user, [payload.loggedOn])
 
-    return NextResponse.json(
-      warning ? { timeLogId, warning } : { timeLogId },
-      { status: 201 }
-    )
+    return NextResponse.json(warning ? { timeLogId, warning } : { timeLogId }, {
+      status: 201,
+    })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to create time log', error)
     return NextResponse.json(
       { error: 'Unable to create time log.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

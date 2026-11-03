@@ -16,7 +16,9 @@ export type TimeLogEditContext = {
  */
 export function useTimeLogEditContext() {
   const [openingEntryId, setOpeningEntryId] = useState<string | null>(null)
-  const [editContext, setEditContext] = useState<TimeLogEditContext | null>(null)
+  const [editContext, setEditContext] = useState<TimeLogEditContext | null>(
+    null
+  )
   const [error, setError] = useState<string | null>(null)
 
   const open = useCallback(async (entryId: string) => {

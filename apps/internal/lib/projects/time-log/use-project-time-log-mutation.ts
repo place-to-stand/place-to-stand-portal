@@ -1,5 +1,9 @@
 'use client'
 
+import {
+  isQuarterHours,
+  QUARTER_HOURS_MESSAGE,
+} from '@/lib/time-logs/quarter-hours'
 import { useMutation, type QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 
@@ -74,6 +78,10 @@ export function useProjectTimeLogMutation(
           'hours',
           'Enter a valid number of hours greater than zero.'
         )
+      }
+
+      if (!isQuarterHours(parsedHours)) {
+        throw makeFieldError('hours', QUARTER_HOURS_MESSAGE)
       }
 
       const logUserId = formValues.selectedUserId
