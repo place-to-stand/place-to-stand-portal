@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireCrmUser } from '@/lib/auth/session'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import { AVATAR_BUCKET, ensureAvatarBucket } from '@/lib/storage/avatar'
 import { getPersonAvatarPath } from '@/lib/queries/users'
 import { HttpError } from '@/lib/errors/http'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const paramsSchema = z.object({
   contactId: z.string().uuid(),
@@ -15,7 +15,8 @@ export async function GET(
   _request: NextRequest,
   context: RouteContext<'/api/storage/person-avatar/[contactId]'>
 ) {
-  await requireCrmUser()
+  const { denied } = await authorizeRoute('portal.sign_in')
+  if (denied) return denied
 
   const parsedParams = paramsSchema.safeParse(await context.params)
 
@@ -33,11 +34,17 @@ export async function GET(
     avatarPath = await getPersonAvatarPath(contactId)
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to load avatar metadata', error)
-    return NextResponse.json({ error: 'Unable to load avatar.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Unable to load avatar.' },
+      { status: 500 }
+    )
   }
 
   await ensureAvatarBucket(supabase)

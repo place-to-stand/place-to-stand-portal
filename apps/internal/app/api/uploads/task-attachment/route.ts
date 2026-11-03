@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireStaffUser } from '@/lib/auth/session'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'
 import {
   deleteAttachmentObject,
@@ -17,6 +16,8 @@ import {
   generatePendingAttachmentPath,
   isPendingAttachmentPath,
 } from '@/lib/storage/task-attachments'
+import { authorizeRoute } from '@/lib/auth/guard'
+import { roleCan } from '@/lib/auth/capabilities'
 
 const uploadPayloadSchema = z.object({
   mimeType: z.string().min(1),
@@ -35,7 +36,8 @@ const deletePayloadSchema = z.object({
  * by `ensureTaskAttachmentBucket`) enforce what the client claims here.
  */
 export async function POST(request: Request) {
-  const actor = await requireStaffUser()
+  const { user: actor, denied } = await authorizeRoute('projects.view_member')
+  if (denied) return denied
   const payload = await request.json().catch(() => null)
   const parsed = uploadPayloadSchema.safeParse(payload)
 
@@ -93,7 +95,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const actor = await requireStaffUser()
+  const { user: actor, denied } = await authorizeRoute('projects.view_member')
+  if (denied) return denied
   const payload = await request.json().catch(() => null)
   const parsed = deletePayloadSchema.safeParse(payload)
 
@@ -103,7 +106,10 @@ export async function DELETE(request: Request) {
 
   const { path } = parsed.data
 
-  if (!isPendingAttachmentPath(path, actor.id) && actor.role !== 'ADMIN') {
+  if (
+    !isPendingAttachmentPath(path, actor.id) &&
+    !roleCan(actor.role, 'tasks.edit_others_comments')
+  ) {
     return NextResponse.json(
       { error: 'You cannot remove this attachment.' },
       { status: 403 }

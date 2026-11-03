@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireStaffUser } from '@/lib/auth/session'
 import { listWorkableProjectIds } from '@/lib/projects/access'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { listAssignedDoneSlice } from '@/lib/data/tasks'
@@ -12,6 +11,8 @@ import {
   MAX_DONE_WEEKS,
   resolveDoneWindowStart,
 } from '@/lib/projects/tasks/done-window'
+import { authorizeRoute } from '@/lib/auth/guard'
+import { roleCan } from '@/lib/auth/capabilities'
 
 /**
  * One "load previous two weeks" step for the My Tasks board's Done column.
@@ -36,7 +37,8 @@ const payloadSchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const user = await requireStaffUser()
+  const { user, denied } = await authorizeRoute('projects.view_member')
+  if (denied) return denied
 
   let payload: z.infer<typeof payloadSchema>
 
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
   // Admins may view anyone's board — same rule the reorder route applies.
   // 'all' widens to every assignee (null); absent defaults to self. Sales
   // users only ever see their own board, on projects they can work.
-  const isAdmin = user.role === 'ADMIN'
+  const isAdmin = roleCan(user.role, 'projects.view_all')
   const boardOwnerId = !isAdmin
     ? user.id
     : payload.assigneeId === 'all'

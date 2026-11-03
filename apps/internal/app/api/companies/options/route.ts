@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 
-import { requireCrmUser } from '@/lib/auth/session'
 import { listCompanyOptions } from '@/lib/queries/companies'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /** GET /api/companies/options: every live company, for the company pickers. */
 export async function GET() {
-  const user = await requireCrmUser()
+  const { user, denied } = await authorizeRoute('companies.manage')
+  if (denied) return denied
   return NextResponse.json({ ok: true, data: await listCompanyOptions(user) })
 }

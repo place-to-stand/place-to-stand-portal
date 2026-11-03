@@ -9,7 +9,12 @@ import { fetchCrmUsers } from '@/lib/data/users'
 import { db } from '@/lib/db'
 import { users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
-import { userFields, userSortExpression, type SelectUser } from '@/lib/queries/users/fields'
+import {
+  userFields,
+  userSortExpression,
+  type SelectUser,
+} from '@/lib/queries/users/fields'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export type CliUserFilters = {
   search?: string
@@ -29,7 +34,7 @@ export async function listUsersForCli(
 
   const conditions = [isNull(users.deletedAt), isNull(users.disabledAt)]
 
-  if (user.role !== 'ADMIN') {
+  if (!roleCan(user.role, 'settings.users')) {
     const staff = [...(await crmUserIds())]
 
     if (!staff.length) {
@@ -93,7 +98,10 @@ async function matchUserReferences(
 
   if (emails.length) {
     conditions.push(
-      inArray(sql`lower(${users.email})`, emails.map(email => email.toLowerCase()))
+      inArray(
+        sql`lower(${users.email})`,
+        emails.map(email => email.toLowerCase())
+      )
     )
   }
 
@@ -142,7 +150,7 @@ export async function resolveUserIds(
 
   return matchUserReferences(
     references,
-    user.role === 'ADMIN' ? null : await crmUserIds(),
+    roleCan(user.role, 'settings.users') ? null : await crmUserIds(),
     reference => `No active user matches "${reference}".`
   )
 }

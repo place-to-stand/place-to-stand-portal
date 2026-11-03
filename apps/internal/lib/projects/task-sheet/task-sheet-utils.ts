@@ -125,21 +125,21 @@ export const buildAssigneeItems = ({
       return
     }
 
-    const user = member.user
-    if (!user || !isSelectableUser(user) || user.role !== 'ADMIN') {
+    const person = member.user
+    if (!person || !isSelectableUser(person) || person.role !== 'ADMIN') {
       return
     }
 
-    const label = user.full_name?.trim() || user.email
+    const label = person.full_name?.trim() || person.email
 
     eligibleItems.push({
       value: member.user_id,
       label,
-      keywords: [user.email, 'admin'].filter((keyword): keyword is string =>
+      keywords: [person.email, 'admin'].filter((keyword): keyword is string =>
         Boolean(keyword)
       ),
       userId: member.user_id,
-      avatarUrl: user.avatar_url,
+      avatarUrl: person.avatar_url,
     })
     seen.add(member.user_id)
   })

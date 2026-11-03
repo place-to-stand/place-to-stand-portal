@@ -35,6 +35,7 @@ import {
 } from './save-task-children'
 import type { SaveTaskResult, TaskWriteContext } from './types'
 import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export async function updateTaskForActor(
   taskId: string,
@@ -88,7 +89,10 @@ export async function updateTaskForActor(
   if (projectChanged) {
     // A client task's time logs stay on its client project, so moving it
     // elsewhere breaks billing. Only admins may do that.
-    if (actor.role !== 'ADMIN' && existingTask.companyId) {
+    if (
+      !roleCan(actor.role, 'tasks.move_off_client_project') &&
+      existingTask.companyId
+    ) {
       return { error: 'Only an admin can move a task off a client project.' }
     }
 

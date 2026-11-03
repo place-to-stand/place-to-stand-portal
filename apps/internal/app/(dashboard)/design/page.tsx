@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 
 import {
   ComponentsBadges,
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
  * sample data; nothing here writes.
  */
 export default async function DesignPage() {
-  await requireUser()
+  await requirePage('settings.design')
 
   return (
     <PageShell breadcrumbs={[{ label: 'Design' }]}>

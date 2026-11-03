@@ -3,7 +3,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 
 import type { UserRole } from '@/lib/auth/session'
-import { isAdminRole } from '@/lib/auth/roles'
+import { roleCan } from '@/lib/auth/capabilities'
 
 type ViewerAccess = {
   role: UserRole | null
@@ -32,7 +32,7 @@ export function ViewerAccessProvider({
   children: ReactNode
 }) {
   const value = useMemo(
-    () => ({ role, userId, isAdmin: isAdminRole(role) }),
+    () => ({ role, userId, isAdmin: roleCan(role, 'portal.admin') }),
     [role, userId]
   )
 

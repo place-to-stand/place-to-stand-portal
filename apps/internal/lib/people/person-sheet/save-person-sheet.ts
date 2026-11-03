@@ -2,7 +2,6 @@ import 'server-only'
 
 import { eq } from 'drizzle-orm'
 
-import { isAdminRole } from '@/lib/auth/roles'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
@@ -38,6 +37,7 @@ import {
 import { finishSignIn, runSignInAuth, writeSignIn } from './sign-in-apply'
 import { prepareSignIn, type SignInInput } from './sign-in-plan'
 import { Undo } from './undo'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export type PersonSheetInput = ContactInput & {
   /** Their photo, when it changed: a staged upload, or removed. */
@@ -90,7 +90,7 @@ async function save(
   input: PersonSheetInput
 ): Promise<PersonSheetResult> {
   const { avatar, signIn, loadedUpdatedAt, ...contactInput } = input
-  const isAdmin = isAdminRole(user.role)
+  const isAdmin = roleCan(user.role, 'settings.users')
 
   const existing = input.id ? await loadExistingContact(input.id) : null
   if (input.id && (!existing || existing.deletedAt)) {

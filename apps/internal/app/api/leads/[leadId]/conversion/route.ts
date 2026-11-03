@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireRole } from '@/lib/auth/session'
 import { fetchLeadConversionSummary } from '@/lib/data/leads/conversion'
 import { NotFoundError } from '@/lib/errors/http'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const leadIdSchema = z.string().uuid()
 
@@ -18,7 +18,8 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/leads/[leadId]/conversion'>
 ) {
-  const user = await requireRole('ADMIN')
+  const { user, denied } = await authorizeRoute('leads.convert')
+  if (denied) return denied
   const { leadId } = await params
 
   if (!leadIdSchema.safeParse(leadId).success) {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listInvoices } from '@/lib/queries/invoices'
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 }
 
 export default async function InvoicesActivityPage() {
-  const currentUser = await requireRole('ADMIN')
+  const currentUser = await requirePage('activity.read_all')
 
   const { clients } = await listInvoices(currentUser, {
     status: 'active',

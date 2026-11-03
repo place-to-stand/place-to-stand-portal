@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { eq, and, isNull } from 'drizzle-orm'
 
-import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function GET() {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('integrations.manage')
+  if (denied) return denied
 
   // Fetch all Google accounts for this user (multi-account support)
   const connections = await db

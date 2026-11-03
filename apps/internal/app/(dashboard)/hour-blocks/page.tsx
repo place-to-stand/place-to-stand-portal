@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import {
   getHourBlockWithClientById,
@@ -27,7 +27,7 @@ const firstParam = (value: string | string[] | undefined) =>
 export default async function HourBlocksPage({
   searchParams,
 }: PageProps<'/hour-blocks'>) {
-  const currentUser = await requireRole('ADMIN')
+  const currentUser = await requirePage('billing.manage')
   const params = await searchParams
   const pageSize = await readPageSize()
 

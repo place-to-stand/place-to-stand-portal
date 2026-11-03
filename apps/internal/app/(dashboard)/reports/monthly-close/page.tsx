@@ -6,7 +6,7 @@ import { formatCalendarDate } from '@pts/ui/dates'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import {
   getLatestPartnerRates,
   getPartnerRatesEndDate,
@@ -48,7 +48,7 @@ function parseSearchParam(value: string | string[] | undefined): string | null {
 export default async function MonthlyClosePage({
   searchParams,
 }: PageProps<'/reports/monthly-close'>) {
-  await requireRole('ADMIN')
+  await requirePage('reports.view')
 
   const params = await searchParams
 

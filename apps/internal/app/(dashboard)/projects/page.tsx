@@ -12,7 +12,7 @@ import {
   type ClientHoursSummary,
 } from '@/lib/data/clients'
 import { fetchAdminUsers } from '@/lib/data/users'
-import { requireStaffUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import type { AppUser } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import type { LandingProject } from '@/lib/data/projects'
@@ -20,6 +20,7 @@ import { listClientDirectory } from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export const metadata: Metadata = {
   title: 'Projects',
@@ -28,12 +29,12 @@ export const metadata: Metadata = {
 export default async function ProjectsPage({
   searchParams,
 }: PageProps<'/projects'>) {
-  const user = await requireStaffUser()
+  const user = await requirePage('projects.view_member')
   const params = await searchParams
   const { statuses, search, filtersActive } =
     parseProjectsLandingSearchParams(params)
 
-  if (user.role !== 'ADMIN') {
+  if (!roleCan(user.role, 'projects.view_all')) {
     return renderMemberLanding(user, { statuses, search, filtersActive })
   }
 

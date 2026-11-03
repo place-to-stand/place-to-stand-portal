@@ -24,6 +24,7 @@ import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
 import { ForbiddenError } from '@/lib/errors/http'
 import { roleCan } from '@/lib/auth/capabilities'
+import { assertCan } from '@/lib/auth/permissions'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { listClientDirectory } from '@/lib/queries/companies/billing'
@@ -48,7 +49,9 @@ type SheetInitResolver<E extends SheetInitEntity> = (
   id: string
 ) => Promise<SheetInitPayloads[E]>
 
-const resolveClientInit: SheetInitResolver<'client'> = async (_user, id) => {
+const resolveClientInit: SheetInitResolver<'client'> = async (user, id) => {
+  // Billing fields: checked here too, not only by the route's allowlist.
+  assertCan(user, 'clients.manage')
   if (id === NEW_SHEET_VALUE) {
     return { client: null }
   }
@@ -233,7 +236,7 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
     fetchProjectsLite(),
     // Opening a sheet never creates projects for non-admins: SALES only
     // read it (null until an admin's sheet or the CLI creates it).
-    user.role === 'ADMIN'
+    roleCan(user.role, 'projects.manage')
       ? getOrCreateSalesProject(user.id)
       : findSalesProjectId(),
   ])
@@ -257,7 +260,7 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   if (!holdingProjectId) {
     throw new NotFoundError('Task not found')
   }
-  if (user.role !== 'ADMIN') {
+  if (!roleCan(user.role, 'projects.view_all')) {
     await ensureTaskWorkAccess(user, id)
   }
 

@@ -23,6 +23,7 @@ import { BadRequestError, ForbiddenError } from '@/lib/errors/http'
 
 import { listLimit } from '../output'
 import { defineTool } from '../tool'
+import { roleCan } from '@/lib/auth/capabilities'
 
 const source = z
   .enum(activitySource.enumValues)
@@ -240,7 +241,9 @@ export function registerActivityTools(server: McpServer) {
       // it; naming any other type is refused, as on list_activity.
       const scopedTypes =
         targetType ??
-        (user.role === 'ADMIN' ? undefined : [...SALES_ACTIVITY_TARGET_TYPES])
+        (roleCan(user.role, 'activity.read_all')
+          ? undefined
+          : [...SALES_ACTIVITY_TARGET_TYPES])
 
       if (!canReadActivity(user.role, { targetType: scopedTypes })) {
         throw new ForbiddenError(

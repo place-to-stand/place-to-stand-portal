@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
 import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ProjectsActivityPage() {
-  const admin = await requireRole('ADMIN')
+  const admin = await requirePage('activity.read_all')
 
   const managementResult = await listProjectsForSettings(admin, {
     status: 'active',

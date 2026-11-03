@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
 import { eq, and } from 'drizzle-orm'
 
-import { requireUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 import { decryptToken } from '@/lib/oauth/encryption'
 import { revokeToken } from '@/lib/oauth/github'
 import { logActivity } from '@/lib/activity/logger'
 import { oauthDisconnectedEvent } from '@/lib/activity/events'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function POST(request: Request) {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('integrations.manage')
+  if (denied) return denied
 
   // Get connectionId from request body (multi-account support)
   const body = await request.json().catch(() => ({}))

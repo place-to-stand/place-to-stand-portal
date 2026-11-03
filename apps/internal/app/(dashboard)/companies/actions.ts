@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { saveCompanySheet as saveCompanySheetMutation } from '@/lib/companies/save-company-sheet'
 import type { SaveCompanySheetInput } from '@/lib/companies/sheet-save-schema'
 import type { CompanyActionResult } from '@/lib/companies/types'
@@ -37,7 +37,7 @@ function revalidateCompanyRoutes() {
 export async function saveCompanySheet(
   input: SaveCompanySheetInput
 ): Promise<CompanyActionResult> {
-  const user = await requireCrmUser()
+  const user = await requirePage('companies.manage')
   const result = await saveCompanySheetMutation(user, input)
   if (result.ok) revalidateCompanyRoutes()
   return result
@@ -46,7 +46,7 @@ export async function saveCompanySheet(
 export async function archiveCompany(
   companyId: string
 ): Promise<CompanyActionResult> {
-  const user = await requireCrmUser()
+  const user = await requirePage('companies.manage')
   if (!UUID_PATTERN.test(companyId)) return { ok: false, error: 'Not found.' }
   const result = await setCompanyArchived(user, companyId, true)
   if (result.ok) revalidateCompanyRoutes()
@@ -56,7 +56,7 @@ export async function archiveCompany(
 export async function restoreCompany(
   companyId: string
 ): Promise<CompanyActionResult> {
-  const user = await requireCrmUser()
+  const user = await requirePage('companies.manage')
   if (!UUID_PATTERN.test(companyId)) return { ok: false, error: 'Not found.' }
   const result = await setCompanyArchived(user, companyId, false)
   if (result.ok) revalidateCompanyRoutes()

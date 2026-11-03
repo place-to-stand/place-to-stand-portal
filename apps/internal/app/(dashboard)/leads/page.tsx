@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { redirect } from 'next/navigation'
 
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import {
   fetchArchivedLeads,
   fetchLeadAssignees,
@@ -24,7 +24,7 @@ export default async function LeadsBoardPage({
   searchParams,
 }: PageProps<'/leads'>) {
   // permission: leads.manage
-  const user = await requireCrmUser()
+  const user = await requirePage('leads.manage')
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
   // `?assignee=`: a user id, `me` (the My aging leads "See all"), or absent

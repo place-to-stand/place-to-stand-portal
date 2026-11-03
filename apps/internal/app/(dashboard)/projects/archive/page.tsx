@@ -9,7 +9,7 @@ import { mapProjectToTableRow } from '../_lib/map-project-to-table-row'
 import { parseProjectsSearchParams } from '../_lib/parse-projects-search-params'
 import { PROJECTS_TABS } from '../_lib/tabs'
 import { fetchAdminUsers } from '@/lib/data/users'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { listProjectsForSettings } from '@/lib/queries/projects'
 import type {
   ClientPickerRow,
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 export default async function ProjectsArchivePage({
   searchParams,
 }: PageProps<'/projects/archive'>) {
-  const admin = await requireRole('ADMIN')
+  const admin = await requirePage('projects.manage')
   const params = await searchParams
   const pageSize = await readPageSize()
   const {

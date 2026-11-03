@@ -43,6 +43,13 @@ const config = [
     ignores: QUERY_LAYER_ALLOWLIST,
     rules: { 'pts/query-layer-purity': 'error' },
   },
+  {
+    // One way to check roles: capabilities, and JSON 401/403 from API routes.
+    rules: {
+      'pts/api-route-guard': 'error',
+      'pts/no-role-literal': 'error',
+    },
+  },
 ]
 
 export default config

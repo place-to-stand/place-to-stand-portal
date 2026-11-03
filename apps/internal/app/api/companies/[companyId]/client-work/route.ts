@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
 import { loadCompanyClientWork } from '@/lib/companies/sheet-loaders'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
  * GET /api/companies/<id>/client-work: a client company's projects and
@@ -12,7 +12,8 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/companies/[companyId]/client-work'>
 ) {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('clients.manage')
+  if (denied) return denied
   const { companyId } = await params
   const data = await loadCompanyClientWork(user, companyId)
   return NextResponse.json({ ok: true, data })

@@ -2,7 +2,7 @@
 
 import { eq } from 'drizzle-orm'
 
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { logActivity } from '@/lib/activity/logger'
 import { projectArchivedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
@@ -19,7 +19,7 @@ import { revalidateProjectSettings } from './shared'
 export async function softDeleteProject(
   input: DeleteProjectInput
 ): Promise<ProjectActionResult> {
-  const user = await requireRole('ADMIN')
+  const user = await requirePage('projects.manage')
   return trackSettingsServerInteraction(
     {
       entity: 'project',

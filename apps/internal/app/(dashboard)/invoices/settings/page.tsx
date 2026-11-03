@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { listAllProductCatalogItems } from '@/lib/queries/product-catalog'
 import { listTaxRates } from '@/lib/queries/tax-rates'
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 }
 
 export default async function InvoiceSettingsPage() {
-  await requireRole('ADMIN')
+  await requirePage('billing.manage')
 
   const [products, taxRates] = await Promise.all([
     listAllProductCatalogItems(),

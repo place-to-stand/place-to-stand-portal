@@ -3,8 +3,8 @@
     "type": "action",
     "name": "completePasswordReset",
     "file": "apps/internal/app/(auth)/_actions/update-password.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "portal.sign_in"
   },
   {
     "type": "page",
@@ -88,49 +88,49 @@
     "name": "updateProfile",
     "file": "apps/internal/app/(dashboard)/_actions/update-profile.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "page",
     "name": "/clients/[clientSlug]",
     "file": "apps/internal/app/(dashboard)/clients/[clientSlug]/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "clients.manage"
   },
   {
     "type": "action",
     "name": "saveCompanySheet",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "companies.manage"
   },
   {
     "type": "action",
     "name": "archiveCompany",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "companies.manage"
   },
   {
     "type": "action",
     "name": "restoreCompany",
     "file": "apps/internal/app/(dashboard)/companies/actions.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "companies.manage"
   },
   {
     "type": "page",
     "name": "/companies/activity",
     "file": "apps/internal/app/(dashboard)/companies/activity/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "activity.read_crm"
   },
   {
     "type": "page",
     "name": "/companies/archive",
     "file": "apps/internal/app/(dashboard)/companies/archive/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "companies.manage"
   },
   {
     "type": "action",
@@ -144,14 +144,14 @@
     "name": "/companies",
     "file": "apps/internal/app/(dashboard)/companies/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "companies.manage"
   },
   {
     "type": "page",
     "name": "/design",
     "file": "apps/internal/app/(dashboard)/design/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.design"
   },
   {
     "type": "action",
@@ -178,22 +178,22 @@
     "type": "page",
     "name": "/hour-blocks/activity",
     "file": "apps/internal/app/(dashboard)/hour-blocks/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "activity.read_all"
   },
   {
     "type": "page",
     "name": "/hour-blocks/archive",
     "file": "apps/internal/app/(dashboard)/hour-blocks/archive/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "page",
     "name": "/hour-blocks",
     "file": "apps/internal/app/(dashboard)/hour-blocks/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "action",
@@ -262,22 +262,22 @@
     "type": "page",
     "name": "/invoices/activity",
     "file": "apps/internal/app/(dashboard)/invoices/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "activity.read_all"
   },
   {
     "type": "page",
     "name": "/invoices/archive",
     "file": "apps/internal/app/(dashboard)/invoices/archive/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "page",
     "name": "/invoices",
     "file": "apps/internal/app/(dashboard)/invoices/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "action",
@@ -304,64 +304,64 @@
     "type": "page",
     "name": "/invoices/settings",
     "file": "apps/internal/app/(dashboard)/invoices/settings/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "action",
     "name": "archiveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/archive-lead.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
     "name": "moveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/move-lead.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
     "name": "restoreLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/restore-lead.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
     "name": "saveLead",
     "file": "apps/internal/app/(dashboard)/leads/_actions/save-lead.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
     "name": "createLeadUpdate",
     "file": "apps/internal/app/(dashboard)/leads/_actions/updates/create-lead-update.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
     "name": "deleteLeadUpdate",
     "file": "apps/internal/app/(dashboard)/leads/_actions/updates/delete-lead-update.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
     "name": "updateLeadUpdate",
     "file": "apps/internal/app/(dashboard)/leads/_actions/updates/update-lead-update.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "page",
     "name": "/leads/activity",
     "file": "apps/internal/app/(dashboard)/leads/activity/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "activity.read_crm"
   },
   {
     "type": "page",
@@ -382,49 +382,49 @@
     "name": "saveDashboardLayout",
     "file": "apps/internal/app/(dashboard)/my/home/_actions/save-dashboard-layout.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
     "name": "resetDashboardLayout",
     "file": "apps/internal/app/(dashboard)/my/home/_actions/save-dashboard-layout.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "page",
     "name": "/my/home",
     "file": "apps/internal/app/(dashboard)/my/home/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "dashboard.home"
   },
   {
     "type": "page",
     "name": "/my/tasks/[view]",
     "file": "apps/internal/app/(dashboard)/my/tasks/[view]/page.tsx",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
     "name": "savePersonSheetAction",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "contacts.manage"
   },
   {
     "type": "action",
     "name": "softDeleteContact",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "contacts.manage"
   },
   {
     "type": "action",
     "name": "restoreContact",
     "file": "apps/internal/app/(dashboard)/people/actions.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "contacts.manage"
   },
   {
     "type": "action",
@@ -438,49 +438,49 @@
     "name": "/people/activity",
     "file": "apps/internal/app/(dashboard)/people/activity/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "activity.read_crm"
   },
   {
     "type": "page",
     "name": "/people/archive",
     "file": "apps/internal/app/(dashboard)/people/archive/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "contacts.manage"
   },
   {
     "type": "page",
     "name": "/people",
     "file": "apps/internal/app/(dashboard)/people/page.tsx",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "contacts.manage"
   },
   {
     "type": "page",
     "name": "/projects/[clientSlug]/[projectSlug]/activity",
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.admin_tabs"
   },
   {
     "type": "page",
     "name": "/projects/[clientSlug]/[projectSlug]/review",
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/review/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.admin_tabs"
   },
   {
     "type": "page",
     "name": "/projects/[clientSlug]/[projectSlug]/tasks",
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/tasks/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.view_member"
   },
   {
     "type": "page",
     "name": "/projects/[clientSlug]/[projectSlug]/time-logs",
     "file": "apps/internal/app/(dashboard)/projects/[clientSlug]/[projectSlug]/time-logs/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.admin_tabs"
   },
   {
     "type": "action",
@@ -501,14 +501,14 @@
     "name": "changeTaskDueDate",
     "file": "apps/internal/app/(dashboard)/projects/actions/change-task-due-date.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
     "name": "changeTaskStatus",
     "file": "apps/internal/app/(dashboard)/projects/actions/change-task-status.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
@@ -522,7 +522,7 @@
     "name": "removeTask",
     "file": "apps/internal/app/(dashboard)/projects/actions/remove-task.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
@@ -536,14 +536,14 @@
     "name": "saveTask",
     "file": "apps/internal/app/(dashboard)/projects/actions/save-task.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
     "name": "revalidateProjectTaskViews",
     "file": "apps/internal/app/(dashboard)/projects/actions/shared.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
@@ -570,22 +570,22 @@
     "type": "page",
     "name": "/projects/activity",
     "file": "apps/internal/app/(dashboard)/projects/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "activity.read_all"
   },
   {
     "type": "page",
     "name": "/projects/archive",
     "file": "apps/internal/app/(dashboard)/projects/archive/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "page",
     "name": "/projects",
     "file": "apps/internal/app/(dashboard)/projects/page.tsx",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
@@ -640,50 +640,50 @@
     "type": "page",
     "name": "/reports/monthly-close",
     "file": "apps/internal/app/(dashboard)/reports/monthly-close/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "reports.view"
   },
   {
     "type": "page",
     "name": "/settings/integrations",
     "file": "apps/internal/app/(dashboard)/settings/integrations/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "page",
     "name": "/settings/permissions",
     "file": "apps/internal/app/(dashboard)/settings/permissions/page.tsx",
-    "kind": "public",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.permissions"
   },
   {
     "type": "page",
     "name": "/settings/templates/emails",
     "file": "apps/internal/app/(dashboard)/settings/templates/emails/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.templates"
   },
   {
     "type": "page",
     "name": "/settings/templates/notifications",
     "file": "apps/internal/app/(dashboard)/settings/templates/notifications/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.templates"
   },
   {
     "type": "page",
     "name": "/settings/templates/pdfs",
     "file": "apps/internal/app/(dashboard)/settings/templates/pdfs/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.templates"
   },
   {
     "type": "page",
     "name": "/settings/users",
     "file": "apps/internal/app/(dashboard)/settings/users/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.users"
   },
   {
     "type": "action",
@@ -717,50 +717,50 @@
     "type": "page",
     "name": "/submissions/activity",
     "file": "apps/internal/app/(dashboard)/submissions/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "submissions.manage"
   },
   {
     "type": "page",
     "name": "/submissions/archive",
     "file": "apps/internal/app/(dashboard)/submissions/archive/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "submissions.manage"
   },
   {
     "type": "page",
     "name": "/submissions",
     "file": "apps/internal/app/(dashboard)/submissions/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "submissions.manage"
   },
   {
     "type": "page",
     "name": "/time-logs/activity",
     "file": "apps/internal/app/(dashboard)/time-logs/activity/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "activity.read_all"
   },
   {
     "type": "page",
     "name": "/time-logs/archive",
     "file": "apps/internal/app/(dashboard)/time-logs/archive/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "page",
     "name": "/time-logs",
     "file": "apps/internal/app/(dashboard)/time-logs/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "page",
     "name": "/preview/invoices/[invoiceId]",
     "file": "apps/internal/app/(public)/preview/invoices/[invoiceId]/page.tsx",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "page",
@@ -976,43 +976,43 @@
     "type": "route",
     "name": "GET /api/command-palette/search",
     "file": "apps/internal/app/api/command-palette/search/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "portal.command_palette"
   },
   {
     "type": "route",
     "name": "GET /api/companies/[companyId]/client-work",
     "file": "apps/internal/app/api/companies/[companyId]/client-work/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "clients.manage"
   },
   {
     "type": "route",
     "name": "GET /api/companies/[companyId]/sheet",
     "file": "apps/internal/app/api/companies/[companyId]/sheet/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "companies.manage"
   },
   {
     "type": "route",
     "name": "GET /api/companies/options",
     "file": "apps/internal/app/api/companies/options/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "companies.manage"
   },
   {
     "type": "route",
     "name": "GET /api/contacts/[contactId]/sheet",
     "file": "apps/internal/app/api/contacts/[contactId]/sheet/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "contacts.manage"
   },
   {
     "type": "route",
     "name": "GET /api/contacts/options",
     "file": "apps/internal/app/api/contacts/options/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "contacts.manage"
   },
   {
     "type": "route",
@@ -1046,15 +1046,15 @@
     "type": "route",
     "name": "POST /api/dashboard/hours",
     "file": "apps/internal/app/api/dashboard/hours/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "widget.hours"
   },
   {
     "type": "route",
     "name": "GET /api/dashboard/my-tasks",
     "file": "apps/internal/app/api/dashboard/my-tasks/route.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "widget.my_tasks"
   },
   {
     "type": "route",
@@ -1067,57 +1067,57 @@
     "type": "route",
     "name": "GET /api/dashboard/time-logs/[timeLogId]",
     "file": "apps/internal/app/api/dashboard/time-logs/[timeLogId]/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "route",
     "name": "POST /api/dev/make-me-admin",
     "file": "apps/internal/app/api/dev/make-me-admin/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "portal.sign_in"
   },
   {
     "type": "route",
     "name": "POST /api/dev/seed",
     "file": "apps/internal/app/api/dev/seed/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "portal.admin"
   },
   {
     "type": "route",
     "name": "GET /api/github/repos/[owner]/[repo]/branches",
     "file": "apps/internal/app/api/github/repos/[owner]/[repo]/branches/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
     "name": "POST /api/integrations/[provider]/connect",
     "file": "apps/internal/app/api/integrations/[provider]/connect/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "POST /api/integrations/[provider]/disconnect",
     "file": "apps/internal/app/api/integrations/[provider]/disconnect/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/[provider]/projects",
     "file": "apps/internal/app/api/integrations/[provider]/projects/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/[provider]/status",
     "file": "apps/internal/app/api/integrations/[provider]/status/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
@@ -1130,15 +1130,15 @@
     "type": "route",
     "name": "POST /api/integrations/connected-apps/revoke",
     "file": "apps/internal/app/api/integrations/connected-apps/revoke/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/connected-apps",
     "file": "apps/internal/app/api/integrations/connected-apps/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
@@ -1151,43 +1151,43 @@
     "type": "route",
     "name": "POST /api/integrations/github/disconnect",
     "file": "apps/internal/app/api/integrations/github/disconnect/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/github/repos",
     "file": "apps/internal/app/api/integrations/github/repos/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/github/status",
     "file": "apps/internal/app/api/integrations/github/status/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "POST /api/integrations/google/disconnect",
     "file": "apps/internal/app/api/integrations/google/disconnect/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/google/status",
     "file": "apps/internal/app/api/integrations/google/status/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/services/status",
     "file": "apps/internal/app/api/integrations/services/status/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.manage"
   },
   {
     "type": "route",
@@ -1207,22 +1207,22 @@
     "type": "route",
     "name": "POST /api/invoices/[id]/checkout",
     "file": "apps/internal/app/api/invoices/[id]/checkout/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "billing.manage"
   },
   {
     "type": "route",
     "name": "GET /api/leads/[leadId]/conversion",
     "file": "apps/internal/app/api/leads/[leadId]/conversion/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "leads.convert"
   },
   {
     "type": "route",
     "name": "GET /api/leads/[leadId]/tasks",
     "file": "apps/internal/app/api/leads/[leadId]/tasks/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "leads.tasks"
   },
   {
     "type": "route",
@@ -1236,7 +1236,7 @@
     "name": "POST /api/my-tasks/done-window",
     "file": "apps/internal/app/api/my-tasks/done-window/route.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "route",
@@ -1250,14 +1250,14 @@
     "name": "POST /api/my-tasks/reorder",
     "file": "apps/internal/app/api/my-tasks/reorder/route.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "route",
     "name": "GET /api/my-tasks",
     "file": "apps/internal/app/api/my-tasks/route.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "route",
@@ -1298,50 +1298,50 @@
     "type": "route",
     "name": "DELETE /api/projects/[projectId]/github-repos/[linkId]",
     "file": "apps/internal/app/api/projects/[projectId]/github-repos/[linkId]/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
     "name": "GET /api/projects/[projectId]/github-repos/[linkId]",
     "file": "apps/internal/app/api/projects/[projectId]/github-repos/[linkId]/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
     "name": "GET /api/projects/[projectId]/github-repos",
     "file": "apps/internal/app/api/projects/[projectId]/github-repos/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
     "name": "POST /api/projects/[projectId]/github-repos",
     "file": "apps/internal/app/api/projects/[projectId]/github-repos/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
     "name": "DELETE /api/projects/[projectId]/integration-links/[linkId]",
     "file": "apps/internal/app/api/projects/[projectId]/integration-links/[linkId]/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
     "name": "GET /api/projects/[projectId]/integration-links",
     "file": "apps/internal/app/api/projects/[projectId]/integration-links/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
     "name": "POST /api/projects/[projectId]/integration-links",
     "file": "apps/internal/app/api/projects/[projectId]/integration-links/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "route",
@@ -1418,28 +1418,28 @@
     "name": "GET /api/sheets/init",
     "file": "apps/internal/app/api/sheets/init/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "route",
     "name": "GET /api/storage/person-avatar/[contactId]",
     "file": "apps/internal/app/api/storage/person-avatar/[contactId]/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "route",
     "name": "GET /api/storage/task-attachment/[attachmentId]",
     "file": "apps/internal/app/api/storage/task-attachment/[attachmentId]/route.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "route",
     "name": "GET /api/storage/user-avatar/[userId]",
     "file": "apps/internal/app/api/storage/user-avatar/[userId]/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "route",
@@ -1459,8 +1459,8 @@
     "type": "route",
     "name": "GET /api/task-deployments/[deploymentId]/worker-status",
     "file": "apps/internal/app/api/task-deployments/[deploymentId]/worker-status/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.admin_tabs"
   },
   {
     "type": "route",
@@ -1508,43 +1508,43 @@
     "type": "route",
     "name": "GET /api/templates/pdf/[id]",
     "file": "apps/internal/app/api/templates/pdf/[id]/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.templates"
   },
   {
     "type": "route",
     "name": "POST /api/uploads/task-attachment",
     "file": "apps/internal/app/api/uploads/task-attachment/route.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "route",
     "name": "DELETE /api/uploads/task-attachment",
     "file": "apps/internal/app/api/uploads/task-attachment/route.ts",
     "kind": "capability",
-    "capability": "portal.sign_in"
+    "capability": "projects.view_member"
   },
   {
     "type": "route",
     "name": "POST /api/uploads/user-avatar",
     "file": "apps/internal/app/api/uploads/user-avatar/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "route",
     "name": "DELETE /api/uploads/user-avatar",
     "file": "apps/internal/app/api/uploads/user-avatar/route.ts",
     "kind": "capability",
-    "capability": "leads.manage"
+    "capability": "portal.sign_in"
   },
   {
     "type": "route",
     "name": "GET /api/users/[userId]/sign-in",
     "file": "apps/internal/app/api/users/[userId]/sign-in/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "settings.users"
   },
   {
     "type": "route",
@@ -1606,35 +1606,35 @@
     "type": "action",
     "name": "restoreProject",
     "file": "apps/internal/lib/projects/sheet/actions/restore-project.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "action",
     "name": "saveProject",
     "file": "apps/internal/lib/projects/sheet/actions/save-project.ts",
     "kind": "capability",
-    "capability": "projects.manage"
+    "capability": "projects.view_member"
   },
   {
     "type": "action",
     "name": "softDeleteProject",
     "file": "apps/internal/lib/projects/sheet/actions/soft-delete-project.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "action",
     "name": "updateProjectOwner",
     "file": "apps/internal/lib/projects/sheet/actions/update-project-owner.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   },
   {
     "type": "action",
     "name": "updateProjectStatus",
     "file": "apps/internal/lib/projects/sheet/actions/update-project-status.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "projects.manage"
   }
 ]

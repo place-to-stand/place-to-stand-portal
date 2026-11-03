@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireStaffUser } from '@/lib/auth/session'
 import { listWorkableProjectIds } from '@/lib/projects/access'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import { listAssignedTaskSummaries } from '@/lib/data/tasks'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const schema = z.object({
   offset: z.coerce.number().int().min(0).max(10_000).default(0),
@@ -18,7 +18,8 @@ const schema = z.object({
  * contract, which includes Done and honors hidden project types.
  */
 export async function GET(request: Request) {
-  const user = await requireStaffUser()
+  const { user, denied } = await authorizeRoute('widget.my_tasks')
+  if (denied) return denied
   const { searchParams } = new URL(request.url)
 
   const parsed = schema.safeParse({

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { assertAdmin } from '@/lib/auth/permissions'
-import { requireUser } from '@/lib/auth/session'
 import { renderSamplePdf } from '@/lib/pdf/catalog'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
  * GET /api/templates/pdf/[id]?variant=<key>
@@ -14,7 +14,8 @@ export async function GET(
   request: Request,
   { params }: RouteContext<'/api/templates/pdf/[id]'>
 ) {
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('settings.templates')
+  if (denied) return denied
   assertAdmin(user)
 
   const { id } = await params

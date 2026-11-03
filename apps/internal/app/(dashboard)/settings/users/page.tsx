@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
@@ -17,7 +17,7 @@ const firstParam = (value: string | string[] | undefined) =>
 export default async function UsersSettingsPage({
   searchParams,
 }: PageProps<'/settings/users'>) {
-  await requireRole('ADMIN')
+  await requirePage('settings.users')
   const params = await searchParams
   const next = new URLSearchParams({ signIn: 'any' })
   const userParam = firstParam(params.user)

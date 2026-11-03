@@ -13,6 +13,7 @@ import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 
 import { revalidateProjectTaskViews } from './shared'
 import type { ActionResult } from './action-types'
+import { roleCan } from '@/lib/auth/capabilities'
 
 const schema = z.object({
   projectId: z.string().uuid(),
@@ -27,7 +28,7 @@ export async function acceptDoneTasks(input: {
 }): Promise<AcceptDoneTasksResult> {
   const user = await requireUser()
 
-  if (user.role !== 'ADMIN') {
+  if (!roleCan(user.role, 'projects.admin_tabs')) {
     return { error: 'Only administrators can accept tasks.', acceptedCount: 0 }
   }
 

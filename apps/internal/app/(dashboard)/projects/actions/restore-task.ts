@@ -13,6 +13,7 @@ import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 
 import { revalidateProjectTaskViews } from './shared'
 import type { ActionResult } from './action-types'
+import { roleCan } from '@/lib/auth/capabilities'
 
 const schema = z.object({
   taskId: z.string().uuid(),
@@ -23,7 +24,7 @@ export async function restoreTask(input: {
 }): Promise<ActionResult> {
   const user = await requireUser()
 
-  if (user.role !== 'ADMIN') {
+  if (!roleCan(user.role, 'projects.admin_tabs')) {
     return { error: 'Only administrators can restore tasks.' }
   }
 

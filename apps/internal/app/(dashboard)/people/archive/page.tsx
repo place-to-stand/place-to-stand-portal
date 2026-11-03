@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import {
   listContactsForSettings,
   listCompanyFilterOptions,
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 export default async function ContactsArchivePage({
   searchParams,
 }: PageProps<'/people/archive'>) {
-  const admin = await requireCrmUser()
+  const admin = await requirePage('contacts.manage')
   const params = await searchParams
   const pageSize = await readPageSize()
   const {

@@ -19,6 +19,7 @@ import { isAllowedRedirect } from '@/lib/mcp/redirects'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 import { decideAuthorization } from './actions'
+import { roleCan } from '@/lib/auth/capabilities'
 
 export const metadata: Metadata = {
   title: 'Connect an app',
@@ -138,7 +139,9 @@ export default async function OAuthConsentPage({
       label='Internal Portal'
       title={`Connect ${oauthClientName(data.client)}`}
       description={
-        user.role === 'ADMIN' ? ADMIN_ACCESS_SUMMARY : SALES_ACCESS_SUMMARY
+        roleCan(user.role, 'portal.admin')
+          ? ADMIN_ACCESS_SUMMARY
+          : SALES_ACCESS_SUMMARY
       }
     >
       <div className='space-y-4'>

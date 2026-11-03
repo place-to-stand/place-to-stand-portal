@@ -22,6 +22,7 @@ import type {
   TaskCommentAuthor,
   TaskCommentWithAuthor,
 } from '@/lib/types'
+import { roleCan } from '@/lib/auth/capabilities'
 
 /**
  * Comment mutations are reached from the browser API routes and from the CLI;
@@ -80,7 +81,10 @@ function mapCommentSelectionToTaskComment(
 
 /** Admins may edit or delete any comment; everyone else only their own. */
 function assertCanChangeComment(user: AppUser, authorId: string | null) {
-  if (user.role !== 'ADMIN' && authorId !== user.id) {
+  if (
+    !roleCan(user.role, 'tasks.edit_others_comments') &&
+    authorId !== user.id
+  ) {
     throw new ForbiddenError('You can only change your own comments')
   }
 }

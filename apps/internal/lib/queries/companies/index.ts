@@ -33,8 +33,7 @@ import {
   currentOriginationUserIdSql,
   fetchLatestClosersByClient,
 } from '@/lib/queries/companies/billing/commission-terms'
-import { isAdminRole } from '@/lib/auth/roles'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import type {
   CompanyDetail,
@@ -58,7 +57,7 @@ export async function listCompanies(
   user: AppUser,
   options: { status?: 'active' | 'archived'; search?: string | null } = {}
 ): Promise<CompanyListItem[]> {
-  assertCrmAccess(user)
+  assertCan(user, 'companies.manage')
 
   const status = options.status ?? 'active'
   const search = options.search?.trim() ?? ''
@@ -137,7 +136,7 @@ export async function listCompanies(
     )
 
   // Billing and commission are for people who manage clients.
-  const seesBilling = isAdminRole(user.role)
+  const seesBilling = roleCan(user.role, 'clients.manage')
   const clientIds = rows.filter(row => row.isClient).map(row => row.id)
   const [closersByClient, hoursByClient] = seesBilling
     ? await Promise.all([
@@ -192,7 +191,7 @@ export async function listCompanies(
     // Same rules as setCompanyArchived: staff sign in through this company,
     // and a billed company stops billing before it is archived.
     archiveRefusal:
-      row.isStaff && !isAdminRole(user.role)
+      row.isStaff && !roleCan(user.role, 'directory.staff_company')
         ? `Only an admin can change ${row.name}.`
         : row.isClient && !row.deletedAt
           ? ARCHIVE_BILLED_REFUSAL
@@ -203,7 +202,7 @@ export async function listCompanies(
 }
 
 export async function countCompanies(user: AppUser) {
-  assertCrmAccess(user)
+  assertCan(user, 'companies.manage')
   const [active] = await db
     .select({ count: sql<number>`count(*)` })
     .from(companies)
@@ -223,7 +222,7 @@ export async function getCompanyDetail(
   user: AppUser,
   companyId: string
 ): Promise<CompanyDetail> {
-  assertCrmAccess(user)
+  assertCan(user, 'companies.manage')
 
   const [row] = await db
     .select({
@@ -314,7 +313,8 @@ export async function getCompanyDetail(
       isPrimary: member.isPrimary,
       portalAccess: seesSignIns && member.portalAccess,
       hasPortalLogin: seesSignIns && Boolean(member.userId),
-      signInLocked: !isAdminRole(user.role) && Boolean(member.userId),
+      signInLocked:
+        !roleCan(user.role, 'settings.users') && Boolean(member.userId),
       signInDisabled: Boolean(
         seesSignIns && member.userId && disabledSignIns.has(member.userId)
       ),
@@ -348,7 +348,7 @@ export async function getCompanyDetail(
 export async function listCompanyOptions(
   user: AppUser
 ): Promise<CompanyOption[]> {
-  assertCrmAccess(user)
+  assertCan(user, 'companies.manage')
 
   return db
     .select({

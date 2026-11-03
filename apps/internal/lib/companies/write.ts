@@ -27,8 +27,7 @@ import {
   setMembershipTitle,
 } from '@/lib/queries/memberships'
 import { roleCan } from '@/lib/auth/capabilities'
-import { isAdminRole } from '@/lib/auth/roles'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { saveCompanySchema } from '@/lib/companies/schema'
 import { db, uniqueViolation, type DbTx } from '@/lib/db'
@@ -96,7 +95,7 @@ export async function planCompanyWrite(
 ): Promise<
   { ok: true; plan: CompanyWritePlan } | { ok: false; error: string }
 > {
-  assertCrmAccess(actor)
+  assertCan(actor, 'companies.manage')
 
   const next: CompanyFields = {
     name: values.name,
@@ -187,7 +186,7 @@ export async function planCompanyWrite(
     const renamed = next.name !== existing.name
     // Staff sign in as members of the agency's own company, so only an
     // admin renames it or changes its people.
-    if (existing.isStaff && !isAdminRole(actor.role)) {
+    if (existing.isStaff && !roleCan(actor.role, 'directory.staff_company')) {
       if (renamed) {
         return {
           ok: false,
@@ -222,7 +221,10 @@ export async function planCompanyWrite(
 
   // Someone who can sign in sees what their companies give them, so only an
   // admin moves them between companies (as on the person sheet).
-  if (!isAdminRole(actor.role) && people.moves.some(move => move.hasSignIn)) {
+  if (
+    !roleCan(actor.role, 'settings.users') &&
+    people.moves.some(move => move.hasSignIn)
+  ) {
     return { ok: false, error: SIGN_IN_COMPANIES_ADMIN_ONLY }
   }
 

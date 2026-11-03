@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 
 export default async function SettingsLayout({
   children,
 }: {
   children: ReactNode
 }) {
-  await requireRole('ADMIN')
+  await requirePage('portal.admin')
 
   return <>{children}</>
 }

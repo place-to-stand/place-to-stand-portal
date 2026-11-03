@@ -18,7 +18,7 @@ Review the specified files or recent changes for:
 - Server-side template injection
 
 ### 2. Authentication & Authorization
-- Verify `requireUser()` and `requireRole()` guards on all protected routes
+- Verify `requirePage('<capability>')` on protected pages and `authorizeRoute('<capability>')` on API routes
 - Check `ensureClientAccess()` usage before data queries
 - Review session handling in `lib/auth/session.ts`
 - Verify RLS bypass is properly handled (per CLAUDE.md: RLS is disabled, app-level guards required)

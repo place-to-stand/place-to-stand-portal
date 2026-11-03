@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { ensureProjectAccess } from '@/lib/auth/permissions'
-import { requireRole } from '@/lib/auth/session'
 import {
   getProjectIntegrationLinks,
   linkExternalProject,
@@ -10,6 +9,7 @@ import {
 import { findExternalProjectsForUser } from '@/lib/integrations/find-external-projects'
 import { integrationErrorResponse } from '@/lib/integrations/route-helpers'
 import { NotFoundError } from '@/lib/errors/http'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const linkSchema = z.object({
   provider: z.enum(['VERCEL', 'SUPABASE']),
@@ -20,7 +20,8 @@ export async function GET(
   _request: Request,
   { params }: RouteContext<'/api/projects/[projectId]/integration-links'>
 ) {
-  const user = await requireRole('ADMIN')
+  const { user, denied } = await authorizeRoute('projects.manage')
+  if (denied) return denied
   const { projectId } = await params
 
   try {
@@ -50,7 +51,8 @@ export async function POST(
   request: Request,
   { params }: RouteContext<'/api/projects/[projectId]/integration-links'>
 ) {
-  const user = await requireRole('ADMIN')
+  const { user, denied } = await authorizeRoute('projects.manage')
+  if (denied) return denied
   const { projectId } = await params
 
   try {

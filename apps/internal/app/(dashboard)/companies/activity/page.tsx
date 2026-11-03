@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { COMPANIES_TABS } from '../_lib/tabs'
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 export default async function CompaniesActivityPage() {
-  await requireCrmUser()
+  await requirePage('activity.read_crm')
 
   return (
     <PageShell

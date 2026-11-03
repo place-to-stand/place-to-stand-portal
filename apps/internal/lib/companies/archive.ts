@@ -5,11 +5,13 @@ import { billingOpenSql, wasClientCompany } from '@pts/db/client-state'
 
 import { and, eq, sql } from 'drizzle-orm'
 
-import { companyArchivedEvent, companyRestoredEvent } from '@/lib/activity/events'
+import {
+  companyArchivedEvent,
+  companyRestoredEvent,
+} from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { roleCan } from '@/lib/auth/capabilities'
-import { isAdminRole } from '@/lib/auth/roles'
-import { assertCrmAccess } from '@/lib/auth/permissions'
+import { assertCan } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import type { CompanyActionResult } from '@/lib/companies/types'
 import { db, uniqueViolation } from '@/lib/db'
@@ -21,7 +23,6 @@ import { revokeCompanyPortalAccess } from '@/lib/companies/billing/revoke-compan
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { companies } from '@/lib/db/schema'
 import { CompanySaveRefusal, companyHasClient } from '@/lib/companies/write'
-
 
 /**
  * Archiving keeps the company's contacts and leads linked, so a restore
@@ -35,7 +36,7 @@ export async function setCompanyArchived(
   companyId: string,
   archived: boolean
 ): Promise<CompanyActionResult> {
-  assertCrmAccess(actor)
+  assertCan(actor, 'companies.manage')
 
   const [existing] = await db
     .select({
@@ -56,7 +57,7 @@ export async function setCompanyArchived(
   }
 
   // Staff sign in as members of the agency's own company.
-  if (existing.isStaff && !isAdminRole(actor.role)) {
+  if (existing.isStaff && !roleCan(actor.role, 'directory.staff_company')) {
     return { ok: false, error: `Only an admin can change ${existing.name}.` }
   }
 
@@ -71,6 +72,22 @@ export async function setCompanyArchived(
       error: archived
         ? 'This company is a client, so only an admin can archive it.'
         : 'This company is a client, so only an admin can restore it.',
+    }
+  }
+
+  // Archiving a former client turns off its people's portal access, which
+  // is an admin's call (audit RBAC-8).
+  if (archived && !roleCan(actor.role, 'clients.manage')) {
+    const [former] = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(and(eq(companies.id, existing.id), wasClientCompany()))
+      .limit(1)
+    if (former) {
+      return {
+        ok: false,
+        error: 'This company was a client, so only an admin can archive it.',
+      }
     }
   }
 

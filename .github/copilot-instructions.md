@@ -8,7 +8,7 @@ Next.js 16 (App Router) application with Supabase (PostgreSQL + Auth + Storage),
 
 ### Authentication & Authorization
 
-- All protected routes MUST use `requireUser()` or `requireRole()` guards
+- Protected pages MUST call `requirePage('<capability>')`; API routes MUST call `authorizeRoute('<capability>')` (capabilities in `apps/internal/lib/auth/capabilities.ts`)
 - Data queries MUST call `ensureClientAccess()` before fetching client-scoped data
 - RLS is DISABLED - all access control must be enforced in application code
 - Never expose sensitive data (passwords, tokens, PII) in API responses

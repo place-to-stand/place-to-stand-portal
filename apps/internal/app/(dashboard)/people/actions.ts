@@ -9,7 +9,7 @@ import {
 
 import { revalidatePath } from 'next/cache'
 
-import { requireCrmUser, requireUser } from '@/lib/auth/session'
+import { requireUser, requirePage } from '@/lib/auth/session'
 import {
   type ContactActionResult,
   type DeleteContactInput,
@@ -45,7 +45,7 @@ const CONTACT_ROUTES_TO_REVALIDATE = [
 export async function savePersonSheetAction(
   input: PersonSheetInput
 ): Promise<PersonSheetResult> {
-  const user = await requireCrmUser()
+  const user = await requirePage('contacts.manage')
   if (input.id && !UUID_PATTERN.test(input.id)) {
     return { error: 'Invalid person.' }
   }
@@ -76,7 +76,7 @@ async function runContactMutation<TInput>(
   ) => Promise<ContactMutationResult>
 ): Promise<ContactActionResult> {
   // CRM staff may archive and restore.
-  const user = await requireCrmUser()
+  const user = await requirePage('contacts.manage')
   const mutationResult = await mutate({ user }, input)
   const { didMutate, ...result } = mutationResult
 

@@ -3,20 +3,12 @@ import 'server-only'
 import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import {
-  projects,
-  tasks,
-  timeLogs,
-} from '@/lib/db/schema'
+import { projects, tasks, timeLogs } from '@/lib/db/schema'
 import { roleCan, type Capability } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 
 type UUID = string
-
-function isAdmin(user: AppUser | null | undefined): boolean {
-  return !!user && user.role === 'ADMIN'
-}
 
 /** Whether the user's role holds a capability (`lib/auth/capabilities.ts`). */
 export function can(
@@ -26,9 +18,19 @@ export function can(
   return roleCan(user?.role, capability)
 }
 
+/**
+ * The guard for code below the page and route layer: throws ForbiddenError
+ * unless the user's role holds `capability`.
+ */
+export function assertCan(user: AppUser, capability: Capability) {
+  if (!can(user, capability)) {
+    throw new ForbiddenError('You don’t have permission to do that.')
+  }
+}
 
+/** Admin-only code with no narrower capability yet (`portal.admin`). */
 export function assertAdmin(user: AppUser) {
-  if (!isAdmin(user)) {
+  if (!can(user, 'portal.admin')) {
     throw new ForbiddenError('Admin privileges required')
   }
 }

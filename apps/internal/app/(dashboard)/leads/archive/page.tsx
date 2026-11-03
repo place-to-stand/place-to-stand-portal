@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { requireCrmUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import {
   fetchArchivedLeads,
@@ -29,7 +29,7 @@ const firstParam = (value: string | string[] | undefined) =>
 export default async function LeadsArchivePage({
   searchParams,
 }: PageProps<'/leads/archive'>) {
-  const user = await requireCrmUser()
+  const user = await requirePage('leads.manage')
   assertCrmAccess(user)
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null

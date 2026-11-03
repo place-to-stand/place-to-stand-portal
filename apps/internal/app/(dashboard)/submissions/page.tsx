@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { PageShell } from '@/components/layout/page-shell'
-import { requireRole } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { fetchFormSubmissions } from '@/lib/data/form-submissions'
 import {
   isFormSubmissionKind,
@@ -23,17 +23,14 @@ export const metadata: Metadata = {
   title: 'Submissions',
 }
 
-
-function firstParam(
-  value: string | string[] | undefined
-): string | undefined {
+function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
 
 export default async function SubmissionsPage({
   searchParams,
 }: PageProps<'/submissions'>) {
-  const currentUser = await requireRole('ADMIN')
+  const currentUser = await requirePage('submissions.manage')
   const params = await searchParams
   const pageSize = await readPageSize()
 
@@ -86,14 +83,18 @@ export default async function SubmissionsPage({
         filteredTotal: totalCount,
       }}
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm space-y-4'>
+      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
         <SubmissionsFilters
           search={search}
           activeKind={kind}
           activeStatus={status}
           activeContact={hasContact}
           activeAcknowledgement={
-            unacknowledgedOnly ? 'unacknowledged' : acknowledgedOnly ? 'acknowledged' : undefined
+            unacknowledgedOnly
+              ? 'unacknowledged'
+              : acknowledgedOnly
+                ? 'acknowledged'
+                : undefined
           }
           showUnacknowledgedFilter
           basePath='/submissions'

@@ -9,6 +9,7 @@ import {
   taskAttachmentsRemovedEvent,
 } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
+import { roleCan } from '@/lib/auth/capabilities'
 import { db, type DbTx } from '@/lib/db'
 import { taskAssignees, taskAttachments } from '@/lib/db/schema'
 import {
@@ -117,7 +118,7 @@ export async function stageAttachments({
   for (const attachment of attachmentsInput?.toAttach ?? []) {
     // Non-admins may only attach files they uploaded themselves.
     if (
-      actorRole !== 'ADMIN' &&
+      !roleCan(actorRole, 'tasks.edit_others_comments') &&
       !isPendingAttachmentPath(attachment.path, actorId)
     ) {
       continue
@@ -229,7 +230,7 @@ export async function writeAttachmentRows(
           isNull(taskAttachments.deletedAt),
           // Deleting a file can't be undone, so only admins may remove files
           // someone else uploaded.
-          actorRole === 'ADMIN'
+          roleCan(actorRole, 'tasks.edit_others_comments')
             ? undefined
             : eq(taskAttachments.uploadedBy, actorId)
         )

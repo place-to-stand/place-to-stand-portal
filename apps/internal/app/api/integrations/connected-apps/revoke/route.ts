@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { requireUser } from '@/lib/auth/session'
 import { revokeConnectedApp } from '@/lib/mcp/grants'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 const bodySchema = z.object({ clientId: z.string().uuid() })
 
 export async function POST(request: Request) {
-  await requireUser()
+  const { denied } = await authorizeRoute('integrations.manage')
+  if (denied) return denied
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})))
   if (!parsed.success) {

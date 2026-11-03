@@ -1,6 +1,6 @@
 'use server'
 
-import { requireStaffUser } from '@/lib/auth/session'
+import { requirePage } from '@/lib/auth/session'
 import { saveTaskForActor } from '@/lib/tasks/save-task-core'
 import type { SaveTaskResult } from '@/lib/tasks/types'
 
@@ -19,7 +19,7 @@ export type { SaveTaskResult }
  * resolved here from the session rather than accepted as a parameter.
  */
 export async function saveTask(input: BaseTaskInput): Promise<SaveTaskResult> {
-  const user = await requireStaffUser()
+  const user = await requirePage('projects.view_member')
   const result = await saveTaskForActor(user, input, 'ADMIN_UI')
 
   // A `taskId` means the save committed; an error means nothing was written.

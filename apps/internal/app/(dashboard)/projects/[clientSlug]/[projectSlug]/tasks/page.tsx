@@ -1,3 +1,4 @@
+// permission: projects.view_member — renderProjectTabRoute checks it
 import type { Metadata } from 'next'
 
 import {

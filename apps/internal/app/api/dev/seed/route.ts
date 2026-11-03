@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 
-import { requireUser, type AppUser } from '@/lib/auth/session'
+import { type AppUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { companies, contacts, projects } from '@/lib/db/schema'
 import { joinCompany, setPortalAccess } from '@/lib/queries/memberships'
 import { and, eq, isNull, sql } from 'drizzle-orm'
+import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function POST() {
   // Hard guard: never available in production (matches dev/make-me-admin)
@@ -13,7 +14,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Not available' }, { status: 404 })
   }
 
-  const user = await requireUser()
+  const { user, denied } = await authorizeRoute('portal.admin')
+  if (denied) return denied
   assertAdmin(user)
 
   // Each client is a company (1:1).
