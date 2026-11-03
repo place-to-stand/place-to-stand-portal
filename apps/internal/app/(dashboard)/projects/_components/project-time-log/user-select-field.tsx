@@ -25,7 +25,7 @@ export function UserSelectField(props: UserSelectFieldProps) {
 
   return (
     <div className='space-y-2 sm:col-span-2'>
-      <EntityFieldLabel entity='contact' htmlFor='time-log-user'>
+      <EntityFieldLabel entity='user' htmlFor='time-log-user'>
         Log hours for
       </EntityFieldLabel>
       <SearchableCombobox

@@ -25,15 +25,16 @@ export default async function LeadsBoardPage({
   const user = await requirePage('leads.manage')
   const params = await searchParams
   const leadParam = firstParam(params.lead) ?? null
-  // `?assignee=`: a user id, `me` (the My aging leads "See all"), or absent
-  // / `all` for everyone's leads.
+  // `?assignee=`: a user id, `me` (the My aging leads "See all"), or `all`
+  // for everyone's leads. Absent shows the viewer's own leads, as My tasks
+  // does.
   const assigneeParam = firstParam(params.assignee)
   const assigneeFilter =
-    assigneeParam === 'me'
-      ? user.id
+    assigneeParam === 'all'
+      ? 'all'
       : assigneeParam && UUID_PATTERN.test(assigneeParam)
         ? assigneeParam
-        : 'all'
+        : user.id
 
   // The whole board goes to the client even with `?assignee=me`: it filters
   // what shows, while deep links and drag ranks still see every lead.
