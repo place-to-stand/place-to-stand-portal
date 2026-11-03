@@ -105,15 +105,6 @@ export function ContactsTableSection({
             >
               Name
             </SortableTableHead>
-            <SortableTableHead
-              field='companies'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className='w-[26%]'
-            >
-              Companies
-            </SortableTableHead>
             {seesAccess ? (
               <SortableTableHead
                 field='signIn'
@@ -125,6 +116,15 @@ export function ContactsTableSection({
                 Role
               </SortableTableHead>
             ) : null}
+            <SortableTableHead
+              field='companies'
+              sort={sort}
+              defaultSort='name:asc'
+              onSortChange={next => update({ sort: next })}
+              className='w-[26%]'
+            >
+              Companies
+            </SortableTableHead>
             <SortableTableHead
               field='email'
               sort={sort}
@@ -193,6 +193,15 @@ export function ContactsTableSection({
                     </span>
                   </div>
                 </TableCell>
+                {seesAccess ? (
+                  <TableCell label='Role' className='text-sm'>
+                    {contact.signInRole ? (
+                      <RoleBadge role={contact.signInRole} />
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </TableCell>
+                ) : null}
                 <TableCell label='Companies' className='text-sm'>
                   {contact.companyId && contact.companyName ? (
                     <span className='flex min-w-0 items-center gap-2'>
@@ -240,15 +249,6 @@ export function ContactsTableSection({
                     <EmptyValue />
                   )}
                 </TableCell>
-                {seesAccess ? (
-                  <TableCell label='Role' className='text-sm'>
-                    {contact.signInRole ? (
-                      <RoleBadge role={contact.signInRole} />
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                ) : null}
                 <TableCell className='text-muted-foreground text-sm'>
                   {contact.email ? (
                     <a
