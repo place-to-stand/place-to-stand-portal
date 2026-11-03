@@ -130,7 +130,7 @@ export function LeadSheetFormFields({
           name='assigneeId'
           render={({ field }) => (
             <FormItem>
-              <FormLabel entity='contact'>Assignee</FormLabel>
+              <FormLabel entity='user'>Assignee</FormLabel>
               <FormControl>
                 <SearchableCombobox
                   items={assigneeItems}

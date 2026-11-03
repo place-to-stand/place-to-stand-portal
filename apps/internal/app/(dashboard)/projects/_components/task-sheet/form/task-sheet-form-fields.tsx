@@ -202,7 +202,7 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
 
             return (
               <FormItem>
-                <FormLabel entity='contact'>Assignee</FormLabel>
+                <FormLabel entity='user'>Assignee</FormLabel>
                 <FormControl>
                   <DisabledFieldTooltip disabled={disabled} reason={reason}>
                     <SearchableCombobox
