@@ -20,6 +20,7 @@ import {
   leadContactJoin,
   leadDisplayFields,
 } from '@/lib/leads/lead-display'
+import { markConvertedIfClient } from '@/lib/leads/mark-converted'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
 import {
@@ -191,6 +192,7 @@ async function createLead(
   if (!inserted) {
     return { success: false, error: 'Unable to save lead. Please try again.' }
   }
+  await markConvertedIfClient(tx, inserted.id, timestamp)
 
   await tx.insert(leadStageHistory).values({
     leadId: inserted.id,
@@ -350,6 +352,7 @@ async function updateLead(
   }
 
   await tx.update(leads).set(setPayload).where(eq(leads.id, leadId))
+  await markConvertedIfClient(tx, leadId, timestamp)
 
   if (statusChanged) {
     await tx.insert(leadStageHistory).values({

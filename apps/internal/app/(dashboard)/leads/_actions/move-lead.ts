@@ -9,6 +9,7 @@ import { requireCrmUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { leads, leadStageHistory } from '@/lib/db/schema'
+import { markConvertedIfClient } from '@/lib/leads/mark-converted'
 import { leadContactNameSql } from '@/lib/leads/lead-display'
 import {
   LEAD_STATUS_VALUES,
@@ -114,9 +115,10 @@ export async function moveLead(
           setPayload.resolvedAt = now
         }
 
-        // Winning a lead doesn't convert it: only starting the company's
-        // billing does (`startClientBillingInTx`), which is admin-only. The
-        // sheet, CLI and MCP save path follows the same rule.
+        // Winning a lead converts it only when its company is already a
+        // client (`markConvertedIfClient`, below); otherwise starting the
+        // company's billing does (`startClientBillingInTx`, admin-only).
+        // The sheet, CLI and MCP save path follows the same rule.
 
         // Moving back to an active stage reopens the lead. The conversion
         // record (`convertedAt`, which links the lead to its company as a
@@ -139,6 +141,7 @@ export async function moveLead(
       if (!statusChanged) {
         return { refused: null, statusChange: null }
       }
+      await markConvertedIfClient(tx, leadId, now)
 
       await tx.insert(leadStageHistory).values({
         leadId,
