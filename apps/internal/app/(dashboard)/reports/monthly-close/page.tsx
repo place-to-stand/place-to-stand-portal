@@ -12,6 +12,7 @@ import {
   getPartnerRatesEndDate,
 } from '@/lib/billing/partner-rates'
 import { fetchMonthlyCloseView } from '@/lib/data/reports/close'
+import { clampToReportBounds } from '@/lib/data/reports/monthly-close'
 import { loadStripeFees } from '@/lib/stripe/fees'
 
 import { BillingInCard } from './_components/billing-in-card'
@@ -60,11 +61,16 @@ export default async function MonthlyClosePage({
   const parsedMonth = monthParam ? parseInt(monthParam, 10) : getMonth(now)
   const parsedYear = yearParam ? parseInt(yearParam, 10) : getYear(now)
 
-  const validMonth =
+  const requestedMonth =
     Number.isFinite(parsedMonth) && parsedMonth >= 0 && parsedMonth <= 11
       ? parsedMonth
       : getMonth(now)
-  const validYear = Number.isFinite(parsedYear) ? parsedYear : getYear(now)
+  const requestedYear = Number.isFinite(parsedYear) ? parsedYear : getYear(now)
+
+  // A hand-edited URL can ask for a month with no data and no partner rates.
+  const bounded = await clampToReportBounds(requestedYear, requestedMonth + 1)
+  const validMonth = bounded.month - 1
+  const validYear = bounded.year
 
   // W4: the URL month param is 0-indexed; the close layer is 1-indexed.
   const closeMonthNumber = validMonth + 1
