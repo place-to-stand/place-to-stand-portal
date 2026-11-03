@@ -84,7 +84,9 @@ function ProductRow({
   return (
     <TableRow>
       <TableCell className='truncate font-medium'>{item.name}</TableCell>
-      <TableCell label='Price'>{formatCurrency(item.unit_price)}</TableCell>
+      <TableCell label='Price' className='text-right tabular-nums'>
+        {formatCurrency(item.unit_price)}
+      </TableCell>
       <TableCell label='Unit' className='truncate'>
         {item.unit_label}
       </TableCell>
@@ -326,7 +328,7 @@ export function ProductCatalogSection({
               >
                 Name
               </SortableTableHead>
-              <TableHead className='w-[13%]'>Unit price</TableHead>
+              <TableHead className='w-[13%] text-right'>Unit price</TableHead>
               <TableHead className='w-[13%]'>Unit label</TableHead>
               <TableHead className='w-[11%]'>Min qty</TableHead>
               <TableHead className='w-[13%]'>Hour block</TableHead>

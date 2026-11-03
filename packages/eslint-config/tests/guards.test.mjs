@@ -19,6 +19,51 @@ const tester = new RuleTester({
 
 const run = (id, cases) => tester.run(id, pts.rules[id], cases)
 
+run('popover-shadow', {
+  valid: [
+    "<PopoverContent className='w-80 p-0' />",
+    "<SelectContent className='shadow-popover' />",
+    "<Card className='shadow-lg' />",
+    "<SheetContent className='shadow-lg' />",
+    "<SheetPrimitive.Popup className='shadow-lg' />",
+  ],
+  invalid: [
+    { code: "<PopoverContent className='w-96 shadow-2xl' />", errors: 1 },
+    {
+      code: "<MenuPopup className={cn('p-1', open && 'shadow-lg')} />",
+      errors: 1,
+    },
+  ],
+})
+
+run('figure-cell-aligned', {
+  valid: [
+    "<TableCell className='text-right tabular-nums'>{formatCurrency(n)}</TableCell>",
+    '<TableCell className={MONEY_CELL}>{formatCurrency(n)}</TableCell>',
+    "<TableCell className='text-sm'>{name}</TableCell>",
+  ],
+  invalid: [
+    {
+      code: "<TableCell className='text-sm'>{formatCurrency(n)}</TableCell>",
+      errors: 1,
+    },
+    { code: '<TableCell>{formatHours(h)}</TableCell>', errors: 1 },
+  ],
+})
+
+run('no-details-section', {
+  valid: ["<SheetSection title='Billing' />"],
+  invalid: [{ code: "<SheetSection title='Details' />", errors: 1 }],
+})
+
+run('no-raw-type-size', {
+  valid: ["const c = 'text-micro text-overline text-sm'"],
+  invalid: [
+    { code: "const c = 'text-[10px] font-semibold'", errors: 1 },
+    { code: 'const c = `sm:text-[22px] ${x}`', errors: 1 },
+  ],
+})
+
 run('one-page-panel', {
   valid: [
     "const c = 'rounded-xl border p-4'",

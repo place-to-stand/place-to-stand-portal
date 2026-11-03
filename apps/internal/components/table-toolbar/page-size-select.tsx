@@ -64,7 +64,7 @@ export function PageSizeSelect({ value, className }: PageSizeSelectProps) {
   )
 
   return (
-    <label
+    <div
       className={cn(
         'text-muted-foreground flex items-center gap-2 text-xs',
         className
@@ -86,6 +86,6 @@ export function PageSizeSelect({ value, className }: PageSizeSelectProps) {
         </SelectContent>
       </Select>
       <span className='whitespace-nowrap'>rows per page</span>
-    </label>
+    </div>
   )
 }

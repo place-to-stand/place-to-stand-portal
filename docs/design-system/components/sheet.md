@@ -16,7 +16,7 @@ The right-side panel where every entity is created and edited, on Base UI Dialog
 
 **One add button, one related list.** Every sheet section's add action (Add person, Add company, Add line item, Add task, Add update, Log time, Add member, Link repository, Create project) comes from `EntityList` (`components/sheets/entity-list.tsx`, see `entity-list.md`): the + alone, a ghost icon button on the section's title row, its full label the accessible name, with the list and a clickable empty state under it. Never a labelled outline button or a hand-built + beside a section title. (guard: lint)
 
-**No generic first heading.** A sheet's first group of fields has no "Details" heading: it only restates the sheet. Leave `SheetSection`'s `title` out. Headings name real groups (Billing, Commission, People). (guard: review)
+**No generic first heading.** A sheet's first group of fields has no "Details" heading: it only restates the sheet. Leave `SheetSection`'s `title` out. Headings name real groups (Billing, Commission, People). (guard: eslint `pts/no-details-section`)
 
 **Dividers between sections, except around a few boxed lists.** Sheet sections are separated by a full-width `Separator` in a `gap-6` column. A few EntityList sections drop the line: company People and Leads, person Companies, invoice Line items. Stacked sections with no line between them sit 24px apart, the same as one field to the next (`SHEET_SECTIONS_CLASS`: the company's Company column, the lead's Tasks and Updates). Invoice Line items alone takes `SHEET_BLOCK_CLASS`, 48px around it. The first group of fields never gets a line above it. (guard: review)
 

@@ -9,7 +9,7 @@
     "./plugin": "./plugin.mjs"
   },
   "scripts": {
-    "lint": "eslint --max-warnings=0 && node --test tests/"
+    "lint": "eslint --max-warnings=0 && node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "eslint": "^9.39.5"

@@ -28,7 +28,7 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import ts from 'typescript'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -240,49 +240,71 @@ function copyStrings(file, text) {
   }))
 }
 
-function check(dirs, rules, errors) {
+const RULES = {
+  internal: [...INTERNAL_RULES, ...EVERYWHERE_RULES],
+  client: [...CLIENT_RULES, ...EVERYWHERE_RULES],
+}
+
+/** Each retired word in the UI copy of `text`, for the `portal` it ships in. */
+export function checkCopy(text, file, portal) {
+  const rules = RULES[portal]
+  const lines = text.split('\n')
+  const found = []
+  for (const { value, line } of copyStrings(file, text)) {
+    if (ALLOW.test(lines[line - 1] ?? '') || ALLOW.test(lines[line - 2] ?? ''))
+      continue
+    const prose = value.replace(/\S*[/_]\S*|`[^`]*`/g, ' ')
+    for (const [pattern, message, allowed] of rules) {
+      const flags = allowed
+        ? allowed.flags.includes('g')
+          ? allowed.flags
+          : allowed.flags + 'g'
+        : ''
+      const masked = allowed
+        ? prose.replace(new RegExp(allowed.source, flags), '')
+        : prose
+      if (pattern.test(masked)) found.push({ line, message, value })
+    }
+  }
+  return found
+}
+
+function check(dirs, portal, errors) {
   for (const dir of dirs) {
     for (const file of files(join(root, dir))) {
-      const text = readFileSync(file, 'utf8')
-      const lines = text.split('\n')
-      for (const { value, line } of copyStrings(file, text)) {
-        if (
-          ALLOW.test(lines[line - 1] ?? '') ||
-          ALLOW.test(lines[line - 2] ?? '')
+      for (const { line, message, value } of checkCopy(
+        readFileSync(file, 'utf8'),
+        file,
+        portal
+      )) {
+        errors.push(
+          `${file.slice(root.length)}:${line}: ${message}: "${value.slice(0, 80)}"`
         )
-          continue
-        const prose = value.replace(/\S*[/_]\S*|`[^`]*`/g, ' ')
-        for (const [pattern, message, allowed] of rules) {
-          const flags = allowed
-            ? allowed.flags.includes('g')
-              ? allowed.flags
-              : allowed.flags + 'g'
-            : ''
-          const masked = allowed
-            ? prose.replace(new RegExp(allowed.source, flags), '')
-            : prose
-          if (pattern.test(masked)) {
-            errors.push(
-              `${file.slice(root.length)}:${line}: ${message}: "${value.slice(0, 80)}"`
-            )
-          }
-        }
       }
     }
   }
 }
 
-const errors = []
-check(INTERNAL, [...INTERNAL_RULES, ...EVERYWHERE_RULES], errors)
-check(CLIENT, [...CLIENT_RULES, ...EVERYWHERE_RULES], errors)
+const isMain =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
 
-if (errors.length) {
+const errors = []
+if (isMain) {
+  check(INTERNAL, 'internal', errors)
+  check(CLIENT, 'client', errors)
+}
+
+if (!isMain) {
+  // Imported by the tests: nothing to report.
+} else if (errors.length) {
   console.error(
     'Copy check failed: retired entity words in UI copy (docs/design-system/README.md, Content fundamentals).'
   )
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
 }
-console.log(
-  'Copy: person not contact, companies in the client portal, no Partners or Delete forever'
-)
+else
+  console.log(
+    'Copy: person not contact, companies in the client portal, no Partners or Delete forever'
+  )
