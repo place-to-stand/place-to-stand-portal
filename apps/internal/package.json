@@ -8,6 +8,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint --max-warnings=0",
+    "test": "tsx --test 'lib/**/*.test.mts'",
     "type-check": "next typegen && tsc --noEmit",
     "db:pull": "drizzle-kit pull --config drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
