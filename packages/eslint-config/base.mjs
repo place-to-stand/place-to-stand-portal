@@ -78,7 +78,13 @@ export function common({ allowConsole = false } = {}) {
       // Switch's on state.
       // The auth ground is always dark, so its error red is raw on purpose
       // (auth-shell.tsx explains).
-      files: ['**/badge-tints.ts', '**/switch.tsx', '**/auth-shell.tsx'],
+      // Rule tests quote raw colours as fixtures.
+      files: [
+        '**/badge-tints.ts',
+        '**/switch.tsx',
+        '**/auth-shell.tsx',
+        '**/tests/**',
+      ],
       rules: { 'pts/no-raw-colour': 'off' },
     },
     {
