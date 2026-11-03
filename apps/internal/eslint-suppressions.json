@@ -817,11 +817,6 @@
       "count": 1
     }
   },
-  "lib/mcp/tools/companies.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 2
-    }
-  },
   "lib/mcp/tools/directory.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 1

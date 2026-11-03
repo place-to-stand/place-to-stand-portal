@@ -5,7 +5,8 @@ import {
   mainTitleSql,
 } from '@/lib/queries/memberships'
 
-export type SelectContact = typeof contacts.$inferSelect
+/** A person as lists show them: notes are read with their sheet. */
+export type SelectContact = Omit<typeof contacts.$inferSelect, 'notes'>
 
 export const contactFields = {
   id: contacts.id,

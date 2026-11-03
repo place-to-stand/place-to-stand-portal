@@ -258,6 +258,8 @@ export const contacts = pgTable(
     name: text().notNull(),
     phone: text(),
     linkedinUrl: text('linkedin_url'),
+    /** Rich text (TipTap HTML) about the person, edited on their sheet. */
+    notes: text(),
     /** Their photo: a path in the avatar bucket (anyone can have one). */
     avatarUrl: text('avatar_url'),
     createdBy: uuid('created_by'),

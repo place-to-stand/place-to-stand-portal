@@ -37,6 +37,8 @@ const contactFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(160),
   phone: z.string().max(40).optional(),
   linkedinUrl: z.string().max(255).optional(),
+  /** Rich text (TipTap HTML), loaded with the sheet. */
+  notes: z.string().max(20000).optional(),
   /** Every company they belong to, staged until Save. */
   companies: z.array(
     z.object({
@@ -153,6 +155,7 @@ export function useContactSheetState({
       name: '',
       phone: '',
       linkedinUrl: '',
+      notes: '',
       companies: [],
     },
   })
@@ -191,6 +194,8 @@ export function useContactSheetState({
       name: contact?.name ?? initialName ?? '',
       phone: contact?.phone ?? '',
       linkedinUrl: contact?.linkedinUrl ?? '',
+      // Notes come with the sheet's own read below, not the list's copy.
+      notes: '',
       // A create from a company (e.g. the lead sheet) starts there; the
       // picker names it.
       companies:
@@ -236,6 +241,7 @@ export function useContactSheetState({
             email: data.person.email ?? '',
             phone: data.person.phone ?? '',
             linkedinUrl: data.person.linkedinUrl ?? '',
+            notes: data.person.notes ?? '',
           }
           for (const key of Object.keys(saved) as (keyof typeof saved)[]) {
             const untouched =
@@ -372,6 +378,9 @@ export function useContactSheetState({
           name: data.name,
           phone: data.phone || null,
           linkedinUrl: data.linkedinUrl?.trim() || null,
+          // Only when edited: if the sheet's read failed, the empty editor
+          // must not clear saved notes.
+          notes: dirty.notes ? data.notes?.trim() || null : undefined,
           companies: companiesLoaded
             ? data.companies.map(entry => ({
                 companyId: entry.companyId,
