@@ -8,7 +8,6 @@ import { type BoardColumnId } from '../board-constants'
 import {
   deriveReorderPlan,
   DropPreview,
-  extractSortableMeta,
   prepareReorderOutcome,
   type ColumnTaskFilter,
   type DragComputeEvent,
@@ -16,6 +15,7 @@ import {
   type ReorderPlan,
 } from './dnd-helpers'
 import type { TaskLookup } from './types'
+import { extractSortableMeta } from '@/lib/dnd/kanban'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
 
 type UseBoardDnDArgs = {

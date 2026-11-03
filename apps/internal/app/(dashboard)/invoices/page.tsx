@@ -1,98 +1,14 @@
 import type { Metadata } from 'next'
 
-import { PageShell } from '@/components/layout/page-shell'
-import { requirePage } from '@/lib/auth/session'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { getInvoiceById, listInvoices } from '@/lib/queries/invoices'
-import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
-import { invoiceHref } from '@/lib/sheets/hrefs'
-import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
-import { readPageSize } from '@/lib/pagination/page-size.server'
-
-import { InvoicesAddButton } from './_components/invoices-add-button'
-import { InvoicesFilters } from './_components/invoices-filters'
-import { InvoicesManagementTable } from './_components/invoices-management-table'
-import { INVOICES_TABS } from './_lib/tabs'
-import { PagePanel } from '@/components/layout/page-panel'
+import { InvoicesListPage } from './_components/invoices-list-page'
 
 export const metadata: Metadata = {
   title: 'Invoices',
 }
 
+// permission: billing.manage — InvoicesListPage calls requirePage('billing.manage')
 export default async function InvoicesPage({
   searchParams,
 }: PageProps<'/invoices'>) {
-  const currentUser = await requirePage('billing.manage')
-  const params = await searchParams
-  const pageSize = await readPageSize()
-
-  const {
-    page: currentPage,
-    status,
-    search,
-    sort,
-  } = parseInvoicesSearchParams(params)
-  const offset = (currentPage - 1) * pageSize
-
-  const {
-    items,
-    clients,
-    productCatalog,
-    taxRates,
-    totalCount,
-    unfilteredTotalCount,
-  } = await listInvoices(currentUser, {
-    status: 'active',
-    offset,
-    limit: pageSize,
-    invoiceStatus: status,
-    search,
-    sort,
-  })
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
-
-  // The list is paginated and filtered, so a shared `?invoice=` link has to
-  // resolve server-side — the row may sit on another page or be filtered out.
-  const { record: deepLinkedInvoice, notFound: invoiceNotFound } =
-    await resolveSheetDeepLink({
-      idParam: typeof params.invoice === 'string' ? params.invoice : undefined,
-      fetchById: id => getInvoiceById(currentUser, id),
-      tab: 'active',
-      isArchived: invoice => Boolean(invoice.deleted_at),
-      activeHref: invoiceHref,
-      archiveHref: id => invoiceHref(id, { archived: true }),
-    })
-
-  return (
-    <PageShell
-      breadcrumbs={crumbsForNav('/invoices')}
-      tabs={INVOICES_TABS}
-      activeTab='invoices'
-      count={{
-        label: 'invoices',
-        total: unfilteredTotalCount,
-        filteredTotal: totalCount,
-      }}
-      primaryAction={<InvoicesAddButton clients={clients} />}
-    >
-      <PagePanel className='space-y-4'>
-        <InvoicesFilters basePath='/invoices' status={status} search={search} />
-        <InvoicesManagementTable
-          invoices={items}
-          clients={clients}
-          productCatalog={productCatalog}
-          taxRates={taxRates}
-          totalCount={totalCount}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          mode='active'
-          basePath='/invoices'
-          deepLinkedInvoice={deepLinkedInvoice}
-          invoiceNotFound={invoiceNotFound}
-        />
-      </PagePanel>
-    </PageShell>
-  )
+  return <InvoicesListPage params={await searchParams} mode='active' />
 }

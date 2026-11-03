@@ -77,7 +77,10 @@ export function ProjectsLandingAdminSection({
       }
       primaryAction={
         // Everyone gets the same sheet; it offers only what the role can use.
-        <ProjectsAddButton clients={clients} allowWithoutClients={memberView} />
+        <ProjectsAddButton
+          hasClients={clients.length > 0}
+          allowWithoutClients={memberView}
+        />
       }
     >
       <PagePanel className='space-y-4'>

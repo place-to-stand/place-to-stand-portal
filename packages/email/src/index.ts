@@ -22,3 +22,10 @@ export {
   type TransportConfig,
 } from './transport'
 export * from './templates/index'
+export {
+  AUTH_LINK_EXPIRY_MINUTES,
+  PORTAL_NAMES,
+  renderAuthEmail,
+  type AuthEmail,
+  type PortalName,
+} from './auth'

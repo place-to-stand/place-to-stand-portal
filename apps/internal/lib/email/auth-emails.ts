@@ -1,49 +1,23 @@
 import 'server-only'
 
-import {
-  magicLinkEmail,
-  passwordChangedEmail,
-  passwordResetEmail,
-  type RenderedEmail,
-} from '@pts/email'
+import { renderAuthEmail, type AuthEmail, type PortalName } from '@pts/email'
 
 import { serverEnv } from '@/lib/env.server'
 import { sendEmail } from '@/lib/email/send'
 
-/**
- * Matches `otp_expiry` in `supabase/config.toml` (3600s). The templates state
- * the window in words, so a drift here makes the mail lie about how long the
- * recipient has.
- */
-const LINK_EXPIRY_MINUTES = 60
-
-/** How each portal is named in mail. */
-const DESTINATIONS = {
-  internal: 'the Place To Stand internal portal',
-  client: 'the Place To Stand client portal',
-} as const
-const DESTINATION = DESTINATIONS.internal
-
 /** Which portal the link opens: an admin can reset a client's password here. */
-export type AuthEmailPortal = keyof typeof DESTINATIONS
-
-type AuthEmailTemplate = (args: {
-  actionLink: string
-  destination: string
-  expiresInMinutes: number
-  replyTo: string
-}) => RenderedEmail
+export type AuthEmailPortal = PortalName
 
 export async function sendPasswordResetEmail(
   to: string,
   actionLink: string,
   portal: AuthEmailPortal = 'internal'
 ) {
-  await send(to, actionLink, passwordResetEmail, DESTINATIONS[portal])
+  await deliver(to, { kind: 'password-reset', actionLink }, portal)
 }
 
 export async function sendMagicLinkEmail(to: string, actionLink: string) {
-  await send(to, actionLink, magicLinkEmail)
+  await deliver(to, { kind: 'magic-link', actionLink })
 }
 
 /**
@@ -54,37 +28,20 @@ export async function sendMagicLinkEmail(to: string, actionLink: string) {
  * calling this — see `supabase/config.toml`.
  */
 export async function sendPasswordChangedEmail(to: string) {
-  await deliver(
-    to,
-    passwordChangedEmail({
-      destination: DESTINATION,
-      replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
-    })
-  )
+  await deliver(to, { kind: 'password-changed' })
 }
 
-async function send(
+async function deliver(
   to: string,
-  actionLink: string,
-  template: AuthEmailTemplate,
-  destination: string = DESTINATION
+  auth: AuthEmail,
+  portal: PortalName = 'internal'
 ) {
-  await deliver(
-    to,
-    template({
-      actionLink,
-      destination,
-      expiresInMinutes: LINK_EXPIRY_MINUTES,
-      replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
-    })
-  )
-}
-
-async function deliver(to: string, email: RenderedEmail) {
+  const replyTo = serverEnv.RESEND_REPLY_TO_EMAIL
+  const email = renderAuthEmail(auth, portal, replyTo)
   await sendEmail({
     from: `Place To Stand <${serverEnv.RESEND_FROM_EMAIL}>`,
     to,
-    replyTo: serverEnv.RESEND_REPLY_TO_EMAIL,
+    replyTo,
     subject: email.subject,
     text: email.text,
     html: email.html,

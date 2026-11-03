@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./accordion": "./src/accordion.tsx",
     "./alert": "./src/alert.tsx",
     "./alert-dialog": "./src/alert-dialog.tsx",
     "./auth-shell": "./src/auth-shell.tsx",
@@ -19,7 +20,6 @@
     "./card": "./src/card.tsx",
     "./checkbox": "./src/checkbox.tsx",
     "./cn": "./src/cn.ts",
-    "./accordion": "./src/accordion.tsx",
     "./collapsible": "./src/collapsible.tsx",
     "./confirm-dialog": "./src/confirm-dialog.tsx",
     "./dates": "./src/dates.ts",
@@ -37,12 +37,13 @@
     "./select": "./src/select.tsx",
     "./separator": "./src/separator.tsx",
     "./skeleton": "./src/skeleton.tsx",
-    "./status-tints": "./src/status-tints.ts",
     "./slot": "./src/slot.tsx",
+    "./status-tints": "./src/status-tints.ts",
     "./switch": "./src/switch.tsx",
     "./table": "./src/table.tsx",
     "./tabs": "./src/tabs.tsx",
     "./textarea": "./src/textarea.tsx",
+    "./theme-provider": "./src/theme-provider.tsx",
     "./tooltip": "./src/tooltip.tsx"
   },
   "scripts": {

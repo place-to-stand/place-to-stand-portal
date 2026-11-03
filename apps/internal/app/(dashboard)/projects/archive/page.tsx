@@ -75,7 +75,7 @@ export default async function ProjectsArchivePage({
         total: archiveResult.unfilteredTotalCount,
         filteredTotal: archiveResult.totalCount,
       }}
-      primaryAction={<ProjectsAddButton clients={clientRows} />}
+      primaryAction={<ProjectsAddButton hasClients={clientRows.length > 0} />}
     >
       <ProjectsManagementSection
         mode='archive'

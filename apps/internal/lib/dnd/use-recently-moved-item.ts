@@ -33,5 +33,3 @@ export const useRecentlyMovedItem = () => {
     clearTimer,
   }
 }
-
-

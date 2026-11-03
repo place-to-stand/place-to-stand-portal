@@ -23,6 +23,11 @@ import type { MyTasksReorderPayload } from '@/lib/projects/tasks/use-my-tasks-da
 import type { MyTasksInitialEntry } from './my-tasks-page'
 import { DoneWindowFooter } from '@/app/(dashboard)/projects/_components/done-window-footer'
 import type { TaskContextDetails } from '@/app/(dashboard)/projects/task-card'
+import {
+  clamp,
+  locateKanbanItem,
+  resolveKanbanDropTarget,
+} from '@/lib/dnd/kanban'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -344,49 +349,28 @@ function compareRows(a: TaskRow, b: TaskRow): number {
   return a.task.title.localeCompare(b.task.title)
 }
 
+const MY_TASK_COLUMN_IDS = MY_TASK_BOARD_COLUMNS.map(column => column.id)
+
+const taskIdsIn = (rowsByColumn: TaskRowsByColumn) => (status: MyTaskStatus) =>
+  (rowsByColumn.get(status) ?? []).map(row => row.task.id)
+
 function resolveCurrentLocation(
   taskId: string,
   rowsByColumn: TaskRowsByColumn
 ) {
-  for (const [status, rows] of rowsByColumn) {
-    const index = rows.findIndex(row => row.task.id === taskId)
-    if (index >= 0) {
-      return { columnId: status, index }
-    }
-  }
-
-  return null
+  return locateKanbanItem(taskId, MY_TASK_COLUMN_IDS, taskIdsIn(rowsByColumn))
 }
 
 function resolveDropTarget(
   event: DragOverEvent | DragEndEvent,
   rowsByColumn: TaskRowsByColumn
 ) {
-  const overId = event.over?.id?.toString()
-
-  if (!overId) {
-    return null
-  }
-
-  const overData = event.over?.data.current as
-    | { type: 'task'; columnId: MyTaskStatus }
-    | { type: 'column'; columnId: MyTaskStatus }
-    | undefined
-
-  if (overData?.type === 'task') {
-    const columnId = normalizeStatus(overData.columnId)
-    const rows = rowsByColumn.get(columnId) ?? []
-    const index = rows.findIndex(row => row.task.id === overId)
-    return { columnId, index: index >= 0 ? index : rows.length }
-  }
-
-  if (overData?.type === 'column') {
-    const columnId = normalizeStatus(overData.columnId)
-    const rows = rowsByColumn.get(columnId) ?? []
-    return { columnId, index: rows.length }
-  }
-
-  return null
+  return resolveKanbanDropTarget(
+    event,
+    MY_TASK_COLUMN_IDS,
+    taskIdsIn(rowsByColumn),
+    normalizeStatus
+  )
 }
 
 function produceReorderUpdate({
@@ -443,7 +427,7 @@ function produceReorderUpdate({
   }
 
   const [movedEntry] = sourceBucket.splice(sourceIndex, 1)
-  const boundedIndex = Math.min(Math.max(targetIndex, 0), targetBucket.length)
+  const boundedIndex = clamp(targetIndex, 0, targetBucket.length)
   targetBucket.splice(boundedIndex, 0, movedEntry)
 
   if (sourceStatus !== targetStatus) {

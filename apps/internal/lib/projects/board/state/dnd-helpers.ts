@@ -1,9 +1,13 @@
 import type { DragEndEvent, DragOverEvent } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
 
 import type { TaskWithRelations } from '@/lib/types'
 
-import { getRankBetween } from '@/lib/rank'
+import {
+  clamp,
+  extractSortableMeta,
+  moveIntoColumn,
+  rankAtIndex,
+} from '@/lib/dnd/kanban'
 import type { BoardColumnId } from '../board-constants'
 import { compareTasksByRank } from '../board-utils'
 import type { TaskLookup } from './types'
@@ -18,11 +22,6 @@ type TaskDragData = {
 type ColumnDropData = {
   type: 'column'
   columnId: BoardColumnId
-}
-
-export type SortableMeta = {
-  containerId: string
-  index: number
 }
 
 export type DropPreview = {
@@ -53,22 +52,6 @@ export type ReorderOutcome =
       recentlyMoved: boolean
     }
 
-export const extractSortableMeta = (payload: unknown): SortableMeta | null => {
-  if (!payload || typeof payload !== 'object') {
-    return null
-  }
-
-  const sortable = (payload as { sortable?: SortableMeta | null }).sortable
-  if (!sortable) {
-    return null
-  }
-
-  return {
-    containerId: String(sortable.containerId),
-    index: sortable.index,
-  }
-}
-
 const getColumnTasks = (
   projectTasks: TaskWithRelations[],
   columnId: BoardColumnId
@@ -84,9 +67,7 @@ const resolveDestinationColumnId = (
   }
 
   const overData = over.data?.current as
-    | TaskDragData
-    | ColumnDropData
-    | undefined
+    TaskDragData | ColumnDropData | undefined
 
   const sortable = extractSortableMeta(over.data?.current)
 
@@ -178,17 +159,14 @@ export const deriveReorderPlan = (
 
   let targetIndex = overSortable ? overSortable.index : destinationTasks.length
 
-  if (sourceColumnId === destinationColumnId) {
-    if (destinationTasks.length === 0) {
-      targetIndex = 0
-    } else {
-      targetIndex = Math.max(
-        0,
-        Math.min(targetIndex, destinationTasks.length - 1)
-      )
-    }
+  const sameColumn = sourceColumnId === destinationColumnId
+  if (sameColumn && destinationTasks.length === 0) {
+    targetIndex = 0
   } else {
-    targetIndex = Math.max(0, Math.min(targetIndex, destinationTasks.length))
+    // A card can land after the last card only when it comes from another
+    // column.
+    const lastIndex = destinationTasks.length - (sameColumn ? 1 : 0)
+    targetIndex = clamp(targetIndex, 0, lastIndex)
   }
 
   return {
@@ -215,20 +193,16 @@ export const prepareReorderOutcome = (plan: ReorderPlan): ReorderOutcome => {
     taskId,
   } = plan
 
-  if (sourceColumnId === destinationColumnId) {
-    if (destinationTasks.length === 0 || targetIndex === activeIndex) {
-      return { status: 'noop' }
-    }
-  }
+  const orderedTasks = moveIntoColumn(
+    destinationTasks,
+    currentTask,
+    targetIndex,
+    sourceColumnId === destinationColumnId ? { fromIndex: activeIndex } : null
+  )
 
-  const orderedTasks =
-    sourceColumnId === destinationColumnId
-      ? arrayMove(destinationTasks, activeIndex, targetIndex)
-      : [
-          ...destinationTasks.slice(0, targetIndex),
-          currentTask,
-          ...destinationTasks.slice(targetIndex),
-        ]
+  if (!orderedTasks) {
+    return { status: 'noop' }
+  }
 
   const nextIndex = orderedTasks.findIndex(task => task.id === taskId)
 
@@ -236,13 +210,7 @@ export const prepareReorderOutcome = (plan: ReorderPlan): ReorderOutcome => {
     return { status: 'noop' }
   }
 
-  const previousNeighbor = orderedTasks[nextIndex - 1] ?? null
-  const nextNeighbor = orderedTasks[nextIndex + 1] ?? null
-
-  const nextRank = getRankBetween(
-    previousNeighbor ? previousNeighbor.rank : null,
-    nextNeighbor ? nextNeighbor.rank : null
-  )
+  const nextRank = rankAtIndex(orderedTasks, nextIndex)
 
   const destinationStatus = destinationColumnId
 

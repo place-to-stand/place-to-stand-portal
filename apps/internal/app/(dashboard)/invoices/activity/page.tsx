@@ -1,41 +1,27 @@
 import type { Metadata } from 'next'
 
-import { PageShell } from '@/components/layout/page-shell'
 import { requirePage } from '@/lib/auth/session'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listInvoices } from '@/lib/queries/invoices'
-
-import { InvoicesAddButton } from '../_components/invoices-add-button'
-import { ActivitySection } from '@/components/activity/activity-section'
 import { INVOICES_TABS } from '../_lib/tabs'
-import { PagePanel } from '@/components/layout/page-panel'
+import { hasClientDirectory } from '@/lib/queries/companies/billing'
+import { InvoicesAddButton } from '../_components/invoices-add-button'
+import { EntityActivityPage } from '@/components/activity/entity-activity-page'
 
 export const metadata: Metadata = {
   title: 'Invoice activity',
 }
 
 export default async function InvoicesActivityPage() {
-  const currentUser = await requirePage('activity.read_all')
-
-  const { clients } = await listInvoices(currentUser, {
-    status: 'active',
-    limit: 1,
-  })
+  await requirePage('activity.read_all')
+  const hasClients = await hasClientDirectory()
 
   return (
-    <PageShell
-      breadcrumbs={[...crumbsForNav('/invoices'), { label: 'Activity' }]}
+    <EntityActivityPage
+      navHref='/invoices'
       tabs={INVOICES_TABS}
-      activeTab='activity'
-      primaryAction={<InvoicesAddButton clients={clients} />}
-    >
-      <PagePanel>
-        <ActivitySection
-          targetType='INVOICE'
-          emptyState='No recent invoice activity.'
-          description='Audit invoice creation, edits, sends, voids, and deletions in one place.'
-        />
-      </PagePanel>
-    </PageShell>
+      primaryAction={<InvoicesAddButton hasClients={hasClients} />}
+      targetType='INVOICE'
+      emptyState='No recent invoice activity.'
+      description='Audit invoice creation, edits, sends, voids, and deletions in one place.'
+    />
   )
 }
