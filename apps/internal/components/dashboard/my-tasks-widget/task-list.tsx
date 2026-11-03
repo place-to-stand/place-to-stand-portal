@@ -145,22 +145,23 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                   <MetaSeparator />
                 </>
               ) : null}
+              {/* No company to open for internal or personal work. */}
               {clientLinkMeta.href ? (
-                <Link
-                  href={clientLinkMeta.href}
-                  onClick={e => e.stopPropagation()}
-                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
-                >
-                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
-                  <span className='truncate-link'>{clientLabel}</span>
-                </Link>
-              ) : (
-                <span className='inline-flex min-w-0 items-center gap-1'>
-                  {renderProjectTypeIcon(task.project.type, 'size-3 shrink-0')}
-                  <span className='truncate'>{clientLabel}</span>
-                </span>
-              )}
-              <MetaSeparator />
+                <>
+                  <Link
+                    href={clientLinkMeta.href}
+                    onClick={e => e.stopPropagation()}
+                    className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                  >
+                    {renderProjectTypeIcon(
+                      task.project.type,
+                      'size-3 shrink-0'
+                    )}
+                    <span className='truncate-link'>{clientLabel}</span>
+                  </Link>
+                  <MetaSeparator />
+                </>
+              ) : null}
               {projectLinkMeta.href ? (
                 <Link
                   href={projectLinkMeta.href}
