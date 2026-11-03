@@ -53,6 +53,7 @@ export type ExistingContact = {
   name: string
   phone: string | null
   linkedinUrl: string | null
+  notes: string | null
   userId: string | null
   avatarUrl: string | null
   deletedAt: string | null
@@ -73,6 +74,7 @@ export type ContactSavePlan = {
     name: string
     phone: string | null
     linkedinUrl: string | null
+    notes: string | null
   }
   existing: ExistingContact | null
   membership: MembershipPlan
@@ -134,6 +136,7 @@ export async function loadExistingContact(
       name: contacts.name,
       phone: contacts.phone,
       linkedinUrl: contacts.linkedinUrl,
+      notes: contacts.notes,
       userId: contacts.userId,
       avatarUrl: contacts.avatarUrl,
       deletedAt: contacts.deletedAt,
@@ -221,7 +224,13 @@ export async function prepareContactSave(
       plan: {
         mode: 'create',
         contactId: randomUUID(),
-        values: { email, name, phone: phone ?? null, linkedinUrl },
+        values: {
+          email,
+          name,
+          phone: phone ?? null,
+          linkedinUrl,
+          notes: parsed.data.notes ?? null,
+        },
         existing: null,
         membership: plan,
         currentById: new Map(),
@@ -246,12 +255,14 @@ export async function prepareContactSave(
       parsed.data.linkedinUrl === undefined
         ? existing.linkedinUrl
         : parsed.data.linkedinUrl,
+    notes: parsed.data.notes === undefined ? existing.notes : parsed.data.notes,
   }
   const labels: Record<keyof typeof next, string> = {
     email: 'email',
     name: 'name',
     phone: 'phone',
     linkedinUrl: 'LinkedIn',
+    notes: 'notes',
   }
   const changedFields: string[] = []
   const before: Record<string, unknown> = {}

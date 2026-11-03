@@ -189,7 +189,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'get_contact',
     title: 'Get contact',
     description:
-      'One contact and the companies they belong to (title, primary). For admins, also their portal access, sign-in and the clients they can see in the portal.',
+      'One contact with their notes (HTML) and the companies they belong to (title, primary). For admins, also their portal access, sign-in and the clients they can see in the portal.',
     effect: 'read',
     input: { contactId: z.string().uuid().describe('Contact UUID.') },
     run: async ({ contactId }, { user }) => readPerson(user, contactId),

@@ -30,6 +30,7 @@ import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import type { ContactFormData } from '@/lib/people/use-contact-sheet-state'
 
 import { ContactCompaniesSection } from './contact-companies-section'
+import { ContactNotesField } from './contact-notes-field'
 import { ContactSignInSection } from './contact-access-section'
 import { canHavePortalAccess } from '@/lib/people/portal-eligibility'
 
@@ -310,6 +311,7 @@ export function ContactSheetForm({
                   )}
                 />
               </div>
+              <ContactNotesField control={form.control} disabled={locked} />
             </SheetSection>
             <FormField
               control={form.control}

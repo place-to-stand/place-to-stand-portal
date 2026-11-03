@@ -19,6 +19,16 @@ export const contactSchema = z.object({
     .nullable()
     .transform(value => (value?.trim() ? value.trim() : null)),
   linkedinUrl: linkedinUrlSchema.optional(),
+  /** Rich text (TipTap HTML). Omitted keeps the saved notes; blank clears. */
+  notes: z
+    .string()
+    .trim()
+    .max(20000)
+    .nullable()
+    .optional()
+    .transform(value =>
+      value === undefined ? undefined : value ? value : null
+    ),
   /**
    * Every company the person belongs to (the sheet's Companies list), with
    * their title at each, and (admins only) portal access to each one that

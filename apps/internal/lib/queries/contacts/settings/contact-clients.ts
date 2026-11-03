@@ -55,6 +55,8 @@ export type ContactSheetData = {
     email: string | null
     phone: string | null
     linkedinUrl: string | null
+    /** Rich text (TipTap HTML). */
+    notes: string | null
     updatedAt: string
     /** Their sign-in's role while they can sign in (null: they can't). */
     signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
@@ -155,6 +157,7 @@ export async function getContactSheetData(
         email: contacts.email,
         phone: contacts.phone,
         linkedinUrl: contacts.linkedinUrl,
+        notes: contacts.notes,
         updatedAt: contacts.updatedAt,
         // A role only while it is live (stripped for Sales below).
         signInRole: sql<'ADMIN' | 'SALES' | 'CLIENT' | null>`(
@@ -180,6 +183,7 @@ export async function getContactSheetData(
           email: person.email,
           phone: person.phone,
           linkedinUrl: person.linkedinUrl,
+          notes: person.notes,
           updatedAt: person.updatedAt,
           // Sign-ins are admin-only information, as on the people list.
           signInRole: canSeePortalAccess(user.role)
@@ -197,7 +201,7 @@ export async function getContactSheetData(
 export async function getContactSheetInputById(
   user: AppUser,
   contactId: string
-): Promise<ContactSheetInputRow> {
+): Promise<ContactSheetInputRow & { notes: string | null }> {
   assertCan(user, 'contacts.manage')
 
   const rows = await db
@@ -208,6 +212,7 @@ export async function getContactSheetInputById(
       phone: contacts.phone,
       userId: contacts.userId,
       ...contactProfileFields,
+      notes: contacts.notes,
     })
     .from(contacts)
     .where(and(eq(contacts.id, contactId), sql`${contacts.deletedAt} IS NULL`))
