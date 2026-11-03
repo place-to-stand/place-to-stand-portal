@@ -15,6 +15,8 @@ import { join } from 'node:path'
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 import nextTypescript from 'eslint-config-next/typescript'
 
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+
 import { IGNORES, NO_RLS_IMPORT, common, typed } from './base.mjs'
 
 export const HOUSE_RULES = {
@@ -30,6 +32,10 @@ export const HOUSE_RULES = {
   'pts/ellipsis-character': 'error', // copy: "…"
   'pts/filter-select': 'error', // list filters are FilterSelect
   'pts/optional-label': 'error', // input.md: <FormLabel optional>
+  'pts/popover-shadow': 'error', // select.md: one elevation
+  'pts/figure-cell-aligned': 'error', // table.md: figures right, tabular
+  'pts/no-details-section': 'error', // sheet.md: no "Details" heading
+  'pts/no-raw-type-size': 'error', // README → Type: role utilities
 }
 
 /**
@@ -154,6 +160,47 @@ export function nextApp({
       // The design system's house rules (docs/design-system/README.md,
       // "House rules (verified in code)"); each message quotes its rule.
       rules: HOUSE_RULES,
+    },
+    {
+      // README → Type: the shared invoice is a brand-ground page with its own
+      // display sizes.
+      files: ['app/*/share/**'],
+      rules: { 'pts/no-raw-type-size': 'off' },
+    },
+    {
+      // WCAG checks: eslint-config-next loads jsx-a11y but sets six of its
+      // rules to warn; the whole recommended set fails instead.
+      files: ['**/*.tsx'],
+      rules: {
+        ...jsxA11y.flatConfigs.recommended.rules,
+        // `role` on our own components (RoleBadge) is a prop, not ARIA.
+        'jsx-a11y/aria-role': ['error', { ignoreNonDOM: true }],
+      },
+    },
+    {
+      // Pages, layouts and components read data through lib/data (or a
+      // lib/queries function), never the database client or schema directly.
+      files: ['app/**/page.tsx', 'app/**/layout.tsx', 'components/**'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            paths: [
+              ...restrictedImports,
+              ...[
+                '@/lib/db',
+                '@/lib/db/schema',
+                '@pts/db/schema',
+                'drizzle-orm',
+              ].map(name => ({
+                name,
+                message:
+                  'Pages and components read data through lib/data or a lib/queries function, never the database directly.',
+              })),
+            ],
+          },
+        ],
+      },
     },
     ...(pagePanel
       ? [

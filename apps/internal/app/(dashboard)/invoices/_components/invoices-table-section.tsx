@@ -199,7 +199,7 @@ export function InvoicesTableSection({
               Client
             </SortableTableHead>
             <TableHead className='w-20'>Status</TableHead>
-            <TableHead className='w-[10%]'>Total</TableHead>
+            <TableHead className='w-[10%] text-right'>Total</TableHead>
             <TableHead className='w-20'>Hours</TableHead>
             <SortableTableHead
               field='created'
@@ -303,7 +303,7 @@ export function InvoicesTableSection({
                 <TableCell>
                   <InvoiceStatusBadge status={invoice.status} />
                 </TableCell>
-                <TableCell className='text-sm'>
+                <TableCell className='text-right text-sm tabular-nums'>
                   {formatCurrency(invoice.total)}
                 </TableCell>
                 <TableCell label='Hours'>

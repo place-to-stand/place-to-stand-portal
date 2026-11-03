@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable max-lines -- a one-off rollout check, kept whole for the record */
 /**
  * Rollout check for PR #279 (migrations 0089–0115): compares a copy of
  * production before the batch with the same copy after it and prints

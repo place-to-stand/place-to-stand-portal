@@ -155,6 +155,7 @@ const LinkMain: React.FC<LinkMainProps> = ({
               value={url}
               onChange={e => setUrl(e.target.value)}
               onKeyDown={handleKeyDown}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- the popover opens to type a link; focus moves into it on purpose
               autoFocus
               autoComplete='off'
               autoCorrect='off'

@@ -227,7 +227,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <TableHead className='w-[24%]'>State</TableHead>
-              <TableHead className='w-[16%]'>Rate (%)</TableHead>
+              <TableHead className='w-[16%] text-right'>Rate (%)</TableHead>
               <SortableTableHead
                 field='label'
                 sort={sort}
@@ -254,7 +254,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                   <TableCell className='truncate font-medium'>
                     {rate.state}
                   </TableCell>
-                  <TableCell label='Rate'>{formatPercent(rate.rate)}</TableCell>
+                  <TableCell label='Rate' className='text-right tabular-nums'>
+                    {formatPercent(rate.rate)}
+                  </TableCell>
                   <TableCell className='truncate'>{rate.label}</TableCell>
                   <TableCell label='Active'>
                     <Switch

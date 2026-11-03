@@ -1,4 +1,5 @@
 export * from './selectors'
+export { findContactIdForUser } from './by-user'
 export { listContactsForSettings } from './settings/list-contacts'
 export {
   listAllActiveClients,

@@ -83,7 +83,7 @@ export function ProjectTimeLogHistoryContent(
           <Table stack>
             <TableHeader>
               <TableRow className='bg-muted/40'>
-                <TableHead className='min-w-20'>Hours</TableHead>
+                <TableHead className='min-w-20 text-right'>Hours</TableHead>
                 <TableHead className='min-w-28'>Logged on</TableHead>
                 <TableHead className='min-w-20 text-center'>Tasks</TableHead>
                 <TableHead className='min-w-36'>Person</TableHead>
@@ -163,7 +163,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
   return (
     <TableRow>
       {/* Hours first, as on the Time logs list. */}
-      <TableCell className='font-semibold max-md:first:basis-auto'>
+      <TableCell className='text-right font-semibold tabular-nums max-md:first:basis-auto'>
         {formatHours(log.hours ?? 0)}
       </TableCell>
       <TableCell label='Logged on'>

@@ -110,7 +110,7 @@ export function HtmlThumbnail({ html }: { html: string }) {
     <ScaledThumbnail width={HTML_RENDER_WIDTH}>
       {height => (
         <iframe
-          title=''
+          title='Email preview'
           tabIndex={-1}
           sandbox=''
           loading='lazy'
@@ -150,7 +150,7 @@ export function NodeThumbnail({
 export function PdfThumbnail({ src }: { src: string }) {
   return (
     <iframe
-      title=''
+      title='PDF preview'
       tabIndex={-1}
       loading='lazy'
       src={`${src}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}

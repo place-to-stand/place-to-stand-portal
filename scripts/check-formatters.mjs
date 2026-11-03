@@ -19,7 +19,7 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const DIRS = [
@@ -79,31 +79,46 @@ function* files(dir) {
   }
 }
 
+/** Each hand-built hours, money or percent format in `source`. */
+export function checkFormatters(source, file) {
+  const found = []
+  source.split('\n').forEach((line, index) => {
+    if (/^\s*(?:\/\/|\*|\/\*)/.test(line)) return
+    if (line.includes('format-check: allow')) return
+    const rules = [...RULES]
+    if (file.endsWith('.tsx') && !line.includes('`')) rules.push(...JSX_RULES)
+    for (const [pattern, label] of rules) {
+      if (pattern.test(line)) found.push({ line: index + 1, label })
+    }
+  })
+  return found
+}
+
+const isMain =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
 const errors = []
-for (const dir of DIRS) {
-  for (const file of files(join(root, dir))) {
-    const lines = readFileSync(file, 'utf8').split('\n')
-    lines.forEach((line, index) => {
-      if (/^\s*(?:\/\/|\*|\/\*)/.test(line)) return
-      if (line.includes('format-check: allow')) return
-      const rules = [...RULES]
-      if (file.endsWith('.tsx') && !line.includes('`')) rules.push(...JSX_RULES)
-      for (const [pattern, label] of rules) {
-        if (pattern.test(line)) {
-          errors.push(`${file.slice(root.length)}:${index + 1}: ${label}`)
-        }
+if (isMain) {
+  for (const dir of DIRS) {
+    for (const file of files(join(root, dir))) {
+      for (const { line, label } of checkFormatters(readFileSync(file, 'utf8'), file)) {
+        errors.push(`${file.slice(root.length)}:${line}: ${label}`)
       }
-    })
+    }
   }
 }
 
-if (errors.length) {
+if (!isMain) {
+  // Imported by the tests: nothing to report.
+} else if (errors.length) {
   console.error(
     'Formatter check failed: format hours, money and percentages with @pts/ui/numbers (formatHours, formatCurrency, formatPercent).'
   )
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
 }
-console.log(
-  'Formatters: hours, money and percentages come only from @pts/ui/numbers'
-)
+else
+  console.log(
+    'Formatters: hours, money and percentages come only from @pts/ui/numbers'
+  )

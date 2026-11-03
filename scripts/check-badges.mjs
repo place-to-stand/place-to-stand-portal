@@ -8,7 +8,7 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const DIRS = ['apps/internal/app', 'apps/internal/components', 'apps/internal/lib', 'apps/client']
@@ -25,23 +25,39 @@ function* files(dir) {
   }
 }
 
+/** Each <Badge> in `source` that changes size, weight or case: its line and the classes. */
+export function checkBadges(source) {
+  const found = []
+  for (const tag of source.matchAll(/<Badge\b[^>]*>/gs)) {
+    const hits = [...tag[0].matchAll(FORBIDDEN)].map(m => m[1])
+    if (hits.length) {
+      const line = source.slice(0, tag.index).split('\n').length
+      found.push({ line, classes: [...new Set(hits)] })
+    }
+  }
+  return found
+}
+
+const isMain =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
 const errors = []
-for (const dir of DIRS) {
-  for (const file of files(join(root, dir))) {
-    const source = readFileSync(file, 'utf8')
-    for (const tag of source.matchAll(/<Badge\b[^>]*>/gs)) {
-      const hits = [...tag[0].matchAll(FORBIDDEN)].map(m => m[1])
-      if (hits.length) {
-        const line = source.slice(0, tag.index).split('\n').length
-        errors.push(`${file.slice(root.length)}:${line}: ${[...new Set(hits)].join(', ')}`)
+if (isMain) {
+  for (const dir of DIRS) {
+    for (const file of files(join(root, dir))) {
+      for (const { line, classes } of checkBadges(readFileSync(file, 'utf8'))) {
+        errors.push(`${file.slice(root.length)}:${line}: ${classes.join(', ')}`)
       }
     }
   }
 }
 
-if (errors.length) {
+if (!isMain) {
+  // Imported by the tests: nothing to report.
+} else if (errors.length) {
   console.error('Badge check failed: badges take size, weight and case from @pts/ui/badge.')
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
 }
-console.log('Badges: one size, weight and case everywhere (set by @pts/ui/badge)')
+else console.log('Badges: one size, weight and case everywhere (set by @pts/ui/badge)')

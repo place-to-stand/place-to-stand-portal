@@ -547,6 +547,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div
+                        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard focus opens the tooltip that explains the rail
                         tabIndex={0}
                         className='bg-muted/30 text-muted-foreground/50 flex w-9 shrink-0 flex-col items-center gap-2 border-l py-3'
                       >

@@ -29,6 +29,12 @@ import {
   optionalLabel,
   sheetUrlThroughBuilders,
 } from './rules/guards.mjs'
+import {
+  figureCellAligned,
+  noDetailsSection,
+  noRawTypeSize,
+  popoverShadow,
+} from './rules/design.mjs'
 import { clientBoundary, queryLayerPurity } from './rules/layering.mjs'
 
 export const pts = {
@@ -53,6 +59,10 @@ export const pts = {
     'no-role-literal': noRoleLiteral,
     'no-raw-colour': noRawColour,
     'one-page-panel': onePagePanel,
+    'popover-shadow': popoverShadow,
+    'figure-cell-aligned': figureCellAligned,
+    'no-details-section': noDetailsSection,
+    'no-raw-type-size': noRawTypeSize,
     'sheet-url-through-builders': sheetUrlThroughBuilders,
     'no-hard-delete': noHardDelete,
     'optional-label': optionalLabel,

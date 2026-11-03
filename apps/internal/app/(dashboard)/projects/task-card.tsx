@@ -265,6 +265,8 @@ export function TaskCard({
       style={style}
       {...(isMounted ? attributes : cleanedAttributes)}
       {...listenersMap}
+      // dnd-kit's attributes set this too; stated so the focus rule sees it.
+      tabIndex={0}
       role='button'
       onClick={() => onEdit(task)}
       onKeyDown={event => {

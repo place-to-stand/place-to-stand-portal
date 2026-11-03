@@ -1,8 +1,10 @@
 import 'server-only'
 
-import { sql } from 'drizzle-orm'
+import { wasClientCompany } from '@pts/db/client-state'
+import { and, eq, or, sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
+import { companies } from '@/lib/db/schema'
 import { UUID_PATTERN } from '@pts/db/uuid'
 
 /**
@@ -23,4 +25,29 @@ export async function companyIdForLegacyClientId(id: string): Promise<string> {
     // No map (a database made after 0111 was archived): nothing to translate.
     return id
   }
+}
+
+/**
+ * The company an old `/clients/<slug or id>` link meant: a company that was
+ * ever a client, by slug, or by id through the 0111 map. Null if none.
+ */
+export async function findClientCompanyForLegacyLink(
+  slugOrId: string
+): Promise<{ id: string } | null> {
+  const id = UUID_PATTERN.test(slugOrId)
+    ? await companyIdForLegacyClientId(slugOrId)
+    : null
+  const [company] = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(
+      and(
+        wasClientCompany(),
+        id
+          ? or(eq(companies.slug, slugOrId), eq(companies.id, id))
+          : eq(companies.slug, slugOrId)
+      )
+    )
+    .limit(1)
+  return company ?? null
 }

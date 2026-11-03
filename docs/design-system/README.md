@@ -107,7 +107,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
   - `caption` (12px) for metadata.
   - `overline` (11px, semibold, uppercase, tracking-wide) for group labels: the `text-overline` utility.
   - `micro` (10px, semibold, tabular-nums) for count pills: the `text-micro` utility.
-  - Nothing else: no `text-[10px]`, `text-[11px]` or `text-[13px]`. The two utilities live in `theme.css` `@theme`, and `cn` knows they are sizes. (guard: review)
+  - Nothing else: no `text-[10px]`, `text-[11px]` or `text-[13px]`. The two utilities live in `theme.css` `@theme`, and `cn` knows they are sizes. The shared invoice is exempt. (guard: eslint `pts/no-raw-type-size`)
   - Inputs use `body` (16px) below the `md` breakpoint so iOS doesn't zoom, then 14px.
 - **Space Grotesk (`font-display`) is the brand face**, used only for:
   - the wordmark (`wordmark`: bold, tracking-tight, leading-none)
@@ -218,6 +218,10 @@ All of these run in `npm run lint` (and so in CI). The `pts/*` rules live in `pa
 | eslint `pts/no-raw-colour`                             | Color: no raw palette shade (`amber-500`) or hex (`[#65a30d]`) in a class; exceptions turned off by file in the eslint config                   |
 | eslint `pts/optional-label`                            | `components/input.md`: optional fields use `<FormLabel optional>`, never a hand-written "(optional)"                                            |
 | eslint `pts/one-page-panel`                            | Borders: page panels are `PagePanel` / `pagePanelClass`, never a copy of their classes (internal app)                                           |
+| eslint `pts/popover-shadow`                            | Borders, select.md: floating panels keep `shadow-popover`, no other shadow                                                                      |
+| eslint `pts/figure-cell-aligned`                       | table.md: a cell printing money, hours or a percent is `text-right tabular-nums`                                                                |
+| eslint `pts/no-details-section`                        | sheet.md: no generic "Details" section heading                                                                                                  |
+| eslint `pts/no-raw-type-size`                          | Type: sizes come from the roles, never `text-[Npx]`                                                                                             |
 | eslint `pts/sheet-url-through-builders`                | CLAUDE.md sheet deep links: no hand-built `?task=` / `?invoice=` URLs outside `lib/sheets/hrefs.ts`                                             |
 | eslint `pts/no-hard-delete`                            | CLAUDE.md soft deletes: no `db.delete(table)` or `DELETE FROM` on a record table (allow list in `next.mjs`)                                     |
 | eslint `pts/env-through-schema`                        | Server env vars read through `serverEnv` (`lib/env.server.ts`), not `process.env`                                                               |

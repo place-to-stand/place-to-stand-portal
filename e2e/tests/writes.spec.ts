@@ -34,7 +34,7 @@ async function setBilling(page: Page, on: boolean) {
 test('billing: make a client, stop billing, restart, and back', async ({
   page,
 }) => {
-  const sheet = await openFirstNonClientCompany(page)
+  await openFirstNonClientCompany(page)
   const url = page.url()
   await setBilling(page, true)
 

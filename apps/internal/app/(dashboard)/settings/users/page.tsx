@@ -1,9 +1,7 @@
-import { and, eq, isNull } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
 import { requirePage } from '@/lib/auth/session'
-import { db } from '@/lib/db'
-import { contacts } from '@/lib/db/schema'
+import { findContactIdForUser } from '@/lib/queries/contacts/by-user'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import { firstParam } from '@/lib/pagination/params'
 
@@ -24,13 +22,9 @@ export default async function UsersSettingsPage({
     redirect('/people?contact=new')
   }
   if (userParam && UUID_PATTERN.test(userParam)) {
-    const [person] = await db
-      .select({ id: contacts.id })
-      .from(contacts)
-      .where(and(eq(contacts.userId, userParam), isNull(contacts.deletedAt)))
-      .limit(1)
+    const personId = await findContactIdForUser(userParam)
     // eslint-disable-next-line pts/sheet-url-through-builders -- a redirect that keeps the signIn filter beside the sheet param
-    if (person) next.set('contact', person.id)
+    if (personId) next.set('contact', personId)
   }
 
   redirect(`/people?${next.toString()}`)
