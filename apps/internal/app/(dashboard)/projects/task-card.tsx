@@ -43,8 +43,6 @@ type TaskContextDetails = {
   projectHref?: string | null
   layout?: 'inline' | 'stacked'
   projectType?: ProjectTypeValue
-  /** Leave out the lead line (the lead's own sheet lists its tasks). */
-  hideLead?: boolean
 }
 
 type TaskCardProps = {
@@ -72,7 +70,7 @@ function CardContent({
     ? getTaskDueMeta(task.due_on, { status: task.status })
     : null
   const isCompleted = task.status === 'DONE'
-  const lead = context?.hideLead ? null : task.lead
+  const lead = task.lead
 
   return (
     <>

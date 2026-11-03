@@ -20,9 +20,6 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { prefetchSheetInit } from '@/lib/sheets/wrappers/use-sheet-init'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
-/** The cards sit on their lead's sheet, so they skip the lead line. */
-const IN_LEAD_SHEET = { hideLead: true }
-
 type AssigneeInfo = {
   id: string
   name: string
@@ -163,7 +160,6 @@ export function LeadTasksSection({
               key={task.id}
               task={task}
               assignees={resolveAssignees(task)}
-              context={IN_LEAD_SHEET}
               onClick={() => openTask(task)}
             />
           ))}
@@ -188,7 +184,6 @@ export function LeadTasksSection({
                 key={task.id}
                 task={task}
                 assignees={resolveAssignees(task)}
-                context={IN_LEAD_SHEET}
                 onClick={() => openTask(task)}
               />
             ))}
