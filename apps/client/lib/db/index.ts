@@ -23,6 +23,9 @@ function getDb(): Db {
     return _db
   }
 
+  // Read directly: scripts and drizzle tooling import the db without the
+  // rest of the app's env.
+  // eslint-disable-next-line pts/env-through-schema -- see above
   const databaseUrl = process.env.DATABASE_URL
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is not set')

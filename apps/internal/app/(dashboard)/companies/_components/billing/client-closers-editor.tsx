@@ -3,6 +3,7 @@
 import { X } from 'lucide-react'
 
 import { Input } from '@pts/ui/input'
+import { formatPercent } from '@pts/ui/numbers'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   RECORD_ROW_INPUT_CLASS,
@@ -83,7 +84,7 @@ export function ClientClosersEditor({
               hasError ? 'text-destructive' : 'text-muted-foreground'
             )}
           >
-            Total {shareTotal === null ? '—' : `${shareTotal}%`}
+            Total {shareTotal === null ? '—' : formatPercent(shareTotal / 100)}
           </span>
         ) : null
       }

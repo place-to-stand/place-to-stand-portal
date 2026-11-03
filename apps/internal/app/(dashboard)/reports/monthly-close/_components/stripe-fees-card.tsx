@@ -1,6 +1,6 @@
 import type { StripeFeesState } from '@/lib/stripe/fees'
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 
 type StripeFeesCardProps = {
   state: StripeFeesState
@@ -54,10 +54,7 @@ export function StripeFeesCard({
         <h2 id='stripe-fees-title' className='text-base font-semibold'>
           Stripe fees
           {inProgress ? (
-            <span className='text-muted-foreground font-normal'>
-              {' '}
-              · so far
-            </span>
+            <span className='text-muted-foreground font-normal'> · so far</span>
           ) : null}
         </h2>
         <span className='text-base font-semibold tabular-nums'>
@@ -109,7 +106,7 @@ export function StripeFeesCard({
               <span className='text-muted-foreground'>
                 Processing fees
                 {data.grossPayments > 0
-                  ? ` · ${((data.processingFees / data.grossPayments) * 100).toFixed(1)}% of payments`
+                  ? ` · ${formatPercent(data.processingFees / data.grossPayments, { maxDecimals: 1 })} of payments`
                   : ''}
               </span>
               <span className='tabular-nums'>
@@ -118,9 +115,7 @@ export function StripeFeesCard({
             </div>
             {data.otherFees !== 0 ? (
               <div className='flex justify-between gap-3'>
-                <span className='text-muted-foreground'>
-                  Other Stripe fees
-                </span>
+                <span className='text-muted-foreground'>Other Stripe fees</span>
                 <span className='tabular-nums'>
                   {formatCurrency(data.otherFees)}
                 </span>

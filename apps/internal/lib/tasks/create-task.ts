@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { resolveNewTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
+import { resolveNewTaskRank } from '@/lib/tasks/rank'
 import { taskCreatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { db } from '@/lib/db'

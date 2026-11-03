@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PaginationControls } from '@/components/ui/pagination-controls'
@@ -24,6 +24,7 @@ import { InvoiceArchiveDialog } from './invoice-archive-dialog'
 import { InvoicesTableSection } from './invoices-table-section'
 import { InvoiceSheet } from '../invoice-sheet'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { usePageParam } from '@/hooks/use-page-param'
 
 type InvoicesManagementTableProps = {
   invoices: InvoiceWithClient[]
@@ -66,7 +67,6 @@ export function InvoicesManagementTable({
   invoiceNotFound = false,
 }: InvoicesManagementTableProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
@@ -245,19 +245,7 @@ export function InvoicesManagementTable({
   // Pagination
   // -------------------------------------------------------------------------
 
-  const handlePageChange = useCallback(
-    (page: number) => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (page <= 1) {
-        params.delete('page')
-      } else {
-        params.set('page', String(page))
-      }
-      const query = params.toString()
-      router.push(query ? `${pathname}?${query}` : pathname)
-    },
-    [pathname, router, searchParams]
-  )
+  const handlePageChange = usePageParam()
 
   return (
     <div className='space-y-4'>

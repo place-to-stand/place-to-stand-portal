@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useMemo, type ReactNode } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useMemo, type ReactNode } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { useToast } from '@/components/ui/use-toast'
@@ -18,6 +18,7 @@ import { ProjectsTableSection } from '@/components/projects/table/projects-table
 import { type ContractorUserSummary } from '@/components/projects/table/types'
 import { useProjectsSettingsController } from '@/components/projects/table/use-projects-settings-controller'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { usePageParam } from '@/hooks/use-page-param'
 
 type ProjectsManagementSectionProps = {
   mode: 'active' | 'archive'
@@ -52,7 +53,6 @@ export function ProjectsManagementSection({
   filters,
 }: ProjectsManagementSectionProps) {
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
@@ -81,19 +81,7 @@ export function ProjectsManagementSection({
 
   const pendingReason = PENDING_REASON
 
-  const handlePageChange = useCallback(
-    (page: number) => {
-      const params = new URLSearchParams(searchParams.toString())
-      if (page <= 1) {
-        params.delete('page')
-      } else {
-        params.set('page', String(page))
-      }
-      const query = params.toString()
-      router.push(query ? `${pathname}?${query}` : pathname)
-    },
-    [pathname, router, searchParams]
-  )
+  const handlePageChange = usePageParam()
 
   // Active `?q=` flips the empty state to the filtered message (R4).
   const hasActiveFilter = Boolean(searchParams.get('q')?.trim())

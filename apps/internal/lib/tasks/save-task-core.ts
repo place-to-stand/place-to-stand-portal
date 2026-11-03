@@ -3,7 +3,7 @@ import 'server-only'
 import {
   baseTaskSchema,
   type BaseTaskInput,
-} from '@/app/(dashboard)/projects/actions/shared-schemas'
+} from '@/lib/tasks/schemas'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskAttachmentBucket } from '@/lib/storage/task-attachments'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'

@@ -1,14 +1,14 @@
 import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 
 /** A deduction line: "−$14,572.50" (true minus sign). */
 export function formatDeduction(amount: number): string {
   return `−${formatCurrency(Math.abs(amount))}`
 }
 
-export function formatPercent(part: number, whole: number): string {
-  if (whole <= 0) return '0%'
-  return `${Math.round((part / whole) * 100)}%`
+/** `part` as a whole-number share of `whole`: "42%"; "0%" when there's no whole. */
+export function formatShare(part: number, whole: number): string {
+  return formatPercent(whole > 0 ? part / whole : 0, { maxDecimals: 0 })
 }
 
 /** "2026-08-31" → "Aug 31". */

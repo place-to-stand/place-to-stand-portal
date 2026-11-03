@@ -16,9 +16,7 @@ import {
   nextMonthStartUtc,
 } from '@/lib/queries/companies/billing/billing-terms'
 import { getTimeLogSummariesForProjects } from '@/lib/queries/time-logs/aggregates'
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 /**
  * The hour info every time-log dialog shows, for one project's client.

@@ -3,7 +3,7 @@ import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
-import type { AttachmentPayload } from '@/app/(dashboard)/projects/actions/shared-schemas'
+import type { AttachmentPayload } from '@/lib/tasks/schemas'
 import {
   taskAttachmentsAddedEvent,
   taskAttachmentsRemovedEvent,

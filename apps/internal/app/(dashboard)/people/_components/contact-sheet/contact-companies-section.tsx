@@ -18,7 +18,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import type { ContactCompanyEntry } from '@/lib/people/use-contact-sheet-state'
-import { PortalAccessField } from '@/components/clients/portal-access-control'
+import { PortalAccessField } from '@/components/companies/portal-access-control'
 import { UiRef } from '@/components/ui/ui-ref'
 
 type ContactCompaniesSectionProps = {

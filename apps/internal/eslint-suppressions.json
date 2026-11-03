@@ -333,7 +333,7 @@
       "count": 1
     }
   },
-  "app/(dashboard)/projects/actions/shared-schemas.ts": {
+  "lib/tasks/schemas.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 5
     }

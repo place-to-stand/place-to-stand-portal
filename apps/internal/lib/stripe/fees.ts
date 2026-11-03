@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { getStripe } from './client'
+import { serverEnv } from '@/lib/env.server'
 
 /** Stripe's fees for one month, in dollars. */
 export type StripeFeesData = {
@@ -38,7 +39,7 @@ export async function loadStripeFees(
   year: number,
   month: number
 ): Promise<StripeFeesState> {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  if (!serverEnv.STRIPE_SECRET_KEY) {
     return { status: 'not_configured' }
   }
 

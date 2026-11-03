@@ -10,6 +10,8 @@
  * route via `claimsPathname`.
  */
 
+import { UUID_PATTERN } from '@pts/db/uuid'
+
 const SHEET_ENTITY_KEYS = [
   'task',
   'lead',
@@ -26,8 +28,7 @@ export type SheetEntityKey = (typeof SHEET_ENTITY_KEYS)[number]
 /** Param value that opens an entity's create sheet (`?lead=new`). */
 export const NEW_SHEET_VALUE = 'new'
 
-export const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export { UUID_PATTERN }
 
 export const isValidSheetParamValue = (value: string) =>
   value === NEW_SHEET_VALUE || UUID_PATTERN.test(value)

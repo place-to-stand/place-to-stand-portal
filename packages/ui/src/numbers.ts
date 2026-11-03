@@ -1,5 +1,5 @@
 /**
- * Hours and money, formatted the same way everywhere: pages, exports, emails,
+ * Hours, money and percentages, formatted the same way everywhere: pages, exports, emails,
  * PDFs, notifications. This file is the only place either is built
  * (`scripts/check-formatters.mjs` fails the lint on a hand-rolled copy).
  *
@@ -28,6 +28,11 @@ export type CurrencyOptions = SignOptions & {
    * summaries; anything billed, paid or owed keeps its cents.
    */
   cents?: boolean
+}
+
+export type PercentOptions = {
+  /** Most decimals shown; trailing zeros are dropped. Defaults to 2. */
+  maxDecimals?: number
 }
 
 const MINUS = '−'
@@ -81,4 +86,30 @@ export function formatCurrency(
 ): string {
   const formatter = options.cents === false ? WHOLE_DOLLARS : CURRENCY
   return format(toNumber(amount), formatter, options.signed)
+}
+
+const PERCENT_FORMATTERS = new Map<number, Intl.NumberFormat>()
+
+function percentFormatter(maxDecimals: number): Intl.NumberFormat {
+  let formatter = PERCENT_FORMATTERS.get(maxDecimals)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat('en-US', {
+      style: 'percent',
+      maximumFractionDigits: maxDecimals,
+      signDisplay: 'negative',
+    })
+    PERCENT_FORMATTERS.set(maxDecimals, formatter)
+  }
+  return formatter
+}
+
+/**
+ * A ratio as a percentage: 0.0825 → "8.25%", 0.08 → "8%", 1 → "100%".
+ * Takes the ratio, not the percent, as tax rates and shares are stored.
+ */
+export function formatPercent(
+  ratio: NumericInput,
+  options: PercentOptions = {}
+): string {
+  return percentFormatter(options.maxDecimals ?? 2).format(toNumber(ratio))
 }

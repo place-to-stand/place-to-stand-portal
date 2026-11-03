@@ -30,15 +30,13 @@ import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 
 import { listLimit, searchText } from '../output'
 import { defineTool } from '../tool'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 const clientRef = z
   .string()
   .trim()
   .min(1)
   .describe('Client company slug or UUID (a company that is billed).')
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const archived = z
   .boolean()

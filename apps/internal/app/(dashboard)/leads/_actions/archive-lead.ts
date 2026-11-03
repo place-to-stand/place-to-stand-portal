@@ -11,7 +11,7 @@ import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { leadContactNameSql } from '@/lib/leads/lead-display'
 
-import { revalidateLeadsPath } from './utils'
+import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 import type { LeadActionResult } from './types'
 
 const archiveLeadSchema = z.object({

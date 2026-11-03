@@ -21,7 +21,7 @@ import {
 } from '@/lib/leads/won-rule'
 import { normalizeRank } from '@/lib/rank'
 
-import { revalidateLeadsPath } from './utils'
+import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 import type { LeadActionResult } from './types'
 
 const moveLeadSchema = z.object({

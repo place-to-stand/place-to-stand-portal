@@ -18,13 +18,11 @@ import { leadHref } from '@/lib/sheets/hrefs'
 import { filterArchivedLeads } from '../_lib/archive-filters'
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
+import { firstParam } from '@/lib/pagination/params'
 
 export const metadata: Metadata = {
   title: 'Lead archive',
 }
-
-const firstParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 
 export default async function LeadsArchivePage({
   searchParams,

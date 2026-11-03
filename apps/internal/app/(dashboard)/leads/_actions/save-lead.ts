@@ -5,7 +5,7 @@ import { assertCrmAccess } from '@/lib/auth/permissions'
 import { saveLeadForActor } from '@/lib/leads/save-lead-core'
 import type { SaveLeadInput } from '@/lib/leads/save-lead-fields'
 
-import { revalidateLeadsPath } from './utils'
+import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 import type { LeadActionResult } from './types'
 
 export type { SaveLeadInput } from '@/lib/leads/save-lead-fields'

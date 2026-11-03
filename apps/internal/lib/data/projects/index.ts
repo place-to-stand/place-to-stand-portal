@@ -20,6 +20,7 @@ import { getReposForProjects } from '@/lib/data/github-repos'
 import { getIntegrationLinksForProjects } from '@/lib/data/project-integration-links'
 import { toIntegrationLinkSummary } from '@/lib/types/integrations'
 import { loadClientRows, mapClientRows } from './relations/clients'
+import { UUID_PATTERN } from '@pts/db/uuid'
 export { fetchProjectCalendarTasks } from './fetch-project-calendar-tasks'
 
 // ============================================================
@@ -338,10 +339,7 @@ export const resolveProjectIdentifier = cache(
     identifier: string
   ): Promise<ProjectDetail & { resolvedId: string }> => {
     // Check if identifier looks like a UUID
-    const isUUID =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        identifier
-      )
+    const isUUID = UUID_PATTERN.test(identifier)
 
     let project: ProjectDetail
 

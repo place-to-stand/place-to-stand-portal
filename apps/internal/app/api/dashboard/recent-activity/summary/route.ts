@@ -527,7 +527,7 @@ type ActivityContext = {
 const TARGET_LABELS: Record<string, string> = {
   TASK: 'task work',
   PROJECT: 'project updates',
-  CLIENT: 'client updates',
+  CLIENT: 'client changes',
   COMMENT: 'task comments',
   TIME_LOG: 'time logs',
   HOUR_BLOCK: 'hour blocks',

@@ -3,7 +3,7 @@ import 'server-only'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
-import { statusSchema } from '@/app/(dashboard)/projects/actions/shared-schemas'
+import { statusSchema } from '@/lib/tasks/schemas'
 import {
   cliCreateCommentFields,
   cliCreateTaskFields,

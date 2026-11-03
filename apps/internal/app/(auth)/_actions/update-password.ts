@@ -1,99 +1,96 @@
-"use server";
+'use server'
 
-import { z } from "zod";
+import { z } from 'zod'
 
-import { requireCrmUser } from "@/lib/auth/session";
-import { logActivity } from "@/lib/activity/logger";
-import { userPasswordChangedEvent } from "@/lib/activity/events";
-import { sendPasswordChangedEmail } from "@/lib/email/auth-emails";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireCrmUser } from '@/lib/auth/session'
+import { logActivity } from '@/lib/activity/logger'
+import { userPasswordChangedEvent } from '@/lib/activity/events'
+import { sendPasswordChangedEmail } from '@/lib/email/auth-emails'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { newPasswordPairSchema } from '@/lib/auth/password'
 
-const schema = z
-  .object({
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters."),
-  })
-  .refine((values) => values.password === values.confirmPassword, {
-    message: "Passwords must match.",
-    path: ["confirmPassword"],
-  });
+const schema = newPasswordPairSchema
 
-export type CompletePasswordResetInput = z.infer<typeof schema>;
+export type CompletePasswordResetInput = z.infer<typeof schema>
 
 export type CompletePasswordResetResult = {
-  error?: string;
-};
+  error?: string
+}
 
 export async function completePasswordReset(
   input: CompletePasswordResetInput
 ): Promise<CompletePasswordResetResult> {
   // Any internal-portal user resets their own password here. requireUser() is
   // admin-only and would bounce a SALES user to the leads board mid-reset.
-  const user = await requireCrmUser();
-  const parsed = schema.safeParse(input);
+  const user = await requireCrmUser()
+  const parsed = schema.safeParse(input)
 
   if (!parsed.success) {
     return {
-      error: parsed.error.issues[0]?.message ?? "Invalid password reset payload.",
-    };
+      error:
+        parsed.error.issues[0]?.message ?? 'Invalid password reset payload.',
+    }
   }
 
-  const { password } = parsed.data;
-  const supabase = getSupabaseServerClient();
+  const { password } = parsed.data
+  const supabase = getSupabaseServerClient()
 
   const {
     data: { user: authUser },
     error: authLookupError,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
   if (authLookupError || !authUser) {
-    console.error("Failed to load auth user for password reset", authLookupError);
+    console.error(
+      'Failed to load auth user for password reset',
+      authLookupError
+    )
     return {
-      error: authLookupError?.message ?? "Unable to verify your session. Please sign in again.",
-    };
+      error:
+        authLookupError?.message ??
+        'Unable to verify your session. Please sign in again.',
+    }
   }
 
   const metadata = {
     ...(authUser.user_metadata ?? {}),
     must_reset_password: false,
-  } as Record<string, unknown>;
+  } as Record<string, unknown>
 
   const { error: authError } = await supabase.auth.updateUser({
     password,
     data: metadata,
-  });
+  })
 
   if (authError) {
-    console.error("Failed to update password", authError);
-    return { error: authError.message };
+    console.error('Failed to update password', authError)
+    return { error: authError.message }
   }
 
   const event = userPasswordChangedEvent({
     fullName: user.full_name ?? user.email,
-    context: "reset",
-  });
+    context: 'reset',
+  })
 
   await logActivity({
     actorId: user.id,
     actorRole: user.role,
     verb: event.verb,
     summary: event.summary,
-    targetType: "USER",
+    targetType: 'USER',
     targetId: user.id,
     metadata: event.metadata,
-  });
+  })
 
   // The password has already changed by this point, so a mail failure must not
   // read as a failed reset — it is logged and swallowed rather than returned.
   if (authUser.email) {
     try {
-      await sendPasswordChangedEmail(authUser.email);
+      await sendPasswordChangedEmail(authUser.email)
     } catch (error) {
-      console.error("Failed to send password changed email", error);
+      console.error('Failed to send password changed email', error)
     }
   }
 
-  return {};
+  return {}
 }

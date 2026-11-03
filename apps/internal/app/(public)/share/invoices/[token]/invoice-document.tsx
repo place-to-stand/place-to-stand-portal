@@ -3,9 +3,9 @@ import { BlueprintCorners } from '@pts/ui/brand'
 import type { InvoiceWithLineItems } from '@/lib/invoices/invoice-form'
 import { cn } from '@/lib/utils'
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 
-import { formatDate, formatTaxRate } from './format'
+import { formatDate } from './format'
 import { InvoiceLineItems } from './invoice-line-items'
 import { HEADLINE_FONT, PAPER_LABEL, SECTION_LABEL } from './styles'
 
@@ -73,7 +73,7 @@ export function InvoiceDocument({ invoice, isPaid, isVoid }: Props) {
             <>
               <TotalsRow label='Subtotal' value={invoice.subtotal} />
               <TotalsRow
-                label={`Tax (${formatTaxRate(invoice.tax_rate)}%)`}
+                label={`Tax (${formatPercent(invoice.tax_rate ?? 0)})`}
                 value={invoice.tax_amount}
               />
             </>

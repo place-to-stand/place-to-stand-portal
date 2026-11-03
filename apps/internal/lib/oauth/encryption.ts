@@ -1,13 +1,12 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 
+import { serverEnv } from '@/lib/env.server'
+
 const ALGORITHM = 'aes-256-gcm'
 
 function getEncryptionKey(): Buffer {
-  const key = process.env.OAUTH_TOKEN_ENCRYPTION_KEY
-  if (!key) {
-    throw new Error('OAUTH_TOKEN_ENCRYPTION_KEY environment variable is required')
-  }
-  return Buffer.from(key, 'base64')
+  // The schema has already checked it decodes to 32 bytes.
+  return Buffer.from(serverEnv.OAUTH_TOKEN_ENCRYPTION_KEY, 'base64')
 }
 
 /**
@@ -19,7 +18,10 @@ export function encryptToken(token: string): string {
   const iv = randomBytes(16)
   const cipher = createCipheriv(ALGORITHM, key, iv)
 
-  const encrypted = Buffer.concat([cipher.update(token, 'utf8'), cipher.final()])
+  const encrypted = Buffer.concat([
+    cipher.update(token, 'utf8'),
+    cipher.final(),
+  ])
   const authTag = cipher.getAuthTag()
 
   // Combine: IV + AuthTag + EncryptedData
@@ -41,5 +43,7 @@ export function decryptToken(encryptedToken: string): string {
   const decipher = createDecipheriv(ALGORITHM, key, iv)
   decipher.setAuthTag(authTag)
 
-  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString(
+    'utf8'
+  )
 }

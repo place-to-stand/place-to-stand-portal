@@ -11,14 +11,23 @@
 import { BOARD_VIEW_SEGMENTS } from '@/lib/projects/board/board-constants'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 
-export const contactSheetHref = (id: string) => `/people?contact=${id}`
+/** Links into an archive tab take `{ archived: true }`. */
+type ArchiveOption = { archived?: boolean }
+
+const listPath = (path: string, options?: ArchiveOption) =>
+  options?.archived ? `${path}/archive` : path
+
+export const contactSheetHref = (id: string, options?: ArchiveOption) =>
+  `${listPath('/people', options)}?contact=${id}`
 
 /** A company's sheet. (Old `&tab=` links still open it; the param is ignored.) */
 export const companySheetHref = (id: string) => `/companies?company=${id}`
 
-export const invoiceHref = (id: string) => `/invoices?invoice=${id}`
+export const invoiceHref = (id: string, options?: ArchiveOption) =>
+  `${listPath('/invoices', options)}?invoice=${id}`
 
-export const hourBlockHref = (id: string) => `/hour-blocks?hour-block=${id}`
+export const hourBlockHref = (id: string, options?: ArchiveOption) =>
+  `${listPath('/hour-blocks', options)}?hour-block=${id}`
 
 /** Hour blocks list searched by invoice number (the search matches it). */
 export const hourBlocksForInvoiceHref = (invoiceNumber: string) =>
@@ -39,13 +48,12 @@ export const boardTaskHref = (
   taskId: string
 ) => `${projectBoardHref(clientSegment, projectSlug)}?task=${taskId}`
 
-export const leadHref = (id: string, options?: { archived?: boolean }) => {
-  const base = options?.archived ? '/leads/archive' : '/leads'
-  return `${base}?lead=${id}`
-}
+export const leadHref = (id: string, options?: ArchiveOption) =>
+  `${listPath('/leads', options)}?lead=${id}`
 
 /** Resolves server-side, so the link keeps working after archive/restore. */
-export const submissionHref = (id: string) => `/submissions?submission=${id}`
+export const submissionHref = (id: string, options?: ArchiveOption) =>
+  `${listPath('/submissions', options)}?submission=${id}`
 
 /**
  * Rebuilds a page's query string for a server-side `redirect()`. Redirects

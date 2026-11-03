@@ -37,6 +37,7 @@ const config = [
   ...nextApp({
     dir: import.meta.dirname,
     entityRegistry: 'lib/entity-accents.ts',
+    sheetRegistry: 'lib/sheets/entities.ts',
   }),
   {
     files: ['lib/queries/**'],

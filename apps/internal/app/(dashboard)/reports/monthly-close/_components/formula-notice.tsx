@@ -12,7 +12,7 @@ import { formatCalendarDate } from '@pts/ui/dates'
 import type { PartnerRateSchedule } from '@/lib/billing/partner-rates'
 import { cn } from '@/lib/utils'
 
-import { formatPercent } from './format'
+import { formatShare } from './format'
 import { formatCurrency } from '@pts/ui/numbers'
 
 type FormulaNoticeProps = {
@@ -35,7 +35,7 @@ function day(iso: string): string {
 
 function rateLabel(perHour: number, billable: number): string {
   return perHour > 0
-    ? `${formatCurrency(perHour)}/hr · ${formatPercent(perHour, billable)}`
+    ? `${formatCurrency(perHour)}/hr · ${formatShare(perHour, billable)}`
     : 'Not active'
 }
 

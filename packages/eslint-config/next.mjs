@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
 import nextTypescript from 'eslint-config-next/typescript'
 
-import { IGNORES, common, typed } from './base.mjs'
+import { IGNORES, NO_RLS_IMPORT, common, typed } from './base.mjs'
 
 export const HOUSE_RULES = {
   'pts/no-radix': 'error', // rule 1
@@ -29,6 +29,37 @@ export const HOUSE_RULES = {
   'pts/grid-phone-column': 'error', // rule 15
   'pts/ellipsis-character': 'error', // copy: "…"
   'pts/filter-select': 'error', // list filters are FilterSelect
+  'pts/optional-label': 'error', // input.md: <FormLabel optional>
+}
+
+/**
+ * Tables whose rows are not records, so a hard delete is right: join rows,
+ * per-user layout, retention of the activity log, rate-limit buckets.
+ */
+const HARD_DELETE_ALLOW = [
+  'activityLogs',
+  'activity_logs',
+  'timeLogTasks',
+  'userDashboardLayouts',
+  'rateLimitBuckets',
+  'rate_limit_buckets',
+]
+
+/** Files that may read process.env: the env schemas, build config, scripts. */
+const ENV_READERS = [
+  'lib/env*.ts',
+  'next.config.ts',
+  'instrumentation*.ts',
+  'drizzle.config.ts',
+  'scripts/**',
+  'playwright.config.ts',
+  'e2e/**',
+]
+
+function sheetParamNames(dir, registry) {
+  const source = readFileSync(join(dir, registry), 'utf8')
+  const block = source.slice(source.indexOf('SHEET_ENTITIES'))
+  return [...block.matchAll(/^ {2}'?([a-z][a-z-]*)'?: \{/gm)].map(m => m[1])
 }
 
 function entityIconNames(dir, registry) {
@@ -37,8 +68,8 @@ function entityIconNames(dir, registry) {
   ].map(match => match[1])
 }
 
-export function nextApp({ dir, entityRegistry } = {}) {
-  const restrictedImports = []
+export function nextApp({ dir, entityRegistry, sheetRegistry } = {}) {
+  const restrictedImports = [NO_RLS_IMPORT]
   if (entityRegistry) {
     // Entity icons belong to the registry: read the list from it so a new
     // entity's icon is guarded the moment it is added.
@@ -69,8 +100,17 @@ export function nextApp({ dir, entityRegistry } = {}) {
       // Lets eslint run from the repo root (pre-commit) as well as the app.
       settings: { next: { rootDir: dir } },
       rules: {
-        ...(restrictedImports.length && {
-          'no-restricted-imports': ['error', { paths: restrictedImports }],
+        'no-restricted-imports': ['error', { paths: restrictedImports }],
+        // CLAUDE.md "Soft deletes": archive, never hard delete a record.
+        'pts/no-hard-delete': ['error', { allow: HARD_DELETE_ALLOW }],
+        // Env vars go through the zod schema (lib/env.server.ts), so an empty
+        // value in Vercel reads the same everywhere.
+        'pts/env-through-schema': 'error',
+        ...(sheetRegistry && {
+          'pts/sheet-url-through-builders': [
+            'error',
+            { entities: sheetParamNames(dir, sheetRegistry) },
+          ],
         }),
         'no-restricted-syntax': [
           'error',
@@ -89,6 +129,22 @@ export function nextApp({ dir, entityRegistry } = {}) {
     ...(entityRegistry
       ? [{ files: [entityRegistry], rules: { 'no-restricted-syntax': 'off' } }]
       : []),
+    { files: ENV_READERS, rules: { 'pts/env-through-schema': 'off' } },
+    {
+      // The sheet links' own home, and the proxy's mapping of retired params.
+      files: ['lib/sheets/**', 'lib/projects/board/board-utils.ts', 'proxy.ts'],
+      rules: { 'pts/sheet-url-through-builders': 'off' },
+    },
+    {
+      // README → Color exceptions: the sidebar's dev band, previews that
+      // mimic Gmail and Google Chat, and the generated share image.
+      files: [
+        'components/layout/sidebar.tsx',
+        'app/(dashboard)/settings/templates/_components/**',
+        '**/opengraph-image.tsx',
+      ],
+      rules: { 'pts/no-raw-colour': 'off' },
+    },
     {
       // The design system's house rules (docs/design-system/README.md,
       // "House rules (verified in code)"); each message quotes its rule.
@@ -96,9 +152,9 @@ export function nextApp({ dir, entityRegistry } = {}) {
     },
     ...typed({ dir }),
     {
-      // Dev scripts print their output.
+      // Dev scripts print their output and clean up the rows they made.
       files: ['scripts/**'],
-      rules: { 'no-console': 'off' },
+      rules: { 'no-console': 'off', 'pts/no-hard-delete': 'off' },
     },
     {
       // Layering: no server code in a 'use client' file.

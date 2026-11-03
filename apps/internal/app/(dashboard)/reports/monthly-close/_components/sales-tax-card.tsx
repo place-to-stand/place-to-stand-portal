@@ -1,7 +1,7 @@
 import { EmptyState } from '@pts/ui/empty-state'
 import type { SalesTaxData } from '@/lib/data/reports/types'
 
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 
 import { formatShortDay } from './format'
 import { TreeBranch } from './tree-branch'
@@ -10,11 +10,6 @@ type SalesTaxCardProps = {
   salesTax: SalesTaxData
   /** A closed month that predates frozen sales tax shows the live figure. */
   isLive?: boolean
-}
-
-/** 0.0725 → "7.25%"; trailing zeros dropped so 0.08 reads "8%". */
-function formatRate(rate: number): string {
-  return `${Number((rate * 100).toFixed(3))}%`
 }
 
 export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
@@ -68,7 +63,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
                 </span>
               </span>
               <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
-                {formatRate(row.taxRate)}
+                {formatPercent(row.taxRate)}
               </span>
               <span className='w-24 text-right tabular-nums'>
                 {formatCurrency(row.taxAmount)}

@@ -8,6 +8,8 @@
  * shares must total exactly 100; with none, the closer share stays in House.
  */
 
+import { formatPercent } from '@pts/ui/numbers'
+
 export type CloserKind = 'user' | 'contact'
 
 export type CloserShare = {
@@ -37,7 +39,9 @@ export function closerSharesTotal(closers: readonly CloserShare[]): number {
 }
 
 /** Why a split can't be saved, or null when it can. */
-export function closerSplitError(closers: readonly CloserShare[]): string | null {
+export function closerSplitError(
+  closers: readonly CloserShare[]
+): string | null {
   if (closers.length === 0) return null
 
   const keys = new Set(closers.map(closerKey))
@@ -60,7 +64,7 @@ export function closerSplitError(closers: readonly CloserShare[]): string | null
 
   const total = closerSharesTotal(closers)
   if (total !== 100) {
-    return `Closer shares must add up to 100% (currently ${total}%).`
+    return `Closer shares must add up to 100% (currently ${formatPercent(total / 100)}).`
   }
 
   return null
@@ -94,5 +98,7 @@ export function closerSplitsEqual(
 /** "Kris Crawford (50%), Chris Donahue (50%)" — a lone closer drops the share. */
 export function describeClosers(closers: readonly ClientCloser[]): string {
   if (closers.length === 1) return closers[0].name
-  return closers.map(c => `${c.name} (${c.sharePercent}%)`).join(', ')
+  return closers
+    .map(c => `${c.name} (${formatPercent(c.sharePercent / 100)})`)
+    .join(', ')
 }

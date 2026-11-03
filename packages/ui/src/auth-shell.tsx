@@ -107,10 +107,18 @@ export const authSecondaryButtonClass =
 export const authLinkClass =
   'font-medium text-brand-lime underline-offset-4 hover:underline'
 
+/** The password rule both portals apply when someone sets a password. */
+export const PASSWORD_MIN_LENGTH = 8
+export const PASSWORD_TOO_SHORT = `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`
+export const PASSWORDS_DIFFER = 'Passwords must match.'
+
 export const authErrorClass =
   // Raw red on purpose: the auth ground is always dark, whatever the theme,
   // and the theme's `destructive` is tuned for the light page in light mode.
   'border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300'
+
+/** A field's error line on the auth ground (red for the same reason). */
+export const authFieldErrorClass = 'text-red-300'
 
 export const authNoticeClass =
   'border border-brand-border-light bg-brand-bg/60 px-3 py-2 text-sm text-brand-text-muted'

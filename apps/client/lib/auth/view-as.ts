@@ -14,6 +14,7 @@ import {
 } from '@pts/db/schema'
 import type { AppUser } from '@/lib/auth/session'
 import { isAdmin } from '@/lib/auth/permissions'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 /**
  * Cookie holding the client an ADMIN is currently previewing the portal as.
@@ -33,9 +34,6 @@ export const VIEW_AS_COOKIE = 'pts_view_as_client'
  * access to (`client_portal_access`). Takes precedence over VIEW_AS_COOKIE.
  */
 export const VIEW_AS_CONTACT_COOKIE = 'pts_view_as_contact'
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type PortalClientOption = {
   id: string
@@ -158,7 +156,7 @@ async function resolveAdminScope(): Promise<PortalScope> {
     cookieStore.get(VIEW_AS_CONTACT_COOKIE)?.value ?? null
 
   // Fail closed: an admin with no selection sees an empty portal.
-  if (!selectedContactId || !UUID_RE.test(selectedContactId)) {
+  if (!selectedContactId || !UUID_PATTERN.test(selectedContactId)) {
     return EMPTY_ADMIN_SCOPE
   }
 

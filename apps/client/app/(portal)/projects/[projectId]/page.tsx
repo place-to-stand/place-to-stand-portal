@@ -11,16 +11,14 @@ import { fetchProjectGitHubStatus } from '@/lib/data/github'
 import { fetchPtsStaffGitHubAccounts } from '@/lib/data/staff-github-access'
 import { ProjectTaskList } from '@/components/tasks/project-task-list'
 import { GitHubRepoSection } from '@/components/projects/github-repos-section'
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 export default async function ProjectDetailPage({
   params,
 }: PageProps<'/projects/[projectId]'>) {
   const { projectId } = await params
 
-  if (!UUID_RE.test(projectId)) {
+  if (!UUID_PATTERN.test(projectId)) {
     notFound()
   }
 

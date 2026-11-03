@@ -14,9 +14,9 @@ import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { pinTaskToTopOfAssigneeBoards } from '@/lib/tasks/assignee-sort'
 
 import { revalidateProjectTaskViews } from './shared'
-import { statusSchema, TASK_STATUSES } from './shared-schemas'
+import { statusSchema, TASK_STATUSES } from '@/lib/tasks/schemas'
 import type { ActionResult } from './action-types'
-import { resolveMovedTaskRank } from './task-rank'
+import { resolveMovedTaskRank } from '@/lib/tasks/rank'
 
 export async function changeTaskStatus(input: {
   taskId: string

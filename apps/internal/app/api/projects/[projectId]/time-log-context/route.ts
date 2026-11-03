@@ -4,9 +4,7 @@ import { getCurrentAdmin } from '@/lib/auth/session'
 import { fetchProjectsWithRelationsByIds } from '@/lib/data/projects'
 import { fetchAdminUsers } from '@/lib/data/users'
 import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-params'
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 /**
  * Everything the time-log dialog needs to log new time on one project:

@@ -21,6 +21,13 @@ import {
   saveNotGatedOnDirty,
   toastCopy,
 } from './rules/house-rules-copy.mjs'
+import {
+  envThroughSchema,
+  noHardDelete,
+  noRawColour,
+  optionalLabel,
+  sheetUrlThroughBuilders,
+} from './rules/guards.mjs'
 import { clientBoundary, queryLayerPurity } from './rules/layering.mjs'
 
 export const pts = {
@@ -43,5 +50,10 @@ export const pts = {
     'query-layer-purity': queryLayerPurity,
     'api-route-guard': apiRouteGuard,
     'no-role-literal': noRoleLiteral,
+    'no-raw-colour': noRawColour,
+    'sheet-url-through-builders': sheetUrlThroughBuilders,
+    'no-hard-delete': noHardDelete,
+    'optional-label': optionalLabel,
+    'env-through-schema': envThroughSchema,
   },
 }

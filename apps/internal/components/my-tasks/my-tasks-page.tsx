@@ -376,9 +376,12 @@ export function MyTasksPage({
   const buildViewPath = useCallback(
     (targetView: MyTasksView, taskId?: string | null) => {
       const params = new URLSearchParams(searchParams.toString())
+      // Keeps the view's other params (assignee) beside `?task=`.
       if (taskId) {
+        // eslint-disable-next-line pts/sheet-url-through-builders -- switching views carries the open task across
         params.set('task', taskId)
       } else {
+        // eslint-disable-next-line pts/sheet-url-through-builders -- as above
         params.delete('task')
       }
       const queryString = params.toString()

@@ -25,7 +25,7 @@ import type { ContactsTableContact } from '@/lib/people/use-contacts-table-state
 
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 
-import { ClientBadge } from '@/components/clients/client-badge'
+import { ClientBadge } from '@/components/companies/client-badge'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import {

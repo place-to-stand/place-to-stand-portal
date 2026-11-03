@@ -1,7 +1,7 @@
 import type { ProfitShareData } from '@/lib/billing/profit-share'
 import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 
-import { formatCurrency, formatHours } from '@pts/ui/numbers'
+import { formatCurrency, formatHours, formatPercent } from '@pts/ui/numbers'
 
 export type PayoutColumn = 'payroll' | 'origination' | 'closer' | 'profitShare'
 
@@ -149,7 +149,7 @@ export function buildPayoutTable(
       const hoursLabel =
         client.sharePercent === 100
           ? `${formatHours(client.hours)}`
-          : `${client.sharePercent}% of ${formatHours((client.hours * 100) / client.sharePercent)}`
+          : `${formatPercent(client.sharePercent / 100)} of ${formatHours((client.hours * 100) / client.sharePercent)}`
       draft.details.push({
         label: `Closer · ${client.clientName} · ${hoursLabel}`,
         column: 'closer',
@@ -169,7 +169,7 @@ export function buildPayoutTable(
       })
       draft.profitShare = partner.amount
       draft.details.push({
-        label: `Profit share · ${percent}% of ${formatCurrency(profitShare.available)}`,
+        label: `Profit share · ${formatPercent(percent / 100)} of ${formatCurrency(profitShare.available)}`,
         column: 'profitShare',
         amount: partner.amount,
       })

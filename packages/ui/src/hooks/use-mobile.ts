@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
 
 export function useIsMobile(breakpoint = 768) {
   // Initialize undefined on server AND first client render — reading
@@ -14,9 +14,10 @@ export function useIsMobile(breakpoint = 768) {
     const onChange = () => {
       setIsMobile(window.innerWidth < breakpoint)
     }
-    mql.addEventListener("change", onChange)
+    mql.addEventListener('change', onChange)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the width is only known after hydration (see above)
     setIsMobile(window.innerWidth < breakpoint)
-    return () => mql.removeEventListener("change", onChange)
+    return () => mql.removeEventListener('change', onChange)
   }, [breakpoint])
 
   return !!isMobile

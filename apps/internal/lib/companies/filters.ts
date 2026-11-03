@@ -1,6 +1,7 @@
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 
 import type { CompanyListItem } from './types'
+import { firstParam } from '@/lib/pagination/params'
 
 /** Companies list filters and sort (`?type=&leads=&sort=`). Client-safe. */
 // Clients (billed now) and everyone else. Any other `?type=` (an old
@@ -41,9 +42,6 @@ export const isCompanyType = (value: string): value is CompanyTypeFilter =>
 export const isCompanyLeads = (value: string): value is CompanyLeadsFilter =>
   (COMPANY_LEADS_VALUES as readonly string[]).includes(value)
 type RawParams = Record<string, string | string[] | undefined>
-const first = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
-
 export type CompaniesListParams = {
   search: string
   type?: CompanyTypeFilter
@@ -58,20 +56,20 @@ export type CompaniesListParams = {
 export function parseCompaniesSearchParams(
   params: RawParams
 ): CompaniesListParams {
-  const type = first(params.type)
-  const leads = first(params.leads)
-  const sortParam = first(params.sort)
+  const type = firstParam(params.type)
+  const leads = firstParam(params.leads)
+  const sortParam = firstParam(params.sort)
   const sort = parseSortParam(
     sortParam,
     COMPANY_SORT_FIELDS,
     DEFAULT_COMPANY_SORT
   )
   return {
-    search: (first(params.q) ?? '').slice(0, 160),
+    search: (firstParam(params.q) ?? '').slice(0, 160),
     type: type && isCompanyType(type) ? type : undefined,
     leads: leads && isCompanyLeads(leads) ? leads : undefined,
     sort,
-    page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),
+    page: Math.max(1, Number.parseInt(firstParam(params.page) ?? '1', 10) || 1),
     sortParam: sort === DEFAULT_COMPANY_SORT ? undefined : sortParam,
   }
 }

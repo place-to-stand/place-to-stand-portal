@@ -3,7 +3,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import { getRankAfter, getRankBefore } from '@/lib/rank'
 import { db } from '@/lib/db'
 import { tasks } from '@/lib/db/schema'
-import { TASK_STATUSES } from './shared-schemas'
+import { TASK_STATUSES } from './schemas'
 
 type TaskStatus = (typeof TASK_STATUSES)[number]
 type ColumnEdge = 'top' | 'bottom'

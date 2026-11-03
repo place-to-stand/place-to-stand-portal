@@ -299,9 +299,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                   <FormItem>
                     {/* Create and edit show the same field; a new project
                       takes its slug from the name when this is blank. */}
-                    <FormLabel>
-                      {isEditing ? 'Slug' : 'Slug (optional)'}
-                    </FormLabel>
+                    <FormLabel optional={!isEditing}>Slug</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={fieldState.slug.disabled}
@@ -398,7 +396,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 name='startsOn'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Start date (optional)</FormLabel>
+                    <FormLabel optional>Start date</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={fieldState.date.disabled}
@@ -420,7 +418,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 name='endsOn'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>End date (optional)</FormLabel>
+                    <FormLabel optional>End date</FormLabel>
                     <FormControl>
                       <DisabledFieldTooltip
                         disabled={fieldState.date.disabled}

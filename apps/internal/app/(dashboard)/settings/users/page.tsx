@@ -5,9 +5,7 @@ import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
-
-const firstParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
+import { firstParam } from '@/lib/pagination/params'
 
 /**
  * A user is a person's sign-in, so Users is People filtered to sign-ins, and
@@ -31,6 +29,7 @@ export default async function UsersSettingsPage({
       .from(contacts)
       .where(and(eq(contacts.userId, userParam), isNull(contacts.deletedAt)))
       .limit(1)
+    // eslint-disable-next-line pts/sheet-url-through-builders -- a redirect that keeps the signIn filter beside the sheet param
     if (person) next.set('contact', person.id)
   }
 

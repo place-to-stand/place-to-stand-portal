@@ -3,9 +3,7 @@ import 'server-only'
 import { sql } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 /**
  * Migration 0111 folded clients into companies. The CLI and MCP keep
