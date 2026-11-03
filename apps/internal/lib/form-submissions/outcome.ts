@@ -1,3 +1,5 @@
+import { formatPercent } from '@pts/ui/numbers'
+
 import type { FormSubmissionRecord } from './types'
 
 /**
@@ -34,5 +36,5 @@ export function describeSubmissionOutcome(
       ? ` · step ${Math.min(submission.furthestStepIndex + 1, submission.stepsTotal)} of ${submission.stepsTotal}`
       : ''
 
-  return `${submission.percentComplete}%${step}`
+  return `${formatPercent(submission.percentComplete / 100, { maxDecimals: 0 })}${step}`
 }

@@ -33,6 +33,7 @@ import {
   SortableTableHead,
   type SortValue,
 } from '@/components/table-toolbar/sortable-table-head'
+import { OptionalMarker } from '@/components/ui/form'
 import { RecordRowAction } from '@/components/table/record-row-action'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
@@ -440,7 +441,7 @@ export function ProductCatalogSection({
 
             <div className='space-y-2'>
               <Label htmlFor='product-min-quantity'>
-                Min quantity (optional)
+                Min quantity <OptionalMarker />
               </Label>
               <Input
                 id='product-min-quantity'

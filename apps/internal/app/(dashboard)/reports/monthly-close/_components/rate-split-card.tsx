@@ -5,7 +5,7 @@ import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 
 import { formatCurrency, formatHours } from '@pts/ui/numbers'
 
-import { formatPercent } from './format'
+import { formatShare } from './format'
 
 type RateSplitCardProps = {
   report: MonthlyCloseReport
@@ -91,7 +91,7 @@ function houseNote(house: MonthlyCloseReport['house']): string | undefined {
 
 export function RateSplitCard({ report }: RateSplitCardProps) {
   const { rates, payroll, origination, closer, house } = report
-  const pct = (rate: number) => formatPercent(rate, rates.billablePerHour)
+  const pct = (rate: number) => formatShare(rate, rates.billablePerHour)
 
   return (
     <section

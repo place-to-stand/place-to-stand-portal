@@ -13,7 +13,7 @@ import type { ProfitShareState } from '@/lib/data/reports/types'
 import { cn } from '@/lib/utils'
 
 import { addProfitShareAction } from '../actions/add-profit-share'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 
 import { formatDay, formatDeduction, formatShortDay } from './format'
 import { PayeeAvatar } from './payee-avatar'
@@ -199,7 +199,7 @@ function ReadyBody({
             />
             <span className='flex-1'>{partner.name}</span>
             <span className='text-muted-foreground text-xs tabular-nums'>
-              {percent}%
+              {formatPercent(percent / 100)}
             </span>
             <span className='w-28 text-right tabular-nums'>
               {formatCurrency(partner.amount)}

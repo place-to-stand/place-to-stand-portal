@@ -28,7 +28,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 import {
   SHEET_SIDE_COLUMN_CLASS,
   Sheet,
@@ -437,12 +437,7 @@ export function InvoiceSheet({
                         name='notes'
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>
-                              Notes{' '}
-                              <span className='text-muted-foreground text-xs'>
-                                (optional)
-                              </span>
-                            </FormLabel>
+                            <FormLabel optional>Notes</FormLabel>
                             <FormControl>
                               <DisabledFieldTooltip
                                 disabled={standardField.disabled}
@@ -534,7 +529,9 @@ export function InvoiceSheet({
                             'bg-muted text-muted-foreground'
                           )}
                         >
-                          {form.getValues('taxRate') ?? 0}%
+                          {formatPercent(
+                            (form.getValues('taxRate') ?? 0) / 100
+                          )}
                         </div>
                       </div>
 

@@ -6,9 +6,3 @@ export const formatDate = (
   style: 'long' | 'short' = 'long'
 ) =>
   formatCalendarDate(dateStr, { year: 'numeric', month: style, day: 'numeric' })
-
-export const formatTaxRate = (taxRate: string | null) => {
-  if (!taxRate) return '0'
-  const rate = Number(taxRate) * 100
-  return rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2).replace(/0+$/, '')
-}

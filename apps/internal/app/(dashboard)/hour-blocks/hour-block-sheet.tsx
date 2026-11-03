@@ -191,12 +191,7 @@ export function HourBlockSheet({
                     name='notes'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          Notes{' '}
-                          <span className='text-muted-foreground text-xs'>
-                            (optional)
-                          </span>
-                        </FormLabel>
+                        <FormLabel optional>Notes</FormLabel>
                         <FormControl>
                           <DisabledFieldTooltip
                             disabled={notesField.disabled}

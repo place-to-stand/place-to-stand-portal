@@ -18,6 +18,7 @@ import {
 } from '@pts/ui/dialog'
 import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
+import { formatPercent } from '@pts/ui/numbers'
 import {
   Select,
   SelectContent,
@@ -253,10 +254,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                   <TableCell className='truncate font-medium'>
                     {rate.state}
                   </TableCell>
-                  <TableCell label='Rate'>
-                    {(Number(rate.rate) * 100).toFixed(2).replace(/\.?0+$/, '')}
-                    %
-                  </TableCell>
+                  <TableCell label='Rate'>{formatPercent(rate.rate)}</TableCell>
                   <TableCell className='truncate'>{rate.label}</TableCell>
                   <TableCell label='Active'>
                     <Switch

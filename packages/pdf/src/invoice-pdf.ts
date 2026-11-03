@@ -8,7 +8,7 @@
  */
 
 import { formatCalendarDate } from '@pts/ui/dates'
-import { formatCurrency } from '@pts/ui/numbers'
+import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 import { jsPDF } from 'jspdf'
 
 import {
@@ -38,11 +38,8 @@ const formatDate = (date: string | null): string | null =>
 const formatStampDate = (timestamp: string | null): string | null =>
   formatCalendarDate(timestamp)
 
-const formatTaxRate = (rate: number) =>
-  (rate * 100).toFixed(2).replace(/\.?0+$/, '')
-
 export async function generateInvoicePdf(
-  invoice: InvoiceWithLineItems,
+  invoice: InvoiceWithLineItems
 ): Promise<Buffer> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -106,7 +103,7 @@ export async function generateInvoicePdf(
     { label: 'Billed to', value: invoice.client?.name ?? null },
     { label: 'Issued', value: formatDate(invoice.issued_date) },
   ].filter((field): field is { label: string; value: string } =>
-    Boolean(field.value),
+    Boolean(field.value)
   )
   const columnGap = 24 * PX
   const columnWidth = (contentWidth - columnGap) / 2
@@ -122,7 +119,12 @@ export async function generateInvoicePdf(
     drawLabel(doc, field.label, x, labelBaseline)
 
     setType(doc, FONTS.body, 16, COLORS.ink)
-    drawText(doc, field.value, x, labelBaseline + 6 * PX + capHeight(doc) + 2 * PX)
+    drawText(
+      doc,
+      field.value,
+      x,
+      labelBaseline + 6 * PX + capHeight(doc) + 2 * PX
+    )
   })
   y += (12 + 11 + 6 + 20) * PX
 
@@ -197,13 +199,15 @@ export async function generateInvoicePdf(
   if (hasTax) {
     const rows = [
       { label: 'Subtotal', value: invoice.subtotal },
-      { label: `Tax (${formatTaxRate(taxRate)}%)`, value: invoice.tax_amount },
+      { label: `Tax (${formatPercent(taxRate)})`, value: invoice.tax_amount },
     ]
     for (const row of rows) {
       setType(doc, FONTS.body, 15, COLORS.body)
       const baseline = y + capHeight(doc)
       drawText(doc, row.label, totalsLeft, baseline)
-      drawText(doc, formatCurrency(row.value), right, baseline, { align: 'right' })
+      drawText(doc, formatCurrency(row.value), right, baseline, {
+        align: 'right',
+      })
       y += rowStep
     }
   }
@@ -218,7 +222,7 @@ export async function generateInvoicePdf(
     isPaid ? 'Paid in full' : isVoid ? 'Total' : 'Total due',
     totalsLeft + 14 * PX,
     stripCenter + capHeight(doc) / 2,
-    { color: COLORS.ink },
+    { color: COLORS.ink }
   )
   setType(doc, FONTS.head, 24, COLORS.ink)
   drawText(
@@ -226,7 +230,7 @@ export async function generateInvoicePdf(
     formatCurrency(invoice.total),
     right - 14 * PX,
     stripCenter + capHeight(doc) / 2,
-    { align: 'right', charSpace: tracking(doc, -0.02) },
+    { align: 'right', charSpace: tracking(doc, -0.02) }
   )
   y += stripHeight
 
@@ -239,7 +243,7 @@ export async function generateInvoicePdf(
     setType(doc, FONTS.body, 16, COLORS.body)
     const noteLines: string[] = doc.splitTextToSize(
       invoice.notes,
-      Math.min(560 * PX, contentWidth),
+      Math.min(560 * PX, contentWidth)
     )
 
     y += 48 * PX
@@ -274,10 +278,21 @@ export async function generateInvoicePdf(
     doc.line(MARGIN_X, ruleY, right, ruleY)
     doc.setLineDashPattern([], 0)
 
-    drawLabel(doc, 'Place To Stand · placetostandagency.com', MARGIN_X, baseline)
-    drawLabel(doc, `${invoiceNumber} · Page ${page} of ${pageCount}`, right, baseline, {
-      align: 'right',
-    })
+    drawLabel(
+      doc,
+      'Place To Stand · placetostandagency.com',
+      MARGIN_X,
+      baseline
+    )
+    drawLabel(
+      doc,
+      `${invoiceNumber} · Page ${page} of ${pageCount}`,
+      right,
+      baseline,
+      {
+        align: 'right',
+      }
+    )
   }
 
   return Buffer.from(doc.output('arraybuffer'))
