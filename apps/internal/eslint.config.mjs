@@ -38,6 +38,7 @@ const config = [
     dir: import.meta.dirname,
     entityRegistry: 'lib/entity-accents.ts',
     sheetRegistry: 'lib/sheets/entities.ts',
+    pagePanel: 'components/layout/page-panel.tsx',
   }),
   {
     files: ['lib/queries/**'],

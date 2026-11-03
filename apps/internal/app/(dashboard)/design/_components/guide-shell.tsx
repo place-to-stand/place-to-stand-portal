@@ -67,7 +67,7 @@ export function GuideShell({ children }: { children: ReactNode }) {
           >
             {DESIGN_SECTION_GROUPS.map(group => (
               <div key={group.title} className='space-y-1.5'>
-                <p className='text-muted-foreground px-3 text-[11px] font-semibold tracking-wider uppercase'>
+                <p className='text-muted-foreground text-overline px-3 font-semibold tracking-wider uppercase'>
                   {group.title}
                 </p>
                 <ul className='border-l'>

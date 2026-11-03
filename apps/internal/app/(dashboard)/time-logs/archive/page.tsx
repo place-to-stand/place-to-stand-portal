@@ -9,6 +9,7 @@ import { TimeLogsFilters } from '../_components/time-logs-filters'
 import { TimeLogsTable } from '../_components/time-logs-table'
 import { loadTimeLogsList } from '../_lib/load-time-logs-list'
 import { TIME_LOGS_TABS } from '../_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Time log archive',
@@ -42,7 +43,7 @@ export default async function TimeLogsArchivePage({
       }}
       primaryAction={<LogTimeButton projects={logTimeProjects} />}
     >
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <TimeLogsFilters
           basePath='/time-logs/archive'
           params={params}
@@ -59,7 +60,7 @@ export default async function TimeLogsArchivePage({
           sort={params.sortParam}
           mode='archive'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

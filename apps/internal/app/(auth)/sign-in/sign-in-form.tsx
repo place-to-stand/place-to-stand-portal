@@ -146,7 +146,7 @@ export function SignInForm({ redirectTo }: Props) {
           <span className='border-brand-border w-full border-t' />
         </div>
         <div className='relative flex justify-center'>
-          <span className='bg-brand-bg-panel text-brand-text-muted px-2 font-mono text-[11px] tracking-[0.1em] uppercase'>
+          <span className='bg-brand-bg-panel text-brand-text-muted text-overline px-2 font-mono tracking-[0.1em] uppercase'>
             or
           </span>
         </div>

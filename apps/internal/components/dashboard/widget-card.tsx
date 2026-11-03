@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
+import { pagePanelClass } from '@/components/layout/page-panel'
 
 /** Every home widget's frame (the card behind list pages' background). */
-export const WIDGET_FRAME_CLASS =
-  'bg-background flex flex-col overflow-hidden rounded-xl border shadow-sm'
+export const WIDGET_FRAME_CLASS = `${pagePanelClass} flex flex-col overflow-hidden`
 
 /** The shared frame for home widgets: titled header, meta/action slot, body. Same background as the card that holds list-page tables (bg-background). */
 export function WidgetCard({

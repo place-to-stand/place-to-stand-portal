@@ -150,7 +150,7 @@ function DeploymentRow({
   return (
     <div className='group/deploy-row bg-background/60 flex items-center gap-2 rounded-md border px-2.5 py-1.5'>
       {/* Plan ID */}
-      <span className='text-muted-foreground shrink-0 font-mono text-[11px]'>
+      <span className='text-muted-foreground text-overline shrink-0 font-mono'>
         {deployment.plan_id}
       </span>
 

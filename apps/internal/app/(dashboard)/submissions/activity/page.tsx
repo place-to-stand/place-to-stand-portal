@@ -6,6 +6,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
 import { ActivitySection } from '@/components/activity/activity-section'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Submission activity',
@@ -20,13 +21,13 @@ export default async function SubmissionsActivityPage() {
       tabs={SUBMISSIONS_TABS}
       activeTab='activity'
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <ActivitySection
           targetType='SUBMISSION'
           emptyState='No recent submission activity.'
           description='Audit submission acknowledgement changes, archives, restores, and deletions in one place.'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

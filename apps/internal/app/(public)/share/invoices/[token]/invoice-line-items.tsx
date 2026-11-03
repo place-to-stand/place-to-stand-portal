@@ -85,7 +85,7 @@ export function InvoiceLineItems({ items }: { items: LineItem[] }) {
           >
             <span className='text-sm leading-[1.45]'>{item.description}</span>
             <div className='flex items-baseline justify-between gap-4'>
-              <span className={cn(NUM, 'text-email-muted text-[13px]')}>
+              <span className={cn(NUM, 'text-email-muted text-sm')}>
                 {Number(item.quantity)} × {formatCurrency(item.unit_price)}
               </span>
               <span className={cn(NUM, 'text-sm font-medium')}>

@@ -23,7 +23,7 @@ export function SnapshotErrorNotice({ message }: SnapshotErrorNoticeProps) {
         <AlertTitle className='font-semibold'>
           Unable to read the saved close
         </AlertTitle>
-        <AlertDescription className='text-foreground/80 text-[13px]'>
+        <AlertDescription className='text-foreground/80 text-sm'>
           {message} The figures below are live, not the saved close.
         </AlertDescription>
       </AlertContent>

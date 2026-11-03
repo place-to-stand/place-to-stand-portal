@@ -18,6 +18,7 @@ import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 import { formatDay, formatDeduction, formatShortDay } from './format'
 import { PayeeAvatar } from './payee-avatar'
 import { TreeBranch } from './tree-branch'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type ProfitShareCardProps = {
   state: Exclude<ProfitShareState, { status: 'inactive' }>
@@ -35,9 +36,10 @@ function CardShell({
   children: React.ReactNode
 }) {
   return (
-    <section
+    <PagePanel
       aria-labelledby='profit-share-title'
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      flush
+      className='overflow-hidden'
     >
       <div className='flex items-center justify-between gap-4 border-b px-5 py-3.5'>
         <div className='flex min-w-0 flex-col gap-0.5'>
@@ -53,7 +55,7 @@ function CardShell({
         </span>
       </div>
       {children}
-    </section>
+    </PagePanel>
   )
 }
 
@@ -140,7 +142,7 @@ function ReadyBody({
         {data.accounts.map((account, index) => (
           <div
             key={account.id}
-            className='text-muted-foreground flex items-center gap-2 py-1 pr-5 pl-16 text-[13px]'
+            className='text-muted-foreground flex items-center gap-2 py-1 pr-5 pl-16 text-sm'
           >
             <TreeBranch
               first={index === 0}
@@ -207,7 +209,7 @@ function ReadyBody({
           </div>
         ))}
       </div>
-      <div className='bg-muted/50 text-foreground/80 flex items-center justify-between gap-3 border-t px-5 py-3 text-[13px]'>
+      <div className='bg-muted/50 text-foreground/80 flex items-center justify-between gap-3 border-t px-5 py-3 text-sm'>
         <span>Balance left after all payouts</span>
         <span className='text-foreground font-medium tabular-nums'>
           {formatCurrency(leftAfter)}
@@ -235,7 +237,7 @@ function UnavailableBody({ message }: { message: string }) {
           <span className='text-sm font-medium'>
             Unable to load Mercury balance
           </span>
-          <span className='text-muted-foreground text-[13px]'>
+          <span className='text-muted-foreground text-sm'>
             {message} Profit share can&apos;t be worked out until the balance
             loads.
           </span>

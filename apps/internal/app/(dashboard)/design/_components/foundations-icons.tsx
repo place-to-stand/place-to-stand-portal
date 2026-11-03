@@ -145,7 +145,7 @@ function IconTile({
         {caption ? (
           <span className='block truncate text-xs font-medium'>{caption}</span>
         ) : null}
-        <span className='text-muted-foreground block truncate font-mono text-[10px]'>
+        <span className='text-muted-foreground text-micro block truncate font-mono'>
           {name}
         </span>
       </span>

@@ -45,6 +45,38 @@ export const noRawColour = {
   },
 }
 
+const PANEL_TOKENS = [/(^|\s)rounded-xl(\s|$)/, /(^|\s)shadow-sm(\s|$)/]
+
+/**
+ * README → Borders: a page panel is `PagePanel` (or `pagePanelClass`) from
+ * components/layout/page-panel.tsx, never a hand-written copy of its classes.
+ */
+export const onePagePanel = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Page panels come from PagePanel' },
+    schema: [],
+    messages: {
+      copy: 'This copies the page panel (rounded-xl + shadow-sm). Use <PagePanel> or pagePanelClass from @/components/layout/page-panel.',
+    },
+  },
+  create(context) {
+    function check(node, value) {
+      if (PANEL_TOKENS.every(token => token.test(value))) {
+        context.report({ node, messageId: 'copy' })
+      }
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === 'string') check(node, node.value)
+      },
+      TemplateElement(node) {
+        check(node, node.value.raw)
+      },
+    }
+  },
+}
+
 /**
  * CLAUDE.md, "Sheet deep links": never hand-roll sheet URL writes; links come
  * from the builders in lib/sheets/hrefs.ts. Options: `{ entities: [...] }`,

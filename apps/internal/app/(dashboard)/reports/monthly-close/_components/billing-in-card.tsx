@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 
 import { formatCurrency, formatHours } from '@pts/ui/numbers'
 import { TreeBranch } from './tree-branch'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type BillingInCardProps = {
   prepaid: PrepaidBillingData
@@ -44,7 +45,7 @@ function Group({
           <span className='font-semibold'>{label}</span>
           <span className='text-muted-foreground'> · {basis}</span>
         </span>
-        <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
+        <span className='text-muted-foreground w-18 text-right text-sm tabular-nums'>
           {formatHours(hours)}
         </span>
         <span className='w-24 text-right font-semibold tabular-nums'>
@@ -60,7 +61,7 @@ function Group({
             <TreeBranch first={index === 0} last={index === rows.length - 1} />
             <span className='min-w-0'>{row.clientName}</span>
           </span>
-          <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
+          <span className='text-muted-foreground w-18 text-right text-sm tabular-nums'>
             {formatHours(row.totalHours)}
           </span>
           <span className='w-24 text-right tabular-nums'>
@@ -76,9 +77,10 @@ export function BillingInCard({ prepaid, net30, total }: BillingInCardProps) {
   const empty = prepaid.rows.length === 0 && net30.rows.length === 0
 
   return (
-    <section
+    <PagePanel
       aria-labelledby='billing-in-title'
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      flush
+      className='overflow-hidden'
     >
       <div className='flex items-center justify-between gap-4 border-b px-5 py-3.5'>
         <h2 id='billing-in-title' className='text-base font-semibold'>
@@ -112,6 +114,6 @@ export function BillingInCard({ prepaid, net30, total }: BillingInCardProps) {
           />
         </div>
       )}
-    </section>
+    </PagePanel>
   )
 }

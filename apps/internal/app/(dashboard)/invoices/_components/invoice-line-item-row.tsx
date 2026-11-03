@@ -7,6 +7,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Trash2, TriangleAlert } from 'lucide-react'
 
 import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
+import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   FormControl,
@@ -36,6 +37,8 @@ type LineItemRowProps = {
   catalogItemMap: Record<string, ProductCatalogOption>
   onProductSelect: (index: number, productId: string) => void
   onRemove: (index: number) => void
+  /** Undo for a line pending removal. */
+  onRestore: (index: number) => void
   canRemove: boolean
   disabled: boolean
   isReadOnly: boolean
@@ -52,6 +55,7 @@ function LineItemRow({
   catalogItemMap,
   onProductSelect,
   onRemove,
+  onRestore,
   canRemove,
   disabled,
   isReadOnly,
@@ -73,6 +77,14 @@ function LineItemRow({
   const productCatalogItemId = useWatch({
     control: form.control,
     name: `lineItems.${index}.productCatalogItemId`,
+  })
+  const removed = useWatch({
+    control: form.control,
+    name: `lineItems.${index}.removed`,
+  })
+  const description = useWatch({
+    control: form.control,
+    name: `lineItems.${index}.description`,
   })
   const amount = computeLineItemAmount(quantity ?? 0, unitPrice ?? 0)
 
@@ -112,6 +124,31 @@ function LineItemRow({
 
   // The combobox value: catalog item ID, or "__custom__" for custom items
   const selectorValue = productCatalogItemId ?? CUSTOM_ITEM_VALUE
+
+  if (removed) {
+    // Like every sheet list: the card stays where it was until Save.
+    const title = description?.trim() || `Item ${index + 1}`
+    return (
+      <div className='flex items-center gap-3 rounded-lg border p-4 opacity-60'>
+        <div className='flex min-w-0 flex-1 flex-col'>
+          <span className='truncate text-sm font-medium'>{title}</span>
+          <span className='text-destructive text-xs'>Pending removal</span>
+        </div>
+        <span className='text-sm tabular-nums'>{formatCurrency(amount)}</span>
+        <Button
+          type='button'
+          variant='ghost'
+          size='xs'
+          className='text-muted-foreground'
+          disabled={disabled}
+          onClick={() => onRestore(index)}
+          aria-label={`Undo removing ${title}`}
+        >
+          Undo
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className='flex rounded-lg border'>

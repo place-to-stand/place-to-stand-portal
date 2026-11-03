@@ -48,7 +48,7 @@ export function PublicInvoice({
     <>
       <PublicHeader>
         {invoice.invoice_number ? (
-          <span className='text-brand-text-muted hidden font-mono text-[11px] tracking-[0.1em] uppercase sm:inline'>
+          <span className='text-brand-text-muted text-overline hidden font-mono tracking-[0.1em] uppercase sm:inline'>
             Invoice {invoice.invoice_number}
           </span>
         ) : null}
@@ -96,7 +96,7 @@ export function PublicInvoice({
                   Email{' '}
                   <a
                     href={`mailto:${replyTo}`}
-                    className='text-brand-text hover:text-brand-lime font-mono text-[13px] underline-offset-4 transition-colors hover:underline'
+                    className='text-brand-text hover:text-brand-lime font-mono text-sm underline-offset-4 transition-colors hover:underline'
                   >
                     {replyTo}
                   </a>

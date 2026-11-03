@@ -14,6 +14,7 @@ import {
   TemplateFilters,
   TemplateSection,
 } from './template-gallery-parts'
+import { PagePanel } from '@/components/layout/page-panel'
 
 /** Width a chat card is laid out at before it is scaled into the card. */
 const CHAT_RENDER_WIDTH = 400
@@ -34,9 +35,9 @@ export function NotificationsGallery({
 
   if (entries.length === 0) {
     return (
-      <section className='bg-background text-muted-foreground rounded-xl border p-6 text-sm shadow-sm'>
+      <PagePanel className='text-muted-foreground text-sm'>
         No notifications are registered.
-      </section>
+      </PagePanel>
     )
   }
 
@@ -50,7 +51,7 @@ export function NotificationsGallery({
   const channels = [...new Set(visible.map(entry => entry.channel))]
 
   return (
-    <section className='bg-background flex flex-col gap-6 rounded-xl border p-4 shadow-sm'>
+    <PagePanel className='flex flex-col gap-6'>
       <TemplateFilters value={filters} onChange={setFilters} />
 
       {visible.length === 0 ? (
@@ -97,6 +98,6 @@ export function NotificationsGallery({
           if (!open) setOpenId(null)
         }}
       />
-    </section>
+    </PagePanel>
   )
 }

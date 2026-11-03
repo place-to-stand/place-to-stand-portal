@@ -13,6 +13,7 @@ import {
   TemplateFilters,
   TemplateSection,
 } from './template-gallery-parts'
+import { PagePanel } from '@/components/layout/page-panel'
 
 /**
  * Read-only catalog of every PDF the apps render, in the same gallery and
@@ -26,9 +27,9 @@ export function PdfsGallery({ entries }: { entries: PdfTemplateEntry[] }) {
 
   if (entries.length === 0) {
     return (
-      <section className='bg-background text-muted-foreground rounded-xl border p-6 text-sm shadow-sm'>
+      <PagePanel className='text-muted-foreground text-sm'>
         No PDF templates are registered.
-      </section>
+      </PagePanel>
     )
   }
 
@@ -41,7 +42,7 @@ export function PdfsGallery({ entries }: { entries: PdfTemplateEntry[] }) {
   )
 
   return (
-    <section className='bg-background flex flex-col gap-6 rounded-xl border p-4 shadow-sm'>
+    <PagePanel className='flex flex-col gap-6'>
       <TemplateFilters value={filters} onChange={setFilters} />
 
       {visible.length === 0 ? (
@@ -77,6 +78,6 @@ export function PdfsGallery({ entries }: { entries: PdfTemplateEntry[] }) {
           if (!open) setOpenId(null)
         }}
       />
-    </section>
+    </PagePanel>
   )
 }

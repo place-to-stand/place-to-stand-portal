@@ -5,6 +5,7 @@ import { formatCurrency, formatPercent } from '@pts/ui/numbers'
 
 import { formatShortDay } from './format'
 import { TreeBranch } from './tree-branch'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type SalesTaxCardProps = {
   salesTax: SalesTaxData
@@ -16,9 +17,10 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
   const { rows } = salesTax
 
   return (
-    <section
+    <PagePanel
       aria-labelledby='sales-tax-title'
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      flush
+      className='overflow-hidden'
     >
       <div className='flex items-center justify-between gap-4 border-b px-5 py-3.5'>
         <h2 id='sales-tax-title' className='text-base font-semibold'>
@@ -39,7 +41,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
               <span className='font-semibold'>Collected</span>
               <span className='text-muted-foreground'> · invoices paid</span>
             </span>
-            <span className='text-muted-foreground text-right text-[13px] tabular-nums'>
+            <span className='text-muted-foreground text-right text-sm tabular-nums'>
               on {formatCurrency(salesTax.totalTaxable)}
             </span>
           </div>
@@ -62,7 +64,7 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
                   </span>
                 </span>
               </span>
-              <span className='text-muted-foreground w-18 text-right text-[13px] tabular-nums'>
+              <span className='text-muted-foreground w-18 text-right text-sm tabular-nums'>
                 {formatPercent(row.taxRate)}
               </span>
               <span className='w-24 text-right tabular-nums'>
@@ -78,6 +80,6 @@ export function SalesTaxCard({ salesTax, isLive }: SalesTaxCardProps) {
           is the current figure.
         </p>
       ) : null}
-    </section>
+    </PagePanel>
   )
 }

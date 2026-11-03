@@ -37,7 +37,7 @@ export function FoundationsEntities() {
         </div>
         {GROUP_ORDER.map(group => (
           <div key={group}>
-            <div className='bg-muted/40 text-muted-foreground border-b px-4 py-1.5 text-[11px] font-semibold tracking-wider uppercase'>
+            <div className='bg-muted/40 text-muted-foreground text-overline border-b px-4 py-1.5 font-semibold tracking-wider uppercase'>
               {ENTITY_GROUP_LABELS[group]}
             </div>
             {ENTITY_KEYS.filter(key => ENTITIES[key].group === group).map(
@@ -59,7 +59,7 @@ function EntityRow({ entity }: { entity: AccentEntity }) {
     <div className='grid grid-cols-1 border-b last:border-b-0 md:grid-cols-[13rem_1fr_1fr]'>
       <div className='flex flex-col justify-center gap-0.5 px-4 py-3'>
         <span className='text-sm font-medium'>{definition.label}</span>
-        <span className='text-muted-foreground font-mono text-[11px]'>
+        <span className='text-muted-foreground text-overline font-mono'>
           {definition.iconName} · {colour.token}
         </span>
       </div>

@@ -6,6 +6,7 @@ import type { MonthlyCloseReport } from '@/lib/data/reports/types'
 import { formatCurrency, formatHours } from '@pts/ui/numbers'
 
 import { formatShare } from './format'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type RateSplitCardProps = {
   report: MonthlyCloseReport
@@ -49,10 +50,10 @@ function Row({
           {basis}
         </span>
       </div>
-      <span className='text-muted-foreground w-10 shrink-0 text-right text-[13px] tabular-nums'>
+      <span className='text-muted-foreground w-10 shrink-0 text-right text-sm tabular-nums'>
         {percent}
       </span>
-      <span className='text-muted-foreground w-30 shrink-0 text-right text-[13px] tabular-nums max-sm:hidden'>
+      <span className='text-muted-foreground w-30 shrink-0 text-right text-sm tabular-nums max-sm:hidden'>
         {basis}
       </span>
       <span
@@ -94,9 +95,10 @@ export function RateSplitCard({ report }: RateSplitCardProps) {
   const pct = (rate: number) => formatShare(rate, rates.billablePerHour)
 
   return (
-    <section
+    <PagePanel
       aria-labelledby='rate-split-title'
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      flush
+      className='overflow-hidden'
     >
       <div className='flex items-center justify-between gap-4 border-b px-5 py-3.5'>
         <h2 id='rate-split-title' className='text-base font-semibold'>
@@ -144,6 +146,6 @@ export function RateSplitCard({ report }: RateSplitCardProps) {
       <p className='bg-muted/50 text-muted-foreground border-t px-5 py-3 text-xs'>
         Payroll accrues on hours worked and the rest on hours billed.
       </p>
-    </section>
+    </PagePanel>
   )
 }

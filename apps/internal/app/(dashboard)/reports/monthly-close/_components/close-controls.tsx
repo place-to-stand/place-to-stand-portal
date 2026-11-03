@@ -3,16 +3,8 @@
 import { useState, useTransition } from 'react'
 import { Lock, LockOpen } from 'lucide-react'
 
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@pts/ui/alert-dialog'
-import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
+import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { toast } from '@/components/ui/use-toast'
 import type { ProfitShareState } from '@/lib/data/reports/types'
@@ -122,40 +114,21 @@ export function CloseControls({
           Close {displayMonth}
         </Button>
       </DisabledFieldTooltip>
-      <AlertDialog
+      <ConfirmDialog
         open={confirming === 'close'}
-        onOpenChange={next => {
-          if (!next) setConfirming(null)
-        }}
+        title={`Close ${displayMonth}?`}
+        description={
+          profitShare.status === 'ready'
+            ? `Saves these numbers and the ${formatShortDay(profitShare.data.asOfDate)} Mercury balance. Late changes will show as drift.`
+            : 'Saves these numbers. Late changes will show as drift.'
+        }
+        confirmLabel={isPending ? 'Closing…' : 'Close month'}
+        confirmDisabled={isPending}
+        onConfirm={() => runAction('close')}
+        onCancel={() => setConfirming(null)}
       >
-        <AlertDialogContent onBackdropClick={() => setConfirming(null)}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Close {displayMonth}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {profitShare.status === 'ready'
-                ? `Saves these numbers and the ${formatShortDay(profitShare.data.asOfDate)} Mercury balance. Late changes will show as drift.`
-                : 'Saves these numbers. Late changes will show as drift.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <CloseSummary payoutsTotal={payoutsTotal} profitShare={profitShare} />
-          <AlertDialogFooter>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => setConfirming(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type='button'
-              disabled={isPending}
-              onClick={() => runAction('close')}
-            >
-              {isPending ? 'Closing…' : 'Close month'}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <CloseSummary payoutsTotal={payoutsTotal} profitShare={profitShare} />
+      </ConfirmDialog>
     </>
   )
 }

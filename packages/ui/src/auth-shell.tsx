@@ -93,7 +93,7 @@ export function AuthShell({
  * only need to agree on how a field looks.
  */
 export const authFieldLabelClass =
-  'block font-mono text-[11px] uppercase tracking-[0.1em] text-brand-text-muted'
+  'block font-mono text-overline uppercase tracking-[0.1em] text-brand-text-muted'
 
 export const authInputClass =
   'w-full border border-brand-border bg-brand-bg px-3 py-2 text-sm text-brand-text placeholder:text-brand-text-muted/50 transition-colors focus:border-brand-lime focus:outline-none focus:ring-1 focus:ring-brand-lime disabled:opacity-50'

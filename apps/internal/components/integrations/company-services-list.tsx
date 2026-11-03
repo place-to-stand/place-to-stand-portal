@@ -18,6 +18,7 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { Skeleton } from '@pts/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type { CompanyService, CompanyServiceId } from '@/lib/types/integrations'
+import { pagePanelClass } from '@/components/layout/page-panel'
 
 function BrandIcon({ icon }: { icon: { title: string; path: string } }) {
   return (
@@ -171,7 +172,7 @@ export function CompanyServicesList() {
   const byId = new Map(data?.map(service => [service.id, service]))
 
   return (
-    <div className='bg-card overflow-hidden rounded-xl border shadow-sm'>
+    <div className={cn(pagePanelClass, 'overflow-hidden')}>
       <div className='flex items-center justify-between gap-3 px-4 py-2.5'>
         <span className='text-muted-foreground text-xs'>
           {isLoading
@@ -190,7 +191,7 @@ export function CompanyServicesList() {
       </div>
       {GROUPS.map(group => (
         <section key={group.label} aria-label={group.label}>
-          <h3 className='bg-muted/40 text-muted-foreground border-t px-4 py-1.5 text-[11px] font-semibold tracking-wide uppercase'>
+          <h3 className='bg-muted/40 text-muted-foreground text-overline border-t px-4 py-1.5 font-semibold tracking-wide uppercase'>
             {group.label}
           </h3>
           <ul>

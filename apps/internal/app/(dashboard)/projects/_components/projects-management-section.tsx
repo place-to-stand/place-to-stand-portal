@@ -19,6 +19,7 @@ import { type ContractorUserSummary } from '@/components/projects/table/types'
 import { useProjectsSettingsController } from '@/components/projects/table/use-projects-settings-controller'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { usePageParam } from '@/hooks/use-page-param'
+import { PagePanel } from '@/components/layout/page-panel'
 
 type ProjectsManagementSectionProps = {
   mode: 'active' | 'archive'
@@ -94,7 +95,7 @@ export function ProjectsManagementSection({
   return (
     <div className='space-y-4'>
       {/* Main Container with Background */}
-      <section className='bg-background space-y-4 rounded-xl border p-4 shadow-sm'>
+      <PagePanel className='space-y-4'>
         <ProjectLifecycleDialogs
           deleteTarget={deleteTarget}
           isPending={isPending}
@@ -122,7 +123,7 @@ export function ProjectsManagementSection({
           pageSize={pageSize}
           onPageChange={handlePageChange}
         />
-      </section>
+      </PagePanel>
       <ProjectSheet
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}

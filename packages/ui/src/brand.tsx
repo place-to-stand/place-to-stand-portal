@@ -183,7 +183,7 @@ export function BrandLockup({ label }: { label: string }) {
           Place To Stand
         </span>
         <span
-          className='font-mono text-[11px] tracking-[0.1em] uppercase'
+          className='text-overline font-mono tracking-[0.1em] uppercase'
           style={{ color: BRAND.accent }}
         >
           {label}

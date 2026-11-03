@@ -7,6 +7,7 @@ import { requirePage } from '@/lib/auth/session'
 import { CONTACTS_TABS } from '../_lib/tabs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { ActivitySection } from '@/components/activity/activity-section'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'People activity',
@@ -24,13 +25,13 @@ export default async function ContactsActivityPage() {
         <SheetCreateButton entity='contact' label='Create person' />
       }
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <ActivitySection
           targetType='CONTACT'
           emptyState='No recent people activity.'
           description='Audit people creation, edits, archives, and deletions in one place.'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

@@ -9,6 +9,8 @@ import type {
 import { formatCurrency, formatHours } from '@pts/ui/numbers'
 
 import { formatShortDay } from './format'
+import { pagePanelClass } from '@/components/layout/page-panel'
+import { cn } from '@/lib/utils'
 
 type SummaryStripProps = {
   report: MonthlyCloseReport
@@ -112,7 +114,10 @@ export function SummaryStrip({
   return (
     <section
       aria-label='Summary'
-      className='bg-border [&>*]:bg-card grid grid-cols-1 gap-px overflow-hidden rounded-xl border shadow-sm sm:grid-cols-2 lg:grid-cols-4'
+      className={cn(
+        pagePanelClass,
+        'bg-border [&>*]:bg-background grid grid-cols-1 gap-px overflow-hidden sm:grid-cols-2 lg:grid-cols-4'
+      )}
     >
       <Stat
         label={`Billing in${soFar}`}

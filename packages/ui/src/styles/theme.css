@@ -232,6 +232,12 @@
  * brand grounds only (auth screens, share-page masthead, the logo).
  */
 @theme {
+  /* Type roles below text-xs (docs/design-system tokens: overline, micro). */
+  --text-overline: 11px;
+  --text-overline--line-height: 16px;
+  --text-micro: 10px;
+  --text-micro--line-height: 14px;
+
   --color-brand-bg: #0e0f11;
   --color-brand-bg-card: #1a1b1f;
   --color-brand-bg-panel: rgba(22, 24, 28, 0.88);

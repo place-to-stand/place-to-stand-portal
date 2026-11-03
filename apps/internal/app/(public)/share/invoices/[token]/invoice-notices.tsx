@@ -43,7 +43,7 @@ export function InvoiceNotices({
         <div
           className={`${NOTICE} border-brand-lime/30 bg-brand-lime/[0.06] text-brand-text`}
         >
-          <span className='border-brand-lime/50 text-brand-lime shrink-0 border px-2 py-0.5 font-mono text-[10px] tracking-[0.2em] uppercase'>
+          <span className='border-brand-lime/50 text-brand-lime text-micro shrink-0 border px-2 py-0.5 font-mono tracking-[0.2em] uppercase'>
             Preview
           </span>
           <p>
@@ -58,7 +58,7 @@ export function InvoiceNotices({
         <div
           className={`${NOTICE} border-brand-lime/30 bg-brand-lime/[0.06] text-brand-text`}
         >
-          <span className='border-brand-lime/50 text-brand-lime shrink-0 border px-2 py-0.5 font-mono text-[10px] tracking-[0.2em] uppercase'>
+          <span className='border-brand-lime/50 text-brand-lime text-micro shrink-0 border px-2 py-0.5 font-mono tracking-[0.2em] uppercase'>
             Draft
           </span>
           <p>

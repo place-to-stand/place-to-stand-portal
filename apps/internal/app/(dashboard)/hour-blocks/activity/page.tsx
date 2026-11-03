@@ -8,6 +8,7 @@ import { listHourBlocksForSettings } from '@/lib/queries/hour-blocks'
 import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
 import { ActivitySection } from '@/components/activity/activity-section'
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Hour block activity',
@@ -28,13 +29,13 @@ export default async function HourBlocksActivityPage() {
       activeTab='activity'
       primaryAction={<HourBlocksAddButton clients={clients} />}
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <ActivitySection
           targetType='HOUR_BLOCK'
           emptyState='No recent hour block activity.'
           description='Audit hour block creation, edits, archives, and deletions in one place.'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

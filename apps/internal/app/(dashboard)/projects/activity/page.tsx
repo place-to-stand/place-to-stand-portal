@@ -9,6 +9,7 @@ import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 import { ActivitySection } from '@/components/activity/activity-section'
 import { ProjectsAddButton } from '../_components/projects-add-button'
 import { PROJECTS_TABS } from '../_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Project activity',
@@ -37,13 +38,13 @@ export default async function ProjectsActivityPage() {
       activeTab='activity'
       primaryAction={<ProjectsAddButton clients={clientRows} />}
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <ActivitySection
           targetType='PROJECT'
           emptyState='No recent project activity.'
           description='Audit project creation, edits, archives, and deletions in one place.'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

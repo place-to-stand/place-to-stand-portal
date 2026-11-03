@@ -35,7 +35,7 @@ export function ChatCardPreview({ payload }: { payload: ChatCardPayload }) {
         <div className='flex flex-col gap-0.5 px-4 pt-4 pb-3'>
           <span className='text-base font-medium'>{card.header.title}</span>
           {card.header.subtitle ? (
-            <span className='text-[13px] leading-snug text-[#5f6368]'>
+            <span className='text-sm leading-snug text-[#5f6368]'>
               {card.header.subtitle}
             </span>
           ) : null}

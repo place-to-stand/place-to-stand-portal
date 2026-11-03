@@ -78,7 +78,7 @@ export function Sidebar({ user, badges }: Props) {
         </div>
         {isDev ? (
           <>
-            <div className='flex items-center justify-center gap-1.5 rounded-sm bg-amber-500 px-2 py-1 text-[10px] font-semibold text-amber-950 group-data-[collapsible=icon]:hidden'>
+            <div className='text-micro flex items-center justify-center gap-1.5 rounded-sm bg-amber-500 px-2 py-1 font-semibold text-amber-950 group-data-[collapsible=icon]:hidden'>
               <span className='inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-amber-950/60' />
               Development
             </div>
@@ -108,13 +108,13 @@ export function Sidebar({ user, badges }: Props) {
               <span className='group-data-[collapsible=icon]:hidden'>
                 Search
               </span>
-              <kbd className='bg-muted text-muted-foreground pointer-events-none ml-auto rounded-sm border px-1 font-mono text-[10px] group-data-[collapsible=icon]:hidden'>
+              <kbd className='bg-muted text-muted-foreground text-micro pointer-events-none ml-auto rounded-sm border px-1 font-mono group-data-[collapsible=icon]:hidden'>
                 ⌘K
               </kbd>
             </button>
           </TooltipTrigger>
           <TooltipContent side='right' hidden={sidebarState !== 'collapsed'}>
-            Search <kbd className='ml-1 font-mono text-[10px]'>⌘K</kbd>
+            Search <kbd className='text-micro ml-1 font-mono'>⌘K</kbd>
           </TooltipContent>
         </Tooltip>
       </SidebarHeader>
@@ -122,7 +122,7 @@ export function Sidebar({ user, badges }: Props) {
         {navGroups.map((group, index) => (
           <SidebarGroup key={group.title ?? `group-${index}`} className='py-1'>
             {group.title ? (
-              <SidebarGroupLabel className='text-muted-foreground/60 h-6 px-1 pb-1 text-[11px] font-semibold tracking-wide uppercase duration-300 ease-in-out group-data-[collapsible=icon]:-mt-6 group-data-[collapsible=icon]:opacity-0'>
+              <SidebarGroupLabel className='text-muted-foreground/60 text-overline h-6 px-1 pb-1 font-semibold tracking-wide uppercase duration-300 ease-in-out group-data-[collapsible=icon]:-mt-6 group-data-[collapsible=icon]:opacity-0'>
                 {group.title}
               </SidebarGroupLabel>
             ) : null}
@@ -167,7 +167,7 @@ export function Sidebar({ user, badges }: Props) {
                           <SidebarMenuBadge
                             aria-hidden='true'
                             className={cn(
-                              'right-1.5 h-4 min-w-4 rounded-full px-1 text-[10px] font-semibold tabular-nums',
+                              'text-micro right-1.5 h-4 min-w-4 rounded-full px-1 font-semibold tabular-nums',
                               // The primitive swaps badge text to the accent
                               // color on hover/active — unreadable on our
                               // bg-primary pill; pin it in every state.

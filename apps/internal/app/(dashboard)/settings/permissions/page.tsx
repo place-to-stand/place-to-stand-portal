@@ -21,6 +21,7 @@ import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { cn } from '@/lib/utils'
 
 import { EndpointList } from './_components/endpoint-list'
+import { PagePanel, pagePanelClass } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Roles & permissions | Settings',
@@ -57,10 +58,7 @@ export default async function PermissionsPage() {
       <div className='w-full space-y-6'>
         <section className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
           {roleTotals.map(({ role, count }) => (
-            <div
-              key={role}
-              className='bg-background rounded-xl border p-4 shadow-sm'
-            >
+            <div key={role} className={cn(pagePanelClass, 'p-4')}>
               <p className='text-muted-foreground text-xs font-medium'>
                 {ROLE_LABELS[role]}
               </p>
@@ -73,7 +71,7 @@ export default async function PermissionsPage() {
               </p>
             </div>
           ))}
-          <div className='bg-background rounded-xl border p-4 shadow-sm'>
+          <div className={cn(pagePanelClass, 'p-4')}>
             <p className='text-muted-foreground text-xs font-medium'>
               Endpoints checked
             </p>
@@ -95,10 +93,11 @@ export default async function PermissionsPage() {
         </p>
 
         {registry.areas.map(({ area, capabilities }) => (
-          <section
+          <PagePanel
             key={area}
-            className='bg-background overflow-hidden rounded-xl border shadow-sm'
             aria-labelledby={`area-${area}`}
+            flush
+            className='overflow-hidden'
           >
             <div className={cn(GRID, 'bg-muted/40 border-b px-4 py-2.5')}>
               <h2 id={`area-${area}`} className='text-sm font-semibold'>
@@ -121,10 +120,10 @@ export default async function PermissionsPage() {
                 <CapabilityRow key={capability.key} capability={capability} />
               ))}
             </ul>
-          </section>
+          </PagePanel>
         ))}
 
-        <section className='bg-background overflow-hidden rounded-xl border shadow-sm'>
+        <PagePanel flush className='overflow-hidden'>
           <div className='bg-muted/40 border-b px-4 py-2.5'>
             <h2 className='text-sm font-semibold'>Admin only</h2>
             <p className='text-muted-foreground text-xs'>
@@ -151,9 +150,9 @@ export default async function PermissionsPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </PagePanel>
 
-        <section className='bg-background overflow-hidden rounded-xl border shadow-sm'>
+        <PagePanel flush className='overflow-hidden'>
           <details className='group'>
             <summary className='bg-muted/40 flex cursor-pointer list-none items-center gap-2 px-4 py-2.5'>
               <ChevronRight className='text-muted-foreground size-4 transition-transform group-open:rotate-90' />
@@ -172,7 +171,7 @@ export default async function PermissionsPage() {
               <EndpointList endpoints={registry.open} />
             </div>
           </details>
-        </section>
+        </PagePanel>
       </div>
     </PageShell>
   )

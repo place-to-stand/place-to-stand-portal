@@ -68,7 +68,12 @@ function entityIconNames(dir, registry) {
   ].map(match => match[1])
 }
 
-export function nextApp({ dir, entityRegistry, sheetRegistry } = {}) {
+export function nextApp({
+  dir,
+  entityRegistry,
+  sheetRegistry,
+  pagePanel,
+} = {}) {
   const restrictedImports = [NO_RLS_IMPORT]
   if (entityRegistry) {
     // Entity icons belong to the registry: read the list from it so a new
@@ -150,6 +155,15 @@ export function nextApp({ dir, entityRegistry, sheetRegistry } = {}) {
       // "House rules (verified in code)"); each message quotes its rule.
       rules: HOUSE_RULES,
     },
+    ...(pagePanel
+      ? [
+          {
+            // README → Borders: page panels are <PagePanel> (this path).
+            rules: { 'pts/one-page-panel': 'error' },
+          },
+          { files: [pagePanel], rules: { 'pts/one-page-panel': 'off' } },
+        ]
+      : []),
     ...typed({ dir }),
     {
       // Dev scripts print their output and clean up the rows they made.

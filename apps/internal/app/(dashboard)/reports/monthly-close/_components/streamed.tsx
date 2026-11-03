@@ -5,6 +5,7 @@ import type { StripeFeesState } from '@/lib/stripe/fees'
 
 import { DriftNotice } from './drift-notice'
 import { StripeFeesCard } from './stripe-fees-card'
+import { PagePanel } from '@/components/layout/page-panel'
 
 // Cards fed by an outside API stream in behind a Suspense boundary, so the
 // database-backed report never waits on Stripe or Mercury. The page starts
@@ -38,10 +39,11 @@ export async function StreamedStripeFeesCard({
 /** Holds the Stripe fees card's frame while Stripe answers. */
 export function StripeFeesCardSkeleton() {
   return (
-    <section
+    <PagePanel
       aria-label='Stripe fees'
       aria-busy
-      className='bg-card overflow-hidden rounded-xl border shadow-sm'
+      flush
+      className='overflow-hidden'
     >
       <div className='flex items-center justify-between gap-4 border-b px-5 py-3.5'>
         <span className='text-base font-semibold'>Stripe fees</span>
@@ -52,6 +54,6 @@ export function StripeFeesCardSkeleton() {
         <Skeleton className='h-4 w-1/2' />
         <Skeleton className='h-4 w-2/3' />
       </div>
-    </section>
+    </PagePanel>
   )
 }

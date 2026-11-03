@@ -8,6 +8,7 @@ import { listInvoices } from '@/lib/queries/invoices'
 import { InvoicesAddButton } from '../_components/invoices-add-button'
 import { ActivitySection } from '@/components/activity/activity-section'
 import { INVOICES_TABS } from '../_lib/tabs'
+import { PagePanel } from '@/components/layout/page-panel'
 
 export const metadata: Metadata = {
   title: 'Invoice activity',
@@ -28,13 +29,13 @@ export default async function InvoicesActivityPage() {
       activeTab='activity'
       primaryAction={<InvoicesAddButton clients={clients} />}
     >
-      <section className='bg-background rounded-xl border p-4 shadow-sm'>
+      <PagePanel>
         <ActivitySection
           targetType='INVOICE'
           emptyState='No recent invoice activity.'
           description='Audit invoice creation, edits, sends, voids, and deletions in one place.'
         />
-      </section>
+      </PagePanel>
     </PageShell>
   )
 }

@@ -120,22 +120,27 @@ function InvoiceEmailForm({
 
   useEffect(() => {
     let cancelled = false
-    getInvoiceEmailDraft(invoiceId).then(result => {
-      if (cancelled) return
-      if (!result.ok) {
-        setLoadError(result.error)
-        return
+    getInvoiceEmailDraft(invoiceId).then(
+      result => {
+        if (cancelled) return
+        if (!result.ok) {
+          setLoadError(result.error)
+          return
+        }
+        const draft = result.data
+        setLoaded({ draft, requestId: crypto.randomUUID() })
+        setTo(draft.to)
+        setCc(draft.cc)
+        setSubject(draft.subject)
+        setMessage(draft.message)
+      },
+      (error: unknown) => {
+        if (cancelled) return
+        setLoadError(
+          error instanceof Error ? error.message : 'Unable to load the email.'
+        )
       }
-      const draft = result.data
-      setLoaded({ draft, requestId: crypto.randomUUID() })
-      setTo(draft.to)
-      setCc(draft.cc)
-      setSubject(draft.subject)
-      setMessage(draft.message)
-    }, (error: unknown) => {
-      if (cancelled) return
-      setLoadError(error instanceof Error ? error.message : 'Unable to load the email.')
-    })
+    )
     return () => {
       cancelled = true
     }
@@ -305,7 +310,7 @@ function InvoiceEmailForm({
 
           <div className='bg-email-backdrop hidden min-h-0 flex-col md:flex'>
             <div className='border-email-rule flex h-10 shrink-0 items-center justify-between gap-3 border-b px-5'>
-              <span className='text-email-muted text-[11px] font-semibold tracking-wide uppercase'>
+              <span className='text-email-muted text-overline font-semibold tracking-wide uppercase'>
                 Preview
               </span>
               <span className='text-email-faint truncate text-xs'>
