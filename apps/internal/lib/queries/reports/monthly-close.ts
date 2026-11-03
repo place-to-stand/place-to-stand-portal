@@ -732,23 +732,24 @@ export async function fetchReportDateBounds(): Promise<{
     month: now.getUTCMonth() + 1, // Convert 0-indexed to 1-indexed
   }
 
-  // Find earliest time log date
-  const [timeLogRow] = await db
-    .select({
-      earliestDate: sql<string | null>`MIN(${timeLogs.loggedOn})`,
-    })
-    .from(timeLogs)
-    .where(isNull(timeLogs.deletedAt))
-    .limit(1)
-
-  // Find earliest hour block billing month (PRD 002 D13 attribution)
-  const [hourBlockRow] = await db
-    .select({
-      earliestDate: sql<string | null>`MIN(${hourBlocks.billingMonth})`,
-    })
-    .from(hourBlocks)
-    .where(isNull(hourBlocks.deletedAt))
-    .limit(1)
+  // Earliest time log date and earliest hour block billing month (PRD 002
+  // D13 attribution), read in parallel.
+  const [[timeLogRow], [hourBlockRow]] = await Promise.all([
+    db
+      .select({
+        earliestDate: sql<string | null>`MIN(${timeLogs.loggedOn})`,
+      })
+      .from(timeLogs)
+      .where(isNull(timeLogs.deletedAt))
+      .limit(1),
+    db
+      .select({
+        earliestDate: sql<string | null>`MIN(${hourBlocks.billingMonth})`,
+      })
+      .from(hourBlocks)
+      .where(isNull(hourBlocks.deletedAt))
+      .limit(1),
+  ])
 
   // Parse dates and find the overall minimum.
   //

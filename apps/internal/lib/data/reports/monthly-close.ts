@@ -50,6 +50,9 @@ function toFiniteNumber(value: string | number | null | undefined): number {
  * @param startDate - Start date in 'yyyy-MM-dd' format (inclusive)
  * @param endDate - End date in 'yyyy-MM-dd' format (inclusive)
  */
+/** Month navigation bounds, read once per request. */
+export const fetchReportBounds = cache(fetchReportDateBounds)
+
 export const fetchMonthlyCloseReport = cache(
   async (startDate: string, endDate: string): Promise<MonthlyCloseReport> => {
     const rates = getPartnerRatesForPeriod(startDate)
@@ -72,7 +75,7 @@ export const fetchMonthlyCloseReport = cache(
       fetchNet30Billing(startDate, endDate),
       fetchBillableWorkHours(startDate, endDate),
       fetchSalesTaxCollected(startDate, endDate),
-      fetchReportDateBounds(),
+      fetchReportBounds(),
     ])
 
     // ------------------------------------------------------------------
