@@ -27,7 +27,7 @@ import {
   SheetRecordRow,
 } from '@/components/sheets/sheet-record-row'
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
-import { PortalAccessField } from '@/components/clients/portal-access-control'
+import { PortalAccessField } from '@/components/companies/portal-access-control'
 import { EmptyValue } from '@/components/table/empty-value'
 import {
   RecordRowAction,
