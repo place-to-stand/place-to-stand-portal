@@ -43,8 +43,6 @@ type TaskContextDetails = {
   projectHref?: string | null
   layout?: 'inline' | 'stacked'
   projectType?: ProjectTypeValue
-  /** Leave out the lead line (the lead's own sheet lists its tasks). */
-  hideLead?: boolean
 }
 
 type TaskCardProps = {
@@ -72,7 +70,7 @@ function CardContent({
     ? getTaskDueMeta(task.due_on, { status: task.status })
     : null
   const isCompleted = task.status === 'DONE'
-  const lead = context?.hideLead ? null : task.lead
+  const lead = task.lead
 
   return (
     <>
@@ -98,34 +96,23 @@ function CardContent({
                   : 'flex min-w-0 flex-wrap items-center gap-3'
               )}
             >
-              {context.clientLabel ? (
-                context.clientHref ? (
-                  <div className='flex max-w-full min-w-0 items-center gap-1'>
-                    <Link
-                      href={context.clientHref}
-                      title={context.clientLabel}
-                      className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
-                      onClick={event => event.stopPropagation()}
-                    >
-                      {renderProjectTypeIcon(
-                        context?.projectType,
-                        'h-3.5 w-3.5 shrink-0'
-                      )}
-                      <span className='truncate'>{context.clientLabel}</span>
-                    </Link>
-                  </div>
-                ) : (
-                  <span
-                    className='inline-flex max-w-full min-w-0 items-center gap-1'
+              {/* Internal, personal and unbilled projects have no company to
+                  open; the project name says enough. */}
+              {context.clientLabel && context.clientHref ? (
+                <div className='flex max-w-full min-w-0 items-center gap-1'>
+                  <Link
+                    href={context.clientHref}
                     title={context.clientLabel}
+                    className='hover:text-foreground inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                    onClick={event => event.stopPropagation()}
                   >
                     {renderProjectTypeIcon(
                       context?.projectType,
                       'h-3.5 w-3.5 shrink-0'
                     )}
                     <span className='truncate'>{context.clientLabel}</span>
-                  </span>
-                )
+                  </Link>
+                </div>
               ) : null}
               {context.projectLabel ? (
                 context.projectHref ? (

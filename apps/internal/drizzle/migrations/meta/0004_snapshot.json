@@ -216,12 +216,8 @@
           "name": "activity_logs_actor_id_fkey",
           "tableFrom": "activity_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "actor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -233,34 +229,26 @@
           "name": "Admins delete activity logs",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()"
         },
         "Admins update activity logs": {
           "name": "Admins update activity logs",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users insert activity logs": {
           "name": "Users insert activity logs",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view activity logs": {
           "name": "Users view activity logs",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -353,12 +341,8 @@
           "name": "activity_overview_cache_user_id_fkey",
           "tableFrom": "activity_overview_cache",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -370,34 +354,26 @@
           "name": "Users can delete their cached activity overview",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "(( SELECT auth.uid() AS uid) = user_id)"
         },
         "Users can insert their cached activity overview": {
           "name": "Users can insert their cached activity overview",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users can update their cached activity overview": {
           "name": "Users can update their cached activity overview",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users can view their cached activity overview": {
           "name": "Users can view their cached activity overview",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {
@@ -496,12 +472,8 @@
           "name": "client_members_client_id_fkey",
           "tableFrom": "client_members",
           "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -509,12 +481,8 @@
           "name": "client_members_user_id_fkey",
           "tableFrom": "client_members",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -524,10 +492,7 @@
         "client_members_client_id_user_id_key": {
           "name": "client_members_client_id_user_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "client_id",
-            "user_id"
-          ]
+          "columns": ["client_id", "user_id"]
         }
       },
       "policies": {
@@ -535,34 +500,26 @@
           "name": "Admins delete client members",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()"
         },
         "Admins insert client members": {
           "name": "Admins insert client members",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Admins update client members": {
           "name": "Admins update client members",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view client members": {
           "name": "Users view client members",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -656,12 +613,8 @@
           "name": "clients_created_by_fkey",
           "tableFrom": "clients",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -671,9 +624,7 @@
         "clients_slug_key": {
           "name": "clients_slug_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {
@@ -681,34 +632,26 @@
           "name": "Admins delete clients",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()"
         },
         "Admins insert clients": {
           "name": "Admins insert clients",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Admins update clients": {
           "name": "Admins update clients",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view clients": {
           "name": "Users view clients",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -811,12 +754,8 @@
           "name": "hour_blocks_created_by_fkey",
           "tableFrom": "hour_blocks",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -824,12 +763,8 @@
           "name": "hour_blocks_client_id_fkey",
           "tableFrom": "hour_blocks",
           "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -841,34 +776,26 @@
           "name": "Admins delete hour blocks",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()"
         },
         "Admins insert hour blocks": {
           "name": "Admins insert hour blocks",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Admins update hour blocks": {
           "name": "Admins update hour blocks",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view hour blocks": {
           "name": "Users view hour blocks",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {
@@ -1004,12 +931,8 @@
           "name": "leads_owner_id_fkey",
           "tableFrom": "leads",
           "tableTo": "users",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1021,9 +944,7 @@
           "name": "Admins manage leads",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()",
           "withCheck": "is_admin()"
         },
@@ -1031,9 +952,7 @@
           "name": "Users view leads",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -1180,12 +1099,8 @@
           "name": "projects_client_id_fkey",
           "tableFrom": "projects",
           "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1193,12 +1108,8 @@
           "name": "projects_created_by_fkey",
           "tableFrom": "projects",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1210,34 +1121,26 @@
           "name": "Admins delete projects",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()"
         },
         "Users create projects": {
           "name": "Users create projects",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users update projects": {
           "name": "Users update projects",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view projects": {
           "name": "Users view projects",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {
@@ -1315,12 +1218,8 @@
           "name": "task_assignee_metadata_task_id_fkey",
           "tableFrom": "task_assignee_metadata",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "task_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["task_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1328,12 +1227,8 @@
           "name": "task_assignee_metadata_user_id_fkey",
           "tableFrom": "task_assignee_metadata",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1341,10 +1236,7 @@
       "compositePrimaryKeys": {
         "task_assignee_metadata_pkey": {
           "name": "task_assignee_metadata_pkey",
-          "columns": [
-            "task_id",
-            "user_id"
-          ]
+          "columns": ["task_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -1353,9 +1245,7 @@
           "name": "Admins manage task assignee metadata",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()",
           "withCheck": "is_admin()"
         },
@@ -1363,9 +1253,7 @@
           "name": "Users view task assignee metadata",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -1442,12 +1330,8 @@
           "name": "task_assignees_task_id_fkey",
           "tableFrom": "task_assignees",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "task_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["task_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1455,12 +1339,8 @@
           "name": "task_assignees_user_id_fkey",
           "tableFrom": "task_assignees",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1470,10 +1350,7 @@
         "task_assignees_task_id_user_id_key": {
           "name": "task_assignees_task_id_user_id_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "task_id",
-            "user_id"
-          ]
+          "columns": ["task_id", "user_id"]
         }
       },
       "policies": {
@@ -1481,9 +1358,7 @@
           "name": "Admins manage task assignees",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()",
           "withCheck": "is_admin()"
         },
@@ -1491,9 +1366,7 @@
           "name": "Users view task assignees",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -1608,12 +1481,8 @@
           "name": "task_attachments_task_id_fkey",
           "tableFrom": "task_attachments",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "task_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["task_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1621,12 +1490,8 @@
           "name": "task_attachments_uploaded_by_fkey",
           "tableFrom": "task_attachments",
           "tableTo": "users",
-          "columnsFrom": [
-            "uploaded_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploaded_by"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1638,9 +1503,7 @@
           "name": "Admins manage task attachments",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()",
           "withCheck": "is_admin()"
         },
@@ -1648,17 +1511,13 @@
           "name": "Users create task attachments",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view task attachments": {
           "name": "Users view task attachments",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -1755,12 +1614,8 @@
           "name": "task_comments_task_id_fkey",
           "tableFrom": "task_comments",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "task_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["task_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1768,12 +1623,8 @@
           "name": "task_comments_author_id_fkey",
           "tableFrom": "task_comments",
           "tableTo": "users",
-          "columnsFrom": [
-            "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["author_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1785,9 +1636,7 @@
           "name": "Admins manage task comments",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()",
           "withCheck": "is_admin()"
         },
@@ -1795,25 +1644,19 @@
           "name": "Users create task comments",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users update task comments": {
           "name": "Users update task comments",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view task comments": {
           "name": "Users view task comments",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -2013,12 +1856,8 @@
           "name": "tasks_project_id_fkey",
           "tableFrom": "tasks",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2026,12 +1865,8 @@
           "name": "tasks_created_by_fkey",
           "tableFrom": "tasks",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2039,12 +1874,8 @@
           "name": "tasks_updated_by_fkey",
           "tableFrom": "tasks",
           "tableTo": "users",
-          "columnsFrom": [
-            "updated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2056,34 +1887,26 @@
           "name": "Users create tasks",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "withCheck": "is_admin()"
         },
         "Users delete tasks": {
           "name": "Users delete tasks",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users update tasks": {
           "name": "Users update tasks",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view tasks": {
           "name": "Users view tasks",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -2181,12 +2004,8 @@
           "name": "time_log_tasks_time_log_id_fkey",
           "tableFrom": "time_log_tasks",
           "tableTo": "time_logs",
-          "columnsFrom": [
-            "time_log_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["time_log_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2194,12 +2013,8 @@
           "name": "time_log_tasks_task_id_fkey",
           "tableFrom": "time_log_tasks",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "task_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["task_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2211,9 +2026,7 @@
           "name": "Admins manage time log tasks",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()",
           "withCheck": "is_admin()"
         },
@@ -2221,9 +2034,7 @@
           "name": "Users view time log tasks",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {
@@ -2338,12 +2149,8 @@
           "name": "time_logs_project_id_fkey",
           "tableFrom": "time_logs",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2351,12 +2158,8 @@
           "name": "time_logs_user_id_fkey",
           "tableFrom": "time_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2368,9 +2171,7 @@
           "name": "Admins manage time logs",
           "as": "PERMISSIVE",
           "for": "ALL",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()",
           "withCheck": "is_admin()"
         },
@@ -2378,17 +2179,13 @@
           "name": "Users update time logs",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view time logs": {
           "name": "Users view time logs",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {
@@ -2462,12 +2259,8 @@
           "name": "users_id_fkey",
           "tableFrom": "users",
           "tableTo": "users",
-          "columnsFrom": [
-            "id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2477,9 +2270,7 @@
         "users_email_key": {
           "name": "users_email_key",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {
@@ -2487,34 +2278,26 @@
           "name": "Admins delete users",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "is_admin()"
         },
         "Admins insert users": {
           "name": "Admins insert users",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Admins update users": {
           "name": "Admins update users",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users view accessible users": {
           "name": "Users view accessible users",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "checkConstraints": {},
@@ -2525,10 +2308,7 @@
     "public.client_billing_type": {
       "name": "client_billing_type",
       "schema": "public",
-      "values": [
-        "prepaid",
-        "net_30"
-      ]
+      "values": ["prepaid", "net_30"]
     },
     "public.lead_status": {
       "name": "lead_status",
@@ -2545,11 +2325,7 @@
     "public.project_type": {
       "name": "project_type",
       "schema": "public",
-      "values": [
-        "CLIENT",
-        "PERSONAL",
-        "INTERNAL"
-      ]
+      "values": ["CLIENT", "PERSONAL", "INTERNAL"]
     },
     "public.task_status": {
       "name": "task_status",
@@ -2567,10 +2343,7 @@
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "ADMIN",
-        "CLIENT"
-      ]
+      "values": ["ADMIN", "CLIENT"]
     }
   },
   "schemas": {},

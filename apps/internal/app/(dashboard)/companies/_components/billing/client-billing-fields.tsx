@@ -3,6 +3,7 @@
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Badge } from '@pts/ui/badge'
+import { Input } from '@pts/ui/input'
 import { Separator } from '@pts/ui/separator'
 import {
   Select,
@@ -15,6 +16,7 @@ import { SheetSection } from '@/components/sheets/sheet-section'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -219,6 +221,36 @@ export function ClientBillingFields({
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name='slug'
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel optional={!isEditing}>Slug</FormLabel>
+              <FormControl>
+                <DisabledFieldTooltip
+                  disabled={isPending}
+                  reason={fieldDisabledReason}
+                >
+                  <Input
+                    {...field}
+                    value={field.value ?? ''}
+                    placeholder={
+                      isEditing ? 'acme-co' : 'Generated from the name'
+                    }
+                    disabled={isPending}
+                  />
+                </DisabledFieldTooltip>
+              </FormControl>
+              <FormDescription>
+                Starts every project link: /projects/
+                {field.value || 'slug'}/…
+                {isEditing ? ' Changing it breaks links people saved.' : ''}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         {isEditing &&
         initialBillingType !== null &&
         watchedBillingType !== initialBillingType ? (
