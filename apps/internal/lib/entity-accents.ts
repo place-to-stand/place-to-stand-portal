@@ -17,12 +17,12 @@ import {
   Briefcase,
   Building2,
   Clock,
+  ContactRound,
   FolderKanban,
   Handshake,
   Hourglass,
   Inbox,
   LayoutTemplate,
-  KeyRound,
   ListTodo,
   Receipt,
   UserRound,
@@ -122,8 +122,8 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
   contact: {
     label: 'Person',
     group: 'sales',
-    icon: UserRound,
-    iconName: 'UserRound',
+    icon: ContactRound,
+    iconName: 'ContactRound',
     token: 'person',
     example: 'Ada Lovelace',
     accent: {
@@ -139,8 +139,8 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
   user: {
     label: 'Sign-in',
     group: 'sales',
-    icon: KeyRound,
-    iconName: 'KeyRound',
+    icon: UserRound,
+    iconName: 'UserRound',
     token: 'sign-in',
     example: 'ada@acme.com',
     accent: {
