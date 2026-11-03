@@ -5,7 +5,7 @@ import { saveTaskForActor } from '@/lib/tasks/save-task-core'
 import type { SaveTaskResult } from '@/lib/tasks/types'
 
 import { revalidateProjectTaskViews } from './shared'
-import type { BaseTaskInput } from './shared-schemas'
+import type { BaseTaskInput } from '@/lib/tasks/schemas'
 
 export type { SaveTaskResult }
 

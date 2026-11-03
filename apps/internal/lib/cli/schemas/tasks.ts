@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { statusSchema } from '@/app/(dashboard)/projects/actions/shared-schemas'
+import { statusSchema } from '@/lib/tasks/schemas'
 
 import { cliListQuerySchema } from './listing'
 

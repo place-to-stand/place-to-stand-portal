@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { z } from 'zod'
 
-import { revalidateLeadsPath } from '@/app/(dashboard)/leads/_actions/utils'
+import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 import type { AppUser } from '@/lib/auth/session'
 import { BadRequestError, NotFoundError } from '@/lib/errors/http'
 import { createLeadUpdateForActor } from '@/lib/leads/lead-update-core'

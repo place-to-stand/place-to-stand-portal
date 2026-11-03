@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { AppUser } from '@/lib/auth/session'
-import type { BaseTaskInput } from '@/app/(dashboard)/projects/actions/shared-schemas'
+import type { BaseTaskInput } from '@/lib/tasks/schemas'
 import type { ActivitySourceValue } from '@/lib/types'
 
 // A save is all or nothing: the task row, its assignee and its attachment rows

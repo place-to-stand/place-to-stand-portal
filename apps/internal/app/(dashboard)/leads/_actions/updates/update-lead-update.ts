@@ -17,7 +17,7 @@ import { LEAD_UPDATE_LABELS } from '@/lib/leads/updates'
 import { getLeadUpdateForLead } from '@/lib/queries/lead-updates'
 
 import type { LeadActionResult } from '../types'
-import { revalidateLeadsPath } from '../utils'
+import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 import {
   findActiveLead,
   leadUpdateBodySchema,

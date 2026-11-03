@@ -13,7 +13,7 @@ import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { revalidateProjectTaskViews } from '@/app/(dashboard)/projects/actions/shared'
-import { statusSchema } from '@/app/(dashboard)/projects/actions/shared-schemas'
+import { statusSchema } from '@/lib/tasks/schemas'
 
 const rankPattern = /^[0-9a-z]+$/
 

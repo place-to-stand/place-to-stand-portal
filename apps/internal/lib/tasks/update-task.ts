@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { resolveMovedTaskRank } from '@/app/(dashboard)/projects/actions/task-rank'
+import { resolveMovedTaskRank } from '@/lib/tasks/rank'
 import { logActivity } from '@/lib/activity/logger'
 import { db } from '@/lib/db'
 import {
