@@ -72,9 +72,14 @@ export async function signInWithPassword(
   })
 
   if (error || !data.user) {
-    return {
-      error: error?.message ?? 'Unable to sign in. Please try again.',
+    // One message for every failure: Supabase's own text ("Email not
+    // confirmed" vs "Invalid login credentials") tells a real account from
+    // a made-up one.
+    if (error?.status === 429) return { error: SIGN_IN_THROTTLED_MESSAGE }
+    if (error && error.status !== 400) {
+      console.error('Password sign-in failed', error)
     }
+    return { error: 'That email and password don’t match. Try again.' }
   }
 
   // Supabase bans disabled users, but the DB flag is the source of truth —

@@ -4,7 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { githubAppInstallations } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
-import { ensureClientAccess } from '@/lib/auth/permissions'
+import { clientAccessDenied } from '@/lib/auth/permissions'
 import { getGitHubAppEnv } from '@/lib/env.server'
 import { listInstallationRepos } from '@pts/github/app-client'
 import { isInstallationNotFoundError } from '@pts/github/app-auth'
@@ -34,7 +34,8 @@ export async function GET(request: Request) {
     )
   }
 
-  await ensureClientAccess(user, companyId)
+  const denied = await clientAccessDenied(user, companyId)
+  if (denied) return denied
 
   const env = getGitHubAppEnv()
 

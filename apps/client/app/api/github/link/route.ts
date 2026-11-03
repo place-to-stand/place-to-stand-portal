@@ -9,7 +9,7 @@ import {
   projects,
 } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
-import { ensureClientAccess } from '@/lib/auth/permissions'
+import { clientAccessDenied } from '@/lib/auth/permissions'
 import { getGitHubAppEnv } from '@/lib/env.server'
 import { getInstallationRepo } from '@pts/github/app-client'
 import { isInstallationNotFoundError } from '@pts/github/app-auth'
@@ -65,7 +65,8 @@ export async function GET(request: Request) {
     )
   }
 
-  await ensureClientAccess(user, project.companyId)
+  const denied = await clientAccessDenied(user, project.companyId)
+  if (denied) return denied
 
   const links = await db
     .select()
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const body = await request.json()
+  const body: unknown = await request.json().catch(() => null)
   const result = linkSchema.safeParse(body)
 
   if (!result.success) {
@@ -106,7 +107,8 @@ export async function POST(request: Request) {
 
   const { projectId, companyId, repoOwner, repoName } = result.data
 
-  await ensureClientAccess(user, companyId)
+  const denied = await clientAccessDenied(user, companyId)
+  if (denied) return denied
 
   // Verify project belongs to this client
   const [project] = await db

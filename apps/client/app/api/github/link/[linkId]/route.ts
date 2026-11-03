@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { and, eq, isNull } from 'drizzle-orm'
+import { z } from 'zod'
 
 import { db } from '@/lib/db'
 import { githubRepoLinks, projects } from '@pts/db/schema'
 import { getCurrentUser } from '@/lib/auth/session'
-import { ensureClientAccess } from '@/lib/auth/permissions'
+import { clientAccessDenied } from '@/lib/auth/permissions'
 
 /**
  * DELETE /api/github/link/:linkId
@@ -24,6 +25,9 @@ export async function DELETE(
   }
 
   const { linkId } = await params
+  if (!z.uuid().safeParse(linkId).success) {
+    return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
+  }
 
   const [link] = await db
     .select({
@@ -50,7 +54,8 @@ export async function DELETE(
     return NextResponse.json({ ok: false, error: 'Not found' }, { status: 404 })
   }
 
-  await ensureClientAccess(user, project.companyId)
+  const denied = await clientAccessDenied(user, project.companyId)
+  if (denied) return denied
 
   await db
     .update(githubRepoLinks)

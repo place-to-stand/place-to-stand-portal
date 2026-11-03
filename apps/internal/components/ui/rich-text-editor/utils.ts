@@ -1,3 +1,14 @@
+import DOMPurify from 'dompurify'
+
+import {
+  ALLOWED_RICH_TEXT_TAGS,
+  RICH_TEXT_LINK_REL,
+  RICH_TEXT_LINK_TARGET,
+  ensureUrlProtocol,
+} from '@/lib/rich-text/allowlist'
+
+export { ensureUrlProtocol }
+
 const NAMED_ENTITIES: Record<string, string> = {
   amp: '&',
   apos: "'",
@@ -19,7 +30,11 @@ const decodeHtmlEntities = (content: string) =>
           ? Number.parseInt(entity.slice(2), 16)
           : Number.parseInt(entity.slice(1), 10)
 
-      if (!Number.isFinite(codePoint) || codePoint < 1 || codePoint > 0x10ffff) {
+      if (
+        !Number.isFinite(codePoint) ||
+        codePoint < 1 ||
+        codePoint > 0x10ffff
+      ) {
         return match
       }
 
@@ -48,110 +63,28 @@ export const richTextToPlainText = (content: string) =>
 export const isContentEmpty = (content: string) =>
   richTextToPlainText(content).length === 0
 
-export const ensureUrlProtocol = (value: string) => {
-  if (!value) return ''
-  const trimmed = value.trim()
-  if (trimmed.length === 0) return ''
-
-  const hasProtocol = /^[a-zA-Z][\w+.-]*:/.test(trimmed)
-  if (hasProtocol) {
-    // Only allow safe protocols — reject javascript:, data:, vbscript:, etc.
-    if (/^(https?|mailto|tel):/i.test(trimmed)) {
-      return trimmed
-    }
-    return ''
-  }
-
-  return `https://${trimmed}`
-}
-
-// Allowlist the minimal tags produced by the editor to prevent unsafe markup.
-const ALLOWED_RICH_TEXT_TAGS = new Set([
-  'A',
-  'BLOCKQUOTE',
-  'BR',
-  'CODE',
-  'EM',
-  'HR',
-  'H1',
-  'H2',
-  'H3',
-  'H4',
-  'H5',
-  'H6',
-  'LI',
-  'OL',
-  'P',
-  'PRE',
-  'S',
-  'SPAN',
-  'STRONG',
-  'U',
-  'UL',
-])
-
-const unwrapElement = (element: Element) => {
-  const parent = element.parentNode
-  if (!parent) {
-    element.remove()
-    return
-  }
-
-  while (element.firstChild) {
-    parent.insertBefore(element.firstChild, element)
-  }
-
-  parent.removeChild(element)
-}
-
-const sanitizeElement = (element: Element) => {
-  if (element.tagName === 'A') {
-    const href = element.getAttribute('href') ?? ''
-    const safeHref = ensureUrlProtocol(href)
-    if (!safeHref) {
-      unwrapElement(element)
+const purify = (content: string) => {
+  // Hooks are global to the DOMPurify instance, so add and remove ours
+  // around each call.
+  DOMPurify.addHook('afterSanitizeAttributes', node => {
+    if (node.tagName !== 'A') return
+    const href = ensureUrlProtocol(node.getAttribute('href') ?? '')
+    if (!href) {
+      node.removeAttribute('href')
       return
     }
-
-    element.setAttribute('href', safeHref)
-    element.setAttribute('target', '_blank')
-    element.setAttribute('rel', 'noreferrer noopener')
-
-    const allowedAttributes = new Set(['href', 'target', 'rel'])
-    Array.from(element.attributes).forEach(attribute => {
-      if (!allowedAttributes.has(attribute.name)) {
-        element.removeAttribute(attribute.name)
-      }
+    node.setAttribute('href', href)
+    node.setAttribute('target', RICH_TEXT_LINK_TARGET)
+    node.setAttribute('rel', RICH_TEXT_LINK_REL)
+  })
+  try {
+    return DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: [...ALLOWED_RICH_TEXT_TAGS],
+      ALLOWED_ATTR: ['href'],
+      ALLOW_DATA_ATTR: false,
     })
-  } else {
-    Array.from(element.attributes).forEach(attribute => {
-      element.removeAttribute(attribute.name)
-    })
-  }
-}
-
-const sanitizeNode = (node: Node) => {
-  if (node.nodeType === Node.ELEMENT_NODE) {
-    const element = node as Element
-    // Taken first: an unwrapped element's children move to its parent, past
-    // the parent's own walk, so they are sanitized here.
-    const children = Array.from(element.childNodes)
-    if (!ALLOWED_RICH_TEXT_TAGS.has(element.tagName)) {
-      if (element.tagName === 'SCRIPT' || element.tagName === 'STYLE') {
-        element.remove()
-        return
-      }
-      unwrapElement(element)
-    } else {
-      sanitizeElement(element)
-    }
-
-    children.forEach(sanitizeNode)
-    return
-  }
-
-  if (node.nodeType === Node.COMMENT_NODE) {
-    node.parentNode?.removeChild(node)
+  } finally {
+    DOMPurify.removeHook('afterSanitizeAttributes')
   }
 }
 
@@ -175,13 +108,7 @@ export const sanitizeEditorHtml = (content: string) => {
   }
 
   try {
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(content, 'text/html')
-    const { body } = doc
-
-    Array.from(body.childNodes).forEach(sanitizeNode)
-
-    return body.innerHTML
+    return purify(content)
   } catch (error) {
     console.warn('Failed to sanitize rich text content', error)
     return toEscapedText(content)

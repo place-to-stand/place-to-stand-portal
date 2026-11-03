@@ -7,6 +7,7 @@ import { db } from '@/lib/db'
 import { leads } from '@/lib/db/schema'
 import { leadContactNameSql } from '@/lib/leads/lead-display'
 import { LEAD_UPDATE_TYPES } from '@/lib/leads/updates'
+import { sanitizeRichTextHtml } from '@/lib/rich-text/sanitize-server'
 
 // The body is TipTap HTML (like task_comments), so markup overhead counts
 // toward this — same ceiling as the comments API.
@@ -19,6 +20,7 @@ export const leadUpdateBodySchema = z
   .trim()
   .min(1, 'Add a short description of the interaction.')
   .max(MAX_UPDATE_BODY_LENGTH, 'Keep updates under 10,000 characters.')
+  .transform(sanitizeRichTextHtml)
 
 /**
  * An interaction cannot have happened in the future — that is always a typo,
