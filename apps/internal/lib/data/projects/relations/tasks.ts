@@ -43,12 +43,22 @@ export type TaskAssigneeRow = {
   deletedAt: string | null
 }
 
+export type LoadedTaskRows = {
+  rows: TaskRow[]
+  assigneeRows: TaskAssigneeRow[]
+}
+
+/**
+ * A project's tasks with their counts and assignees. `taskIds` narrows it
+ * to those tasks, for callers that show a few tasks (one sheet, My Tasks)
+ * rather than a whole board.
+ */
 export async function loadTaskRows(
   projectIds: string[],
-  options: { archived?: boolean } = {}
-): Promise<TaskRow[]> {
-  if (!projectIds.length) {
-    return []
+  options: { archived?: boolean; taskIds?: string[] } = {}
+): Promise<LoadedTaskRows> {
+  if (!projectIds.length || options.taskIds?.length === 0) {
+    return { rows: [], assigneeRows: [] }
   }
 
   const deletedPredicate = options.archived
@@ -81,64 +91,72 @@ export async function loadTaskRows(
   const rows = await db
     .select(taskSelection)
     .from(tasksTable)
-    .where(and(inArray(tasksTable.projectId, projectIds), deletedPredicate))
+    .where(
+      and(
+        inArray(tasksTable.projectId, projectIds),
+        deletedPredicate,
+        options.taskIds ? inArray(tasksTable.id, options.taskIds) : undefined
+      )
+    )
 
   if (!rows.length) {
-    return []
+    return { rows: [], assigneeRows: [] }
   }
 
   // Two grouped queries replace the old per-row correlated subqueries,
   // which executed 2 index probes per task row per request.
   const taskIds = rows.map(row => row.id)
-  const [commentCounts, attachmentCounts, loggedHours] = await Promise.all([
-    db
-      .select({
-        taskId: taskCommentsTable.taskId,
-        count: sql<number>`count(*)`,
-      })
-      .from(taskCommentsTable)
-      .where(
-        and(
-          inArray(taskCommentsTable.taskId, taskIds),
-          isNull(taskCommentsTable.deletedAt)
+  const [commentCounts, attachmentCounts, loggedHours, assigneeRows] =
+    await Promise.all([
+      db
+        .select({
+          taskId: taskCommentsTable.taskId,
+          count: sql<number>`count(*)`,
+        })
+        .from(taskCommentsTable)
+        .where(
+          and(
+            inArray(taskCommentsTable.taskId, taskIds),
+            isNull(taskCommentsTable.deletedAt)
+          )
         )
-      )
-      .groupBy(taskCommentsTable.taskId),
-    db
-      .select({
-        taskId: taskAttachmentsTable.taskId,
-        count: sql<number>`count(*)`,
-      })
-      .from(taskAttachmentsTable)
-      .where(
-        and(
-          inArray(taskAttachmentsTable.taskId, taskIds),
-          isNull(taskAttachmentsTable.deletedAt)
+        .groupBy(taskCommentsTable.taskId),
+      db
+        .select({
+          taskId: taskAttachmentsTable.taskId,
+          count: sql<number>`count(*)`,
+        })
+        .from(taskAttachmentsTable)
+        .where(
+          and(
+            inArray(taskAttachmentsTable.taskId, taskIds),
+            isNull(taskAttachmentsTable.deletedAt)
+          )
         )
-      )
-      .groupBy(taskAttachmentsTable.taskId),
-    // Sum numeric(8,2) in SQL, never by accumulating floats in JS. A log
-    // linked to several tasks contributes fully to each -- the same shape the
-    // task sheet's own total uses, so a card can't contradict its sheet.
-    db
-      .select({
-        taskId: timeLogTasksTable.taskId,
-        hours: sql<string>`coalesce(sum(${timeLogsTable.hours}), 0)`,
-      })
-      .from(timeLogTasksTable)
-      .innerJoin(
-        timeLogsTable,
-        eq(timeLogTasksTable.timeLogId, timeLogsTable.id)
-      )
-      .where(
-        and(
-          inArray(timeLogTasksTable.taskId, taskIds),
-          isNull(timeLogTasksTable.deletedAt),
-          isNull(timeLogsTable.deletedAt)
+        .groupBy(taskAttachmentsTable.taskId),
+      // Sum numeric(8,2) in SQL, never by accumulating floats in JS. A log
+      // linked to several tasks contributes fully to each -- the same shape the
+      // task sheet's own total uses, so a card can't contradict its sheet.
+      db
+        .select({
+          taskId: timeLogTasksTable.taskId,
+          hours: sql<string>`coalesce(sum(${timeLogsTable.hours}), 0)`,
+        })
+        .from(timeLogTasksTable)
+        .innerJoin(
+          timeLogsTable,
+          eq(timeLogTasksTable.timeLogId, timeLogsTable.id)
         )
-      )
-      .groupBy(timeLogTasksTable.taskId),
-  ])
+        .where(
+          and(
+            inArray(timeLogTasksTable.taskId, taskIds),
+            isNull(timeLogTasksTable.deletedAt),
+            isNull(timeLogsTable.deletedAt)
+          )
+        )
+        .groupBy(timeLogTasksTable.taskId),
+      loadTaskAssigneeRows(taskIds),
+    ])
 
   const commentCountByTask = new Map(
     commentCounts.map(row => [row.taskId, Number(row.count)])
@@ -150,12 +168,15 @@ export async function loadTaskRows(
     loggedHours.map(row => [row.taskId, Number(row.hours)])
   )
 
-  return rows.map(row => ({
-    ...row,
-    commentCount: commentCountByTask.get(row.id) ?? 0,
-    attachmentCount: attachmentCountByTask.get(row.id) ?? 0,
-    loggedHours: loggedHoursByTask.get(row.id) ?? 0,
-  }))
+  return {
+    rows: rows.map(row => ({
+      ...row,
+      commentCount: commentCountByTask.get(row.id) ?? 0,
+      attachmentCount: attachmentCountByTask.get(row.id) ?? 0,
+      loggedHours: loggedHoursByTask.get(row.id) ?? 0,
+    })),
+    assigneeRows,
+  }
 }
 
 export async function loadTaskAssigneeRows(

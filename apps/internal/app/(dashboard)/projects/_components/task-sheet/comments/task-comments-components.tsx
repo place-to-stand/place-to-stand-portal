@@ -15,7 +15,7 @@ import {
 } from '@pts/ui/dropdown-menu'
 import { InlineReveal } from '@/components/ui/inline-reveal'
 import { InlineFormActions } from '@/components/sheets/inline-form-actions'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import {
   isContentEmpty,

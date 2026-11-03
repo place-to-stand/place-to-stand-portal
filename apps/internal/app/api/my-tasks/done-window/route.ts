@@ -97,7 +97,9 @@ export async function POST(request: Request) {
     )
     const projects = await scopeProjectsForViewer(
       user,
-      await fetchProjectsWithRelationsByIds(projectIds)
+      await fetchProjectsWithRelationsByIds(projectIds, {
+        taskIds: slice.items.map(item => item.id),
+      })
     )
 
     return NextResponse.json({

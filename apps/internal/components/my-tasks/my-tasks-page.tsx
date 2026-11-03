@@ -128,16 +128,13 @@ export function MyTasksPage({
   // slice's start and the next slice's end.
   const [windowAnchor] = useState(now)
 
-  // Widening pulls in projects the initial load never hydrated; they extend
-  // the server's set rather than replacing it.
-  const allProjects = useMemo(() => {
-    if (!olderProjects.length) {
-      return projects
-    }
-
-    const known = new Set(projects.map(project => project.id))
-    return [...projects, ...olderProjects.filter(p => !known.has(p.id))]
-  }, [projects, olderProjects])
+  // Each load hydrates only the tasks it shows, so a wider window can add
+  // tasks to a project the server already sent: merge tasks per project
+  // rather than keeping whichever copy arrived first.
+  const allProjects = useMemo(
+    () => mergeProjectTasks(projects, olderProjects),
+    [projects, olderProjects]
+  )
 
   const taskLookup = useMemo(() => buildTaskLookup(allProjects), [allProjects])
   // Deliberately keyed off the server's projects, not `allProjects`: this only
@@ -243,10 +240,7 @@ export function MyTasksPage({
 
       const data = payload.data
 
-      setOlderProjects(current => {
-        const known = new Set(current.map(project => project.id))
-        return [...current, ...data.projects.filter(p => !known.has(p.id))]
-      })
+      setOlderProjects(current => mergeProjectTasks(current, data.projects))
       setOlderEntries(current => {
         const seen = new Set(current.map(entry => entry.taskId))
         return [
@@ -592,6 +586,30 @@ type TaskContextMeta = {
   projectHref: string | null
   layout: 'inline' | 'stacked'
   projectType: ProjectTypeValue
+}
+
+/**
+ * `base` with `extra` folded in: new projects are appended, and a project in
+ * both keeps `base`'s copy plus any of `extra`'s tasks it lacks.
+ */
+function mergeProjectTasks(
+  base: ProjectWithRelations[],
+  extra: ProjectWithRelations[]
+): ProjectWithRelations[] {
+  if (!extra.length) return base
+
+  const extraById = new Map(extra.map(project => [project.id, project]))
+  const merged = base.map(project => {
+    const more = extraById.get(project.id)
+    if (!more) return project
+    const known = new Set(project.tasks.map(task => task.id))
+    const added = more.tasks.filter(task => !known.has(task.id))
+    return added.length
+      ? { ...project, tasks: [...project.tasks, ...added] }
+      : project
+  })
+  const baseIds = new Set(base.map(project => project.id))
+  return [...merged, ...extra.filter(project => !baseIds.has(project.id))]
 }
 
 function buildTaskLookup(projects: ProjectWithRelations[]): TaskLookup {

@@ -231,15 +231,18 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   // The sheet only reads project identity fields for its selector — no need
   // to hydrate every project's task graph. Assignees come from every CRM
   // user; the save path checks each one can reach the task's project.
-  const [admins, liteProjects, salesProjectId] = await Promise.all([
-    fetchCrmUsers(),
-    fetchProjectsLite(),
-    // Opening a sheet never creates projects for non-admins: SALES only
-    // read it (null until an admin's sheet or the CLI creates it).
-    roleCan(user.role, 'projects.manage')
-      ? getOrCreateSalesProject(user.id)
-      : findSalesProjectId(),
-  ])
+  const isNew = id === NEW_SHEET_VALUE
+  const [admins, liteProjects, salesProjectId, holdingProjectId] =
+    await Promise.all([
+      fetchCrmUsers(),
+      fetchProjectsLite(),
+      // Opening a sheet never creates projects for non-admins: SALES only
+      // read it (null until an admin's sheet or the CLI creates it).
+      roleCan(user.role, 'projects.manage')
+        ? getOrCreateSalesProject(user.id)
+        : findSalesProjectId(),
+      isNew ? Promise.resolve(null) : getActiveTaskProjectId(id),
+    ])
   // Non-admins only see (redacted) projects they can work.
   const allProjects = await scopeProjectsForViewer(user, liteProjects)
 
@@ -250,13 +253,10 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
     currentUserId: user.id,
   }
 
-  if (id === NEW_SHEET_VALUE) {
+  if (isNew) {
     return { task: null, ...base }
   }
 
-  // Resolve the task's project, then hydrate just that project's graph so
-  // the sheet gets a full `TaskWithRelations`.
-  const holdingProjectId = await getActiveTaskProjectId(id)
   if (!holdingProjectId) {
     throw new NotFoundError('Task not found')
   }
@@ -264,9 +264,13 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
     await ensureTaskWorkAccess(user, id)
   }
 
+  // Hydrate the holding project with just this task: the sheet reads the
+  // project's own fields, never its other tasks.
   const [hydratedProject] = await scopeProjectsForViewer(
     user,
-    await fetchProjectsWithRelationsByIds([holdingProjectId])
+    await fetchProjectsWithRelationsByIds([holdingProjectId], {
+      taskIds: [id],
+    })
   )
   const task = hydratedProject?.tasks.find(item => item.id === id) ?? null
 

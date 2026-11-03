@@ -31,8 +31,8 @@ const FAILURE_TITLES: Record<FeedAction['action'], string> = {
   unread: 'Unable to mark notifications unread',
   clear: 'Unable to clear notifications',
 }
-// Background refresh while the home page is open.
-const POLL_MS = 60_000
+// Background refresh while the home page is open (paused in hidden tabs).
+const POLL_MS = 2 * 60_000
 
 type FeedAction = { action: 'read' | 'unread' | 'clear'; ids?: string[] }
 

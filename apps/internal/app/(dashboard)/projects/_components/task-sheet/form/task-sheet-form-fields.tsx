@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { Badge } from '@pts/ui/badge'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { UseFormReturn } from 'react-hook-form'
