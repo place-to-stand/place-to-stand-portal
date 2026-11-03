@@ -7,9 +7,7 @@ import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
 import { NotFoundError } from '@/lib/errors/http'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import { submissionHref } from '@/lib/sheets/hrefs'
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 export type SubmissionDeepLink = {
   /** The shared row, resolved regardless of which list page/filter it sits on. */

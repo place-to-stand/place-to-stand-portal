@@ -1,10 +1,6 @@
-import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
-import { and, asc, eq, isNull } from 'drizzle-orm'
-
-import { db } from '@/lib/db'
-import { users } from '@/lib/db/schema'
+import { fetchStaffUsers } from '@/lib/data/users'
 
 export type StaffMember = {
   id: string
@@ -14,21 +10,10 @@ export type StaffMember = {
 
 /** Active admins: the staff an invoice email can cc. */
 export async function fetchActiveStaff(): Promise<StaffMember[]> {
-  const rows = await db
-    .select({ id: users.id, fullName: personNameSql, email: users.email })
-    .from(users)
-    .where(
-      and(
-        eq(users.role, 'ADMIN'),
-        isNull(users.deletedAt),
-        isNull(users.disabledAt)
-      )
-    )
-    .orderBy(asc(personNameSql), asc(users.email))
-
+  const rows = await fetchStaffUsers({ roles: ['ADMIN'], activeOnly: true })
   return rows.map(row => ({
     id: row.id,
-    name: row.fullName?.trim() || row.email,
+    name: row.full_name?.trim() || row.email,
     email: row.email.toLowerCase(),
   }))
 }

@@ -5,9 +5,7 @@ import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
-
-const firstParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
+import { firstParam } from '@/lib/pagination/params'
 
 /**
  * A user is a person's sign-in, so Users is People filtered to sign-ins, and

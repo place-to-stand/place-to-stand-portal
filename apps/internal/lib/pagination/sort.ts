@@ -9,6 +9,7 @@
  */
 
 import { decodeCursor, encodeCursor } from './cursor'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 export type SortDirection = 'asc' | 'desc'
 
@@ -50,9 +51,6 @@ export type SortCursorPayload = {
   value: string | null
   id: string
 }
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export function encodeSortCursor(payload: SortCursorPayload): string {
   return encodeCursor(payload)

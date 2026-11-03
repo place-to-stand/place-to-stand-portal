@@ -29,6 +29,7 @@ import {
   type ClientContactSummary,
 } from '@/lib/queries/companies/billing/contact-summaries'
 import type { ProjectStatusValue } from '@/lib/constants'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 export type { ClientContactSummary }
 
@@ -419,10 +420,7 @@ export const resolveClientIdentifier = cache(
     identifier: string
   ): Promise<ClientDetail & { resolvedId: string }> => {
     // Check if identifier looks like a UUID
-    const isUUID =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        identifier
-      )
+    const isUUID = UUID_PATTERN.test(identifier)
 
     let client: ClientDetail
 

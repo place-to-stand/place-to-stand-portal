@@ -6,9 +6,7 @@ import { getTimeLogEntryById } from '@/lib/queries/time-logs/read'
 import { buildProjectTimeLogDialogParams } from '@/lib/projects/time-log/dialog-params'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { authorizeRoute } from '@/lib/auth/guard'
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 /**
  * Everything the time-log dialog needs to open in edit mode, for one log.

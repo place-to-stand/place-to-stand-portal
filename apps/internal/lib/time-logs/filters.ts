@@ -9,6 +9,8 @@ import {
   resolveDateRangePreset,
 } from '@/lib/dates/calendar-date'
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
+import { firstParam } from '@/lib/pagination/params'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 export const TIME_LOG_SORT_FIELDS = [
   'date',
@@ -25,11 +27,6 @@ export const DEFAULT_TIME_LOG_SORT = {
 } as const satisfies ParsedSort<TimeLogSortField>
 
 type RawParams = Record<string, string | string[] | undefined>
-
-const first = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type TimeLogsListParams = {
   q?: string
@@ -61,14 +58,14 @@ export function parseTimeLogsSearchParams(
   // A real calendar date (2026-02-31 is not), or the default.
   const valid = (value: string | undefined) =>
     value && parseCalendarDate(value) ? value : undefined
-  const allTime = first(params.from) === ALL_TIME_PARAM
-  const from = allTime ? '' : valid(first(params.from))
-  const to = allTime ? '' : valid(first(params.to))
+  const allTime = firstParam(params.from) === ALL_TIME_PARAM
+  const from = allTime ? '' : valid(firstParam(params.from))
+  const to = allTime ? '' : valid(firstParam(params.to))
   const uuid = (key: string) => {
-    const value = first(params[key])
-    return value && UUID.test(value) ? value : undefined
+    const value = firstParam(params[key])
+    return value && UUID_PATTERN.test(value) ? value : undefined
   }
-  const q = first(params.q)?.trim()
+  const q = firstParam(params.q)?.trim()
   return {
     q: q || undefined,
     from: from ?? '',
@@ -76,8 +73,8 @@ export function parseTimeLogsSearchParams(
     companyId: uuid('companyId'),
     projectId: uuid('projectId'),
     personId: uuid('personId'),
-    page: Math.max(1, Number.parseInt(first(params.page) ?? '1', 10) || 1),
-    ...parseSort(first(params.sort)),
+    page: Math.max(1, Number.parseInt(firstParam(params.page) ?? '1', 10) || 1),
+    ...parseSort(firstParam(params.sort)),
     isDefaultRange: !from && !to,
   }
 }

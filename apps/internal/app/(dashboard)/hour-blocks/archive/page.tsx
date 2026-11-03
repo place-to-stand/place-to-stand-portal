@@ -16,13 +16,11 @@ import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
 import { HourBlocksFilters } from '../_components/hour-blocks-filters'
 import { HourBlocksManagementTable } from '../_components/hour-blocks-management-table'
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
+import { firstParam } from '@/lib/pagination/params'
 
 export const metadata: Metadata = {
   title: 'Hour block archive',
 }
-
-const firstParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 
 export default async function HourBlocksArchivePage({
   searchParams,

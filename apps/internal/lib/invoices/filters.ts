@@ -1,5 +1,6 @@
 import { invoiceStatus } from '@/lib/db/schema'
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
+import { firstParam } from '@/lib/pagination/params'
 
 export const INVOICE_STATUS_VALUES = invoiceStatus.enumValues
 
@@ -49,16 +50,6 @@ export type InvoicesSearchParams = {
   sort: ParsedSort<InvoiceSortField>
 }
 
-function firstParam(value: string | string[] | undefined): string | undefined {
-  if (typeof value === 'string') {
-    return value
-  }
-  if (Array.isArray(value)) {
-    return value[0]
-  }
-  return undefined
-}
-
 /**
  * Shared searchParams parsing for the invoices pages. Invalid status values
  * fail the type guard and are treated as unset (R4).
@@ -66,7 +57,10 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 export function parseInvoicesSearchParams(
   params: RawSearchParams
 ): InvoicesSearchParams {
-  const page = Math.max(1, Number.parseInt(firstParam(params.page) ?? '1', 10) || 1)
+  const page = Math.max(
+    1,
+    Number.parseInt(firstParam(params.page) ?? '1', 10) || 1
+  )
   const statusParam = firstParam(params.status)
   const searchParam = firstParam(params.q)?.trim()
   const sort = parseSortParam(

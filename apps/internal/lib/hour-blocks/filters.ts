@@ -1,6 +1,7 @@
 import { parseCalendarDate } from '@/lib/dates/calendar-date'
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
+import { firstParam } from '@/lib/pagination/params'
 
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field has a matching
 // descriptor (order expr + cursor encode/compare) in the query.
@@ -63,16 +64,6 @@ export type HourBlocksSearchParams = {
   /** Created between (`?from=&to=`, `YYYY-MM-DD`); none is All time. */
   from: string | undefined
   to: string | undefined
-}
-
-function firstParam(value: string | string[] | undefined): string | undefined {
-  if (typeof value === 'string') {
-    return value
-  }
-  if (Array.isArray(value)) {
-    return value[0]
-  }
-  return undefined
 }
 
 /** Shared searchParams parsing for the hour-blocks pages (offset paged). */

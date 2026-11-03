@@ -37,6 +37,7 @@ import { resolveAssigneeIds, resolveUserIds } from './queries/users'
 import type { cliCreateTaskSchema, cliUpdateTaskSchema } from './schemas/tasks'
 import { serializeComment, type CliComment } from './serializers/comment'
 import { serializeTask, type CliTask } from './serializers/task'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 export type CreateTaskInput = z.output<typeof cliCreateTaskSchema>
 export type UpdateTaskInput = z.output<typeof cliUpdateTaskSchema>
@@ -86,9 +87,6 @@ export async function resolveProjectId(
   await ensureProjectWorkAccess(user, project.id)
   return project.id
 }
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Where a lead task with no project goes: the internal Sales project, as on

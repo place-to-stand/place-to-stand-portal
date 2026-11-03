@@ -29,6 +29,7 @@ import {
   resolveDoneWindowStart,
 } from '@/lib/projects/tasks/done-window'
 import { roleCan } from '@/lib/auth/capabilities'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 export const metadata: Metadata = {
   title: 'My tasks',
@@ -216,9 +217,6 @@ export default async function MyTasksViewRoute({
     />
   )
 }
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function isMyTasksView(value: string): value is MyTasksView {
   return value === 'board' || value === 'calendar'

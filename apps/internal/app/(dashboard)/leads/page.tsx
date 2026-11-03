@@ -12,13 +12,11 @@ import { NEW_SHEET_VALUE, UUID_PATTERN } from '@/lib/sheets/entities'
 import { leadHref } from '@/lib/sheets/hrefs'
 
 import { LeadsWorkspace } from './_components/leads-workspace'
+import { firstParam } from '@/lib/pagination/params'
 
 export const metadata: Metadata = {
   title: 'Leads',
 }
-
-const firstParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value
 
 export default async function LeadsBoardPage({
   searchParams,

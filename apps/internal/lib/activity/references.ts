@@ -8,14 +8,12 @@ import { contacts, projects, users } from '@/lib/db/schema'
 
 import { toRecord } from './changes'
 import type { ActivityLogWithActor, ActivityReferences } from './types'
+import { UUID_PATTERN } from '@pts/db/uuid'
 
 const USER_ID_KEYS = ['ownerId', 'closerUserId', 'originationUserId']
 const CONTACT_ID_KEYS = ['originationContactId']
 const PROJECT_ID_KEYS = ['projectId']
 const MEMBERSHIP_KEYS = ['assignees', 'contractors', 'members']
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * Activity metadata stores raw ids for people, contacts and projects (so the
@@ -136,7 +134,7 @@ function collectIds(
 }
 
 function addIfUuid(target: Set<string>, value: unknown) {
-  if (typeof value === 'string' && UUID_RE.test(value)) {
+  if (typeof value === 'string' && UUID_PATTERN.test(value)) {
     target.add(value)
   }
 }

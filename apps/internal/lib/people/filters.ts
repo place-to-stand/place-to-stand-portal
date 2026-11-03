@@ -1,5 +1,6 @@
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
+import { firstParam } from '@/lib/pagination/params'
 
 // PRD 004 §03: per-view sort allowlist (D6/R5). Each field here has a
 // matching descriptor (order expr + cursor encode/compare) in the query.
@@ -68,16 +69,6 @@ export type ContactsSearchParams = {
   /** Who can sign in (admins only; ignored for others). */
   signIn: SignInFilter | undefined
   sort: ParsedSort<ContactSortField>
-}
-
-function firstParam(value: string | string[] | undefined): string | undefined {
-  if (typeof value === 'string') {
-    return value
-  }
-  if (Array.isArray(value)) {
-    return value[0]
-  }
-  return undefined
 }
 
 /**

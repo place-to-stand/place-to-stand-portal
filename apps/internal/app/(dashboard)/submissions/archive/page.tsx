@@ -18,13 +18,10 @@ import { SubmissionsFilters } from '../_components/submissions-filters'
 import { SubmissionsTable } from '../_components/submissions-table'
 import { resolveSubmissionDeepLink } from '../_lib/submission-deep-link'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
+import { firstParam } from '@/lib/pagination/params'
 
 export const metadata: Metadata = {
   title: 'Submission archive',
-}
-
-function firstParam(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value
 }
 
 export default async function SubmissionsArchivePage({
