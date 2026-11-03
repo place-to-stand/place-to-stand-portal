@@ -34,12 +34,15 @@ const beforeSend = (event: CaptureResult | null) => {
 // Dev sessions were flooding the production PostHog project with Turbopack
 // build-error overlays, mid-edit HMR ReferenceErrors, and localhost analytics,
 // so capture is limited to production builds. The public invoice page is
-// for clients, not staff, so analytics don't start there at all.
+// for clients, not staff, so analytics don't start there at all. Also
+// skipped when the key is unset, so a deployment without PostHog env vars
+// still boots quietly (as in the client portal).
 if (
   process.env.NODE_ENV === 'production' &&
+  process.env.NEXT_PUBLIC_POSTHOG_KEY &&
   !window.location.pathname.startsWith('/share/')
 ) {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
     api_host: '/relay-HVAq/',
     ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST!,
     defaults: '2025-05-24',

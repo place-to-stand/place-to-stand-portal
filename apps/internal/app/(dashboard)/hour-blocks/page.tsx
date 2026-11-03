@@ -1,108 +1,14 @@
 import type { Metadata } from 'next'
 
-import { PageShell } from '@/components/layout/page-shell'
-import { requirePage } from '@/lib/auth/session'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import {
-  getHourBlockWithClientById,
-  listHourBlocksForSettings,
-} from '@/lib/queries/hour-blocks'
-import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
-import { hourBlockHref } from '@/lib/sheets/hrefs'
-import { parseHourBlocksSearchParams } from '@/lib/hour-blocks/filters'
-import { readPageSize } from '@/lib/pagination/page-size.server'
-
-import { HourBlocksAddButton } from './_components/hour-blocks-add-button'
-import { HourBlocksFilters } from './_components/hour-blocks-filters'
-import { HourBlocksManagementTable } from './_components/hour-blocks-management-table'
-import { HOUR_BLOCKS_TABS } from './_lib/tabs'
-import { firstParam } from '@/lib/pagination/params'
-import { PagePanel } from '@/components/layout/page-panel'
+import { HourBlocksListPage } from './_components/hour-blocks-list-page'
 
 export const metadata: Metadata = {
   title: 'Hour blocks',
 }
 
+// permission: billing.manage — HourBlocksListPage calls requirePage('billing.manage')
 export default async function HourBlocksPage({
   searchParams,
 }: PageProps<'/hour-blocks'>) {
-  const currentUser = await requirePage('billing.manage')
-  const params = await searchParams
-  const pageSize = await readPageSize()
-
-  const {
-    page: currentPage,
-    search,
-    sort,
-    companyId,
-    invoice,
-    from,
-    to,
-  } = parseHourBlocksSearchParams(params)
-  const offset = (currentPage - 1) * pageSize
-
-  const { items, clients, totalCount, unfilteredTotalCount } =
-    await listHourBlocksForSettings(currentUser, {
-      status: 'active',
-      offset,
-      limit: pageSize,
-      search,
-      sort,
-      companyId,
-      invoice,
-      from,
-      to,
-    })
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
-
-  // The list is paginated and filterable, so resolve `?hour-block=` by id —
-  // a shared link must open even when the row isn't on this page.
-  const { record: deepLinkedHourBlock, notFound: hourBlockNotFound } =
-    await resolveSheetDeepLink({
-      idParam: firstParam(params['hour-block']),
-      fetchById: id => getHourBlockWithClientById(currentUser, id),
-      tab: 'active',
-      isArchived: block => block.deleted_at !== null,
-      archiveHref: id => hourBlockHref(id, { archived: true }),
-      activeHref: hourBlockHref,
-    })
-
-  return (
-    <PageShell
-      breadcrumbs={crumbsForNav('/hour-blocks')}
-      tabs={HOUR_BLOCKS_TABS}
-      activeTab='hour-blocks'
-      count={{
-        label: 'hour blocks',
-        total: unfilteredTotalCount,
-        filteredTotal: totalCount,
-      }}
-      primaryAction={<HourBlocksAddButton clients={clients} />}
-    >
-      <PagePanel className='space-y-4'>
-        <HourBlocksFilters
-          basePath='/hour-blocks'
-          search={search}
-          companyId={companyId}
-          invoice={invoice}
-          from={from}
-          to={to}
-          clients={clients}
-        />
-        <HourBlocksManagementTable
-          hourBlocks={items}
-          clients={clients}
-          totalCount={totalCount}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          mode='active'
-          basePath='/hour-blocks'
-          deepLinkedHourBlock={deepLinkedHourBlock}
-          hourBlockNotFound={hourBlockNotFound}
-        />
-      </PagePanel>
-    </PageShell>
-  )
+  return <HourBlocksListPage params={await searchParams} mode='active' />
 }

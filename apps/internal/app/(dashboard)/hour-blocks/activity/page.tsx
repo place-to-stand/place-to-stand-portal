@@ -1,41 +1,27 @@
 import type { Metadata } from 'next'
 
-import { PageShell } from '@/components/layout/page-shell'
 import { requirePage } from '@/lib/auth/session'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import { listHourBlocksForSettings } from '@/lib/queries/hour-blocks'
-
-import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
-import { ActivitySection } from '@/components/activity/activity-section'
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
-import { PagePanel } from '@/components/layout/page-panel'
+import { hasClientDirectory } from '@/lib/queries/companies/billing'
+import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
+import { EntityActivityPage } from '@/components/activity/entity-activity-page'
 
 export const metadata: Metadata = {
   title: 'Hour block activity',
 }
 
 export default async function HourBlocksActivityPage() {
-  const currentUser = await requirePage('activity.read_all')
-
-  const { clients } = await listHourBlocksForSettings(currentUser, {
-    status: 'active',
-    limit: 1,
-  })
+  await requirePage('activity.read_all')
+  const hasClients = await hasClientDirectory()
 
   return (
-    <PageShell
-      breadcrumbs={[...crumbsForNav('/hour-blocks'), { label: 'Activity' }]}
+    <EntityActivityPage
+      navHref='/hour-blocks'
       tabs={HOUR_BLOCKS_TABS}
-      activeTab='activity'
-      primaryAction={<HourBlocksAddButton clients={clients} />}
-    >
-      <PagePanel>
-        <ActivitySection
-          targetType='HOUR_BLOCK'
-          emptyState='No recent hour block activity.'
-          description='Audit hour block creation, edits, archives, and deletions in one place.'
-        />
-      </PagePanel>
-    </PageShell>
+      primaryAction={<HourBlocksAddButton hasClients={hasClients} />}
+      targetType='HOUR_BLOCK'
+      emptyState='No recent hour block activity.'
+      description='Audit hour block creation, edits, archives, and deletions in one place.'
+    />
   )
 }

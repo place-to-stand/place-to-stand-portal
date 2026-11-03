@@ -1,108 +1,14 @@
 import type { Metadata } from 'next'
 
-import { PageShell } from '@/components/layout/page-shell'
-import { requirePage } from '@/lib/auth/session'
-import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
-import {
-  getHourBlockWithClientById,
-  listHourBlocksForSettings,
-} from '@/lib/queries/hour-blocks'
-import { resolveSheetDeepLink } from '@/lib/sheets/resolve-deep-link'
-import { hourBlockHref } from '@/lib/sheets/hrefs'
-import { parseHourBlocksSearchParams } from '@/lib/hour-blocks/filters'
-import { readPageSize } from '@/lib/pagination/page-size.server'
-
-import { HourBlocksAddButton } from '../_components/hour-blocks-add-button'
-import { HourBlocksFilters } from '../_components/hour-blocks-filters'
-import { HourBlocksManagementTable } from '../_components/hour-blocks-management-table'
-import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
-import { firstParam } from '@/lib/pagination/params'
-import { PagePanel } from '@/components/layout/page-panel'
+import { HourBlocksListPage } from '../_components/hour-blocks-list-page'
 
 export const metadata: Metadata = {
   title: 'Hour block archive',
 }
 
+// permission: billing.manage — HourBlocksListPage calls requirePage('billing.manage')
 export default async function HourBlocksArchivePage({
   searchParams,
 }: PageProps<'/hour-blocks/archive'>) {
-  const currentUser = await requirePage('billing.manage')
-  const params = await searchParams
-  const pageSize = await readPageSize()
-
-  const {
-    page: currentPage,
-    search,
-    sort,
-    companyId,
-    invoice,
-    from,
-    to,
-  } = parseHourBlocksSearchParams(params)
-  const offset = (currentPage - 1) * pageSize
-
-  const { items, clients, totalCount, unfilteredTotalCount } =
-    await listHourBlocksForSettings(currentUser, {
-      status: 'archived',
-      offset,
-      limit: pageSize,
-      search,
-      sort,
-      companyId,
-      invoice,
-      from,
-      to,
-    })
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
-
-  // Resolve `?hour-block=` by id; a link to a restored block redirects back
-  // to the active tab so shared links survive restore.
-  const { record: deepLinkedHourBlock, notFound: hourBlockNotFound } =
-    await resolveSheetDeepLink({
-      idParam: firstParam(params['hour-block']),
-      fetchById: id => getHourBlockWithClientById(currentUser, id),
-      tab: 'archive',
-      isArchived: block => block.deleted_at !== null,
-      archiveHref: id => hourBlockHref(id, { archived: true }),
-      activeHref: hourBlockHref,
-    })
-
-  return (
-    <PageShell
-      breadcrumbs={[...crumbsForNav('/hour-blocks'), { label: 'Archive' }]}
-      tabs={HOUR_BLOCKS_TABS}
-      activeTab='archive'
-      count={{
-        label: 'archived hour blocks',
-        total: unfilteredTotalCount,
-        filteredTotal: totalCount,
-      }}
-      primaryAction={<HourBlocksAddButton clients={clients} />}
-    >
-      <PagePanel className='space-y-4'>
-        <HourBlocksFilters
-          basePath='/hour-blocks/archive'
-          search={search}
-          companyId={companyId}
-          invoice={invoice}
-          from={from}
-          to={to}
-          clients={clients}
-        />
-        <HourBlocksManagementTable
-          hourBlocks={items}
-          clients={clients}
-          totalCount={totalCount}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          mode='archive'
-          basePath='/hour-blocks/archive'
-          deepLinkedHourBlock={deepLinkedHourBlock}
-          hourBlockNotFound={hourBlockNotFound}
-        />
-      </PagePanel>
-    </PageShell>
-  )
+  return <HourBlocksListPage params={await searchParams} mode='archive' />
 }

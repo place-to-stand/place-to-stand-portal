@@ -2,16 +2,16 @@
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { INVOICE_MISSING_CLIENT_REASON } from '@/lib/invoices/invoice-ui-state'
-import type { InvoiceClient } from '@/lib/invoices/invoice-form'
 
 type InvoicesAddButtonProps = {
-  clients: InvoiceClient[]
+  /** Whether any company is or was a client. */
+  hasClients: boolean
   className?: string
 }
 
 /** "Create invoice" needs a client to attach to, so it waits for the first one. */
 export function InvoicesAddButton({
-  clients,
+  hasClients,
   className,
 }: InvoicesAddButtonProps) {
   return (
@@ -20,7 +20,7 @@ export function InvoicesAddButton({
       label='Create invoice'
       className={className}
       disabledReason={
-        clients.length === 0 ? INVOICE_MISSING_CLIENT_REASON : null
+        !hasClients ? INVOICE_MISSING_CLIENT_REASON : null
       }
     />
   )

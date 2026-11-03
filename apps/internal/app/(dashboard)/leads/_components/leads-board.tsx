@@ -12,7 +12,6 @@ import {
   type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
@@ -23,7 +22,14 @@ import type { LeadStatusValue } from '@/lib/leads/constants'
 import { EmptyState } from '@pts/ui/empty-state'
 import { useToast } from '@/components/ui/use-toast'
 import { moveLead } from '../actions'
-import { getRankAfter, getRankBefore, getRankBetween } from '@/lib/rank'
+import {
+  locateKanbanItem,
+  moveIntoColumn,
+  rankAmongHidden,
+  resolveKanbanDropTarget,
+  type KanbanDragEvent,
+  type KanbanDropTarget,
+} from '@/lib/dnd/kanban'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
 import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
@@ -529,123 +535,33 @@ function findLeadById(
   return null
 }
 
+const LEAD_COLUMN_IDS = (columns: LeadBoardColumnData[]) =>
+  columns.map(column => column.id)
+
+const leadIdsIn =
+  (columns: LeadBoardColumnData[]) => (columnId: LeadStatusValue) =>
+    columns
+      .find(column => column.id === columnId)
+      ?.leads.map(lead => lead.id) ?? []
+
 function resolveCurrentLocation(
   leadId: string,
   columns: LeadBoardColumnData[]
 ): DropTarget | null {
-  for (const column of columns) {
-    const index = column.leads.findIndex(lead => lead.id === leadId)
-    if (index >= 0) {
-      return {
-        columnId: column.id,
-        index,
-      }
-    }
-  }
-
-  return null
+  return locateKanbanItem(leadId, LEAD_COLUMN_IDS(columns), leadIdsIn(columns))
 }
 
-type DropTarget = {
-  columnId: LeadStatusValue
-  index: number
-}
-
-type LeadDragData = {
-  type: 'lead'
-  columnId: LeadStatusValue
-}
-
-type LeadColumnDropData = {
-  type: 'column'
-  columnId: LeadStatusValue
-}
-
-type SortableMeta = {
-  containerId: string
-  index: number
-}
-
-function extractSortableMeta(payload: unknown): SortableMeta | null {
-  if (!payload || typeof payload !== 'object') {
-    return null
-  }
-
-  const sortable = (payload as { sortable?: SortableMeta | null }).sortable
-
-  if (!sortable || typeof sortable.index !== 'number') {
-    return null
-  }
-
-  return {
-    containerId: String(sortable.containerId),
-    index: sortable.index,
-  }
-}
+type DropTarget = KanbanDropTarget<LeadStatusValue>
 
 function resolveDropTarget(
-  event: DragOverEvent | DragEndEvent,
+  event: KanbanDragEvent,
   columns: LeadBoardColumnData[]
 ): DropTarget | null {
-  const over = event.over
-  if (!over) {
-    return null
-  }
-
-  const overSortable = extractSortableMeta(over.data?.current)
-  if (overSortable) {
-    return {
-      columnId: overSortable.containerId as LeadStatusValue,
-      index: overSortable.index,
-    }
-  }
-
-  const overData = over.data?.current as
-    LeadDragData | LeadColumnDropData | undefined
-  const overId = over.id ? over.id.toString() : null
-
-  if (overData?.type === 'column') {
-    const column = columns.find(col => col.id === overData.columnId)
-    return {
-      columnId: overData.columnId,
-      index: column?.leads.length ?? 0,
-    }
-  }
-
-  if (overData?.type === 'lead' && overId) {
-    const column = columns.find(col => col.id === overData.columnId)
-    if (!column) {
-      return null
-    }
-    const index = column.leads.findIndex(entry => entry.id === overId)
-    return {
-      columnId: overData.columnId,
-      index: index >= 0 ? index : column.leads.length,
-    }
-  }
-
-  if (overId) {
-    const column = columns.find(col =>
-      col.leads.some(entry => entry.id === overId)
-    )
-    if (column) {
-      const index = column.leads.findIndex(entry => entry.id === overId)
-      return {
-        columnId: column.id,
-        index: index >= 0 ? index : column.leads.length,
-      }
-    }
-  }
-
-  const activeSortable = extractSortableMeta(event.active.data?.current)
-  if (activeSortable) {
-    return {
-      columnId: activeSortable.containerId as LeadStatusValue,
-      index: activeSortable.index,
-    }
-  }
-
-  return null
+  return resolveKanbanDropTarget(
+    event,
+    LEAD_COLUMN_IDS(columns),
+    leadIdsIn(columns)
+  )
 }
 
 function produceLeadReorder({
@@ -679,72 +595,37 @@ function produceLeadReorder({
   }
 
   const sourceIndex = sourceColumn.leads.findIndex(lead => lead.id === leadId)
-
-  if (sourceIndex === -1) {
+  const moved = sourceColumn.leads[sourceIndex]
+  if (!moved) {
     return null
   }
 
   const isSameColumn = sourceColumn.id === targetColumnId
-  let destinationLeads: LeadRecord[]
-
-  if (isSameColumn) {
-    const maxIndex = sourceColumn.leads.length - 1
-    const boundedTarget = clamp(targetIndex, 0, maxIndex)
-
-    if (boundedTarget === sourceIndex) {
-      return null
-    }
-
-    destinationLeads = arrayMove(
-      [...sourceColumn.leads],
-      sourceIndex,
-      boundedTarget
-    )
-    sourceColumn.leads.splice(0, sourceColumn.leads.length, ...destinationLeads)
-  } else {
-    const [removedLead] = sourceColumn.leads.splice(sourceIndex, 1)
-    if (!removedLead) {
-      return null
-    }
-
-    const boundedIndex = clamp(targetIndex, 0, targetColumn.leads.length)
-    destinationLeads = [
-      ...targetColumn.leads.slice(0, boundedIndex),
-      removedLead,
-      ...targetColumn.leads.slice(boundedIndex),
-    ]
-    targetColumn.leads.splice(0, targetColumn.leads.length, ...destinationLeads)
-  }
-
-  const destinationColumn = isSameColumn ? sourceColumn : targetColumn
-  const reorderedLeads = destinationColumn.leads
-  const insertedIndex = reorderedLeads.findIndex(lead => lead.id === leadId)
-
-  if (insertedIndex === -1) {
+  const reorderedLeads = moveIntoColumn(
+    targetColumn.leads,
+    moved,
+    targetIndex,
+    isSameColumn ? { fromIndex: sourceIndex } : null
+  )
+  if (!reorderedLeads) {
     return null
   }
 
-  const rank = computeRankAmongHidden(
+  if (!isSameColumn) {
+    sourceColumn.leads.splice(sourceIndex, 1)
+  }
+
+  const insertedIndex = reorderedLeads.indexOf(moved)
+  const rank = rankAmongHidden(
     reorderedLeads,
     insertedIndex,
     hiddenLeads.filter(lead => lead.status === targetColumnId)
   )
 
-  reorderedLeads[insertedIndex] = {
-    ...reorderedLeads[insertedIndex],
-    status: targetColumnId,
-    rank,
-  }
+  reorderedLeads[insertedIndex] = { ...moved, status: targetColumnId, rank }
+  targetColumn.leads = reorderedLeads
 
-  const originalLead = previousColumns
-    .flatMap(column => column.leads)
-    .find(lead => lead.id === leadId)
-
-  if (
-    originalLead &&
-    originalLead.status === targetColumnId &&
-    originalLead.rank === rank
-  ) {
+  if (moved.status === targetColumnId && moved.rank === rank) {
     return null
   }
 
@@ -754,57 +635,4 @@ function produceLeadReorder({
     rank,
     targetColumnId,
   }
-}
-
-/**
- * The rank for the lead at `index` of the visible column, placed in the full
- * column (visible plus filtered-out leads, by rank): straight after the
- * visible lead above it, or straight before the one below.
- */
-function computeRankAmongHidden(
-  visible: LeadRecord[],
-  index: number,
-  hidden: LeadRecord[]
-) {
-  if (!hidden.length) return computeRankFromNeighbors(visible, index)
-
-  const moved = visible[index]
-  const full = [...visible.filter(lead => lead !== moved), ...hidden].sort(
-    (a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0)
-  )
-  const above = visible[index - 1]
-  const below = visible[index + 1]
-  let position: number
-  if (above) {
-    position = full.indexOf(above) + 1
-  } else if (below) {
-    position = full.indexOf(below)
-  } else {
-    position = full.length
-  }
-  full.splice(position, 0, moved!)
-  return computeRankFromNeighbors(full, position)
-}
-
-function computeRankFromNeighbors(leads: LeadRecord[], index: number) {
-  const previousRank = index > 0 ? (leads[index - 1]?.rank ?? null) : null
-  const nextRank = leads[index + 1]?.rank ?? null
-
-  if (previousRank && nextRank) {
-    return getRankBetween(previousRank, nextRank)
-  }
-
-  if (previousRank) {
-    return getRankAfter(previousRank)
-  }
-
-  if (nextRank) {
-    return getRankBefore(nextRank)
-  }
-
-  return getRankBetween(null, null)
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max)
 }

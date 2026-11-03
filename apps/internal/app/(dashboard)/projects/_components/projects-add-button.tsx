@@ -1,10 +1,10 @@
 'use client'
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
-import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 
 type ProjectsAddButtonProps = {
-  clients: ClientPickerRow[]
+  /** Whether any company is or was a client. */
+  hasClients: boolean
   /**
    * Members can only create personal projects, which need no client, so the
    * button stays enabled for them even when no client exists.
@@ -15,7 +15,7 @@ type ProjectsAddButtonProps = {
 
 /** "Create project" needs a client to attach to, so it waits for the first one. */
 export function ProjectsAddButton({
-  clients,
+  hasClients,
   allowWithoutClients = false,
   className,
 }: ProjectsAddButtonProps) {
@@ -25,7 +25,7 @@ export function ProjectsAddButton({
       label='Create project'
       className={className}
       disabledReason={
-        !allowWithoutClients && clients.length === 0
+        !allowWithoutClients && !hasClients
           ? 'Add a client before creating a project.'
           : null
       }

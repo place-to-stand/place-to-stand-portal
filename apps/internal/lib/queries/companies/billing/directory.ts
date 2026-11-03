@@ -39,3 +39,17 @@ export async function listClientDirectory(): Promise<ClientDirectoryRow[]> {
     .where(wasClientCompany())
     .orderBy(asc(companies.name))
 }
+
+/**
+ * Whether any company is or was a client: the create buttons' disabled
+ * state, without loading the whole directory. Callers check permissions
+ * first.
+ */
+export async function hasClientDirectory(): Promise<boolean> {
+  const rows = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(wasClientCompany())
+    .limit(1)
+  return rows.length > 0
+}

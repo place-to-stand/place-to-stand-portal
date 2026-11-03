@@ -2,16 +2,16 @@
 
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { HOUR_BLOCK_MISSING_CLIENT_REASON } from '@/lib/hour-blocks/hour-block-ui-state'
-import type { HourBlockClient } from '@/lib/hour-blocks/hour-block-form'
 
 type HourBlocksAddButtonProps = {
-  clients: HourBlockClient[]
+  /** Whether any company is or was a client. */
+  hasClients: boolean
   className?: string
 }
 
 /** "Create hour block" needs a client to attach to, so it waits for the first one. */
 export function HourBlocksAddButton({
-  clients,
+  hasClients,
   className,
 }: HourBlocksAddButtonProps) {
   return (
@@ -20,7 +20,7 @@ export function HourBlocksAddButton({
       label='Create hour block'
       className={className}
       disabledReason={
-        clients.length === 0 ? HOUR_BLOCK_MISSING_CLIENT_REASON : null
+        !hasClients ? HOUR_BLOCK_MISSING_CLIENT_REASON : null
       }
     />
   )

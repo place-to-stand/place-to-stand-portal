@@ -15,6 +15,7 @@
     "@pts/email": "*",
     "@pts/github": "*",
     "@pts/pdf": "^0.1.0",
+    "@pts/server": "^0.1.0",
     "@pts/ui": "*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",

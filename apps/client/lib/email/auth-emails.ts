@@ -1,45 +1,26 @@
 import 'server-only'
 
 import {
-  magicLinkEmail,
-  passwordChangedEmail,
-  passwordResetEmail,
+  renderAuthEmail,
   sendEmail,
-  type RenderedEmail,
+  type AuthEmail,
   type TransportConfig,
 } from '@pts/email'
 
 import { getEnv } from '@/lib/env.server'
 
-/**
- * Matches `otp_expiry` in `supabase/config.toml` (3600s). The templates state
- * the window in words, so a drift here makes the mail lie about how long the
- * recipient has.
- */
-const LINK_EXPIRY_MINUTES = 60
-
-/** How the portal refers to itself in mail. */
-const DESTINATION = 'the Place To Stand client portal'
-
-type AuthEmailTemplate = (args: {
-  actionLink: string
-  destination: string
-  expiresInMinutes: number
-  replyTo: string
-}) => RenderedEmail
-
 export async function sendPasswordResetEmail(
   to: string,
   actionLink: string
 ): Promise<void> {
-  await send(to, actionLink, passwordResetEmail)
+  await deliver(to, { kind: 'password-reset', actionLink })
 }
 
 export async function sendMagicLinkEmail(
   to: string,
   actionLink: string
 ): Promise<void> {
-  await send(to, actionLink, magicLinkEmail)
+  await deliver(to, { kind: 'magic-link', actionLink })
 }
 
 /**
@@ -50,13 +31,7 @@ export async function sendMagicLinkEmail(
  * calling this — see `supabase/config.toml`.
  */
 export async function sendPasswordChangedEmail(to: string): Promise<void> {
-  const { from, replyTo, transport } = resolveMailConfig()
-
-  await deliver(
-    to,
-    passwordChangedEmail({ destination: DESTINATION, replyTo }),
-    { from, replyTo, transport }
-  )
+  await deliver(to, { kind: 'password-changed' })
 }
 
 /**
@@ -71,28 +46,10 @@ export function assertAuthEmailConfigured(): void {
   resolveMailConfig()
 }
 
-async function send(
-  to: string,
-  actionLink: string,
-  template: AuthEmailTemplate
-): Promise<void> {
-  const config = resolveMailConfig()
+async function deliver(to: string, auth: AuthEmail): Promise<void> {
+  const { from, replyTo, transport } = resolveMailConfig()
+  const email = renderAuthEmail(auth, 'client', replyTo)
 
-  const email = template({
-    actionLink,
-    destination: DESTINATION,
-    expiresInMinutes: LINK_EXPIRY_MINUTES,
-    replyTo: config.replyTo,
-  })
-
-  await deliver(to, email, config)
-}
-
-async function deliver(
-  to: string,
-  email: RenderedEmail,
-  { from, replyTo, transport }: MailConfig
-): Promise<void> {
   await sendEmail(
     {
       from: `Place To Stand <${from}>`,
