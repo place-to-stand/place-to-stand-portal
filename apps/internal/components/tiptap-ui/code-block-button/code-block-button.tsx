@@ -1,28 +1,27 @@
-"use client"
+'use client'
 
-import { forwardRef, useCallback } from "react"
+import { forwardRef, useCallback } from 'react'
 
 // --- Hooks ---
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 // --- Lib ---
-import { parseShortcutKeys } from "@/lib/tiptap-utils"
+import { parseShortcutKeys } from '@/lib/tiptap-utils'
 
 // --- Tiptap UI ---
-import type { UseCodeBlockConfig } from "@/components/tiptap-ui/code-block-button"
+import type { UseCodeBlockConfig } from '@/components/tiptap-ui/code-block-button'
 import {
   CODE_BLOCK_SHORTCUT_KEY,
   useCodeBlock,
-} from "@/components/tiptap-ui/code-block-button"
+} from '@/components/tiptap-ui/code-block-button'
 
 // --- UI Primitives ---
-import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
-import { Button } from "@/components/tiptap-ui-primitive/button"
-import { Badge } from "@/components/tiptap-ui-primitive/badge"
+import type { ButtonProps } from '@/components/tiptap-ui-primitive/button'
+import { Button } from '@/components/tiptap-ui-primitive/button'
+import { Badge } from '@/components/tiptap-ui-primitive/badge'
 
 export interface CodeBlockButtonProps
-  extends Omit<ButtonProps, "type">,
-    UseCodeBlockConfig {
+  extends Omit<ButtonProps, 'type'>, UseCodeBlockConfig {
   /**
    * Optional text to display alongside the icon.
    */
@@ -94,24 +93,24 @@ export const CodeBlockButton = forwardRef<
 
     return (
       <Button
-        type="button"
-        data-style="ghost"
-        data-active-state={isActive ? "on" : "off"}
-        role="button"
+        type='button'
+        data-style='ghost'
+        data-active-state={isActive ? 'on' : 'off'}
+        role='button'
         disabled={!canToggle}
         data-disabled={!canToggle}
         tabIndex={-1}
         aria-label={label}
         aria-pressed={isActive}
-        tooltip="Code Block"
+        tooltip='Code Block'
         onClick={handleClick}
         {...buttonProps}
         ref={ref}
       >
         {children ?? (
           <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <Icon className='tiptap-button-icon' />
+            {text && <span className='tiptap-button-text'>{text}</span>}
             {showShortcut && (
               <CodeBlockShortcutBadge shortcutKeys={shortcutKeys} />
             )}
@@ -122,4 +121,4 @@ export const CodeBlockButton = forwardRef<
   }
 )
 
-CodeBlockButton.displayName = "CodeBlockButton"
+CodeBlockButton.displayName = 'CodeBlockButton'

@@ -68,8 +68,7 @@ export const getRankAfter = (prev: string | null) => getRankBetween(prev, null)
 
 export const getRankBefore = (next: string | null) => getRankBetween(null, next)
 
-const isValidRank = (value: string) =>
-  rankCharPattern.test(toLower(value))
+const isValidRank = (value: string) => rankCharPattern.test(toLower(value))
 
 export const normalizeRank = (value: string) => {
   const normalized = toLower(value)

@@ -1,6 +1,6 @@
 # 01 — `client_billing_terms`: schema, backfill, billing change flow
 
-Effective-dated history of each client's billing type, plus the admin flow that writes it. The monthly close resolves billing type *as of the report month* from this table (section 02); `clients.billing_type` remains the denormalized **current** cache for UI display, invoice defaults, and lead conversion (D2).
+Effective-dated history of each client's billing type, plus the admin flow that writes it. The monthly close resolves billing type _as of the report month_ from this table (section 02); `clients.billing_type` remains the denormalized **current** cache for UI display, invoice defaults, and lead conversion (D2).
 
 Core semantics (D10): **a billing change applies when saved** — the cache flips in the save transaction; the terms row's `effective_from` month boundary controls only which basis the report resolves per month. "Switch Acme to prepaid from September" saved Aug 6 means: sheet and invoice defaults say prepaid today, August still closes as net_30 from time logs, September onward closes as prepaid from hour blocks.
 
@@ -115,7 +115,7 @@ New file `apps/internal/lib/queries/clients/billing-terms.ts` (`server-only`):
 
 One insertion point: [apps/internal/lib/settings/clients/actions/create-client.ts](../../../apps/internal/lib/settings/clients/actions/create-client.ts). Lead conversion needs **no separate change** — [convert-lead.ts](../../../apps/internal/lib/leads/actions/convert-lead.ts) creates clients by calling the `createClient` action and inherits the term (W1; test 01.3 verifies).
 
-Insert the term **in the same transaction** as the client insert, with `effective_from = date_trunc('month', now())` (first of the creation month — new clients have no earlier data). `createClient` currently has **no transaction** — it's a slug-retry loop (~lines 68–131) around a bare insert (W2). Restructure: wrap `db.transaction` (client insert + `insertInitialBillingTerm`) *inside* the retry loop — a slug unique-violation aborts the transaction and the loop retries with a fresh slug. A client without a terms row is invisible to every future monthly close (D4).
+Insert the term **in the same transaction** as the client insert, with `effective_from = date_trunc('month', now())` (first of the creation month — new clients have no earlier data). `createClient` currently has **no transaction** — it's a slug-retry loop (~lines 68–131) around a bare insert (W2). Restructure: wrap `db.transaction` (client insert + `insertInitialBillingTerm`) _inside_ the retry loop — a slug unique-violation aborts the transaction and the loop retries with a fresh slug. A client without a terms row is invisible to every future monthly close (D4).
 
 ## Billing change flow (client sheet + update action)
 
@@ -131,7 +131,7 @@ Insert the term **in the same transaction** as the client insert, with `effectiv
 **Update action** ([apps/internal/lib/settings/clients/actions/update-client.ts](../../../apps/internal/lib/settings/clients/actions/update-client.ts)), when `billingType` differs from `existingClient.billingType`:
 
 1. Compute `effectiveFrom` from `billingEffective` (`date_trunc('month', now())` or `+ 1 month`), in UTC.
-2. In one transaction: closed-month guard **inside the transaction** (F5 — checking before it leaves a TOCTOU window where a concurrent close slips between check and write), then `upsertBillingTerm(…)` + the existing `db.update(clients)` set-clause, which keeps writing `billingType` unconditionally — that write *is* the cache flip. Guard failure: `'That month's books are closed. Reopen [Month] before changing its billing basis.'` (D9 hard block; only reachable via "This month"). Uses `isMonthClosed` from section 03 — ship behind a stub returning "open" if 03 hasn't landed.
+2. In one transaction: closed-month guard **inside the transaction** (F5 — checking before it leaves a TOCTOU window where a concurrent close slips between check and write), then `upsertBillingTerm(…)` + the existing `db.update(clients)` set-clause, which keeps writing `billingType` unconditionally — that write _is_ the cache flip. Guard failure: `'That month's books are closed. Reopen [Month] before changing its billing basis.'` (D9 hard block; only reachable via "This month"). Uses `isMonthClosed` from section 03 — ship behind a stub returning "open" if 03 hasn't landed.
 
 **Activity**: the existing `clientUpdatedEvent` "billing type" diff entry ([apps/internal/lib/activity/events/clients.ts](../../../apps/internal/lib/activity/events/clients.ts) via `calculateDiff` in update-client.ts) gains the boundary in details: `{ billingType: { from, to, effectiveFrom } }`. One event, actor = the saving admin.
 

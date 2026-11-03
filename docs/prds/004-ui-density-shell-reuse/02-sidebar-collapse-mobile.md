@@ -23,15 +23,15 @@ Adopt the shadcn sidebar primitive (D4): `npx shadcn@latest add sidebar` → `co
 
 Map the existing structure ([navigation-config.ts](../../../apps/internal/components/layout/navigation-config.ts) is unchanged):
 
-| Current | Becomes |
-|---|---|
-| `<aside class='w-56 …'>` | `<Sidebar collapsible='icon'>` |
-| Logo block (theme-aware, `max-w-[140px]`) | `SidebarHeader`; collapsed state shows a square icon mark (add a small logo glyph asset or the "P" mark) — full wordmark hides via `group-data-[collapsible=icon]:hidden` |
-| Dev "Development" pill | Collapsed: amber dot with tooltip; expanded: unchanged pill |
-| `NAV_GROUPS` map | `SidebarGroup` + `SidebarGroupLabel` (auto-hidden when collapsed) + `SidebarMenu`/`SidebarMenuItem`/`SidebarMenuButton asChild tooltip={item.label}` around the existing `<Link>` |
-| Active detection | import from `lib/navigation/active-route.ts` (extracted here or in 01 — whichever lands first; single source ends the duplication) |
-| Badge pill (`ml-auto`, `99+` cap, sr-only text) | `SidebarMenuBadge` when expanded; when collapsed, an absolute-positioned dot on the icon (custom — `SidebarMenuBadge` hides in icon mode) |
-| Footer `UserMenu` | `SidebarFooter`; `UserMenu` trigger gains a compact square variant for collapsed state (name/role column already `hidden sm:flex`) |
+| Current                                         | Becomes                                                                                                                                                                           |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<aside class='w-56 …'>`                        | `<Sidebar collapsible='icon'>`                                                                                                                                                    |
+| Logo block (theme-aware, `max-w-[140px]`)       | `SidebarHeader`; collapsed state shows a square icon mark (add a small logo glyph asset or the "P" mark) — full wordmark hides via `group-data-[collapsible=icon]:hidden`         |
+| Dev "Development" pill                          | Collapsed: amber dot with tooltip; expanded: unchanged pill                                                                                                                       |
+| `NAV_GROUPS` map                                | `SidebarGroup` + `SidebarGroupLabel` (auto-hidden when collapsed) + `SidebarMenu`/`SidebarMenuItem`/`SidebarMenuButton asChild tooltip={item.label}` around the existing `<Link>` |
+| Active detection                                | import from `lib/navigation/active-route.ts` (extracted here or in 01 — whichever lands first; single source ends the duplication)                                                |
+| Badge pill (`ml-auto`, `99+` cap, sr-only text) | `SidebarMenuBadge` when expanded; when collapsed, an absolute-positioned dot on the icon (custom — `SidebarMenuBadge` hides in icon mode)                                         |
+| Footer `UserMenu`                               | `SidebarFooter`; `UserMenu` trigger gains a compact square variant for collapsed state (name/role column already `hidden sm:flex`)                                                |
 
 Preserve the current compact visual language: `text-[12px]` labels, `size-3.5` icons, `text-[11px]` uppercase group labels — set via className overrides on the primitives, not by editing `components/ui/sidebar.tsx`.
 
@@ -39,7 +39,7 @@ Preserve the current compact visual language: `text-[12px]` labels, `size-3.5` i
 
 [app/(dashboard)/layout.tsx](<../../../apps/internal/app/(dashboard)/layout.tsx>) is already an async server component: read the `sidebar_state` cookie via `cookies()` and pass `defaultOpen` to `SidebarProvider` (the primitive writes the cookie on toggle). Wrap `AppShell`'s flex row: `SidebarProvider` → `Sidebar` + `SidebarInset`.
 
-**Watch-item:** the app's scroll model is `html { h-screen overflow-hidden }` + `app-shell.tsx`'s `flex h-screen overflow-hidden` with inner `overflow-y-auto` panes. `SidebarInset` assumes a slightly different flex model — expect one reconciliation pass; the invariant to preserve is *the page body never scrolls; inner panes do*.
+**Watch-item:** the app's scroll model is `html { h-screen overflow-hidden }` + `app-shell.tsx`'s `flex h-screen overflow-hidden` with inner `overflow-y-auto` panes. `SidebarInset` assumes a slightly different flex model — expect one reconciliation pass; the invariant to preserve is _the page body never scrolls; inner panes do_.
 
 ### 4. Trigger + mobile
 

@@ -18,10 +18,11 @@ Read every file in the PRD directory AND the actual codebase files they referenc
 Report findings as **C# (Critical)** — blocks implementation, **W# (Warning)** — risks, or **I# (Info)** — suggestions. Include file paths and line numbers.
 
 **Output the completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | {N critical}, {N warnings}, {N info} findings |
-| 2-3 | Pending | — |
+
+| Step | Status  | Output                                        |
+| ---- | ------- | --------------------------------------------- |
+| 1    | Done    | {N critical}, {N warnings}, {N info} findings |
+| 2-3  | Pending | —                                             |
 
 ## Step 2 — Product Manager (Product-Market Fit)
 
@@ -36,11 +37,12 @@ Read the agency's website at https://placetostandagency.com/ to understand the b
 Report findings as **P# (Product Critical)**, **PW# (Product Warning)**, or **PI# (Product Info)**.
 
 **Output the completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | {N product critical}, {N product warnings}, {N product info} findings |
-| 3 | Pending | — |
+
+| Step | Status  | Output                                                                |
+| ---- | ------- | --------------------------------------------------------------------- |
+| 1    | Done    | ...                                                                   |
+| 2    | Done    | {N product critical}, {N product warnings}, {N product info} findings |
+| 3    | Pending | —                                                                     |
 
 ## Step 3 — Ask questions, then incorporate
 
@@ -53,10 +55,11 @@ Report findings as **P# (Product Critical)**, **PW# (Product Warning)**, or **PI
 5. Update TEST-PLAN.md if new test items are needed.
 
 **Output the final completion table:**
-| Step | Status | Output |
-|------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | ... |
-| 3 | Done | {N decisions resolved}, {N files updated} |
+
+| Step | Status | Output                                    |
+| ---- | ------ | ----------------------------------------- |
+| 1    | Done   | ...                                       |
+| 2    | Done   | ...                                       |
+| 3    | Done   | {N decisions resolved}, {N files updated} |
 
 $ARGUMENTS

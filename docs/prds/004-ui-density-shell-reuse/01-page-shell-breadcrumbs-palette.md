@@ -13,7 +13,7 @@ There is no page shell. [app-shell.tsx](../../../apps/internal/components/layout
 - `/clients`, `/projects`, and the 6 project-detail routes instead render `SearchableCombobox variant='heading'` at **`text-3xl`** with no description ([searchable-combobox.tsx](../../../apps/internal/components/ui/searchable-combobox.tsx) ~L191–195, L216–220) — the header bar visibly changes height between sibling pages.
 - The tabs/count/action row idiom is copy-pasted ~12×, and **nine near-identical `*TabsNav` components** exist (clients, contacts, hour-blocks, invoices, leads, projects, users, submissions, projects-board), all with the same literal `TabsList` classes.
 - The header icon is derived by re-matching the pathname against `NAV_GROUPS` (app-shell.tsx ~L73–89) — logic duplicated verbatim from `sidebar.tsx` — and silently renders nothing for uncovered routes.
-- No breadcrumbs exist anywhere; `⌘[`/`⌘]` prev/next-record navigation lives *inside* the combobox header components ([clients-landing-header.tsx](<../../../apps/internal/app/(dashboard)/clients/_components/clients-landing-header.tsx>) ~L51–68, [projects-board-header.tsx](<../../../apps/internal/app/(dashboard)/projects/_components/projects-board-header.tsx>) ~L34–49).
+- No breadcrumbs exist anywhere; `⌘[`/`⌘]` prev/next-record navigation lives _inside_ the combobox header components ([clients-landing-header.tsx](<../../../apps/internal/app/(dashboard)/clients/_components/clients-landing-header.tsx>) ~L51–68, [projects-board-header.tsx](<../../../apps/internal/app/(dashboard)/projects/_components/projects-board-header.tsx>) ~L34–49).
 - No global quick-nav exists; `command.tsx` (`CommandDialog`) is installed but unused — and has an a11y bug (see implementation step 1).
 
 ## Design
@@ -77,6 +77,7 @@ As designed. Files: `components/layout/command-palette.tsx`, `app/api/command-pa
 Order (simple → complex): settings/integrations → reports → submissions → hour-blocks → invoices → contacts → clients → leads → my (home, tasks) → projects (landing + detail). Per page: delete the `LegacyPageHeader` block (post-R4 mechanical commit) + hand-rolled toolbar row, wrap content in `PageShell` with props, delete the local `*TabsNav`. (`LegacyPageHeader` carries the `SidebarTrigger` from 02 during the transition; `PageShell` owns it after conversion.)
 
 Special cases:
+
 - **My Tasks** ([my-tasks-page.tsx](../../../apps/internal/components/my-tasks/my-tasks-page.tsx)): `headerRight={<PersonSelector …>}` (D3); its inline tabs (~L296–314) move to the `tabs` prop; count + Add task to `count`/`primaryAction`.
 - **Project detail** ([projects-board.tsx](<../../../apps/internal/app/(dashboard)/projects/projects-board.tsx>) — note: lives at the route root, **not** `_components/` (W1)): `headerRight={<ProjectBurndownWidget …>}` (D3); breadcrumb ends with the project name; the two divergent `AppShellHeader` branches (L132, L159) collapse into one `PageShell` usage. Combobox header replaced; `useRecordCycle` mounted with the existing prev/next handlers.
 - **Clients landing/detail**: same treatment; `/clients/[clientSlug]` breadcrumb `Work / Clients / {name}`.

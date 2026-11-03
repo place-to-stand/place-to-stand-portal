@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.{tsx,jsx}"
+applyTo: '**/*.{tsx,jsx}'
 ---
 
 # React Component Review Guidelines

@@ -11,7 +11,12 @@ import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const DIRS = ['apps/internal/app', 'apps/internal/components', 'apps/internal/lib', 'apps/client']
+const DIRS = [
+  'apps/internal/app',
+  'apps/internal/components',
+  'apps/internal/lib',
+  'apps/client',
+]
 const SKIP = /node_modules|\.next|tiptap/
 const FORBIDDEN =
   /(?<![\w:-])(uppercase|lowercase|capitalize|tracking-[\w-]+|font-(?:thin|light|normal|semibold|bold|extrabold|black)|text-(?:\[[^\]]+\]|sm|base|lg|xl|2xs)|h-\d+(?:\.\d+)?|py-\d+(?:\.\d+)?|rounded-(?:none|sm|md|lg|xl))(?![\w-])/g
@@ -56,8 +61,12 @@ if (isMain) {
 if (!isMain) {
   // Imported by the tests: nothing to report.
 } else if (errors.length) {
-  console.error('Badge check failed: badges take size, weight and case from @pts/ui/badge.')
+  console.error(
+    'Badge check failed: badges take size, weight and case from @pts/ui/badge.'
+  )
   for (const error of errors) console.error(`  - ${error}`)
   process.exit(1)
-}
-else console.log('Badges: one size, weight and case everywhere (set by @pts/ui/badge)')
+} else
+  console.log(
+    'Badges: one size, weight and case everywhere (set by @pts/ui/badge)'
+  )

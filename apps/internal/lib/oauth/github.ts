@@ -1,12 +1,7 @@
 import { serverEnv } from '@/lib/env.server'
 
 // GitHub OAuth scopes for repo access
-export const GITHUB_SCOPES = [
-  'user:email',
-  'read:user',
-  'repo',
-  'read:org',
-]
+export const GITHUB_SCOPES = ['user:email', 'read:user', 'repo', 'read:org']
 
 export interface GitHubTokenResponse {
   access_token: string
@@ -49,7 +44,11 @@ export function getGitHubAuthUrl(state: string): string {
 export async function exchangeCodeForTokens(
   code: string
 ): Promise<GitHubTokenResponse> {
-  if (!serverEnv.GITHUB_CLIENT_ID || !serverEnv.GITHUB_CLIENT_SECRET || !serverEnv.GITHUB_REDIRECT_URI) {
+  if (
+    !serverEnv.GITHUB_CLIENT_ID ||
+    !serverEnv.GITHUB_CLIENT_SECRET ||
+    !serverEnv.GITHUB_REDIRECT_URI
+  ) {
     throw new Error('GitHub OAuth not configured')
   }
 
@@ -75,7 +74,9 @@ export async function exchangeCodeForTokens(
   const data = await response.json()
 
   if (data.error) {
-    throw new Error(`GitHub OAuth error: ${data.error_description || data.error}`)
+    throw new Error(
+      `GitHub OAuth error: ${data.error_description || data.error}`
+    )
   }
 
   return data

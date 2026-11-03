@@ -36,6 +36,7 @@ agent-browser --session autotest-internal open http://localhost:3000/page && age
 ```
 
 **Login flows** (run once per app at start of Phase 2):
+
 ```bash
 # internal portal
 agent-browser --session autotest-internal open http://localhost:3000/sign-in && agent-browser --session autotest-internal wait --load networkidle && agent-browser --session autotest-internal snapshot -i
@@ -45,15 +46,14 @@ agent-browser --session autotest-client open http://localhost:3001/sign-in && ag
 ```
 
 **Key rules:**
+
 - Always `snapshot -i` after navigation to get element refs
 - Use `wait --load networkidle` after navigating to a new page
 - Chain related commands with `&&` to reduce round-trips
 - Use the same `--session` on EVERY command against an app to maintain browser state
 - Test permission scoping from both sides: admin sees everything; a CLIENT-role user must only see data for clients they're a member of (`client_members`)
 
-
 **This command has 3 phases. Execute them IN ORDER. Output the completion table after each phase.**
-
 
 ## Phase 1 — Audit PROGRESS.md
 
@@ -66,11 +66,12 @@ agent-browser --session autotest-client open http://localhost:3001/sign-in && ag
 4. Report a short summary: "X of Y items complete, Z corrections made"
 
 **Output the completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | {X of Y complete, Z corrections} |
-| 2 | Pending | — |
-| 3 | Pending | — |
+
+| Phase | Status  | Output                           |
+| ----- | ------- | -------------------------------- |
+| 1     | Done    | {X of Y complete, Z corrections} |
+| 2     | Pending | —                                |
+| 3     | Pending | —                                |
 
 ## Phase 2 — Automated browser testing
 
@@ -115,18 +116,19 @@ Steps:
      - Tests blocked by an unrelated environment issue (missing Postgres extension, missing webhook secret, etc.)
 
    Print this categorization as a table so the user can see your plan. **The plan must be aggressive about Section A** — items that look "manual" often become "auto" after one SQL flip.
+
 4. **Seed the fixtures you'll need up front.** If the test plan references tasks in every lifecycle status, or both prepaid and net_30 clients, ensure you have or can produce one of each before starting. Cluster fixture setup at the top of the phase so you don't bounce between testing and seeding.
 5. **Work in section order. Within a section, batch related items into a single browser flow** — e.g., open the create dialog ONCE and verify field defaults (T3.6), date default (T3.9), status default (T3.10) in one sequence. Don't navigate fresh for every test ID. Each browser flow should knock out 3-8 test items.
 6. For each automated item:
    a. Use `agent-browser` (or curl, or `node -e` against the local DB) to navigate / interact / query
    b. Evaluate pass/fail from the tool output AND, where the test asserts persistence, a follow-up query against the local DB
    c. If a test **fails**:
-      - Diagnose root cause (read the source file, check dev-server logs)
-      - Implement a fix
-      - Run `npm run type-check` AND `npm run lint` from the repo root
-      - Re-test the same item + any items in the same browser flow that may have been affected
-      - If still failing after 2 fix attempts, **change its category to Section B** with reason "needs manual review — autotest couldn't fix" and move on
-   d. Update TEST-PLAN.md: `[ ] → [x]` and append `<!-- auto-tested -->` to the line — but only after the verifying tool call appears in your session log. No bulk-tagger shortcuts.
+   - Diagnose root cause (read the source file, check dev-server logs)
+   - Implement a fix
+   - Run `npm run type-check` AND `npm run lint` from the repo root
+   - Re-test the same item + any items in the same browser flow that may have been affected
+   - If still failing after 2 fix attempts, **change its category to Section B** with reason "needs manual review — autotest couldn't fix" and move on
+     d. Update TEST-PLAN.md: `[ ] → [x]` and append `<!-- auto-tested -->` to the line — but only after the verifying tool call appears in your session log. No bulk-tagger shortcuts.
 7. For each Section B item, leave the checkbox at `[ ]` and append `<!-- manual: see MANUAL-TEST-PLAN Section B -->`.
 8. **Self-audit before declaring Phase 2 done.** This is the gate that catches lazy tags:
    - `CHECKED=$(grep -cE '^- \[x\]' TEST-PLAN.md)`
@@ -139,6 +141,7 @@ Steps:
 9. **Then** commit any fixes with a descriptive message. Don't commit until the self-audit passes.
 
 **Anti-patterns — these are explicitly disallowed:**
+
 - ❌ "I'll knock off ~64 representative tests and call it a day." Every item needs an explicit disposition.
 - ❌ Bulk-tagging by section heading (e.g., a Python script that walks headings and stamps all `- [ ]` lines below them as `auto-tested`). Tags must be earned line-by-line.
 - ❌ "Section B: needs Paid fixture." A Paid fixture is one UPDATE away. Run the UPDATE first.
@@ -148,11 +151,12 @@ Steps:
 - ❌ Leaving items silently `[ ]`. They MUST get either `[x] <!-- auto-tested -->` or `[ ] <!-- manual: ... -->`.
 
 **Output the completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | {N auto-tested}, {N manual-tagged for Section B}, {N untagged — MUST be 0} |
-| 3 | Pending | — |
+
+| Phase | Status  | Output                                                                     |
+| ----- | ------- | -------------------------------------------------------------------------- |
+| 1     | Done    | ...                                                                        |
+| 2     | Done    | {N auto-tested}, {N manual-tagged for Section B}, {N untagged — MUST be 0} |
+| 3     | Pending | —                                                                          |
 
 ## Phase 3 — Manual test plan document (MANDATORY FILE WRITE)
 
@@ -180,6 +184,7 @@ After all automated testing is complete, you MUST create a file named `MANUAL-TE
 ## 🟥 Section A — Highest priority (failed/flaky/observed issues)
 
 These need a hands-on look — they revealed real concerns during automation. Each item must include:
+
 - A short label tying it back to the original test ID(s)
 - What was observed
 - A concrete repro or "decide whether X is acceptable"
@@ -190,11 +195,13 @@ These need a hands-on look — they revealed real concerns during automation. Ea
 ## 🟧 Section B — Not automatable (require human/external context)
 
 Group by category (Environment / external systems, Drag and drop, Visual / "feel" judgments, etc.). Every item must:
+
 - Reference the original test ID
 - Explain WHY it couldn't be automated
 - Say specifically what to verify
 
 ### [Category]
+
 - [ ] **B1. (TX.X) ...**
 - [ ] **B2. (TX.X) ...**
 
@@ -203,41 +210,44 @@ Group by category (Environment / external systems, Drag and drop, Visual / "feel
 Everything that passed an automated assertion. Touch each one to confirm the feel is right. Group by PRD section so the user can work through it linearly.
 
 ### [PRD section name]
+
 - [ ] **C1. (TX.X)** ...
 
 ---
 
 ## ✏️ Fixes applied during autotest
 
-| # | Issue | File | Commit |
-|---|-------|------|--------|
-| F1 | [description] | [path] | [short SHA] |
+| #   | Issue         | File   | Commit      |
+| --- | ------------- | ------ | ----------- |
+| F1  | [description] | [path] | [short SHA] |
 
 ---
 
 ## Summary counts
 
-| Section | Count |
-|---------|-------|
-| A — High priority follow-ups | N |
-| B — Not automatable | N |
-| C — Gut-check (auto-pass) | N |
-| **Total** | **N** |
+| Section                      | Count |
+| ---------------------------- | ----- |
+| A — High priority follow-ups | N     |
+| B — Not automatable          | N     |
+| C — Gut-check (auto-pass)    | N     |
+| **Total**                    | **N** |
 ```
 
 **Rules:**
+
 1. The file must be **written to disk** with the Write tool — chat output alone does not satisfy this step.
 2. Use the user's local date in the "Generated by" line. If you don't know it, ask before writing.
 3. Cross-reference every item back to its original `TX.X` / `EX` test ID from `TEST-PLAN.md` so the user can find it in the source plan.
-4. Section A is the *most important* — anything that decisively failed, behaved oddly, or needs a product decision goes here, not buried in Section B.
+4. Section A is the _most important_ — anything that decisively failed, behaved oddly, or needs a product decision goes here, not buried in Section B.
 5. After writing the file, commit it together with any autotest fixes (do NOT split into a separate commit).
 6. Then echo a short text summary of the file path and section counts back to the user.
 
 **Output the final completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | ... |
-| 3 | Done | Wrote `docs/prds/0XX-name/MANUAL-TEST-PLAN.md` — {N section A}, {N section B}, {N section C} |
+
+| Phase | Status | Output                                                                                       |
+| ----- | ------ | -------------------------------------------------------------------------------------------- |
+| 1     | Done   | ...                                                                                          |
+| 2     | Done   | ...                                                                                          |
+| 3     | Done   | Wrote `docs/prds/0XX-name/MANUAL-TEST-PLAN.md` — {N section A}, {N section B}, {N section C} |
 
 $ARGUMENTS

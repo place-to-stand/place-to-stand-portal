@@ -27,6 +27,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [x] **01.12** After the transition, the description editor shows the saved content; undo history starts fresh (W13 — expected) <!-- auto-tested -->
 
 **Edge cases:**
+
 - [x] **01.E1** Create a task from My Tasks assigned to someone else (not self) → sheet transitions to edit mode showing the task (C1: server page resolves it by id); a second save updates, not duplicates <!-- auto-tested -->
 - [x] **01.E2** Create with a validation error (e.g. empty title) → sheet stays open, errors shown, no navigation <!-- auto-tested -->
 - [ ] **01.E3** Server error on save (kill network) → toast/error state, sheet open, form intact, retry works; if the failure happened **after** the insert (partial failure), the result carries `taskId` and the sheet transitions to edit — retry never creates a second task (R1) <!-- manual: see MANUAL-TEST-PLAN Section B -->
@@ -51,6 +52,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [x] **02.14** Open the pre-linked create dialog, touch nothing, close it → no "Discard time log?" prompt (C5 baseline seeding) <!-- auto-tested -->
 
 **Edge cases:**
+
 - [x] **02.E1** Log 0 or negative hours → dialog validation blocks (existing rule, hours > 0) <!-- auto-tested -->
 - [x] **02.E2** Log into a closed month (PRD 002) → warning toast still appears; log saves <!-- auto-tested -->
 - [ ] **02.E3** Time-logs API failure → section shows quiet error, rest of the sheet fully usable <!-- manual: see MANUAL-TEST-PLAN Section B -->
@@ -71,6 +73,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [x] **03.8** Build/lint/type-check pass — no orphan imports anywhere (this is the real deletion test) <!-- verified 2026-08-08: npm run build / lint / type-check all green from repo root -->
 
 **Edge cases:**
+
 - [x] **03.E1** Old bookmark with query string `/scope?x=y` → still redirects (params may drop; no 404) <!-- auto-tested -->
 - [x] **03.E2** `npm run db:migrate` re-run → idempotent, no error <!-- verified 2026-08-08: second run exits clean -->
 
@@ -85,6 +88,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [x] **04.7** Soft-deleted project appears in neither hover nor either count <!-- auto-tested -->
 
 **Edge cases:**
+
 - [x] **04.E1** Client with many projects (>10) → card scrolls within `max-h-80` (W9), stays usable <!-- auto-tested -->
 - [ ] **04.E2** Project with null slug → link uses id fallback and resolves <!-- manual: see MANUAL-TEST-PLAN Section A -->
 - [x] **04.E3** Focus the total trigger and press Enter/Space → card opens (I3: activation, not focus — parity with active trigger) <!-- auto-tested -->
@@ -103,6 +107,7 @@ portal at sign-in — application-layer access control, no RLS).
 - [x] **05.9** Filter matching zero users → filtered empty-state message (not the default empty text) <!-- auto-tested -->
 
 **Edge cases:**
+
 - [x] **05.E1** Hand-typed `?role=SUPERADMIN` or `?access=maybe` → ignored, shows All <!-- auto-tested -->
 - [ ] **05.E2** Toggle a user's access switch while `access=enabled` filtered → toggle succeeds with toast; the row disappears **immediately** (the toggle's own `router.refresh()` re-runs the filtered query — expected, W12) <!-- manual: see MANUAL-TEST-PLAN Section A -->
 - [x] **05.E3** Stale cursor pasted with a filter (`?cursor=...&role=CLIENT`) → no crash; sane page <!-- auto-tested -->
@@ -126,13 +131,13 @@ portal at sign-in — application-layer access control, no RLS).
 
 ## Summary
 
-| Section | Core | Edge | Total |
-|---------|------|------|-------|
-| §01 Stay open | 12 | 5 | 17 |
-| §02 Time logs | 14 | 7 | 21 |
-| §03 Scope removal | 8 | 2 | 10 |
-| §04 Total hover | 7 | 4 | 11 |
-| §05 User filters | 9 | 3 | 12 |
-| Permissions | 3 | — | 3 |
-| Regressions | 8 | — | 8 |
-| **Total** | **61** | **21** | **82** |
+| Section           | Core   | Edge   | Total  |
+| ----------------- | ------ | ------ | ------ |
+| §01 Stay open     | 12     | 5      | 17     |
+| §02 Time logs     | 14     | 7      | 21     |
+| §03 Scope removal | 8      | 2      | 10     |
+| §04 Total hover   | 7      | 4      | 11     |
+| §05 User filters  | 9      | 3      | 12     |
+| Permissions       | 3      | —      | 3      |
+| Regressions       | 8      | —      | 8      |
+| **Total**         | **61** | **21** | **82** |

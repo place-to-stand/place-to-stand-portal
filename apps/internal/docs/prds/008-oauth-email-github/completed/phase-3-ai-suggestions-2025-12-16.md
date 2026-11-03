@@ -14,23 +14,29 @@ Phase 3 implements AI-powered task extraction from emails. The system analyzes e
 ## Completed Tasks
 
 ### Task 3.1: Schema for Task Suggestions ✅
+
 **Files:**
+
 - `lib/db/schema.ts` - Added `taskSuggestions` and `suggestionFeedback` tables
 - `lib/types/suggestions.ts` - TypeScript types
 
 **Database Tables:**
+
 - `task_suggestions` - Stores AI-generated suggestions with confidence scores, status, and links to source emails/projects
 - `suggestion_feedback` - Records user modifications for AI learning
 
 **Statuses:** PENDING, APPROVED, REJECTED, MODIFIED, EXPIRED
 
 ### Task 3.2: AI Analysis Service ✅
+
 **Files:**
+
 - `lib/ai/email-analysis.ts` - Core analysis function using Vercel AI Gateway
 - `lib/ai/prompts/email-to-tasks.ts` - System and user prompts
 - `lib/ai/schemas/task-extraction.ts` - Zod schemas for structured output
 
 **Key Implementation:**
+
 ```typescript
 import { createGateway } from '@ai-sdk/gateway'
 const gateway = createGateway()
@@ -40,7 +46,9 @@ const model = gateway('google/gemini-2.5-flash-lite')
 Uses `AI_GATEWAY_API_KEY` environment variable automatically.
 
 ### Task 3.3: Suggestions API ✅
+
 **Files:**
+
 - `lib/data/suggestions/index.ts` - Data access layer
 - `app/api/suggestions/route.ts` - GET pending suggestions
 - `app/api/suggestions/[suggestionId]/route.ts` - GET single suggestion
@@ -50,6 +58,7 @@ Uses `AI_GATEWAY_API_KEY` environment variable automatically.
 - `app/api/projects/route.ts` - GET projects for dropdown
 
 **Functions:**
+
 - `getPendingSuggestions(options)` - List pending with email/project context
 - `getSuggestionById(id)` - Single suggestion with relations
 - `approveSuggestion(id, userId, modifications?)` - Creates task, records feedback
@@ -57,7 +66,9 @@ Uses `AI_GATEWAY_API_KEY` environment variable automatically.
 - `getSuggestionCounts()` - Counts by status
 
 ### Task 3.4: Suggestions Review UI ✅
+
 **Files:**
+
 - `app/(dashboard)/suggestions/page.tsx` - Main page (requires ADMIN)
 - `app/(dashboard)/suggestions/_components/suggestions-panel.tsx` - Client state management
 - `app/(dashboard)/suggestions/_components/suggestion-card.tsx` - Suggestion card component
@@ -65,6 +76,7 @@ Uses `AI_GATEWAY_API_KEY` environment variable automatically.
 - `components/layout/navigation-config.ts` - Added "Suggestions" nav item with Sparkles icon
 
 **Features:**
+
 - List view with confidence scores (color-coded)
 - Quick Approve (one-click task creation)
 - Edit & Approve (modify before creating)
@@ -77,16 +89,20 @@ Uses `AI_GATEWAY_API_KEY` environment variable automatically.
 ## Supporting Work
 
 ### Scripts Created (for testing)
+
 - `scripts/sync-emails-bulk.ts` - Bulk sync emails from Gmail
 - `scripts/batch-match-emails.ts` - Auto-link emails to clients by contact
 - `scripts/test-ai-analysis.ts` - Test AI analysis on linked emails
 
 ### Activity Logging
+
 Added new verbs to `lib/activity/types.ts`:
+
 - `TASK_CREATED_FROM_EMAIL`
 - `TASK_SUGGESTION_REJECTED`
 
 ### Test Data Created
+
 - **Clients:** Valise, Kendall Booking
 - **Contacts:** mitch@valise.io, shawn@kendallbooking.com
 - **Projects:** Valise Development, Kendall Booking Development

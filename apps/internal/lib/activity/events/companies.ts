@@ -23,12 +23,16 @@ export const companyUpdatedEvent = (args: {
   }),
 })
 
-export const companyArchivedEvent = (args: { name: string }): ActivityEvent => ({
+export const companyArchivedEvent = (args: {
+  name: string
+}): ActivityEvent => ({
   verb: ActivityVerbs.COMPANY_ARCHIVED,
   summary: `Archived company "${args.name}"`,
 })
 
-export const companyRestoredEvent = (args: { name: string }): ActivityEvent => ({
+export const companyRestoredEvent = (args: {
+  name: string
+}): ActivityEvent => ({
   verb: ActivityVerbs.COMPANY_RESTORED,
   summary: `Restored company "${args.name}"`,
 })

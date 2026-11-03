@@ -76,4 +76,3 @@ export const clientBillingRestartedEvent = (args: {
     metadata: { effective: args.effective, cancelsStop: args.cancelsStop },
   }
 }
-

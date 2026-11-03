@@ -11,12 +11,7 @@ import {
   ensureTimeLogAccess,
 } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import {
-  tasks,
-  timeLogTasks,
-  timeLogs,
-  users,
-} from '@/lib/db/schema'
+import { tasks, timeLogTasks, timeLogs, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { UserRoleValue } from '@/lib/types'
@@ -100,7 +95,7 @@ const TIME_LOG_SELECTION = {
  * previously unlinked tasks.
  */
 async function hydrateTimeLogEntries(
-  timeLogRows: TimeLogSelection[],
+  timeLogRows: TimeLogSelection[]
 ): Promise<TimeLogEntry[]> {
   const timeLogIds = timeLogRows.map(row => row.log.id)
 
@@ -122,8 +117,8 @@ async function hydrateTimeLogEntries(
         .where(
           and(
             inArray(timeLogTasks.timeLogId, timeLogIds),
-            isNull(timeLogTasks.deletedAt),
-          ),
+            isNull(timeLogTasks.deletedAt)
+          )
         )
     : []
 
@@ -175,7 +170,7 @@ async function hydrateTimeLogEntries(
 export async function listProjectTimeLogs(
   user: AppUser,
   projectId: string,
-  limit = DEFAULT_HISTORY_LIMIT,
+  limit = DEFAULT_HISTORY_LIMIT
 ): Promise<ProjectTimeLogList> {
   await ensureProjectAccess(user, projectId)
 
@@ -227,7 +222,7 @@ export type TimeLogPage = {
  */
 export async function listTimeLogs(
   user: AppUser,
-  { projectId, userId, from, to, limit, offset = 0 }: TimeLogFilters,
+  { projectId, userId, from, to, limit, offset = 0 }: TimeLogFilters
 ): Promise<TimeLogPage> {
   if (projectId) {
     await ensureProjectAccess(user, projectId)
@@ -240,7 +235,7 @@ export async function listTimeLogs(
     projectId ? eq(timeLogs.projectId, projectId) : undefined,
     userId ? eq(timeLogs.userId, userId) : undefined,
     from ? gte(timeLogs.loggedOn, from) : undefined,
-    to ? lte(timeLogs.loggedOn, to) : undefined,
+    to ? lte(timeLogs.loggedOn, to) : undefined
   )
 
   const [timeLogRows, [totals]] = await Promise.all([
@@ -250,7 +245,11 @@ export async function listTimeLogs(
       .leftJoin(users, eq(timeLogs.userId, users.id))
       .where(where)
       // id makes the order total so offset paging cannot skip or repeat a row.
-      .orderBy(desc(timeLogs.loggedOn), desc(timeLogs.createdAt), desc(timeLogs.id))
+      .orderBy(
+        desc(timeLogs.loggedOn),
+        desc(timeLogs.createdAt),
+        desc(timeLogs.id)
+      )
       .limit(Math.max(1, limit))
       .offset(Math.max(0, offset))
       .then(rows => rows as TimeLogSelection[]),
@@ -279,7 +278,7 @@ export async function listTimeLogs(
  */
 export async function listTaskTimeLogs(
   user: AppUser,
-  taskId: string,
+  taskId: string
 ): Promise<TaskTimeLogList> {
   // Default access check: soft-deleted tasks 404 (status-ARCHIVED tasks are
   // not soft-deleted, so their sheets can still show existing logs).
@@ -294,12 +293,12 @@ export async function listTaskTimeLogs(
       and(
         eq(timeLogTasks.taskId, taskId),
         isNull(timeLogTasks.deletedAt),
-        isNull(timeLogs.deletedAt),
-      ),
+        isNull(timeLogs.deletedAt)
+      )
     )
     .orderBy(
       desc(timeLogs.loggedOn),
-      desc(timeLogs.createdAt),
+      desc(timeLogs.createdAt)
     )) as TimeLogSelection[]
 
   const entries = await hydrateTimeLogEntries(timeLogRows)
@@ -315,8 +314,8 @@ export async function listTaskTimeLogs(
       and(
         eq(timeLogTasks.taskId, taskId),
         isNull(timeLogTasks.deletedAt),
-        isNull(timeLogs.deletedAt),
-      ),
+        isNull(timeLogs.deletedAt)
+      )
     )
 
   return {
@@ -334,7 +333,7 @@ export async function listTaskTimeLogs(
  */
 export async function getTimeLogEntryById(
   user: AppUser,
-  timeLogId: string,
+  timeLogId: string
 ): Promise<TimeLogEntry> {
   await ensureTimeLogAccess(user, timeLogId)
 

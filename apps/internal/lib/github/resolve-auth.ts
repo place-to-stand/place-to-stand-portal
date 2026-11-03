@@ -2,10 +2,7 @@ import 'server-only'
 
 import { eq, and, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import {
-  githubAppInstallations,
-  oauthConnections,
-} from '@/lib/db/schema'
+import { githubAppInstallations, oauthConnections } from '@/lib/db/schema'
 import { decryptToken } from '@/lib/oauth/encryption'
 import { getInstallationToken } from '@pts/github'
 import { serverEnv } from '@/lib/env.server'

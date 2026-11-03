@@ -81,7 +81,9 @@ export async function GET(request: NextRequest) {
 
   // Leg 2: back from the GitHub sign-in we asked for.
   const savedOauthState = cookieStore.get('github_oauth_state')?.value
-  const pendingInstallation = cookieStore.get('github_pending_installation')?.value
+  const pendingInstallation = cookieStore.get(
+    'github_pending_installation'
+  )?.value
   const isSignInReturn = Boolean(
     code && state && savedOauthState && savedOauthState === state
   )
@@ -166,7 +168,6 @@ export async function GET(request: NextRequest) {
     console.error('GitHub sign-in check failed:', error)
     return NextResponse.redirect(new URL(errorPath, request.url))
   }
-
 
   try {
     // Fetch installation details from GitHub using App JWT

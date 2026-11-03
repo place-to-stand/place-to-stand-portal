@@ -172,6 +172,7 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
    ```
    (set -a; . ~/Sites/place-to-stand-portal/apps/internal/.env.prod; set +a; U="${DATABASE_URL%%\?*}"; U="${U/:6543\//:5432/}"; pg_dump "$U" -Fc -n public -n drizzle -n auth -f ~/Backups/pts-portal/prod-$(date +%Y%m%d-%H%M).dump) && ls -la ~/Backups/pts-portal/prod-*.dump
    ```
+
 2. Run `scripts/rehearse-rollout.sh <dump>`. Expect:
    - 41/41 compare checks;
    - ALL CHECKS PASS;
@@ -220,4 +221,3 @@ What changed in the audit and why: [pr-279-swarm-audit.md](pr-279-swarm-audit.md
 26. **(U21)** Hours read "1.5h" and money "$1,234.00" everywhere, including emails and PDFs (money exact to the cent).
 27. **Rich text:** type a very long URL in a task description and Save. Expect: it wraps; nothing runs past the edge.
 28. **(PI9, client portal)** A Net 30 client's Hours page shows this month's hours, then earlier months as lines. **(PI4)** The account menu shows the person's first name.
-

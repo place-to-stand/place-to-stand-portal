@@ -15,7 +15,9 @@ import { sql } from 'drizzle-orm'
  * keeps their name in history (time logs, the close, comments).
  */
 export function personNameOf(table = 'users') {
-  return sql<string | null>`(select c.name from contacts c where c.user_id = ${sql.raw(
+  return sql<
+    string | null
+  >`(select c.name from contacts c where c.user_id = ${sql.raw(
     `"${table}"."id"`
   )})`
 }
@@ -28,7 +30,9 @@ export const personNameSql = personNameOf('users')
  * person, signed in or not). `table` as for `personNameOf`.
  */
 export function personAvatarOf(table = 'users') {
-  return sql<string | null>`(select c.avatar_url from contacts c where c.user_id = ${sql.raw(
+  return sql<
+    string | null
+  >`(select c.avatar_url from contacts c where c.user_id = ${sql.raw(
     `"${table}"."id"`
   )})`
 }

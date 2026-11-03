@@ -2,7 +2,11 @@ import 'server-only'
 
 import { and, eq, isNull } from 'drizzle-orm'
 
-import { leadCreatedEvent, leadStatusChangedEvent, leadUpdatedEvent } from '@/lib/activity/events'
+import {
+  leadCreatedEvent,
+  leadStatusChangedEvent,
+  leadUpdatedEvent,
+} from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -23,7 +27,10 @@ import {
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
 import { notifyLeadAssigned } from '@/lib/notifications/in-app/events'
-import { fillCompanyWebsiteIfBlank, type DeferActivity } from '@/lib/companies/find-or-create'
+import {
+  fillCompanyWebsiteIfBlank,
+  type DeferActivity,
+} from '@/lib/companies/find-or-create'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {

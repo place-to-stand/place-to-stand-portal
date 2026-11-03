@@ -11,7 +11,6 @@ import { applyPortalAccessInTx } from '@/lib/queries/companies/billing/settings/
 import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import type { ContactSavePlan } from '@/lib/people/actions/save-contact'
 
-
 /** The companies (clients) a person gains and loses portal access to. */
 export type PersonPortalPlan = { grant: string[]; revoke: string[] }
 

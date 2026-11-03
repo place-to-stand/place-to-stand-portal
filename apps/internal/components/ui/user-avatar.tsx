@@ -32,8 +32,7 @@ export function personPhotoSrc({
   hasPhoto = true,
   version,
 }: Pick<UserAvatarProps, 'contactId' | 'userId' | 'hasPhoto' | 'version'>):
-  | string
-  | null {
+  string | null {
   const query = version ? `?v=${encodeURIComponent(version)}` : ''
   if (!hasPhoto) return null
   if (contactId) return `/api/storage/person-avatar/${contactId}${query}`

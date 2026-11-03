@@ -321,7 +321,10 @@ export async function getFileContents(
   auth?: GitHubAuth
 ): Promise<
   | { type: 'file'; content: string; path: string; size: number; sha: string }
-  | { type: 'dir'; entries: Array<{ type: string; name: string; path: string; size: number }> }
+  | {
+      type: 'dir'
+      entries: Array<{ type: string; name: string; path: string; size: number }>
+    }
 > {
   const params = ref ? `?ref=${encodeURIComponent(ref)}` : ''
   const encodedPath = path.split('/').map(encodeURIComponent).join('/')
@@ -366,7 +369,10 @@ export async function getRepoTree(
   repo: string,
   ref = 'HEAD',
   auth?: GitHubAuth
-): Promise<{ entries: Array<{ path: string; type: 'blob' | 'tree'; size?: number }>; truncated: boolean }> {
+): Promise<{
+  entries: Array<{ path: string; type: 'blob' | 'tree'; size?: number }>
+  truncated: boolean
+}> {
   const result = await githubFetch<GitHubTreeResponse>(
     userId,
     `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
@@ -417,7 +423,9 @@ export async function searchRepoCode(
 /**
  * Get the default connection ID for a user
  */
-export async function getDefaultConnectionId(userId: string): Promise<string | null> {
+export async function getDefaultConnectionId(
+  userId: string
+): Promise<string | null> {
   const [connection] = await db
     .select({ id: oauthConnections.id })
     .from(oauthConnections)

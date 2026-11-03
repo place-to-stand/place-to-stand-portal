@@ -41,7 +41,8 @@ export function usePlanRevisions(threadId: string | null, enabled: boolean) {
   })
 
   const revisions = useMemo(() => data?.revisions ?? [], [data?.revisions])
-  const latestVersion = revisions.length > 0 ? revisions[revisions.length - 1].version : 0
+  const latestVersion =
+    revisions.length > 0 ? revisions[revisions.length - 1].version : 0
   const currentVersion = viewingVersion ?? latestVersion
 
   const currentRevision = useMemo(

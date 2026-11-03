@@ -50,7 +50,9 @@ export function formatCalendarDate(
   if (!value) return null
   if (typeof value === 'string' && DATE_ONLY_RE.test(value)) {
     const [year, month, day] = value.split('-').map(Number)
-    return getFormatter(style, 'UTC').format(new Date(Date.UTC(year, month - 1, day)))
+    return getFormatter(style, 'UTC').format(
+      new Date(Date.UTC(year, month - 1, day))
+    )
   }
   const parsed = typeof value === 'string' ? new Date(value) : value
   if (Number.isNaN(parsed.getTime())) return null

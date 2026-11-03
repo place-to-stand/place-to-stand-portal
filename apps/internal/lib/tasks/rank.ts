@@ -43,7 +43,11 @@ async function resolveColumnEdgeRank(
  * goes to the top instead.
  */
 export function resolveNewTaskRank(projectId: string, status: TaskStatus) {
-  return resolveColumnEdgeRank(projectId, status, status === 'DONE' ? 'top' : 'bottom')
+  return resolveColumnEdgeRank(
+    projectId,
+    status,
+    status === 'DONE' ? 'top' : 'bottom'
+  )
 }
 
 /**

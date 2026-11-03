@@ -2,7 +2,10 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
-import { getInvoiceByShareToken, recordInvoiceView } from '@/lib/queries/invoices'
+import {
+  getInvoiceByShareToken,
+  recordInvoiceView,
+} from '@/lib/queries/invoices'
 import { getSession } from '@/lib/auth/session'
 import { invoiceViewedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
@@ -42,7 +45,7 @@ export default async function PublicInvoicePage({
 
   if (!session) {
     recordInvoiceView(invoice.id)
-      .then((previousCount) => {
+      .then(previousCount => {
         // Log activity only for the first view
         if (previousCount === 0) {
           const event = invoiceViewedEvent({
@@ -62,7 +65,7 @@ export default async function PublicInvoicePage({
           })
         }
       })
-      .catch((err) => {
+      .catch(err => {
         console.error(
           '[invoice-view] Failed to record view for invoice',
           invoice.id,

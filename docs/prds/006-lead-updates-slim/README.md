@@ -12,8 +12,8 @@ would be a fresh design if ever wanted (the old tip was `4d92ab99` should archae
 ## Why this exists
 
 PRD 005 grew to six interlocking sections across eight migrations. Jason's call on 2026-08-14:
-*"I've bitten off more than I can chew — reduce to just the updates flow, hard-code lead tasks to
-the Sales project, kill the referral linking and all board filtering."* Follow-up decisions in the
+_"I've bitten off more than I can chew — reduce to just the updates flow, hard-code lead tasks to
+the Sales project, kill the referral linking and all board filtering."_ Follow-up decisions in the
 same session: the staleness dot dies too (no thresholds anywhere), and the composer's
 "Add follow-up task" checkbox dies with it.
 
@@ -39,15 +39,15 @@ same session: the staleness dot dies too (no thresholds anywhere), and the compo
 
 ## What was deliberately cut (do not scope-creep back in)
 
-| Cut | Status |
-| --- | --- |
-| `tasks.project_id` nullable / lead-anchored tasks | dropped — lead tasks stay hard-coded to the internal **Sales** project |
-| Origination model, referrer contacts, `contact_leads` revival | dropped — `leads.source_type` / `source_detail` remain exactly as on main |
-| Staleness dot + per-stage thresholds + `/leads/settings` | dropped |
-| Board filter row (follow-up toggle, assignee filter) | dropped |
-| Composer "Add follow-up task" checkbox (D21/D24) | dropped |
-| `leads-intake` route removal | dropped — the route stays live on main |
-| Dropping `last_contact_at` / `awaiting_reply` | dropped — both columns stay (write-never, read-but-dead), no destructive migration in this PRD |
+| Cut                                                           | Status                                                                                         |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `tasks.project_id` nullable / lead-anchored tasks             | dropped — lead tasks stay hard-coded to the internal **Sales** project                         |
+| Origination model, referrer contacts, `contact_leads` revival | dropped — `leads.source_type` / `source_detail` remain exactly as on main                      |
+| Staleness dot + per-stage thresholds + `/leads/settings`      | dropped                                                                                        |
+| Board filter row (follow-up toggle, assignee filter)          | dropped                                                                                        |
+| Composer "Add follow-up task" checkbox (D21/D24)              | dropped                                                                                        |
+| `leads-intake` route removal                                  | dropped — the route stays live on main                                                         |
+| Dropping `last_contact_at` / `awaiting_reply`                 | dropped — both columns stay (write-never, read-but-dead), no destructive migration in this PRD |
 
 ## Deployed
 

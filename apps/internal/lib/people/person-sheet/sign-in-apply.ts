@@ -28,10 +28,7 @@ import {
   setAuthBanned,
   takeOverExistingAuthUser,
 } from '@/lib/users/services'
-import {
-  applyRoleInForce,
-  type RoleChange,
-} from '@/lib/users/services/role'
+import { applyRoleInForce, type RoleChange } from '@/lib/users/services/role'
 import { monthLabel } from '@/lib/users/role-months'
 import { dispatchPortalInvite } from '@/lib/users/user-service'
 import { getSupabaseServiceClient } from '@/lib/supabase/service'

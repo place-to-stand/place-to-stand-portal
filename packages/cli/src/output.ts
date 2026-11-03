@@ -29,14 +29,14 @@ function renderTable(rows: Record<string, unknown>[]): string {
 
   const columns = [...new Set(rows.flatMap(row => Object.keys(row)))]
   const widths = columns.map(column =>
-    Math.max(
-      column.length,
-      ...rows.map(row => toCell(row[column]).length)
-    )
+    Math.max(column.length, ...rows.map(row => toCell(row[column]).length))
   )
 
   const line = (cells: string[]) =>
-    cells.map((cell, index) => cell.padEnd(widths[index])).join('  ').trimEnd()
+    cells
+      .map((cell, index) => cell.padEnd(widths[index]))
+      .join('  ')
+      .trimEnd()
 
   return [
     line(columns.map(column => column.toUpperCase())),

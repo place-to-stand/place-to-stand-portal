@@ -29,20 +29,22 @@ export async function GET(
   try {
     const attachments = await listTaskAttachments(
       user,
-      parsedParams.data.taskId,
+      parsedParams.data.taskId
     )
 
     return NextResponse.json({ attachments }, { status: 200 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to load task attachments', error)
     return NextResponse.json(
       { error: 'Unable to load attachments.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
-

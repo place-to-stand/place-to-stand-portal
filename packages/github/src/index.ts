@@ -13,8 +13,4 @@ export {
   userCanAccessInstallation,
 } from './user-auth'
 
-export type {
-  GitHubInstallation,
-  GitHubRepo,
-  InstallationToken,
-} from './types'
+export type { GitHubInstallation, GitHubRepo, InstallationToken } from './types'

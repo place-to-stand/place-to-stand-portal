@@ -137,7 +137,10 @@ export async function saveProductCatalogItem(
 
   const parsed = productCatalogItemSchema.safeParse(input)
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? 'Invalid input.',
+    }
   }
 
   const values = {
@@ -213,7 +216,10 @@ export async function saveTaxRate(
 
   const parsed = taxRateSchema.safeParse(input)
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Invalid input.' }
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? 'Invalid input.',
+    }
   }
 
   const values = {

@@ -1,9 +1,9 @@
-import { MAC_SYMBOLS } from "./constants"
+import { MAC_SYMBOLS } from './constants'
 
 export function cn(
   ...classes: Array<string | boolean | undefined | null>
 ): string {
-  return classes.filter(Boolean).join(" ")
+  return classes.filter(Boolean).join(' ')
 }
 
 /**
@@ -12,8 +12,8 @@ export function cn(
  */
 function isMac(): boolean {
   return (
-    typeof navigator !== "undefined" &&
-    navigator.platform.toLowerCase().includes("mac")
+    typeof navigator !== 'undefined' &&
+    navigator.platform.toLowerCase().includes('mac')
   )
 }
 
@@ -49,13 +49,12 @@ export const parseShortcutKeys = (props: {
   delimiter?: string
   capitalize?: boolean
 }) => {
-  const { shortcutKeys, delimiter = "+", capitalize = true } = props
+  const { shortcutKeys, delimiter = '+', capitalize = true } = props
 
   if (!shortcutKeys) return []
 
   return shortcutKeys
     .split(delimiter)
-    .map((key) => key.trim())
-    .map((key) => formatShortcutKey(key, isMac(), capitalize))
+    .map(key => key.trim())
+    .map(key => formatShortcutKey(key, isMac(), capitalize))
 }
-

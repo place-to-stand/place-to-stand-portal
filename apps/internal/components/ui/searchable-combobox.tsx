@@ -457,10 +457,7 @@ function renderLeading(
 ): React.ReactNode {
   // A hairline ring keeps the circle visible on a highlighted row, whose
   // background matches the avatar's fill.
-  const className = cn(
-    'ring-border shrink-0 ring-1',
-    place === 'row' && 'mr-2'
-  )
+  const className = cn('ring-border shrink-0 ring-1', place === 'row' && 'mr-2')
   if (item.userId) {
     return (
       <Avatar size='xs' className={className}>

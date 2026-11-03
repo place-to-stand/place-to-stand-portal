@@ -42,18 +42,18 @@ export function AppShell({
     // Palette provider wraps the sidebar too — the search affordance lives
     // there (user-revised placement of PW1).
     <ViewerAccessProvider role={user.role} userId={user.id}>
-    <CommandPaletteProvider>
-      <SidebarProvider
-        defaultOpen={sidebarDefaultOpen}
-        style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
-        className='bg-muted h-dvh min-h-0 overflow-hidden'
-      >
-        <Sidebar user={user} badges={navBadges} />
-        <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
-          {children}
-        </div>
-      </SidebarProvider>
-    </CommandPaletteProvider>
+      <CommandPaletteProvider>
+        <SidebarProvider
+          defaultOpen={sidebarDefaultOpen}
+          style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+          className='bg-muted h-dvh min-h-0 overflow-hidden'
+        >
+          <Sidebar user={user} badges={navBadges} />
+          <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
+            {children}
+          </div>
+        </SidebarProvider>
+      </CommandPaletteProvider>
     </ViewerAccessProvider>
   )
 }

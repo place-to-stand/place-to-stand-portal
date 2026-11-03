@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang='en' suppressHydrationWarning>
       <head>
         {/* Synchronous theme init — must run before first paint, otherwise the
             page renders light and then flips. Reads the stored preference and

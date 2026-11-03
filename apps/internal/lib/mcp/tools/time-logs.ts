@@ -47,10 +47,7 @@ export function registerTimeLogTools(server: McpServer) {
         .optional(),
       limit: listLimit,
     },
-    run: async (
-      { project, user: person, from, to, limit },
-      { user }
-    ) => {
+    run: async ({ project, user: person, from, to, limit }, { user }) => {
       if (from && to && to < from) {
         throw new BadRequestError('to must not be before from.')
       }

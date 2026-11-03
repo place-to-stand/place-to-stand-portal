@@ -16,12 +16,10 @@
 import postgres from 'postgres'
 
 const args = Object.fromEntries(
-  process.argv
-    .slice(2)
-    .reduce((pairs, arg, index, all) => {
-      if (arg.startsWith('--')) pairs.push([arg.slice(2), all[index + 1]])
-      return pairs
-    }, [])
+  process.argv.slice(2).reduce((pairs, arg, index, all) => {
+    if (arg.startsWith('--')) pairs.push([arg.slice(2), all[index + 1]])
+    return pairs
+  }, [])
 )
 for (const key of ['before', 'after']) {
   const url = args[key]
@@ -69,22 +67,31 @@ for (const table of [
   'activity_logs',
   'monthly_close_snapshots',
 ]) {
-  const old = set((await rows(before, `select id::text from ${table}`)).map(r => r.id))
-  const now = set((await rows(after, `select id::text from ${table}`)).map(r => r.id))
+  const old = set(
+    (await rows(before, `select id::text from ${table}`)).map(r => r.id)
+  )
+  const now = set(
+    (await rows(after, `select id::text from ${table}`)).map(r => r.id)
+  )
   const lost = missing(old, now)
   const added = missing(now, old)
-  const allowedAdds = table === 'contacts' ? 'people for sign-ins without one (0109)' : null
+  const allowedAdds =
+    table === 'contacts' ? 'people for sign-ins without one (0109)' : null
   check(
     `${table}: every row kept`,
     lost.length === 0 && (added.length === 0 || allowedAdds),
     `${old.size} before, ${now.size} after, ${lost.length} lost` +
-      (added.length ? `, ${added.length} added${allowedAdds ? ` (${allowedAdds})` : ''}` : '')
+      (added.length
+        ? `, ${added.length} added${allowedAdds ? ` (${allowedAdds})` : ''}`
+        : '')
   )
 }
 
 // Contacts added by the batch: a sign-in's person (0109) or a lead's (0106).
 {
-  const old = set((await rows(before, 'select id::text from contacts')).map(r => r.id))
+  const old = set(
+    (await rows(before, 'select id::text from contacts')).map(r => r.id)
+  )
   const added = (
     await rows(
       after,
@@ -107,35 +114,54 @@ for (const table of [
     'select id::text, slug, state, notes, deleted_at, billing_type from clients'
   )
   const unmapped = clients.filter(c => !company(c.id))
-  check('every client maps to a company', unmapped.length === 0, `${clients.length} clients, ${unmapped.length} unmapped`)
+  check(
+    'every client maps to a company',
+    unmapped.length === 0,
+    `${clients.length} clients, ${unmapped.length} unmapped`
+  )
 
   const companies = new Map(
     // Client state is read through 0113's billing periods.
-    (await rows(after, `select id::text, slug, state, notes,
+    (
+      await rows(
+        after,
+        `select id::text, slug, state, notes,
        exists (select 1 from client_billing_periods p where p.company_id = companies.id and p.deleted_at is null) as was_client,
-       company_billing_open(id) as billing_open from companies`)).map(
-      c => [c.id, c]
-    )
+       company_billing_open(id) as billing_open from companies`
+      )
+    ).map(c => [c.id, c])
   )
   const live = clients.filter(c => !c.deleted_at)
   const wrong = live.filter(c => {
     const co = companies.get(company(c.id))
     return !co || co.slug !== c.slug || (co.state ?? null) !== (c.state ?? null)
   })
-  check('live clients: slug and state on the company', wrong.length === 0, `${live.length} live, ${wrong.length} differ`)
+  check(
+    'live clients: slug and state on the company',
+    wrong.length === 0,
+    `${live.length} live, ${wrong.length} differ`
+  )
 
   const stateWrong = clients.filter(c => {
     const co = companies.get(company(c.id))
     if (!co) return true
     return c.deleted_at ? !co.was_client : !co.was_client || !co.billing_open
   })
-  check('client state on the company (live / former)', stateWrong.length === 0, `${stateWrong.length} wrong`)
+  check(
+    'client state on the company (live / former)',
+    stateWrong.length === 0,
+    `${stateWrong.length} wrong`
+  )
 
   const notesLost = clients.filter(c => {
     const note = (c.notes ?? '').trim()
     return note && !(companies.get(company(c.id))?.notes ?? '').includes(note)
   })
-  check('client notes kept on the company', notesLost.length === 0, `${notesLost.length} lost`)
+  check(
+    'client notes kept on the company',
+    notesLost.length === 0,
+    `${notesLost.length} lost`
+  )
 
   // Billing type: the old column was a cache of the newest term.
   const newest = new Map(
@@ -148,8 +174,14 @@ for (const table of [
       )
     ).map(r => [r.company_id, r.billing_type])
   )
-  const billingWrong = live.filter(c => c.billing_type && newest.get(company(c.id)) !== c.billing_type)
-  check('billing type per client unchanged', billingWrong.length === 0, `${billingWrong.length} differ`)
+  const billingWrong = live.filter(
+    c => c.billing_type && newest.get(company(c.id)) !== c.billing_type
+  )
+  check(
+    'billing type per client unchanged',
+    billingWrong.length === 0,
+    `${billingWrong.length} differ`
+  )
 }
 
 // Terms: same rows on the mapped company.
@@ -157,22 +189,39 @@ for (const [oldTable, newTable] of [
   ['client_billing_terms', 'billing_terms'],
   ['client_commission_terms', 'commission_terms'],
 ]) {
-  const extra = oldTable === 'client_billing_terms' ? 'billing_type' : 'origination_user_id, origination_contact_id'
-  const old = await rows(before, `select id::text, client_id::text, effective_from::text, ${extra} from ${oldTable} where deleted_at is null`)
+  const extra =
+    oldTable === 'client_billing_terms'
+      ? 'billing_type'
+      : 'origination_user_id, origination_contact_id'
+  const old = await rows(
+    before,
+    `select id::text, client_id::text, effective_from::text, ${extra} from ${oldTable} where deleted_at is null`
+  )
   const now = new Map(
-    (await rows(after, `select id::text, company_id::text, effective_from::text, ${extra} from ${newTable} where deleted_at is null`)).map(
-      r => [r.id, r]
-    )
+    (
+      await rows(
+        after,
+        `select id::text, company_id::text, effective_from::text, ${extra} from ${newTable} where deleted_at is null`
+      )
+    ).map(r => [r.id, r])
   )
   const wrong = old.filter(t => {
     const n = now.get(t.id)
     if (!n) return true
-    if (n.company_id !== company(t.client_id) || n.effective_from !== t.effective_from) return true
+    if (
+      n.company_id !== company(t.client_id) ||
+      n.effective_from !== t.effective_from
+    )
+      return true
     return extra
       .split(', ')
       .some(column => String(n[column] ?? '') !== String(t[column] ?? ''))
   })
-  check(`${newTable}: every term on the right company`, wrong.length === 0, `${old.length} terms, ${wrong.length} differ`)
+  check(
+    `${newTable}: every term on the right company`,
+    wrong.length === 0,
+    `${old.length} terms, ${wrong.length} differ`
+  )
 }
 
 // Closers: old per-term closer_user_id became a closer row (0086/0108).
@@ -194,22 +243,44 @@ for (const [oldTable, newTable] of [
     ).map(r => r.k)
   )
   const lost = old.filter(r => !now.has(`${r.term_id}/${r.user_id}`))
-  check('commission closers kept', lost.length === 0, `${old.length} closers, ${lost.length} lost`)
+  check(
+    'commission closers kept',
+    lost.length === 0,
+    `${old.length} closers, ${lost.length} lost`
+  )
 }
 
 // Projects, hour blocks, invoices: on the client's company, timestamps untouched.
 for (const table of ['projects', 'hour_blocks', 'invoices']) {
-  const old = await rows(before, `select id::text, client_id::text, updated_at::text from ${table}`)
+  const old = await rows(
+    before,
+    `select id::text, client_id::text, updated_at::text from ${table}`
+  )
   const now = new Map(
-    (await rows(after, `select id::text, company_id::text, updated_at::text from ${table}`)).map(r => [r.id, r])
+    (
+      await rows(
+        after,
+        `select id::text, company_id::text, updated_at::text from ${table}`
+      )
+    ).map(r => [r.id, r])
   )
   const wrong = old.filter(r => {
     const n = now.get(r.id)
     return !n || (n.company_id ?? null) !== (company(r.client_id) ?? null)
   })
-  const touched = old.filter(r => now.get(r.id) && now.get(r.id).updated_at !== r.updated_at)
-  check(`${table}: on the client's company`, wrong.length === 0, `${old.length} rows, ${wrong.length} wrong`)
-  check(`${table}: updated_at untouched`, touched.length === 0, `${touched.length} changed`)
+  const touched = old.filter(
+    r => now.get(r.id) && now.get(r.id).updated_at !== r.updated_at
+  )
+  check(
+    `${table}: on the client's company`,
+    wrong.length === 0,
+    `${old.length} rows, ${wrong.length} wrong`
+  )
+  check(
+    `${table}: updated_at untouched`,
+    touched.length === 0,
+    `${touched.length} changed`
+  )
 }
 
 // 3. Every foreign key resolves (including ones not enforced as constraints).
@@ -223,8 +294,22 @@ for (const table of ['projects', 'hour_blocks', 'invoices']) {
   )
   // Columns with no constraint, checked by hand, with their pre-batch name.
   const soft = [
-    ['activity_logs', 'target_company_id', 'companies', 'id', 'target_client_id', 'clients'],
-    ['activity_logs', 'target_project_id', 'projects', 'id', 'target_project_id', 'projects'],
+    [
+      'activity_logs',
+      'target_company_id',
+      'companies',
+      'id',
+      'target_client_id',
+      'clients',
+    ],
+    [
+      'activity_logs',
+      'target_project_id',
+      'projects',
+      'id',
+      'target_project_id',
+      'projects',
+    ],
   ]
   const count = async (db, tbl, col, ref, refcol) =>
     (
@@ -234,7 +319,12 @@ for (const table of ['projects', 'hour_blocks', 'invoices']) {
       )
     )[0].n
   const bad = []
-  for (const [tbl, col, ref, refcol] of fks.map(f => [f.tbl, f.col, f.ref, f.refcol])) {
+  for (const [tbl, col, ref, refcol] of fks.map(f => [
+    f.tbl,
+    f.col,
+    f.ref,
+    f.refcol,
+  ])) {
     const n = await count(after, tbl, col, ref, refcol)
     if (n) bad.push(`${tbl}.${col}: ${n}`)
   }
@@ -251,25 +341,45 @@ for (const table of ['projects', 'hour_blocks', 'invoices']) {
     bad.length === 0,
     `${fks.length + soft.length} keys checked, ${bad.length} with new orphans` +
       (bad.length ? `: ${bad.join(', ')}` : '') +
-      (known.length ? ` (already orphaned before the batch: ${known.join('; ')})` : '')
+      (known.length
+        ? ` (already orphaned before the batch: ${known.join('; ')})`
+        : '')
   )
 }
 
 // 4. Every sign-in tied to the right person.
 {
-  const old = await rows(before, 'select id::text, user_id::text from contacts where user_id is not null')
-  const now = new Map((await rows(after, 'select id::text, user_id::text from contacts')).map(r => [r.id, r.user_id]))
+  const old = await rows(
+    before,
+    'select id::text, user_id::text from contacts where user_id is not null'
+  )
+  const now = new Map(
+    (await rows(after, 'select id::text, user_id::text from contacts')).map(
+      r => [r.id, r.user_id]
+    )
+  )
   const moved = old.filter(r => now.get(r.id) !== r.user_id)
-  check('sign-ins keep their person', moved.length === 0, `${old.length} links, ${moved.length} moved`)
+  check(
+    'sign-ins keep their person',
+    moved.length === 0,
+    `${old.length} links, ${moved.length} moved`
+  )
 
   const [{ n }] = await rows(
     after,
     `select count(*)::int n from users u where u.deleted_at is null and
      (select count(*) from contacts c where c.user_id = u.id and c.deleted_at is null) <> 1`
   )
-  check('every live sign-in has exactly one live person', n === 0, `${n} without`)
+  check(
+    'every live sign-in has exactly one live person',
+    n === 0,
+    `${n} without`
+  )
 
-  const users = await rows(before, 'select id::text, email, role::text, disabled_at::text, deleted_at::text, avatar_url from users')
+  const users = await rows(
+    before,
+    'select id::text, email, role::text, disabled_at::text, deleted_at::text, avatar_url from users'
+  )
   const nowUsers = new Map(
     (
       await rows(
@@ -282,11 +392,27 @@ for (const table of ['projects', 'hour_blocks', 'invoices']) {
   )
   const changed = users.filter(u => {
     const n = nowUsers.get(u.id)
-    return !n || ['email', 'role', 'disabled_at', 'deleted_at'].some(k => n[k] !== u[k])
+    return (
+      !n ||
+      ['email', 'role', 'disabled_at', 'deleted_at'].some(k => n[k] !== u[k])
+    )
   })
-  check('sign-ins: email, role, off switch unchanged', changed.length === 0, `${users.length} sign-ins, ${changed.length} changed`)
-  const photos = users.filter(u => u.avatar_url && !u.deleted_at && nowUsers.get(u.id)?.avatar_url !== u.avatar_url)
-  check('photos now on the person', photos.length === 0, `${users.filter(u => u.avatar_url).length} photos, ${photos.length} lost`)
+  check(
+    'sign-ins: email, role, off switch unchanged',
+    changed.length === 0,
+    `${users.length} sign-ins, ${changed.length} changed`
+  )
+  const photos = users.filter(
+    u =>
+      u.avatar_url &&
+      !u.deleted_at &&
+      nowUsers.get(u.id)?.avatar_url !== u.avatar_url
+  )
+  check(
+    'photos now on the person',
+    photos.length === 0,
+    `${users.filter(u => u.avatar_url).length} photos, ${photos.length} lost`
+  )
 }
 
 // 5. Portal access identical (old: contact_clients + a live sign-in + live client).
@@ -304,43 +430,84 @@ for (const table of ['projects', 'hour_blocks', 'invoices']) {
     ).map(r => `${company(r.client_id)}/${r.contact_id}/${r.user_id}`)
   )
   const now = set(
-    (await rows(after, 'select company_id::text, contact_id::text, user_id::text from client_portal_access')).map(
-      r => `${r.company_id}/${r.contact_id}/${r.user_id}`
-    )
+    (
+      await rows(
+        after,
+        'select company_id::text, contact_id::text, user_id::text from client_portal_access'
+      )
+    ).map(r => `${r.company_id}/${r.contact_id}/${r.user_id}`)
   )
   const lost = missing(old, now)
   const gained = missing(now, old)
-  check('portal access identical', lost.length === 0 && gained.length === 0, `${old.size} before, ${now.size} after, ${lost.length} lost, ${gained.length} gained`)
+  check(
+    'portal access identical',
+    lost.length === 0 && gained.length === 0,
+    `${old.size} before, ${now.size} after, ${lost.length} lost, ${gained.length} gained`
+  )
 }
 
 // 6. People at two companies keep both.
 {
-  const old = await rows(before, 'select contact_id::text, client_id::text from contact_clients')
+  const old = await rows(
+    before,
+    'select contact_id::text, client_id::text from contact_clients'
+  )
   const byContact = new Map()
   for (const r of old) {
     const co = company(r.client_id)
     if (!co) continue
-    byContact.set(r.contact_id, (byContact.get(r.contact_id) ?? new Set()).add(co))
+    byContact.set(
+      r.contact_id,
+      (byContact.get(r.contact_id) ?? new Set()).add(co)
+    )
   }
   const multi = [...byContact].filter(([, cos]) => cos.size > 1)
   const memberships = set(
-    (await rows(after, 'select contact_id::text || \'/\' || company_id::text k from memberships where ended_at is null')).map(r => r.k)
+    (
+      await rows(
+        after,
+        "select contact_id::text || '/' || company_id::text k from memberships where ended_at is null"
+      )
+    ).map(r => r.k)
   )
-  const lost = multi.filter(([contact, cos]) => [...cos].some(co => !memberships.has(`${contact}/${co}`)))
-  check('people at two companies keep both', lost.length === 0, `${multi.length} people, ${lost.length} lost a company`)
+  const lost = multi.filter(([contact, cos]) =>
+    [...cos].some(co => !memberships.has(`${contact}/${co}`))
+  )
+  check(
+    'people at two companies keep both',
+    lost.length === 0,
+    `${multi.length} people, ${lost.length} lost a company`
+  )
 }
 
 // 7. Closed months: every snapshot the same once ids are mapped.
 {
-  const old = await rows(before, 'select id::text, report::text from monthly_close_snapshots')
-  const now = new Map((await rows(after, 'select id::text, report::text from monthly_close_snapshots')).map(r => [r.id, r.report]))
+  const old = await rows(
+    before,
+    'select id::text, report::text from monthly_close_snapshots'
+  )
+  const now = new Map(
+    (
+      await rows(
+        after,
+        'select id::text, report::text from monthly_close_snapshots'
+      )
+    ).map(r => [r.id, r.report])
+  )
   const differ = old.filter(s => {
     let text = s.report
-    for (const [clientId, companyId] of clientToCompany) text = text.split(clientId).join(companyId)
+    for (const [clientId, companyId] of clientToCompany)
+      text = text.split(clientId).join(companyId)
     const n = now.get(s.id)
-    return !n || JSON.stringify(JSON.parse(n)) !== JSON.stringify(JSON.parse(text))
+    return (
+      !n || JSON.stringify(JSON.parse(n)) !== JSON.stringify(JSON.parse(text))
+    )
   })
-  check('closed-month snapshots unchanged', differ.length === 0, `${old.length} snapshots, ${differ.length} differ`)
+  check(
+    'closed-month snapshots unchanged',
+    differ.length === 0,
+    `${old.length} snapshots, ${differ.length} differ`
+  )
 }
 
 // 8–9. Money per client: hours bought, hours logged, invoice totals.
@@ -366,9 +533,15 @@ for (const [label, oldSql, newSql] of [
     const co = company(r.k)
     old.set(co, (Number(old.get(co) ?? 0) + Number(r.v)).toFixed(2))
   }
-  const now = new Map((await rows(after, newSql)).map(r => [r.k, Number(r.v).toFixed(2)]))
+  const now = new Map(
+    (await rows(after, newSql)).map(r => [r.k, Number(r.v).toFixed(2)])
+  )
   const differ = [...old].filter(([k, v]) => now.get(k) !== v)
-  check(label, differ.length === 0 && old.size === now.size, `${old.size} clients, ${differ.length} differ`)
+  check(
+    label,
+    differ.length === 0 && old.size === now.size,
+    `${old.size} clients, ${differ.length} differ`
+  )
 }
 
 await before.end()

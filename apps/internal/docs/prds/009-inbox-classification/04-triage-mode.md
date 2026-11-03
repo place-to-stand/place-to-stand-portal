@@ -33,6 +33,7 @@ Triage is a **top-level tab** in the inbox, not nested under Emails:
 Each card shows a single thread with its auto-detected classification suggestion.
 
 **Match found (client contact recognized):**
+
 ```
 ┌──────────────────────────────────────────────────┐
 │  ✉ Subject: Re: Website redesign proposal        │
@@ -55,6 +56,7 @@ Each card shows a single thread with its auto-detected classification suggestion
 ```
 
 **No match found (unknown sender):**
+
 ```
 ┌──────────────────────────────────────────────────┐
 │  ✉ Subject: Quick question about your services   │
@@ -76,6 +78,7 @@ Each card shows a single thread with its auto-detected classification suggestion
 ```
 
 **No match → after clicking "Link to Client":**
+
 ```
 ┌──────────────────────────────────────────────────┐
 │  ✉ Subject: Quick question about your services   │
@@ -100,11 +103,13 @@ Each card shows a single thread with its auto-detected classification suggestion
 **Sections:**
 
 **Header:**
+
 - Subject line
 - Sender name/email, participant count, relative timestamp
 - Source indicator (email icon; future: meeting/chat icons)
 
 **Detection Panel (the core interaction):**
+
 - System pre-selects a **track** based on existing matching logic:
   - **Client Work** — if the sender's email/domain matches a known client contact. Pre-fills client dropdown (and project if AI match found).
   - **Lead** — if the sender matches an existing lead. Pre-fills lead dropdown.
@@ -115,6 +120,7 @@ Each card shows a single thread with its auto-detected classification suggestion
   - Switch tracks entirely ("Switch to Lead" / "Switch to Client Work")
 
 **Body:**
+
 - Snippet / first few lines of the latest message
 - Expandable to show full thread without leaving triage mode
 
@@ -125,6 +131,7 @@ The detection panel uses existing matching infrastructure, but **matchers must b
 **Current problem**: `matchAndLinkThread()` in `lib/email/matcher.ts` writes the `clientId` directly to the `threads` table. `linkThreadToLead()` writes `leadId`. These cannot be used as suggestion engines.
 
 **Required refactor**: Split each matcher into two functions:
+
 - `suggestClientMatch(participantEmails[])` → returns `{ clientId, clientName, confidence }` without writing (pure read)
 - `suggestLeadMatch(participantEmails[])` → returns `{ leadId, leadName, contactEmail }` without writing (pure read)
 
@@ -166,8 +173,8 @@ Returns a paginated list of unclassified threads with pre-computed match suggest
     thread: ThreadSummary
     suggestion: {
       track: 'client_work' | 'lead' | null
-      client?: { id: string, name: string, confidence: 'HIGH' | 'MEDIUM' }
-      lead?: { id: string, name: string }
+      client?: { id: string; name: string; confidence: 'HIGH' | 'MEDIUM' }
+      lead?: { id: string; name: string }
     }
   }>
   total: number
@@ -184,15 +191,16 @@ Returns a paginated list of unclassified threads with pre-computed match suggest
 
 The **Accept** button is disabled until a valid selection is made:
 
-| Track | Required Selection | Optional |
-|-------|-------------------|----------|
-| Client Work | Client must be selected | Project (can be empty) |
-| Lead | Lead must be selected (existing or new) | — |
-| No track | Must select a track and make a selection first | — |
+| Track       | Required Selection                             | Optional               |
+| ----------- | ---------------------------------------------- | ---------------------- |
+| Client Work | Client must be selected                        | Project (can be empty) |
+| Lead        | Lead must be selected (existing or new)        | —                      |
+| No track    | Must select a track and make a selection first | —                      |
 
 This ensures every accepted thread is fully linked. No partial classifications.
 
 On accept:
+
 1. Link the thread to the selected client/project/lead (via existing `PATCH /api/threads/[threadId]`)
 2. Classification auto-sets to `CLASSIFIED` via [02-data-model.md §Auto-Classify on Link](./02-data-model.md#auto-classify-on-link)
 3. If lead track: update `leads.lastContactAt` with thread's `lastMessageAt`
@@ -208,13 +216,13 @@ No confirmation dialog — dismissed threads are recoverable from the "Dismissed
 
 **v1 shortcuts** — keep it minimal. Additional shortcuts can be added based on usage feedback.
 
-| Action | Keyboard Shortcut | Behavior |
-|--------|-------------------|----------|
-| Accept | `Enter` | Accept current detection (disabled until valid selection) |
-| Dismiss | `d` | Sets classification to `DISMISSED`, advances |
-| Skip | `→` | Moves to next without classifying |
-| Go Back | `←` | Returns to previous thread |
-| Expand Thread | `Space` | Toggle full message thread view |
+| Action        | Keyboard Shortcut | Behavior                                                  |
+| ------------- | ----------------- | --------------------------------------------------------- |
+| Accept        | `Enter`           | Accept current detection (disabled until valid selection) |
+| Dismiss       | `d`               | Sets classification to `DISMISSED`, advances              |
+| Skip          | `→`               | Moves to next without classifying                         |
+| Go Back       | `←`               | Returns to previous thread                                |
+| Expand Thread | `Space`           | Toggle full message thread view                           |
 
 > **Deferred shortcuts**: Track switching (`t`), dropdown focus (`c`, `p`), open detail (`o`). Add these if users request them after using v1.
 

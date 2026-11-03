@@ -40,7 +40,12 @@ export { safeRedirectPath } from './safe-redirect'
  * passing an arbitrary `?type=` through from the query string lets a caller pick
  * which verification path runs.
  */
-const SUPPORTED_OTP_TYPES = ['magiclink', 'email', 'recovery', 'invite'] as const
+const SUPPORTED_OTP_TYPES = [
+  'magiclink',
+  'email',
+  'recovery',
+  'invite',
+] as const
 
 export type SupportedOtpType = (typeof SUPPORTED_OTP_TYPES)[number]
 

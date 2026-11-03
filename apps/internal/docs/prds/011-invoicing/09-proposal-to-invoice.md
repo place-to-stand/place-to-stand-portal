@@ -13,18 +13,19 @@ A signed/accepted proposal naturally leads to an invoice. This phase adds a "Cre
 ### Trigger
 
 A "Create Invoice" action appears in the proposals table row actions when:
+
 - The proposal is signed/accepted
 - The proposal has a client associated with it
 
 ### What Gets Pre-Filled
 
-| Invoice Field | Source | Notes |
-|---------------|--------|-------|
-| `clientId` | Proposal's client | Required — proposals without a client can't convert |
-| Line item | Single "Development Hours" line | 5 hours × $200/hr default (minimum billable block) |
-| `notes` | Proposal title/reference | e.g., "Per proposal: {proposalTitle}" |
-| `dueDate` | Client billing type | net_30 → 30 days from today; prepaid → blank (upon receipt) |
-| `proposalId` | Proposal ID | New FK for traceability (see data model addition) |
+| Invoice Field | Source                          | Notes                                                       |
+| ------------- | ------------------------------- | ----------------------------------------------------------- |
+| `clientId`    | Proposal's client               | Required — proposals without a client can't convert         |
+| Line item     | Single "Development Hours" line | 5 hours × $200/hr default (minimum billable block)          |
+| `notes`       | Proposal title/reference        | e.g., "Per proposal: {proposalTitle}"                       |
+| `dueDate`     | Client billing type             | net_30 → 30 days from today; prepaid → blank (upon receipt) |
+| `proposalId`  | Proposal ID                     | New FK for traceability (see data model addition)           |
 
 ### Proposal Content → Line Items Mapping
 
@@ -33,17 +34,21 @@ The agency bills in comfortable blocks that the client agrees to, with a **minim
 The pre-fill creates a single "Development Hours" line item with the minimum block size as a starting point:
 
 ```typescript
-function mapProposalToLineItems(proposal: ProposalWithContent): InvoiceLineItemDraft[] {
+function mapProposalToLineItems(
+  proposal: ProposalWithContent
+): InvoiceLineItemDraft[] {
   const content = proposal.content as ProposalContent
   const hourlyRate = content?.rates?.hourlyRate ?? 200
 
-  return [{
-    description: `Development Hours — ${proposal.title}`,
-    quantity: 5, // Minimum billable block, admin adjusts to actual
-    unitPrice: hourlyRate,
-    createsHourBlock: true,
-    productCatalogItemId: DEVELOPMENT_HOURS_CATALOG_ID,
-  }]
+  return [
+    {
+      description: `Development Hours — ${proposal.title}`,
+      quantity: 5, // Minimum billable block, admin adjusts to actual
+      unitPrice: hourlyRate,
+      createsHourBlock: true,
+      productCatalogItemId: DEVELOPMENT_HOURS_CATALOG_ID,
+    },
+  ]
 }
 ```
 
@@ -75,6 +80,7 @@ CREATE INDEX idx_invoices_proposal_id
 **ON DELETE SET NULL**: If the proposal is deleted, the invoice survives but loses the reference. Same pattern as `hour_blocks.invoiceId`.
 
 This enables:
+
 - Viewing which invoice was created from which proposal
 - Preventing duplicate invoices from the same proposal (optional: show warning if an invoice already exists for this proposal)
 - Future reporting on the full Proposal → Invoice → Payment chain

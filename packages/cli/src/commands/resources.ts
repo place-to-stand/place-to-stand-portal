@@ -64,15 +64,17 @@ function registerUsers(program: Command): void {
     .option('--search <text>', 'Filter by name or email')
     .option('--role <role>', 'ADMIN or CLIENT')
     .option('--limit <count>', 'Maximum rows (default 50, max 200)')
-    .action(async (options: { search?: string; role?: string; limit?: string }) => {
-      const { data } = await apiGet('api/cli/v1/users', {
-        search: options.search,
-        role: options.role,
-        limit: options.limit,
-      })
+    .action(
+      async (options: { search?: string; role?: string; limit?: string }) => {
+        const { data } = await apiGet('api/cli/v1/users', {
+          search: options.search,
+          role: options.role,
+          limit: options.limit,
+        })
 
-      emit(data)
-    })
+        emit(data)
+      }
+    )
 }
 
 function registerTime(program: Command): void {

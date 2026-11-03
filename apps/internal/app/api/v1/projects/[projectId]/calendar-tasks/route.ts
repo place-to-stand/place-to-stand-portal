@@ -78,7 +78,10 @@ export async function GET(
       )
     }
 
-    console.error('Failed to authorize project access for calendar tasks', error)
+    console.error(
+      'Failed to authorize project access for calendar tasks',
+      error
+    )
     return NextResponse.json(
       { error: 'Unable to verify project access.' },
       { status: 500 }

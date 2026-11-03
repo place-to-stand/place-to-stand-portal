@@ -53,7 +53,9 @@ function distinctIdFromCookie(
 
   try {
     const parsed = JSON.parse(decodeURIComponent(match.slice(name.length)))
-    return typeof parsed?.distinct_id === 'string' ? parsed.distinct_id : undefined
+    return typeof parsed?.distinct_id === 'string'
+      ? parsed.distinct_id
+      : undefined
   } catch {
     return undefined
   }

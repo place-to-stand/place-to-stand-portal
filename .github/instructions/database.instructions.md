@@ -1,5 +1,5 @@
 ---
-applyTo: "lib/db/**/*,lib/queries/**/*,drizzle/**/*"
+applyTo: 'lib/db/**/*,lib/queries/**/*,drizzle/**/*'
 ---
 
 # Database & Drizzle Review Guidelines

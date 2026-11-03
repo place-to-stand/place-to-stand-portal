@@ -34,6 +34,7 @@ Remove **steps 6 and 7** (auto-create LINK_EMAIL_THREAD and LINK_TRANSCRIPT sugg
 ### 2. `app/(dashboard)/leads/_components/lead-sheet/lead-sheet-right-column.tsx`
 
 Remove:
+
 - Import of `LeadEmailSuggestionsSection`
 - Import of `LeadTranscriptSuggestionsSection`
 - `<LeadEmailSuggestionsSection>` JSX (lines ~101-104)
@@ -54,19 +55,25 @@ export interface LinkTranscriptSuggestedContent { ... }
 ```
 
 Remove from `LeadActionType` union:
+
 ```typescript
 // BEFORE:
 export type LeadActionType =
-  | 'FOLLOW_UP' | 'REPLY' | 'SCHEDULE_CALL' | 'SEND_PROPOSAL'
-  | 'ADVANCE_STATUS' | 'LINK_EMAIL_THREAD' | 'LINK_TRANSCRIPT'
+  | 'FOLLOW_UP'
+  | 'REPLY'
+  | 'SCHEDULE_CALL'
+  | 'SEND_PROPOSAL'
+  | 'ADVANCE_STATUS'
+  | 'LINK_EMAIL_THREAD'
+  | 'LINK_TRANSCRIPT'
 
 // AFTER:
 export type LeadActionType =
-  | 'FOLLOW_UP' | 'REPLY' | 'SCHEDULE_CALL' | 'SEND_PROPOSAL'
-  | 'ADVANCE_STATUS'
+  'FOLLOW_UP' | 'REPLY' | 'SCHEDULE_CALL' | 'SEND_PROPOSAL' | 'ADVANCE_STATUS'
 ```
 
 Remove from `SuggestedContent` union type:
+
 ```typescript
 // BEFORE:
 export type SuggestedContent = ... | LinkEmailSuggestedContent | LinkTranscriptSuggestedContent
@@ -77,10 +84,10 @@ export type SuggestedContent = TaskSuggestedContent | PRSuggestedContent | Reply
 
 ## Files to Delete
 
-| File | Reason |
-|------|--------|
-| `app/(dashboard)/leads/_components/lead-sheet/lead-email-suggestions-section.tsx` | UI for approve/reject email thread linking — replaced by inbox triage |
-| `app/(dashboard)/leads/_components/lead-sheet/lead-transcript-suggestions-section.tsx` | UI for approve/reject transcript linking — replaced by inbox triage |
+| File                                                                                   | Reason                                                                |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `app/(dashboard)/leads/_components/lead-sheet/lead-email-suggestions-section.tsx`      | UI for approve/reject email thread linking — replaced by inbox triage |
+| `app/(dashboard)/leads/_components/lead-sheet/lead-transcript-suggestions-section.tsx` | UI for approve/reject transcript linking — replaced by inbox triage   |
 
 ## Cleanup Review
 

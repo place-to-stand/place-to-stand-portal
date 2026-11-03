@@ -1,6 +1,4 @@
-import type {
-  ProjectWithClient as SheetProjectWithClient,
-} from '@/lib/projects/sheet/project-sheet-form'
+import type { ProjectWithClient as SheetProjectWithClient } from '@/lib/projects/sheet/project-sheet-form'
 
 export type ProjectWithClient = SheetProjectWithClient
 

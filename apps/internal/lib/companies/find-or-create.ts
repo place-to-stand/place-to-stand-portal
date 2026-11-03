@@ -4,7 +4,6 @@
  */
 import 'server-only'
 
-
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { companyCreatedEvent, companyUpdatedEvent } from '@/lib/activity/events'
@@ -14,12 +13,10 @@ import { companyNameSchema, normalizeWebAddress } from '@/lib/companies/schema'
 import { db } from '@/lib/db'
 import { companies } from '@/lib/db/schema'
 
-
 type DbExecutor = Pick<typeof db, 'select' | 'insert' | 'update'>
 
 /** Queues work (an activity write) to run once the caller's transaction commits. */
 export type DeferActivity = (task: () => Promise<unknown>) => void
-
 
 /** A live company by id, for linking a record to it. */
 export async function getLinkableCompany(

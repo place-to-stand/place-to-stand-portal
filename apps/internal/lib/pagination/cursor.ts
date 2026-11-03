@@ -27,7 +27,7 @@ export function encodeCursor(payload: CursorPayload): string {
 }
 
 export function decodeCursor<T extends CursorPayload = CursorPayload>(
-  cursor: string | null | undefined,
+  cursor: string | null | undefined
 ): T | null {
   if (!cursor) {
     return null
@@ -46,14 +46,14 @@ export function decodeCursor<T extends CursorPayload = CursorPayload>(
 }
 
 export function resolveDirection(
-  direction: string | null | undefined,
+  direction: string | null | undefined
 ): CursorDirection {
   return direction === 'backward' ? 'backward' : 'forward'
 }
 
 export function clampLimit(
   requested: number | null | undefined,
-  options: PaginationOptions = {},
+  options: PaginationOptions = {}
 ): number {
   const defaultLimit =
     typeof options.defaultLimit === 'number' && options.defaultLimit > 0
@@ -75,4 +75,3 @@ export function clampLimit(
 export function createSearchPattern(query: string): string {
   return `%${query.trim().replace(/\s+/g, '%')}%`
 }
-

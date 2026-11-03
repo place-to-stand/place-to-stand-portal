@@ -35,7 +35,10 @@ export async function GET(
     return NextResponse.json({ session }, { status: 200 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to load planning session', error)

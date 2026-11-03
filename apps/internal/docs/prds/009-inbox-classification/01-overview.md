@@ -31,6 +31,7 @@ Classification is effort — it only pays off if the linked context is surfaced 
 ## Scope
 
 **This PRD covers:**
+
 - Thread classification system (data model)
 - Triage mode UI for rapid classification with auto-detected suggestions
 - Manual classification and dismissal
@@ -39,6 +40,7 @@ Classification is effort — it only pays off if the linked context is surfaced 
 - Foundation for multi-source ingestion (meeting transcripts, messages)
 
 **This PRD does NOT cover:**
+
 - Auto-classification rules engine (deferred — classification is manual for v1)
 - Meeting transcript ingestion (future PRD, builds on this foundation)
 - Changes to compose/draft/send flows
@@ -47,6 +49,7 @@ Classification is effort — it only pays off if the linked context is surfaced 
 ## Design Principle: No Magic
 
 All linking and classification is **explicit and user-approved**. The system suggests, the user confirms. Nothing is auto-linked or auto-classified without the user seeing and accepting it. This applies to:
+
 - Gmail sync: ingests messages only, does not write any links
 - Triage mode: pre-fills suggestions from matchers, but user must accept
 - Detail sheet: user manually links via panels
@@ -58,6 +61,7 @@ All linking and classification is **explicit and user-approved**. The system sug
 The classification system is designed to work across all thread sources. The `threads.source` enum already supports: `EMAIL`, `CHAT`, `VOICE_MEMO`, `DOCUMENT`, `FORM`.
 
 For meeting transcripts (future PRD):
+
 - Add `MEETING` to the `messageSource` enum
 - Transcript becomes a message within a thread
 - Same classification + triage flow applies

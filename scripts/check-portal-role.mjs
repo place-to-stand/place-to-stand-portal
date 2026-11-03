@@ -34,12 +34,17 @@ try {
     }
     const userId = subject.user_id
     const admitted = async () =>
-      (await tx`select count(*)::int as n from client_portal_access where user_id = ${userId}`)[0].n > 0
+      (
+        await tx`select count(*)::int as n from client_portal_access where user_id = ${userId}`
+      )[0].n > 0
 
     check('a live Client sign-in is admitted', await admitted())
     for (const role of ['SALES', 'ADMIN']) {
       await tx`update users set role = ${role} where id = ${userId}`
-      check(`a ${role} sign-in with portal_access on is not admitted`, !(await admitted()))
+      check(
+        `a ${role} sign-in with portal_access on is not admitted`,
+        !(await admitted())
+      )
     }
     await tx`update users set role = 'CLIENT', disabled_at = now() where id = ${userId}`
     check('a switched-off Client sign-in is not admitted', !(await admitted()))
@@ -53,5 +58,7 @@ try {
   await sql.end()
 }
 
-console.log(failures ? `${failures} check(s) failed` : 'portal role checks pass')
+console.log(
+  failures ? `${failures} check(s) failed` : 'portal role checks pass'
+)
 process.exit(failures ? 1 : 0)

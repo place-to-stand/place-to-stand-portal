@@ -17,7 +17,9 @@ export class BillingPeriodError extends Error {}
 
 function previousMonthStartUtc(): string {
   const now = new Date()
-  const prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
+  const prev = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)
+  )
   return prev.toISOString().slice(0, 10)
 }
 
@@ -133,4 +135,3 @@ export async function restartBilling(
   })
   return { startsOn }
 }
-

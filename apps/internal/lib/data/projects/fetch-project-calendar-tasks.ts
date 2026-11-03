@@ -74,8 +74,8 @@ export async function fetchProjectCalendarTasks({
         eq(tasksTable.projectId, projectId),
         isNull(tasksTable.deletedAt),
         gte(tasksTable.dueOn, start),
-        lte(tasksTable.dueOn, end),
-      ),
+        lte(tasksTable.dueOn, end)
+      )
     )
     .orderBy(asc(tasksTable.dueOn), asc(tasksTable.title))
 
@@ -92,8 +92,8 @@ export async function fetchProjectCalendarTasks({
         .where(
           and(
             inArray(taskAssigneesTable.taskId, taskIds),
-            isNull(taskAssigneesTable.deletedAt),
-          ),
+            isNull(taskAssigneesTable.deletedAt)
+          )
         )
     : []
 

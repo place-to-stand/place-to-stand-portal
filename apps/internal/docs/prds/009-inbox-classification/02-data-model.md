@@ -20,6 +20,7 @@ ALTER TABLE threads
 ```
 
 **Definitions:**
+
 - `UNCLASSIFIED` — Default. Thread has not been reviewed. All existing threads start here.
 - `CLASSIFIED` — Thread has been reviewed and linked to a client, project, or lead. Set automatically when any link is established.
 - `DISMISSED` — User explicitly dismissed. The thread has no business value (notifications, promotions, irrelevant correspondence).
@@ -69,6 +70,7 @@ These rules maintain the `CLASSIFIED = linked` invariant across all operations.
 ### Auto-Classify on Link
 
 When a user links a thread to a client, project, or lead — OR when a suggestion is approved — automatically set:
+
 - `classification` → `CLASSIFIED`
 - `classified_by` → current user
 - `classified_at` → now()
@@ -78,6 +80,7 @@ This happens in the existing linking actions (server actions for thread linking)
 ### Revert on Unlink
 
 When a user **unlinks** a thread (sets `clientId`, `projectId`, or `leadId` to NULL via the existing `PATCH /api/threads/[threadId]` endpoint):
+
 - If the thread has **no remaining links** (all three are NULL after the unlink), revert `classification` → `UNCLASSIFIED` and clear `classified_by` and `classified_at`
 - If the thread still has at least one link, classification stays `CLASSIFIED`
 
@@ -86,6 +89,7 @@ This prevents orphaned `CLASSIFIED` threads with no actual links.
 ### Dismiss Unlinks
 
 When a user reclassifies a thread to `DISMISSED` (from the detail sheet or triage mode):
+
 - Remove all links: set `clientId`, `projectId`, and `leadId` to NULL
 - Set `classification` → `DISMISSED`, `classified_by` → current user, `classified_at` → now()
 

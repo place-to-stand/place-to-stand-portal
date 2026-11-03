@@ -84,9 +84,9 @@ The migration will be executed in four distinct phases to minimize risk and ensu
 2.  **Authorization Helper Functions:**
     - Develop a set of reusable server-side helper functions to encapsulate authorization logic. These functions will take the authenticated user's session as input and determine their permissions.
     - **Examples:**
-        - `canViewClient(user, clientId)`: Checks if a user is a member of the client.
-        - `canEditTask(user, taskId)`: Checks if a user has permission to modify a task.
-        - `isAdmin(user)`: A simple check for the 'ADMIN' role.
+      - `canViewClient(user, clientId)`: Checks if a user is a member of the client.
+      - `canEditTask(user, taskId)`: Checks if a user has permission to modify a task.
+      - `isAdmin(user)`: A simple check for the 'ADMIN' role.
 
 3.  **Data Access Layer Scaffolding:**
     - Create a structured directory for Drizzle queries (e.g., `lib/queries/`).
@@ -105,9 +105,9 @@ The migration will be executed in four distinct phases to minimize risk and ensu
 1.  **Module-by-Module Refactoring:**
     - We will approach the refactoring one feature or domain at a time (e.g., first Clients, then Projects, then Tasks).
     - For each module:
-        a. Identify all server-side components and API routes that use `supabase-js` for data access.
-        b. Replace the calls with the corresponding functions from our new Drizzle data access layer (`lib/queries/*`).
-        c. Ensure all data-fetching hooks (e.g., React Query's `useQuery`) and server actions are updated to use the new data layer.
+      a. Identify all server-side components and API routes that use `supabase-js` for data access.
+      b. Replace the calls with the corresponding functions from our new Drizzle data access layer (`lib/queries/*`).
+      c. Ensure all data-fetching hooks (e.g., React Query's `useQuery`) and server actions are updated to use the new data layer.
 
 > **Implementation status (2025-11-08):** The Settings → Users, Settings → Clients, Settings → Projects, and Tasks domains are fully migrated. Server services, actions, settings pages, and the reorder API now rely on the Drizzle query layer with shared authorization helpers, eliminating bespoke Supabase fetchers. See `phase-3/README.md` for the refactor log and verification notes.
 
@@ -133,6 +133,5 @@ The migration will be executed in four distinct phases to minimize risk and ensu
 
 4.  **Documentation Update:**
     - Update the `AGENTS.md` file and any other relevant developer documentation to reflect the new data access patterns with Drizzle ORM and application-level authorization.
-
 
 > **Implementation status (2025-11-10):** All production surfaces now depend exclusively on the Drizzle data layer. The legacy `app/api/test-drizzle` route is removed, `@supabase/supabase-js` remains only for Auth and Storage flows, RLS is disabled via migration `20251110123000_disable_rls.sql`, and docs (including `AGENTS.md` and `docs/prds/004-migrate-to-drizzle-orm/phase-4/README.md`) document the operational playbooks and Drizzle-first architecture.

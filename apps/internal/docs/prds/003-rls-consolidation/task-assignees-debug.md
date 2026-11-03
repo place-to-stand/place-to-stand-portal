@@ -1,11 +1,13 @@
 # Task Assignees RLS Debug Guide
 
 ## Current Status
+
 Migration `20251107120024_fix_task_assignees_absolute_final.sql` has been applied. This should work.
 
 ## If Still Broken - Diagnostic Steps
 
 ### 1. Check if function exists and works
+
 ```sql
 -- Test the function directly
 SELECT public.user_can_edit_task('your-task-id-here');
@@ -21,6 +23,7 @@ WHERE n.nspname = 'public'
 ```
 
 ### 2. Check current policies
+
 ```sql
 SELECT policyname, cmd,
   substring(qual::text, 1, 200) as using_clause,
@@ -31,6 +34,7 @@ ORDER BY policyname, cmd;
 ```
 
 ### 3. Test UPDATE manually
+
 ```sql
 -- Try updating a task_assignee row manually as the user
 UPDATE task_assignees
@@ -41,6 +45,7 @@ LIMIT 1;
 ```
 
 ### 4. Check user permissions
+
 ```sql
 -- Verify user is project member
 SELECT pm.*, t.id as task_id, t.project_id
@@ -63,6 +68,7 @@ WHERE pm.user_id = auth.uid()
 ## Nuclear Option
 
 If nothing works, we can temporarily disable RLS on task_assignees to verify the issue is RLS-related:
+
 ```sql
 -- TEMPORARY - FOR TESTING ONLY
 ALTER TABLE task_assignees DISABLE ROW LEVEL SECURITY;
@@ -70,4 +76,3 @@ ALTER TABLE task_assignees DISABLE ROW LEVEL SECURITY;
 -- Then re-enable and fix policies
 ALTER TABLE task_assignees ENABLE ROW LEVEL SECURITY;
 ```
-

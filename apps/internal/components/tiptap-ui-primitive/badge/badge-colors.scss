@@ -53,7 +53,7 @@
     Ghost 
   **************************************************/
 
-  &[data-style="ghost"] {
+  &[data-style='ghost'] {
     /* Light mode */
     --tt-badge-border-color: var(--tt-gray-light-a-200);
     --tt-badge-border-color-subdued: var(--tt-gray-light-a-200);
@@ -105,7 +105,7 @@
     Gray 
   **************************************************/
 
-  &[data-style="gray"] {
+  &[data-style='gray'] {
     /* Light mode */
     --tt-badge-border-color: var(--tt-gray-light-a-200);
     --tt-badge-border-color-subdued: var(--tt-gray-light-a-200);
@@ -157,7 +157,7 @@
     Green 
   **************************************************/
 
-  &[data-style="green"] {
+  &[data-style='green'] {
     /* Light mode */
     --tt-badge-border-color: var(--tt-color-green-inc-2);
     --tt-badge-border-color-subdued: var(--tt-color-green-inc-3);
@@ -217,7 +217,7 @@
     Yellow 
   **************************************************/
 
-  &[data-style="yellow"] {
+  &[data-style='yellow'] {
     /* Light mode */
     --tt-badge-border-color: var(--tt-color-yellow-inc-2);
     --tt-badge-border-color-subdued: var(--tt-color-yellow-inc-3);
@@ -277,7 +277,7 @@
     Red 
   **************************************************/
 
-  &[data-style="red"] {
+  &[data-style='red'] {
     /* Light mode */
     --tt-badge-border-color: var(--tt-color-red-inc-2);
     --tt-badge-border-color-subdued: var(--tt-color-red-inc-3);
@@ -337,7 +337,7 @@
     Brand 
   **************************************************/
 
-  &[data-style="brand"] {
+  &[data-style='brand'] {
     /* Light mode */
     --tt-badge-border-color: var(--tt-brand-color-300);
     --tt-badge-border-color-subdued: var(--tt-brand-color-200);

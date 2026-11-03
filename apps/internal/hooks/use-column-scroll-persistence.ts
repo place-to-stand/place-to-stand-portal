@@ -22,7 +22,9 @@ export function useColumnScrollPersistence({
   columnIds,
 }: UseColumnScrollPersistenceOptions): ColumnScrollHandlers {
   // Store refs for each column
-  const columnRefsMap = useRef<Map<string, MutableRefObject<HTMLDivElement | null>>>(new Map())
+  const columnRefsMap = useRef<
+    Map<string, MutableRefObject<HTMLDivElement | null>>
+  >(new Map())
 
   // Initialize refs for all columns
   useEffect(() => {
@@ -103,17 +105,14 @@ export function useColumnScrollPersistence({
     }
   }, [columnIds, persistScrollPosition, restoreScrollPosition])
 
-  const getColumnRef = useCallback(
-    (columnId: string) => {
-      let ref = columnRefsMap.current.get(columnId)
-      if (!ref) {
-        ref = { current: null }
-        columnRefsMap.current.set(columnId, ref)
-      }
-      return ref
-    },
-    []
-  )
+  const getColumnRef = useCallback((columnId: string) => {
+    let ref = columnRefsMap.current.get(columnId)
+    if (!ref) {
+      ref = { current: null }
+      columnRefsMap.current.set(columnId, ref)
+    }
+    return ref
+  }, [])
 
   const getScrollHandler = useCallback(
     (columnId: string): UIEventHandler<HTMLDivElement> => {

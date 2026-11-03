@@ -81,18 +81,20 @@ Keep the mechanism generic-but-minimal — a `badges` map keyed by nav href, so 
 - `sidebar.tsx`: `badges?: Record<string, number>`. In the internal-link branch, after the label:
 
 ```tsx
-{badges?.[item.href] ? (
-  <span
-    className={cn(
-      'ml-auto inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
-      isActive
-        ? 'bg-primary-foreground/20 text-primary-foreground'
-        : 'bg-primary text-primary-foreground'
-    )}
-  >
-    {badges[item.href] > 99 ? '99+' : badges[item.href]}
-  </span>
-) : null}
+{
+  badges?.[item.href] ? (
+    <span
+      className={cn(
+        'ml-auto inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums',
+        isActive
+          ? 'bg-primary-foreground/20 text-primary-foreground'
+          : 'bg-primary text-primary-foreground'
+      )}
+    >
+      {badges[item.href] > 99 ? '99+' : badges[item.href]}
+    </span>
+  ) : null
+}
 ```
 
 Zero renders nothing (the map is undefined or the key falsy — never a "0" pill). Cap at `99+`. `aria`: append `sr-only` text `({n} unread)` so screen readers announce it with the link label.

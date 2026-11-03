@@ -25,7 +25,10 @@ export async function getProjectIntegrationLinks(
         isNull(projectIntegrationLinks.deletedAt)
       )
     )
-    .orderBy(projectIntegrationLinks.provider, projectIntegrationLinks.createdAt)
+    .orderBy(
+      projectIntegrationLinks.provider,
+      projectIntegrationLinks.createdAt
+    )
 }
 
 /** Batch fetch for list pages — one query for every project on screen. */
@@ -45,7 +48,10 @@ export async function getIntegrationLinksForProjects(
         isNull(projectIntegrationLinks.deletedAt)
       )
     )
-    .orderBy(projectIntegrationLinks.provider, projectIntegrationLinks.createdAt)
+    .orderBy(
+      projectIntegrationLinks.provider,
+      projectIntegrationLinks.createdAt
+    )
 
   const linksByProject = new Map<string, ProjectIntegrationLink[]>()
   rows.forEach(row => {

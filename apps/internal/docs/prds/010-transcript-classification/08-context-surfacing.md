@@ -140,16 +140,27 @@ export async function getTranscriptCounts(): Promise<{
 }>
 
 // Get single transcript with content (for detail view)
-export async function getTranscriptById(id: string): Promise<TranscriptDetail | null>
+export async function getTranscriptById(
+  id: string
+): Promise<TranscriptDetail | null>
 
 // Update transcript (classification, AI cache, etc.)
-export async function updateTranscript(id: string, data: Partial<TranscriptUpdate>): Promise<void>
+export async function updateTranscript(
+  id: string,
+  data: Partial<TranscriptUpdate>
+): Promise<void>
 
 // --- Added in Phase 5b (entity surfacing) ---
 
 // Get transcripts for entity surfacing (NO content column)
-export async function getTranscriptsForClient(clientId: string, options?: { limit?: number }): Promise<TranscriptForClient[]>
-export async function getTranscriptsForLead(leadId: string, options?: { limit?: number }): Promise<TranscriptForLead[]>
+export async function getTranscriptsForClient(
+  clientId: string,
+  options?: { limit?: number }
+): Promise<TranscriptForClient[]>
+export async function getTranscriptsForLead(
+  leadId: string,
+  options?: { limit?: number }
+): Promise<TranscriptForLead[]>
 ```
 
 **Critical pattern:** All list/summary queries exclude the `content` column. Only `getTranscriptById()` fetches content. This prevents multi-megabyte payloads on list views (50 transcripts x 100KB = 5MB).

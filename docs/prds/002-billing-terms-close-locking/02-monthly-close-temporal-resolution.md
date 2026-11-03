@@ -34,14 +34,14 @@ Resolution is by **period start** (`startDate`, always the 1st — [apps/interna
 
 In [apps/internal/lib/queries/reports/monthly-close.ts](../../../apps/internal/lib/queries/reports/monthly-close.ts), replace all **eight** occurrences of `eq(clients.billingType, '…')` with the resolved comparison:
 
-| Function | Sites | Change |
-|----------|-------|--------|
-| `fetchOriginationCommissions` | 4 (prepaid×user, prepaid×contact, net_30×user, net_30×contact) | `eq(clients.billingType, 'prepaid')` → `sql\`${billingTypeAsOfSql(startDate)} = 'prepaid'\`` (and `'net_30'` respectively) |
-| `fetchCloserCommissions` | 2 (prepaid, net_30) | same |
-| `fetchPrepaidBilling` | 1 | same |
-| `fetchNet30Billing` | 1 | same |
+| Function                      | Sites                                                          | Change                                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `fetchOriginationCommissions` | 4 (prepaid×user, prepaid×contact, net_30×user, net_30×contact) | `eq(clients.billingType, 'prepaid')` → `sql\`${billingTypeAsOfSql(startDate)} = 'prepaid'\``(and`'net_30'` respectively) |
+| `fetchCloserCommissions`      | 2 (prepaid, net_30)                                            | same                                                                                                                     |
+| `fetchPrepaidBilling`         | 1                                                              | same                                                                                                                     |
+| `fetchNet30Billing`           | 1                                                              | same                                                                                                                     |
 
-The hardcoded `clientBillingType: 'prepaid' | 'net_30'` literals stamped onto `OriginationQueryRow` / `CloserQueryRow` in the row-mapping loops remain correct — each sub-query's population is *defined* by its resolved type.
+The hardcoded `clientBillingType: 'prepaid' | 'net_30'` literals stamped onto `OriginationQueryRow` / `CloserQueryRow` in the row-mapping loops remain correct — each sub-query's population is _defined_ by its resolved type.
 
 **Prepaid attribution switches to `billing_month` (F7, defined in section 01):** the four hour-block-sourced queries (`fetchPrepaidBilling`, both prepaid origination sub-queries, the prepaid closer sub-query) currently range on `DATE(hour_blocks.created_at AT TIME ZONE 'UTC')` — they change to `hourBlocks.billingMonth >= startDate AND <= endDate` (equivalently `billingMonth = startDate`, since both are month-start dates). `fetchReportDateBounds` likewise switches its hour-block bound from `MIN(created_at)` to `MIN(billing_month)`. Backfill sets `billing_month` = creation month, so pre-migration output is unchanged.
 

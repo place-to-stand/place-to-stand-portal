@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import { useEffect } from "react";
+import { useEffect } from 'react'
 
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 /**
  * Supabase Auth session listener.
@@ -18,7 +18,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
  * `GET /user` calls per full page load — all redundant with cookie storage.
  */
 export function SupabaseListener() {
-  const supabase = getSupabaseBrowserClient();
+  const supabase = getSupabaseBrowserClient()
 
   // Refresh session when page becomes visible
   // This handles computer sleep/wake scenarios
@@ -26,32 +26,35 @@ export function SupabaseListener() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // Verify and refresh session when page becomes visible
-        void supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) {
-            // Session exists and is valid, Supabase will auto-refresh if needed
-            return;
-          }
-          // If no session, redirect to login
-          if (
-            typeof window !== 'undefined' &&
-            window.location.pathname !== '/sign-in' &&
-            !window.location.pathname.startsWith('/share/')
-          ) {
-            // Full reload on session loss drops all client state and
-            // re-runs middleware — router.push would keep stale trees.
-            // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full reload on session loss drops stale client state
-            window.location.href = '/sign-in';
-          }
-        }).catch(() => {});
+        void supabase.auth
+          .getSession()
+          .then(({ data: { session } }) => {
+            if (session) {
+              // Session exists and is valid, Supabase will auto-refresh if needed
+              return
+            }
+            // If no session, redirect to login
+            if (
+              typeof window !== 'undefined' &&
+              window.location.pathname !== '/sign-in' &&
+              !window.location.pathname.startsWith('/share/')
+            ) {
+              // Full reload on session loss drops all client state and
+              // re-runs middleware — router.push would keep stale trees.
+              // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full reload on session loss drops stale client state
+              window.location.href = '/sign-in'
+            }
+          })
+          .catch(() => {})
       }
-    };
+    }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [supabase]);
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [supabase])
 
-  return null;
+  return null
 }

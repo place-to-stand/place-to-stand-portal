@@ -27,7 +27,9 @@ CREATE SEQUENCE invoice_number_seq START WITH 1 INCREMENT BY 1;
 Invoice numbers are formatted as `INV-NNNN` (e.g., `INV-0001`, `INV-0042`). The sequence value is read and formatted in the application layer during the DRAFT→SENT transition:
 
 ```typescript
-const [{ nextval }] = await db.execute(sql`SELECT nextval('invoice_number_seq')`)
+const [{ nextval }] = await db.execute(
+  sql`SELECT nextval('invoice_number_seq')`
+)
 const invoiceNumber = `INV-${String(nextval).padStart(4, '0')}`
 ```
 
@@ -172,6 +174,7 @@ CREATE UNIQUE INDEX idx_hour_blocks_invoice_line_item_unique
 **ON DELETE SET NULL**: If an invoice or line item is hard-deleted, the hour block record survives but loses the reference. Hour blocks represent purchased hours — they shouldn't disappear when invoice records are cleaned up.
 
 **`invoice_line_item_id` with unique index**: This serves two purposes:
+
 1. **Traceability** — when an invoice has multiple "Development Hours" line items (e.g., Phase 1: 20hrs, Phase 2: 10hrs), each hour block can be traced back to its specific line item
 2. **Idempotency** — the unique partial index prevents duplicate hour blocks from concurrent webhook deliveries (INSERT fails with conflict instead of creating duplicates)
 
@@ -245,7 +248,9 @@ export const productCatalogItems = pgTable(
     description: text(),
     unitPrice: numeric('unit_price', { precision: 12, scale: 2 }).notNull(),
     unitLabel: text('unit_label').notNull().default('unit'),
-    createsHourBlockDefault: boolean('creates_hour_block_default').notNull().default(false),
+    createsHourBlockDefault: boolean('creates_hour_block_default')
+      .notNull()
+      .default(false),
     isActive: boolean('is_active').notNull().default(true),
     sortOrder: integer('sort_order').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
@@ -276,7 +281,9 @@ export const invoices = pgTable(
     dueDate: date('due_date'),
     subtotal: numeric({ precision: 12, scale: 2 }).notNull().default('0'),
     taxRate: numeric('tax_rate', { precision: 5, scale: 4 }).default('0'),
-    taxAmount: numeric('tax_amount', { precision: 12, scale: 2 }).notNull().default('0'),
+    taxAmount: numeric('tax_amount', { precision: 12, scale: 2 })
+      .notNull()
+      .default('0'),
     total: numeric({ precision: 12, scale: 2 }).notNull().default('0'),
     notes: text(),
     shareToken: varchar('share_token', { length: 64 }).unique(),
@@ -351,7 +358,10 @@ export const invoiceLineItems = pgTable(
       .using('btree', table.invoiceId.asc().nullsLast().op('uuid_ops'))
       .where(sql`(deleted_at IS NULL)`),
     index('idx_invoice_line_items_product_catalog')
-      .using('btree', table.productCatalogItemId.asc().nullsLast().op('uuid_ops'))
+      .using(
+        'btree',
+        table.productCatalogItemId.asc().nullsLast().op('uuid_ops')
+      )
       .where(sql`(deleted_at IS NULL AND product_catalog_item_id IS NOT NULL)`),
     foreignKey({
       columns: [table.invoiceId],
@@ -384,21 +394,27 @@ export const invoicesRelations = relations(invoices, ({ one, many }) => ({
 }))
 
 // Invoice Line Items
-export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) => ({
-  invoice: one(invoices, {
-    fields: [invoiceLineItems.invoiceId],
-    references: [invoices.id],
-  }),
-  productCatalogItem: one(productCatalogItems, {
-    fields: [invoiceLineItems.productCatalogItemId],
-    references: [productCatalogItems.id],
-  }),
-}))
+export const invoiceLineItemsRelations = relations(
+  invoiceLineItems,
+  ({ one }) => ({
+    invoice: one(invoices, {
+      fields: [invoiceLineItems.invoiceId],
+      references: [invoices.id],
+    }),
+    productCatalogItem: one(productCatalogItems, {
+      fields: [invoiceLineItems.productCatalogItemId],
+      references: [productCatalogItems.id],
+    }),
+  })
+)
 
 // Product Catalog Items
-export const productCatalogItemsRelations = relations(productCatalogItems, ({ many }) => ({
-  lineItems: many(invoiceLineItems),
-}))
+export const productCatalogItemsRelations = relations(
+  productCatalogItems,
+  ({ many }) => ({
+    lineItems: many(invoiceLineItems),
+  })
+)
 
 // Add to existing hour blocks relations
 export const hourBlocksRelations = relations(hourBlocks, ({ one }) => ({
@@ -468,6 +484,7 @@ VIEWED → VOID      (cancel after client viewed)
 ```
 
 Invalid transitions:
+
 - `PAID → *` (paid invoices are immutable)
 - `VOID → *` (voided invoices are immutable)
 - `* → DRAFT` (no reverting to draft)
@@ -492,6 +509,7 @@ When line items are added, updated, or removed:
 This computation happens in the save action, not via database triggers.
 
 **Tax rate conversion:** The form displays the tax rate as a human-readable percentage (e.g., `8.75`). The database stores it as a decimal (e.g., `0.0875`). The conversion is:
+
 - **Form → DB:** `storedRate = displayRate / 100`
 - **DB → Form:** `displayRate = storedRate * 100`
 
@@ -500,11 +518,13 @@ This must be handled explicitly in the form's `defaultValues` and the save actio
 ### Soft Delete Cascade
 
 When an invoice is soft-deleted (archived):
+
 - The invoice's `deletedAt` is set
 - Line items are NOT soft-deleted (they're hidden by the invoice being archived)
 - Line items are only relevant when queried via their parent invoice
 
 When an invoice is hard-deleted (destroyed from archive):
+
 - The database CASCADE deletes line items automatically
 
 ## Migration
@@ -512,6 +532,7 @@ When an invoice is hard-deleted (destroyed from archive):
 Generate with: `npm run db:generate -- --name add_invoicing`
 
 The migration should:
+
 1. Create `invoice_status` enum
 2. Create `product_catalog_items` table
 3. Create `invoices` table

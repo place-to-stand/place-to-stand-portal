@@ -20,7 +20,8 @@
     font-size: 0.8125rem;
     line-height: 1.25;
     max-width: 200px;
-    transition: background-color var(--tt-transition-duration-default) var(--tt-transition-easing-default);
+    transition: background-color var(--tt-transition-duration-default)
+      var(--tt-transition-easing-default);
 
     &:hover {
       background-color: var(--tt-button-hover-bg-color);

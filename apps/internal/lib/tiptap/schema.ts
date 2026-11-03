@@ -1,4 +1,4 @@
-import type { Editor } from "@tiptap/react"
+import type { Editor } from '@tiptap/react'
 
 /**
  * Checks if a mark exists in the editor schema
@@ -44,18 +44,17 @@ export function isExtensionAvailable(
     ? extensionNames
     : [extensionNames]
 
-  const found = names.some((name) =>
-    editor.extensionManager.extensions.some((ext) => ext.name === name)
+  const found = names.some(name =>
+    editor.extensionManager.extensions.some(ext => ext.name === name)
   )
 
   if (!found) {
     console.warn(
       `None of the extensions [${names.join(
-        ", "
+        ', '
       )}] were found in the editor schema. Ensure they are included in the editor configuration.`
     )
   }
 
   return found
 }
-

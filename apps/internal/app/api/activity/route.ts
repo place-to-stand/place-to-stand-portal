@@ -2,10 +2,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-import {
-  countActivityLogs,
-  fetchActivityLogs,
-} from '@/lib/activity/queries'
+import { countActivityLogs, fetchActivityLogs } from '@/lib/activity/queries'
 import {
   ACTIVITY_TARGET_TYPES,
   type ActivityTargetType,

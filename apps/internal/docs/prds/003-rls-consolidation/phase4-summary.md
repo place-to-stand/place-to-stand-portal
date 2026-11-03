@@ -7,6 +7,7 @@ All 4 Phase 4 migrations have been created and are ready for testing and deploym
 ## Overview
 
 Phase 4 consolidates the most complex tables with multiple operations and complex permission checks:
+
 - `task_comments` - 3 duplicates (SELECT, INSERT, UPDATE)
 - `task_attachments` - 3 duplicates (SELECT, INSERT, UPDATE)
 - `time_logs` - 3 duplicates (SELECT, INSERT, UPDATE)
@@ -15,6 +16,7 @@ Phase 4 consolidates the most complex tables with multiple operations and comple
 ## Migrations Created
 
 ### 1. `20251107120011_consolidate_task_comments_rls.sql`
+
 - **Table**: `task_comments`
 - **Change**: Consolidated SELECT, INSERT, and UPDATE operations
 - **Policies**: 4 → 4 (but eliminates duplicates for SELECT, INSERT, UPDATE)
@@ -30,12 +32,14 @@ Phase 4 consolidates the most complex tables with multiple operations and comple
     - "Users update task comments" (UPDATE - consolidated)
 
 **Key Features**:
+
 - Uses direct joins (matching task_assignees fix pattern)
 - SELECT: Admin OR project/client member
 - INSERT: Admin OR project/client member (must be author)
 - UPDATE: Admin OR author (checks deleted_at in using clause)
 
 ### 2. `20251107120012_consolidate_task_attachments_rls.sql`
+
 - **Table**: `task_attachments`
 - **Change**: Consolidated SELECT, INSERT, and UPDATE operations
 - **Policies**: 4 → 4 (but eliminates duplicates for SELECT, INSERT, UPDATE)
@@ -51,12 +55,14 @@ Phase 4 consolidates the most complex tables with multiple operations and comple
     - "Users update task attachments" (UPDATE - consolidated)
 
 **Key Features**:
+
 - Uses direct joins (matching task_assignees fix pattern)
 - SELECT: Admin OR project/client member
 - INSERT: Admin OR project/client member (must be uploader)
 - UPDATE: Admin OR project member (checks deleted_at in using clause, like task_attachments currently does)
 
 ### 3. `20251107120013_consolidate_time_logs_rls.sql`
+
 - **Table**: `time_logs`
 - **Change**: Consolidated SELECT, INSERT, and UPDATE operations
 - **Policies**: 4 → 4 (but eliminates duplicates for SELECT, INSERT, UPDATE)
@@ -72,12 +78,14 @@ Phase 4 consolidates the most complex tables with multiple operations and comple
     - "Users update time logs" (UPDATE - consolidated)
 
 **Key Features**:
+
 - Uses direct joins
 - SELECT: Admin OR project/client member
 - INSERT: Admin-only (was contractor-only, now admin-only after role removal)
 - UPDATE: Admin OR author (checks deleted_at in using clause)
 
 ### 4. `20251107120014_consolidate_time_log_tasks_rls.sql`
+
 - **Table**: `time_log_tasks`
 - **Change**: Consolidated all operations (SELECT, INSERT, UPDATE, DELETE)
 - **Policies**: 3 → 5 (but eliminates duplicates for all operations)
@@ -93,6 +101,7 @@ Phase 4 consolidates the most complex tables with multiple operations and comple
     - "Users delete time log tasks" (DELETE - consolidated)
 
 **Key Features**:
+
 - Uses direct joins
 - SELECT: Admin OR author OR project/client member
 - INSERT: Admin OR author (authors manage their own time log tasks)
@@ -125,6 +134,7 @@ All Phase 4 migrations follow the lessons learned from the task_assignees fix:
 For each migration, verify:
 
 ### task_comments
+
 - [ ] Admin can SELECT all comments
 - [ ] Project member can SELECT comments in their projects
 - [ ] Client member can SELECT comments in their clients' projects
@@ -138,6 +148,7 @@ For each migration, verify:
 - [ ] Soft-deleted comments are filtered correctly
 
 ### task_attachments
+
 - [ ] Admin can SELECT all attachments
 - [ ] Project member can SELECT attachments in their projects
 - [ ] Client member can SELECT attachments in their clients' projects
@@ -150,6 +161,7 @@ For each migration, verify:
 - [ ] Soft-deleted attachments are filtered correctly
 
 ### time_logs
+
 - [ ] Admin can SELECT all time logs
 - [ ] Project member can SELECT time logs in their projects
 - [ ] Client member can SELECT time logs in their clients' projects
@@ -162,6 +174,7 @@ For each migration, verify:
 - [ ] Soft-deleted time logs are filtered correctly
 
 ### time_log_tasks
+
 - [ ] Admin can SELECT all time log tasks
 - [ ] Author can SELECT their own time log tasks
 - [ ] Project member can SELECT time log tasks in their projects
@@ -182,6 +195,7 @@ For each migration, verify:
 ### Recommended Order
 
 1. **Test locally**:
+
    ```bash
    supabase db reset
    # Verify all tests pass
@@ -225,21 +239,25 @@ Each migration includes rollback instructions in comments. If issues arise:
 ## Complexity Notes
 
 ### task_comments
+
 - Authors can only update their own comments
 - Project and client members can view comments
 - Uses direct joins for project/client membership checks
 
 ### task_attachments
+
 - Uploaders must match the authenticated user
 - Project members can update attachments (not just authors)
 - Uses direct joins for project/client membership checks
 
 ### time_logs
+
 - INSERT is admin-only (changed from contractor-only after role removal)
 - Authors can update their own time logs
 - Project and client members can view time logs
 
 ### time_log_tasks
+
 - Authors manage their own time log tasks (via time_log ownership)
 - Multiple access patterns: admin, author, project member, client member
 - UPDATE policy does NOT check deleted_at (matches original behavior)
@@ -277,4 +295,3 @@ Each migration includes rollback instructions in comments. If issues arise:
 - Reference: `docs/prds/003-rls-consolidation/debug-log-task-assignees-fix.md`
 - Reference: `docs/prds/003-rls-consolidation/task-assignees-fix-summary.md`
 - Previous phases: `phase1-summary.md`, `phase2-summary.md`, `phase3-summary.md`
-

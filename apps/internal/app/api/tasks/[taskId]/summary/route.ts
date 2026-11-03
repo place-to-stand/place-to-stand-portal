@@ -30,13 +30,16 @@ export async function GET(
     return NextResponse.json(summary, { status: 200 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to load task summary', error)
     return NextResponse.json(
       { error: 'Unable to load task summary.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

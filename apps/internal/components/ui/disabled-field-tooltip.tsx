@@ -7,11 +7,7 @@ import {
   type ReactElement,
 } from 'react'
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@pts/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 type PassThroughProps = Omit<

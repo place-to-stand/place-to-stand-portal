@@ -6,17 +6,17 @@ This document outlines the color system used to distinguish different object typ
 
 Each primary object type is assigned a distinct color from the Tailwind CSS palette. This color is used to provide immediate visual recognition across the application, particularly in card views and lists.
 
-| Object Type | Color Name | Tailwind Class Prefix | Hex (500) |
-| :--- | :--- | :--- | :--- |
-| **Task** | Violet | `violet` | `#8b5cf6` |
-| **Lead** | Amber | `amber` | `#f59e0b` |
-| **Project** | Emerald | `emerald` | `#10b981` |
-| **Client** | Blue | `blue` | `#3b82f6` |
-| **Contact** | Cyan | `cyan` | `#06b6d4` |
-| **Invoice** | Orange | `orange` | `#f97316` |
-| **Hour Block** | Teal | `teal` | `#14b8a6` |
-| **User** | Rose | `rose` | `#f43f5e` |
-| **Submission** | Pink | `pink` | `#ec4899` |
+| Object Type    | Color Name | Tailwind Class Prefix | Hex (500) |
+| :------------- | :--------- | :-------------------- | :-------- |
+| **Task**       | Violet     | `violet`              | `#8b5cf6` |
+| **Lead**       | Amber      | `amber`               | `#f59e0b` |
+| **Project**    | Emerald    | `emerald`             | `#10b981` |
+| **Client**     | Blue       | `blue`                | `#3b82f6` |
+| **Contact**    | Cyan       | `cyan`                | `#06b6d4` |
+| **Invoice**    | Orange     | `orange`              | `#f97316` |
+| **Hour Block** | Teal       | `teal`                | `#14b8a6` |
+| **User**       | Rose       | `rose`                | `#f43f5e` |
+| **Submission** | Pink       | `pink`                | `#ec4899` |
 
 The canonical class strings live in `lib/entity-accents.ts` (`ENTITY_ACCENTS`), which exports the card pattern, static-card pattern, and sheet-header accent per entity. Consume that module rather than re-typing the classes.
 
@@ -26,8 +26,8 @@ The color identity is primarily applied to **Cards** using the following pattern
 
 1.  **Border:** A uniform 1px border in a semi-transparent shade of the object's primary color (`-500/35`). The border is symmetric on all sides so the card geometry stays centered — do **not** use a thick colored left border (`border-l-4`), a widely-disliked style that also shifts card content off-center.
 2.  **Hover State:**
-    *   **Border:** The border strengthens to `/60`.
-    *   **Background:** A very subtle tint (`/5`) of the color appears on hover.
+    - **Border:** The border strengthens to `/60`.
+    - **Background:** A very subtle tint (`/5`) of the color appears on hover.
 3.  **Icons:** In some contexts (like headers or lists), the object's icon may be colored with the `-500` shade.
 
 ### Standard Class Pattern
@@ -54,12 +54,15 @@ className={cn(
 When adding a new object type (e.g., "Invoice", "Ticket", "Note"), follow these steps to maintain consistency:
 
 ### 1. Choose a Distinct Color
+
 Select a color from the Tailwind palette that is visually distinct from the existing set.
-*   *Avoid:* Violet, Amber, Emerald, Blue, Cyan, Fuchsia, Orange, Teal, Rose, Pink.
-*   *Suggested:*
-    *   **Slate** (`slate-500`) for neutral or archived items.
+
+- _Avoid:_ Violet, Amber, Emerald, Blue, Cyan, Fuchsia, Orange, Teal, Rose, Pink.
+- _Suggested:_
+  - **Slate** (`slate-500`) for neutral or archived items.
 
 ### 2. Apply the Pattern
+
 Add the entity to `ENTITY_ACCENTS` in `lib/entity-accents.ts` with the standard class pattern (written out literally so Tailwind's scanner picks the classes up), then consume it from there.
 
 **Example: Creating an `InvoiceCard` (using Orange)**
@@ -84,7 +87,7 @@ export function InvoiceCard({ invoice }) {
         'hover:shadow-md'
       )}
     >
-      <h3 className="font-semibold">Invoice #{invoice.id}</h3>
+      <h3 className='font-semibold'>Invoice #{invoice.id}</h3>
       {/* ... content ... */}
     </div>
   )
@@ -92,7 +95,9 @@ export function InvoiceCard({ invoice }) {
 ```
 
 ### 3. Consistent Link Hover
+
 Ensure any links inside the card match the standard interaction style:
+
 ```tsx
 <Link
   href={...}

@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useState } from "react"
-import { type Editor } from "@tiptap/react"
-import { NodeSelection, TextSelection } from "@tiptap/pm/state"
+import { useCallback, useEffect, useState } from 'react'
+import { type Editor } from '@tiptap/react'
+import { NodeSelection, TextSelection } from '@tiptap/pm/state'
 
 // --- Hooks ---
-import { useTiptapEditor } from "@/hooks/use-tiptap-editor"
+import { useTiptapEditor } from '@/hooks/use-tiptap-editor'
 
 // --- Lib ---
 import {
@@ -14,12 +14,12 @@ import {
   isNodeTypeSelected,
   isValidPosition,
   selectionWithinConvertibleTypes,
-} from "@/lib/tiptap-utils"
+} from '@/lib/tiptap-utils'
 
 // --- Icons ---
-import { CodeBlockIcon } from "@/components/tiptap-icons/code-block-icon"
+import { CodeBlockIcon } from '@/components/tiptap-icons/code-block-icon'
 
-export const CODE_BLOCK_SHORTCUT_KEY = "mod+alt+c"
+export const CODE_BLOCK_SHORTCUT_KEY = 'mod+alt+c'
 
 /**
  * Configuration for the code block functionality
@@ -49,25 +49,25 @@ export function canToggle(
 ): boolean {
   if (!editor || !editor.isEditable) return false
   if (
-    !isNodeInSchema("codeBlock", editor) ||
-    isNodeTypeSelected(editor, ["image"])
+    !isNodeInSchema('codeBlock', editor) ||
+    isNodeTypeSelected(editor, ['image'])
   )
     return false
 
   if (!turnInto) {
-    return editor.can().toggleNode("codeBlock", "paragraph")
+    return editor.can().toggleNode('codeBlock', 'paragraph')
   }
 
   // Ensure selection is in nodes we're allowed to convert
   if (
     !selectionWithinConvertibleTypes(editor, [
-      "paragraph",
-      "heading",
-      "bulletList",
-      "orderedList",
-      "taskList",
-      "blockquote",
-      "codeBlock",
+      'paragraph',
+      'heading',
+      'bulletList',
+      'orderedList',
+      'taskList',
+      'blockquote',
+      'codeBlock',
     ])
   )
     return false
@@ -75,7 +75,7 @@ export function canToggle(
   // Either we can toggle code block directly on the selection,
   // or we can clear formatting/nodes to arrive at a code block.
   return (
-    editor.can().toggleNode("codeBlock", "paragraph") ||
+    editor.can().toggleNode('codeBlock', 'paragraph') ||
     editor.can().clearNodes()
   )
 }
@@ -130,9 +130,9 @@ export function toggleCodeBlock(editor: Editor | null): boolean {
         .clearNodes()
     }
 
-    const toggle = editor.isActive("codeBlock")
-      ? chain.setNode("paragraph")
-      : chain.toggleNode("codeBlock", "paragraph")
+    const toggle = editor.isActive('codeBlock')
+      ? chain.setNode('paragraph')
+      : chain.toggleNode('codeBlock', 'paragraph')
 
     toggle.run()
 
@@ -154,9 +154,9 @@ export function shouldShowButton(props: {
   const { editor, hideWhenUnavailable } = props
 
   if (!editor) return false
-  if (!isNodeInSchema("codeBlock", editor)) return false
+  if (!isNodeInSchema('codeBlock', editor)) return false
 
-  if (hideWhenUnavailable && editor.isEditable && !editor.isActive("code")) {
+  if (hideWhenUnavailable && editor.isEditable && !editor.isActive('code')) {
     return canToggle(editor)
   }
 
@@ -223,17 +223,17 @@ export function useCodeBlock(config?: UseCodeBlockConfig) {
 
     const updateState = () => {
       setIsVisible(shouldShowButton({ editor, hideWhenUnavailable }))
-      setIsActive(editor.isActive("codeBlock") || false)
+      setIsActive(editor.isActive('codeBlock') || false)
     }
 
     updateState()
 
-    editor.on("selectionUpdate", updateState)
-    editor.on("transaction", updateState)
+    editor.on('selectionUpdate', updateState)
+    editor.on('transaction', updateState)
 
     return () => {
-      editor.off("selectionUpdate", updateState)
-      editor.off("transaction", updateState)
+      editor.off('selectionUpdate', updateState)
+      editor.off('transaction', updateState)
     }
   }, [editor, hideWhenUnavailable])
 
@@ -252,7 +252,7 @@ export function useCodeBlock(config?: UseCodeBlockConfig) {
     isActive,
     handleToggle,
     canToggle: canToggleState,
-    label: "Code Block",
+    label: 'Code Block',
     shortcutKeys: CODE_BLOCK_SHORTCUT_KEY,
     Icon: CodeBlockIcon,
   }

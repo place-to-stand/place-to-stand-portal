@@ -17,19 +17,20 @@ The `creates_hour_block` boolean on `invoice_line_items` determines which line i
 **Auto-set from product catalog:** When a line item is created from a product catalog item, the flag is set based on the catalog item. For v1, only "Development Hours" auto-sets this flag.
 
 **Manually overridable:** The admin can toggle this flag in the invoice sheet for any line item. This handles edge cases like:
+
 - A custom line item that represents prepaid hours
 - A development hours line item that should NOT create an hour block (e.g., it's a correction)
 
 ### What data flows to the hour block?
 
-| Hour Block Field | Source |
-|------------------|--------|
-| `clientId` | `invoice.clientId` |
-| `hoursPurchased` | `lineItem.quantity` |
-| `invoiceId` | `invoice.id` (FK) |
-| `invoiceLineItemId` | `lineItem.id` (FK, unique — idempotency guard) |
-| `invoiceNumber` | `invoice.invoiceNumber` (copied string for display) |
-| `createdBy` | `invoice.createdBy` |
+| Hour Block Field    | Source                                              |
+| ------------------- | --------------------------------------------------- |
+| `clientId`          | `invoice.clientId`                                  |
+| `hoursPurchased`    | `lineItem.quantity`                                 |
+| `invoiceId`         | `invoice.id` (FK)                                   |
+| `invoiceLineItemId` | `lineItem.id` (FK, unique — idempotency guard)      |
+| `invoiceNumber`     | `invoice.invoiceNumber` (copied string for display) |
+| `createdBy`         | `invoice.createdBy`                                 |
 
 ## Creation Flow
 
@@ -43,7 +44,8 @@ export async function createHourBlocksFromInvoice(invoiceId: string) {
 
   // 2. Filter to qualifying line items (creates hour block, not deleted, positive quantity)
   const hourBlockItems = invoice.lineItems.filter(
-    item => item.createsHourBlock && !item.deletedAt && Number(item.quantity) > 0
+    item =>
+      item.createsHourBlock && !item.deletedAt && Number(item.quantity) > 0
   )
   if (hourBlockItems.length === 0) return
 
@@ -95,17 +97,18 @@ This is more robust than the SELECT-then-INSERT pattern because it's atomic. The
 
 An invoice can have multiple line items flagged for hour block creation. Each creates a separate hour block record. For example:
 
-| Line Item | Qty | Creates HB? |
-|-----------|-----|-------------|
-| Development Hours (Phase 1) | 20 | ✓ → creates 20-hour block |
-| Development Hours (Phase 2) | 10 | ✓ → creates 10-hour block |
-| Server Hosting | 1 | ✗ |
+| Line Item                   | Qty | Creates HB?               |
+| --------------------------- | --- | ------------------------- |
+| Development Hours (Phase 1) | 20  | ✓ → creates 20-hour block |
+| Development Hours (Phase 2) | 10  | ✓ → creates 10-hour block |
+| Server Hosting              | 1   | ✗                         |
 
 This results in two hour block records, both linked to the same invoice.
 
 ## Hour Block Display Enhancement
 
 On the hour blocks list and client detail pages, hour blocks created from invoices show:
+
 - The invoice number as a link (if the invoice exists)
 - "Auto-created from invoice INV-0042" in the activity feed
 
@@ -114,19 +117,23 @@ This provides traceability from hour block back to the invoice that generated it
 ## Edge Cases
 
 ### Invoice voided after payment
+
 - Not possible: PAID → VOID is an invalid transition (see [02-data-model.md](./02-data-model.md))
 - Once paid, the invoice and its hour blocks are permanent
 
 ### Invoice hard-deleted after payment
+
 - Hour blocks have `ON DELETE SET NULL` on the `invoiceId` FK
 - The hour blocks survive but lose the invoice reference
 - The `invoiceNumber` string field preserves the reference for display
 
 ### Line item has quantity 0
+
 - Handled by the filtering logic (`Number(item.quantity) > 0`) — these items are silently skipped
 - No warning needed; zero-quantity line items are a normal case (e.g., placeholder items)
 
 ### Client deleted
+
 - Hour blocks CASCADE on client delete, so they're removed
 - The invoice has RESTRICT on client delete, so this scenario requires archiving the invoice first
 

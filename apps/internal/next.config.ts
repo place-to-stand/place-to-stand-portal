@@ -46,8 +46,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value:
-              "frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
+            value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'",
           },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
         ],
@@ -91,16 +90,26 @@ const nextConfig: NextConfig = {
       to('/settings/users/activity', '/people/activity'),
       to('/settings/projects', '/projects'),
       // The project Overview and Scope tabs are gone: the board is Tasks.
-      to('/projects/:clientSlug/:projectSlug/overview', '/projects/:clientSlug/:projectSlug/tasks'),
-      to('/projects/:clientSlug/:projectSlug/scope', '/projects/:clientSlug/:projectSlug/tasks'),
+      to(
+        '/projects/:clientSlug/:projectSlug/overview',
+        '/projects/:clientSlug/:projectSlug/tasks'
+      ),
+      to(
+        '/projects/:clientSlug/:projectSlug/scope',
+        '/projects/:clientSlug/:projectSlug/tasks'
+      ),
       // A project's archived tasks live on its Review tab.
-      to('/projects/:clientSlug/:projectSlug/archive', '/projects/:clientSlug/:projectSlug/review'),
+      to(
+        '/projects/:clientSlug/:projectSlug/archive',
+        '/projects/:clientSlug/:projectSlug/review'
+      ),
     ]
   },
   async rewrites() {
     // PostHog reverse proxy to avoid ad blockers
     // The relay path must match the api_host in instrumentation-client.ts
-    const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
+    const posthogHost =
+      process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com'
     return [
       {
         source: '/relay-HVAq/static/:path*',

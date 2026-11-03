@@ -1,6 +1,6 @@
 # 03 — Schema: `monthly_close_snapshots` + close/reopen actions
 
-The "close the books" primitive: an explicit, admin-triggered snapshot that freezes a month's assembled report. Closing is an *event you trigger* (after the remember-it-before-invoicing pass), not a calendar boundary (D6) — logging time a day or two into the new month costs nothing while the month is still open.
+The "close the books" primitive: an explicit, admin-triggered snapshot that freezes a month's assembled report. Closing is an _event you trigger_ (after the remember-it-before-invoicing pass), not a calendar boundary (D6) — logging time a day or two into the new month costs nothing while the month is still open.
 
 ## Table definition
 
@@ -55,7 +55,7 @@ New `apps/internal/lib/queries/reports/close-snapshots.ts` (`server-only`):
 
 New `apps/internal/lib/data/reports/close.ts` (`server-only`):
 
-- `closeMonth(user, { year, month })` — `assertAdmin`; reject future months (`'Cannot close a month that has not started.'`). **Cutoff-first, transactional (F4):** capture `closedAt = now()` *before* deriving, run the derivation + `insertSnapshot` inside one `db.transaction` (Postgres default read-committed within a single transaction gives every report query one consistent view), and store the pre-captured `closedAt` — so any record committed after the cutoff is, by definition, detectable as late (`created_at > closed_at`). Closing the in-progress current month is allowed — the UI confirms with a warning (04). Log activity after commit.
+- `closeMonth(user, { year, month })` — `assertAdmin`; reject future months (`'Cannot close a month that has not started.'`). **Cutoff-first, transactional (F4):** capture `closedAt = now()` _before_ deriving, run the derivation + `insertSnapshot` inside one `db.transaction` (Postgres default read-committed within a single transaction gives every report query one consistent view), and store the pre-captured `closedAt` — so any record committed after the cutoff is, by definition, detectable as late (`created_at > closed_at`). Closing the in-progress current month is allowed — the UI confirms with a warning (04). Log activity after commit.
 - `reopenMonth(user, { year, month })` — `assertAdmin`; `softDeleteSnapshot`; log activity.
 - `recloseMonth(user, { year, month })` — **atomic swap, not sequential reopen→close (F3):** derive the replacement report first (same cutoff-first rule), then in one transaction soft-delete the active snapshot and insert the new one. A derivation or insert failure leaves the original snapshot untouched — the month never transiently loses its close.
 - `isMonthClosed(date)` — convenience over `getClosedMonthSet` for 01/05 (accepts `yyyy-MM-dd`, checks its month).

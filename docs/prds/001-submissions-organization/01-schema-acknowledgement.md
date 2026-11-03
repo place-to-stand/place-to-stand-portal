@@ -6,7 +6,7 @@
 
 ## Problem statement
 
-`form_submissions` has no way to record that a human has seen a row. The table already soft-deletes via `deleted_at` (archive needs no schema change), but "unread" state — the core of D1/D2 — has nowhere to live. Additionally, the beacon upsert can advance a row's status *after* it has been acknowledged (an acknowledged `completed` audit later becomes `captured` when a late beacon delivers contact info), and that transition must re-flag the row (D8).
+`form_submissions` has no way to record that a human has seen a row. The table already soft-deletes via `deleted_at` (archive needs no schema change), but "unread" state — the core of D1/D2 — has nowhere to live. Additionally, the beacon upsert can advance a row's status _after_ it has been acknowledged (an acknowledged `completed` audit later becomes `captured` when a late beacon delivers contact info), and that transition must re-flag the row (D8).
 
 ## Fix description
 
@@ -49,15 +49,18 @@ In the table-config callback, add a partial index matching the unread-count quer
 
 ### 1b. Relations (W3 — [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
-`packages/db/src/relations.ts` currently has no `formSubmissions` entry. Per the project migration workflow (schema changes land in `schema.ts` *and* `relations.ts`), declare the new FK's relation:
+`packages/db/src/relations.ts` currently has no `formSubmissions` entry. Per the project migration workflow (schema changes land in `schema.ts` _and_ `relations.ts`), declare the new FK's relation:
 
 ```ts
-export const formSubmissionsRelations = relations(formSubmissions, ({ one }) => ({
-  acknowledgedByUser: one(users, {
-    fields: [formSubmissions.acknowledgedBy],
-    references: [users.id],
-  }),
-}))
+export const formSubmissionsRelations = relations(
+  formSubmissions,
+  ({ one }) => ({
+    acknowledgedByUser: one(users, {
+      fields: [formSubmissions.acknowledgedBy],
+      references: [users.id],
+    }),
+  })
+)
 ```
 
 Nothing traverses it yet (the detail sheet shows the timestamp only — resolving the acknowledger's name is future scope), but this keeps `db.query.formSubmissions.with(...)` available and the convention checklist honest.

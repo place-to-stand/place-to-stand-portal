@@ -42,7 +42,10 @@ export async function PATCH(
     payload = updateBodySchema.parse(await request.json())
   } catch (error) {
     console.error('Invalid update task comment payload', error)
-    return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Invalid request payload.' },
+      { status: 400 }
+    )
   }
 
   try {
@@ -54,13 +57,16 @@ export async function PATCH(
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to update task comment', error)
     return NextResponse.json(
       { error: 'Unable to update comment.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
@@ -86,13 +92,16 @@ export async function DELETE(
     return new NextResponse(null, { status: 204 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to delete task comment', error)
     return NextResponse.json(
       { error: 'Unable to delete comment.' },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }

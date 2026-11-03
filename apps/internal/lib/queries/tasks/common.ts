@@ -22,4 +22,3 @@ export const taskFields = {
   githubIssueUrl: tasks.githubIssueUrl,
   workerStatus: tasks.workerStatus,
 } as const
-

@@ -27,14 +27,14 @@ export async function GET(
   }
 
   try {
-    const revisions = await loadPlanRevisions(
-      user,
-      parsedParams.data.threadId
-    )
+    const revisions = await loadPlanRevisions(user, parsedParams.data.threadId)
     return NextResponse.json({ revisions }, { status: 200 })
   } catch (error) {
     if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status })
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
     }
 
     console.error('Failed to load plan revisions', error)

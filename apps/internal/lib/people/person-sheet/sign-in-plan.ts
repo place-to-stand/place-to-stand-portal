@@ -97,7 +97,8 @@ export async function prepareSignIn(
 
     let emailChange: SignInPlan['emailChange'] = null
     if ((nextEmail ?? '').toLowerCase() !== current.email.toLowerCase()) {
-      if (!nextEmail) return { error: 'Someone who can sign in needs an email.' }
+      if (!nextEmail)
+        return { error: 'Someone who can sign in needs an email.' }
       const [taken] = await db
         .select({ id: users.id })
         .from(users)
@@ -144,7 +145,9 @@ export async function prepareSignIn(
 
   // A sign-in row with this email and no person (left behind by an
   // archive or an earlier failure) is linked, not duplicated.
-  const found = await loadSignIn(sql`lower(${users.email}) = lower(${nextEmail})`)
+  const found = await loadSignIn(
+    sql`lower(${users.email}) = lower(${nextEmail})`
+  )
   if (found) {
     const [owner] = await db
       .select({ id: contacts.id })

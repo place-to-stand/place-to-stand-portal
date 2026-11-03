@@ -75,7 +75,7 @@ export async function acknowledgeFormSubmission(id: string, userId: string) {
 }
 ```
 
-Note: a null return from the race/double-click path is *success-shaped* for the UI (the row is acknowledged either way) — the action must distinguish "already acknowledged" from "not found" by re-fetching (see below), not by treating null as an error.
+Note: a null return from the race/double-click path is _success-shaped_ for the UI (the row is acknowledged either way) — the action must distinguish "already acknowledged" from "not found" by re-fetching (see below), not by treating null as an error.
 
 ### 3. Server action — `apps/internal/app/(dashboard)/submissions/actions/acknowledge-submission.ts` (new)
 
@@ -133,7 +133,7 @@ Only when `mode === 'active'`:
 
 ### 6. Unread quick filter (PW1 — [ARCHITECTURE-REVIEW.md](ARCHITECTURE-REVIEW.md))
 
-The badge (06) tells the admin *how many* rows are unread, but `last_activity_at DESC` ordering interleaves ad noise — nothing helps them find *which* rows. Add an **Unread** filter on the List tab:
+The badge (06) tells the admin _how many_ rows are unread, but `last_activity_at DESC` ordering interleaves ad noise — nothing helps them find _which_ rows. Add an **Unread** filter on the List tab:
 
 - `SubmissionsFilters` (02) gains an unread toggle — either a two-state `Select` ("All" / "Unread") or a `Checkbox`-style toggle button, whichever reads best next to the two existing selects — writing URL param `unread=1` (absent = all). Resets to page 1 like the other filters. List tab only (`basePath='/submissions'` consumers); archived rows are never unread, so the archive page ignores/omits it.
 - `page.tsx` parses `unread` and threads `unreadOnly: boolean` through `fetchFormSubmissions` → `listFormSubmissions`/`countFormSubmissions`.
@@ -159,7 +159,7 @@ In the detail sheet, render `contactEmail` as a `mailto:` link (underlined, with
 
 ### 8. Sort order (explicitly unchanged)
 
-The list stays ordered by `last_activity_at DESC`. Unread rows are *not* pinned to the top — newest-first already surfaces new arrivals, and pinning would fight the beacon-driven reordering. (Revisit in future scope if the team asks.)
+The list stays ordered by `last_activity_at DESC`. Unread rows are _not_ pinned to the top — newest-first already surfaces new arrivals, and pinning would fight the beacon-driven reordering. (Revisit in future scope if the team asks.)
 
 ## Architecture review notes
 

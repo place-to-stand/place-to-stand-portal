@@ -3,7 +3,11 @@ import 'server-only'
 import { tool } from 'ai'
 import { z } from 'zod'
 
-import { getFileContents, searchRepoCode, type GitHubAuth } from '@/lib/github/client'
+import {
+  getFileContents,
+  searchRepoCode,
+  type GitHubAuth,
+} from '@/lib/github/client'
 
 // ---------------------------------------------------------------------------
 // System prompt builder
@@ -71,15 +75,27 @@ Keep the plan concise but comprehensive. Focus on the "what" and "why", not boil
 // ---------------------------------------------------------------------------
 
 const readFileSchema = z.object({
-  path: z.string().describe('File path relative to repository root (e.g., "lib/db/schema.ts")'),
+  path: z
+    .string()
+    .describe(
+      'File path relative to repository root (e.g., "lib/db/schema.ts")'
+    ),
 })
 
 const listDirectorySchema = z.object({
-  path: z.string().describe('Directory path relative to repository root (e.g., "lib/db" or "" for root)'),
+  path: z
+    .string()
+    .describe(
+      'Directory path relative to repository root (e.g., "lib/db" or "" for root)'
+    ),
 })
 
 const searchCodeSchema = z.object({
-  query: z.string().describe('Search query — function names, type names, import paths, or keywords (e.g., "createPlanningTools", "TaskStatus enum", "useSheetFormControls")'),
+  query: z
+    .string()
+    .describe(
+      'Search query — function names, type names, import paths, or keywords (e.g., "createPlanningTools", "TaskStatus enum", "useSheetFormControls")'
+    ),
 })
 
 export function createPlanningTools(
@@ -95,14 +111,25 @@ export function createPlanningTools(
       inputSchema: readFileSchema,
       execute: async ({ path }: z.infer<typeof readFileSchema>) => {
         try {
-          const result = await getFileContents(userId, owner, repo, path, undefined, auth)
+          const result = await getFileContents(
+            userId,
+            owner,
+            repo,
+            path,
+            undefined,
+            auth
+          )
           if (result.type === 'dir') {
             return `"${path}" is a directory. Entries:\n${result.entries.map(e => `  ${e.type === 'dir' ? '\u{1F4C1}' : '\u{1F4C4}'} ${e.name}`).join('\n')}`
           }
           // Truncate very large files
-          const content = result.content.length > 50000
-            ? result.content.slice(0, 50000) + '\n\n... (truncated, file is ' + result.size + ' bytes)'
-            : result.content
+          const content =
+            result.content.length > 50000
+              ? result.content.slice(0, 50000) +
+                '\n\n... (truncated, file is ' +
+                result.size +
+                ' bytes)'
+              : result.content
           return content
         } catch (error) {
           return `Error reading "${path}": ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -116,12 +143,22 @@ export function createPlanningTools(
       inputSchema: listDirectorySchema,
       execute: async ({ path }: z.infer<typeof listDirectorySchema>) => {
         try {
-          const result = await getFileContents(userId, owner, repo, path || '.', undefined, auth)
+          const result = await getFileContents(
+            userId,
+            owner,
+            repo,
+            path || '.',
+            undefined,
+            auth
+          )
           if (result.type === 'file') {
             return `"${path}" is a file, not a directory.`
           }
           return result.entries
-            .map(e => `${e.type === 'dir' ? '\u{1F4C1}' : '\u{1F4C4}'} ${e.name}${e.type === 'file' ? ` (${e.size}b)` : ''}`)
+            .map(
+              e =>
+                `${e.type === 'dir' ? '\u{1F4C1}' : '\u{1F4C4}'} ${e.name}${e.type === 'file' ? ` (${e.size}b)` : ''}`
+            )
             .join('\n')
         } catch (error) {
           return `Error listing "${path}": ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -141,9 +178,10 @@ export function createPlanningTools(
           }
           return results
             .map(r => {
-              const fragments = r.fragments.length > 0
-                ? `\n${r.fragments.map(f => `  | ${f}`).join('\n')}`
-                : ''
+              const fragments =
+                r.fragments.length > 0
+                  ? `\n${r.fragments.map(f => `  | ${f}`).join('\n')}`
+                  : ''
               return `${r.path}${fragments}`
             })
             .join('\n\n')

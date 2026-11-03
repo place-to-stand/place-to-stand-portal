@@ -26,7 +26,10 @@ export async function firstRoleTermStart(): Promise<string> {
  * `user_role_terms` row on or before that month. Seeded from Oct 2025 (0113),
  * so every sign-in resolves for every month the close covers.
  */
-export function roleAsOfSql(periodStart: string, userId: SQL | typeof users.id = users.id) {
+export function roleAsOfSql(
+  periodStart: string,
+  userId: SQL | typeof users.id = users.id
+) {
   return sql<string | null>`user_role_as_of(${userId}, ${periodStart}::date)`
 }
 
@@ -34,7 +37,10 @@ export function roleAsOfSql(periodStart: string, userId: SQL | typeof users.id =
  * A person or sign-in counts for a period unless archived before it began:
  * archived people stay in the months they worked, and drop out after.
  */
-export function liveDuring(deletedAt: SQL | { name: string }, periodStart: string) {
+export function liveDuring(
+  deletedAt: SQL | { name: string },
+  periodStart: string
+) {
   return sql`(${deletedAt} is null or ${deletedAt} >= ${periodStart}::date)`
 }
 

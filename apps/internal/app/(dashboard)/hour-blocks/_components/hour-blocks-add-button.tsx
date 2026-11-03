@@ -19,9 +19,7 @@ export function HourBlocksAddButton({
       entity='hour-block'
       label='Create hour block'
       className={className}
-      disabledReason={
-        !hasClients ? HOUR_BLOCK_MISSING_CLIENT_REASON : null
-      }
+      disabledReason={!hasClients ? HOUR_BLOCK_MISSING_CLIENT_REASON : null}
     />
   )
 }

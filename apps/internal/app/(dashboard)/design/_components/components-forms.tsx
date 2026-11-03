@@ -213,9 +213,7 @@ export function ComponentsPickers() {
   const [status, setStatus] = useState('active')
   const [person, setPerson] = useState<string | null>('radia')
   const [fieldPerson, setFieldPerson] = useState<string | null>('ada')
-  const [fieldCompany, setFieldCompany] = useState<string | null>(
-    'design-acme'
-  )
+  const [fieldCompany, setFieldCompany] = useState<string | null>('design-acme')
   const [company, setCompany] = useState<CompanyLink | null>(null)
   const [contact, setContact] = useState<ContactLink | null>(null)
   const [staticCompany, setStaticCompany] = useState<{

@@ -1,12 +1,12 @@
 # PRD 002 — Progress
 
-| Section | Status | Notes |
-|---------|--------|-------|
-| 01 — Terms schema + billing change flow | Implemented (2026-08-07) | Migration 0056 applied locally; guard behind stub until 03 |
+| Section                                   | Status                   | Notes                                                                                      |
+| ----------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
+| 01 — Terms schema + billing change flow   | Implemented (2026-08-07) | Migration 0056 applied locally; guard behind stub until 03                                 |
 | 02 — Temporal resolution in close queries | Implemented (2026-08-07) | All 8 filter sites + 4 block ranges + date bounds switched; grep-verified zero cache reads |
-| 03 — `monthly_close_snapshots` + actions | Implemented (2026-08-07) | Migration 0057 applied locally; real `isMonthClosed` replaces 01's stub |
-| 04 — Close workflow UI + drift banner | Implemented (2026-08-07) | Snapshot rendering, canonical drift, close controls in header |
-| 05 — Late-entry guardrails | Implemented (2026-08-07) | API-route warnings (admin-only), hour-block action warnings, DELETE now returns JSON 200 |
+| 03 — `monthly_close_snapshots` + actions  | Implemented (2026-08-07) | Migration 0057 applied locally; real `isMonthClosed` replaces 01's stub                    |
+| 04 — Close workflow UI + drift banner     | Implemented (2026-08-07) | Snapshot rendering, canonical drift, close controls in header                              |
+| 05 — Late-entry guardrails                | Implemented (2026-08-07) | API-route warnings (admin-only), hour-block action warnings, DELETE now returns JSON 200   |
 
 ## Pre-implementation checklist (from ARCHITECTURE-REVIEW.md)
 

@@ -254,7 +254,8 @@ export function useClientBillingForm({
   )
 
   const handleOriginationPickerOpenChange = useCallback(
-    (next: boolean) => setIsOriginationPickerOpen(pickerDisabled ? false : next),
+    (next: boolean) =>
+      setIsOriginationPickerOpen(pickerDisabled ? false : next),
     [pickerDisabled]
   )
   const handleSelectOriginationUser = useCallback((user: PartnerUserOption) => {

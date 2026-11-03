@@ -6,7 +6,7 @@ Catch closed-month collisions **at write time** instead of leaving discovery to 
 
 A write "touches a closed month" when:
 
-- **Time log create/update/delete**: `logged_on` (new or existing value) falls in a month with an active snapshot. An update that *moves* a log across a closed boundary trips on either side — **the route must read the existing `logged_on` before mutating** (F6): the PATCH body only carries the new date and `updateTimeLog` overwrites in place, so a move *out of* a closed month is undetectable after the fact.
+- **Time log create/update/delete**: `logged_on` (new or existing value) falls in a month with an active snapshot. An update that _moves_ a log across a closed boundary trips on either side — **the route must read the existing `logged_on` before mutating** (F6): the PATCH body only carries the new date and `updateTimeLog` overwrites in place, so a move _out of_ a closed month is undetectable after the fact.
 - **Hour block create/edit/archive/restore**: the block's `billing_month` is closed. Creates can trip only when the current month was closed early (billing_month never points backward).
 
 Check via `isMonthClosed(date)` from the section 03 data layer — one indexed `getClosedMonthSet` lookup per action.

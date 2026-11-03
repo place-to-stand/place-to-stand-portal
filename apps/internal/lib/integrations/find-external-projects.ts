@@ -32,7 +32,10 @@ export async function findExternalProjectsForUser(
     await Promise.all(
       providers.map(
         async provider =>
-          [provider, await listExternalProjectsForUser(userId, provider)] as const
+          [
+            provider,
+            await listExternalProjectsForUser(userId, provider),
+          ] as const
       )
     )
   )

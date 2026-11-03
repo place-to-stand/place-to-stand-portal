@@ -72,7 +72,10 @@ export const buildOwnerOptions = (
     ...admins.filter(isSelectableUser).map(toOwnerOption),
   ]
 
-  if (currentOwnerId && !options.some(option => option.value === currentOwnerId)) {
+  if (
+    currentOwnerId &&
+    !options.some(option => option.value === currentOwnerId)
+  ) {
     const currentOwner = admins.find(admin => admin.id === currentOwnerId)
     if (currentOwner) {
       options.push({ ...toOwnerOption(currentOwner), disabled: true })

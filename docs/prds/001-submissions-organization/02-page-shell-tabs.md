@@ -6,9 +6,10 @@
 
 ## Problem statement
 
-The submissions page is a one-off layout: the kind/status filters and the total count live *inside* the card, and there is no navigation structure for the archive and activity views this PRD adds. The owner directed reusing the hour-blocks shell so "the filters and count are all in the same place and the card behind the list looks the same."
+The submissions page is a one-off layout: the kind/status filters and the total count live _inside_ the card, and there is no navigation structure for the archive and activity views this PRD adds. The owner directed reusing the hour-blocks shell so "the filters and count are all in the same place and the card behind the list looks the same."
 
 Reference implementation to mirror (do not modify):
+
 - `apps/internal/app/(dashboard)/hour-blocks/page.tsx` — tabs row above the card, count on the right, `<section className='bg-background rounded-xl border p-6 shadow-sm'>`
 - `apps/internal/app/(dashboard)/hour-blocks/_components/hour-blocks-tabs-nav.tsx` — route-based `Tabs` using `router.push`
 - `apps/internal/app/(dashboard)/hour-blocks/archive/page.tsx`, `activity/page.tsx`
@@ -99,7 +100,7 @@ Clone of `hour-blocks/activity/page.tsx` shape: `requireRole('ADMIN')`, tabs row
 
 - Route-based tabs (real pages, not client tab-panels) match hour blocks and keep each view server-rendered with its own `searchParams` — pagination and filters stay URL-addressable.
 - `metadata.title` per route: `'Submissions'`, `'Submissions Archive'`, `'Submissions Activity'` (hour blocks appends `| Settings`; submissions is not under settings, so plain titles).
-- The existing `matchHrefs: ['/submissions']` in `navigation-config.ts` already prefix-matches `/submissions/archive` and `/submissions/activity` via the sidebar's `startsWith` logic — no nav change needed in *this* section. (Section 06 does modify the nav item: badge plumbing + the D10 `roles: ['ADMIN']` restriction.)
+- The existing `matchHrefs: ['/submissions']` in `navigation-config.ts` already prefix-matches `/submissions/archive` and `/submissions/activity` via the sidebar's `startsWith` logic — no nav change needed in _this_ section. (Section 06 does modify the nav item: badge plumbing + the D10 `roles: ['ADMIN']` restriction.)
 
 ## Acceptance criteria
 

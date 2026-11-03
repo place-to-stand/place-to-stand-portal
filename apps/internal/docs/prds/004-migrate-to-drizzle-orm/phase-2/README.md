@@ -34,4 +34,3 @@
 - Replace Supabase data calls across dashboards and settings modules with the new query helpers.
 - Expand the query layer with mutations (create/update/delete) once RLS parity is verified.
 - Add automated tests that cover the authorization helpers and edge cases around soft-deleted records.
-

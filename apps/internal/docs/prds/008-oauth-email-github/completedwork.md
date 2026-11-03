@@ -3,6 +3,7 @@
 This document tracks the changes implemented to advance the Email Linking foundation and related developer tooling.
 
 ## Phase 1 touchups
+
 - Fix: Align Next.js 16 route typing for Gmail message detail
   - File: `app/api/integrations/gmail/messages/[messageId]/route.ts`
   - Updated GET signature to use `NextRequest` and async `params` to satisfy `tsc --noEmit`.
@@ -10,6 +11,7 @@ This document tracks the changes implemented to advance the Email Linking founda
 ## Phase 2: Email Linking Foundation
 
 ### Schema additions (via Drizzle)
+
 - Added `client_contacts` table with indexes and RLS policies
   - File: `lib/db/schema.ts`
   - Unique on `(client_id, email)`, indexes on `client_id`, `email`, and domain expression `split_part(email,'@',2)`
@@ -28,6 +30,7 @@ This document tracks the changes implemented to advance the Email Linking founda
   - RLS: admins manage; users can select for accessible clients/projects
 
 ### Relations and Types
+
 - Updated relations
   - `clientsRelations.contacts: many(clientContacts)`
   - `clientContactsRelations`, `emailMetadataRelations`, `emailLinksRelations`
@@ -37,11 +40,13 @@ This document tracks the changes implemented to advance the Email Linking founda
   - `lib/types/emails.ts` → `EmailMetadata`, `NewEmailMetadata`, `EmailLink`, `NewEmailLink`, `EmailWithLinks`
 
 ### Migration
+
 - Generated and applied `drizzle/migrations/0008_client_contacts.sql`
   - Contains enum + both new tables + policies and indexes
   - Applied locally using Drizzle CLI per guardrails
 
 ### Query helpers
+
 - `lib/queries/emails.ts`
   - `getEmailMetadataById(user, id)` — ownership/role-guarded fetch
   - `listEmailLinksForEmail(user, emailId)` — non-deleted links
@@ -50,12 +55,14 @@ This document tracks the changes implemented to advance the Email Linking founda
   - `listEmailMetadataForDirectory(user, filters)` — optional filtering by linked clients/projects
 
 ### Auto-matcher
+
 - `lib/email/matcher.ts`
   - `matchAndLinkEmail(user, emailId)`
     - Heuristics: exact from-address matches (confidence '1.00'); domain matches (confidence '0.60') using `client_contacts`
     - Avoids duplicate links
 
 ### API Endpoints
+
 - Manual link
   - `POST /api/emails/links` → create client/project link
   - `DELETE /api/emails/links/[linkId]` → unlink (soft delete)
@@ -67,17 +74,19 @@ This document tracks the changes implemented to advance the Email Linking founda
   - `POST /api/dev/seed` → creates Acme/Beta clients, a project, contacts, three emails, and runs matcher on two emails
 
 ### Dev UI
+
 - Admin-only page to test linking
   - `app/(dashboard)/dev/emails/page.tsx`
   - Lists recent `email_metadata`, runs auto-match, creates manual links, and allows unlinking
 
 ## Verification
+
 - Type-check: passed (`npm run type-check`)
 - Lint: passed with zero warnings (`npm run lint -- --max-warnings=0`)
 - Migration: applied locally via Drizzle CLI (`npm run db:migrate`)
 
 ## Notes / Next
+
 - Pending (Phase 1.5): Integrations UI toast handling of OAuth success/error query params
 - Phase 2.4: Gmail sync service to populate `email_metadata`
 - Phase 2.5: Matcher enhancements (heuristics, conflict handling), UI for linking in primary views
-

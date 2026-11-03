@@ -10,6 +10,7 @@ Analyze and refactor code for clarity, maintainability, and removal of unused co
 ## Scope
 
 ### 1. Dead Code Detection
+
 - Unused exports (functions, types, constants)
 - Unused imports
 - Unreachable code paths
@@ -19,12 +20,14 @@ Analyze and refactor code for clarity, maintainability, and removal of unused co
 - Unused dependencies in package.json
 
 ### 2. Code Duplication
+
 - Repeated logic across files (DRY violations)
 - Similar components that should be abstracted
 - Copy-pasted utility functions
 - Duplicated type definitions
 
 ### 3. Complexity Reduction
+
 - Functions exceeding 50 lines
 - Deeply nested conditionals (>3 levels)
 - Complex boolean expressions
@@ -32,18 +35,21 @@ Analyze and refactor code for clarity, maintainability, and removal of unused co
 - Files approaching 300 lines (per AGENTS.md)
 
 ### 4. Naming & Clarity
+
 - Unclear variable/function names
 - Misleading names that don't match behavior
 - Inconsistent naming conventions
 - Magic numbers without constants
 
 ### 5. Pattern Consistency
+
 - Inconsistent error handling patterns
 - Mixed async patterns (callbacks vs promises vs async/await)
 - Inconsistent state management approaches
 - Varying component structure patterns
 
 ### 6. Type Safety
+
 - `any` types that should be specific
 - Missing type annotations
 - Overly broad types that could be narrowed
@@ -52,6 +58,7 @@ Analyze and refactor code for clarity, maintainability, and removal of unused co
 ## Output Format
 
 For each finding:
+
 ```
 [TYPE: DEAD_CODE|DUPLICATION|COMPLEXITY|NAMING|PATTERN|TYPES]
 File: path/to/file.ts:lineNumber
@@ -72,6 +79,7 @@ Risk: LOW|MEDIUM|HIGH (breaking change potential)
 ## Refactoring Principles
 
 Per AGENTS.md guidelines:
+
 - Single Responsibility Principle
 - Reuse > Rebuild
 - Abstract only when pattern appears 3+ times
@@ -80,6 +88,7 @@ Per AGENTS.md guidelines:
 ## Post-Review
 
 Generate:
+
 - Safe deletions (no breaking changes)
 - Refactoring candidates with dependency analysis
 - Suggested extraction of shared utilities

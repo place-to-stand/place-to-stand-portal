@@ -6,6 +6,7 @@
 ## Auto-Classification Rules Engine
 
 Table of sender domain/email/pattern rules that auto-classify during sync. Includes:
+
 - Admin-managed rules (global, not per-user)
 - Seed data for common automated senders (Vercel, GitHub, Luma, noreply@*)
 - Gmail category label matching (`CATEGORY_UPDATES`, `CATEGORY_PROMOTIONS` — confirmed available in `providerMetadata.labels`)
@@ -27,6 +28,7 @@ When a user dismisses a thread in triage, show a toast: "Always dismiss emails f
 ## Meeting Transcript Ingestion
 
 New source type with the same triage flow:
+
 - Add `MEETING` to `messageSource` enum
 - Transcript becomes a message within a thread
 - Same classification + triage + linking pipeline
@@ -35,6 +37,7 @@ New source type with the same triage flow:
 ## AUTOMATED Classification State
 
 Separate state for notification/transactional emails, distinct from user-dismissed. Would enable:
+
 - Auto-classification during sync via rules
 - Dedicated "Automated" view with greyed-out visual treatment
 - Separate count from dismissed (automated ≠ worthless, just not actionable)
@@ -42,6 +45,7 @@ Separate state for notification/transactional emails, distinct from user-dismiss
 ## Smart Queue Ordering
 
 Pre-compute match confidence during sync and sort triage queue by confidence tiers:
+
 1. High-confidence client matches (exact email)
 2. Lead matches
 3. Medium-confidence matches (domain)

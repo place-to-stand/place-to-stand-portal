@@ -75,10 +75,11 @@ export async function dispatchPortalInvite(options: {
 }) {
   const { email, fullName } = options
 
-  const { data, error } = await getSupabaseServiceClient().auth.admin.generateLink({
-    type: 'magiclink',
-    email,
-  })
+  const { data, error } =
+    await getSupabaseServiceClient().auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+    })
 
   const tokenHash = data?.properties?.hashed_token
 
@@ -122,7 +123,12 @@ export async function dispatchAdminInvite(options: {
   baseUrl: string
 }) {
   const { email, fullName, temporaryPassword, baseUrl } = options
-  await sendAdminInviteEmail({ to: email, fullName, temporaryPassword, baseUrl })
+  await sendAdminInviteEmail({
+    to: email,
+    fullName,
+    temporaryPassword,
+    baseUrl,
+  })
 }
 
 export async function resolveAvatarUpdate(options: {

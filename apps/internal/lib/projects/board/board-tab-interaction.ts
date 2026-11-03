@@ -69,4 +69,3 @@ export function completeBoardTabInteraction(currentTab: string) {
 
   delete store[BOARD_INTERACTION_KEY]
 }
-

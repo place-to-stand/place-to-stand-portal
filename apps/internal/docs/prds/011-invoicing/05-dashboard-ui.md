@@ -120,15 +120,15 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
 
 The invoice table displays:
 
-| Column | Content |
-|--------|---------|
-| Invoice # | `INV-0001` or "Draft" badge |
-| Client | Client name |
-| Status | Badge: Draft (gray), Sent (blue), Viewed (yellow), Paid (green), Void (red) |
-| Total | Formatted currency |
-| Due Date | Date with overdue indicator if past due |
-| Issued | Date or "—" for drafts |
-| Actions | Edit, Share/Copy Link, View Public, Archive/Restore/Destroy |
+| Column    | Content                                                                     |
+| --------- | --------------------------------------------------------------------------- |
+| Invoice # | `INV-0001` or "Draft" badge                                                 |
+| Client    | Client name                                                                 |
+| Status    | Badge: Draft (gray), Sent (blue), Viewed (yellow), Paid (green), Void (red) |
+| Total     | Formatted currency                                                          |
+| Due Date  | Date with overdue indicator if past due                                     |
+| Issued    | Date or "—" for drafts                                                      |
+| Actions   | Edit, Share/Copy Link, View Public, Archive/Restore/Destroy                 |
 
 ### Status Badges
 
@@ -145,28 +145,29 @@ const STATUS_BADGE_MAP = {
 ### Overdue Indicator
 
 For invoices where `dueDate < today` and status is `SENT` or `VIEWED`:
+
 - Show a red "Overdue" badge next to the status
 - This is computed at render time, not stored
 
 ### Row Actions (Active Mode)
 
-| Action | Icon | Condition |
-|--------|------|-----------|
-| Edit | Pencil | Status is DRAFT or SENT (locked at VIEWED) |
-| Send | Send | Status is DRAFT (assigns number + enables sharing) |
-| Copy Link | Copy | shareEnabled is true (available after send) |
-| View Public | ExternalLink | shareEnabled is true |
-| Disable Sharing | Link2Off | shareEnabled is true (toggle off without voiding) |
-| Re-enable Sharing | Link2 | shareEnabled is false AND status is SENT/VIEWED/PAID |
-| Void | Ban | Status is DRAFT, SENT, or VIEWED |
-| Archive | Archive | Any status |
+| Action            | Icon         | Condition                                            |
+| ----------------- | ------------ | ---------------------------------------------------- |
+| Edit              | Pencil       | Status is DRAFT or SENT (locked at VIEWED)           |
+| Send              | Send         | Status is DRAFT (assigns number + enables sharing)   |
+| Copy Link         | Copy         | shareEnabled is true (available after send)          |
+| View Public       | ExternalLink | shareEnabled is true                                 |
+| Disable Sharing   | Link2Off     | shareEnabled is true (toggle off without voiding)    |
+| Re-enable Sharing | Link2        | shareEnabled is false AND status is SENT/VIEWED/PAID |
+| Void              | Ban          | Status is DRAFT, SENT, or VIEWED                     |
+| Archive           | Archive      | Any status                                           |
 
 ### Row Actions (Archive Mode)
 
-| Action | Icon | Condition |
-|--------|------|-----------|
-| Restore | RefreshCw | Always |
-| Destroy | Trash2 | Always (with confirmation) |
+| Action  | Icon      | Condition                  |
+| ------- | --------- | -------------------------- |
+| Restore | RefreshCw | Always                     |
+| Destroy | Trash2    | Always (with confirmation) |
 
 ## Invoice Sheet (Slide-Out Form)
 
@@ -177,11 +178,13 @@ The sheet form handles both create and edit modes. It follows the hour blocks sh
 ### Form Fields
 
 **Header Section:**
+
 - Client (combobox, required) — selecting a client auto-sets the due date default based on billing type
 - Due Date (date picker, optional) — defaults based on client billing type: `net_30` → 30 days from today, `prepaid` → blank (upon receipt). Admin can always override.
 - Notes (textarea, optional)
 
 **Line Items Section:**
+
 - Dynamic array of line items, each with:
   - Product (combobox selecting from product catalog, optional)
   - Description (text, required — auto-filled from product catalog selection)
@@ -193,10 +196,12 @@ The sheet form handles both create and edit modes. It follows the hour blocks sh
 - "Add Line Item" button at bottom
 
 **Tax Section** (below line items):
+
 - Tax Rate (percentage input, e.g., "8.75" for 8.75%, defaults to 0)
 - Tax Amount (computed, read-only: subtotal × tax rate)
 
 **Totals Section:**
+
 - Subtotal (sum of line item amounts)
 - Tax (tax amount with rate label)
 - **Total** (subtotal + tax, bold)
@@ -217,6 +222,7 @@ The sheet form handles both create and edit modes. It follows the hour blocks sh
 ### Fixed Footer Bar
 
 Same pattern as hour blocks:
+
 - Left: Undo / Redo buttons (basic form-level undo via `useSheetFormControls`)
 - Right: Save button (or "Send Invoice" for draft→sent shortcut)
 - Position: fixed, blur backdrop
@@ -240,6 +246,7 @@ Same component pattern as `HourBlocksTabsNav`.
 File: `app/(dashboard)/invoices/archive/page.tsx`
 
 Identical pattern to hour blocks archive:
+
 - Same `listInvoices(user, { status: 'archived' })` query
 - Same table component with `mode='archive'`
 - Restore and Destroy actions
@@ -327,6 +334,7 @@ export async function saveInvoiceAction(
 File: `app/(dashboard)/invoices/actions/send-invoice.ts`
 
 Calls `sendInvoice()` which:
+
 1. Assigns the invoice number from the PostgreSQL SEQUENCE
 2. Sets `issuedDate` to today
 3. Transitions status to `SENT`
@@ -354,18 +362,18 @@ Sets `status = 'VOID'`. Only valid for DRAFT, SENT, or VIEWED invoices.
 
 File: `lib/activity/events/invoices.ts`
 
-| Verb | Summary | When |
-|------|---------|------|
-| `INVOICE_CREATED` | "Created invoice for {client}" | Save action (create) |
-| `INVOICE_UPDATED` | "Updated invoice {number}" | Save action (update) |
-| `INVOICE_SENT` | "Sent invoice {number}" | Send action |
-| `INVOICE_VIEWED` | "Invoice {number} was viewed" | First public page view |
-| `INVOICE_PAID` | "Invoice {number} was paid" | Stripe webhook |
-| `INVOICE_VOIDED` | "Voided invoice {number}" | Void action |
-| `INVOICE_SHARED` | "Shared invoice {number}" | Share API |
-| `INVOICE_UNSHARED` | "Disabled sharing for invoice {number}" | Unshare API |
-| `INVOICE_ARCHIVED` | "Archived invoice {number}" | Archive action |
-| `INVOICE_RESTORED` | "Restored invoice {number}" | Restore action |
+| Verb               | Summary                                 | When                   |
+| ------------------ | --------------------------------------- | ---------------------- |
+| `INVOICE_CREATED`  | "Created invoice for {client}"          | Save action (create)   |
+| `INVOICE_UPDATED`  | "Updated invoice {number}"              | Save action (update)   |
+| `INVOICE_SENT`     | "Sent invoice {number}"                 | Send action            |
+| `INVOICE_VIEWED`   | "Invoice {number} was viewed"           | First public page view |
+| `INVOICE_PAID`     | "Invoice {number} was paid"             | Stripe webhook         |
+| `INVOICE_VOIDED`   | "Voided invoice {number}"               | Void action            |
+| `INVOICE_SHARED`   | "Shared invoice {number}"               | Share API              |
+| `INVOICE_UNSHARED` | "Disabled sharing for invoice {number}" | Unshare API            |
+| `INVOICE_ARCHIVED` | "Archived invoice {number}"             | Archive action         |
+| `INVOICE_RESTORED` | "Restored invoice {number}"             | Restore action         |
 
 All events set `targetType: 'INVOICE'`, `targetId: invoiceId`, `targetClientId: clientId`.
 

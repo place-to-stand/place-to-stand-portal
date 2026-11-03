@@ -79,7 +79,8 @@ export function SortableTableHead({
 
   // When the param is unset, the default column reads as sorted (PW3) —
   // expose that to AT too.
-  const showAsSorted = isActive && (sort !== undefined || defaultParsed.field === field)
+  const showAsSorted =
+    isActive && (sort !== undefined || defaultParsed.field === field)
 
   // The cell carries `group/head` because that named group is what reveals
   // the neutral chevron below — it has to sit on an ancestor of the icon.

@@ -87,7 +87,10 @@ function AlertAction({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       data-slot='alert-action'
-      className={cn('ml-auto flex h-[1lh] shrink-0 items-center gap-2', className)}
+      className={cn(
+        'ml-auto flex h-[1lh] shrink-0 items-center gap-2',
+        className
+      )}
       {...props}
     />
   )

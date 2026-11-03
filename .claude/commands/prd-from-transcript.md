@@ -3,6 +3,7 @@ I'm feeding you a Gemini summary and raw transcript from a stakeholder feedback 
 **This command has 3 phases. Execute them IN ORDER. Output the completion table after each phase. Do NOT proceed to Phase 2 until Phase 1 is complete and the user has approved the structure.**
 
 **Important context:**
+
 - **Build this with me, not for me.** The scope is probably too big to generate all at once. Break it down granularly and iterate with me. Propose structure first, get my feedback, then write. I want to be involved in the decisions.
 - **Split into small files** that manage the LLM context window. Each section file should be self-contained enough that an LLM can implement it by reading only that file plus the README (not the entire PRD). Files should link to each other, clearly listing dependencies.
 - **Create a progress document and a manual test plan document** that get updated after each coding session.
@@ -18,11 +19,12 @@ I'm feeding you a Gemini summary and raw transcript from a stakeholder feedback 
 5. **Ask me questions.** Use AskUserQuestion to resolve all ambiguities and conflicts before writing. Don't assume — ask. Cover things like: scope boundaries, which app owns the feature (internal vs client portal), UX behavior on click/hover/drag, which page owns the feature, default states, edge cases.
 
 **Output the completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | {source archived: N files}, {N Gemini discrepancies}, {N repeat asks flagged}, {N codebase files scanned}, {N sections proposed}, {N questions resolved} |
-| 2 | Pending | — |
-| 3 | Pending | — |
+
+| Phase | Status  | Output                                                                                                                                                   |
+| ----- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Done    | {source archived: N files}, {N Gemini discrepancies}, {N repeat asks flagged}, {N codebase files scanned}, {N sections proposed}, {N questions resolved} |
+| 2     | Pending | —                                                                                                                                                        |
+| 3     | Pending | —                                                                                                                                                        |
 
 **STOP — Wait for user to approve the proposed structure before proceeding to Phase 2.**
 
@@ -31,6 +33,7 @@ I'm feeding you a Gemini summary and raw transcript from a stakeholder feedback 
 After I approve the structure, write the complete PRD as a directory in docs/prds/ with:
 
 ### README.md
+
 - Status, dependencies, blocks
 - Source material with Gemini accuracy notes
 - What this PRD covers (numbered list matching section files)
@@ -44,7 +47,9 @@ After I approve the structure, write the complete PRD as a directory in docs/prd
 - Recommended implementation sequence (which can be parallelized, which are sequential)
 
 ### Numbered section files (01-xxx.md, 02-xxx.md, ...)
+
 For each section:
+
 - Problem statement (what's wrong or missing)
 - Decision references (D# from README)
 - Fix description
@@ -54,11 +59,13 @@ For each section:
 - Files likely modified / created
 
 ### PROGRESS.md
+
 - Pre-implementation checklist (things that must be done before any section)
 - Per-section checkbox items matching the acceptance criteria
 - Architecture review codes (C#, W#) referenced inline where relevant
 
 ### TEST-PLAN.md
+
 - Prerequisites (database state, pre-implementation items, dev servers — internal on :3000, client on :3001)
 - Per-section test items converted from acceptance criteria into testable checkboxes
 - Edge cases: empty states, error states, concurrent actions, rapid inputs, boundary values
@@ -67,27 +74,31 @@ For each section:
 - Summary table with test counts per section and total
 
 ### Future scope file (##-future-scope.md)
+
 - Everything discussed but explicitly deferred, with context for why and when to revisit
 
 **Output the completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | {N files written}: {file list} |
-| 3 | Pending | — |
+
+| Phase | Status  | Output                         |
+| ----- | ------- | ------------------------------ |
+| 1     | Done    | ...                            |
+| 2     | Done    | {N files written}: {file list} |
+| 3     | Pending | —                              |
 
 ## Phase 3 — Review & Polish
 
 After writing all files:
+
 1. Do a self-audit for internal consistency (cross-references, file paths, decision numbering, URL formats, no contradictions between sections).
 2. Fix any issues found.
 3. Present a summary of what was created.
 
 **Output the final completion table:**
-| Phase | Status | Output |
-|-------|--------|--------|
-| 1 | Done | ... |
-| 2 | Done | ... |
-| 3 | Done | {N inconsistencies found and fixed}, PRD clean: yes/no |
+
+| Phase | Status | Output                                                 |
+| ----- | ------ | ------------------------------------------------------ |
+| 1     | Done   | ...                                                    |
+| 2     | Done   | ...                                                    |
+| 3     | Done   | {N inconsistencies found and fixed}, PRD clean: yes/no |
 
 $ARGUMENTS

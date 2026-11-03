@@ -26,5 +26,3 @@ export const CLIENT_BILLING_TYPE_SELECT_OPTIONS: BillingTypeOption[] = [
     badgeClassName: BADGE_TINTS.amber,
   },
 ]
-
-

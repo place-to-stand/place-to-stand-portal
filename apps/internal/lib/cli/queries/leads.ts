@@ -38,7 +38,9 @@ const leadFields = {
   lossNotes: leads.lossNotes,
   convertedAt: leads.convertedAt,
   // A won lead's client is its company (0111).
-  convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
+  convertedToClientId: sql<
+    string | null
+  >`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
   createdAt: leads.createdAt,
   updatedAt: leads.updatedAt,
 }

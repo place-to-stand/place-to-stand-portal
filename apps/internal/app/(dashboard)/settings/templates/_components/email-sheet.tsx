@@ -101,7 +101,7 @@ function EmailSheetBody({ entry }: { entry: EmailTemplateEntry }) {
         ]}
       />
 
-      <div className='min-h-0 flex-1 overflow-auto bg-email-backdrop'>
+      <div className='bg-email-backdrop min-h-0 flex-1 overflow-auto'>
         {mode === 'html' ? (
           <iframe
             key={variant.audience}
@@ -111,7 +111,7 @@ function EmailSheetBody({ entry }: { entry: EmailTemplateEntry }) {
             className='block h-full w-full border-0'
           />
         ) : (
-          <pre className='mx-auto my-8 w-fit max-w-[520px] email-paper bg-background text-foreground border px-8 py-7 font-mono text-xs leading-relaxed whitespace-pre-wrap'>
+          <pre className='email-paper bg-background text-foreground mx-auto my-8 w-fit max-w-[520px] border px-8 py-7 font-mono text-xs leading-relaxed whitespace-pre-wrap'>
             {variant.sample.text}
           </pre>
         )}

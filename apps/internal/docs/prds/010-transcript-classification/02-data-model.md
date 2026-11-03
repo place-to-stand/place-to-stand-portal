@@ -120,9 +120,7 @@ The `updatedAt` column must be set explicitly in every UPDATE query in the query
 In `lib/db/schema.ts`:
 
 ```typescript
-export const transcriptSource = pgEnum('transcript_source', [
-  'DRIVE_SEARCH',
-])
+export const transcriptSource = pgEnum('transcript_source', ['DRIVE_SEARCH'])
 
 export const transcriptClassification = pgEnum('transcript_classification', [
   'UNCLASSIFIED',
@@ -130,42 +128,57 @@ export const transcriptClassification = pgEnum('transcript_classification', [
   'DISMISSED',
 ])
 
-export const transcripts = pgTable('transcripts', {
-  id: uuid().defaultRandom().primaryKey().notNull(),
-  title: text().notNull(),
-  content: text(),
-  source: transcriptSource().notNull(),
-  driveFileId: text('drive_file_id'),
-  driveFileUrl: text('drive_file_url'),
-  meetingDate: timestamp('meeting_date', { withTimezone: true, mode: 'string' }),
-  durationMinutes: integer('duration_minutes'),
-  participantNames: text('participant_names').array().default([]).notNull(),
-  participantEmails: text('participant_emails').array().default([]).notNull(),
-  classification: transcriptClassification().default('UNCLASSIFIED').notNull(),
-  clientId: uuid('client_id'),
-  projectId: uuid('project_id'),
-  leadId: uuid('lead_id'),
-  classifiedBy: uuid('classified_by'),
-  classifiedAt: timestamp('classified_at', { withTimezone: true, mode: 'string' }),
-  aiSuggestedClientId: uuid('ai_suggested_client_id'),
-  aiSuggestedClientName: text('ai_suggested_client_name'),
-  aiSuggestedProjectId: uuid('ai_suggested_project_id'),
-  aiSuggestedProjectName: text('ai_suggested_project_name'),
-  aiSuggestedLeadId: uuid('ai_suggested_lead_id'),
-  aiSuggestedLeadName: text('ai_suggested_lead_name'),
-  aiConfidence: numeric('ai_confidence', { precision: 4, scale: 3 }),
-  aiAnalyzedAt: timestamp('ai_analyzed_at', { withTimezone: true, mode: 'string' }),
-  syncedBy: uuid('synced_by'),
-  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
-    .default(sql`timezone('utc'::text, now())`)
-    .notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
-    .default(sql`timezone('utc'::text, now())`)
-    .notNull(),
-  deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
-}, table => [
-  // indexes and foreign keys...
-])
+export const transcripts = pgTable(
+  'transcripts',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    title: text().notNull(),
+    content: text(),
+    source: transcriptSource().notNull(),
+    driveFileId: text('drive_file_id'),
+    driveFileUrl: text('drive_file_url'),
+    meetingDate: timestamp('meeting_date', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    durationMinutes: integer('duration_minutes'),
+    participantNames: text('participant_names').array().default([]).notNull(),
+    participantEmails: text('participant_emails').array().default([]).notNull(),
+    classification: transcriptClassification()
+      .default('UNCLASSIFIED')
+      .notNull(),
+    clientId: uuid('client_id'),
+    projectId: uuid('project_id'),
+    leadId: uuid('lead_id'),
+    classifiedBy: uuid('classified_by'),
+    classifiedAt: timestamp('classified_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    aiSuggestedClientId: uuid('ai_suggested_client_id'),
+    aiSuggestedClientName: text('ai_suggested_client_name'),
+    aiSuggestedProjectId: uuid('ai_suggested_project_id'),
+    aiSuggestedProjectName: text('ai_suggested_project_name'),
+    aiSuggestedLeadId: uuid('ai_suggested_lead_id'),
+    aiSuggestedLeadName: text('ai_suggested_lead_name'),
+    aiConfidence: numeric('ai_confidence', { precision: 4, scale: 3 }),
+    aiAnalyzedAt: timestamp('ai_analyzed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    syncedBy: uuid('synced_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`timezone('utc'::text, now())`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    // indexes and foreign keys...
+  ]
+)
 ```
 
 In `lib/db/relations.ts`, add relations for transcripts → clients, projects, leads, users.
@@ -177,6 +190,7 @@ These rules maintain the same invariants as thread classification (PRD 009, [02-
 ### Auto-Classify on Link
 
 When a user sets `clientId`, `projectId`, or `leadId` on a transcript, automatically set:
+
 - `classification` → `CLASSIFIED`
 - `classifiedBy` → current user
 - `classifiedAt` → now()
@@ -186,18 +200,21 @@ When a user sets `clientId`, `projectId`, or `leadId` on a transcript, automatic
 ### Revert on Unlink
 
 When a user removes a link (sets a field to NULL):
+
 - If **no remaining links** (all three are NULL), revert `classification` → `UNCLASSIFIED` and clear `classifiedBy` / `classifiedAt`
 - If at least one link remains, classification stays `CLASSIFIED`
 
 ### Dismiss Unlinks
 
 When classifying as `DISMISSED`:
+
 - Clear all links: set `clientId`, `projectId`, `leadId` to NULL
 - Set `classification` → `DISMISSED`, `classifiedBy` → current user, `classifiedAt` → now()
 
 ### Mutual Exclusivity
 
 Classification links are mutually exclusive between the lead track and the client track:
+
 - Setting `leadId` → clear `clientId` and `projectId`
 - Setting `clientId` → clear `leadId`
 - `clientId` and `projectId` can coexist (project belongs to client)

@@ -7,4 +7,3 @@ export function getActorDisplayName(log: ActivityLogWithActor): string {
     (log.actor_role ? `${log.actor_role.toLowerCase()} user` : 'System')
   )
 }
-

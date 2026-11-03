@@ -7,7 +7,7 @@ import { projects } from '@/lib/db/schema'
 
 export async function projectSlugExistsDrizzle(
   slug: string,
-  options: { excludeId?: string } = {},
+  options: { excludeId?: string } = {}
 ) {
   const conditions = [eq(projects.slug, slug)]
 
@@ -44,4 +44,3 @@ export async function generateUniqueProjectSlugDrizzle(base: string) {
     }
   }
 }
-
