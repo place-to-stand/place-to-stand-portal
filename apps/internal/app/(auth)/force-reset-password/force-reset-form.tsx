@@ -27,18 +27,9 @@ import {
 import { Input } from '@pts/ui/input'
 import { useToast } from '@/components/ui/use-toast'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import { newPasswordPairSchema } from '@/lib/auth/password'
 
-const formSchema = z
-  .object({
-    password: z.string().min(8, 'Password must be at least 8 characters.'),
-    confirmPassword: z
-      .string()
-      .min(8, 'Password must be at least 8 characters.'),
-  })
-  .refine(values => values.password === values.confirmPassword, {
-    path: ['confirmPassword'],
-    message: 'Passwords must match.',
-  })
+const formSchema = newPasswordPairSchema
 
 type FormValues = z.infer<typeof formSchema>
 

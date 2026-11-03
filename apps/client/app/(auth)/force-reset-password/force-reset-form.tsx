@@ -8,6 +8,9 @@ import {
   authFieldLabelClass,
   authInputClass,
   authPrimaryButtonClass,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_TOO_SHORT,
+  PASSWORDS_DIFFER,
 } from '@pts/ui/auth-shell'
 
 import { notifyPasswordChanged } from '@/app/(auth)/_actions/auth-emails'
@@ -29,12 +32,12 @@ export function ForceResetForm({ email }: ForceResetFormProps) {
     setError(null)
 
     if (password !== confirm) {
-      setError('Passwords do not match')
+      setError(PASSWORDS_DIFFER)
       return
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(PASSWORD_TOO_SHORT)
       return
     }
 
@@ -68,25 +71,25 @@ export function ForceResetForm({ email }: ForceResetFormProps) {
 
   return (
     <AuthShell
-      label="Client Portal"
-      title="Set new password"
+      label='Client Portal'
+      title='Set new password'
       description="Choose a password you'll use to sign in from now on."
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className='space-y-4'>
         {error && <div className={authErrorClass}>{error}</div>}
 
         {email ? (
           // Read-only, but a real `username` field: without one, password
           // managers save the new password under a blank username.
-          <div className="space-y-2">
-            <label htmlFor="email" className={authFieldLabelClass}>
+          <div className='space-y-2'>
+            <label htmlFor='email' className={authFieldLabelClass}>
               Email
             </label>
             <input
-              id="email"
-              name="username"
-              type="email"
-              autoComplete="username"
+              id='email'
+              name='username'
+              type='email'
+              autoComplete='username'
               value={email}
               readOnly
               className={authInputClass}
@@ -94,42 +97,42 @@ export function ForceResetForm({ email }: ForceResetFormProps) {
           </div>
         ) : null}
 
-        <div className="space-y-2">
-          <label htmlFor="password" className={authFieldLabelClass}>
+        <div className='space-y-2'>
+          <label htmlFor='password' className={authFieldLabelClass}>
             New password
           </label>
           <input
-            id="password"
-            name="new-password"
-            type="password"
-            autoComplete="new-password"
+            id='password'
+            name='new-password'
+            type='password'
+            autoComplete='new-password'
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
-            minLength={8}
+            minLength={PASSWORD_MIN_LENGTH}
             className={authInputClass}
           />
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="confirm" className={authFieldLabelClass}>
+        <div className='space-y-2'>
+          <label htmlFor='confirm' className={authFieldLabelClass}>
             Confirm password
           </label>
           <input
-            id="confirm"
-            name="confirm-password"
-            type="password"
-            autoComplete="new-password"
+            id='confirm'
+            name='confirm-password'
+            type='password'
+            autoComplete='new-password'
             value={confirm}
             onChange={e => setConfirm(e.target.value)}
             required
-            minLength={8}
+            minLength={PASSWORD_MIN_LENGTH}
             className={authInputClass}
           />
         </div>
 
         <button
-          type="submit"
+          type='submit'
           disabled={loading}
           className={authPrimaryButtonClass}
         >
