@@ -17,6 +17,7 @@ import { projects, taskComments, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { notifyTaskComment } from '@/lib/notifications/in-app/events'
 import { clampLimit, decodeCursor, encodeCursor } from '@/lib/pagination/cursor'
+import { sanitizeRichTextHtml } from '@/lib/rich-text/sanitize-server'
 import type {
   ActivitySourceValue,
   TaskCommentAuthor,
@@ -275,13 +276,14 @@ export async function createTaskComment(
   options: TaskCommentMutationOptions = {}
 ): Promise<{ commentId: string }> {
   await ensureTaskWorkAccess(user, input.taskId)
+  const body = sanitizeRichTextHtml(input.body)
 
   const result = await db
     .insert(taskComments)
     .values({
       taskId: input.taskId,
       authorId: user.id,
-      body: input.body,
+      body,
     })
     .returning({ id: taskComments.id })
 
@@ -305,7 +307,7 @@ export async function createTaskComment(
     .where(eq(tasks.id, input.taskId))
     .limit(1)
   if (task) {
-    const text = htmlToPlainText(input.body).trim()
+    const text = htmlToPlainText(body).trim()
     await notifyTaskComment(
       user,
       { id: input.taskId, title: task.title },
@@ -333,15 +335,17 @@ export async function updateTaskComment(
   await ensureTaskWorkAccess(user, comment.taskId)
   assertCanChangeComment(user, comment.authorId)
 
+  const body = sanitizeRichTextHtml(input.body)
+
   // Re-saving an unchanged body is a no-op: no write, no activity row.
-  if (comment.body === input.body) {
+  if (comment.body === body) {
     return
   }
 
   await db
     .update(taskComments)
     .set({
-      body: input.body,
+      body,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(taskComments.id, input.commentId))

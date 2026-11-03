@@ -37,6 +37,16 @@ const PUBLIC_PATHS = new Set([
 const FORCE_RESET_PATH = '/force-reset-password'
 
 /**
+ * An entry ending in `/` covers everything under it. Any other entry is one
+ * path plus its sub-paths, so `/api/mcp` doesn't make `/api/mcp-admin`
+ * public.
+ */
+function matchesPublicPath(pathname: string, path: string): boolean {
+  if (path.endsWith('/')) return pathname.startsWith(path)
+  return pathname === path || pathname.startsWith(`${path}/`)
+}
+
+/**
  * Check authentication using Supabase Auth
  */
 async function checkSupabaseAuth(req: NextRequest): Promise<{
@@ -124,7 +134,9 @@ function isCrossSiteMutation(req: NextRequest): boolean {
 export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname
 
-  const isPublic = [...PUBLIC_PATHS].some(path => pathname.startsWith(path))
+  const isPublic = [...PUBLIC_PATHS].some(path =>
+    matchesPublicPath(pathname, path)
+  )
 
   if (!isPublic && isCrossSiteMutation(req)) {
     return NextResponse.json(

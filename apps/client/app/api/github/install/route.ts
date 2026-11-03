@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid'
 
 import { getCurrentUser } from '@/lib/auth/session'
 import { safeRedirectPath } from '@/lib/auth/callback'
-import { ensureClientAccess } from '@/lib/auth/permissions'
+import { clientAccessDenied } from '@/lib/auth/permissions'
 import { getGitHubAppEnv } from '@/lib/env.server'
 
 /**
@@ -33,7 +33,8 @@ export async function GET(request: Request) {
     )
   }
 
-  await ensureClientAccess(user, companyId)
+  const denied = await clientAccessDenied(user, companyId)
+  if (denied) return denied
 
   getGitHubAppEnv() // validate env vars are present
   const state = nanoid(32)
