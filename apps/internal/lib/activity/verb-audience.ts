@@ -115,7 +115,20 @@ export const ACTIVITY_VERB_AUDIENCE = {
   MONTHLY_CLOSE_REOPENED: 'any',
 } as const satisfies Record<ActivityVerb, 'billing' | 'any'>
 
+/**
+ * Retired verbs whose old rows still sit on task and lead feeds (the removed
+ * suggestions feature). None is about billing, so they stay readable.
+ */
+const RETIRED_NON_BILLING_VERBS = [
+  'TASK_SUGGESTION_REJECTED',
+  'TASK_CREATED_FROM_SUGGESTION',
+  'LEAD_SUGGESTION_APPROVED',
+] as const
+
 /** Verbs a viewer without `clients.manage` may read. */
-export const NON_BILLING_VERBS: readonly ActivityVerb[] = (
-  Object.keys(ActivityVerbs) as ActivityVerb[]
-).filter(verb => ACTIVITY_VERB_AUDIENCE[verb] === 'any')
+export const NON_BILLING_VERBS: readonly string[] = [
+  ...(Object.keys(ActivityVerbs) as ActivityVerb[]).filter(
+    verb => ACTIVITY_VERB_AUDIENCE[verb] === 'any'
+  ),
+  ...RETIRED_NON_BILLING_VERBS,
+]
