@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation'
 
 import { requirePage } from '@/lib/auth/session'
 import {
-  fetchArchivedLeads,
   fetchLeadAssignees,
   fetchLeadsBoard,
+  isArchivedLead,
 } from '@/lib/data/leads'
 import { NEW_SHEET_VALUE, UUID_PATTERN } from '@/lib/sheets/entities'
 import { leadHref } from '@/lib/sheets/hrefs'
@@ -56,8 +56,7 @@ export default async function LeadsBoardPage({
         column.leads.some(lead => lead.id === leadParam)
       )
       if (!onBoard) {
-        const archived = await fetchArchivedLeads(user)
-        if (archived.some(lead => lead.id === leadParam)) {
+        if (await isArchivedLead(user, leadParam)) {
           redirect(leadHref(leadParam, { archived: true }))
         }
         leadNotFound = true

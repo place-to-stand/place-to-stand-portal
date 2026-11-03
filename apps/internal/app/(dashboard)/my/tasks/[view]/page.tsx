@@ -68,13 +68,23 @@ export default async function MyTasksViewRoute({
   // `admins` is every CRM user: the people a task can be assigned to, and
   // the boards an admin can switch to. Sales users only see their own board,
   // on projects they can work.
-  const [admins, allLiteProjects, allClientDirectory, workableProjectIds] =
-    await Promise.all([
-      fetchCrmUsers(),
-      fetchProjectsLite(),
-      listClientDirectory(),
-      listWorkableProjectIds(user),
-    ])
+  const deepLinkedTaskId =
+    activeTaskId && UUID_PATTERN.test(activeTaskId) ? activeTaskId : null
+  const [
+    admins,
+    allLiteProjects,
+    allClientDirectory,
+    workableProjectIds,
+    deepLinkedProjectId,
+  ] = await Promise.all([
+    fetchCrmUsers(),
+    fetchProjectsLite(),
+    listClientDirectory(),
+    listWorkableProjectIds(user),
+    deepLinkedTaskId
+      ? getActiveTaskProjectId(deepLinkedTaskId)
+      : Promise.resolve(null),
+  ])
   const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)
   const visibleClientIds = new Set(
     liteProjects.flatMap(project => (project.client ? [project.client.id] : []))
@@ -153,24 +163,27 @@ export default async function MyTasksViewRoute({
 
   // Deep-linked task outside the assigned set: resolve its project by id so
   // the sheet opens in edit mode instead of silently creating a duplicate.
-  if (activeTaskId && UUID_PATTERN.test(activeTaskId)) {
-    const holdingProjectId = await getActiveTaskProjectId(activeTaskId)
-    if (
-      holdingProjectId &&
-      (isAdmin || (await canWorkTask(user, activeTaskId)))
-    ) {
-      if (!includedProjectIds.has(holdingProjectId)) {
-        includedProjectIds.add(holdingProjectId)
-        orderedProjectIds.push(holdingProjectId)
-      }
+  const shownTaskIds = initialEntries.map(entry => entry.taskId)
+  if (
+    deepLinkedTaskId &&
+    deepLinkedProjectId &&
+    (isAdmin || (await canWorkTask(user, deepLinkedTaskId)))
+  ) {
+    shownTaskIds.push(deepLinkedTaskId)
+    if (!includedProjectIds.has(deepLinkedProjectId)) {
+      includedProjectIds.add(deepLinkedProjectId)
+      orderedProjectIds.push(deepLinkedProjectId)
     }
   }
 
-  // Hydrate the task graph for only the projects that hold assigned (or
-  // deep-linked) tasks — previously this loaded every project in the DB.
+  // Hydrate only the tasks this page shows (assigned, plus a deep-linked
+  // one), in only the projects that hold them. Wider Done windows load
+  // their own tasks through /api/my-tasks/done-window.
   const hydratedProjects = await scopeProjectsForViewer(
     user,
-    await fetchProjectsWithRelationsByIds(orderedProjectIds)
+    await fetchProjectsWithRelationsByIds(orderedProjectIds, {
+      taskIds: shownTaskIds,
+    })
   )
   const hydratedById = new Map(
     hydratedProjects.map(project => [project.id, project])

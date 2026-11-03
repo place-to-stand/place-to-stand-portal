@@ -77,12 +77,19 @@ export const getCurrentUser = cache(async (): Promise<AppUser | null> => {
   }
 
   try {
-    if (!(await sessionIsLive(data.claims.session_id, authUserId))) {
-      return null
-    }
-    const profile = await fetchUserProfile(authUserId)
+    // Every Supabase user token carries session_id (password, link, invite,
+    // refresh): one without it isn't a user session.
+    const sessionId = data.claims.session_id
+    if (typeof sessionId !== 'string' || !sessionId) return null
 
-    if (!profile) {
+    // One query: the profile plus whether the session still exists.
+    // getClaims() checks only the JWT's signature and expiry, so a token
+    // issued before its session ended (sign-out, or an orphaned sign-in
+    // re-linked to a person) would otherwise work until it expires. Fails closed: an error
+    // (the role can't read auth.sessions, say) lands in the catch below.
+    const profile = await fetchUserProfile(authUserId, sessionId)
+
+    if (!profile || !profile.sessionLive) {
       return null
     }
 
@@ -153,10 +160,17 @@ type UserProfile = {
 }
 
 async function fetchUserProfile(
-  userId: string
-): Promise<(UserProfile & { roleInForce: string | null }) | null> {
+  userId: string,
+  /** When given, also reports whether this Supabase session is live. */
+  sessionId?: string
+): Promise<
+  (UserProfile & { roleInForce: string | null; sessionLive: boolean }) | null
+> {
   const profileRows = await db
     .select({
+      sessionLive: sessionId
+        ? sql<boolean>`exists (select 1 from auth.sessions s where s.id = ${sessionId}::uuid and s.user_id = ${userId}::uuid)`
+        : sql<boolean>`true`,
       id: users.id,
       email: users.email,
       fullName: personNameSql,
@@ -336,33 +350,3 @@ export const requireUser = () => requirePage('portal.admin')
  * `ensureTaskWorkAccess` or a query scoped by `listWorkableProjectIds`.
  */
 export const requireCrmUser = () => requirePage('portal.sign_in')
-
-/**
- * The token's Supabase session still exists. getClaims() checks only the
- * JWT's signature and expiry, so a token issued before its session was
- * ended (sign-out, or an orphaned sign-in taken over and re-linked to a
- * person) would otherwise keep working until it expires. Ending a session
- * deletes its auth.sessions row; this makes that end the token at once.
- * (Security review, Nov 2026.)
- */
-async function sessionIsLive(
-  sessionId: unknown,
-  userId: string
-): Promise<boolean> {
-  // Every Supabase user token carries session_id (password, link, invite,
-  // refresh): one without it isn't a user session.
-  if (typeof sessionId !== 'string' || !sessionId) return false
-  try {
-    const [row] = await db.execute<{ live: boolean }>(
-      sql`select exists (select 1 from auth.sessions s where s.id = ${sessionId}::uuid and s.user_id = ${userId}::uuid) as live`
-    )
-    return Boolean(row?.live)
-  } catch (error) {
-    // Fail closed: an unverifiable session counts as ended. A database
-    // outage would fail the users-row lookup next anyway; the one error this
-    // alone could cause (the role can't read auth.sessions) is ruled out by
-    // the pre-merge has_table_privilege check in the release runbook.
-    console.error('Session check failed; treating the session as ended', error)
-    return false
-  }
-}

@@ -162,6 +162,20 @@ export const fetchLeadById = cache(
  */
 export type ArchivedLead = LeadRecord & { deletedAt: string }
 
+/** Whether this id is an archived lead: one row, not the whole archive. */
+export async function isArchivedLead(
+  user: AppUser,
+  leadId: string
+): Promise<boolean> {
+  assertCrmAccess(user)
+  const [row] = await db
+    .select({ id: leads.id })
+    .from(leads)
+    .where(and(eq(leads.id, leadId), isNotNull(leads.deletedAt)))
+    .limit(1)
+  return Boolean(row)
+}
+
 export const fetchArchivedLeads = cache(
   async (user: AppUser): Promise<ArchivedLead[]> => {
     assertCrmAccess(user)
@@ -264,7 +278,9 @@ async function selectLeadRows({
     // Conversion
     convertedAt: leads.convertedAt,
     // A won lead's client is its company (0111).
-  convertedToClientId: sql<string | null>`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
+    convertedToClientId: sql<
+      string | null
+    >`case when ${leads.convertedAt} is not null then ${leads.companyId} end`,
     // Raw SQL on purpose: interpolating the Drizzle columns here would strip
     // the table qualification and break the correlation with the outer row.
     openTaskCount: sql<number>`(

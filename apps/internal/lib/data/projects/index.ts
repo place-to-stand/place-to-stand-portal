@@ -181,24 +181,34 @@ export async function fetchProjectsForLanding(
 
 export async function fetchProjectsWithRelationsByIds(
   projectIds: string[],
-  options: { includeArchivedTasks?: boolean } = {}
+  options: {
+    includeArchivedTasks?: boolean
+    /**
+     * Hydrate only these tasks. For callers that show a few tasks (one
+     * task sheet, My Tasks) instead of a whole board: the project's own
+     * fields, members and hours are still complete.
+     */
+    taskIds?: string[]
+  } = {}
 ): Promise<ProjectWithRelations[]> {
   if (!projectIds.length) {
     return []
   }
 
   const baseProjects = await fetchBaseProjects({ projectIds })
-  const relations = await fetchProjectRelations({
-    projectIds: baseProjects.projectIds,
-    companyIds: baseProjects.companyIds,
-    ownerIds: baseProjects.ownerIds,
-    includeArchivedTasks: options.includeArchivedTasks,
-  })
 
   // Client hours must be queried per CLIENT, not derived from the hydrated
   // projects — these routes hydrate a single project, so deriving the client
   // burndown from `timeLogSummaries` would ignore the client's other projects.
-  const [timeLogSummaries, clientHours] = await Promise.all([
+  // Both need only the ids above, so they run alongside the relations.
+  const [relations, timeLogSummaries, clientHours] = await Promise.all([
+    fetchProjectRelations({
+      projectIds: baseProjects.projectIds,
+      companyIds: baseProjects.companyIds,
+      ownerIds: baseProjects.ownerIds,
+      includeArchivedTasks: options.includeArchivedTasks,
+      taskIds: options.taskIds,
+    }),
     getTimeLogSummariesForProjects(baseProjects.projectIds),
     getClientHoursTotals(db, baseProjects.companyIds),
   ])

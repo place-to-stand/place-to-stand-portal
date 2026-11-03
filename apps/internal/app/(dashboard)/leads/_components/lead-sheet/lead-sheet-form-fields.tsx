@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
   Select,

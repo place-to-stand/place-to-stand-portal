@@ -21,10 +21,9 @@ import {
 } from './relations/clients'
 import {
   buildAssigneeMap,
-  loadTaskAssigneeRows,
   loadTaskRows,
   mapTaskRowsToRaw,
-  type TaskRow,
+  type LoadedTaskRows,
 } from './relations/tasks'
 import { getReposForProjects } from '@/lib/data/github-repos'
 import { getIntegrationLinksForProjects } from '@/lib/data/project-integration-links'
@@ -42,6 +41,8 @@ export type ProjectRelationsFetchArgs = {
    * tabs render them — every other surface skips the query entirely.
    */
   includeArchivedTasks?: boolean
+  /** Only these tasks (see `loadTaskRows`). */
+  taskIds?: string[]
 }
 
 export type ProjectRelationsFetchResult = {
@@ -86,16 +87,18 @@ export async function fetchProjectRelations({
   companyIds,
   ownerIds,
   includeArchivedTasks = false,
+  taskIds,
 }: ProjectRelationsFetchArgs): Promise<ProjectRelationsFetchResult> {
   const clientDataPromise: Promise<[ClientRelationRow[], MemberRow[]]> =
     Promise.all([loadClientRows(companyIds), loadMemberRows(companyIds)])
 
-  const taskDataPromise: Promise<[TaskRow[], TaskRow[]]> = Promise.all([
-    loadTaskRows(projectIds, { archived: false }),
-    includeArchivedTasks
-      ? loadTaskRows(projectIds, { archived: true })
-      : Promise.resolve([]),
-  ])
+  const taskDataPromise: Promise<[LoadedTaskRows, LoadedTaskRows]> =
+    Promise.all([
+      loadTaskRows(projectIds, { archived: false, taskIds }),
+      includeArchivedTasks
+        ? loadTaskRows(projectIds, { archived: true, taskIds })
+        : Promise.resolve({ rows: [], assigneeRows: [] }),
+    ])
 
   const githubReposPromise = getReposForProjects(projectIds)
   const integrationLinksPromise = getIntegrationLinksForProjects(projectIds)
@@ -103,7 +106,7 @@ export async function fetchProjectRelations({
 
   const [
     [clientRows, memberRows],
-    [activeTaskRows, archivedTaskRows],
+    [activeLoaded, archivedLoaded],
     githubReposMap,
     integrationLinksMap,
     owners,
@@ -115,9 +118,12 @@ export async function fetchProjectRelations({
     ownersPromise,
   ])
 
-  const allTaskIds = [...activeTaskRows, ...archivedTaskRows].map(row => row.id)
-  const assigneeRows = await loadTaskAssigneeRows(allTaskIds)
-  const assigneesByTask = buildAssigneeMap(assigneeRows)
+  const activeTaskRows = activeLoaded.rows
+  const archivedTaskRows = archivedLoaded.rows
+  const assigneesByTask = buildAssigneeMap([
+    ...activeLoaded.assigneeRows,
+    ...archivedLoaded.assigneeRows,
+  ])
 
   const clients: ClientCompanyView[] = mapClientRows(clientRows)
   const members: MemberWithUser[] = mapMemberRows(memberRows)

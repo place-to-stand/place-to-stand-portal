@@ -113,11 +113,30 @@ async function syncDueTaskNotifications(user: AppUser) {
 const live = (userId: string) =>
   and(eq(notifications.userId, userId), isNull(notifications.clearedAt))
 
+/**
+ * The due-date sync writes, and the feed is polled from every open tab, so
+ * each server instance runs it at most once per user every 15 minutes (and
+ * again as soon as the company date changes).
+ */
+const DUE_SYNC_INTERVAL_MS = 15 * 60_000
+const lastDueSync = new Map<string, { at: number; date: string }>()
+
+async function syncDueTaskNotificationsThrottled(user: AppUser) {
+  const now = Date.now()
+  const date = companyCalendarDate()
+  const last = lastDueSync.get(user.id)
+  if (last && last.date === date && now - last.at < DUE_SYNC_INTERVAL_MS) {
+    return
+  }
+  await syncDueTaskNotifications(user)
+  lastDueSync.set(user.id, { at: now, date })
+}
+
 export async function fetchNotificationFeed(
   user: AppUser,
   filter: NotificationFilter
 ): Promise<NotificationFeed> {
-  await syncDueTaskNotifications(user)
+  await syncDueTaskNotificationsThrottled(user)
 
   const where =
     filter === 'unread'

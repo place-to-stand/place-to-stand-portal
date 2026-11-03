@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { UrlInput } from '@/components/ui/url-input'
 
 import type { CompanyFormValues } from './use-company-sheet-form'
