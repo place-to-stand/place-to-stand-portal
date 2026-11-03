@@ -1,4 +1,9 @@
-import { jsonOk, readJsonBody, withCliAuth } from '@/lib/cli/handler'
+import {
+  jsonOk,
+  readJsonBody,
+  withCliAuth,
+  parseQuery,
+} from '@/lib/cli/handler'
 import { createLeadFromInput } from '@/lib/cli/leads'
 import { listLeadsForCli } from '@/lib/cli/queries/leads'
 import { resolveUserIds } from '@/lib/cli/queries/users'
@@ -9,9 +14,7 @@ import {
 import { serializeLead } from '@/lib/cli/serializers/lead'
 
 export const GET = withCliAuth(async ({ user, request }) => {
-  const query = cliLeadListQuerySchema.parse(
-    Object.fromEntries(new URL(request.url).searchParams)
-  )
+  const query = parseQuery(request, cliLeadListQuerySchema)
 
   const [assigneeId] = query.assignee
     ? await resolveUserIds(user, [query.assignee])

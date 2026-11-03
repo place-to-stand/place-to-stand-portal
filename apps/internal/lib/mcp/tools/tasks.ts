@@ -5,29 +5,22 @@ import { z } from 'zod'
 
 import { statusSchema } from '@/app/(dashboard)/projects/actions/shared-schemas'
 import {
-  fetchAssigneeIdsByTask,
-  fetchBoardLocationsByProject,
-  listTasksForCli,
-} from '@/lib/cli/queries/tasks'
-import { resolveUserIds } from '@/lib/cli/queries/users'
-import {
   cliCreateCommentFields,
   cliCreateTaskFields,
   cliUpdateTaskFields,
 } from '@/lib/cli/schemas/tasks'
 import { serializeComment } from '@/lib/cli/serializers/comment'
-import { serializeTask } from '@/lib/cli/serializers/task'
 import {
   addTaskComment,
   createTaskFromInput,
+  listTasksForAgent,
   loadSerializedTask,
-  resolveProjectId,
   updateTaskFromInput,
 } from '@/lib/cli/tasks'
 import { BadRequestError } from '@/lib/errors/http'
 import { listTaskComments } from '@/lib/queries/task-comments'
 
-import { clip, listLimit, page } from '../output'
+import { clip, listLimit } from '../output'
 import { defineTool } from '../tool'
 
 const taskId = z.string().uuid().describe('Task UUID.')
@@ -58,36 +51,16 @@ export function registerTaskTools(server: McpServer) {
         .optional(),
       limit: listLimit,
     },
-    run: async ({ project, lead, status, assignee, limit }, { user }) => {
-      const [projectId, assigneeIds] = await Promise.all([
-        project ? resolveProjectId(user, project) : undefined,
-        assignee ? resolveUserIds(user, [assignee]) : [],
-      ])
+    run: async (args, { user }) => {
+      const { items, hasMore } = await listTasksForAgent(user, args)
 
-      const rows = await listTasksForCli(user, {
-        projectId,
-        leadId: lead,
-        status,
-        assigneeId: assigneeIds[0],
-        limit: limit + 1,
-      })
-
-      const [assignees, locations] = await Promise.all([
-        fetchAssigneeIdsByTask(rows.map(row => row.id)),
-        fetchBoardLocationsByProject(rows.map(row => row.projectId)),
-      ])
-
-      const tasks = rows.map(row => {
-        const task = serializeTask(
-          row,
-          assignees.get(row.id) ?? [],
-          locations.get(row.projectId) ?? null
-        )
-
-        return { ...task, description: clip(task.description, 'get_task') }
-      })
-
-      return page(tasks, limit)
+      return {
+        items: items.map(task => ({
+          ...task,
+          description: clip(task.description, 'get_task'),
+        })),
+        hasMore,
+      }
     },
   })
 

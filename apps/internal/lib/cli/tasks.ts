@@ -2,10 +2,19 @@ import 'server-only'
 
 import type { z } from 'zod'
 
+import { and, eq, isNull, or } from 'drizzle-orm'
+
+import { roleCan } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import { resolveProjectIdentifier } from '@/lib/data/projects'
+import { db } from '@/lib/db'
+import { projects } from '@/lib/db/schema'
 import { BadRequestError, NotFoundError } from '@/lib/errors/http'
-import { getOrCreateSalesProject } from '@/lib/leads/sales-project'
+import {
+  findSalesProjectId,
+  getOrCreateSalesProject,
+} from '@/lib/leads/sales-project'
+import { ensureProjectWorkAccess } from '@/lib/projects/access'
 import {
   createTaskComment,
   listTaskComments,
@@ -13,12 +22,18 @@ import {
 import { revalidateTaskViews } from '@/lib/tasks/revalidate-task-views'
 import { saveTaskForActor } from '@/lib/tasks/save-task-core'
 import type { SaveTaskResult } from '@/lib/tasks/types'
+import type { SelectTask } from '@/lib/queries/tasks/common'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import { toRichTextHtml } from './description'
 import { jsonOk } from './handler'
-import { fetchBoardLocationsByProject, loadTaskForEdit } from './queries/tasks'
-import { resolveAssigneeIds } from './queries/users'
+import {
+  fetchAssigneeIdsByTask,
+  fetchBoardLocationsByProject,
+  listTasksForCli,
+  loadTaskForEdit,
+} from './queries/tasks'
+import { resolveAssigneeIds, resolveUserIds } from './queries/users'
 import type { cliCreateTaskSchema, cliUpdateTaskSchema } from './schemas/tasks'
 import { serializeComment, type CliComment } from './serializers/comment'
 import { serializeTask, type CliTask } from './serializers/task'
@@ -45,9 +60,102 @@ export async function resolveProjectId(
   user: AppUser,
   identifier: string
 ): Promise<string> {
-  const project = await resolveProjectIdentifier(user, identifier)
+  if (roleCan(user.role, 'projects.view_all')) {
+    const project = await resolveProjectIdentifier(user, identifier)
+    return project.resolvedId
+  }
 
-  return project.resolvedId
+  // Sales: the board's guard, without the admin project detail.
+  const [project] = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(
+        isNull(projects.deletedAt),
+        UUID_PATTERN.test(identifier)
+          ? or(eq(projects.id, identifier), eq(projects.slug, identifier))
+          : eq(projects.slug, identifier)
+      )
+    )
+    .limit(1)
+
+  if (!project) {
+    throw new NotFoundError('Project not found')
+  }
+
+  await ensureProjectWorkAccess(user, project.id)
+  return project.id
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Where a lead task with no project goes: the internal Sales project, as on
+ * the lead sheet. Only admins may create it; for Sales it must exist.
+ */
+async function leadTaskProjectId(user: AppUser): Promise<string> {
+  if (roleCan(user.role, 'projects.manage')) {
+    return getOrCreateSalesProject(user.id)
+  }
+
+  const projectId = await findSalesProjectId()
+  if (!projectId) {
+    throw new BadRequestError(
+      'There is no Sales project yet. Name a project, or ask an admin to create the Sales project.'
+    )
+  }
+  return projectId
+}
+
+export type TaskListRequest = {
+  /** Project slug or UUID. */
+  project?: string
+  lead?: string
+  status?: SelectTask['status']
+  /** Assignee email or UUID. */
+  assignee?: string
+  limit: number
+}
+
+/**
+ * The one task list both the CLI and the MCP serve: resolve the refs, list,
+ * hydrate assignees and board links, serialize. `hasMore` comes from asking
+ * for one row past the limit.
+ */
+export async function listTasksForAgent(
+  user: AppUser,
+  { project, lead, status, assignee, limit }: TaskListRequest
+): Promise<{ items: CliTask[]; hasMore: boolean }> {
+  const [projectId, assigneeIds] = await Promise.all([
+    project ? resolveProjectId(user, project) : undefined,
+    assignee ? resolveUserIds(user, [assignee]) : [],
+  ])
+
+  const rows = await listTasksForCli(user, {
+    projectId,
+    leadId: lead,
+    status,
+    assigneeId: assigneeIds[0],
+    limit: limit + 1,
+  })
+  const shown = rows.slice(0, limit)
+
+  const [assignees, locations] = await Promise.all([
+    fetchAssigneeIdsByTask(shown.map(row => row.id)),
+    fetchBoardLocationsByProject(shown.map(row => row.projectId)),
+  ])
+
+  return {
+    items: shown.map(row =>
+      serializeTask(
+        row,
+        assignees.get(row.id) ?? [],
+        locations.get(row.projectId) ?? null
+      )
+    ),
+    hasMore: rows.length > limit,
+  }
 }
 
 /** One task as the CLI sees it, board URL included. */
@@ -74,7 +182,7 @@ export async function createTaskFromInput(
   // goes where the lead sheet would put it.
   const projectId = payload.project
     ? await resolveProjectId(user, payload.project)
-    : await getOrCreateSalesProject(user.id)
+    : await leadTaskProjectId(user)
   const assigneeIds = await resolveAssigneeIds(user, payload.assigneeIds)
 
   const result = await saveTaskForActor(

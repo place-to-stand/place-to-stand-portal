@@ -1,4 +1,4 @@
-import { jsonOk, withCliAuth } from '@/lib/cli/handler'
+import { jsonOk, withCliAuth, parseQuery } from '@/lib/cli/handler'
 import { cliProjectScopedQuerySchema } from '@/lib/cli/schemas/listing'
 import { serializeTimeLog } from '@/lib/cli/serializers/time-log'
 import { resolveProjectId } from '@/lib/cli/tasks'
@@ -10,9 +10,7 @@ import { listProjectTimeLogs } from '@/lib/queries/time-logs/read'
  * today.
  */
 export const GET = withCliAuth(async ({ user, request }) => {
-  const query = cliProjectScopedQuerySchema.parse(
-    Object.fromEntries(new URL(request.url).searchParams)
-  )
+  const query = parseQuery(request, cliProjectScopedQuerySchema)
 
   const projectId = await resolveProjectId(user, query.project)
   const result = await listProjectTimeLogs(user, projectId, query.limit)

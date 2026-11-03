@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 import { statusSchema } from '@/app/(dashboard)/projects/actions/shared-schemas'
 
+import { cliListQuerySchema } from './listing'
+
 /**
  * `baseTaskSchema` types `dueOn` as a bare string, so a malformed date reaches
  * Postgres and comes back as a raw driver error. Constrain it here rather than
@@ -91,10 +93,12 @@ export const cliCreateCommentFields = {
 
 export const cliCreateCommentSchema = z.object(cliCreateCommentFields)
 
-export const cliTaskListQuerySchema = z.object({
-  project: projectRefSchema.optional(),
-  lead: z.string().uuid().optional(),
-  status: statusSchema.optional(),
-  assignee: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-})
+export const cliTaskListQuerySchema = cliListQuerySchema
+  .omit({ search: true })
+  .extend({
+    project: projectRefSchema.optional(),
+    lead: z.uuid().optional(),
+    status: statusSchema.optional(),
+    // Email or UUID, as on MCP list_tasks and CLI leads.
+    assignee: z.string().trim().min(1).optional(),
+  })

@@ -29,7 +29,11 @@ import { defineTool } from '../tool'
 import { readPerson } from './people-read'
 import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
 
-const clientRef = z.string().trim().min(1).describe('Client slug or UUID.')
+const clientRef = z
+  .string()
+  .trim()
+  .min(1)
+  .describe('Client company slug or UUID (a company that is billed).')
 
 async function resolveContactFilterClient(
   user: AppUser,
@@ -48,7 +52,7 @@ async function resolveContactFilterClient(
   return match.id
 }
 
-/** People, clients, contacts and projects: everything read-only (D4). */
+/** Users, client companies, people and projects. */
 export function registerDirectoryTools(server: McpServer) {
   defineTool(server, {
     name: 'whoami',
@@ -87,9 +91,9 @@ export function registerDirectoryTools(server: McpServer) {
 
   defineTool(server, {
     name: 'list_clients',
-    title: 'List clients',
+    title: 'List client companies',
     description:
-      'List clients with their billing type, project counts and prepaid hours balance (purchased, used, remaining). hoursRemaining can be negative when a client is over; net_30 clients have no meaningful balance.',
+      'List client companies (the companies that are billed) with their billing type, originator and closers, project counts and prepaid hours balance (purchased, used, remaining). hoursRemaining can be negative when a client is over; net_30 clients have no meaningful balance. For every company, billed or not, use list_companies; for billing history, get_company_billing.',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -104,9 +108,9 @@ export function registerDirectoryTools(server: McpServer) {
 
   defineTool(server, {
     name: 'get_client',
-    title: 'Get client',
+    title: 'Get client company',
     description:
-      'One client with its hours balance, its Portal access contacts (who can see it in the client portal) and projects.',
+      'One client company with its hours balance, the people with portal access (who can see it in the client portal) and its projects.',
     effect: 'read',
     input: { client: clientRef },
     run: async ({ client: reference }, { user }) => {
@@ -122,17 +126,27 @@ export function registerDirectoryTools(server: McpServer) {
 
       return {
         client: serializeClient(client),
-        contacts: client.contacts,
-        projects: client.allProjects,
+        portalAccess: client.contacts.map(contact => ({
+          contactId: contact.id,
+          name: contact.name,
+          email: contact.email,
+          isPrimary: contact.isPrimary,
+        })),
+        projects: client.allProjects.map(project => ({
+          id: project.id,
+          name: project.name,
+          slug: project.slug,
+          status: project.status,
+        })),
       }
     },
   })
 
   defineTool(server, {
     name: 'list_contacts',
-    title: 'List contacts',
+    title: 'List people',
     description:
-      'List people (contacts) at any company, optionally only those at one client. For any company, use get_company.',
+      'List people at any company, optionally only those at one client company. For the people at any company, use get_company.',
     effect: 'read',
     input: {
       search: searchText.optional(),
@@ -185,7 +199,7 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'list_projects',
     title: 'List projects',
     description:
-      'List projects (CLIENT, INTERNAL and PERSONAL), optionally for one client. Use a project slug to scope task tools.',
+      'List projects (CLIENT, INTERNAL and PERSONAL), optionally for one client company. Use a project slug to scope task tools.',
     effect: 'read',
     input: {
       search: searchText.optional(),
