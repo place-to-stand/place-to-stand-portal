@@ -18,6 +18,7 @@ import type {
   CloserData,
   CloserGroupRow,
   HouseData,
+  MonthCursor,
   MonthlyCloseReport,
   Net30Data,
   Net30Row,
@@ -52,6 +53,25 @@ function toFiniteNumber(value: string | number | null | undefined): number {
  */
 /** Month navigation bounds, read once per request. */
 export const fetchReportBounds = cache(fetchReportDateBounds)
+
+/**
+ * Pulls a requested month (1-indexed) inside the report's navigation bounds.
+ * A hand-edited URL can ask for a month before the first time log, which
+ * falls before the partner rate schedule and would throw in
+ * getPartnerRatesForPeriod. Showing the nearest real month is kinder than
+ * a crashed page.
+ */
+export async function clampToReportBounds(
+  year: number,
+  month: number
+): Promise<MonthCursor> {
+  const { min, max } = await fetchReportBounds()
+  const key = (c: MonthCursor) => c.year * 12 + c.month
+  const requested = { year, month }
+  if (key(requested) < key(min)) return min
+  if (key(requested) > key(max)) return max
+  return requested
+}
 
 export const fetchMonthlyCloseReport = cache(
   async (startDate: string, endDate: string): Promise<MonthlyCloseReport> => {
