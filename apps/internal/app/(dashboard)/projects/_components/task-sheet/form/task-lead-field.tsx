@@ -7,11 +7,18 @@ import type { TaskLead } from '@/lib/types'
 
 /**
  * The lead this task is linked to, as its record row; a click stacks the
- * lead's sheet. Left out when that lead's sheet is already open beneath.
+ * lead's sheet. Left out when the task was opened from that lead's sheet
+ * (lead param before the task param), not when the row itself just stacked
+ * the lead on top, or the row would vanish before the lead sheet loads.
  */
 export function TaskLeadField({ lead }: { lead: TaskLead | null }) {
-  const { get } = useSheetParams()
-  if (!lead || get('lead') === lead.id) return null
+  const { stack } = useSheetParams()
+  if (!lead) return null
+  const leadAt = stack.findIndex(
+    i => i.entity === 'lead' && i.value === lead.id
+  )
+  const taskAt = stack.findIndex(i => i.entity === 'task')
+  if (leadAt !== -1 && (taskAt === -1 || leadAt < taskAt)) return null
 
   return (
     <div className={FIELD_STACK_CLASS}>
