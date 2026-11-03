@@ -20,7 +20,7 @@ import {
 import { BadRequestError } from '@/lib/errors/http'
 import { listTaskComments } from '@/lib/queries/task-comments'
 
-import { clip, listLimit } from '../output'
+import { archivedFlag, clip, listLimit } from '../output'
 import { defineTool } from '../tool'
 
 const taskId = z.string().uuid().describe('Task UUID.')
@@ -32,7 +32,7 @@ export function registerTaskTools(server: McpServer) {
     name: 'list_tasks',
     title: 'List tasks',
     description:
-      'List tasks, most recently updated first. Filter by project, lead, status or assignee. Descriptions are plain-text previews; get_task returns the full task and its comments.',
+      'List tasks, most recently updated first. Filter by project, lead, status or assignee; archived: true lists archived tasks instead. Descriptions are plain-text previews; get_task returns the full task and its comments.',
     effect: 'read',
     input: {
       project: z
@@ -49,6 +49,7 @@ export function registerTaskTools(server: McpServer) {
         .min(1)
         .describe('Assignee email or UUID.')
         .optional(),
+      archived: archivedFlag,
       limit: listLimit,
     },
     run: async (args, { user }) => {
@@ -104,7 +105,7 @@ export function registerTaskTools(server: McpServer) {
     name: 'update_task',
     title: 'Update task',
     description:
-      'Change a task: title, description, status, due date, assignee, project or lead. Omitted fields keep their value; null clears one. A task has one assignee: assigneeIds takes a one-item list ([] unassigns) and only its first entry is kept. No tool archives or deletes a task: set status DONE, or archive it in the portal.',
+      'Change a task: title, description, status, due date, assignee, project or lead. Omitted fields keep their value; null clears one. A task has one assignee: assigneeIds takes a one-item list ([] unassigns) and only its first entry is kept. To archive a task, use archive_task.',
     effect: 'idempotent-write',
     input: { taskId, ...cliUpdateTaskFields },
     run: async ({ taskId, ...changes }, { user }) => {

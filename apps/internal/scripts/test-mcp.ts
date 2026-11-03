@@ -41,6 +41,17 @@ const CLIENT_NAME = 'test-mcp script'
 
 let failures = 0
 
+const ARCHIVE_TOOLS = [
+  'archive_lead',
+  'restore_lead',
+  'archive_task',
+  'restore_task',
+  'archive_company',
+  'restore_company',
+  'archive_person',
+  'restore_person',
+]
+
 function check(label: string, condition: boolean, detail?: unknown) {
   if (condition) {
     console.log(`  ✓ ${label}`)
@@ -501,6 +512,7 @@ async function main() {
     'list_hour_blocks',
     'get_client_hour_balance',
     'get_monthly_close',
+    ...ARCHIVE_TOOLS,
   ]
   check(
     `tools/list has all ${expected.length} tools`,
@@ -516,6 +528,20 @@ async function main() {
           tool.name === 'list_time_logs' &&
           tool.annotations?.readOnlyHint === true
       )
+  )
+
+  check(
+    'archive and restore tools are marked destructive, so the client asks',
+    (list.body?.result?.tools ?? [])
+      .filter((tool: Loose) => ARCHIVE_TOOLS.includes(tool.name))
+      .every((tool: Loose) => tool.annotations?.destructiveHint === true),
+    ARCHIVE_TOOLS
+  )
+  check(
+    'no other tool is marked destructive',
+    (list.body?.result?.tools ?? [])
+      .filter((tool: Loose) => !ARCHIVE_TOOLS.includes(tool.name))
+      .every((tool: Loose) => tool.annotations?.destructiveHint !== true)
   )
 
   const whoami = await callTool(accessToken, 'whoami')
@@ -1093,6 +1119,38 @@ async function main() {
       backwards.message
     )
 
+    console.log('\nArchive and restore')
+    for (const [kind, idKey, id, listTool] of [
+      ['task', 'taskId', created.taskId, 'list_tasks'],
+      ['lead', 'leadId', created.leadId, 'list_leads'],
+    ] as const) {
+      const archived = await callTool(accessToken, `archive_${kind}`, {
+        [idKey]: id,
+      })
+      check(`archive_${kind} archives`, archived.ok, archived.message)
+      const live = await callTool(accessToken, listTool, { limit: 100 })
+      const gone = await callTool(accessToken, listTool, {
+        archived: true,
+        limit: 100,
+      })
+      check(
+        `${listTool} archived: true lists it, the live list doesn't`,
+        !live.data.items?.some((row: Loose) => row.id === id) &&
+          gone.data.items?.some((row: Loose) => row.id === id),
+        gone.message
+      )
+      const restored = await callTool(accessToken, `restore_${kind}`, {
+        [idKey]: id,
+      })
+      check(`restore_${kind} restores`, restored.ok, restored.message)
+      const back = await callTool(accessToken, listTool, { limit: 100 })
+      check(
+        `${listTool} shows it again`,
+        back.data.items?.some((row: Loose) => row.id === id),
+        back.message
+      )
+    }
+
     console.log('\nAssignment (staff only, any role)')
     const clientRef = clientUser.email
     const assignChecks: [string, Record<string, unknown>][] = [
@@ -1297,6 +1355,11 @@ async function main() {
         },
       ],
     ]
+    // Archiving another project's task, or restoring any task, is refused.
+    for (const name of ['archive_task', 'restore_task']) {
+      const result = await callTool(sales, name, { taskId: created.taskId })
+      check(`SALES is refused ${name}`, !result.ok, result.message)
+    }
     for (const [name, args] of denied) {
       const result = await callTool(sales, name, args)
       check(

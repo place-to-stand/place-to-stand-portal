@@ -24,7 +24,7 @@ import { NotFoundError } from '@/lib/errors/http'
 import { listContactsForSettings } from '@/lib/queries/contacts/settings/list-contacts'
 import { listAllActiveClients } from '@/lib/queries/contacts/settings/contact-clients'
 
-import { listLimit, page, searchText } from '../output'
+import { archivedFlag, listLimit, page, searchText } from '../output'
 import { defineTool } from '../tool'
 import { readPerson } from './people-read'
 import { companyIdForLegacyClientId } from '@/lib/queries/legacy-client-ids'
@@ -146,14 +146,15 @@ export function registerDirectoryTools(server: McpServer) {
     name: 'list_contacts',
     title: 'List people',
     description:
-      'List people at any company, optionally only those at one client company. For the people at any company, use get_company.',
+      'List people at any company, optionally only those at one client company; archived: true lists archived people instead. For the people at any company, use get_company.',
     effect: 'read',
     input: {
       search: searchText.optional(),
       client: clientRef.optional(),
+      archived: archivedFlag,
       limit: listLimit,
     },
-    run: async ({ search, client, limit }, { user }) => {
+    run: async ({ search, client, archived, limit }, { user }) => {
       // The same client list the portal's contacts filter offers (ADMIN and
       // SALES): active clients by id or slug. `resolveClientIdentifier` would
       // load the full client record, which is admin-only.
@@ -164,6 +165,7 @@ export function registerDirectoryTools(server: McpServer) {
       const result = await listContactsForSettings(user, {
         search: search ?? null,
         companyId: clientId,
+        status: archived ? 'archived' : 'active',
         limit,
       })
 

@@ -163,17 +163,7 @@
       "count": 2
     }
   },
-  "app/(dashboard)/leads/_actions/archive-lead.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 1
-    }
-  },
   "app/(dashboard)/leads/_actions/move-lead.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/leads/_actions/restore-lead.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 1
     }
@@ -321,16 +311,6 @@
   "app/(dashboard)/projects/actions/planning.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 2
-    }
-  },
-  "app/(dashboard)/projects/actions/remove-task.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/projects/actions/restore-task.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 1
     }
   },
   "app/(dashboard)/projects/actions/trigger-worker.ts": {

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike, isNull, or, sql, isNotNull } from 'drizzle-orm'
 
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -66,6 +66,8 @@ export type CliLeadFilters = {
   status?: LeadStatusValue
   assigneeId?: string
   search?: string
+  /** Archived leads instead of live ones. */
+  archived?: boolean
   limit: number
 }
 
@@ -75,12 +77,14 @@ export type CliLeadFilters = {
  */
 export async function listLeadsForCli(
   user: AppUser,
-  { status, assigneeId, search, limit }: CliLeadFilters
+  { status, assigneeId, search, archived, limit }: CliLeadFilters
 ): Promise<CliLeadRow[]> {
   // Leads are CRM data (ADMIN, SALES), like the portal's board.
   assertCrmAccess(user)
 
-  const conditions = [isNull(leads.deletedAt)]
+  const conditions = [
+    archived ? isNotNull(leads.deletedAt) : isNull(leads.deletedAt),
+  ]
 
   if (status) {
     conditions.push(eq(leads.status, status))

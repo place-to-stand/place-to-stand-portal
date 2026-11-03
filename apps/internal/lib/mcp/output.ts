@@ -52,3 +52,9 @@ export function clip(text: string | null, getTool: string): string | null {
 
   return `${plain.slice(0, LIST_TEXT_MAX)}… [truncated; call ${getTool} for the full text]`
 }
+
+/** Lists archived records instead of live ones. */
+export const archivedFlag = z
+  .boolean()
+  .default(false)
+  .describe('List archived records instead of live ones.')

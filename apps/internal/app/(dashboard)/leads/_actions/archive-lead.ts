@@ -1,63 +1,32 @@
 'use server'
 
-import { and, eq, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 
-import { leadArchivedEvent } from '@/lib/activity/events'
-import { logActivity } from '@/lib/activity/logger'
 import { requireCrmUser } from '@/lib/auth/session'
-import { assertCrmAccess } from '@/lib/auth/permissions'
-import { db } from '@/lib/db'
-import { leads } from '@/lib/db/schema'
-import { leadContactNameSql } from '@/lib/leads/lead-display'
-
+import { NotFoundError } from '@/lib/errors/http'
+import { setLeadArchived } from '@/lib/leads/archive'
 import { revalidateLeadsPath } from '@/lib/leads/revalidate'
+
 import type { LeadActionResult } from './types'
 
-const archiveLeadSchema = z.object({
-  leadId: z.string().uuid(),
-})
-
-export type ArchiveLeadInput = z.infer<typeof archiveLeadSchema>
+const schema = z.object({ leadId: z.guid() })
 
 export async function archiveLead(
-  input: ArchiveLeadInput
+  input: z.infer<typeof schema>
 ): Promise<LeadActionResult> {
   const user = await requireCrmUser()
-  assertCrmAccess(user)
-
-  const parsed = archiveLeadSchema.safeParse(input)
+  const parsed = schema.safeParse(input)
 
   if (!parsed.success) {
-    return {
-      success: false,
-      error: parsed.error.issues[0]?.message ?? 'Invalid lead reference.',
-    }
+    return { success: false, error: 'Invalid lead reference.' }
   }
 
   try {
-    const result = await db
-      .update(leads)
-      .set({
-        deletedAt: new Date().toISOString(),
-      })
-      .where(and(eq(leads.id, parsed.data.leadId), isNull(leads.deletedAt)))
-      .returning({ id: leads.id, contactName: leadContactNameSql })
-
-    const archived = result[0]
-
-    if (!archived) {
-      return { success: false, error: 'Lead not found.' }
-    }
-
-    await logActivity({
-      actorId: user.id,
-      actorRole: user.role,
-      targetType: 'LEAD',
-      targetId: archived.id,
-      ...leadArchivedEvent({ name: archived.contactName }),
-    })
+    await setLeadArchived(user, parsed.data.leadId, true)
   } catch (error) {
+    if (error instanceof NotFoundError) {
+      return { success: false, error: error.message }
+    }
     console.error('Failed to archive lead', error)
     return {
       success: false,

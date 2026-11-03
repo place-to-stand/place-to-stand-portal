@@ -21,7 +21,7 @@ import { BadRequestError } from '@/lib/errors/http'
 import { LEAD_STATUS_VALUES } from '@/lib/leads/constants'
 import { listLeadUpdates } from '@/lib/queries/lead-updates'
 
-import { clip, listLimit, page, searchText } from '../output'
+import { archivedFlag, clip, listLimit, page, searchText } from '../output'
 import { defineTool } from '../tool'
 
 const leadId = z.string().uuid().describe('Lead UUID.')
@@ -33,7 +33,7 @@ export function registerLeadTools(server: McpServer) {
     name: 'list_leads',
     title: 'List leads',
     description:
-      'List sales pipeline leads, most recently updated first. Filter by stage, owner or text. Notes are plain-text previews; get_lead returns the full lead and its timeline.',
+      'List sales pipeline leads, most recently updated first. Filter by stage, owner or text; archived: true lists archived leads instead. Notes are plain-text previews; get_lead returns the full lead and its timeline.',
     effect: 'read',
     input: {
       status: z.enum(LEAD_STATUS_VALUES).optional(),
@@ -44,9 +44,10 @@ export function registerLeadTools(server: McpServer) {
         .describe('Owner email or UUID.')
         .optional(),
       search: searchText.optional(),
+      archived: archivedFlag,
       limit: listLimit,
     },
-    run: async ({ status, assignee, search, limit }, { user }) => {
+    run: async ({ status, assignee, search, archived, limit }, { user }) => {
       const [assigneeId] = assignee
         ? await resolveUserIds(user, [assignee])
         : []
@@ -55,6 +56,7 @@ export function registerLeadTools(server: McpServer) {
         status,
         assigneeId,
         search,
+        archived,
         limit: limit + 1,
       })
 
@@ -102,7 +104,7 @@ export function registerLeadTools(server: McpServer) {
     name: 'update_lead',
     title: 'Update lead',
     description:
-      'Edit a lead or move it to another stage. Omitted fields keep their value; null clears one. Does not convert a lead to a client. No tool archives or deletes a lead: move it to CLOSED_LOST or UNQUALIFIED, or archive it in the portal.',
+      'Edit a lead or move it to another stage. Omitted fields keep their value; null clears one. Does not convert a lead to a client. To archive a lead, use archive_lead.',
     effect: 'idempotent-write',
     input: { leadId, ...cliUpdateLeadFields },
     run: async ({ leadId, ...changes }, { user }) => {
