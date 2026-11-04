@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { currentMonthStartUtc } from '@/lib/billing/months'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import {
@@ -416,6 +416,7 @@ export function useContactSheetState({
               : 'Unable to create person',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('contact', contact?.id),
           })
           return
         }
@@ -428,6 +429,7 @@ export function useContactSheetState({
         toast({
           title: isEditing ? 'Person saved' : 'Person created',
           description: result.warning ?? (data.name || data.email),
+          link: toastLink('contact', result.id ?? contact?.id),
         })
 
         // Call onCreated with the new contact ID if this was a create operation
@@ -494,6 +496,7 @@ export function useContactSheetState({
           title: 'Unable to archive person',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('contact', contactId),
         })
         return
       }
@@ -501,6 +504,7 @@ export function useContactSheetState({
       toast({
         title: 'Person archived',
         description: `${displayName} has been archived.`,
+        link: toastLink('contact', contactId, { archived: true }),
       })
       onComplete()
     })

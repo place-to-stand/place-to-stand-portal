@@ -18,7 +18,7 @@ import { Button } from '@pts/ui/button'
 import { cn } from '@pts/ui/cn'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { DbTaskDeployment } from '@/lib/types'
 import type { WorkerCommentStatus } from '@/lib/tasks/worker-status'
 import { cancelDeployment } from '../../actions/trigger-worker'
@@ -264,15 +264,16 @@ export function PlanDeploymentStatus({
             variant: 'destructive',
             title: 'Unable to cancel dispatch',
             description: result.error,
+            link: toastLink('task', taskId),
           })
           return
         }
-        toast({ title: 'Dispatch cancelled' })
+        toast({ title: 'Dispatch cancelled', link: toastLink('task', taskId) })
         // Background refetch: its errors land in the query, not here.
         void queryClient.invalidateQueries({ queryKey: deploymentsQueryKey })
       })
     },
-    [toast, queryClient, deploymentsQueryKey]
+    [taskId, toast, queryClient, deploymentsQueryKey]
   )
 
   if (deployments.length === 0) return null

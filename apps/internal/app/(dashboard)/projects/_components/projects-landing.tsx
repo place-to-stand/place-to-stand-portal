@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -218,6 +218,7 @@ export function ProjectsLanding({
           title: 'Unable to archive project',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('project', project.id),
         })
         return
       }
@@ -225,6 +226,7 @@ export function ProjectsLanding({
       toast({
         title: 'Project archived',
         description: `${project.name} is hidden from active views but remains in historical reporting.`,
+        link: toastLink('project', project.id, { archived: true }),
       })
       router.refresh()
     })
@@ -248,6 +250,7 @@ export function ProjectsLanding({
           title: 'Unable to update project status',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('project', projectId),
         })
         throw new Error(result.error)
       }
@@ -268,6 +271,7 @@ export function ProjectsLanding({
           title: 'Unable to update project owner',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('project', projectId),
         })
         throw new Error(result.error)
       }

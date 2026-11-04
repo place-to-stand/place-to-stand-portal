@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
 import {
   restoreHourBlock,
@@ -125,6 +125,7 @@ export function useHourBlocksTableState({
             title: 'Unable to delete hour block',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('hour-block', block.id),
           })
           return
         }
@@ -133,12 +134,14 @@ export function useHourBlocksTableState({
           title: 'Hour block archived',
           description:
             'The hour block is hidden from active tracking but remains in history.',
+          link: toastLink('hour-block', block.id, { archived: true }),
         })
         if (result.warning) {
           toast({
             title: 'Closed month affected',
             description: result.warning,
             variant: 'warning',
+            link: toastLink('hour-block', block.id, { archived: true }),
           })
         }
         router.refresh()
@@ -164,6 +167,7 @@ export function useHourBlocksTableState({
             title: 'Unable to restore hour block',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('hour-block', block.id),
           })
           return
         }
@@ -171,12 +175,14 @@ export function useHourBlocksTableState({
         toast({
           title: 'Hour block restored',
           description: 'The hour block is active again.',
+          link: toastLink('hour-block', block.id),
         })
         if (result.warning) {
           toast({
             title: 'Closed month affected',
             description: result.warning,
             variant: 'warning',
+            link: toastLink('hour-block', block.id),
           })
         }
         router.refresh()

@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 
 import {
   TIME_LOGS_QUERY_KEY,
@@ -119,12 +119,14 @@ export function useProjectTimeLogHistory(
       toast({
         title: 'Time log archived',
         description: 'The log no longer counts toward the burndown total.',
+        link: toastLink('project', projectId),
       })
       if (data?.warning) {
         toast({
           title: 'Closed month',
           description: data.warning,
           variant: 'warning',
+          link: toastLink('project', projectId),
         })
       }
       setPendingDelete(null)
@@ -136,6 +138,7 @@ export function useProjectTimeLogHistory(
         title: 'Unable to delete time log',
         description: 'Please try again. If the issue persists contact support.',
         variant: 'destructive',
+        link: toastLink('project', projectId),
       })
     },
   })

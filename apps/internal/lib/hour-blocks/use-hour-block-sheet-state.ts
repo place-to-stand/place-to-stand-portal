@@ -8,7 +8,7 @@ import {
   saveHourBlock,
   softDeleteHourBlock,
 } from '@/app/(dashboard)/hour-blocks/actions'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
@@ -152,6 +152,7 @@ export function useHourBlockSheetState({
               title: 'Unable to save hour block',
               description: result.error,
               variant: 'destructive',
+              link: toastLink('hour-block', payload.id),
             })
             return
           }
@@ -163,6 +164,7 @@ export function useHourBlockSheetState({
 
           toast({
             title: isEditing ? 'Hour block saved' : 'Hour block created',
+            link: toastLink('hour-block', result.id),
           })
 
           // PRD 002 section 05: closed-month / future-billing notice.
@@ -170,6 +172,7 @@ export function useHourBlockSheetState({
             toast({
               title: 'Review billing details',
               description: result.warning,
+              link: toastLink('hour-block', result.id),
             })
           }
 
@@ -186,6 +189,7 @@ export function useHourBlockSheetState({
             description:
               error instanceof Error ? error.message : 'Unknown error.',
             variant: 'destructive',
+            link: toastLink('hour-block', payload.id),
           })
         }
       })
@@ -249,6 +253,7 @@ export function useHourBlockSheetState({
             title: 'Unable to archive hour block',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('hour-block', hourBlock.id),
           })
           return
         }
@@ -262,12 +267,14 @@ export function useHourBlockSheetState({
           title: 'Hour block archived',
           description:
             'It will be hidden from active tracking but remains available historically.',
+          link: toastLink('hour-block', hourBlock.id, { archived: true }),
         })
         if (result.warning) {
           toast({
             title: 'Closed month affected',
             description: result.warning,
             variant: 'warning',
+            link: toastLink('hour-block', hourBlock.id, { archived: true }),
           })
         }
 
@@ -284,6 +291,7 @@ export function useHourBlockSheetState({
           description:
             error instanceof Error ? error.message : 'Unknown error.',
           variant: 'destructive',
+          link: toastLink('hour-block', hourBlock.id),
         })
       }
     })

@@ -10,6 +10,8 @@ import type {
 } from './schemas'
 
 export type ActionResult = {
+  /** The saved invoice (save only), so its toast can link to it. */
+  id?: string
   error?: string
   fieldErrors?: Record<string, string[]>
 }

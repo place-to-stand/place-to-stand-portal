@@ -28,7 +28,7 @@ import {
 } from '@/lib/sheets/hrefs'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { CompanyListItem } from '@/lib/companies/types'
 import { archiveCompanyExtra } from '../_lib/archive-copy'
 import { archiveCompany, restoreCompany } from '../actions'
@@ -89,12 +89,14 @@ export function CompaniesTable({
           variant: 'destructive',
           title: `Unable to ${action} company`,
           description: result.error,
+          link: toastLink('company', company.id),
         })
         return
       }
       toast({
         title: action === 'archive' ? 'Company archived' : 'Company restored',
         description: company.name,
+        link: toastLink('company', company.id),
       })
       router.refresh()
     })

@@ -7,16 +7,16 @@ import {
 } from '@/lib/storage/task-attachment-constants'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
+import { toastLink, type ToastOptions } from '@/components/ui/use-toast'
+
 import type { AttachmentDraft } from './types'
 import { UPLOAD_ENDPOINT } from './types'
 
 type UseAttachmentUploaderArgs = {
   canManage: boolean
-  toast: (options: {
-    title: string
-    description: string
-    variant?: 'default' | 'destructive'
-  }) => void
+  /** The task's id once it exists, for the toasts' link. */
+  taskId: string | null
+  toast: (options: ToastOptions) => void
   setAttachments: React.Dispatch<React.SetStateAction<AttachmentDraft[]>>
   pendingPathsRef: React.MutableRefObject<Set<string>>
   previewUrlRef: React.MutableRefObject<Map<string, string>>
@@ -24,6 +24,7 @@ type UseAttachmentUploaderArgs = {
 
 export function useAttachmentUploader({
   canManage,
+  taskId,
   toast,
   setAttachments,
   pendingPathsRef,
@@ -56,6 +57,7 @@ export function useAttachmentUploader({
             title: 'Unsupported file type',
             description: 'Images, videos, PDFs, and ZIPs are supported.',
             variant: 'destructive',
+            link: toastLink('task', taskId),
           })
           continue
         }
@@ -65,6 +67,7 @@ export function useAttachmentUploader({
             title: 'File too large',
             description: 'Please choose a smaller attachment.',
             variant: 'destructive',
+            link: toastLink('task', taskId),
           })
           continue
         }
@@ -130,13 +133,14 @@ export function useAttachmentUploader({
                 ? error.message
                 : 'Unable to upload attachment.',
             variant: 'destructive',
+            link: toastLink('task', taskId),
           })
         } finally {
           setPendingUploadCount(count => Math.max(count - 1, 0))
         }
       }
     },
-    [canManage, toast, pendingPathsRef, previewUrlRef, setAttachments]
+    [canManage, taskId, toast, pendingPathsRef, previewUrlRef, setAttachments]
   )
 
   return {

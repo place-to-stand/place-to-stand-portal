@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 import type { InvoiceWithClient } from '@/lib/invoices/invoice-form'
@@ -85,10 +85,11 @@ function ShareLinkCell({
       toast({
         title: 'Invoice sent',
         description: `Invoice ${invoiceNumber} was emailed and marked as sent.`,
+        link: toastLink('invoice', invoice.id),
       })
       onRefresh()
     },
-    [toast, onRefresh]
+    [invoice.id, toast, onRefresh]
   )
 
   if (invoice.status === 'DRAFT') {

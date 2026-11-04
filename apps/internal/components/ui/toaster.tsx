@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { subscribe, type ToastMessage } from './toast'
 import { ToastCard } from './toast-card'
+import { ToastRecordLink } from './toast-record-link'
 
 const TOAST_GAP = 12
 
@@ -58,6 +59,17 @@ export function Toaster() {
           title={toast.title}
           description={toast.description}
           variant={toast.variant}
+          link={
+            toast.link ? (
+              // The link reads the URL, which needs a Suspense boundary.
+              <Suspense fallback={null}>
+                <ToastRecordLink
+                  link={toast.link}
+                  onOpen={() => dismiss(toast.id)}
+                />
+              </Suspense>
+            ) : null
+          }
           onDismiss={() => dismiss(toast.id)}
         />
       ))}

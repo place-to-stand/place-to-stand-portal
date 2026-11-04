@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { requestTimeLogArchiveChange } from '@/lib/projects/time-log/time-log-archive-request'
 
@@ -39,19 +39,22 @@ export function useTimeLogRowActions() {
       entry: DashboardTimeLogEntry
       change: Change
     }) => requestTimeLogArchiveChange(entry.projectId, entry.id, change),
-    onSuccess: (data, { change }) => {
-      toast(SUCCESS_TOAST[change])
+    onSuccess: (data, { entry, change }) => {
+      // A time log has no sheet of its own: link its project.
+      const link = toastLink('project', entry.projectId)
+      toast({ ...SUCCESS_TOAST[change], link })
       if (data.warning) {
         toast({
           title: 'Closed month',
           description: data.warning,
           variant: 'warning',
+          link,
         })
       }
       setPendingArchive(null)
       router.refresh()
     },
-    onError: (error, { change }) => {
+    onError: (error, { entry, change }) => {
       console.error(`Failed to ${change} time log`, error)
       toast({
         title:
@@ -60,6 +63,7 @@ export function useTimeLogRowActions() {
             : 'Unable to restore time log',
         description: 'Please try again. If the issue persists contact support.',
         variant: 'destructive',
+        link: toastLink('project', entry.projectId),
       })
     },
   })

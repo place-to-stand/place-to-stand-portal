@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import type { SearchableComboboxItem } from '@/components/ui/searchable-combobox'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { todayCalendarDate } from '@/lib/dates/calendar-date'
 
 import {
@@ -376,12 +376,14 @@ export function useProjectTimeLogDialog(
       toast({
         title: 'Time log archived',
         description: 'The log no longer counts toward the burndown total.',
+        link: toastLink('project', projectId),
       })
       if (data?.warning) {
         toast({
           title: 'Closed month',
           description: data.warning,
           variant: 'warning',
+          link: toastLink('project', projectId),
         })
       }
       router.refresh()
@@ -393,6 +395,7 @@ export function useProjectTimeLogDialog(
         title: 'Unable to delete time log',
         description: 'Please try again. If the issue persists contact support.',
         variant: 'destructive',
+        link: toastLink('project', projectId),
       })
     },
   })

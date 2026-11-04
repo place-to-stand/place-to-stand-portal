@@ -18,7 +18,7 @@ import { Switch } from '@pts/ui/switch'
 import { EffectiveMonthPicker } from '@/components/billing/effective-month-select'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { FormField } from '@/components/ui/form'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { sendPersonPasswordResetAction } from '@/app/(dashboard)/people/actions'
@@ -185,10 +185,12 @@ function ManagedSignIn({
               title: 'Unable to send password reset',
               description: result.error,
               variant: 'destructive',
+              link: toastLink('contact', contactId),
             }
           : {
               title: 'Password reset sent',
               description: `${personName || personEmail} gets a link to set a new password.`,
+              link: toastLink('contact', contactId),
             }
       )
     })

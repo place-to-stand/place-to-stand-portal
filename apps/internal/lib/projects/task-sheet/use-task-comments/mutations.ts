@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import type { InfiniteData, QueryClient } from '@tanstack/react-query'
 import type { useRouter } from 'next/navigation'
 
-import type { useToast } from '@/components/ui/use-toast'
+import { toastLink, type useToast } from '@/components/ui/use-toast'
 import type { TaskCommentsPage } from '@/lib/queries/task-comments'
 import type { TaskCommentWithAuthor } from '@/lib/types'
 
@@ -161,6 +161,7 @@ export function useCreateTaskCommentMutation({
       toast({
         title: 'Comment added',
         description: 'Your message is now visible to project collaborators.',
+        link: toastLink('task', taskId),
       })
     },
     onError: (error, body, context) => {
@@ -177,6 +178,7 @@ export function useCreateTaskCommentMutation({
         description:
           'Please try again. If the issue continues contact support.',
         variant: 'destructive',
+        link: toastLink('task', taskId),
       })
     },
     // Reconcile against the server on both paths: success swaps the temporary
@@ -218,6 +220,7 @@ export function useUpdateTaskCommentMutation({
       toast({
         title: 'Comment updated',
         description: 'Your message has been refreshed.',
+        link: toastLink('task', taskId),
       })
     },
     onError: error => {
@@ -227,6 +230,7 @@ export function useUpdateTaskCommentMutation({
         description:
           'Please try again. If the issue continues contact support.',
         variant: 'destructive',
+        link: toastLink('task', taskId),
       })
     },
   })
@@ -261,6 +265,7 @@ export function useDeleteTaskCommentMutation({
       toast({
         title: 'Comment removed',
         description: 'The comment is now hidden from collaborators.',
+        link: toastLink('task', taskId),
       })
     },
     onError: error => {
@@ -270,6 +275,7 @@ export function useDeleteTaskCommentMutation({
         description:
           'Please try again. If the issue continues contact support.',
         variant: 'destructive',
+        link: toastLink('task', taskId),
       })
     },
   })

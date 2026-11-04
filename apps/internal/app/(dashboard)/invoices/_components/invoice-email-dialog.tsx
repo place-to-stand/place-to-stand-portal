@@ -18,7 +18,7 @@ import {
   RecipientField,
   type RecipientOption,
 } from '@/components/email/recipient-field'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { InvoiceEmailDraft } from '@/lib/invoices/send/email'
 
@@ -205,6 +205,7 @@ function InvoiceEmailForm({
           variant: 'destructive',
           title: 'Unable to send invoice',
           description: result.error,
+          link: toastLink('invoice', invoiceId),
         })
         return
       }
@@ -214,6 +215,7 @@ function InvoiceEmailForm({
         variant: 'destructive',
         title: 'Unable to send invoice',
         description: 'Please try again.',
+        link: toastLink('invoice', invoiceId),
       })
     } finally {
       setSending(false)

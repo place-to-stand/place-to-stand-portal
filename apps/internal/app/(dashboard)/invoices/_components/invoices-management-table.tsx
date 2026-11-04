@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { PaginationControls } from '@/components/ui/pagination-controls'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import {
   useDeepLinkNotFound,
   useSheetParamSelection,
@@ -186,6 +186,7 @@ export function InvoicesManagementTable({
             title: 'Unable to archive invoice',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('invoice', invoice.id),
           })
           return
         }
@@ -194,6 +195,7 @@ export function InvoicesManagementTable({
           title: 'Invoice archived',
           description:
             'The invoice is hidden from active views but remains in history.',
+          link: toastLink('invoice', invoice.id, { archived: true }),
         })
         clearIfSelected(invoice.id)
         router.refresh()
@@ -221,6 +223,7 @@ export function InvoicesManagementTable({
             title: 'Unable to restore invoice',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('invoice', invoice.id),
           })
           return
         }
@@ -228,6 +231,7 @@ export function InvoicesManagementTable({
         toast({
           title: 'Invoice restored',
           description: 'The invoice is active again.',
+          link: toastLink('invoice', invoice.id),
         })
         clearIfSelected(invoice.id)
         router.refresh()

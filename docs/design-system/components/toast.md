@@ -1,6 +1,6 @@
 # Toast
 
-A short note that something just happened, in the bottom corner (bottom centre on a phone). It goes away by itself after 4 seconds, or with its close button. From `apps/internal/components/ui/use-toast`: `toast({ title, description?, variant? })`. The look is `ToastCard` (`components/ui/toast-card.tsx`); it is shown on `/design#feedback`, with every kind visible.
+A short note that something just happened, in the bottom corner (bottom centre on a phone). It goes away by itself after 4 seconds, or with its close button. From `apps/internal/components/ui/use-toast`: `toast({ title, description?, variant?, link? })`. The look is `ToastCard` (`components/ui/toast-card.tsx`); it is shown on `/design#feedback`, with every kind visible.
 
 **Kinds:**
 
@@ -11,10 +11,12 @@ A short note that something just happened, in the bottom corner (bottom centre o
 
 **Built like an Alert:** the same icon rule (`firstLineIcon` from `@pts/ui/alert`), so the icon and the close button each sit on the first line of text however it wraps. Semibold title, muted description, 14px text, the popover surface, a border and the large shadow. Colours are tokens only: no gradients, no solid red or amber slabs.
 
+**Record link:** every toast about a record links to it: `link: toastLink('<entity>', id)`, with the sheet param's entity name (`task`, `lead`, `contact`, `company`, `invoice`, `hour-block`, `project`, `submission`). It shows under the text as the entity's icon and "Open <entity>" ("Open task", "Open person"), and opens that record's sheet over the current page, the way any sheet link does, then closes the toast; a new-tab click opens the same URL. Success and failure alike: a failed save links the record it failed on. Pass `{ archived: true }` after an archive: the link goes to the record on its list's archive tab (people, leads, invoices, hour blocks, submissions); archived tasks and projects open nowhere, so their link hides. A time log has no sheet, so its toasts link the project. No link when there is no record: a failed create, a settings or profile change, the monthly close, integrations, notifications, the dashboard layout. The link is `ToastRecordLink` (`components/ui/toast-record-link.tsx`); `ToastCard` takes it in its `link` slot. (guard: review)
+
 **Copy:** past tense on success ("Invoice sent"); "Unable to <verb> <noun>" on failure, with the reason in the description; sentence case.
 
 **Toast or Alert?** A toast reports what just happened and leaves. An Alert stays on the page or sheet while its cause does (a lead's person isn't at its company).
 
 **Save results are toasts, on every sheet and dialog.** A save, archive, send or log either succeeds ("Company saved", "Company created", "Time logged") or fails ("Unable to save company") as a toast, the same way everywhere, and a failed save leaves the sheet open with its edits. A refusal gives its reason in the description: "Someone else saved this company. Reload to see their changes.", a closed month, "Only an admin can …". There is no inline save-error box. Only a field's own error (required, format, a lead's Won needing a company) stays under that field (`FormMessage`), and it may also be the reason a save toast gives.
 
-**Don't:** put actions in a toast, use one for a field error, or call `toast` with hand-rolled classes.
+**Don't:** put actions in a toast (the record link is the one exception), use one for a field error, or call `toast` with hand-rolled classes.

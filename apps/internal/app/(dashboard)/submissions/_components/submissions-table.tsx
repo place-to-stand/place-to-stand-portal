@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import {
   useDeepLinkNotFound,
@@ -276,6 +276,7 @@ export function SubmissionsTable({
             title: errorTitle,
             description: result.error,
             variant: 'destructive',
+            link: toastLink('submission', submission.id),
           })
           // The row may have changed underneath us — show the latest.
           router.refresh()

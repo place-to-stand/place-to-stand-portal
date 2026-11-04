@@ -18,7 +18,7 @@ import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { COMPANY_OPTIONS_QUERY_KEY } from '@/components/companies/company-link-picker'
 import { CONTACT_OPTIONS_QUERY_KEY } from '@/components/contacts/contact-link-picker'
 import { roleCan } from '@/lib/auth/capabilities'
@@ -246,6 +246,7 @@ export function CompanySheet({
             variant: 'destructive',
             title: 'Unable to save company',
             description: 'Check the billing before saving.',
+            link: toastLink('company', companyId),
           })
           return
         }
@@ -299,6 +300,7 @@ export function CompanySheet({
             variant: 'destructive',
             title: 'Unable to save company',
             description: result.error ?? 'Please try again.',
+            link: toastLink('company', companyId),
           })
           return
         }
@@ -309,6 +311,7 @@ export function CompanySheet({
         toast({
           title: isEditing ? 'Company saved' : 'Company created',
           description: values.name,
+          link: toastLink('company', result.id ?? companyId),
         })
         form.reset(values)
         setBillingDirty(false)
@@ -357,10 +360,15 @@ export function CompanySheet({
           variant: 'destructive',
           title: 'Unable to archive company',
           description: result.error ?? 'Please try again.',
+          link: toastLink('company', companyId),
         })
         return
       }
-      toast({ title: 'Company archived', description: company?.name })
+      toast({
+        title: 'Company archived',
+        description: company?.name,
+        link: toastLink('company', companyId),
+      })
       await refresh()
       onClose()
     })

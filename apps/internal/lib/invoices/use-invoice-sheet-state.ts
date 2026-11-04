@@ -23,7 +23,7 @@ import {
   saveInvoice,
   archiveInvoice,
 } from '@/app/(dashboard)/invoices/actions'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import {
   useSheetLifecycle,
   type SheetLifecycle,
@@ -280,6 +280,7 @@ export function useInvoiceSheetState({
           title: 'Unable to load invoice',
           description: 'Close the sheet and open it again.',
           variant: 'destructive',
+          link: toastLink('invoice', invoice.id),
         })
       }
     })
@@ -405,6 +406,7 @@ export function useInvoiceSheetState({
               title: 'Unable to save invoice',
               description: result.error,
               variant: 'destructive',
+              link: toastLink('invoice', payload.id),
             })
             return
           }
@@ -416,6 +418,7 @@ export function useInvoiceSheetState({
 
           toast({
             title: isEditing ? 'Invoice saved' : 'Invoice created',
+            link: toastLink('invoice', result.id),
           })
 
           resetFormState(null)
@@ -431,6 +434,7 @@ export function useInvoiceSheetState({
             description:
               error instanceof Error ? error.message : 'Unknown error.',
             variant: 'destructive',
+            link: toastLink('invoice', payload.id),
           })
         }
       })
@@ -496,6 +500,7 @@ export function useInvoiceSheetState({
             title: 'Unable to archive invoice',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('invoice', invoice.id),
           })
           return
         }
@@ -509,6 +514,7 @@ export function useInvoiceSheetState({
           title: 'Invoice archived',
           description:
             'It will be hidden from active views but remains available historically.',
+          link: toastLink('invoice', invoice.id, { archived: true }),
         })
 
         onOpenChange(false)
@@ -524,6 +530,7 @@ export function useInvoiceSheetState({
           description:
             error instanceof Error ? error.message : 'Unknown error.',
           variant: 'destructive',
+          link: toastLink('invoice', invoice.id),
         })
       }
     })

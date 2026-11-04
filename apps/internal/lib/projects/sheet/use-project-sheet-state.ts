@@ -16,7 +16,7 @@ import {
   saveProject,
   softDeleteProject,
 } from '@/app/(dashboard)/projects/project-sheet-actions'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
@@ -274,6 +274,7 @@ export function useProjectSheetState({
               title: 'Unable to save project',
               description: result.error,
               variant: 'destructive',
+              link: toastLink('project', payload.id),
             })
             return
           }
@@ -299,6 +300,7 @@ export function useProjectSheetState({
           toast({
             title: isEditing ? 'Project saved' : 'Project created',
             description: payload.name,
+            link: toastLink('project', targetProjectId),
           })
 
           form.reset({
@@ -325,6 +327,7 @@ export function useProjectSheetState({
             description:
               error instanceof Error ? error.message : 'Unknown error.',
             variant: 'destructive',
+            link: toastLink('project', payload.id),
           })
         }
       })
@@ -388,6 +391,7 @@ export function useProjectSheetState({
             title: 'Unable to archive project',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('project', project.id),
           })
           return
         }
@@ -400,6 +404,7 @@ export function useProjectSheetState({
         toast({
           title: 'Project archived',
           description: 'You can still find it in historical reporting.',
+          link: toastLink('project', project.id, { archived: true }),
         })
 
         onOpenChange(false)
@@ -415,6 +420,7 @@ export function useProjectSheetState({
           description:
             error instanceof Error ? error.message : 'Unknown error.',
           variant: 'destructive',
+          link: toastLink('project', project.id),
         })
       }
     })

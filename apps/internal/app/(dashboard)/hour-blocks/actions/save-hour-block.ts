@@ -86,6 +86,7 @@ async function performSaveHourBlock(
   const targetClientName = client.name
   const nowIso = new Date().toISOString()
   let warning: string | undefined
+  let savedId = id
 
   if (!id) {
     try {
@@ -107,6 +108,7 @@ async function performSaveHourBlock(
       if (!inserted) {
         throw new Error('Unable to create hour block.')
       }
+      savedId = inserted.id
 
       const event = hourBlockCreatedEvent({
         clientName: targetClientName,
@@ -226,5 +228,5 @@ async function performSaveHourBlock(
 
   revalidatePath(HOUR_BLOCKS_PATH)
 
-  return warning ? { warning } : {}
+  return warning ? { id: savedId, warning } : { id: savedId }
 }
