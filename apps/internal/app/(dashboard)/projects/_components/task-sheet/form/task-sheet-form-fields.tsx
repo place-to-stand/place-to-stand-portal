@@ -43,7 +43,6 @@ export type TaskSheetFormFieldsProps = {
   resolveDisabledReason: (disabled: boolean) => string | null
   taskStatuses: Array<{ value: string; label: string; token: string }>
   assigneeItems: SearchableComboboxItem[]
-  unassignedValue: string
   projectItems: SearchableComboboxItem[]
   projectGroups: SearchableComboboxGroup[]
   editorKey: string
@@ -70,7 +69,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
     resolveDisabledReason,
     taskStatuses,
     assigneeItems,
-    unassignedValue,
     projectItems,
     projectGroups,
     editorKey,
@@ -203,7 +201,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
           render={({ field }) => {
             const disabled = isPending || !canManage
             const reason = resolveDisabledReason(disabled)
-            const selectedValue = field.value ?? unassignedValue
 
             return (
               <FormItem>
@@ -213,14 +210,10 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                     <SearchableCombobox
                       items={assigneeItems}
                       clearLabel='assignee'
-                      value={selectedValue}
-                      onChange={next => {
-                        if (next === unassignedValue) {
-                          field.onChange(null)
-                          return
-                        }
-                        field.onChange(next)
-                      }}
+                      // Empty is null, so the field shows the muted
+                      // "Unassigned" placeholder with no clear button.
+                      value={field.value ?? null}
+                      onChange={field.onChange}
                       onBlur={field.onBlur}
                       name={field.name}
                       placeholder='Unassigned'

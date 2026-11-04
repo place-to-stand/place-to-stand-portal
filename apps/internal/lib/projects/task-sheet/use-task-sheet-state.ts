@@ -78,7 +78,6 @@ type UseTaskSheetStateReturn = {
   resolveDisabledReason: (disabled: boolean) => string | null
   editorKey: string
   taskStatuses: typeof TASK_STATUSES
-  unassignedValue: typeof UNASSIGNED_ASSIGNEE_VALUE
   attachments: AttachmentItem[]
   handleAttachmentUpload: (files: FileList | File[]) => void
   handleAttachmentRemove: (key: string) => void
@@ -344,7 +343,6 @@ export const useTaskSheetState = ({
     resolveDisabledReason,
     editorKey,
     taskStatuses: TASK_STATUSES,
-    unassignedValue: UNASSIGNED_ASSIGNEE_VALUE,
     attachments: attachmentItems,
     handleAttachmentUpload,
     handleAttachmentRemove,

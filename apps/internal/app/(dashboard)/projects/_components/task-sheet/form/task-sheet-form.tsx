@@ -28,7 +28,6 @@ type TaskSheetFormProps = {
   projectGroups: SearchableComboboxGroup[]
   resolveDisabledReason: (disabled: boolean) => string | null
   taskStatuses: TaskSheetFormFieldsProps['taskStatuses']
-  unassignedValue: string
   editorKey: string
   isSheetOpen: boolean
   attachments: AttachmentItem[]
@@ -54,7 +53,6 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     projectGroups,
     resolveDisabledReason,
     taskStatuses,
-    unassignedValue,
     editorKey,
     isSheetOpen,
     attachments,
@@ -109,7 +107,6 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           assigneeItems={[...assigneeItems]}
           projectItems={projectItems}
           projectGroups={projectGroups}
-          unassignedValue={unassignedValue}
           editorKey={editorKey}
           attachments={attachments}
           onSelectFiles={handleFileDialogSelect}
