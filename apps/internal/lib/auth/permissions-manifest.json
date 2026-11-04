@@ -1233,6 +1233,13 @@
   },
   {
     "type": "route",
+    "name": "GET /api/leads/options",
+    "file": "apps/internal/app/api/leads/options/route.ts",
+    "kind": "capability",
+    "capability": "leads.tasks"
+  },
+  {
+    "type": "route",
     "name": "POST /api/my-tasks/done-window",
     "file": "apps/internal/app/api/my-tasks/done-window/route.ts",
     "kind": "capability",
