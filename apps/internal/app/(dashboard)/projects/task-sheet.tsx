@@ -97,7 +97,6 @@ export function TaskSheet(props: TaskSheetProps) {
     resolveDisabledReason,
     editorKey,
     taskStatuses,
-    unassignedValue,
     attachments,
     handleAttachmentUpload,
     handleAttachmentRemove,
@@ -426,7 +425,6 @@ export function TaskSheet(props: TaskSheetProps) {
                   projectGroups={projectGroups}
                   resolveDisabledReason={resolveDisabledReason}
                   taskStatuses={taskStatuses}
-                  unassignedValue={unassignedValue}
                   editorKey={editorKey}
                   isSheetOpen={props.open}
                   attachments={attachments}

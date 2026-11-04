@@ -198,7 +198,11 @@ export const createDefaultValues = ({
   status: task?.status ?? defaultStatus,
   dueOn: toDateInputValue(task?.due_on ?? defaultDueOn ?? null),
   projectId: task?.project_id ?? defaultProjectId ?? '',
-  assigneeId: currentAssigneeId ?? defaultAssigneeId ?? null,
+  // The default assignee (usually you) is for new tasks only: an existing
+  // task with no assignee opens unassigned.
+  assigneeId: task
+    ? (currentAssigneeId ?? null)
+    : (currentAssigneeId ?? defaultAssigneeId ?? null),
   leadId: task?.lead_id ?? defaultLeadId ?? null,
 })
 
