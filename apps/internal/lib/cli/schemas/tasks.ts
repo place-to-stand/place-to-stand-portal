@@ -59,7 +59,7 @@ export const cliCreateTaskFields = {
 export const cliCreateTaskSchema = z
   .object(cliCreateTaskFields)
   .refine(payload => !payload.project !== !payload.leadId, {
-    message: 'Give a project or a leadId, not both.',
+    message: 'Give exactly one of project or leadId.',
     path: ['project'],
   })
 

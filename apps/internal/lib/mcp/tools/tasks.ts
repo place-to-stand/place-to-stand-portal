@@ -94,7 +94,7 @@ export function registerTaskTools(server: McpServer) {
     input: cliCreateTaskFields,
     run: async (args, { user }) => {
       if (!args.project === !args.leadId) {
-        throw new BadRequestError('Give a project or a leadId, not both.')
+        throw new BadRequestError('Give exactly one of project or leadId.')
       }
 
       return createTaskFromInput(user, args, 'MCP')

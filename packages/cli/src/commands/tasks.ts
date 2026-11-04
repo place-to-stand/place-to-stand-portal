@@ -128,7 +128,7 @@ export function registerTaskCommands(program: Command): void {
     .option('--assignee <user>', 'Assign by email or user id (one assignee)')
     .action(async (options: CreateOptions) => {
       if (!options.project === !options.lead) {
-        throw new Error('Provide --project or --lead, not both.')
+        throw new Error('Provide exactly one of --project or --lead.')
       }
 
       const { data, warning } = await apiPost<Task>('api/cli/v1/tasks', {

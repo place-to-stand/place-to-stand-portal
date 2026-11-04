@@ -1,5 +1,5 @@
 {
-  "id": "9550c87f-743d-453a-b098-cd84c388ec83",
+  "id": "e01f4d0d-e943-43b3-a27c-792b99092de9",
   "prevId": "92b2944d-6621-4ea8-8b3e-5b538470351b",
   "version": "7",
   "dialect": "postgresql",
@@ -6073,7 +6073,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "tasks_created_by_fkey": {

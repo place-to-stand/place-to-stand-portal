@@ -553,7 +553,9 @@ export const tasks = pgTable(
       columns: [table.leadId],
       foreignColumns: [leads.id],
       name: 'tasks_lead_id_fkey',
-    }).onDelete('set null'),
+      // A lead task goes with its lead, as a project task goes with its
+      // project: a task always has exactly one home (check above).
+    }).onDelete('cascade'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],
