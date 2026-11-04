@@ -45,12 +45,15 @@ export function ToastCard({
   title,
   description,
   variant = 'default',
+  link,
   onDismiss,
   className,
 }: {
   title: ReactNode
   description?: ReactNode
   variant?: ToastVariant
+  /** The link to the record the toast is about (`ToastRecordLink`). */
+  link?: ReactNode
   /** Shows the close button. */
   onDismiss?: () => void
   className?: string
@@ -77,6 +80,7 @@ export function ToastCard({
         {description ? (
           <p className='text-muted-foreground'>{description}</p>
         ) : null}
+        {link ? <div className='mt-1'>{link}</div> : null}
       </div>
       {onDismiss ? (
         <div className='-mr-1.5 flex h-[1lh] shrink-0 items-center'>

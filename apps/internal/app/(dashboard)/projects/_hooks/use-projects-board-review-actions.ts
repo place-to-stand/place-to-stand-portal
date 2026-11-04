@@ -1,6 +1,6 @@
 import { useCallback, useState, useTransition } from 'react'
 
-import type { ToastOptions } from '@/components/ui/use-toast'
+import { toastLink, type ToastOptions } from '@/components/ui/use-toast'
 
 import {
   acceptDoneTasks,
@@ -50,6 +50,7 @@ export function useProjectsBoardReviewActions({
           variant: 'destructive',
           title: 'Unable to accept tasks',
           description: result.error,
+          link: toastLink('project', activeProjectId),
         })
         return
       }
@@ -59,6 +60,7 @@ export function useProjectsBoardReviewActions({
         toast({
           title: 'Tasks accepted',
           description: `${result.acceptedCount} task${plural} moved out of Done.`,
+          link: toastLink('project', activeProjectId),
         })
         return
       }
@@ -66,6 +68,7 @@ export function useProjectsBoardReviewActions({
       toast({
         title: 'No tasks to accept',
         description: 'All tasks in Done are already accepted.',
+        link: toastLink('project', activeProjectId),
       })
     })
   }, [activeProjectId, startAcceptingDone, toast])
@@ -96,6 +99,7 @@ export function useProjectsBoardReviewActions({
               variant: 'destructive',
               title: errorTitle,
               description: result.error,
+              link: toastLink('task', taskId),
             })
             return
           }
@@ -103,6 +107,7 @@ export function useProjectsBoardReviewActions({
           toast({
             title: success.title,
             description: success.description,
+            link: toastLink('task', taskId),
           })
         } catch (error) {
           console.error('Review action failed', error)
@@ -110,6 +115,7 @@ export function useProjectsBoardReviewActions({
             variant: 'destructive',
             title: errorTitle,
             description: 'An unexpected error occurred.',
+            link: toastLink('task', taskId),
           })
         } finally {
           setPendingReviewAction(null)

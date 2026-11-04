@@ -4,14 +4,11 @@ import {
   restoreProject as restoreProjectAction,
   softDeleteProject,
 } from '@/app/(dashboard)/projects/project-sheet-actions'
+import { toastLink, type ToastOptions } from '@/components/ui/use-toast'
 
 import type { ProjectWithClient } from './types'
 
-type ToastFn = (props: {
-  title: string
-  description?: string
-  variant?: 'default' | 'destructive'
-}) => void
+type ToastFn = (props: ToastOptions) => void
 
 type UseProjectsSettingsControllerParams = {
   toast: ToastFn
@@ -101,6 +98,7 @@ export function useProjectsSettingsController({
             title: 'Unable to delete project',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('project', project.id),
           })
           return
         }
@@ -108,6 +106,7 @@ export function useProjectsSettingsController({
         toast({
           title: 'Project archived',
           description: `${project.name} is hidden from active views but remains in historical reporting.`,
+          link: toastLink('project', project.id, { archived: true }),
         })
         onRefresh()
       } finally {
@@ -131,6 +130,7 @@ export function useProjectsSettingsController({
             title: 'Unable to restore project',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('project', project.id),
           })
           return
         }
@@ -138,6 +138,7 @@ export function useProjectsSettingsController({
         toast({
           title: 'Project restored',
           description: `${project.name} is active again.`,
+          link: toastLink('project', project.id),
         })
         onRefresh()
       } finally {

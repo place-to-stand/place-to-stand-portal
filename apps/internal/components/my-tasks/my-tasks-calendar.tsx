@@ -21,7 +21,7 @@ import {
   buildWeekdayHeaders,
   getCalendarRange,
 } from '@/lib/projects/calendar/calendar-helpers'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { TaskWithRelations } from '@/lib/types'
 
 import type { MyTasksInitialEntry } from './my-tasks-page'
@@ -151,6 +151,7 @@ export function MyTasksCalendar({
           title: 'Unable to reschedule task',
           description:
             error instanceof Error ? error.message : 'Please try again.',
+          link: toastLink('task', taskId),
         })
       }
     },

@@ -20,7 +20,7 @@ import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistenc
 import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { EmptyState } from '@pts/ui/empty-state'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { moveLead } from '../actions'
 import {
   cloneColumns,
@@ -201,6 +201,7 @@ export function LeadsBoard({
             variant: 'destructive',
             title: 'Unable to move lead',
             description: LEAD_WON_NEEDS_COMPANY_MESSAGE,
+            link: toastLink('lead', draggedLead.id),
           })
         }
         return
@@ -229,6 +230,7 @@ export function LeadsBoard({
             variant: 'destructive',
             title: 'Unable to move lead',
             description: response.error ?? 'Please try again.',
+            link: toastLink('lead', leadId),
           })
         } else {
           columnsRef.current = result.nextColumns

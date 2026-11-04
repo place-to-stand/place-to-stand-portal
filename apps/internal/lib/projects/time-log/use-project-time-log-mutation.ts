@@ -7,7 +7,7 @@ import {
 import { useMutation, type QueryClient } from '@tanstack/react-query'
 import type { Dispatch, SetStateAction } from 'react'
 
-import type { ToastOptions } from '@/components/ui/use-toast'
+import { toastLink, type ToastOptions } from '@/components/ui/use-toast'
 import type { FieldError, TimeLogFormErrors, TimeLogFormField } from './types'
 
 const SUCCESS_TOAST: ToastOptions = {
@@ -193,12 +193,15 @@ export function useProjectTimeLogMutation(
       onMutationSuccess?.()
       onSuccessReset()
       onClose()
-      toast(successToast ?? SUCCESS_TOAST)
+      // A time log has no sheet of its own: its toasts link the project.
+      const link = toastLink('project', project.id)
+      toast({ ...(successToast ?? SUCCESS_TOAST), link })
       if (data?.warning) {
         toast({
           title: 'Closed month',
           description: data.warning,
           variant: 'warning',
+          link,
         })
       }
       router.refresh()
@@ -224,6 +227,7 @@ export function useProjectTimeLogMutation(
             title: failureTitle,
             description: general,
             variant: 'destructive',
+            link: toastLink('project', project.id),
           })
         }
         return
@@ -241,6 +245,7 @@ export function useProjectTimeLogMutation(
         title: failureTitle,
         description: message,
         variant: 'destructive',
+        link: toastLink('project', project.id),
       })
     },
   })

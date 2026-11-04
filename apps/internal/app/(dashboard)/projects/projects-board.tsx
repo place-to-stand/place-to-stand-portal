@@ -8,7 +8,7 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { useRecordCycle } from '@/hooks/use-record-cycle'
 import { ProjectSheet } from '@/app/(dashboard)/projects/project-sheet'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { ProjectLifecycleDialogs } from '@/components/projects/table/project-lifecycle-dialogs'
 import { useProjectsSettingsController } from '@/components/projects/table/use-projects-settings-controller'
 import type {
@@ -105,6 +105,7 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
           title: 'Unable to update project status',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('project', projectId),
         })
         throw new Error(result.error)
       }

@@ -16,7 +16,7 @@ import { InlineReveal } from '@/components/ui/inline-reveal'
 import { InlineFormActions } from '@/components/sheets/inline-form-actions'
 import { LeadUpdateTypeBadge } from './lead-update-type-badge'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import {
   isContentEmpty,
   sanitizeEditorHtml,
@@ -153,11 +153,15 @@ export function LeadUpdateDialog({
           variant: 'destructive',
           title: isEditing ? 'Unable to save update' : 'Unable to log update',
           description: result.error ?? 'Please try again.',
+          link: toastLink('lead', leadId),
         })
         return
       }
 
-      toast({ title: isEditing ? 'Update saved' : 'Update logged' })
+      toast({
+        title: isEditing ? 'Update saved' : 'Update logged',
+        link: toastLink('lead', leadId),
+      })
 
       // Save = done = close (project convention: task-sheet-closes-on-save).
       // Saved edits are no longer discardable, so close directly.

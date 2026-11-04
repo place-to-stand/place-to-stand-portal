@@ -26,7 +26,7 @@ import {
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
@@ -207,6 +207,7 @@ export function SubmissionDetailSheet({
             title: errorTitle,
             description: result.error,
             variant: 'destructive',
+            link: toastLink('submission', submission.id),
           })
           // The row may have changed underneath us — show the latest.
           router.refresh()
@@ -266,6 +267,7 @@ export function SubmissionDetailSheet({
             title: errorTitle,
             description: result.error,
             variant: 'destructive',
+            link: toastLink('submission', submission.id),
           })
           return
         }

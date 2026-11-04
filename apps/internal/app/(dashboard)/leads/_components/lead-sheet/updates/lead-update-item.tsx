@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { RICH_TEXT_HTML_CLASSES } from '@/components/ui/rich-text-editor/rich-text-html'
 import { sanitizeEditorHtml } from '@/components/ui/rich-text-editor/utils'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { formatCalendarDate } from '@pts/ui/dates'
 import {
@@ -77,7 +77,10 @@ export function LeadUpdateItem({
       })
 
       if (result.success) {
-        toast({ title: 'Update archived' })
+        toast({
+          title: 'Update archived',
+          link: toastLink('lead', update.leadId),
+        })
         onArchived()
         return
       }
@@ -86,6 +89,7 @@ export function LeadUpdateItem({
         variant: 'destructive',
         title: 'Unable to archive update',
         description: result.error ?? 'Please try again.',
+        link: toastLink('lead', update.leadId),
       })
     })
   }

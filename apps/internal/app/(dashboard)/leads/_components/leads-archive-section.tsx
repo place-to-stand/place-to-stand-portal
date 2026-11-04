@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useListParams } from '@/hooks/use-list-params'
 import {
   useDeepLinkNotFound,
@@ -133,6 +133,7 @@ export function LeadsArchiveSection({
           title: 'Unable to restore lead',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('lead', lead.id),
         })
         return
       }
@@ -140,6 +141,7 @@ export function LeadsArchiveSection({
       toast({
         title: 'Lead restored',
         description: `${lead.contactName} has been restored to the board.`,
+        link: toastLink('lead', lead.id),
       })
       router.refresh()
     })

@@ -41,7 +41,7 @@ import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { Textarea } from '@pts/ui/textarea'
 import { Separator } from '@pts/ui/separator'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 import { invoiceShareHref } from '@/lib/invoices/links'
 import type {
@@ -232,6 +232,7 @@ export function InvoiceSheet({
           title: 'Unable to mark invoice as sent',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('invoice', invoice.id),
         })
       } else {
         // One click: sent, link live, link on the clipboard to paste into
@@ -251,6 +252,7 @@ export function InvoiceSheet({
           description: copied
             ? 'The public link is copied to your clipboard.'
             : 'Copy the public link from the top of this panel.',
+          link: toastLink('invoice', invoice.id),
         })
         router.refresh()
       }
@@ -259,6 +261,7 @@ export function InvoiceSheet({
         title: 'Unable to mark invoice as sent',
         description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
+        link: toastLink('invoice', invoice.id),
       })
     } finally {
       setActionPending(false)
@@ -279,10 +282,11 @@ export function InvoiceSheet({
         description: markedSent
           ? `Invoice ${invoiceNumber} was emailed and marked as sent.`
           : `Invoice ${invoiceNumber} was emailed again.`,
+        link: toastLink('invoice', invoice?.id),
       })
       router.refresh()
     },
-    [toast, router]
+    [invoice?.id, toast, router]
   )
 
   const handleUnsendInvoice = useCallback(async () => {
@@ -295,11 +299,13 @@ export function InvoiceSheet({
           title: 'Unable to revert invoice to draft',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('invoice', invoice.id),
         })
       } else {
         toast({
           title: 'Invoice reverted to draft',
           description: 'The invoice has been reverted to draft.',
+          link: toastLink('invoice', invoice.id),
         })
         router.refresh()
       }
@@ -308,6 +314,7 @@ export function InvoiceSheet({
         title: 'Unable to revert invoice to draft',
         description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
+        link: toastLink('invoice', invoice.id),
       })
     } finally {
       setActionPending(false)
@@ -333,11 +340,13 @@ export function InvoiceSheet({
           title: 'Unable to void invoice',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('invoice', invoice.id),
         })
       } else {
         toast({
           title: 'Invoice voided',
           description: 'The invoice has been marked as void.',
+          link: toastLink('invoice', invoice.id),
         })
         router.refresh()
       }
@@ -346,6 +355,7 @@ export function InvoiceSheet({
         title: 'Unable to void invoice',
         description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
+        link: toastLink('invoice', invoice.id),
       })
     } finally {
       setActionPending(false)

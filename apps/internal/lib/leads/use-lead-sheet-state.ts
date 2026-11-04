@@ -11,7 +11,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
@@ -169,6 +169,7 @@ export function useLeadSheetState({
             variant: 'destructive',
             title: 'Unable to save lead',
             description: result.error ?? 'Please try again.',
+            link: toastLink('lead', lead?.id),
           })
           return
         }
@@ -176,6 +177,7 @@ export function useLeadSheetState({
         toast({
           title: isEditing ? 'Lead saved' : 'Lead created',
           description: contact?.name || undefined,
+          link: toastLink('lead', result.leadId ?? lead?.id),
         })
 
         form.reset({
@@ -263,6 +265,7 @@ export function useLeadSheetState({
           variant: 'destructive',
           title: 'Unable to archive lead',
           description: result.error ?? 'Please try again.',
+          link: toastLink('lead', lead.id),
         })
         return
       }
@@ -270,6 +273,7 @@ export function useLeadSheetState({
       toast({
         title: 'Lead archived',
         description: 'The lead has been archived and removed from the board.',
+        link: toastLink('lead', lead.id, { archived: true }),
       })
 
       setArchiveDialogOpen(false)

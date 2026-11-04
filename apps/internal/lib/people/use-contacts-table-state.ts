@@ -4,7 +4,7 @@ import type { ContactProfile } from '@/lib/queries/contacts/selectors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import {
   restoreContact,
   softDeleteContact,
@@ -148,6 +148,7 @@ export function useContactsTableState({
             title: 'Unable to archive person',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('contact', contact.id),
           })
           return
         }
@@ -155,6 +156,7 @@ export function useContactsTableState({
         toast({
           title: 'Person archived',
           description: `${contact.name || contact.email} has been archived.`,
+          link: toastLink('contact', contact.id, { archived: true }),
         })
         clearIfSelected(contact.id)
         router.refresh()
@@ -179,6 +181,7 @@ export function useContactsTableState({
             title: 'Unable to restore person',
             description: result.error,
             variant: 'destructive',
+            link: toastLink('contact', contact.id),
           })
           return
         }
@@ -186,6 +189,7 @@ export function useContactsTableState({
         toast({
           title: 'Person restored',
           description: `${contact.name || contact.email} is active again.`,
+          link: toastLink('contact', contact.id),
         })
         clearIfSelected(contact.id)
         router.refresh()

@@ -81,17 +81,10 @@ export function useSheetParams() {
     [pathname, searchParams]
   )
 
-  const open = useCallback(
-    (
-      entity: SheetEntityKey,
-      value: string,
-      /** Aux params written in the same push (e.g. a create-sheet prefill). */
-      aux?: Record<string, string>,
-      options?: SheetOpenOptions
-    ) => {
-      // Let the host mount now, before the URL write lands.
-      emitSheetOpen(entity, value)
-      const url = buildUrl(params => {
+  /** The URL `open` writes: this page with the sheet on top of the stack. */
+  const hrefFor = useCallback(
+    (entity: SheetEntityKey, value: string, aux?: Record<string, string>) =>
+      buildUrl(params => {
         // `set` keeps an existing param's stack position; `append` puts a
         // newly opened sheet on top.
         if (params.has(entity)) {
@@ -106,7 +99,21 @@ export function useSheetParams() {
             params.delete(key)
           }
         }
-      })
+      }),
+    [buildUrl]
+  )
+
+  const open = useCallback(
+    (
+      entity: SheetEntityKey,
+      value: string,
+      /** Aux params written in the same push (e.g. a create-sheet prefill). */
+      aux?: Record<string, string>,
+      options?: SheetOpenOptions
+    ) => {
+      // Let the host mount now, before the URL write lands.
+      emitSheetOpen(entity, value)
+      const url = hrefFor(entity, value, aux)
       const shallow =
         options?.shallow ??
         (value === NEW_SHEET_VALUE ||
@@ -117,7 +124,7 @@ export function useSheetParams() {
         router.push(url, { scroll: false })
       }
     },
-    [buildUrl, pathname, router]
+    [hrefFor, pathname, router]
   )
 
   const openNew = useCallback(
@@ -141,7 +148,7 @@ export function useSheetParams() {
     [buildUrl]
   )
 
-  return { stack, get, getAux, open, openNew, close }
+  return { stack, get, getAux, hrefFor, open, openNew, close }
 }
 
 /**

@@ -79,6 +79,7 @@ export const useTaskAttachments = ({
   const { handleAttachmentUpload, pendingUploadCount, resetPendingUploads } =
     useAttachmentUploader({
       canManage,
+      taskId,
       toast,
       setAttachments: setPendingDrafts,
       pendingPathsRef,

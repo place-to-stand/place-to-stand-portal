@@ -82,6 +82,10 @@ import {
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { ToastCard } from '@/components/ui/toast-card'
+import {
+  ToastRecordLinkContent,
+  toastRecordLinkClass,
+} from '@/components/ui/toast-record-link'
 import { useToast } from '@/components/ui/use-toast'
 
 import { DesignSection, Example, Specimen } from './specimen'
@@ -241,14 +245,19 @@ export function ComponentsFeedback() {
       </Specimen>
       <Specimen
         label='Toast'
-        note='components/ui/use-toast; each kind shown as it appears'
+        note='components/ui/use-toast; each kind shown as it appears, with its record link'
         className='block space-y-2'
       >
-        <ToastCard title='Invoice sent' onDismiss={() => {}} />
+        <ToastCard
+          title='Invoice sent'
+          link={<SpecimenToastLink entity='invoice' />}
+          onDismiss={() => {}}
+        />
         <ToastCard
           variant='destructive'
           title='Unable to save invoice'
           description='The billing email is missing.'
+          link={<SpecimenToastLink entity='invoice' />}
           onDismiss={() => {}}
         />
         <ToastCard
@@ -292,12 +301,14 @@ export function ComponentsFeedback() {
         <ToastCard
           title='Company saved'
           description='Acme Industries'
+          link={<SpecimenToastLink entity='company' />}
           onDismiss={() => {}}
         />
         <ToastCard
           variant='destructive'
           title='Unable to save company'
           description='Someone else saved this company. Reload to see their changes.'
+          link={<SpecimenToastLink entity='company' />}
           onDismiss={() => {}}
         />
       </Specimen>
@@ -436,6 +447,15 @@ export function ComponentsOverlays() {
         </p>
       </Specimen>
     </DesignSection>
+  )
+}
+
+/** A toast's record link as it looks, without a record behind it. */
+function SpecimenToastLink({ entity }: { entity: 'invoice' | 'company' }) {
+  return (
+    <span className={toastRecordLinkClass}>
+      <ToastRecordLinkContent entity={entity} />
+    </span>
   )
 }
 

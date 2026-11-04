@@ -1,3 +1,5 @@
+import type { SheetEntityKey } from '@/lib/sheets/entities'
+
 /**
  * `default` and `success` confirm something that just happened; `info` is
  * neutral news; `warning` is worth a look (a closed month affected);
@@ -5,6 +7,29 @@
  */
 export type ToastVariant =
   'default' | 'success' | 'info' | 'warning' | 'destructive'
+
+/**
+ * The record a toast is about. The toast shows a link that opens its sheet
+ * over the current page. Leave it out only when there is no record: a failed
+ * create, a settings change, a month in the close.
+ */
+export type ToastLink = {
+  entity: SheetEntityKey
+  id: string
+  /**
+   * The record was just archived: the link goes to it on its list's
+   * archive tab, the one place an archived record's sheet opens.
+   */
+  archived?: boolean
+}
+
+/** A toast's record link; none when the record has no id (yet). */
+export const toastLink = (
+  entity: SheetEntityKey,
+  id: string | null | undefined,
+  options?: { archived?: boolean }
+): ToastLink | undefined =>
+  id ? { entity, id, archived: options?.archived } : undefined
 
 type Listener = (toast: ToastMessage) => void
 
@@ -18,6 +43,7 @@ export type ToastOptions = {
   description?: string
   variant?: ToastVariant
   duration?: number
+  link?: ToastLink
 }
 
 export type ToastMessage = Required<Pick<ToastOptions, 'title'>> &
@@ -32,6 +58,7 @@ export function toast(options: ToastOptions): string {
     duration: DEFAULT_DURATION,
     description: options.description,
     title: options.title,
+    link: options.link,
     id,
   }
 

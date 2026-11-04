@@ -3,6 +3,8 @@ import type { z } from 'zod'
 import { hourBlockSchema, deleteSchema, restoreSchema } from './schemas'
 
 export type ActionResult = {
+  /** The saved hour block (save only), so its toast can link to it. */
+  id?: string
   error?: string
   /** Non-blocking notice (closed-month drift, future billing month). */
   warning?: string

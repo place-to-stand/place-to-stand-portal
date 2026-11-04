@@ -14,7 +14,7 @@ import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
-import { toast } from '@/components/ui/use-toast'
+import { toast, toastLink } from '@/components/ui/use-toast'
 import type { GitHubRepoLink } from '@/lib/types/github'
 import { siGithub } from 'simple-icons/icons'
 import { Badge } from '@pts/ui/badge'
@@ -206,6 +206,7 @@ export function GitHubReposSection({
             title: 'Unable to load repositories',
             description: 'Please try again.',
             variant: 'destructive',
+            link: toastLink('project', projectId),
           })
         })
         .finally(() => setLoadingRepos(false))

@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { Textarea } from '@pts/ui/textarea'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 
 import type { GitHubRepoLinkSummary, TaskWithRelations } from '@/lib/types'
 import { usePlanningSession } from './use-planning-session'
@@ -349,6 +349,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
         variant: 'destructive',
         title: 'Unable to start planning',
         description: ensured.error,
+        link: toastLink('task', task.id),
       })
       return
     }
@@ -432,6 +433,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
           variant: 'destructive',
           title: 'Unable to dispatch plan',
           description: result.error,
+          link: toastLink('task', task.id),
         })
         return
       }
@@ -450,6 +452,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
       toast({
         title: 'Plan dispatched',
         description: 'GitHub issue created with PRD instructions.',
+        link: toastLink('task', task.id),
       })
       // Background refetch: its errors land in the query, not here.
       void queryClient.invalidateQueries({

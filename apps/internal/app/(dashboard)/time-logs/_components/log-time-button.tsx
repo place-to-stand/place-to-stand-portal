@@ -10,7 +10,7 @@ import {
   SearchableCombobox,
   type SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
-import { toast } from '@/components/ui/use-toast'
+import { toast, toastLink } from '@/components/ui/use-toast'
 import type { ProjectTimeLogDialogParams } from '@/lib/projects/time-log/types'
 
 type LogTimeButtonProps = {
@@ -52,6 +52,7 @@ export function LogTimeButton({ projects }: LogTimeButtonProps) {
         title: 'Unable to log time',
         description: 'That project could not be opened. Please try again.',
         variant: 'destructive',
+        link: toastLink('project', projectId),
       })
     } finally {
       setLoadingProjectId(null)

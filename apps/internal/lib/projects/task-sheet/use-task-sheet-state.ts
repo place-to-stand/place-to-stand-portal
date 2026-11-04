@@ -12,7 +12,7 @@ import type {
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
-import { useToast } from '@/components/ui/use-toast'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 
 import { removeTask, saveTask } from '@/app/(dashboard)/projects/actions'
 import {
@@ -199,6 +199,7 @@ export const useTaskSheetState = ({
               title: task ? 'Unable to save task' : 'Unable to create task',
               description: result.error,
               variant: 'destructive',
+              link: toastLink('task', task?.id),
             })
             return
           }
@@ -206,6 +207,7 @@ export const useTaskSheetState = ({
           toast({
             title: task ? 'Task saved' : 'Task created',
             description: values.title.trim(),
+            link: toastLink('task', result.taskId),
           })
 
           resetFormState({ preservePending: true })
@@ -258,6 +260,7 @@ export const useTaskSheetState = ({
           title: 'Unable to delete task',
           description: result.error,
           variant: 'destructive',
+          link: toastLink('task', task.id),
         })
         return
       }
@@ -265,6 +268,7 @@ export const useTaskSheetState = ({
       toast({
         title: 'Task deleted',
         description: 'The task has been removed from the board.',
+        link: toastLink('task', task.id, { archived: true }),
       })
 
       router.refresh()

@@ -119,6 +119,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const nowIso = new Date().toISOString()
 
   const { subtotal, taxAmount, total } = invoiceTotals(lineItems, taxRate)
+  let savedId = id
 
   if (!id) {
     try {
@@ -173,6 +174,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       if (!inserted) {
         throw new Error('Unable to create invoice.')
       }
+      savedId = inserted.id
 
       const event = invoiceCreatedEvent({
         clientName: targetClientName,
@@ -394,5 +396,5 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
 
   revalidatePath(INVOICES_PATH)
 
-  return {}
+  return { id: savedId }
 }
