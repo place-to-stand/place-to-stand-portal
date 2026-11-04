@@ -1,12 +1,13 @@
 import type { SelectTask } from '@/lib/queries/tasks/common'
-import { boardTaskHref } from '@/lib/sheets/hrefs'
+import { boardTaskHref, leadTaskHref } from '@/lib/sheets/hrefs'
 
 import type { BoardLocation } from '../queries/tasks'
 import { isoTimestamp } from './timestamp'
 
 export type CliTask = {
   id: string
-  projectId: string
+  /** Null for a lead task: a task is on a project or a lead, never both. */
+  projectId: string | null
   leadId: string | null
   title: string
   description: string | null
@@ -21,8 +22,9 @@ export type CliTask = {
   githubIssueUrl: string | null
   workerStatus: SelectTask['workerStatus']
   /**
-   * Portal path to the task on its project board; the CLI joins it to its API
-   * base URL. Null when the project has no board URL (missing slug).
+   * Portal path to the task on its project board (or over its lead's sheet);
+   * the CLI joins it to its API base URL. Null when the project has no board
+   * URL (missing slug).
    */
   path: string | null
 }
@@ -50,6 +52,8 @@ export function serializeTask(
     workerStatus: task.workerStatus,
     path: location
       ? boardTaskHref(location.clientSegment, location.projectSlug, task.id)
-      : null,
+      : !task.projectId && task.leadId
+        ? leadTaskHref(task.leadId, task.id)
+        : null,
   }
 }

@@ -18,7 +18,7 @@ import { loadTaskLeads } from './task-leads'
 
 export type TaskRow = {
   id: string
-  projectId: string
+  projectId: string | null
   leadId: string | null
   title: string
   description: string | null

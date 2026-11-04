@@ -268,7 +268,7 @@ export async function writeAttachmentRows(
  */
 export type AttachmentActivityContext = {
   taskTitle: string
-  projectId: string
+  projectId: string | null
   companyId: string | null
   source: ActivitySourceValue
 }

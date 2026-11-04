@@ -20,10 +20,9 @@ import {
   HIDE_PARAM,
   parseHiddenProjectTypes,
 } from '@/lib/my-tasks/project-scope'
-import {
-  getActiveTaskProjectId,
-  listAssignedTaskSummaries,
-} from '@/lib/data/tasks'
+import { getActiveTaskHome, listAssignedTaskSummaries } from '@/lib/data/tasks'
+import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
+import { loadTasksWithRelationsByIds } from '@/lib/queries/tasks/relations'
 import {
   DONE_WINDOW_WEEKS,
   resolveDoneWindowStart,
@@ -76,14 +75,14 @@ export default async function MyTasksViewRoute({
     allLiteProjects,
     allClientDirectory,
     workableProjectIds,
-    deepLinkedProjectId,
+    deepLinkedHome,
   ] = await Promise.all([
     fetchCrmUsers(),
     fetchProjectsLite(),
     listClientDirectory(),
     listWorkableProjectIds(user),
     deepLinkedTaskId
-      ? getActiveTaskProjectId(deepLinkedTaskId)
+      ? getActiveTaskHome(deepLinkedTaskId)
       : Promise.resolve(null),
   ])
   const liteProjects = await scopeProjectsForViewer(user, allLiteProjects)
@@ -148,44 +147,54 @@ export default async function MyTasksViewRoute({
   const orderedProjectIds: string[] = []
 
   const initialEntries: MyTasksInitialEntry[] = []
+  // Lead tasks have no project; they load on their own below.
+  const leadTaskIds: string[] = []
 
   assignedSummaries.items.forEach(item => {
-    if (!includedProjectIds.has(item.project.id)) {
+    if (!item.project) {
+      leadTaskIds.push(item.id)
+    } else if (!includedProjectIds.has(item.project.id)) {
       includedProjectIds.add(item.project.id)
       orderedProjectIds.push(item.project.id)
     }
 
     initialEntries.push({
       taskId: item.id,
-      projectId: item.project.id,
+      projectId: item.project?.id ?? null,
       sortOrder: item.sortOrder ?? null,
     })
   })
 
-  // Deep-linked task outside the assigned set: resolve its project by id so
+  // Deep-linked task outside the assigned set: resolve its home by id so
   // the sheet opens in edit mode instead of silently creating a duplicate.
   const shownTaskIds = initialEntries.map(entry => entry.taskId)
   if (
     deepLinkedTaskId &&
-    deepLinkedProjectId &&
+    deepLinkedHome &&
+    !shownTaskIds.includes(deepLinkedTaskId) &&
     (isAdmin || (await canWorkTask(user, deepLinkedTaskId)))
   ) {
     shownTaskIds.push(deepLinkedTaskId)
-    if (!includedProjectIds.has(deepLinkedProjectId)) {
-      includedProjectIds.add(deepLinkedProjectId)
-      orderedProjectIds.push(deepLinkedProjectId)
+    const projectId = deepLinkedHome.projectId
+    if (!projectId) {
+      leadTaskIds.push(deepLinkedTaskId)
+    } else if (!includedProjectIds.has(projectId)) {
+      includedProjectIds.add(projectId)
+      orderedProjectIds.push(projectId)
     }
   }
 
   // Hydrate only the tasks this page shows (assigned, plus a deep-linked
   // one), in only the projects that hold them. Wider Done windows load
   // their own tasks through /api/my-tasks/done-window.
-  const hydratedProjects = await scopeProjectsForViewer(
-    user,
-    await fetchProjectsWithRelationsByIds(orderedProjectIds, {
+  const [hydratedProjects, leadTasks] = await Promise.all([
+    fetchProjectsWithRelationsByIds(orderedProjectIds, {
       taskIds: shownTaskIds,
-    })
-  )
+    }).then(rows => scopeProjectsForViewer(user, rows)),
+    loadTasksWithRelationsByIds(leadTaskIds).then(rows =>
+      rows.map(normalizeRawTask)
+    ),
+  ])
   const hydratedById = new Map(
     hydratedProjects.map(project => [project.id, project])
   )
@@ -202,6 +211,7 @@ export default async function MyTasksViewRoute({
       user={user}
       admins={admins}
       projects={relevantProjects}
+      leadTasks={leadTasks}
       projectSelectionProjects={selectionProjects}
       initialEntries={initialEntries}
       view={viewParam}

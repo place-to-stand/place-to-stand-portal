@@ -67,10 +67,8 @@ export type SheetInitPayloads = {
   task: {
     task: TaskWithRelations | null
     admins: DbUser[]
-    /** Identity-only projects for the sheet's project selector. */
+    /** Identity-only projects for the sheet's "Project or lead" selector. */
     projects: ProjectWithRelations[]
-    /** Default project when creating a task from a lead (null until it exists). */
-    salesProjectId: string | null
     currentUserId: string
   }
 }

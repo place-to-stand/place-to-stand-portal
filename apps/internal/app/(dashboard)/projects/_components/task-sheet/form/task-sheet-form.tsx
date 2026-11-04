@@ -24,8 +24,9 @@ type TaskSheetFormProps = {
   isPending: boolean
   canManage: boolean
   assigneeItems: SearchableComboboxItem[]
-  projectItems: SearchableComboboxItem[]
-  projectGroups: SearchableComboboxGroup[]
+  homeItems: SearchableComboboxItem[]
+  homeGroups: SearchableComboboxGroup[]
+  canOpenProject: boolean
   resolveDisabledReason: (disabled: boolean) => string | null
   taskStatuses: TaskSheetFormFieldsProps['taskStatuses']
   editorKey: string
@@ -39,7 +40,6 @@ type TaskSheetFormProps = {
   maxAttachmentSize: number
   attachmentsDisabledReason: string | null
   isDragActive: boolean
-  lead: TaskSheetFormFieldsProps['lead']
 }
 
 export function TaskSheetForm(props: TaskSheetFormProps) {
@@ -49,8 +49,9 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     isPending,
     canManage,
     assigneeItems,
-    projectItems,
-    projectGroups,
+    homeItems,
+    homeGroups,
+    canOpenProject,
     resolveDisabledReason,
     taskStatuses,
     editorKey,
@@ -64,7 +65,6 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
     maxAttachmentSize,
     attachmentsDisabledReason,
     isDragActive,
-    lead,
   } = props
 
   const attachmentsDisabled = isPending || !canManage
@@ -105,8 +105,9 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           resolveDisabledReason={resolveDisabledReason}
           taskStatuses={taskStatuses}
           assigneeItems={[...assigneeItems]}
-          projectItems={projectItems}
-          projectGroups={projectGroups}
+          homeItems={homeItems}
+          homeGroups={homeGroups}
+          canOpenProject={canOpenProject}
           editorKey={editorKey}
           attachments={attachments}
           onSelectFiles={handleFileDialogSelect}
@@ -119,7 +120,6 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
           acceptedAttachmentTypes={acceptedAttachmentTypes}
           maxAttachmentSize={maxAttachmentSize}
           isSheetOpen={isSheetOpen}
-          lead={lead}
         />
       </form>
     </Form>

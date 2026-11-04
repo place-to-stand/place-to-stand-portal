@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 
-import { listWorkableProjectIds } from '@/lib/projects/access'
+import {
+  isWorkableTaskHome,
+  listWorkableProjectIds,
+} from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import {
   taskAssigneeMetadata as taskAssigneeMetadataTable,
@@ -98,12 +101,13 @@ export async function POST(request: Request) {
 
   const workableProjectIds = await listWorkableProjectIds(user)
   if (workableProjectIds !== null) {
-    const allowed = new Set(workableProjectIds)
-    const projectRows = await db
-      .select({ projectId: tasksTable.projectId })
+    const homeRows = await db
+      .select({ projectId: tasksTable.projectId, leadId: tasksTable.leadId })
       .from(tasksTable)
       .where(inArray(tasksTable.id, uniqueTaskIds))
-    if (projectRows.some(row => !allowed.has(row.projectId))) {
+    if (
+      homeRows.some(row => !isWorkableTaskHome(user, workableProjectIds, row))
+    ) {
       return NextResponse.json(
         { error: 'You are not a member of every project on this board.' },
         { status: 403 }

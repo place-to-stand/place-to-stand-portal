@@ -10,10 +10,6 @@ import { resolveProjectIdentifier } from '@/lib/data/projects'
 import { db } from '@/lib/db'
 import { projects } from '@/lib/db/schema'
 import { BadRequestError, NotFoundError } from '@/lib/errors/http'
-import {
-  findSalesProjectId,
-  getOrCreateSalesProject,
-} from '@/lib/leads/sales-project'
 import { ensureProjectWorkAccess } from '@/lib/projects/access'
 import {
   createTaskComment,
@@ -88,24 +84,6 @@ export async function resolveProjectId(
   return project.id
 }
 
-/**
- * Where a lead task with no project goes: the internal Sales project, as on
- * the lead sheet. Only admins may create it; for Sales it must exist.
- */
-async function leadTaskProjectId(user: AppUser): Promise<string> {
-  if (roleCan(user.role, 'projects.manage')) {
-    return getOrCreateSalesProject(user.id)
-  }
-
-  const projectId = await findSalesProjectId()
-  if (!projectId) {
-    throw new BadRequestError(
-      'There is no Sales project yet. Name a project, or ask an admin to create the Sales project.'
-    )
-  }
-  return projectId
-}
-
 export type TaskListRequest = {
   /** Project slug or UUID. */
   project?: string
@@ -144,7 +122,9 @@ export async function listTasksForAgent(
 
   const [assignees, locations] = await Promise.all([
     fetchAssigneeIdsByTask(shown.map(row => row.id)),
-    fetchBoardLocationsByProject(shown.map(row => row.projectId)),
+    fetchBoardLocationsByProject(
+      shown.flatMap(row => (row.projectId ? [row.projectId] : []))
+    ),
   ])
 
   return {
@@ -152,7 +132,7 @@ export async function listTasksForAgent(
       serializeTask(
         row,
         assignees.get(row.id) ?? [],
-        locations.get(row.projectId) ?? null
+        (row.projectId && locations.get(row.projectId)) || null
       )
     ),
     hasMore: rows.length > limit,
@@ -165,9 +145,15 @@ export async function loadSerializedTask(
   taskId: string
 ): Promise<CliTask> {
   const { task, assigneeIds } = await loadTaskForEdit(user, taskId)
-  const locations = await fetchBoardLocationsByProject([task.projectId])
+  const locations = task.projectId
+    ? await fetchBoardLocationsByProject([task.projectId])
+    : null
 
-  return serializeTask(task, assigneeIds, locations.get(task.projectId) ?? null)
+  return serializeTask(
+    task,
+    assigneeIds,
+    (task.projectId && locations?.get(task.projectId)) || null
+  )
 }
 
 /**
@@ -179,11 +165,11 @@ export async function createTaskFromInput(
   payload: CreateTaskInput,
   source: ActivitySourceValue
 ): Promise<TaskWriteOutcome> {
-  // Schema guarantees one of the two; a lead task with no explicit project
-  // goes where the lead sheet would put it.
+  // Schema guarantees exactly one of the two: a task is on a project or a
+  // lead.
   const projectId = payload.project
     ? await resolveProjectId(user, payload.project)
-    : await leadTaskProjectId(user)
+    : null
   const assigneeIds = await resolveAssigneeIds(user, payload.assigneeIds)
 
   const result = await saveTaskForActor(
@@ -220,9 +206,13 @@ export async function updateTaskFromInput(
 ): Promise<TaskWriteOutcome> {
   const { task, assigneeIds } = await loadTaskForEdit(user, taskId)
 
+  // Naming a project or a lead moves the task there and clears the other;
+  // naming neither keeps it where it is.
   const projectId = payload.project
     ? await resolveProjectId(user, payload.project)
-    : task.projectId
+    : payload.leadId
+      ? null
+      : task.projectId
 
   const result = await saveTaskForActor(
     user,
@@ -242,7 +232,11 @@ export async function updateTaskFromInput(
         payload.assigneeIds === undefined
           ? assigneeIds
           : await resolveAssigneeIds(user, payload.assigneeIds),
-      leadId: payload.leadId === undefined ? task.leadId : payload.leadId,
+      leadId: payload.project
+        ? null
+        : payload.leadId === undefined
+          ? task.leadId
+          : payload.leadId,
     },
     source
   )

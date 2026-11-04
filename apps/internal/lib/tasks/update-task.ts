@@ -1,11 +1,12 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { resolveMovedTaskRank } from '@/lib/tasks/rank'
 import { logActivity } from '@/lib/activity/logger'
 import { db } from '@/lib/db'
 import {
+  leads,
   projects,
   taskAssignees,
   tasks,
@@ -14,7 +15,6 @@ import {
 } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import {
-  ensureProjectWorkAccess,
   ensureTaskWorkAccess,
   findAssigneesWithoutAccess,
 } from '@/lib/projects/access'
@@ -23,6 +23,8 @@ import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { pinTaskToTopOfAssigneeBoards } from './assignee-sort'
 import { buildTaskUpdateEvent } from './save-task-activity'
 import { assigneeAccessError } from './assignee-access'
+import { resolveTaskHome } from './home'
+import { resolveTaskHomeContext } from './home-context'
 import {
   finishAttachmentChanges,
   saveFailedMessage,
@@ -68,10 +70,13 @@ export async function updateTaskForActor(
       dueOn: tasks.dueOn,
       completedAt: tasks.completedAt,
       leadId: tasks.leadId,
-      companyId: projects.companyId,
+      companyId: sql<
+        string | null
+      >`coalesce(${projects.companyId}, ${leads.companyId})`,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .leftJoin(leads, eq(leads.id, tasks.leadId))
     .where(eq(tasks.id, taskId))
     .limit(1)
 
@@ -81,16 +86,29 @@ export async function updateTaskForActor(
     return { error: 'Task not found.' }
   }
 
-  const projectChanged = existingTask.projectId !== projectId
+  if (projectId === null && leadId === null) {
+    return { error: 'Choose a project or a lead for this task.' }
+  }
+
+  // Picking a project or a lead clears the other; sending neither keeps the
+  // task where it is.
+  const home = resolveTaskHome({ projectId, leadId }) ?? {
+    projectId: existingTask.projectId,
+    leadId: existingTask.leadId,
+  }
+  const homeChanged =
+    existingTask.projectId !== home.projectId ||
+    existingTask.leadId !== home.leadId
   let targetCompanyId = existingTask.companyId ?? null
 
-  // When moving the task to a different project, authorize access to the
-  // destination project (mirrors the create path) and resolve its client.
-  if (projectChanged) {
+  // When the task moves, authorize the destination (mirrors the create path)
+  // and resolve its company.
+  if (homeChanged) {
     // A client task's time logs stay on its client project, so moving it
     // elsewhere breaks billing. Only admins may do that.
     if (
       !roleCan(actor.role, 'tasks.move_off_client_project') &&
+      existingTask.projectId &&
       existingTask.companyId
     ) {
       return { error: 'Only an admin can move a task off a client project.' }
@@ -100,50 +118,35 @@ export async function updateTaskForActor(
     // each linked time log is on the same project as its task. A move would
     // leave those links pointing across projects, so it waits until they
     // are archived.
-    const [loggedTime] = await db
-      .select({ id: timeLogTasks.id })
-      .from(timeLogTasks)
-      .innerJoin(timeLogs, eq(timeLogs.id, timeLogTasks.timeLogId))
-      .where(
-        and(
-          eq(timeLogTasks.taskId, taskId),
-          isNull(timeLogTasks.deletedAt),
-          isNull(timeLogs.deletedAt)
-        )
-      )
-      .limit(1)
+    const [loggedTime] =
+      existingTask.projectId !== home.projectId
+        ? await db
+            .select({ id: timeLogTasks.id })
+            .from(timeLogTasks)
+            .innerJoin(timeLogs, eq(timeLogs.id, timeLogTasks.timeLogId))
+            .where(
+              and(
+                eq(timeLogTasks.taskId, taskId),
+                isNull(timeLogTasks.deletedAt),
+                isNull(timeLogs.deletedAt)
+              )
+            )
+            .limit(1)
+        : []
 
     if (loggedTime) {
       return {
         error:
-          "This task has time logged on its project, so it can't move to another one. Archive those time logs first.",
+          "This task has time logged on its project, so it can't move. Archive those time logs first.",
       }
     }
 
-    try {
-      await ensureProjectWorkAccess(actor, projectId)
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        return { error: 'Selected project is unavailable.' }
-      }
-      if (error instanceof ForbiddenError) {
-        return { error: 'You do not have permission to use this project.' }
-      }
-      console.error('Failed to authorize project access', error)
-      return { error: 'Unable to resolve project for task.' }
+    const homeContext = await resolveTaskHomeContext(actor, home)
+    if ('error' in homeContext) {
+      return { error: homeContext.error }
     }
 
-    const newProjectContext = await db
-      .select({ companyId: projects.companyId })
-      .from(projects)
-      .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
-      .limit(1)
-
-    if (!newProjectContext.length) {
-      return { error: 'Selected project is unavailable.' }
-    }
-
-    targetCompanyId = newProjectContext[0].companyId ?? null
+    targetCompanyId = homeContext.companyId
   }
 
   const existingAssignees = await db
@@ -155,11 +158,11 @@ export async function updateTaskForActor(
 
   const existingAssigneeIds = existingAssignees.map(assignee => assignee.userId)
 
-  // Check new assignees only (all of them when the task changes project), so
-  // an older assignment never blocks an unrelated edit.
+  // Check new assignees only (all of them when the task moves), so an older
+  // assignment never blocks an unrelated edit.
   const blockedAssignees = await findAssigneesWithoutAccess(
-    projectId,
-    projectChanged
+    home.projectId,
+    homeChanged
       ? assigneeIds
       : assigneeIds.filter(id => !existingAssigneeIds.includes(id))
   )
@@ -171,10 +174,10 @@ export async function updateTaskForActor(
   let nextRank = existingTask.rank
 
   // Recompute ordering when the status changes, or when the task moves to a
-  // new project (so it lands correctly in the destination column).
-  if (statusChanged || projectChanged) {
+  // new project or lead (so it lands correctly in the destination column).
+  if (statusChanged || homeChanged) {
     try {
-      nextRank = await resolveMovedTaskRank(projectId, status)
+      nextRank = await resolveMovedTaskRank(home, status)
     } catch (rankError) {
       console.error('Failed to resolve rank for task status update', rankError)
       return { error: 'Unable to update task ordering.' }
@@ -203,11 +206,8 @@ export async function updateTaskForActor(
       await tx
         .update(tasks)
         .set({
-          projectId,
-          // PATCH semantics: an omitted leadId keeps the existing lead link,
-          // only an explicit null clears it. `?? null` here once let any save
-          // path that didn't know about leads silently sever tasks.lead_id.
-          leadId: leadId !== undefined ? leadId : existingTask.leadId,
+          projectId: home.projectId,
+          leadId: home.leadId,
           title,
           description,
           status,
@@ -258,6 +258,7 @@ export async function updateTaskForActor(
       description: existingTask.description ?? null,
       status: existingTask.status,
       projectId: existingTask.projectId,
+      leadId: existingTask.leadId,
       dueOn: existingTask.dueOn ?? null,
       assigneeIds: existingAssigneeIds,
     },
@@ -265,7 +266,8 @@ export async function updateTaskForActor(
       title,
       description: description ?? null,
       status,
-      projectId,
+      projectId: home.projectId,
+      leadId: home.leadId,
       dueOn: dueOn ?? null,
       assigneeIds,
     }
@@ -280,7 +282,7 @@ export async function updateTaskForActor(
       summary: event.summary,
       targetType: 'TASK',
       targetId: taskId,
-      targetProjectId: projectId,
+      targetProjectId: home.projectId,
       targetCompanyId,
       metadata: event.metadata,
     })
@@ -293,7 +295,7 @@ export async function updateTaskForActor(
     actorRole: actor.role,
     activity: {
       taskTitle: title,
-      projectId,
+      projectId: home.projectId,
       companyId: targetCompanyId,
       source,
     },

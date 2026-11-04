@@ -197,7 +197,12 @@ export const createDefaultValues = ({
   description: task?.description ?? null,
   status: task?.status ?? defaultStatus,
   dueOn: toDateInputValue(task?.due_on ?? defaultDueOn ?? null),
-  projectId: task?.project_id ?? defaultProjectId ?? '',
+  // A lead wins over a project default (opening from a lead's sheet).
+  projectId: task
+    ? (task.project_id ?? null)
+    : defaultLeadId
+      ? null
+      : (defaultProjectId ?? null),
   // The default assignee (usually you) is for new tasks only: an existing
   // task with no assignee opens unassigned.
   assigneeId: task

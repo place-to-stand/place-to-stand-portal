@@ -11,7 +11,7 @@ import type { DbTask, TaskWithRelations } from '@/lib/types'
 
 type TaskRow = {
   id: string
-  projectId: string
+  projectId: string | null
   leadId: string | null
   title: string
   description: string | null

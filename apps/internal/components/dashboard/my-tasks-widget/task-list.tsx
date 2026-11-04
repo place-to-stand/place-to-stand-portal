@@ -142,7 +142,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                     />
                     <span className='truncate-link'>{task.lead.name}</span>
                   </Link>
-                  <MetaSeparator />
+                  {task.project ? <MetaSeparator /> : null}
                 </>
               ) : null}
               {/* No company to open for internal or personal work. */}
@@ -153,16 +153,19 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                     onClick={e => e.stopPropagation()}
                     className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
                   >
-                    {renderProjectTypeIcon(
-                      task.project.type,
-                      'size-3 shrink-0'
-                    )}
+                    {task.project
+                      ? renderProjectTypeIcon(
+                          task.project.type,
+                          'size-3 shrink-0'
+                        )
+                      : null}
                     <span className='truncate-link'>{clientLabel}</span>
                   </Link>
                   <MetaSeparator />
                 </>
               ) : null}
-              {projectLinkMeta.href ? (
+              {/* A lead task has no project: its lead line says where it is. */}
+              {!task.project ? null : projectLinkMeta.href ? (
                 <Link
                   href={projectLinkMeta.href}
                   onClick={e => e.stopPropagation()}
@@ -234,19 +237,19 @@ function getTaskLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
 
 function getProjectLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
   const { client, project } = task
-  const projectSlug = project.slug ?? null
+  const projectSlug = project?.slug ?? null
 
   if (!projectSlug) {
     return { href: null }
   }
 
-  if (project.type === 'INTERNAL') {
+  if (project?.type === 'INTERNAL') {
     return {
       href: `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${projectSlug}/tasks`,
     }
   }
 
-  if (project.type === 'PERSONAL') {
+  if (project?.type === 'PERSONAL') {
     return {
       href: `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${projectSlug}/tasks`,
     }
@@ -267,7 +270,7 @@ function getClientLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
   const { client, project } = task
 
   // Only link to client pages for CLIENT-type projects with a valid client
-  if (project.type !== 'CLIENT' || !client) {
+  if (project?.type !== 'CLIENT' || !client) {
     return { href: null }
   }
 
@@ -280,11 +283,11 @@ function getClientDisplayName(task: AssignedTaskSummary): string {
     return task.client.name
   }
 
-  if (task.project.type === 'PERSONAL') {
+  if (task.project?.type === 'PERSONAL') {
     return 'Personal'
   }
 
-  if (task.project.type === 'INTERNAL') {
+  if (task.project?.type === 'INTERNAL') {
     return 'Internal'
   }
 

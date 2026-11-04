@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { logActivity } from '@/lib/activity/logger'
 import { taskArchivedEvent, taskRestoredEvent } from '@/lib/activity/events'
@@ -8,7 +8,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { ensureTaskAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { projects, taskAttachments, tasks } from '@/lib/db/schema'
+import { leads, projects, taskAttachments, tasks } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { deleteAttachmentObject } from '@/lib/storage/task-attachments'
@@ -27,10 +27,13 @@ async function loadTask(taskId: string) {
       title: tasks.title,
       deletedAt: tasks.deletedAt,
       projectId: tasks.projectId,
-      companyId: projects.companyId,
+      companyId: sql<
+        string | null
+      >`coalesce(${projects.companyId}, ${leads.companyId})`,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .leftJoin(leads, eq(leads.id, tasks.leadId))
     .where(eq(tasks.id, taskId))
     .limit(1)
   if (!task) throw new NotFoundError('Task not found.')

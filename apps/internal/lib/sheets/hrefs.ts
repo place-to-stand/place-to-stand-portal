@@ -51,6 +51,10 @@ export const boardTaskHref = (
 export const leadHref = (id: string, options?: ArchiveOption) =>
   `${listPath('/leads', options)}?lead=${id}`
 
+/** A lead task's sheet, stacked over its lead's sheet. */
+export const leadTaskHref = (leadId: string, taskId: string) =>
+  `${leadHref(leadId)}&task=${taskId}`
+
 /** Resolves server-side, so the link keeps working after archive/restore. */
 export const submissionHref = (id: string, options?: ArchiveOption) =>
   `${listPath('/submissions', options)}?submission=${id}`

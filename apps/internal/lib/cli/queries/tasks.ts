@@ -20,6 +20,7 @@ import {
   ensureTaskWorkAccess,
   isProjectStaff,
   listWorkableProjectIds,
+  workableTasksFilter,
 } from '@/lib/projects/access'
 import { taskFields, type SelectTask } from '@/lib/queries/tasks/common'
 
@@ -138,19 +139,17 @@ export async function listTasksForCli(
     throw new ForbiddenError('Project access required')
   }
 
-  // Admins see every project; Sales only the projects they can work (the
-  // same set as the board and My Tasks).
+  // Admins see every task; Sales only tasks on projects they can work (the
+  // same set as the board and My Tasks) and lead tasks.
   const workable = await listWorkableProjectIds(user)
-  if (workable && !workable.length) {
-    return []
-  }
 
   const conditions = [
     archived ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
   ]
 
-  if (workable) {
-    conditions.push(inArray(tasks.projectId, workable))
+  const workableFilter = workableTasksFilter(user, workable)
+  if (workableFilter) {
+    conditions.push(workableFilter)
   }
 
   if (projectId) {

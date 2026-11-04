@@ -24,6 +24,8 @@ import {
 } from '@pts/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
+import { useLeadOptions } from '@/lib/leads/use-lead-options'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 
 import type {
@@ -75,14 +77,18 @@ type TaskSheetProps = {
 }
 
 export function TaskSheet(props: TaskSheetProps) {
-  const { isAdmin } = useViewerAccess()
+  const { isAdmin, role } = useViewerAccess()
+  // The "Project or lead" field lists leads for anyone who works lead tasks,
+  // first for those who don't see every project (Sales).
+  const canWorkLeadTasks = roleCan(role, 'leads.tasks')
+  const { data: leadOptions } = useLeadOptions(props.open && canWorkLeadTasks)
   const {
     form,
     isPending,
     isDeleteDialogOpen,
     assigneeItems,
-    projectItems,
-    projectGroups,
+    homeItems,
+    homeGroups,
     sheetTitle,
     deleteDisabled,
     deleteDisabledReason,
@@ -119,6 +125,8 @@ export function TaskSheet(props: TaskSheetProps) {
     defaultAssigneeId: props.defaultAssigneeId,
     defaultLeadId: props.defaultLeadId ?? null,
     currentUserId: props.currentUserId,
+    leads: canWorkLeadTasks ? (leadOptions ?? []) : null,
+    leadsFirst: !roleCan(role, 'projects.view_all'),
   })
 
   // The assignee list already carries every internal user by id, so it doubles
@@ -354,6 +362,8 @@ export function TaskSheet(props: TaskSheetProps) {
 
   const taskPanelProjectId = props.task?.project_id ?? null
   const taskPanelClientId = taskProject?.client?.id ?? null
+  // The form's lead or project as saved: a lead task has no project.
+  const watchedLeadId = form.watch('leadId') ?? null
   // Project members (non-admins) don't see time logs or planning.
   const canDeploy = Boolean(
     isAdmin &&
@@ -421,8 +431,9 @@ export function TaskSheet(props: TaskSheetProps) {
                   isPending={isPending}
                   canManage={props.canManage}
                   assigneeItems={assigneeItems}
-                  projectItems={projectItems}
-                  projectGroups={projectGroups}
+                  homeItems={homeItems}
+                  homeGroups={homeGroups}
+                  canOpenProject={roleCan(role, 'projects.manage')}
                   resolveDisabledReason={resolveDisabledReason}
                   taskStatuses={taskStatuses}
                   editorKey={editorKey}
@@ -436,7 +447,6 @@ export function TaskSheet(props: TaskSheetProps) {
                   maxAttachmentSize={maxAttachmentSize}
                   attachmentsDisabledReason={attachmentsDisabledReason}
                   isDragActive={!dropDisabled && isDragActive}
-                  lead={props.task?.lead ?? null}
                 />
                 {/* Time is only tracked against client work — internal and
                     personal projects have no billing target for it. */}
@@ -450,16 +460,18 @@ export function TaskSheet(props: TaskSheetProps) {
                   />
                 ) : isAdmin &&
                   !props.task &&
+                  !watchedLeadId &&
                   (!taskProject || taskProject.type === 'CLIENT') ? (
                   // Create shows the same sheet: time is its own record, so
                   // the section waits for the saved task. Shown until a
                   // project is picked, unless that project is internal or
-                  // personal (no time is tracked there).
+                  // personal, or the task is on a lead (no time is tracked
+                  // there).
                   <TimeLogSectionPlaceholder />
                 ) : null}
                 {/* Sections, no inner tabs: Comments, then the collapsed
                     Activity, always last in a sheet. */}
-                {props.task && taskPanelProjectId ? (
+                {props.task ? (
                   <>
                     <TaskCommentsPanel
                       className='px-6'
@@ -481,7 +493,7 @@ export function TaskSheet(props: TaskSheetProps) {
                       companyId={taskPanelClientId}
                     />
                   </>
-                ) : !props.task ? (
+                ) : (
                   <EntityList
                     className='px-6'
                     title='Comments'
@@ -493,7 +505,7 @@ export function TaskSheet(props: TaskSheetProps) {
                     isEmpty
                     emptyMessage='Add comments after you save the task.'
                   />
-                ) : null}
+                )}
               </div>
 
               {/* Footer — always at bottom, outside scroll area */}

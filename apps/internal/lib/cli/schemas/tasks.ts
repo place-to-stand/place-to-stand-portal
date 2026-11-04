@@ -41,12 +41,11 @@ const descriptionSchema = z
 const leadRefSchema = z
   .string()
   .uuid()
-  .describe('Lead UUID, to attach the task to a lead.')
+  .describe(
+    'Lead UUID. A task is on a project or a lead, never both: setting one clears the other.'
+  )
 
-/**
- * `project` may be omitted only for a lead task, which then lands in the
- * internal Sales project — the same placement the lead sheet uses.
- */
+/** A task is on a project or a lead: exactly one of the two. */
 export const cliCreateTaskFields = {
   title: titleSchema,
   project: projectRefSchema.optional(),
@@ -59,8 +58,8 @@ export const cliCreateTaskFields = {
 
 export const cliCreateTaskSchema = z
   .object(cliCreateTaskFields)
-  .refine(payload => payload.project || payload.leadId, {
-    message: 'project is required unless leadId is set.',
+  .refine(payload => !payload.project !== !payload.leadId, {
+    message: 'Give a project or a leadId, not both.',
     path: ['project'],
   })
 
@@ -83,6 +82,10 @@ export const cliUpdateTaskSchema = z
   .object(cliUpdateTaskFields)
   .refine(payload => Object.keys(payload).length > 0, {
     message: 'Provide at least one field to update.',
+  })
+  .refine(payload => !(payload.project && payload.leadId), {
+    message: 'Give a project or a leadId, not both.',
+    path: ['project'],
   })
 export const cliCreateCommentFields = {
   body: descriptionSchema

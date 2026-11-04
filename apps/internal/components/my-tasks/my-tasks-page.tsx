@@ -42,7 +42,8 @@ import { companySheetHref } from '@/lib/sheets/hrefs'
 
 export type MyTasksInitialEntry = {
   taskId: string
-  projectId: string
+  /** Null for a lead task. */
+  projectId: string | null
   sortOrder: number | null
 }
 
@@ -52,6 +53,8 @@ type MyTasksPageProps = {
   user: AppUser
   admins: DbUser[]
   projects: ProjectWithRelations[]
+  /** Assigned tasks on a lead: they have no project to carry them. */
+  leadTasks: TaskWithRelations[]
   projectSelectionProjects: ProjectWithRelations[]
   initialEntries: MyTasksInitialEntry[]
   view: MyTasksView
@@ -72,6 +75,7 @@ export function MyTasksPage({
   user,
   admins,
   projects,
+  leadTasks,
   projectSelectionProjects,
   initialEntries,
   view,
@@ -121,6 +125,7 @@ export function MyTasksPage({
   const [olderDoneCount, setOlderDoneCount] = useState(initialOlderDoneCount)
   const [olderEntries, setOlderEntries] = useState<MyTasksInitialEntry[]>([])
   const [olderProjects, setOlderProjects] = useState<ProjectWithRelations[]>([])
+  const [olderLeadTasks, setOlderLeadTasks] = useState<TaskWithRelations[]>([])
   const [isLoadingOlderDone, setIsLoadingOlderDone] = useState(false)
   const [doneWindowError, setDoneWindowError] = useState<string | null>(null)
   // Pinned at mount. `now` changes on every server render, and stepping the
@@ -136,11 +141,17 @@ export function MyTasksPage({
     [projects, olderProjects]
   )
 
-  const taskLookup = useMemo(() => buildTaskLookup(allProjects), [allProjects])
+  const taskLookup = useMemo(
+    () => buildTaskLookup(allProjects, [...leadTasks, ...olderLeadTasks]),
+    [allProjects, leadTasks, olderLeadTasks]
+  )
   // Deliberately keyed off the server's projects, not `allProjects`: this only
   // filters the server's own entries, and rebuilding it every time a slice
   // lands would reset `entries` and discard in-flight reorder state.
-  const serverTaskLookup = useMemo(() => buildTaskLookup(projects), [projects])
+  const serverTaskLookup = useMemo(
+    () => buildTaskLookup(projects, leadTasks),
+    [projects, leadTasks]
+  )
   const sanitizedEntries = useMemo(
     () => initialEntries.filter(entry => serverTaskLookup.has(entry.taskId)),
     [initialEntries, serverTaskLookup]
@@ -229,6 +240,7 @@ export function MyTasksPage({
         data?: {
           entries: MyTasksInitialEntry[]
           projects: ProjectWithRelations[]
+          leadTasks: TaskWithRelations[]
           olderDoneCount: number
         }
         error?: string
@@ -241,6 +253,13 @@ export function MyTasksPage({
       const data = payload.data
 
       setOlderProjects(current => mergeProjectTasks(current, data.projects))
+      setOlderLeadTasks(current => {
+        const seen = new Set(current.map(task => task.id))
+        return [
+          ...current,
+          ...data.leadTasks.filter(task => !seen.has(task.id)),
+        ]
+      })
       setOlderEntries(current => {
         const seen = new Set(current.map(entry => entry.taskId))
         return [
@@ -573,7 +592,7 @@ export function MyTasksPage({
           projects={allProjects}
           projectSelectionProjects={projectSelectionProjects}
           defaultProjectId={
-            createTaskContext?.projectId ?? editingTaskMeta?.project.id ?? null
+            createTaskContext?.projectId ?? editingTaskMeta?.project?.id ?? null
           }
           defaultAssigneeId={createTaskContext?.assigneeId ?? null}
         />
@@ -615,13 +634,19 @@ function mergeProjectTasks(
   return [...merged, ...extra.filter(project => !baseIds.has(project.id))]
 }
 
-function buildTaskLookup(projects: ProjectWithRelations[]): TaskLookup {
+function buildTaskLookup(
+  projects: ProjectWithRelations[],
+  leadTasks: TaskWithRelations[]
+): TaskLookup {
   const map: TaskLookup = new Map()
 
   projects.forEach(project => {
     project.tasks.forEach(task => {
       map.set(task.id, { task, project })
     })
+  })
+  leadTasks.forEach(task => {
+    map.set(task.id, { task, project: null })
   })
 
   return map
@@ -660,6 +685,8 @@ function buildTaskContextLookup(
   const map = new Map<string, TaskContextMeta>()
 
   lookup.forEach(({ project }, taskId) => {
+    // A lead task's card shows its lead line instead.
+    if (!project) return
     const clientLabel = resolveClientLabel(project)
     const clientHref = buildClientHref(project)
     const projectHref = buildProjectHref(project)

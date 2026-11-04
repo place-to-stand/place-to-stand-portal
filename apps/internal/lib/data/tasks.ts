@@ -37,20 +37,21 @@ export type AssignedTaskSummary = {
   dueOn: string | null
   updatedAt: string | null
   sortOrder: number | null
+  /** Null for a lead task: a task is on a project or a lead, never both. */
   project: {
     id: string
     name: string
     slug: string | null
     type: ProjectTypeValue
     createdBy: string | null
-  }
+  } | null
   client: {
     id: string
     name: string
     slug: string | null
   } | null
-  /** The lead a sales task belongs to (the home widget's list loads it). */
-  lead?: { id: string; name: string } | null
+  /** The lead a lead task belongs to. */
+  lead: { id: string; name: string } | null
 }
 
 export type AssignedTaskSummaryResult = {
@@ -85,17 +86,20 @@ function assigneeJoinCondition(userId: string | null) {
 }
 
 /**
- * Project scope shared by every My Tasks query: an optional single client,
- * and project types the board is hiding. A client selection already implies
+ * Scope shared by every My Tasks query: an optional single client, and
+ * project types the board is hiding. A client selection already implies
  * CLIENT-type projects, so the type exclusion only bites in the all-clients
  * view — but it's applied unconditionally so the two never disagree.
+ *
+ * Lead tasks have no project. They show in the all-clients view (no project
+ * type hides them) and drop out once a client is picked.
  */
 function projectScopeConditions(
   companyId: string | null,
   hiddenProjectTypes: readonly ProjectTypeValue[],
   projectIds: readonly string[] | null = null
 ) {
-  return [
+  const projectConditions = [
     // Non-admin viewers: only projects they can work (null = every project).
     ...(projectIds === null
       ? []
@@ -107,6 +111,12 @@ function projectScopeConditions(
       ? [notInArray(projectsTable.type, [...hiddenProjectTypes])]
       : []),
   ]
+
+  const projectTask = and(isNotNull(tasksTable.projectId), ...projectConditions)
+
+  return [
+    companyId ? projectTask : or(isNull(tasksTable.projectId), projectTask),
+  ]
 }
 
 function assignedTaskConditions(userId: string | null) {
@@ -116,6 +126,7 @@ function assignedTaskConditions(userId: string | null) {
     // whole picture.
     ...(userId ? [isNotNull(taskAssigneesTable.userId)] : []),
     isNull(tasksTable.deletedAt),
+    // A lead task joins no project row, which reads as not archived.
     isNull(projectsTable.deletedAt),
     isNull(tasksTable.acceptedAt),
   ]
@@ -260,7 +271,7 @@ async function loadAssignedTaskSummaries({
     })
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(companiesTable, eq(projectsTable.companyId, companiesTable.id))
     .leftJoin(
       leadsTable,
@@ -292,7 +303,7 @@ async function loadAssignedTaskSummaries({
       })
       .from(tasksTable)
       .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
-      .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+      .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
       .where(whereClause)
 
     totalCount = Number(totalResult[0]?.count ?? 0)
@@ -333,13 +344,15 @@ async function loadAssignedTaskSummaries({
       dueOn: row.dueOn ?? null,
       updatedAt: updatedSource,
       sortOrder: row.sortOrder ?? null,
-      project: {
-        id: row.project.id,
-        name: row.project.name,
-        slug: row.project.slug ?? null,
-        type: row.project.type as ProjectTypeValue,
-        createdBy: row.project.createdBy ?? null,
-      },
+      project: row.project?.id
+        ? {
+            id: row.project.id,
+            name: row.project.name,
+            slug: row.project.slug ?? null,
+            type: row.project.type as ProjectTypeValue,
+            createdBy: row.project.createdBy ?? null,
+          }
+        : null,
       client: row.client?.id
         ? {
             id: row.client.id,
@@ -370,7 +383,7 @@ async function countAssignedDoneBefore(
     .select({ count: sql<number>`count(distinct ${tasksTable.id})` })
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .where(
       and(
         ...assignedTaskConditions(userId),
@@ -435,11 +448,19 @@ export async function listAssignedDoneSlice({
         name: companiesTable.name,
         slug: companiesTable.slug,
       },
+      lead: {
+        id: leadsTable.id,
+        name: leadContactNameSql,
+      },
     })
     .from(tasksTable)
     .leftJoin(taskAssigneesTable, assigneeJoinCondition(userId))
-    .innerJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
+    .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .leftJoin(companiesTable, eq(projectsTable.companyId, companiesTable.id))
+    .leftJoin(
+      leadsTable,
+      and(eq(leadsTable.id, tasksTable.leadId), isNull(leadsTable.deletedAt))
+    )
     .leftJoin(
       taskAssigneeMetadataTable,
       and(
@@ -478,13 +499,15 @@ export async function listAssignedDoneSlice({
     dueOn: row.dueOn ?? null,
     updatedAt: row.updatedAt ?? row.createdAt ?? null,
     sortOrder: row.sortOrder ?? null,
-    project: {
-      id: row.project.id,
-      name: row.project.name,
-      slug: row.project.slug ?? null,
-      type: row.project.type as ProjectTypeValue,
-      createdBy: row.project.createdBy ?? null,
-    },
+    project: row.project?.id
+      ? {
+          id: row.project.id,
+          name: row.project.name,
+          slug: row.project.slug ?? null,
+          type: row.project.type as ProjectTypeValue,
+          createdBy: row.project.createdBy ?? null,
+        }
+      : null,
     client: row.client?.id
       ? {
           id: row.client.id,
@@ -492,6 +515,7 @@ export async function listAssignedDoneSlice({
           slug: row.client.slug ?? null,
         }
       : null,
+    lead: row.lead?.id ? { id: row.lead.id, name: row.lead.name } : null,
   }))
 
   return {
@@ -518,19 +542,18 @@ export function listAssignedTaskSummaries(
 }
 
 /**
- * Resolve a task's project without hydrating any project graph — used by
- * the My Tasks deep-link path to merge in a project outside the assigned
- * set. Soft-deleted tasks resolve to null (matches the previous behavior
- * of searching active task arrays only).
+ * Where a live task lives (its project, or its lead) without hydrating any
+ * project graph — used by the task sheet and the My Tasks deep-link path.
+ * Soft-deleted tasks resolve to null.
  */
-export async function getActiveTaskProjectId(
+export async function getActiveTaskHome(
   taskId: string
-): Promise<string | null> {
+): Promise<{ projectId: string | null; leadId: string | null } | null> {
   const rows = await db
-    .select({ projectId: tasksTable.projectId })
+    .select({ projectId: tasksTable.projectId, leadId: tasksTable.leadId })
     .from(tasksTable)
     .where(and(eq(tasksTable.id, taskId), isNull(tasksTable.deletedAt)))
     .limit(1)
 
-  return rows[0]?.projectId ?? null
+  return rows[0] ?? null
 }

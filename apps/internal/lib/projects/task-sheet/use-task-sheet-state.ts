@@ -7,6 +7,7 @@ import type { UseFormReturn } from 'react-hook-form'
 import type {
   DbUser,
   ProjectWithRelations,
+  TaskLeadOption,
   TaskWithRelations,
 } from '@/lib/types'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
@@ -31,6 +32,7 @@ import {
   normalizeRichTextContent,
 } from './task-sheet-utils'
 import type { ProjectSelectionItems } from './task-sheet-utils'
+import { buildTaskHomeOptions } from './task-home-options'
 import type { TaskSheetFormValues } from './task-sheet-schema'
 import { useTaskSheetForm } from './hooks/use-task-sheet-form'
 import {
@@ -54,6 +56,10 @@ export type UseTaskSheetStateArgs = {
   defaultAssigneeId: string | null
   defaultLeadId: string | null
   currentUserId: string
+  /** Leads the "Project or lead" field offers; null without lead tasks. */
+  leads: TaskLeadOption[] | null
+  /** List leads above projects in that field (Sales). */
+  leadsFirst: boolean
 }
 
 type UseTaskSheetStateReturn = {
@@ -61,8 +67,8 @@ type UseTaskSheetStateReturn = {
   isPending: boolean
   isDeleteDialogOpen: boolean
   assigneeItems: ReturnType<typeof buildAssigneeItems>
-  projectItems: ProjectSelectionItems['items']
-  projectGroups: ProjectSelectionItems['groups']
+  homeItems: ProjectSelectionItems['items']
+  homeGroups: ProjectSelectionItems['groups']
   sheetTitle: string
   projectName: string | null
   deleteDisabled: boolean
@@ -102,6 +108,8 @@ export const useTaskSheetState = ({
   defaultAssigneeId,
   defaultLeadId,
   currentUserId,
+  leads,
+  leadsFirst,
 }: UseTaskSheetStateArgs): UseTaskSheetStateReturn => {
   const router = useRouter()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -182,7 +190,7 @@ export const useTaskSheetState = ({
           const attachmentsPayload = buildSubmissionPayload()
           const result = await saveTask({
             id: task?.id,
-            projectId: values.projectId,
+            projectId: values.projectId ?? null,
             leadId: values.leadId ?? null,
             title: values.title.trim(),
             description: normalizedDescription,
@@ -308,9 +316,18 @@ export const useTaskSheetState = ({
   const selectedProject = selectedProjectId
     ? projectLookup.get(selectedProjectId)
     : null
-  const { items: projectItems, groups: projectGroups } = useMemo(
-    () => buildProjectItems({ projects: selectionProjects, currentUserId }),
-    [currentUserId, selectionProjects]
+  const { items: homeItems, groups: homeGroups } = useMemo(
+    () =>
+      buildTaskHomeOptions({
+        projectGroups: buildProjectItems({
+          projects: selectionProjects,
+          currentUserId,
+        }).groups,
+        leads,
+        currentLead: task?.lead ?? null,
+        leadsFirst,
+      }),
+    [currentUserId, leads, leadsFirst, selectionProjects, task?.lead]
   )
   const watchedAssigneeId = form.watch('assigneeId') ?? null
   const assigneeItems = useMemo(
@@ -330,8 +347,8 @@ export const useTaskSheetState = ({
     isPending,
     isDeleteDialogOpen,
     assigneeItems,
-    projectItems,
-    projectGroups,
+    homeItems,
+    homeGroups,
     sheetTitle,
     projectName,
     deleteDisabled,

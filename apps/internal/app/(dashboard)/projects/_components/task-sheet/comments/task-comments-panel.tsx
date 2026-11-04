@@ -18,7 +18,7 @@ import {
 
 export type TaskCommentsPanelProps = {
   taskId: string | null
-  projectId: string
+  projectId: string | null
   currentUserId: string
   /** Byline for the optimistic comment until the refetch replaces it. */
   currentUserName?: string | null

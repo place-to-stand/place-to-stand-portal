@@ -5,7 +5,8 @@ export type TaskSnapshot = {
   title: string
   description: string | null
   status: string
-  projectId: string
+  projectId: string | null
+  leadId: string | null
   dueOn: string | null
   assigneeIds: string[]
 }
@@ -53,6 +54,12 @@ export function buildTaskUpdateEvent(
     changedFields.push('project')
     previousDetails.projectId = before.projectId
     nextDetails.projectId = after.projectId
+  }
+
+  if (before.leadId !== after.leadId) {
+    changedFields.push('lead')
+    previousDetails.leadId = before.leadId
+    nextDetails.leadId = after.leadId
   }
 
   if (before.dueOn !== after.dueOn) {

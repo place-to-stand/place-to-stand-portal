@@ -22,8 +22,8 @@ export function TaskSheetWrapper({
   }
 
   const isCreating = value === NEW_SHEET_VALUE
-  // Creating a task while a lead sheet is open below in the stack links the
-  // task to that lead and defaults it to the sales project.
+  // Creating a task while a lead sheet is open below in the stack puts the
+  // task on that lead.
   const leadBelow = stack.find(item => item.entity === 'lead')
   const leadId =
     isCreating && leadBelow && leadBelow.value !== NEW_SHEET_VALUE
@@ -46,9 +46,7 @@ export function TaskSheetWrapper({
       defaultStatus='ON_DECK'
       defaultDueOn={null}
       projects={data.projects}
-      defaultProjectId={
-        leadId ? data.salesProjectId : (data.task?.project_id ?? null)
-      }
+      defaultProjectId={data.task?.project_id ?? null}
       defaultAssigneeId={data.currentUserId}
       defaultLeadId={leadId}
     />

@@ -3,8 +3,7 @@ import 'server-only'
 import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
-import { assertCrmAccess, ensureProjectAccess } from '@/lib/auth/permissions'
-import { listWorkableProjectIds } from '@/lib/projects/access'
+import { assertCan, ensureProjectAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
 import { taskAssignees, tasks } from '@/lib/db/schema'
 import type { RawTaskWithRelations } from '@/lib/data/projects/types'
@@ -12,7 +11,7 @@ import { loadTaskLeads } from '@/lib/data/projects/relations/task-leads'
 
 type TaskWithRelationsSelection = {
   id: string
-  projectId: string
+  projectId: string | null
   leadId: string | null
   title: string
   description: string | null
@@ -61,33 +60,47 @@ async function listProjectTasksWithRelations(
 }
 
 /**
- * Tasks linked to a lead, hydrated with the same counts and assignee rows the
+ * A lead's tasks, hydrated with the same counts and assignee rows the
  * project board's cards consume — the lead sheet renders the board's card.
- * CRM staff only; SALES see just the tasks on projects they can work, with
- * logged hours hidden. Ordered by creation so the section reads as a
- * chronology, not board rank.
+ * Anyone with `leads.tasks`. Lead tasks have no project, so no time is
+ * logged on them. Ordered by creation so the section reads as a chronology,
+ * not board rank.
  */
 export async function listLeadTasksWithRelations(
   user: AppUser,
   leadId: string
 ): Promise<RawTaskWithRelations[]> {
-  assertCrmAccess(user)
+  assertCan(user, 'leads.tasks')
 
-  const workable = await listWorkableProjectIds(user)
-  if (workable !== null && workable.length === 0) return []
-
-  const rows = await queryTasksWithRelations(
-    and(
-      eq(tasks.leadId, leadId),
-      isNull(tasks.deletedAt),
-      workable === null ? undefined : inArray(tasks.projectId, workable)
-    ),
+  return queryTasksWithRelations(
+    and(eq(tasks.leadId, leadId), isNull(tasks.deletedAt)),
     asc(tasks.createdAt)
   )
+}
 
-  return workable === null
-    ? rows
-    : rows.map(row => ({ ...row, logged_hours: 0 }))
+/**
+ * One task with its relations, wherever it lives: the task sheet's load for
+ * a lead task, which has no project to hydrate. The caller checks access.
+ */
+export async function loadTaskWithRelations(
+  taskId: string
+): Promise<RawTaskWithRelations | null> {
+  const [row] = await loadTasksWithRelationsByIds([taskId])
+  return row ?? null
+}
+
+/**
+ * Live tasks by id with their relations: My Tasks' lead tasks, which have no
+ * project to hydrate. The caller checks access.
+ */
+export async function loadTasksWithRelationsByIds(
+  taskIds: readonly string[]
+): Promise<RawTaskWithRelations[]> {
+  if (!taskIds.length) return []
+  return queryTasksWithRelations(
+    and(inArray(tasks.id, [...taskIds]), isNull(tasks.deletedAt)),
+    asc(tasks.createdAt)
+  )
 }
 
 async function queryTasksWithRelations(

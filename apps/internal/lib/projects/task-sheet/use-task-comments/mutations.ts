@@ -21,7 +21,7 @@ type ToastFn = ReturnType<typeof useToast>['toast']
 type BaseMutationArgs = {
   taskId: string | null
   currentUserId: string
-  queryKey: readonly [string, string, string | null]
+  queryKey: readonly [string, string | null, string | null]
   queryClient: QueryClient
   router: RouterInstance
   toast: ToastFn

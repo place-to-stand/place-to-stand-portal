@@ -33,6 +33,7 @@ type CreateOptions = {
 type EditOptions = {
   title?: string
   project?: string
+  lead?: string
   description?: string
   status?: string
   due?: string
@@ -119,21 +120,15 @@ export function registerTaskCommands(program: Command): void {
     .command('create')
     .description('Create a task')
     .requiredOption('--title <title>', 'Task title')
-    .option(
-      '--project <ref>',
-      'Project UUID or slug; required unless --lead is given'
-    )
-    .option(
-      '--lead <leadId>',
-      'Link the task to a lead; without --project it goes in the Sales project'
-    )
+    .option('--project <ref>', 'Project UUID or slug (or give --lead)')
+    .option('--lead <leadId>', 'Put the task on a lead instead of a project')
     .option('--description <text>', 'Task description; "-" reads stdin')
     .option('--status <status>', 'Defaults to ON_DECK')
     .option('--due <date>', 'Due date as YYYY-MM-DD')
     .option('--assignee <user>', 'Assign by email or user id (one assignee)')
     .action(async (options: CreateOptions) => {
-      if (!options.project && !options.lead) {
-        throw new Error('Provide --project, or --lead for a sales task.')
+      if (!options.project === !options.lead) {
+        throw new Error('Provide --project or --lead, not both.')
       }
 
       const { data, warning } = await apiPost<Task>('api/cli/v1/tasks', {
@@ -191,7 +186,8 @@ export function registerTaskCommands(program: Command): void {
     .command('edit <taskId>')
     .description('Update a task; omitted fields keep their current values')
     .option('--title <title>')
-    .option('--project <ref>', 'Move the task to another project')
+    .option('--project <ref>', 'Move the task to a project (off its lead)')
+    .option('--lead <leadId>', 'Move the task to a lead (off its project)')
     .option('--description <text>', 'Task description; "-" reads stdin')
     .option('--status <status>')
     .option('--due <date>', 'Due date as YYYY-MM-DD')
@@ -205,7 +201,11 @@ export function registerTaskCommands(program: Command): void {
       const payload: Record<string, unknown> = {}
 
       if (options.title !== undefined) payload.title = options.title
+      if (options.project !== undefined && options.lead !== undefined) {
+        throw new Error('Provide --project or --lead, not both.')
+      }
       if (options.project !== undefined) payload.project = options.project
+      if (options.lead !== undefined) payload.leadId = options.lead
       if (options.status !== undefined) payload.status = options.status
       if (options.assignee !== undefined)
         payload.assigneeIds = [options.assignee]

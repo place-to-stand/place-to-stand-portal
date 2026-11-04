@@ -3,7 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import type { TaskCommentsPage } from '@/lib/queries/task-comments'
 
 export type TaskCommentsQueryArgs = {
-  queryKey: readonly [string, string, string | null]
+  queryKey: readonly [string, string | null, string | null]
   taskId: string | null
   pageSize?: number
 }

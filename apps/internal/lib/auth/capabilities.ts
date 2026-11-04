@@ -199,12 +199,9 @@ export const CAPABILITIES = {
   'leads.tasks': {
     area: 'Sales',
     label: 'Tasks on leads',
-    description: 'Lead tasks live in the Sales project.',
+    description: 'Create and work tasks on any live lead.',
     roles: STAFF,
     surfaces: ['app'],
-    scope: {
-      SALES: { detail: 'Only if they are a member of the Sales project.' },
-    },
   },
   'leads.edit_others_updates': {
     area: 'Sales',
