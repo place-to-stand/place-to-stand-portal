@@ -2,22 +2,18 @@ import 'server-only'
 
 import { randomUUID } from 'node:crypto'
 
-import { and, eq, isNull } from 'drizzle-orm'
-
 import { resolveNewTaskRank } from '@/lib/tasks/rank'
 import { taskCreatedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { db } from '@/lib/db'
-import { projects, tasks } from '@/lib/db/schema'
-import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
-import {
-  ensureProjectWorkAccess,
-  findAssigneesWithoutAccess,
-} from '@/lib/projects/access'
+import { tasks } from '@/lib/db/schema'
+import { findAssigneesWithoutAccess } from '@/lib/projects/access'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
 
 import { assigneeAccessError } from './assignee-access'
+import { resolveTaskHome } from './home'
+import { resolveTaskHomeContext } from './home-context'
 import {
   finishAttachmentChanges,
   saveFailedMessage,
@@ -40,37 +36,20 @@ export async function createTaskForActor({
   const { projectId, leadId, title, description, status, dueOn, attachments } =
     input
 
-  try {
-    await ensureProjectWorkAccess(actor, projectId)
-  } catch (error) {
-    if (error instanceof NotFoundError) {
-      return { error: 'Selected project is unavailable.' }
-    }
-    if (error instanceof ForbiddenError) {
-      return { error: 'You do not have permission to update this project.' }
-    }
-    console.error('Failed to authorize project access', error)
-    return { error: 'Unable to resolve project for new task.' }
+  const home = resolveTaskHome({ projectId, leadId })
+  if (!home) {
+    return { error: 'Choose a project or a lead for this task.' }
   }
 
-  const projectContext = await db
-    .select({
-      id: projects.id,
-      companyId: projects.companyId,
-      name: projects.name,
-    })
-    .from(projects)
-    .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
-    .limit(1)
-
-  if (!projectContext.length) {
-    return { error: 'Selected project is unavailable.' }
+  const homeContext = await resolveTaskHomeContext(actor, home)
+  if ('error' in homeContext) {
+    return { error: homeContext.error }
   }
 
-  const companyId = projectContext[0].companyId ?? null
+  const { companyId } = homeContext
 
   const blockedAssignees = await findAssigneesWithoutAccess(
-    projectId,
+    home.projectId,
     assigneeIds
   )
   if (blockedAssignees.length) {
@@ -80,7 +59,7 @@ export async function createTaskForActor({
   let nextRank: string
 
   try {
-    nextRank = await resolveNewTaskRank(projectId, status)
+    nextRank = await resolveNewTaskRank(home, status)
   } catch (rankError) {
     console.error('Failed to resolve rank for new task', rankError)
     return { error: 'Unable to determine ordering for new task.' }
@@ -112,8 +91,8 @@ export async function createTaskForActor({
     attachmentChanges = await db.transaction(async tx => {
       await tx.insert(tasks).values({
         id: taskId,
-        projectId,
-        leadId: leadId ?? null,
+        projectId: home.projectId,
+        leadId: home.leadId,
         title,
         description,
         status,
@@ -162,7 +141,7 @@ export async function createTaskForActor({
     summary: event.summary,
     targetType: 'TASK',
     targetId: taskId,
-    targetProjectId: projectId,
+    targetProjectId: home.projectId,
     targetCompanyId: companyId,
     metadata: event.metadata,
   })
@@ -172,7 +151,12 @@ export async function createTaskForActor({
     taskId,
     actorId: actor.id,
     actorRole: actor.role,
-    activity: { taskTitle: title, projectId, companyId, source },
+    activity: {
+      taskTitle: title,
+      projectId: home.projectId,
+      companyId,
+      source,
+    },
     changes: attachmentChanges,
   })
 

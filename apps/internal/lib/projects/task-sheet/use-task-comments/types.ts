@@ -1,7 +1,7 @@
 import type { TaskCommentWithAuthor } from '@/lib/types'
 export type UseTaskCommentsOptions = {
   taskId: string | null
-  projectId: string
+  projectId: string | null
   currentUserId: string
   canComment: boolean
   taskTitle?: string | null

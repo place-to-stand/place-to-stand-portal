@@ -31,10 +31,8 @@ import { normalizeRichTextContent } from '@/lib/projects/task-sheet/task-sheet-u
 import type { AttachmentItem } from '@/lib/projects/task-sheet/use-task-sheet-state'
 import { cn } from '@/lib/utils'
 
-import type { TaskLead } from '@/lib/types'
-
 import { TaskAttachmentsField } from '../task-attachments-field'
-import { TaskLeadField } from './task-lead-field'
+import { TaskHomeField } from './task-home-field'
 
 export type TaskSheetFormFieldsProps = {
   form: UseFormReturn<TaskSheetFormValues>
@@ -43,8 +41,10 @@ export type TaskSheetFormFieldsProps = {
   resolveDisabledReason: (disabled: boolean) => string | null
   taskStatuses: Array<{ value: string; label: string; token: string }>
   assigneeItems: SearchableComboboxItem[]
-  projectItems: SearchableComboboxItem[]
-  projectGroups: SearchableComboboxGroup[]
+  homeItems: SearchableComboboxItem[]
+  homeGroups: SearchableComboboxGroup[]
+  /** False when the viewer can't open project sheets (non-admins). */
+  canOpenProject: boolean
   editorKey: string
   attachments: AttachmentItem[]
   onSelectFiles: (files: FileList | null) => void
@@ -57,8 +57,6 @@ export type TaskSheetFormFieldsProps = {
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
   isSheetOpen: boolean
-  /** The linked lead, shown above the description. */
-  lead: TaskLead | null
 }
 
 export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
@@ -69,8 +67,9 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
     resolveDisabledReason,
     taskStatuses,
     assigneeItems,
-    projectItems,
-    projectGroups,
+    homeItems,
+    homeGroups,
+    canOpenProject,
     editorKey,
     attachments,
     onSelectFiles,
@@ -133,67 +132,14 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
           )
         }}
       />
-      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-        <FormField
-          control={form.control}
-          name='projectId'
-          render={({ field }) => {
-            const disabled = isPending || !canManage
-            const reason = resolveDisabledReason(disabled)
-            const selectedValue = field.value ?? ''
-
-            return (
-              <FormItem>
-                <FormLabel entity='project'>Project</FormLabel>
-                <FormControl>
-                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <SearchableCombobox
-                      items={projectItems}
-                      groups={projectGroups}
-                      value={selectedValue}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      placeholder='Select project'
-                      searchPlaceholder='Search projects…'
-                      emptyMessage='No projects found.'
-                      disabled={disabled}
-                    />
-                  </DisabledFieldTooltip>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-        <FormField
-          control={form.control}
-          name='dueOn'
-          render={({ field }) => {
-            const disabled = isPending || !canManage
-            const reason = resolveDisabledReason(disabled)
-
-            return (
-              <FormItem>
-                <FormLabel>Due date</FormLabel>
-                <FormControl>
-                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
-                    <DatePicker
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      placeholder='No due date'
-                      clearLabel='due date'
-                      disabled={disabled}
-                    />
-                  </DisabledFieldTooltip>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-      </div>
+      <TaskHomeField
+        form={form}
+        items={homeItems}
+        groups={homeGroups}
+        disabled={isPending || !canManage}
+        disabledReason={resolveDisabledReason(isPending || !canManage)}
+        canOpenProject={canOpenProject}
+      />
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
         <FormField
           control={form.control}
@@ -279,7 +225,35 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
           }}
         />
       </div>
-      <TaskLeadField lead={props.lead} />
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+        <FormField
+          control={form.control}
+          name='dueOn'
+          render={({ field }) => {
+            const disabled = isPending || !canManage
+            const reason = resolveDisabledReason(disabled)
+
+            return (
+              <FormItem>
+                <FormLabel>Due date</FormLabel>
+                <FormControl>
+                  <DisabledFieldTooltip disabled={disabled} reason={reason}>
+                    <DatePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder='No due date'
+                      clearLabel='due date'
+                      disabled={disabled}
+                    />
+                  </DisabledFieldTooltip>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
+      </div>
       <FormField
         control={form.control}
         name='description'

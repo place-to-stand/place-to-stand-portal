@@ -13,7 +13,7 @@ import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
-import { projects, taskComments, tasks, users } from '@/lib/db/schema'
+import { leads, projects, taskComments, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { notifyTaskComment } from '@/lib/notifications/in-app/events'
 import { clampLimit, decodeCursor, encodeCursor } from '@/lib/pagination/cursor'
@@ -119,7 +119,7 @@ async function getCommentSelectionById(
 
 type CommentTaskContext = {
   title: string
-  projectId: string
+  projectId: string | null
   companyId: string | null
 }
 
@@ -130,10 +130,14 @@ async function getCommentTaskContext(
     .select({
       title: tasks.title,
       projectId: tasks.projectId,
-      companyId: projects.companyId,
+      // A lead task files its activity under the lead's company.
+      companyId: sql<
+        string | null
+      >`coalesce(${projects.companyId}, ${leads.companyId})`,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .leftJoin(leads, eq(leads.id, tasks.leadId))
     .where(eq(tasks.id, taskId))
     .limit(1)
 

@@ -1,6 +1,6 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -8,7 +8,7 @@ import { taskUpdatedEvent } from '@/lib/activity/events'
 import { requirePage } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
-import { projects, tasks } from '@/lib/db/schema'
+import { leads, projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 
 import { revalidateProjectTaskViews } from './shared'
@@ -59,10 +59,13 @@ export async function changeTaskDueDate(input: {
       title: tasks.title,
       dueOn: tasks.dueOn,
       projectId: tasks.projectId,
-      companyId: projects.companyId,
+      companyId: sql<
+        string | null
+      >`coalesce(${projects.companyId}, ${leads.companyId})`,
     })
     .from(tasks)
     .leftJoin(projects, eq(tasks.projectId, projects.id))
+    .leftJoin(leads, eq(leads.id, tasks.leadId))
     .where(eq(tasks.id, taskId))
     .limit(1)
 

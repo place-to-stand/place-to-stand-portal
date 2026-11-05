@@ -16,7 +16,10 @@ import {
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { notifications, taskAssignees, tasks, users } from '@/lib/db/schema'
-import { listWorkableProjectIds } from '@/lib/projects/access'
+import {
+  listWorkableProjectIds,
+  workableTasksFilter,
+} from '@/lib/projects/access'
 import { myTaskHref } from '@/lib/sheets/hrefs'
 import { companyCalendarDate } from '@pts/ui/dates'
 
@@ -69,12 +72,11 @@ export async function createNotifications(rows: NewNotification[]) {
 /**
  * Due-date notifications are made when the feed is read rather than by a
  * cron: one "due today" and one "overdue" per task and due date, for open
- * tasks assigned to the user on projects they can work.
+ * tasks assigned to the user that they can work.
  */
 async function syncDueTaskNotifications(user: AppUser) {
   const today = companyCalendarDate()
   const workable = await listWorkableProjectIds(user)
-  if (workable !== null && workable.length === 0) return
 
   const rows = await db
     .select({ id: tasks.id, title: tasks.title, dueOn: tasks.dueOn })
@@ -88,7 +90,7 @@ async function syncDueTaskNotifications(user: AppUser) {
         isNull(tasks.acceptedAt),
         ne(tasks.status, 'DONE'),
         lte(tasks.dueOn, today),
-        workable === null ? undefined : inArray(tasks.projectId, workable)
+        workableTasksFilter(user, workable)
       )
     )
 

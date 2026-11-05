@@ -13,13 +13,11 @@ import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
-import { getActiveTaskProjectId } from '@/lib/data/tasks'
+import { getActiveTaskHome } from '@/lib/data/tasks'
+import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
+import { loadTaskWithRelations } from '@/lib/queries/tasks/relations'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
 import { fetchLeadAssignees, fetchLeadById } from '@/lib/data/leads'
-import {
-  findSalesProjectId,
-  getOrCreateSalesProject,
-} from '@/lib/leads/sales-project'
 import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
 import { ForbiddenError } from '@/lib/errors/http'
@@ -230,26 +228,20 @@ const resolveLeadInit: SheetInitResolver<'lead'> = async (user, id) => {
 const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   // The sheet only reads project identity fields for its selector — no need
   // to hydrate every project's task graph. Assignees come from every CRM
-  // user; the save path checks each one can reach the task's project.
+  // user; the save path checks each one can reach the task's project. Leads
+  // for the same selector load through their own GET route.
   const isNew = id === NEW_SHEET_VALUE
-  const [admins, liteProjects, salesProjectId, holdingProjectId] =
-    await Promise.all([
-      fetchCrmUsers(),
-      fetchProjectsLite(),
-      // Opening a sheet never creates projects for non-admins: SALES only
-      // read it (null until an admin's sheet or the CLI creates it).
-      roleCan(user.role, 'projects.manage')
-        ? getOrCreateSalesProject(user.id)
-        : findSalesProjectId(),
-      isNew ? Promise.resolve(null) : getActiveTaskProjectId(id),
-    ])
+  const [admins, liteProjects, home] = await Promise.all([
+    fetchCrmUsers(),
+    fetchProjectsLite(),
+    isNew ? Promise.resolve(null) : getActiveTaskHome(id),
+  ])
   // Non-admins only see (redacted) projects they can work.
   const allProjects = await scopeProjectsForViewer(user, liteProjects)
 
   const base = {
     admins,
     projects: allProjects,
-    salesProjectId,
     currentUserId: user.id,
   }
 
@@ -257,15 +249,23 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
     return { task: null, ...base }
   }
 
-  if (!holdingProjectId) {
+  if (!home) {
     throw new NotFoundError('Task not found')
   }
-  if (!roleCan(user.role, 'projects.view_all')) {
-    await ensureTaskWorkAccess(user, id)
+  await ensureTaskWorkAccess(user, id)
+
+  // A lead task has no project to hydrate: load the task alone.
+  if (!home.projectId) {
+    const raw = await loadTaskWithRelations(id)
+    if (!raw) {
+      throw new NotFoundError('Task not found')
+    }
+    return { task: normalizeRawTask(raw), ...base }
   }
 
   // Hydrate the holding project with just this task: the sheet reads the
   // project's own fields, never its other tasks.
+  const holdingProjectId = home.projectId
   const [hydratedProject] = await scopeProjectsForViewer(
     user,
     await fetchProjectsWithRelationsByIds([holdingProjectId], {

@@ -1,11 +1,11 @@
 import 'server-only'
 
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
-import { projects, taskAttachments, tasks } from '@/lib/db/schema'
+import { leads, projects, taskAttachments, tasks } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import type { DbTaskAttachment } from '@/lib/types'
 
@@ -52,13 +52,16 @@ export async function getTaskAttachmentForDownload(
       },
       project: {
         id: projects.id,
-        companyId: projects.companyId,
+        companyId: sql<
+          string | null
+        >`coalesce(${projects.companyId}, ${leads.companyId})`,
         deletedAt: projects.deletedAt,
       },
     })
     .from(taskAttachments)
     .leftJoin(tasks, eq(tasks.id, taskAttachments.taskId))
     .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .leftJoin(leads, eq(leads.id, tasks.leadId))
     .where(eq(taskAttachments.id, attachmentId))
     .limit(1)) as AttachmentSelection[]
 

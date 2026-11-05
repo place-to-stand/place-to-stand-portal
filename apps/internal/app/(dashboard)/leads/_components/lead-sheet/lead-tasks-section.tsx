@@ -43,9 +43,6 @@ export function LeadTasksSection({
     Record<string, AssigneeInfo>
   >({})
   const [isLoading, setIsLoading] = useState(true)
-  // False for a sales user who isn't a member of the Sales project, where
-  // every lead task lives: they can't see (or create) any.
-  const [inSalesProject, setInSalesProject] = useState(true)
   // Closed by default: completed tasks only grow over the life of a lead, and
   // left open they push the Updates timeline below the fold.
   const [showCompleted, setShowCompleted] = useState(false)
@@ -60,7 +57,6 @@ export function LeadTasksSection({
           const data = await response.json()
           setTasks(data.tasks ?? [])
           setAssigneesById(data.assignees ?? {})
-          setInSalesProject(data.inSalesProject !== false)
         }
       })
       .catch(error => {
@@ -132,18 +128,11 @@ export function LeadTasksSection({
           ? {
               label: 'Add task',
               onAdd: () => openNew('task'),
-              disabledReason: inSalesProject
-                ? null
-                : 'Ask an admin to add you to the Sales project.',
             }
           : undefined
       }
       isEmpty={tasks.length === 0}
-      emptyMessage={
-        inSalesProject
-          ? 'No tasks linked to this lead yet.'
-          : 'Lead tasks live in the Sales project. Ask an admin to add you to it to see and create them.'
-      }
+      emptyMessage='No tasks on this lead yet.'
       status={
         isLoading ? (
           <div className='space-y-2'>

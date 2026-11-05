@@ -16,7 +16,7 @@ type TaskSummarySelection = {
     updatedAt: string
     createdAt: string
     deletedAt: string | null
-    projectId: string
+    projectId: string | null
   }
   project: {
     id: string
@@ -44,7 +44,7 @@ export type TaskSummaryRow = {
   updated_at: string | null
   created_at: string | null
   deleted_at: string | null
-  project_id: string
+  project_id: string | null
   project: {
     id: string
     name: string | null

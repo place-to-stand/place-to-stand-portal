@@ -35,7 +35,8 @@ type TaskCardOptions = {
 
 type TaskLookupEntry = {
   task: TaskWithRelations
-  project: ProjectWithRelations
+  /** Null for a lead task. */
+  project: ProjectWithRelations | null
 }
 
 export type TaskLookup = Map<string, TaskLookupEntry>
@@ -67,7 +68,7 @@ type MyTasksBoardProps = {
 type TaskRow = {
   entry: MyTasksInitialEntry
   task: TaskWithRelations
-  project: ProjectWithRelations
+  project: ProjectWithRelations | null
 }
 
 type TaskRowsByColumn = Map<MyTaskStatus, TaskRow[]>

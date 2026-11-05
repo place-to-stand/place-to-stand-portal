@@ -15,7 +15,7 @@ import {
 
 import { cn } from '@/lib/utils'
 import { Label } from '@pts/ui/label'
-import { EntityLabelIcon } from '@/components/ui/entity-label-icon'
+import { EntityLabelText } from '@/components/ui/entity-label-icon'
 import type { AccentEntity } from '@/lib/entity-accents'
 
 const Form = FormProvider
@@ -117,8 +117,7 @@ function FormLabel({
       htmlFor={formItemId}
       {...props}
     >
-      {entity ? <EntityLabelIcon entity={entity} /> : null}
-      {children}
+      <EntityLabelText entity={entity}>{children}</EntityLabelText>
       {optional ? <OptionalMarker /> : null}
     </Label>
   )

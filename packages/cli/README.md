@@ -121,8 +121,8 @@ you move a lead across the board from the CLI, and it does the same bookkeeping 
 drag does (stage history, rank, resolved/converted timestamps). `--notes` and `leads log
 --body` take the same minimal markdown as task descriptions. `leads log` records an
 interaction on the lead's timeline; `--at` backdates it (ISO 8601 with offset, never in the
-future), otherwise it is stamped now. A lead task is `tasks create --lead <id>`; without
-`--project` it lands in the internal Sales project, where the lead sheet puts its own tasks.
+future), otherwise it is stamped now. A lead task is `tasks create --lead <id>`: a task is on a
+project or a lead, never both, so give one of `--project` and `--lead`.
 
 ## Notes for agents
 

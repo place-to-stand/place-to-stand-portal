@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 
+import { sameTaskHome, type TaskHome } from './home'
+
 import { getRankAfter, getRankBefore } from '@/lib/rank'
 import { db } from '@/lib/db'
 import { tasks } from '@/lib/db/schema'
@@ -9,11 +11,11 @@ type TaskStatus = (typeof TASK_STATUSES)[number]
 type ColumnEdge = 'top' | 'bottom'
 
 /**
- * Rank at one edge of the `status` column in `projectId`. Drag-and-drop
+ * Rank at one edge of the `status` column in a project (or a lead's tasks). Drag-and-drop
  * bypasses this and uses the dropped position directly.
  */
 async function resolveColumnEdgeRank(
-  projectId: string,
+  home: TaskHome,
   status: TaskStatus,
   edge: ColumnEdge
 ) {
@@ -23,11 +25,7 @@ async function resolveColumnEdgeRank(
     .select({ rank: tasks.rank })
     .from(tasks)
     .where(
-      and(
-        eq(tasks.projectId, projectId),
-        eq(tasks.status, status),
-        isNull(tasks.deletedAt)
-      )
+      and(sameTaskHome(home), eq(tasks.status, status), isNull(tasks.deletedAt))
     )
     .orderBy(toTop ? asc(tasks.rank) : desc(tasks.rank))
     .limit(1)
@@ -42,9 +40,9 @@ async function resolveColumnEdgeRank(
  * the end. Done is a log read newest-first, so a task created straight into it
  * goes to the top instead.
  */
-export function resolveNewTaskRank(projectId: string, status: TaskStatus) {
+export function resolveNewTaskRank(home: TaskHome, status: TaskStatus) {
   return resolveColumnEdgeRank(
-    projectId,
+    home,
     status,
     status === 'DONE' ? 'top' : 'bottom'
   )
@@ -56,6 +54,6 @@ export function resolveNewTaskRank(projectId: string, status: TaskStatus) {
  * agent. The task that just moved is the one people open the column to find,
  * so it always goes to the top, whichever column it enters.
  */
-export function resolveMovedTaskRank(projectId: string, status: TaskStatus) {
-  return resolveColumnEdgeRank(projectId, status, 'top')
+export function resolveMovedTaskRank(home: TaskHome, status: TaskStatus) {
+  return resolveColumnEdgeRank(home, status, 'top')
 }

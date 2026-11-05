@@ -3,9 +3,10 @@
 import { Button } from '@pts/ui/button'
 
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
-import { ExternalLink, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { OpenRecordButton } from '@/components/ui/open-record-button'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
@@ -177,21 +178,11 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       trailingAction={
         <>
           {value ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='icon'
-                  className='text-muted-foreground shrink-0'
-                  aria-label={`Open ${value.label}`}
-                  onClick={() => openSheet(entity, value.id)}
-                >
-                  <ExternalLink className='size-3.5' aria-hidden />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Open {entityLabel}</TooltipContent>
-            </Tooltip>
+            <OpenRecordButton
+              name={value.label}
+              entityLabel={entityLabel}
+              onOpen={() => openSheet(entity, value.id)}
+            />
           ) : null}
           {/* Only while empty: a set value shows Open, and the list's
             Create row still replaces it. */}

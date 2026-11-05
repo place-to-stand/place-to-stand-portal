@@ -8,8 +8,6 @@ import { users } from '@/lib/db/schema'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
 import { listLeadTasksWithRelations } from '@/lib/queries/tasks/relations'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
-import { findSalesProjectId } from '@/lib/leads/sales-project'
-import { listWorkableProjectIds } from '@/lib/projects/access'
 import { authorizeRoute } from '@/lib/auth/guard'
 
 /**
@@ -18,7 +16,7 @@ import { authorizeRoute } from '@/lib/auth/guard'
  * Tasks linked to a lead, in the same hydrated shape the project board's
  * cards consume, plus the assignee identities the cards render (the board
  * gets those from its own admins payload; this sheet section is self-fed).
- * CRM staff; SALES get only tasks on projects they can work.
+ * Anyone with `leads.tasks`.
  */
 export async function GET(
   _request: Request,
@@ -65,15 +63,7 @@ export async function GET(
       ])
     )
 
-    // Lead tasks live in the Sales project; a SALES user only sees them as
-    // a member, so the sheet can explain an empty list.
-    const workable = await listWorkableProjectIds(user)
-    const salesProjectId = await findSalesProjectId()
-    const inSalesProject =
-      workable === null ||
-      (salesProjectId !== null && workable.includes(salesProjectId))
-
-    return NextResponse.json({ tasks, assignees, inSalesProject })
+    return NextResponse.json({ tasks, assignees })
   } catch (error) {
     console.error('Failed to fetch lead tasks:', error)
     return NextResponse.json(

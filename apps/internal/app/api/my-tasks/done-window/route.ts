@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { listWorkableProjectIds } from '@/lib/projects/access'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { listAssignedDoneSlice } from '@/lib/data/tasks'
+import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
+import { loadTasksWithRelationsByIds } from '@/lib/queries/tasks/relations'
 import { fetchProjectsWithRelationsByIds } from '@/lib/data/projects'
 import { HIDEABLE_PROJECT_TYPE_VALUES } from '@/lib/my-tasks/project-scope'
 import {
@@ -93,24 +95,30 @@ export async function POST(request: Request) {
     })
 
     const projectIds = Array.from(
-      new Set(slice.items.map(item => item.project.id))
+      new Set(
+        slice.items.flatMap(item => (item.project ? [item.project.id] : []))
+      )
     )
-    const projects = await scopeProjectsForViewer(
-      user,
-      await fetchProjectsWithRelationsByIds(projectIds, {
+    const [projects, leadTasks] = await Promise.all([
+      fetchProjectsWithRelationsByIds(projectIds, {
         taskIds: slice.items.map(item => item.id),
-      })
-    )
+      }).then(rows => scopeProjectsForViewer(user, rows)),
+      // Lead tasks have no project to hydrate.
+      loadTasksWithRelationsByIds(
+        slice.items.flatMap(item => (item.project ? [] : [item.id]))
+      ).then(rows => rows.map(normalizeRawTask)),
+    ])
 
     return NextResponse.json({
       ok: true,
       data: {
         entries: slice.items.map(item => ({
           taskId: item.id,
-          projectId: item.project.id,
+          projectId: item.project?.id ?? null,
           sortOrder: item.sortOrder,
         })),
         projects,
+        leadTasks,
         olderDoneCount: slice.olderDoneCount,
       },
     })

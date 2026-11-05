@@ -85,7 +85,13 @@ export async function ensureTaskAccess(
     throw new NotFoundError('Task not found')
   }
 
-  await ensureProjectAccess(user, task[0].projectId)
+  const { projectId } = task[0]
+  // A lead task has no project; this guard is admin-only either way.
+  if (projectId) {
+    await ensureProjectAccess(user, projectId)
+  } else {
+    assertAdmin(user)
+  }
 }
 
 export async function ensureTimeLogAccess(user: AppUser, timeLogId: UUID) {

@@ -477,7 +477,8 @@ export const tasks = pgTable(
   'tasks',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    projectId: uuid('project_id').notNull(),
+    // A task belongs to a project or to a lead, never both (check below).
+    projectId: uuid('project_id'),
     leadId: uuid('lead_id'),
     title: text().notNull(),
     description: text(),
@@ -542,6 +543,7 @@ export const tasks = pgTable(
         table.completedAt.desc().nullsLast().op('timestamptz_ops')
       )
       .where(sql`(deleted_at IS NULL AND status = 'DONE'::task_status)`),
+    check('tasks_project_or_lead', sql`num_nonnulls(project_id, lead_id) = 1`),
     foreignKey({
       columns: [table.projectId],
       foreignColumns: [projects.id],
@@ -551,7 +553,9 @@ export const tasks = pgTable(
       columns: [table.leadId],
       foreignColumns: [leads.id],
       name: 'tasks_lead_id_fkey',
-    }).onDelete('set null'),
+      // A lead task goes with its lead, as a project task goes with its
+      // project: a task always has exactly one home (check above).
+    }).onDelete('cascade'),
     foreignKey({
       columns: [table.createdBy],
       foreignColumns: [users.id],

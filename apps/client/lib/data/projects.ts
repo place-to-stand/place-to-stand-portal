@@ -114,6 +114,7 @@ export const fetchClientProjects = cache(
 
     const countsByProject = new Map<string, { open: number; done: number }>()
     for (const row of taskCounts) {
+      if (!row.projectId) continue
       const entry = countsByProject.get(row.projectId) ?? { open: 0, done: 0 }
       if (row.status === 'DONE') entry.done += row.count
       else entry.open += row.count

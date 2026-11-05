@@ -151,6 +151,14 @@ export type TaskWithRelations = DbTask & {
   lead?: TaskLead | null
 }
 
+/** A lead as the task sheet's "Project or lead" picker lists it. */
+export type TaskLeadOption = {
+  id: string
+  name: string
+  companyName: string | null
+  status: LeadStatusValue
+}
+
 /** A task's linked lead, as its card and sheet show it. */
 export type TaskLead = {
   id: string

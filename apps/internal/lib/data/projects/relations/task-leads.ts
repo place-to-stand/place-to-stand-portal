@@ -1,11 +1,11 @@
 import 'server-only'
 
 import { personNameSql } from '@pts/db/names'
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
-import { contacts, leads, users } from '@/lib/db/schema'
-import type { TaskLead } from '@/lib/types'
+import { companies, contacts, leads, users } from '@/lib/db/schema'
+import type { TaskLead, TaskLeadOption } from '@/lib/types'
 
 /**
  * The leads these tasks are linked to, by id, for the card's lead line and
@@ -41,4 +41,27 @@ export async function loadTaskLeads(
       },
     ])
   )
+}
+
+/** Every live lead, for the task sheet's "Project or lead" picker. */
+export async function loadLeadOptions(): Promise<TaskLeadOption[]> {
+  const rows = await db
+    .select({
+      id: leads.id,
+      name: contacts.name,
+      companyName: companies.name,
+      status: leads.status,
+    })
+    .from(leads)
+    .innerJoin(contacts, eq(contacts.id, leads.contactId))
+    .leftJoin(companies, eq(companies.id, leads.companyId))
+    .where(isNull(leads.deletedAt))
+    .orderBy(asc(contacts.name))
+
+  return rows.map(row => ({
+    id: row.id,
+    name: row.name,
+    companyName: row.companyName ?? null,
+    status: row.status,
+  }))
 }

@@ -2,11 +2,11 @@ import { personNameSql } from '@pts/db/names'
 import 'server-only'
 
 import { cache } from 'react'
-import { and, eq, inArray, isNull, or } from 'drizzle-orm'
+import { and, eq, inArray, isNull, or, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { projectMembers, projects, tasks, users } from '@/lib/db/schema'
+import { leads, projectMembers, projects, tasks, users } from '@/lib/db/schema'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
 import { roleCan } from '@/lib/auth/capabilities'
 
@@ -15,11 +15,12 @@ import { roleCan } from '@/lib/auth/capabilities'
  *
  * - ADMIN: every project.
  * - Everyone else on staff (SALES): only projects they were added to
- *   (`project_members`) and their own PERSONAL boards. No project is special:
- *   lead tasks live in the internal Sales project, so a sales user needs to be
- *   a member of it like any other. Only the task board: time logs,
+ *   (`project_members`) and their own PERSONAL boards. Only the task board: time logs,
  *   review, billing, GitHub and planning stay admin-only and keep
  *   using `ensureProjectAccess` / `ensureTaskAccess`, which still assert ADMIN.
+ *
+ * A task belongs to a project or to a lead, never both. Lead tasks have no
+ * project: anyone with `leads.tasks` works them, on every live lead.
  *
  * Every helper here is the task-board twin of an admin guard. Use these only
  * on the paths opened to project members; anything else stays admin-only by
@@ -65,6 +66,45 @@ export const listWorkableProjectIds = cache(
 )
 
 /**
+ * Whether a task in `home` is one the user may work, given their
+ * `listWorkableProjectIds` (null = every project).
+ */
+export function isWorkableTaskHome(
+  user: AppUser,
+  workableProjectIds: readonly string[] | null,
+  home: { projectId: string | null; leadId: string | null }
+): boolean {
+  if (home.projectId) {
+    return (
+      workableProjectIds === null || workableProjectIds.includes(home.projectId)
+    )
+  }
+  return !!home.leadId && roleCan(user.role, 'leads.tasks')
+}
+
+/**
+ * SQL twin of `isWorkableTaskHome` for task queries: tasks on the user's
+ * workable projects, plus lead tasks when they may work those. `undefined`
+ * means no filter (admins).
+ */
+export function workableTasksFilter(
+  user: AppUser,
+  workableProjectIds: readonly string[] | null
+): SQL | undefined {
+  if (workableProjectIds === null) return undefined
+
+  const parts: SQL[] = []
+  if (workableProjectIds.length) {
+    parts.push(inArray(tasks.projectId, [...workableProjectIds]))
+  }
+  if (roleCan(user.role, 'leads.tasks')) {
+    parts.push(isNull(tasks.projectId))
+  }
+
+  return parts.length ? or(...parts) : sql`false`
+}
+
+/**
  * Task-board guard for a project: NotFound when it is missing or archived,
  * Forbidden when the user is not staff or (SALES) not a member.
  */
@@ -94,16 +134,56 @@ export async function ensureProjectWorkAccess(
   }
 }
 
-/** Task-board guard for one task, via its project. Returns the project id. */
+/**
+ * Guard for a lead's tasks: NotFound when the lead is missing or archived,
+ * Forbidden without `leads.tasks`.
+ */
+export async function ensureLeadTaskAccess(
+  user: AppUser,
+  leadId: string
+): Promise<void> {
+  if (!roleCan(user.role, 'leads.tasks')) {
+    throw new ForbiddenError('You don’t have permission to work lead tasks.')
+  }
+
+  const [lead] = await db
+    .select({ id: leads.id })
+    .from(leads)
+    .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
+    .limit(1)
+
+  if (!lead) {
+    throw new NotFoundError('Lead not found')
+  }
+}
+
+/** Guard for where a task lives: its project or its lead. */
+export async function ensureTaskHomeAccess(
+  user: AppUser,
+  home: { projectId: string | null; leadId: string | null }
+): Promise<void> {
+  if (home.projectId) {
+    await ensureProjectWorkAccess(user, home.projectId)
+  } else if (home.leadId) {
+    await ensureLeadTaskAccess(user, home.leadId)
+  } else {
+    throw new NotFoundError('Task not found')
+  }
+}
+
+/**
+ * Task-board guard for one task, via its project or its lead. Returns the
+ * project id (null for a lead task).
+ */
 export async function ensureTaskWorkAccess(
   user: AppUser,
   taskId: string,
   options: { includeArchived?: boolean } = {}
-): Promise<string> {
+): Promise<string | null> {
   const { includeArchived = false } = options
 
   const [task] = await db
-    .select({ id: tasks.id, projectId: tasks.projectId })
+    .select({ id: tasks.id, projectId: tasks.projectId, leadId: tasks.leadId })
     .from(tasks)
     .where(
       includeArchived
@@ -116,7 +196,7 @@ export async function ensureTaskWorkAccess(
     throw new NotFoundError('Task not found')
   }
 
-  await ensureProjectWorkAccess(user, task.projectId)
+  await ensureTaskHomeAccess(user, task)
   return task.projectId
 }
 
@@ -138,14 +218,38 @@ export async function canWorkTask(
 
 /**
  * Task assignees must be able to open the task: admins always, other staff
- * only on projects they can work. Returns the names of anyone who can't, so
- * the caller can say who to add to the project first.
+ * only on projects they can work, and anyone with `leads.tasks` on a lead
+ * task (`projectId` null). Returns the names of anyone who can't, so the
+ * caller can say who to add to the project first.
  */
 export async function findAssigneesWithoutAccess(
-  projectId: string,
+  projectId: string | null,
   assigneeIds: readonly string[]
 ): Promise<string[]> {
   if (!assigneeIds.length) return []
+
+  if (projectId === null) {
+    const rows = await db
+      .select({
+        id: users.id,
+        role: users.role,
+        fullName: personNameSql,
+        email: users.email,
+        deletedAt: users.deletedAt,
+        disabledAt: users.disabledAt,
+      })
+      .from(users)
+      .where(inArray(users.id, [...assigneeIds]))
+
+    return assigneeIds.flatMap(id => {
+      const row = rows.find(item => item.id === id)
+      if (!row) return ['Unknown user']
+      const active = !row.deletedAt && !row.disabledAt
+      return active && roleCan(row.role, 'leads.tasks')
+        ? []
+        : [row.fullName?.trim() || row.email]
+    })
+  }
 
   const [project] = await db
     .select({

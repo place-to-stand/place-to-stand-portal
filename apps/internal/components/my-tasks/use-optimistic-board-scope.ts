@@ -65,10 +65,16 @@ export function filterEntriesToScope<T extends { taskId: string }>(
   }
 
   return entries.filter(entry => {
-    const project = taskLookup.get(entry.taskId)?.project
+    const meta = taskLookup.get(entry.taskId)
 
-    if (!project) {
+    if (!meta) {
       return true
+    }
+
+    // Lead tasks belong to no client project: shown only under all clients.
+    const project = meta.project
+    if (!project) {
+      return isAllClients
     }
 
     if (!isAllClients) {

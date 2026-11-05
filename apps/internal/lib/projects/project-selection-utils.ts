@@ -40,13 +40,11 @@ const resolveGroupKey = (project: ProjectWithRelations): ProjectGroupKey => {
   return 'client'
 }
 
+// Internal and personal projects sit under their own group heading, so the
+// name alone says enough; client projects keep their client in front.
 const formatProjectLabel = (project: ProjectWithRelations) => {
-  if (project.type === 'INTERNAL') {
-    return `Internal / ${project.name}`
-  }
-
-  if (project.type === 'PERSONAL') {
-    return `Personal / ${project.name}`
+  if (project.type === 'INTERNAL' || project.type === 'PERSONAL') {
+    return project.name
   }
 
   const clientName = project.client?.name ?? 'Unassigned'

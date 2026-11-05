@@ -35,7 +35,9 @@ const attachmentsSchema = z.object({
 
 export const baseTaskSchema = z.object({
   id: z.string().uuid().optional(),
-  projectId: z.string().uuid(),
+  // A task lives on a project or a lead (`lib/tasks/home.ts`). Creating one
+  // needs either; an update may omit both to keep where it is.
+  projectId: z.string().uuid().optional().nullable(),
   leadId: z.string().uuid().optional().nullable(),
   title: z.string().min(1),
   description: z.string().optional().nullable(),

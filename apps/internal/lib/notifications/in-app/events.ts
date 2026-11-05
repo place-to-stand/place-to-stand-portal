@@ -80,8 +80,8 @@ export function notifyTaskComment(
         and(eq(taskAssignees.taskId, task.id), isNull(taskAssignees.deletedAt))
       )
     const staff = await staffRecipients(assigned.map(row => row.userId))
-    // An assignee who has since lost the project (removed as a member)
-    // can't open the task, so they aren't told about the comment.
+    // An assignee who can no longer open the task (removed from its project,
+    // or without lead task access) isn't told about the comment.
     const [row] = await db
       .select({ projectId: tasks.projectId })
       .from(tasks)

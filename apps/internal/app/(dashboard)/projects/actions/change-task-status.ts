@@ -1,6 +1,6 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -8,7 +8,7 @@ import { taskStatusChangedEvent } from '@/lib/activity/events'
 import { requirePage } from '@/lib/auth/session'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
-import { projects, tasks } from '@/lib/db/schema'
+import { leads, projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
 import { resolveCompletedAt } from '@/lib/projects/task-status'
 import { pinTaskToTopOfAssigneeBoards } from '@/lib/tasks/assignee-sort'
@@ -58,11 +58,15 @@ export async function changeTaskStatus(input: {
       status: tasks.status,
       completedAt: tasks.completedAt,
       projectId: tasks.projectId,
-      companyId: projects.companyId,
+      leadId: tasks.leadId,
+      companyId: sql<
+        string | null
+      >`coalesce(${projects.companyId}, ${leads.companyId})`,
       deletedAt: tasks.deletedAt,
     })
     .from(tasks)
     .leftJoin(projects, eq(projects.id, tasks.projectId))
+    .leftJoin(leads, eq(leads.id, tasks.leadId))
     .where(eq(tasks.id, taskId))
     .limit(1)
 
@@ -80,7 +84,7 @@ export async function changeTaskStatus(input: {
     let nextRank: string
 
     try {
-      nextRank = await resolveMovedTaskRank(task.projectId, status)
+      nextRank = await resolveMovedTaskRank(task, status)
     } catch (rankError) {
       console.error('Failed to resolve rank for task status change', rankError)
       return { error: 'Unable to update task ordering.' }

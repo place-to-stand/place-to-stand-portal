@@ -89,12 +89,12 @@ export function registerTaskTools(server: McpServer) {
     name: 'create_task',
     title: 'Create task',
     description:
-      'Create a task on a project board, as the connected user. project is required unless leadId is set (a lead task with no project goes to the internal Sales project).',
+      'Create a task, as the connected user, on a project board or on a lead: give project or leadId, not both.',
     effect: 'write',
     input: cliCreateTaskFields,
     run: async (args, { user }) => {
-      if (!args.project && !args.leadId) {
-        throw new BadRequestError('project is required unless leadId is set.')
+      if (!args.project === !args.leadId) {
+        throw new BadRequestError('Give exactly one of project or leadId.')
       }
 
       return createTaskFromInput(user, args, 'MCP')
@@ -105,12 +105,15 @@ export function registerTaskTools(server: McpServer) {
     name: 'update_task',
     title: 'Update task',
     description:
-      'Change a task: title, description, status, due date, assignee, project or lead. Omitted fields keep their value; null clears one. A task has one assignee: assigneeIds takes a one-item list ([] unassigns) and only its first entry is kept. To archive a task, use archive_task.',
+      'Change a task: title, description, status, due date, assignee, project or lead. A task is on a project or a lead, never both: setting one moves the task there and clears the other. Omitted fields keep their value; null clears one. A task has one assignee: assigneeIds takes a one-item list ([] unassigns) and only its first entry is kept. To archive a task, use archive_task.',
     effect: 'idempotent-write',
     input: { taskId, ...cliUpdateTaskFields },
     run: async ({ taskId, ...changes }, { user }) => {
       if (!Object.values(changes).some(value => value !== undefined)) {
         throw new BadRequestError('Provide at least one field to update.')
+      }
+      if (changes.project && changes.leadId) {
+        throw new BadRequestError('Give a project or a leadId, not both.')
       }
 
       return updateTaskFromInput(user, taskId, changes, 'MCP')
