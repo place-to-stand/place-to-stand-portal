@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { Label } from '@pts/ui/label'
 import {
@@ -13,6 +13,10 @@ import { cn } from '@/lib/utils'
  * "[icon] Person", "[icon] Company", "[icon] Assignee". Decorative: the label
  * text still names the field. Reach it through `FormLabel entity='…'` or
  * `EntityFieldLabel`, so every picker label matches.
+ *
+ * It sits in the line of text like a word, with one word space after it, so
+ * a label that names two entities ("[icon] Project or [icon] Lead") spaces
+ * evenly. Put it inside `EntityLabelText`, never as a flex item of a label.
  */
 export function EntityLabelIcon({
   entity,
@@ -26,7 +30,7 @@ export function EntityLabelIcon({
     <Icon
       aria-hidden
       className={cn(
-        'size-3.5 shrink-0',
+        'me-1 inline-block size-3.5 shrink-0 align-[-0.15em]',
         ENTITY_ACCENTS[entity].icon,
         className
       )}
@@ -45,8 +49,26 @@ export function EntityFieldLabel({
 }: ComponentProps<typeof Label> & { entity: AccentEntity }) {
   return (
     <Label {...props}>
-      <EntityLabelIcon entity={entity} />
-      {children}
+      <EntityLabelText entity={entity}>{children}</EntityLabelText>
     </Label>
+  )
+}
+
+/**
+ * A label's text with its entity icons in the line, so icons and words space
+ * as text does rather than by the label's flex gap.
+ */
+export function EntityLabelText({
+  entity,
+  children,
+}: {
+  entity?: AccentEntity
+  children: ReactNode
+}) {
+  return (
+    <span>
+      {entity ? <EntityLabelIcon entity={entity} /> : null}
+      {children}
+    </span>
   )
 }

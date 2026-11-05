@@ -58,7 +58,7 @@ export type UseTaskSheetStateArgs = {
   currentUserId: string
   /** Leads the "Project or lead" field offers; null without lead tasks. */
   leads: TaskLeadOption[] | null
-  /** List leads above projects in that field (Sales). */
+  /** List leads above projects in that field (`LEADS_FIRST_ROLES`). */
   leadsFirst: boolean
 }
 

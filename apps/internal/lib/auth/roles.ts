@@ -42,6 +42,12 @@ export const SALES_SHEET_ENTITIES: ReadonlySet<string> = new Set([
   'project',
 ])
 
+/**
+ * Roles that mostly work leads, so pickers offering both list leads above
+ * projects. Every other role, including any new one, gets projects first.
+ */
+export const LEADS_FIRST_ROLES: ReadonlySet<Role> = new Set(['SALES'])
+
 export function canUseInternalPortal(role: Role | null | undefined): boolean {
   return roleCan(role, 'portal.sign_in')
 }

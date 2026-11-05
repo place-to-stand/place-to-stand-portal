@@ -25,6 +25,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
+import { LEADS_FIRST_ROLES } from '@/lib/auth/roles'
 import { useLeadOptions } from '@/lib/leads/use-lead-options'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
 
@@ -79,7 +80,7 @@ type TaskSheetProps = {
 export function TaskSheet(props: TaskSheetProps) {
   const { isAdmin, role } = useViewerAccess()
   // The "Project or lead" field lists leads for anyone who works lead tasks,
-  // first for those who don't see every project (Sales).
+  // first for roles that mostly work leads (`LEADS_FIRST_ROLES`).
   const canWorkLeadTasks = roleCan(role, 'leads.tasks')
   const { data: leadOptions } = useLeadOptions(props.open && canWorkLeadTasks)
   const {
@@ -126,7 +127,7 @@ export function TaskSheet(props: TaskSheetProps) {
     defaultLeadId: props.defaultLeadId ?? null,
     currentUserId: props.currentUserId,
     leads: canWorkLeadTasks ? (leadOptions ?? []) : null,
-    leadsFirst: !roleCan(role, 'projects.view_all'),
+    leadsFirst: role ? LEADS_FIRST_ROLES.has(role) : false,
   })
 
   // The assignee list already carries every internal user by id, so it doubles

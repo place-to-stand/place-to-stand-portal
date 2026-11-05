@@ -62,7 +62,7 @@ export function TaskHomeField({
 
         return (
           <FormItem>
-            <FormLabel className='gap-1'>
+            <FormLabel>
               <TaskHomeLabel
                 kind={home.leadId ? 'lead' : home.projectId ? 'project' : null}
               />
@@ -110,27 +110,19 @@ export function TaskHomeField({
   )
 }
 
-/** An entity's icon right before its name, as on every picker label. */
-function EntityName({ entity }: { entity: 'project' | 'lead' }) {
-  return (
-    <span className='inline-flex items-center gap-2'>
-      <EntityLabelIcon entity={entity} />
-      {entity === 'project' ? 'Project' : 'Lead'}
-    </span>
-  )
-}
-
 /**
  * Empty, the label offers both ("[icon] Project or [icon] Lead"); filled, it
- * names only the kind picked, so a saved task reads at a glance.
+ * names only the kind picked, so a saved task reads at a glance. The icons
+ * flow in the text (`EntityLabelIcon`), so the spacing is a word space.
  */
 function TaskHomeLabel({ kind }: { kind: 'project' | 'lead' | null }) {
-  if (kind) return <EntityName entity={kind} />
   return (
     <>
-      <EntityName entity='project' />
-      or
-      <EntityName entity='lead' />
+      {kind !== 'lead' ? <EntityLabelIcon entity='project' /> : null}
+      {kind !== 'lead' ? 'Project' : null}
+      {kind === null ? ' or ' : null}
+      {kind !== 'project' ? <EntityLabelIcon entity='lead' /> : null}
+      {kind !== 'project' ? 'Lead' : null}
     </>
   )
 }

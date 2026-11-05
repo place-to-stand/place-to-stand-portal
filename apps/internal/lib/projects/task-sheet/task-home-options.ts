@@ -39,7 +39,7 @@ type BuildTaskHomeOptionsArgs = {
   /** The task's current lead, kept listed if it's no longer offered. */
   currentLead: TaskLead | null
   /**
-   * Leads come first for people who mostly work leads (Sales), projects
+   * Leads come first for roles in `LEADS_FIRST_ROLES` (Sales), projects
    * first for everyone else.
    */
   leadsFirst: boolean
