@@ -488,9 +488,11 @@ export function TaskSheet(props: TaskSheetProps) {
                       key={props.task.id}
                       className='px-6'
                       targetType='TASK'
+                      // The task alone picks its history: a project filter
+                      // would hide events from before a move, and members
+                      // (Sales) may read a task's history but not a
+                      // project's.
                       targetId={props.task.id}
-                      projectId={taskPanelProjectId}
-                      companyId={taskPanelClientId}
                     />
                   </>
                 ) : (

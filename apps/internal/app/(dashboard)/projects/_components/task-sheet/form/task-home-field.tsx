@@ -61,7 +61,7 @@ export function TaskHomeField({
 
         return (
           <FormItem>
-            <FormLabel>Project or lead</FormLabel>
+            <FormLabel entity={['project', 'lead']}>Project or lead</FormLabel>
             <FormControl>
               <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
                 <SearchableCombobox

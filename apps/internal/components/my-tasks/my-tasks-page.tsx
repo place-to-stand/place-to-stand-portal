@@ -594,7 +594,9 @@ export function MyTasksPage({
           defaultProjectId={
             createTaskContext?.projectId ?? editingTaskMeta?.project?.id ?? null
           }
-          defaultAssigneeId={createTaskContext?.assigneeId ?? null}
+          // A create opened from a link defaults to you, like the column's
+          // +, so the new task lands on your board.
+          defaultAssigneeId={createTaskContext?.assigneeId ?? user.id}
         />
       ) : null}
     </PageShell>

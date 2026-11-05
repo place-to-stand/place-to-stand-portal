@@ -104,9 +104,11 @@ function FormLabel({
   /**
    * The entity a picker field picks: its registry icon, in its colour, leads
    * the label ("[icon] Company"). Pickers that list only sign-ins (assignee, owner, member) are `user`.
+   * A picker of two kinds of record shows both icons, in the label's order.
    */
-  entity?: AccentEntity
+  entity?: AccentEntity | readonly AccentEntity[]
 }) {
+  const entities = entity === undefined ? [] : [entity].flat()
   const { error, formItemId } = useFormField()
 
   return (
@@ -117,7 +119,9 @@ function FormLabel({
       htmlFor={formItemId}
       {...props}
     >
-      {entity ? <EntityLabelIcon entity={entity} /> : null}
+      {entities.map(item => (
+        <EntityLabelIcon key={item} entity={item} />
+      ))}
       {children}
       {optional ? <OptionalMarker /> : null}
     </Label>
