@@ -3,6 +3,7 @@
 import type { UseFormReturn } from 'react-hook-form'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { EntityLabelIcon } from '@/components/ui/entity-label-icon'
 import {
   FormControl,
   FormField,
@@ -61,7 +62,11 @@ export function TaskHomeField({
 
         return (
           <FormItem>
-            <FormLabel entity={['project', 'lead']}>Project or lead</FormLabel>
+            <FormLabel className='gap-1'>
+              <TaskHomeLabel
+                kind={home.leadId ? 'lead' : home.projectId ? 'project' : null}
+              />
+            </FormLabel>
             <FormControl>
               <DisabledFieldTooltip disabled={disabled} reason={disabledReason}>
                 <SearchableCombobox
@@ -102,5 +107,30 @@ export function TaskHomeField({
         )
       }}
     />
+  )
+}
+
+/** An entity's icon right before its name, as on every picker label. */
+function EntityName({ entity }: { entity: 'project' | 'lead' }) {
+  return (
+    <span className='inline-flex items-center gap-2'>
+      <EntityLabelIcon entity={entity} />
+      {entity === 'project' ? 'Project' : 'Lead'}
+    </span>
+  )
+}
+
+/**
+ * Empty, the label offers both ("[icon] Project or [icon] Lead"); filled, it
+ * names only the kind picked, so a saved task reads at a glance.
+ */
+function TaskHomeLabel({ kind }: { kind: 'project' | 'lead' | null }) {
+  if (kind) return <EntityName entity={kind} />
+  return (
+    <>
+      <EntityName entity='project' />
+      or
+      <EntityName entity='lead' />
+    </>
   )
 }
