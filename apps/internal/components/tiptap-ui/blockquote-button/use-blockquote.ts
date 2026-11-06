@@ -18,8 +18,9 @@ import {
   isValidPosition,
   selectionWithinConvertibleTypes,
 } from '@/lib/tiptap-utils'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
-export const BLOCKQUOTE_SHORTCUT_KEY = 'mod+shift+b'
+export const BLOCKQUOTE_SHORTCUT_KEY = SHORTCUTS.blockquote.keys
 
 /**
  * Configuration for the blockquote functionality

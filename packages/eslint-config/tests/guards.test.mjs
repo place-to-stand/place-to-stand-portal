@@ -171,6 +171,31 @@ run('env-through-schema', {
   ],
 })
 
+run('shortcut-registry', {
+  valid: [
+    'function onKey(e) { if (matchesShortcut(e, SHORTCUTS.save)) save() }',
+    // ⌘-click opens in a new tab: modifiers without a key are not a shortcut.
+    'const onClick = event => { if (event.metaKey || event.ctrlKey) return }',
+    "function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) send() }",
+    // A column's key is not a key press.
+    'function Row({ col }) { const k = col.key; const onClick = e => { if (e.metaKey) open(k) } }',
+  ],
+  invalid: [
+    {
+      code: "function onKey(e) { if (e.key === 'k' && (e.metaKey || e.ctrlKey)) open() }",
+      errors: 2,
+    },
+    {
+      code: "window.addEventListener('keydown', event => { const mod = () => event.metaKey; if (mod() && event.key === 's') save() })",
+      errors: 1,
+    },
+    {
+      code: "window.addEventListener('keydown', e => { const { key, metaKey } = e; if (metaKey && key === 'k') open() })",
+      errors: 1,
+    },
+  ],
+})
+
 run('underline-not-clipped', {
   valid: [
     "<a className='hover:underline'><span className='truncate-link'>x</span></a>",

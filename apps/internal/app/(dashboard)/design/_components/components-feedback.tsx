@@ -5,6 +5,7 @@ import {
   Archive,
   Copy,
   Info,
+  Keyboard,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -60,7 +61,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -72,6 +72,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { Progress } from '@pts/ui/progress'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
+import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
@@ -87,6 +89,7 @@ import {
   toastRecordLinkClass,
 } from '@/components/ui/toast-record-link'
 import { useToast } from '@/components/ui/use-toast'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 import { DesignSection, Example, Specimen } from './specimen'
 
@@ -317,6 +320,7 @@ export function ComponentsFeedback() {
 }
 
 export function ComponentsOverlays() {
+  const { setOpen: setShortcutsOpen } = useKeyboardShortcuts()
   return (
     <DesignSection
       id='overlays'
@@ -380,7 +384,6 @@ export function ComponentsOverlays() {
               <DropdownMenuItem>
                 <Pencil />
                 Edit company
-                <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Copy</DropdownMenuSubTrigger>
@@ -440,11 +443,29 @@ export function ComponentsOverlays() {
       <Specimen label='Command palette' className='block'>
         <p className='text-muted-foreground text-sm'>
           The palette (components/ui/command.tsx) is mounted app-wide: press{' '}
-          <kbd className='bg-muted text-overline rounded border px-1.5 py-0.5 font-mono'>
-            ⌘K
-          </kbd>{' '}
-          to open the real one.
+          <ShortcutKeys shortcut={SHORTCUTS.commandPalette} /> to open the real
+          one.
         </p>
+      </Specimen>
+      <Specimen
+        label='Kbd, ShortcutKeys'
+        note='@pts/ui/kbd · components/keyboard'
+        className='block space-y-3'
+      >
+        <p className='text-muted-foreground text-sm'>
+          Keys on screen come from the registry (lib/keyboard/shortcuts.ts): ⌘
+          on a Mac, Ctrl elsewhere. The registry also fills the keyboard
+          shortcuts list.
+        </p>
+        <div className='flex flex-wrap items-center gap-4'>
+          <ShortcutKeys shortcut={SHORTCUTS.save} />
+          <ShortcutKeys shortcut={SHORTCUTS.redo} />
+          <ShortcutKeys shortcut={SHORTCUTS.commandPalette} size='sm' />
+          <Button variant='outline' onClick={() => setShortcutsOpen(true)}>
+            <Keyboard />
+            Keyboard shortcuts
+          </Button>
+        </div>
       </Specimen>
     </DesignSection>
   )
@@ -516,13 +537,14 @@ export function ComponentsDialogs() {
             </DialogHeader>
             <ul className='space-y-2 text-sm'>
               <li className='flex justify-between'>
-                Save and close <kbd className='font-mono text-xs'>⌘S</kbd>
+                Save and close <ShortcutKeys shortcut={SHORTCUTS.save} />
               </li>
               <li className='flex justify-between'>
-                Save and keep open <kbd className='font-mono text-xs'>⇧⌘S</kbd>
+                Save and keep open{' '}
+                <ShortcutKeys shortcut={SHORTCUTS.saveAndStay} />
               </li>
               <li className='flex justify-between'>
-                Search <kbd className='font-mono text-xs'>⌘K</kbd>
+                Search <ShortcutKeys shortcut={SHORTCUTS.commandPalette} />
               </li>
             </ul>
             <DialogFooter>

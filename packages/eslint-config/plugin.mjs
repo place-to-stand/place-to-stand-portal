@@ -29,6 +29,7 @@ import {
   optionalLabel,
   sheetUrlThroughBuilders,
 } from './rules/guards.mjs'
+import { shortcutRegistry } from './rules/shortcuts.mjs'
 import {
   figureCellAligned,
   noDetailsSection,
@@ -66,6 +67,7 @@ export const pts = {
     'no-raw-type-size': noRawTypeSize,
     'underline-not-clipped': underlineNotClipped,
     'sheet-url-through-builders': sheetUrlThroughBuilders,
+    'shortcut-registry': shortcutRegistry,
     'no-hard-delete': noHardDelete,
     'optional-label': optionalLabel,
     'env-through-schema': envThroughSchema,

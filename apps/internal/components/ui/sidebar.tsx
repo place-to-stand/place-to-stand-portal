@@ -7,6 +7,8 @@ import { SlotNamespace as Slot } from '@pts/ui/slot'
 
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 import { cn } from '@/lib/utils'
+import { isEditableTarget, matchesShortcut } from '@/lib/keyboard/match'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Separator } from '@pts/ui/separator'
@@ -30,7 +32,6 @@ const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
-const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
 
 type SidebarContextProps = {
   state: 'expanded' | 'collapsed'
@@ -40,30 +41,6 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
-}
-
-/**
- * True when the event landed in something that accepts typing — an input, a
- * textarea, or any contentEditable host (which is what TipTap renders). Used
- * to keep the sidebar's Cmd/Ctrl+B from stealing the editor's bold shortcut.
- */
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false
-  }
-
-  if (target.isContentEditable) {
-    return true
-  }
-
-  const tagName = target.tagName
-  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
-    return true
-  }
-
-  // Guards the case where the event target is a node inside the editable
-  // host rather than the host itself.
-  return target.closest('[contenteditable="true"]') !== null
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -120,10 +97,7 @@ function SidebarProvider({
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
-      ) {
+      if (matchesShortcut(event, SHORTCUTS.toggleSidebar)) {
         // Cmd/Ctrl+B means bold while the caret is in a text field, and the
         // rich text editor is the obvious case: toggling bold in a task
         // description was also collapsing the sidebar behind the sheet.
@@ -161,7 +135,7 @@ function SidebarProvider({
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <TooltipProvider delayDuration={0}>
+      <TooltipProvider>
         <div
           data-slot='sidebar-wrapper'
           style={

@@ -12,6 +12,11 @@ type RowActionButtonProps = Omit<
   /** What the action does ("Archive client"): the tooltip and the accessible name. */
   label: string
   icon: ReactNode
+  /**
+   * The action's keyboard shortcut, shown after the label in the tooltip
+   * (the internal portal passes `<ShortcutKeys shortcut={SHORTCUTS.x} />`).
+   */
+  shortcut?: ReactNode
   /** `icon` (36px) only where it sits beside default-height controls. */
   size?: 'icon-sm' | 'icon'
 }
@@ -24,6 +29,7 @@ type RowActionButtonProps = Omit<
 export function RowActionButton({
   label,
   icon,
+  shortcut,
   variant = 'ghost',
   size = 'icon-sm',
   ...props
@@ -35,7 +41,10 @@ export function RowActionButton({
           {icon}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      <TooltipContent>
+        {label}
+        {shortcut ? <span className='ml-2'>{shortcut}</span> : null}
+      </TooltipContent>
     </Tooltip>
   )
 }

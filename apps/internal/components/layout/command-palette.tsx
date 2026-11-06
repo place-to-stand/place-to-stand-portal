@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
+import { Keyboard } from 'lucide-react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import {
@@ -28,6 +29,10 @@ import type { PaletteSearchResult } from '@/lib/queries/command-palette'
 import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 import { companySheetHref } from '@/lib/sheets/hrefs'
+import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
+import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
+import { matchesShortcut } from '@/lib/keyboard/match'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 const MIN_QUERY_LENGTH = 2
 const DEBOUNCE_MS = 200
@@ -90,7 +95,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
       // e.g. the rich text editor's ⌘K link shortcut (ProseMirror calls
       // preventDefault before the event bubbles up to window).
       if (e.defaultPrevented) return
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (matchesShortcut(e, SHORTCUTS.commandPalette)) {
         e.preventDefault()
         setOpen(current => !current)
       }
@@ -112,6 +117,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
 
 function CommandPalette() {
   const { open, setOpen } = useCommandPalette()
+  const { setOpen: setShortcutsOpen } = useKeyboardShortcuts()
   const { role } = useViewerAccess()
   const canSearch = roleCan(role, 'portal.command_palette')
   const navGroups = useMemo(
@@ -281,6 +287,23 @@ function CommandPalette() {
             ))}
           </CommandGroup>
         ) : null}
+        <CommandGroup heading='Help'>
+          <CommandItem
+            value='Help keyboard shortcuts keys'
+            onSelect={() => {
+              handleOpenChange(false)
+              setShortcutsOpen(true)
+            }}
+          >
+            <Keyboard className='size-4' />
+            <span>Keyboard shortcuts</span>
+            <ShortcutKeys
+              shortcut={SHORTCUTS.showShortcuts}
+              size='sm'
+              className='ml-auto'
+            />
+          </CommandItem>
+        </CommandGroup>
       </CommandList>
     </CommandDialog>
   )

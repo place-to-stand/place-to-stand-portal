@@ -32,6 +32,7 @@ import {
   CardItemGroup,
 } from '@/components/tiptap-ui-primitive/card'
 import { Input, InputGroup } from '@/components/tiptap-ui-primitive/input'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 export interface LinkMainProps {
   /**
@@ -91,7 +92,7 @@ export const LinkButton = forwardRef<HTMLButtonElement, ButtonProps>(
         tabIndex={-1}
         aria-label='Link'
         tooltip='Link'
-        shortcutKeys='mod+k'
+        shortcutKeys={SHORTCUTS.link.keys}
         ref={ref}
         {...props}
       >
@@ -329,7 +330,7 @@ export const LinkPopover = forwardRef<HTMLButtonElement, LinkPopoverProps>(
             data-disabled={!canSet}
             aria-label={label}
             aria-pressed={isActive}
-            shortcutKeys='mod+k'
+            shortcutKeys={SHORTCUTS.link.keys}
             onClick={handleClick}
             {...buttonProps}
             ref={ref}

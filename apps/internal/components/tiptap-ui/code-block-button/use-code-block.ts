@@ -18,8 +18,9 @@ import {
 
 // --- Icons ---
 import { CodeBlockIcon } from '@/components/tiptap-icons/code-block-icon'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
-export const CODE_BLOCK_SHORTCUT_KEY = 'mod+alt+c'
+export const CODE_BLOCK_SHORTCUT_KEY = SHORTCUTS.codeBlock.keys
 
 /**
  * Configuration for the code block functionality

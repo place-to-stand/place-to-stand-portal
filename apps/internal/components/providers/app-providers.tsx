@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react'
 
+import { TooltipProvider } from '@pts/ui/tooltip'
+
 import { Toaster } from '@/components/ui/toaster'
 
 import { ReactQueryProvider } from './react-query-provider'
@@ -17,8 +19,10 @@ export function AppProviders({ children }: Props) {
     <PostHogProvider>
       <ThemeProvider>
         <ReactQueryProvider>
-          {children}
-          <Toaster />
+          <TooltipProvider>
+            {children}
+            <Toaster />
+          </TooltipProvider>
         </ReactQueryProvider>
       </ThemeProvider>
     </PostHogProvider>
