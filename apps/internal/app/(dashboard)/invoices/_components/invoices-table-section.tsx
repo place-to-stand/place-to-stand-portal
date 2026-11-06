@@ -196,7 +196,7 @@ export function InvoicesTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-32'
+                className='w-[13%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -210,19 +210,19 @@ export function InvoicesTableSection({
               >
                 Client
               </SortableTableHead>
-              <TableHead className='w-20'>Status</TableHead>
-              <TableHead className='w-24 text-right'>Total</TableHead>
-              <TableHead className='w-20'>Hours</TableHead>
+              <TableHead className='w-[8%]'>Status</TableHead>
+              <TableHead className='w-[10%] text-right'>Total</TableHead>
+              <TableHead className='w-[8%]'>Hours</TableHead>
               <SortableTableHead
                 field='created'
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-28'
+                className='w-[12%]'
               >
                 Issued
               </SortableTableHead>
-              <TableHead className='w-56'>Share link</TableHead>
+              <TableHead className='w-[23%]'>Share link</TableHead>
               {/* Sized to the row's buttons: one in active, two in archive. */}
               <TableHead
                 className={cn(

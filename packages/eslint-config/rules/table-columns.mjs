@@ -1,12 +1,11 @@
 /**
- * table.md: in a fixed-layout table, short columns hold a fixed width and
- * text columns take the slack.
+ * table.md: in a fixed-layout table, the select box and Actions hold a fixed
+ * width, the main text column has none, and every other column takes a %.
  *
  * With `table-layout: fixed`, a table wider than its sized columns spreads
  * the extra over every column (the select box and Actions included) unless
  * one column has no width. So each `<Table layout='fixed'>` needs at least
- * one unsized head, and a short column (Actions, Status, a date, hours,
- * money, a switch, an icon-only head) may not take a % width.
+ * one unsized head, and Actions (or an icon-only head) may not take a %.
  *
  * Heads are read from the table's `<TableHeader>`: `TableHead` and
  * `SortableTableHead` elements, heads inside `.map()`, and helper calls such
@@ -23,9 +22,8 @@ const TABLE_MD = 'docs/design-system/components/table.md'
 const WIDTH = /(?:^|\s)(?:[\w-]+:)*w-(?:\d+(?:\.\d+)?|px|\[[^\]]+\])(?=\s|$)/
 const PERCENT = /(?:^|\s)(?:[\w-]+:)*w-\[\d+(?:\.\d+)?%\]/
 
-/** Heads whose content has a known size. */
-const SHORT =
-  /^(actions?|status|active|hours?|date|issued|created( on)?|archived|received|total|unit price|rate.*|min qty|tasks)$/i
+/** Heads that hold buttons and must not grow. */
+const SHORT = /^actions?$/i
 
 const HEAD = /^(TableHead|SortableTableHead)$/
 
@@ -56,12 +54,12 @@ export const fixedTableColumns = {
     type: 'problem',
     docs: {
       description:
-        'Fixed-layout tables: one text column grows, short columns are fixed',
+        'Fixed-layout tables: one text column takes the rest, Actions is fixed',
     },
     schema: [],
     messages: {
       growing: `${TABLE_MD}: a fixed-layout table needs one column with no width, so the slack goes to text instead of spreading over the select box and Actions. Remove the width from the main text column.`,
-      percent: `${TABLE_MD}: "{{label}}" holds content of a known size, so give it a fixed width (w-24, w-32, …), not a %.`,
+      percent: `${TABLE_MD}: "{{label}}" holds buttons, so give it a fixed width (w-16, w-24, …), not a %.`,
     },
   },
   create(context) {

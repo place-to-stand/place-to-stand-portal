@@ -86,7 +86,7 @@ export function ProjectsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-52'
+                className='w-[32%]'
               >
                 Timeline
               </SortableTableHead>

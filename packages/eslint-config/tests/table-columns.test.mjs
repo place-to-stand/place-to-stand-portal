@@ -22,9 +22,9 @@ const table = heads =>
 
 tester.run('fixed-table-columns', pts.rules['fixed-table-columns'], {
   valid: [
-    // One unsized text column, short columns in px, a second text column in %.
+    // One unsized text column, data columns in %, Actions in px.
     table(
-      "<SelectAllHead /><TableHead>Name</TableHead><TableHead className='w-[20%]'>Email</TableHead><TableHead className='w-28'>Status</TableHead><TableHead className='w-24 text-right'>Actions</TableHead>"
+      "<SelectAllHead /><TableHead>Name</TableHead><TableHead className='w-[20%]'>Email</TableHead><TableHead className='w-[14%]'>Status</TableHead><TableHead className='w-24 text-right'>Actions</TableHead>"
     ),
     // Helper calls: the '' class leaves Company unsized.
     table(
@@ -45,13 +45,13 @@ tester.run('fixed-table-columns', pts.rules['fixed-table-columns'], {
     },
     {
       code: table(
-        "<TableHead>Name</TableHead><TableHead className='w-[10%]'>Status</TableHead><TableHead className='w-[8%]' />"
+        "<TableHead>Name</TableHead><TableHead className='w-[10%]'>Actions</TableHead><TableHead className='w-[8%]' />"
       ),
       errors: [{ messageId: 'percent' }, { messageId: 'percent' }],
     },
     {
       code: `const widths = { name: 'w-[50%]', status: 'w-[20%]' }
-       ${table('<TableHead className={widths.name}>Name</TableHead><TableHead className={`${widths.status} text-right`}>Status</TableHead>')}`,
+       ${table('<TableHead className={widths.name}>Name</TableHead><TableHead className={`${widths.status} text-right`}>Actions</TableHead>')}`,
       errors: [{ messageId: 'growing' }, { messageId: 'percent' }],
     },
   ],

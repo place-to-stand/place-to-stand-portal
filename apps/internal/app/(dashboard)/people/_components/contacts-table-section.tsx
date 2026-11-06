@@ -121,7 +121,7 @@ export function ContactsTableSection({
                   sort={sort}
                   defaultSort='name:asc'
                   onSortChange={next => update({ sort: next })}
-                  className='w-28'
+                  className='w-[12%]'
                 >
                   Role
                 </SortableTableHead>
@@ -149,7 +149,7 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-40'
+                className='w-[18%]'
               >
                 Phone
               </SortableTableHead>

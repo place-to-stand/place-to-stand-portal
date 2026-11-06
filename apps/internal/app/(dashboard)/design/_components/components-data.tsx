@@ -408,14 +408,14 @@ export function SampleProjectList({
                 Project
               </SortableTableHead>
               <TableHead className='w-[22%]'>Company</TableHead>
-              <TableHead className='w-28'>Status</TableHead>
-              <TableHead className='w-24'>People</TableHead>
+              <TableHead className='w-[17%]'>Status</TableHead>
+              <TableHead className='w-[15%]'>People</TableHead>
               <SortableTableHead
                 field='hours'
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={setSort}
-                className='w-24'
+                className='w-[15%]'
               >
                 Hours
               </SortableTableHead>

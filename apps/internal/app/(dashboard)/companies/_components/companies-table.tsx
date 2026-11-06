@@ -153,15 +153,17 @@ export function CompaniesTable({
               {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
               slack, so the select and Actions columns keep their widths. */}
               {sortHead('name', 'Company', '')}
-              {seesBilling ? sortHead('client', 'Billing type', 'w-28') : null}
-              {seesBilling ? sortHead('hours', 'Hours', 'w-48') : null}
-              {sortHead('people', 'People', 'w-24', 'center')}
-              {sortHead('leads', 'Open leads', 'w-28', 'center')}
-              {sortHead('projects', 'Projects', 'w-24', 'center')}
+              {seesBilling
+                ? sortHead('client', 'Billing type', 'w-[10%]')
+                : null}
+              {seesBilling ? sortHead('hours', 'Hours', 'w-[17%]') : null}
+              {sortHead('people', 'People', 'w-[8%]', 'center')}
+              {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
+              {sortHead('projects', 'Projects', 'w-[8%]', 'center')}
               {seesBilling ? (
                 <>
-                  {sortHead('origination', 'Origination', 'w-28', 'center')}
-                  {sortHead('closer', 'Closer', 'w-24', 'center')}
+                  {sortHead('origination', 'Origination', 'w-[10%]', 'center')}
+                  {sortHead('closer', 'Closer', 'w-[8%]', 'center')}
                 </>
               ) : null}
               <TableHead className='w-16 text-right'>Actions</TableHead>
