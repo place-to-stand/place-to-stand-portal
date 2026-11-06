@@ -214,3 +214,24 @@ run('underline-not-clipped', {
     },
   ],
 })
+
+run('sheet-link-in-place', {
+  valid: [
+    "<SheetLink sheet={{ entity: 'company', id }}>x</SheetLink>",
+    "const item = { sheet: { entity: 'lead', id } }",
+    { code: 'const link = { href: leadHref(id) }', filename: 'events.ts' },
+    '<Link href={projectBoardHref(a, b)}>x</Link>',
+    'router.push(companySheetHref(id))',
+  ],
+  invalid: [
+    {
+      code: '<Link href={companySheetHref(id)}>x</Link>',
+      errors: [{ messageId: 'leaves' }],
+    },
+    {
+      code: 'const item = { href: leadHref(lead.id) }',
+      filename: 'row.tsx',
+      errors: [{ messageId: 'leaves' }],
+    },
+  ],
+})

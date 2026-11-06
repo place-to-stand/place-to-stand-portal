@@ -7,10 +7,10 @@ import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
-import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 
 import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TimeLogListProps = {
   items: DashboardTimeLogEntry[]
@@ -96,8 +96,7 @@ function TimeLogRow({
   onOpen: (entryId: string) => void
   isOpening: boolean
 }) {
-  const projectHref = getProjectHref(entry)
-  const clientHref = getClientHref(entry)
+  const projectHref = projectTasksHref(entry)
   // A log can span several tasks; the first names the row and the rest
   // collapse into a count so the primary line stays one line.
   const [firstTask, ...otherTasks] = entry.taskTitles
@@ -140,9 +139,9 @@ function TimeLogRow({
             </span>
             {entry.clientName ? (
               <>
-                {clientHref ? (
+                {entry.companyId ? (
                   <MetaLink
-                    href={clientHref}
+                    sheet={{ entity: 'company', id: entry.companyId }}
                     className='pointer-events-auto relative z-20'
                     icon={renderProjectTypeIcon(entry.projectType)}
                   >
@@ -161,6 +160,7 @@ function TimeLogRow({
             ) : null}
             {projectHref ? (
               <MetaLink
+                // A project opens its board, not its sheet.
                 href={projectHref}
                 className='pointer-events-auto relative z-20'
                 icon={
@@ -202,20 +202,6 @@ function TimeLogRow({
       </div>
     </li>
   )
-}
-
-function getProjectHref(entry: DashboardTimeLogEntry) {
-  // The tasks tab is a project's default view -- same target the My Tasks
-  // widget uses, so both widgets land in the same place.
-  return projectTasksHref(entry)
-}
-
-function getClientHref(entry: DashboardTimeLogEntry) {
-  if (!entry.companyId) {
-    return null
-  }
-
-  return companySheetHref(entry.companyId)
 }
 
 function renderProjectTypeIcon(projectType: string) {

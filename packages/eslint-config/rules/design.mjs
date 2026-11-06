@@ -227,3 +227,50 @@ export const underlineNotClipped = {
     }
   },
 }
+
+/**
+ * Links to a record's sheet are `SheetLink` (or MetaLink / a hover-card row
+ * with `sheet`), which stacks the sheet over the page. A JSX `href` built
+ * from a sheet href builder (`companySheetHref(id)`, `leadHref(id)`) leaves
+ * the page for the record's list instead.
+ */
+const SHEET_HREF_BUILDER =
+  /^(contactSheetHref|companySheetHref|leadHref|invoiceHref|hourBlockHref|submissionHref|leadTaskHref)$/
+
+export const sheetLinkInPlace = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Links to a record open its sheet over the page' },
+    schema: [],
+    messages: {
+      leaves: `docs/design-system/components/table.md: "A linked record opens its sheet over the page you're on". Use SheetLink (components/ui/sheet-link.tsx), or \`sheet\` on MetaLink or a hover-card row, not an href from {{name}}, which leaves the page.`,
+    },
+  },
+  create(context) {
+    const check = (node, expression) => {
+      if (
+        expression?.type === 'CallExpression' &&
+        expression.callee.type === 'Identifier' &&
+        SHEET_HREF_BUILDER.test(expression.callee.name)
+      ) {
+        context.report({
+          node,
+          messageId: 'leaves',
+          data: { name: expression.callee.name },
+        })
+      }
+    }
+    return {
+      // <Link href={companySheetHref(id)}>
+      JSXAttribute(node) {
+        if (node.name?.name === 'href') check(node, node.value?.expression)
+      },
+      // A hover-card row in a component: { href: leadHref(id) }. Plain .ts
+      // modules (a notification's stored link) aren't rendered links.
+      Property(node) {
+        if (!context.filename.endsWith('.tsx')) return
+        if (node.key?.name === 'href') check(node, node.value)
+      },
+    }
+  },
+}

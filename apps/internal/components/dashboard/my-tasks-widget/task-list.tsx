@@ -1,10 +1,8 @@
-import Link from 'next/link'
 import { CalendarDays, ChevronRight, User, Users } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
-import { companySheetHref, leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
@@ -16,9 +14,10 @@ import {
   getTaskStatusToken,
 } from '@/lib/projects/task-status'
 import { cn } from '@/lib/utils'
-import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 import { MetaLink } from '@/components/ui/meta-link'
+import { SheetLink } from '@/components/ui/sheet-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TaskListProps = {
   items: AssignedTaskSummary[]
@@ -26,11 +25,6 @@ type TaskListProps = {
   isLoadingMore: boolean
   onLoadMore: () => void
   error: string | null
-}
-
-type TaskLinkMeta = {
-  href: string | null
-  reason?: string
 }
 
 export function TaskList({
@@ -73,41 +67,33 @@ export function TaskList({
 
 function TaskListItem({ task }: { task: AssignedTaskSummary }) {
   const dueMeta = getTaskDueMeta(task.dueOn, { status: task.status })
-  const linkMeta = getTaskLinkMeta(task)
-  const projectLinkMeta = getProjectLinkMeta(task)
-  const clientLinkMeta = getClientLinkMeta(task)
+  const clientCompanyId = getClientCompanyId(task)
+  const projectHref = task.project
+    ? projectTasksHref({
+        projectSlug: task.project.slug,
+        projectType: task.project.type,
+        clientSlug: task.client?.slug ?? null,
+      })
+    : null
   const statusToken = getTaskStatusToken(task.status)
   const statusLabel = getTaskStatusLabel(task.status)
-  const hasTaskLink = Boolean(linkMeta.href)
   const clientLabel = getClientDisplayName(task)
 
   return (
-    <li className={cn('relative', hasTaskLink && 'group')}>
-      {hasTaskLink ? (
-        <Link
-          href={linkMeta.href!}
-          // Full-bleed so the highlight meets the row dividers and the card's own
-          // clipped corners; a per-row radius left square gaps at every edge.
-          className='hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-0 z-0 transition outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
-          aria-label={`View task: ${task.title}`}
-        />
-      ) : null}
-      <article
-        className={cn(
-          'relative z-10 flex items-start gap-2 px-4 py-2.5',
-          hasTaskLink && 'pointer-events-none'
-        )}
-      >
+    <li className='group relative'>
+      {/* The row opens the task's sheet over the page. */}
+      <SheetLink
+        sheet={{ entity: 'task', id: task.id }}
+        // Full-bleed so the highlight meets the row dividers and the card's own
+        // clipped corners; a per-row radius left square gaps at every edge.
+        className='hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-ring/50 absolute inset-0 z-0 transition outline-none focus-visible:ring-[3px] focus-visible:ring-inset'
+        aria-label={`View task: ${task.title}`}
+      />
+      <article className='pointer-events-none relative z-10 flex items-start gap-2 px-4 py-2.5'>
         <div className='min-w-0 flex-1 space-y-1'>
-          {hasTaskLink ? (
-            <span className='text-foreground group-hover:text-primary block truncate text-sm font-semibold underline-offset-4 transition'>
-              {task.title}
-            </span>
-          ) : (
-            <span className='text-muted-foreground block truncate text-sm font-semibold'>
-              {task.title}
-            </span>
-          )}
+          <span className='text-foreground group-hover:text-primary block truncate text-sm font-semibold underline-offset-4 transition'>
+            {task.title}
+          </span>
           <div className='flex min-w-0 items-center gap-1.5'>
             <Badge variant='outline' className={cn(statusToken)}>
               {statusLabel}
@@ -121,7 +107,7 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
               {task.lead ? (
                 <>
                   <MetaLink
-                    href={leadHref(task.lead.id)}
+                    sheet={{ entity: 'lead', id: task.lead.id }}
                     onClick={e => e.stopPropagation()}
                     className='pointer-events-auto relative z-20'
                     icon={
@@ -137,10 +123,10 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                 </>
               ) : null}
               {/* No company to open for internal or personal work. */}
-              {clientLinkMeta.href ? (
+              {clientCompanyId ? (
                 <>
                   <MetaLink
-                    href={clientLinkMeta.href}
+                    sheet={{ entity: 'company', id: clientCompanyId }}
                     onClick={e => e.stopPropagation()}
                     className='pointer-events-auto relative z-20'
                     icon={
@@ -158,9 +144,18 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                 </>
               ) : null}
               {/* A lead task has no project: its lead line says where it is. */}
-              {!task.project ? null : projectLinkMeta.href ? (
+              {!task.project ? null : !projectHref ? (
+                <span className='inline-flex min-w-0 items-center gap-1'>
+                  <ENTITY_ICONS.project
+                    className='size-3 shrink-0'
+                    aria-hidden
+                  />
+                  <span className='truncate'>{task.project.name}</span>
+                </span>
+              ) : (
                 <MetaLink
-                  href={projectLinkMeta.href}
+                  // A project opens its board, not its sheet.
+                  href={projectHref}
                   onClick={e => e.stopPropagation()}
                   className='pointer-events-auto relative z-20'
                   icon={
@@ -172,14 +167,6 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                 >
                   {task.project.name}
                 </MetaLink>
-              ) : (
-                <span className='inline-flex min-w-0 items-center gap-1'>
-                  <ENTITY_ICONS.project
-                    className='size-3 shrink-0'
-                    aria-hidden
-                  />
-                  <span className='truncate'>{task.project.name}</span>
-                </span>
               )}
               {/* No due date set is the common case -- say nothing rather than
                   spend a line saying there's nothing to say. */}
@@ -200,18 +187,11 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
             </div>
           </div>
         </div>
-        {hasTaskLink ? (
-          <ChevronRight
-            className='text-muted-foreground size-4 shrink-0 self-center'
-            aria-hidden
-          />
-        ) : null}
+        <ChevronRight
+          className='text-muted-foreground size-4 shrink-0 self-center'
+          aria-hidden
+        />
       </article>
-      {linkMeta.reason ? (
-        <p className='text-muted-foreground relative z-10 px-4 pt-1 pb-2.5 text-xs'>
-          {linkMeta.reason}
-        </p>
-      ) : null}
     </li>
   )
 }
@@ -224,53 +204,11 @@ function MetaSeparator() {
   )
 }
 
-function getTaskLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
-  return {
-    href: myTaskHref(task.id),
-  }
-}
-
-function getProjectLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
+/** The company to open for a client project's task; none for other work. */
+function getClientCompanyId(task: AssignedTaskSummary): string | null {
   const { client, project } = task
-  const projectSlug = project?.slug ?? null
-
-  if (!projectSlug) {
-    return { href: null }
-  }
-
-  if (project?.type === 'INTERNAL') {
-    return {
-      href: `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${projectSlug}/tasks`,
-    }
-  }
-
-  if (project?.type === 'PERSONAL') {
-    return {
-      href: `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${projectSlug}/tasks`,
-    }
-  }
-
-  const clientSlug = client?.slug ?? null
-
-  if (!clientSlug) {
-    return { href: null }
-  }
-
-  return {
-    href: `/projects/${clientSlug}/${projectSlug}/tasks`,
-  }
-}
-
-function getClientLinkMeta(task: AssignedTaskSummary): TaskLinkMeta {
-  const { client, project } = task
-
-  // Only link to client pages for CLIENT-type projects with a valid client
-  if (project?.type !== 'CLIENT' || !client) {
-    return { href: null }
-  }
-
-  // A client is its company: open the company.
-  return { href: companySheetHref(client.id) }
+  // A client is its company.
+  return project?.type === 'CLIENT' && client ? client.id : null
 }
 
 function getClientDisplayName(task: AssignedTaskSummary): string {

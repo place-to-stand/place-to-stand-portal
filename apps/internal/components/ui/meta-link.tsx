@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 
+import { SheetLink } from '@/components/ui/sheet-link'
+import type { SheetTarget } from '@/lib/sheets/use-sheet-link'
 import { cn } from '@/lib/utils'
 
 /**
@@ -13,6 +15,8 @@ export const metaLinkClass =
   'hover:text-foreground inline-flex max-w-full min-w-0 items-center gap-1 transition hover:underline'
 
 type MetaLinkProps = {
+  /** A record: the link opens its sheet over the page (`SheetLink`). */
+  sheet?: SheetTarget
   /** An app path opens with next/link; mailto:, tel: and http(s) stay plain anchors. */
   href?: string
   /** Without `href` the link is a button (e.g. stacking a sheet). */
@@ -32,6 +36,7 @@ type MetaLinkProps = {
  * the link would only change colour.
  */
 export function MetaLink({
+  sheet,
   href,
   onClick,
   onKeyDown,
@@ -47,6 +52,20 @@ export function MetaLink({
       <span className='truncate-link'>{children}</span>
     </>
   )
+
+  if (sheet) {
+    return (
+      <SheetLink
+        sheet={sheet}
+        className={classes}
+        title={title}
+        onClick={onClick}
+        onKeyDown={onKeyDown}
+      >
+        {content}
+      </SheetLink>
+    )
+  }
 
   if (!href) {
     return (

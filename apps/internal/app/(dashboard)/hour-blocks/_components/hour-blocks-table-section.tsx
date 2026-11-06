@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Info } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
@@ -15,7 +14,6 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
-import { companySheetHref, invoiceHref } from '@/lib/sheets/hrefs'
 import { isHourBlockSortValue } from '@/lib/hour-blocks/filters'
 import {
   Table,
@@ -39,6 +37,7 @@ import {
   SelectRowCell,
   type RowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink, cellLinkClass } from '@/components/ui/sheet-link'
 
 type HourBlocksTableMode = 'active' | 'archive'
 
@@ -219,14 +218,12 @@ export function HourBlocksTableSection({
                           )}
                         />
                         {client ? (
-                          // Opens the client; the row ignores clicks on links.
-                          <Link
-                            href={companySheetHref(client.company_id)}
+                          <SheetLink
+                            sheet={{ entity: 'company', id: client.company_id }}
                             title={client.name}
-                            className='hover:text-foreground truncate-link transition hover:underline'
                           >
                             {client.name}
-                          </Link>
+                          </SheetLink>
                         ) : (
                           <EmptyValue />
                         )}
@@ -247,12 +244,18 @@ export function HourBlocksTableSection({
                             )}
                           />
                           {block.invoice_id ? (
-                            <Link
-                              href={invoiceHref(block.invoice_id)}
-                              className='text-muted-foreground hover:text-foreground truncate-link hover:underline'
+                            <SheetLink
+                              sheet={{
+                                entity: 'invoice',
+                                id: block.invoice_id,
+                              }}
+                              className={cn(
+                                'text-muted-foreground',
+                                cellLinkClass
+                              )}
                             >
                               {block.invoice_number}
-                            </Link>
+                            </SheetLink>
                           ) : (
                             <span className='text-muted-foreground truncate'>
                               {block.invoice_number}

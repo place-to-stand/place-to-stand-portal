@@ -37,6 +37,7 @@ export const HOUSE_RULES = {
   'pts/no-details-section': 'error', // sheet.md: no "Details" heading
   'pts/no-raw-type-size': 'error', // README → Type: role utilities
   'pts/underline-not-clipped': 'error', // README → Text links: truncate-link
+  'pts/sheet-link-in-place': 'error', // table.md: linked records open in place
 }
 
 /**

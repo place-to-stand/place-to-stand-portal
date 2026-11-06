@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatCurrency } from '@pts/ui/numbers'
 import { Check, Copy, ExternalLink, Mail } from 'lucide-react'
@@ -42,13 +41,13 @@ import {
 import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
 import { InvoiceStatusBadge } from './invoice-status-badge'
-import { companySheetHref } from '@/lib/sheets/hrefs'
 import {
   RowSelectionProvider,
   SelectAllHead,
   SelectRowCell,
   type RowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink } from '@/components/ui/sheet-link'
 
 type InvoicesTableMode = 'active' | 'archive'
 
@@ -317,12 +316,15 @@ export function InvoicesTableSection({
                         />
                         {client ? (
                           client.company_id ? (
-                            <Link
-                              href={companySheetHref(client.company_id)}
-                              className='hover:text-foreground truncate-link hover:underline'
+                            <SheetLink
+                              sheet={{
+                                entity: 'company',
+                                id: client.company_id,
+                              }}
+                              title={client.name}
                             >
                               {client.name}
-                            </Link>
+                            </SheetLink>
                           ) : (
                             <span className='truncate'>{client.name}</span>
                           )
@@ -345,7 +347,6 @@ export function InvoicesTableSection({
                     <TableCell label='Hours'>
                       <InvoiceHourBlocksCell
                         hourBlocks={invoice.hour_blocks ?? []}
-                        invoiceNumber={invoice.invoice_number}
                       />
                     </TableCell>
                     <TableCell

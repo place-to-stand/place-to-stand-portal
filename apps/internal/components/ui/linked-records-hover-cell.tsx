@@ -10,6 +10,8 @@ import {
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { EmptyValue } from '@/components/table/empty-value'
+import { SheetLink } from '@/components/ui/sheet-link'
+import type { SheetTarget } from '@/lib/sheets/use-sheet-link'
 import { cn } from '@/lib/utils'
 import { entityIconAccent } from '@/lib/entity-accents'
 
@@ -17,9 +19,11 @@ export type LinkedRecordItem = {
   id: string
   label: string
   sublabel?: string | null
-  /** Omit (with `onSelect`) to render the row as plain text. */
+  /** The record: the row opens its sheet over the current page. */
+  sheet?: SheetTarget
+  /** A page to go to, for records without a sheet. */
   href?: string
-  /** For rows that open in place, e.g. a sheet over the current page. */
+  /** For rows that act in place without a sheet. Omit all three for plain text. */
   onSelect?: () => void
   /** Rendered after the label, e.g. a status Badge. */
   trailing?: ReactNode
@@ -71,8 +75,8 @@ const ROW_CLASS = 'flex items-center gap-2 px-3 py-2 text-sm'
 /**
  * A count that opens a HoverCard listing the records behind it — linked
  * clients on a contact, projects on a client, assignments on a user. Rows
- * link out when they carry an `href`; the zero state is a muted number with
- * no card.
+ * open their record's sheet over the page when they carry a `sheet`; the
+ * zero state is a muted number with no card.
  */
 export function LinkedRecordsHoverCell({
   count,
@@ -182,6 +186,17 @@ function LinkedRecordRow({
       ) : null}
     </>
   )
+
+  if (item.sheet) {
+    return (
+      <SheetLink
+        sheet={item.sheet}
+        className={cn(ROW_CLASS, 'hover:bg-accent transition-colors')}
+      >
+        {content}
+      </SheetLink>
+    )
+  }
 
   if (item.onSelect) {
     return (

@@ -12,9 +12,10 @@ import {
   leadHref,
   submissionHref,
 } from '@/lib/sheets/hrefs'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { isModifiedClick } from '@/lib/sheets/use-sheet-link'
 import { cn } from '@/lib/utils'
 
+import { SheetLink } from './sheet-link'
 import type { ToastLink } from './toast'
 
 /** Each sheet's entity in the registry (its name, icon and colour). */
@@ -92,42 +93,45 @@ export function ToastRecordLink({
   onOpen: () => void
 }) {
   const router = useRouter()
-  const { get, hrefFor, open } = useSheetParams()
   const archivedHref = link.archived
     ? ARCHIVED_HREF[link.entity]?.(link.id)
     : undefined
+  const content = <ToastRecordLinkContent entity={link.entity} name={name} />
 
-  if (link.archived && !archivedHref) {
+  if (!link.archived) {
+    return (
+      <SheetLink
+        sheet={{ entity: link.entity, id: link.id }}
+        onOpen={onOpen}
+        className={toastRecordLinkClass}
+        title={name}
+      >
+        {content}
+      </SheetLink>
+    )
+  }
+
+  if (!archivedHref) {
     return null
   }
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
+    if (isModifiedClick(event)) {
       return
     }
     event.preventDefault()
-    if (archivedHref) {
-      router.push(archivedHref)
-    } else if (get(link.entity) !== link.id) {
-      open(link.entity, link.id)
-    }
+    router.push(archivedHref)
     onOpen()
   }
 
   return (
     <a
-      href={archivedHref ?? hrefFor(link.entity, link.id)}
+      href={archivedHref}
       onClick={handleClick}
       className={toastRecordLinkClass}
       title={name}
     >
-      <ToastRecordLinkContent entity={link.entity} name={name} />
+      {content}
     </a>
   )
 }

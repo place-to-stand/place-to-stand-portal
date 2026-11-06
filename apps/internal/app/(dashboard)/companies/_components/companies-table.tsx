@@ -22,11 +22,6 @@ import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { EmptyValue } from '@/components/table/empty-value'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
-import {
-  contactSheetHref,
-  leadHref,
-  projectBoardHref,
-} from '@/lib/sheets/hrefs'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
 import { toastLink, useToast } from '@/components/ui/use-toast'
@@ -54,6 +49,7 @@ import {
   SelectRowCell,
   useRowSelection,
 } from '@/components/table/bulk-select'
+import { projectBoardHref } from '@/lib/sheets/hrefs'
 
 const BULK_ARCHIVE_EXTRA =
   'Their people and leads stay as they are. People at former clients lose portal access.'
@@ -274,7 +270,7 @@ export function CompaniesTable({
                           id: person.id,
                           label: person.name,
                           sublabel: person.jobTitle ?? person.email,
-                          href: contactSheetHref(person.id),
+                          sheet: { entity: 'contact', id: person.id },
                           // The primary contact, starred as on the company sheet.
                           trailing: person.isPrimary ? (
                             <Star
@@ -299,7 +295,7 @@ export function CompaniesTable({
                         items={company.openLeads.map(lead => ({
                           id: lead.id,
                           label: lead.contactName,
-                          href: leadHref(lead.id),
+                          sheet: { entity: 'lead', id: lead.id },
                           trailing: <LeadStatusBadge status={lead.status} />,
                         }))}
                       />
@@ -317,6 +313,7 @@ export function CompaniesTable({
                         items={company.projects.map(project => ({
                           id: project.id,
                           label: project.name,
+                          // A project opens its board, not its sheet.
                           href:
                             company.slug && project.slug
                               ? projectBoardHref(company.slug, project.slug)
