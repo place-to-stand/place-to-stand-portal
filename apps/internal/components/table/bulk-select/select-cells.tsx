@@ -58,7 +58,7 @@ const COLUMN_CLASS = 'w-9 pr-0'
 
 /**
  * Boxes stay out of sight until they are useful: a row's box shows while
- * the row is hovered or focused, the header's while the table is, and once
+ * the row is hovered or focused, and once
  * any row is ticked every box shows. Phones have no hover, so the column
  * is hidden there.
  */
@@ -81,23 +81,22 @@ export function SelectAllHead({ ids }: { ids?: string[] }) {
       data-slot='table-select-head'
       className={cn(COLUMN_CLASS, 'align-middle')}
     >
-      <Checkbox
-        aria-label={
-          ids
-            ? `Select all ${label} in this table`
-            : `Select all ${label} on this page`
-        }
-        checked={state === 'all'}
-        indeterminate={state === 'some'}
-        onCheckedChange={() =>
-          ids ? selection.toggleGroup(ids) : selection.toggleAll()
-        }
-        className={cn(
-          'block cursor-pointer',
-          !selection.active &&
-            'opacity-0 transition-opacity focus-visible:opacity-100 [table:hover_&]:opacity-100'
-        )}
-      />
+      {/* Wrapped so the table's checkbox nudge (translate-y-0.5) skips it. */}
+      <div className='flex items-center'>
+        <Checkbox
+          aria-label={
+            ids
+              ? `Select all ${label} in this table`
+              : `Select all ${label} on this page`
+          }
+          checked={state === 'all'}
+          indeterminate={state === 'some'}
+          onCheckedChange={() =>
+            ids ? selection.toggleGroup(ids) : selection.toggleAll()
+          }
+          className='cursor-pointer'
+        />
+      </div>
     </TableHead>
   )
 }
