@@ -256,7 +256,7 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
         />
       ))}
       {cursor ? (
-        <div className='border-t pt-1.5'>
+        <div>
           {moreFailed ? (
             <p className='text-destructive px-2 pb-1 text-xs'>
               Couldn’t load more from Gmail. Try again.
