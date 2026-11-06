@@ -236,7 +236,9 @@ function Sidebar({
       <div
         data-slot='sidebar-container'
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-300 ease-in-out md:flex',
+          // overflow-hidden: while the width animates, nothing may spill
+          // past the sidebar's edge onto the page.
+          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) overflow-hidden transition-[left,right,width] duration-300 ease-in-out md:flex',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
@@ -251,7 +253,11 @@ function Sidebar({
         <div
           data-sidebar='sidebar'
           data-slot='sidebar-inner'
-          className='bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm'
+          // The open layout keeps its full width while the sidebar grows, so
+          // labels are uncovered from the left instead of squeezed, cut off
+          // with an ellipsis, or pushed out of their boxes. The icon layout
+          // follows the container's width.
+          className='bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full min-w-(--sidebar-width) flex-col group-data-[collapsible=icon]:min-w-0 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm'
         >
           {children}
         </div>
