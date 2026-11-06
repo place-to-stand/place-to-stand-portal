@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Request } from '@playwright/test'
+import { archiveFromSheetMenu } from './helpers'
 
 /**
  * The task sheet writes only when Save is clicked, and Save is one request
@@ -124,7 +125,7 @@ test('creating a task with an assignee is one request on Save', async ({
   expect(beforeSave.posts.map(request => request.url())).toEqual([])
 
   const onSave = recordWrites(page)
-  await sheet.getByRole('button', { name: 'Create task' }).click()
+  await sheet.getByRole('button', { name: 'Create and close' }).click()
   await expect(sheet).toBeHidden()
   await page.waitForLoadState('networkidle')
   onSave.stop()
@@ -136,7 +137,7 @@ test('creating a task with an assignee is one request on Save', async ({
   await page.goto('/my/tasks')
   await page.getByText(title, { exact: true }).first().click()
   const created = page.getByRole('dialog')
-  await created.getByRole('button', { name: 'Archive task' }).click()
+  await archiveFromSheetMenu(created)
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Archive task', exact: true })

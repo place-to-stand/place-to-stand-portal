@@ -39,6 +39,8 @@ interface GitHubReposSectionProps {
   onPendingReposChange: (repos: PendingRepo[]) => void
   onRemovedRepoIdsChange: (ids: Set<string>) => void
   onDirtyChange?: (isDirty: boolean) => void
+  /** Bumped after a keep-open save, to read the saved links back. */
+  reloadKey?: number
 }
 
 interface RepoOption {
@@ -80,6 +82,7 @@ export function GitHubReposSection({
   onPendingReposChange,
   onRemovedRepoIdsChange,
   onDirtyChange,
+  reloadKey = 0,
 }: GitHubReposSectionProps) {
   const [repos, setRepos] = useState<GitHubRepoLink[]>([])
   // Create mode has no repos to load, so it never enters the loading state.
@@ -135,8 +138,9 @@ export function GitHubReposSection({
 
   useEffect(() => {
     // loadLinkedRepos catches its own errors.
+    // Runs again on `reloadKey`: a keep-open save changed the links.
     void loadLinkedRepos()
-  }, [loadLinkedRepos])
+  }, [loadLinkedRepos, reloadKey])
 
   // Notify parent of dirty state changes
   useEffect(() => {

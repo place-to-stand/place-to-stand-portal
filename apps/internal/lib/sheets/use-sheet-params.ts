@@ -133,6 +133,26 @@ export function useSheetParams() {
     [open]
   )
 
+  /**
+   * Point an open sheet at another record in place (history replace): a
+   * create sheet saved with "keep open" becomes the new record's sheet. The
+   * param keeps its stack position. A page that renders this sheet itself
+   * resolves the record on the server, so that write goes through
+   * `router.replace`.
+   */
+  const swap = useCallback(
+    (entity: SheetEntityKey, value: string) => {
+      emitSheetOpen(entity, value)
+      const url = hrefFor(entity, value)
+      if (isSheetEntityClaimed(entity, pathname, value)) {
+        router.replace(url, { scroll: false })
+      } else {
+        writeShallowUrl(url, 'replace')
+      }
+    },
+    [hrefFor, pathname, router]
+  )
+
   const close = useCallback(
     (entity: SheetEntityKey) => {
       writeShallowUrl(
@@ -148,7 +168,7 @@ export function useSheetParams() {
     [buildUrl]
   )
 
-  return { stack, get, getAux, hrefFor, open, openNew, close }
+  return { stack, get, getAux, hrefFor, open, openNew, swap, close }
 }
 
 /**

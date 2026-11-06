@@ -5,6 +5,7 @@ import {
   type Page,
   type Request,
 } from '@playwright/test'
+import { archiveFromSheetMenu } from './helpers'
 
 /**
  * The company sheet writes only on Save, and Save is one server action (one
@@ -79,12 +80,12 @@ async function cleanUp(page: Page, name: string) {
     await toggle.click()
     await sheet.getByRole('combobox', { name: 'Last month billed' }).click()
     await page.getByRole('option', { name: /\(last month\)$/ }).click()
-    await sheet.getByRole('button', { name: 'Save changes' }).click()
+    await sheet.getByRole('button', { name: 'Save and close' }).click()
     await expect(sheet).toBeHidden()
     await openCompany(page, name)
   }
   const reopened = page.getByRole('dialog')
-  await reopened.getByRole('button', { name: 'Archive company' }).click()
+  await archiveFromSheetMenu(reopened)
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Archive company', exact: true })
@@ -109,7 +110,7 @@ test('creating a company with a person and billing is one Save', async ({
 
   const actions = await saveAndCountActions(
     page,
-    sheet.getByRole('button', { name: 'Create company' })
+    sheet.getByRole('button', { name: 'Create and close' })
   )
   expect(actions).toBe(1)
   await expect(sheet).toBeHidden()
@@ -130,7 +131,7 @@ test('billing through the end of the month, then restarting, keeps a client', as
   const name = `E2E stop-restart ${Date.now()}`
   const { sheet } = await startCompany(page, name)
   await sheet.getByRole('switch', { name: 'Bill this company' }).click()
-  await sheet.getByRole('button', { name: 'Create company' }).click()
+  await sheet.getByRole('button', { name: 'Create and close' }).click()
   await expect(sheet).toBeHidden()
 
   // Stop, billed through the end of this month (the default).
@@ -139,7 +140,7 @@ test('billing through the end of the month, then restarting, keeps a client', as
   await expect(
     billing.getByRole('combobox', { name: 'Last month billed' })
   ).toContainText('(this month)')
-  await billing.getByRole('button', { name: 'Save changes' }).click()
+  await billing.getByRole('button', { name: 'Save and close' }).click()
   await expect(billing).toBeHidden()
 
   // Still billed this month, with the stop scheduled: the switch reads off
@@ -162,7 +163,7 @@ test('billing through the end of the month, then restarting, keeps a client', as
       'The stop is cancelled and billing continues when you save.'
     )
   ).toBeVisible()
-  await billing.getByRole('button', { name: 'Save changes' }).click()
+  await billing.getByRole('button', { name: 'Save and close' }).click()
   await expect(billing).toBeHidden()
 
   billing = await openCompany(page, name)
@@ -236,16 +237,18 @@ test('a billed company is not archived: stop billing first', async ({
   const name = `E2E archive-billed ${Date.now()}`
   const { sheet } = await startCompany(page, name)
   await sheet.getByRole('switch', { name: 'Bill this company' }).click()
-  await sheet.getByRole('button', { name: 'Create company' }).click()
+  await sheet.getByRole('button', { name: 'Create and close' }).click()
   await expect(sheet).toBeHidden()
 
-  // The sheet's archive button is disabled, with the reason.
+  // The sheet's Archive (in its header's Actions menu) is disabled, with the
+  // reason shown in the menu.
   const saved = await openCompany(page, name)
-  const archive = saved.getByRole('button', { name: 'Archive company' })
+  await saved.getByRole('button', { name: 'Company actions' }).click()
+  const archive = page.getByRole('menuitem', { name: 'Archive' })
   await expect(archive).toBeDisabled()
-  // The reason shows on hovering its wrapper (the button ignores the pointer).
-  await archive.locator('xpath=../..').hover()
-  await expect(page.getByText('Stop billing first.').first()).toBeVisible()
+  await expect(
+    page.getByRole('menu').getByText('Stop billing first.')
+  ).toBeVisible()
   await page.keyboard.press('Escape')
 
   // So is the list's.
@@ -265,7 +268,7 @@ test('a save made since the sheet opened refuses the older sheet', async ({
 }) => {
   const name = `E2E two-tabs ${Date.now()}`
   const { sheet } = await startCompany(page, name)
-  await sheet.getByRole('button', { name: 'Create company' }).click()
+  await sheet.getByRole('button', { name: 'Create and close' }).click()
   await expect(sheet).toBeHidden()
 
   // The same company open in two tabs.
@@ -276,13 +279,13 @@ test('a save made since the sheet opened refuses the older sheet', async ({
   await first
     .getByRole('textbox', { name: 'Website' })
     .fill('https://first.example.com')
-  await first.getByRole('button', { name: 'Save changes' }).click()
+  await first.getByRole('button', { name: 'Save and close' }).click()
   await expect(first).toBeHidden()
 
   await second
     .getByRole('textbox', { name: 'Website' })
     .fill('https://second.example.com')
-  await second.getByRole('button', { name: 'Save changes' }).click()
+  await second.getByRole('button', { name: 'Save and close' }).click()
   // Refused with a toast (outside the sheet); the sheet stays open.
   await expect(
     other.getByText(

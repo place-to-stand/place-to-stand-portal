@@ -52,7 +52,7 @@ test('a long word stays inside the task description, editing and saving', async 
   await sheet.getByLabel('Title').fill('E2E overflow check (never saved)')
   await sheet.getByRole('combobox', { name: 'Project' }).click()
   await page.getByRole('option').first().click()
-  await sheet.getByRole('button', { name: 'Create task' }).click()
+  await sheet.getByRole('button', { name: 'Create and close' }).click()
 
   // Saving: the editor is read-only until the request settles.
   await expect(sheet.locator('.ProseMirror').first()).toHaveAttribute(
