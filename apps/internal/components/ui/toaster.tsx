@@ -72,26 +72,38 @@ export function Toaster() {
       style={{ gap: TOAST_GAP }}
       aria-live='polite'
     >
-      {toasts.map(toast => (
-        <ToastCard
-          key={toast.id}
-          title={toast.title}
-          description={toast.description}
-          variant={toast.variant}
-          link={
-            toast.link ? (
-              // The link reads the URL, which needs a Suspense boundary.
-              <Suspense fallback={null}>
-                <ToastRecordLink
-                  link={toast.link}
-                  onOpen={() => dismiss(toast.id)}
-                />
-              </Suspense>
-            ) : null
-          }
-          onDismiss={() => dismiss(toast.id)}
-        />
-      ))}
+      {toasts.map(toast => {
+        // A success about a named record shows the name as its link: one
+        // line instead of the name and an "Open task" line.
+        const success =
+          !toast.variant ||
+          toast.variant === 'default' ||
+          toast.variant === 'success'
+        const name =
+          success && toast.link && typeof toast.description === 'string'
+            ? toast.description
+            : undefined
+        const link = toast.link ? (
+          // The link reads the URL, which needs a Suspense boundary.
+          <Suspense fallback={null}>
+            <ToastRecordLink
+              link={toast.link}
+              name={name}
+              onOpen={() => dismiss(toast.id)}
+            />
+          </Suspense>
+        ) : null
+        return (
+          <ToastCard
+            key={toast.id}
+            title={toast.title}
+            description={name ? link : toast.description}
+            variant={toast.variant}
+            link={name ? null : link}
+            onDismiss={() => dismiss(toast.id)}
+          />
+        )
+      })}
     </div>
   )
 }

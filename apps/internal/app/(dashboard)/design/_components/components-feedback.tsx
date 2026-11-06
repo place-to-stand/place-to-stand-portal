@@ -298,13 +298,15 @@ export function ComponentsFeedback() {
       </Specimen>
       <Specimen
         label='Sheet save results'
-        note='every sheet: a toast, never an inline box; a refusal gives its reason'
+        note='every sheet: a toast, never an inline box; a success links its record by name, a refusal gives its reason'
         className='block space-y-2'
       >
         <ToastCard
           title='Company saved'
-          description='Acme Industries'
-          link={<SpecimenToastLink entity='company' />}
+          // A success names its record as the link.
+          description={
+            <SpecimenToastLink entity='company' name='Acme Industries' />
+          }
           onDismiss={() => {}}
         />
         <ToastCard
@@ -472,10 +474,16 @@ export function ComponentsOverlays() {
 }
 
 /** A toast's record link as it looks, without a record behind it. */
-function SpecimenToastLink({ entity }: { entity: 'invoice' | 'company' }) {
+function SpecimenToastLink({
+  entity,
+  name,
+}: {
+  entity: 'invoice' | 'company'
+  name?: string
+}) {
   return (
     <span className={toastRecordLinkClass}>
-      <ToastRecordLinkContent entity={entity} />
+      <ToastRecordLinkContent entity={entity} name={name} />
     </span>
   )
 }
