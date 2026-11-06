@@ -39,6 +39,7 @@ import {
   underlineNotClipped,
 } from './rules/design.mjs'
 import { clientBoundary, queryLayerPurity } from './rules/layering.mjs'
+import { fixedTableColumns } from './rules/table-columns.mjs'
 
 export const pts = {
   meta: { name: 'pts' },
@@ -64,6 +65,7 @@ export const pts = {
     'one-page-panel': onePagePanel,
     'popover-shadow': popoverShadow,
     'figure-cell-aligned': figureCellAligned,
+    'fixed-table-columns': fixedTableColumns,
     'no-details-section': noDetailsSection,
     'no-raw-type-size': noRawTypeSize,
     'underline-not-clipped': underlineNotClipped,

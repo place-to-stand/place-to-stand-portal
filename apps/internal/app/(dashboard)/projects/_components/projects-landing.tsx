@@ -552,12 +552,14 @@ export function ProjectsLanding({
   }
 
   const tableColumnWidths = {
-    project: 'w-[33%]',
-    status: 'w-[11%]',
-    progress: 'w-[22%]',
-    owner: 'w-[7%]',
-    links: 'w-[14%]',
-    actions: 'w-24',
+    // Unsized on purpose: in a fixed layout the one auto column absorbs the
+    // slack, so the select and Actions columns keep their widths.
+    project: '',
+    status: 'w-[13%]',
+    progress: 'w-[19%]',
+    owner: 'w-[8%]',
+    links: 'w-[9%]',
+    actions: 'w-20',
   }
 
   /**

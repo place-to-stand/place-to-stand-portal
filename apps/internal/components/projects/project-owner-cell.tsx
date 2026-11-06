@@ -121,7 +121,9 @@ export function ProjectOwnerCell({
       onChange={handleChange}
       searchPlaceholder='Search people…'
       emptyMessage='No people found.'
-      className='w-fit'
+      // Block-level `flex`, not the picker's default `inline-flex`: see the
+      // trigger's note below. The wrapper is inline too, so it needs it as well.
+      className='flex w-fit'
       trigger={
         <button
           type='button'

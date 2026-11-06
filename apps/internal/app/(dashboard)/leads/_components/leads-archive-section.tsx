@@ -238,7 +238,7 @@ export function LeadsArchiveSection({
           density='compact'
           layout='fixed'
           stack
-          className='md:min-w-[46rem]'
+          className='md:min-w-[52rem]'
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
@@ -247,23 +247,22 @@ export function LeadsArchiveSection({
                 sort={sortParam}
                 defaultSort='archived:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[20%]'
               >
                 Person
               </SortableTableHead>
-              <TableHead className='w-[16%]'>Company</TableHead>
-              <TableHead className='w-[18%]'>Email</TableHead>
-              <TableHead className='w-[20%]'>Last status</TableHead>
+              <TableHead className='w-[18%]'>Company</TableHead>
+              <TableHead className='w-[20%]'>Email</TableHead>
+              <TableHead className='w-[21%]'>Last status</TableHead>
               <SortableTableHead
                 field='archived'
                 sort={sortParam}
                 defaultSort='archived:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[14%]'
+                className='w-[13%]'
               >
                 Archived
               </SortableTableHead>
-              <TableHead className='w-24 text-right'>Actions</TableHead>
+              <TableHead className='w-16 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -98,7 +98,7 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[18%]'
+                className='w-[20%]'
               >
                 Hours purchased
               </SortableTableHead>
@@ -107,7 +107,6 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[34%]'
               >
                 Client
               </SortableTableHead>
@@ -116,7 +115,7 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[18%]'
+                className='w-[17%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -125,11 +124,11 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[18%]'
+                className='w-[15%]'
               >
                 Created on
               </SortableTableHead>
-              <TableHead className='w-24 text-right'>Actions</TableHead>
+              <TableHead className='w-20 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

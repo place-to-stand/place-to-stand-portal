@@ -185,7 +185,7 @@ export function InvoicesTableSection({
           density='compact'
           layout='fixed'
           stack
-          className='md:min-w-[50rem]'
+          className='md:min-w-[60rem]'
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
@@ -195,7 +195,7 @@ export function InvoicesTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[12%]'
+                className='w-[11%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -209,24 +209,24 @@ export function InvoicesTableSection({
               >
                 Client
               </SortableTableHead>
-              <TableHead className='w-20'>Status</TableHead>
+              <TableHead className='w-[8%]'>Status</TableHead>
               <TableHead className='w-[10%] text-right'>Total</TableHead>
-              <TableHead className='w-20'>Hours</TableHead>
+              <TableHead className='w-[7%]'>Hours</TableHead>
               <SortableTableHead
                 field='created'
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[14%]'
+                className='w-[11%]'
               >
                 Issued
               </SortableTableHead>
-              <TableHead className='w-[22%]'>Share link</TableHead>
+              <TableHead className='w-[20%]'>Share link</TableHead>
               {/* Sized to the row's buttons: one in active, two in archive. */}
               <TableHead
                 className={cn(
                   'text-right',
-                  mode === 'archive' ? 'w-24' : 'w-16'
+                  mode === 'archive' ? 'w-20' : 'w-16'
                 )}
               >
                 Actions

@@ -146,18 +146,20 @@ export function CompaniesTable({
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SelectAllHead />
-              {sortHead('name', 'Company', 'w-[28%]')}
+              {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
+              slack, so the select and Actions columns keep their widths. */}
+              {sortHead('name', 'Company', '')}
               {seesBilling
-                ? sortHead('client', 'Billing type', 'w-[11%]')
+                ? sortHead('client', 'Billing type', 'w-[9%]')
                 : null}
               {seesBilling ? sortHead('hours', 'Hours', 'w-[18%]') : null}
-              {sortHead('people', 'People', 'w-[7%]', 'center')}
-              {sortHead('leads', 'Open leads', 'w-[9%]', 'center')}
-              {sortHead('projects', 'Projects', 'w-[8%]', 'center')}
+              {sortHead('people', 'People', 'w-[8%]', 'center')}
+              {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
+              {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
               {seesBilling ? (
                 <>
-                  {sortHead('origination', 'Origination', 'w-[9%]', 'center')}
-                  {sortHead('closer', 'Closer', 'w-[7%]', 'center')}
+                  {sortHead('origination', 'Origination', 'w-[10%]', 'center')}
+                  {sortHead('closer', 'Closer', 'w-[8%]', 'center')}
                 </>
               ) : null}
               <TableHead className='w-16 text-right'>Actions</TableHead>

@@ -146,13 +146,15 @@ export function TimeLogsTable({
             <TableHeader>
               <TableRow className='bg-muted/40'>
                 <SelectAllHead />
-                {sortHead('hours', 'Hours', 'w-[10%]')}
+                {sortHead('hours', 'Hours', 'w-[8%]')}
                 {sortHead('date', 'Date', 'w-[10%]')}
-                {sortHead('person', 'Person', 'w-20', 'center')}
+                {sortHead('person', 'Person', 'w-[9%]', 'center')}
                 {sortHead('client', 'Client', 'w-[24%]')}
-                {sortHead('project', 'Project', 'w-[27%]')}
-                <TableHead className='w-[10%] text-center'>Tasks</TableHead>
-                <TableHead className='w-32 text-right'>Actions</TableHead>
+                {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
+                slack, so the select and Actions columns keep their widths. */}
+                {sortHead('project', 'Project', '')}
+                <TableHead className='w-[6%] text-center'>Tasks</TableHead>
+                <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
