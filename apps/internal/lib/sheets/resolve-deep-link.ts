@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation'
 
 import { NotFoundError } from '@/lib/errors/http'
 
-import { NEW_SHEET_VALUE, UUID_PATTERN } from './entities'
+import {
+  NEW_SHEET_VALUE,
+  UUID_PATTERN,
+  parseDuplicateSourceId,
+} from './entities'
 
 export type SheetDeepLink<T> = {
   /** The linked record, resolved regardless of pagination/filters. */
@@ -41,8 +45,12 @@ export async function resolveSheetDeepLink<T>({
   activeHref,
   archiveHref,
 }: ResolveSheetDeepLinkArgs<T>): Promise<SheetDeepLink<T>> {
-  // `new` opens the create sheet — nothing to resolve.
-  if (!idParam || idParam === NEW_SHEET_VALUE) {
+  // `new` and `copy-<uuid>` open a create sheet — nothing to resolve.
+  if (
+    !idParam ||
+    idParam === NEW_SHEET_VALUE ||
+    parseDuplicateSourceId(idParam) !== null
+  ) {
     return { record: null, notFound: false }
   }
 

@@ -11,6 +11,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -404,102 +405,121 @@ export function ProjectsLanding({
     const externalLinks = buildExternalLinks(project)
 
     return (
-      <TableRow
+      <RecordContextMenu
         key={project.id}
-        {...(href !== '#' ? getClickableRowProps(() => router.push(href)) : {})}
-        className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
+        entity='project'
+        id={project.id}
+        disabled={readOnly}
+        // The row opens the board; Edit opens the project's sheet, as the
+        // pencil does.
+        onEdit={() => openProjectSheet(project.id)}
+        onArchive={() => handleRequestDelete(project)}
+        archiveDisabledReason={isArchivePending ? PENDING_REASON : null}
       >
-        <TableCell>
-          <div className='flex min-w-0 items-center'>
-            {treeLine && (
-              <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono max-md:hidden'>
-                {treeLine}
-              </span>
-            )}
-            <Link href={href} className='flex min-w-0 items-center gap-2 py-1'>
-              <ENTITY_ICONS.project
-                className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
-              />
-              <span className='truncate font-medium' title={project.name}>
-                {project.name}
-              </span>
-            </Link>
-          </div>
-        </TableCell>
-        <TableCell>
-          <ProjectStatusCell
-            projectId={project.id}
-            status={project.status}
-            onStatusChange={handleProjectStatusChange}
-            disabled={readOnly}
-          />
-        </TableCell>
-        <TableCell>
-          <div className='flex items-center gap-3'>
-            <Progress value={progressPercentage} className='h-2 w-24' />
-            <span className='text-muted-foreground text-xs'>
-              {doneCount}/{totalCount}
-            </span>
-          </div>
-        </TableCell>
-        <TableCell label='Owner' className='align-middle'>
-          <ProjectOwnerCell
-            projectId={project.id}
-            owner={project.owner}
-            admins={admins}
-            onOwnerChange={handleProjectOwnerChange}
-            readOnly={readOnly}
-          />
-        </TableCell>
-        <TableCell
-          className={cn(
-            'align-middle',
-            externalLinks.length === 0 && 'max-md:hidden'
-          )}
+        <TableRow
+          {...(href !== '#'
+            ? getClickableRowProps(() => router.push(href))
+            : {})}
+          className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
         >
-          <div className='flex h-full flex-wrap items-center gap-1.5'>
-            {externalLinks.length > 0 ? (
-              externalLinks.map(link => (
-                <Tooltip key={link.key}>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={link.href}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      aria-label={link.label}
-                      className='text-muted-foreground hover:text-foreground inline-flex items-center transition-colors'
-                    >
-                      {link.icon}
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>{link.label}</TooltipContent>
-                </Tooltip>
-              ))
-            ) : (
-              <EmptyValue />
+          <TableCell>
+            <div className='flex min-w-0 items-center'>
+              {treeLine && (
+                <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono max-md:hidden'>
+                  {treeLine}
+                </span>
+              )}
+              <Link
+                href={href}
+                className='flex min-w-0 items-center gap-2 py-1'
+              >
+                <ENTITY_ICONS.project
+                  className={cn(
+                    ENTITY_ACCENTS.project.icon,
+                    'h-4 w-4 shrink-0'
+                  )}
+                />
+                <span className='truncate font-medium' title={project.name}>
+                  {project.name}
+                </span>
+              </Link>
+            </div>
+          </TableCell>
+          <TableCell>
+            <ProjectStatusCell
+              projectId={project.id}
+              status={project.status}
+              onStatusChange={handleProjectStatusChange}
+              disabled={readOnly}
+            />
+          </TableCell>
+          <TableCell>
+            <div className='flex items-center gap-3'>
+              <Progress value={progressPercentage} className='h-2 w-24' />
+              <span className='text-muted-foreground text-xs'>
+                {doneCount}/{totalCount}
+              </span>
+            </div>
+          </TableCell>
+          <TableCell label='Owner' className='align-middle'>
+            <ProjectOwnerCell
+              projectId={project.id}
+              owner={project.owner}
+              admins={admins}
+              onOwnerChange={handleProjectOwnerChange}
+              readOnly={readOnly}
+            />
+          </TableCell>
+          <TableCell
+            className={cn(
+              'align-middle',
+              externalLinks.length === 0 && 'max-md:hidden'
             )}
-          </div>
-        </TableCell>
-        <TableCell className='text-right max-md:ml-auto'>
-          {readOnly ? null : (
-            <RecordRowActions>
-              <RecordRowAction
-                kind='edit'
-                entity='project'
-                onClick={() => openProjectSheet(project.id)}
-                disabled={isArchivePending}
-              />
-              <RecordRowAction
-                kind='archive'
-                entity='project'
-                onClick={() => handleRequestDelete(project)}
-                disabled={isArchivePending}
-                disabledReason={isArchivePending ? PENDING_REASON : null}
-              />
-            </RecordRowActions>
-          )}
-        </TableCell>
-      </TableRow>
+          >
+            <div className='flex h-full flex-wrap items-center gap-1.5'>
+              {externalLinks.length > 0 ? (
+                externalLinks.map(link => (
+                  <Tooltip key={link.key}>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={link.href}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        aria-label={link.label}
+                        className='text-muted-foreground hover:text-foreground inline-flex items-center transition-colors'
+                      >
+                        {link.icon}
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>{link.label}</TooltipContent>
+                  </Tooltip>
+                ))
+              ) : (
+                <EmptyValue />
+              )}
+            </div>
+          </TableCell>
+          <TableCell className='text-right max-md:ml-auto'>
+            {readOnly ? null : (
+              <RecordRowActions>
+                <RecordRowAction
+                  kind='edit'
+                  entity='project'
+                  onClick={() => openProjectSheet(project.id)}
+                  disabled={isArchivePending}
+                />
+                <RecordRowAction
+                  kind='archive'
+                  entity='project'
+                  onClick={() => handleRequestDelete(project)}
+                  disabled={isArchivePending}
+                  disabledReason={isArchivePending ? PENDING_REASON : null}
+                />
+              </RecordRowActions>
+            )}
+          </TableCell>
+        </TableRow>
+      </RecordContextMenu>
     )
   }
 

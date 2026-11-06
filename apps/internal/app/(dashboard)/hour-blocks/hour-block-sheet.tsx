@@ -38,6 +38,8 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   hourBlock: HourBlockWithClient | null
+  /** Create a new hour block filled in from this one (Duplicate). */
+  duplicateOf?: HourBlockWithClient | null
   clients: HourBlockClient[]
 }
 
@@ -46,6 +48,7 @@ export function HourBlockSheet({
   onOpenChange,
   onComplete,
   hourBlock,
+  duplicateOf = null,
   clients,
 }: Props) {
   const {
@@ -70,6 +73,7 @@ export function HourBlockSheet({
     onOpenChange,
     onComplete,
     hourBlock,
+    duplicateOf,
     clients,
   })
 
@@ -113,7 +117,9 @@ export function HourBlockSheet({
             entity='hourBlock'
             title={
               !isEditing
-                ? 'Create hour block'
+                ? duplicateOf
+                  ? 'Duplicate hour block'
+                  : 'Create hour block'
                 : hourBlock?.client?.name
                   ? `Hour block for ${hourBlock.client.name}`
                   : 'Hour block'

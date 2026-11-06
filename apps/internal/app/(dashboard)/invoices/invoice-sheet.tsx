@@ -71,6 +71,8 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
+  /** Create a new invoice filled in from this one (Duplicate). */
+  duplicateOf?: InvoiceWithClient | null
   clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
@@ -81,6 +83,7 @@ export function InvoiceSheet({
   onOpenChange,
   onComplete,
   invoice,
+  duplicateOf = null,
   clients,
   productCatalog,
   taxRates,
@@ -117,6 +120,7 @@ export function InvoiceSheet({
     onOpenChange,
     onComplete,
     invoice,
+    duplicateOf,
     clients,
     productCatalog,
     taxRates,
@@ -369,7 +373,9 @@ export function InvoiceSheet({
     ? invoice?.invoice_number
       ? `Invoice ${invoice.invoice_number}`
       : 'Draft invoice'
-    : 'Create invoice'
+    : duplicateOf
+      ? 'Duplicate invoice'
+      : 'Create invoice'
 
   const combinedPending = isPending || actionPending
 

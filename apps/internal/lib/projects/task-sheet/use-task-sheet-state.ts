@@ -46,6 +46,8 @@ export type UseTaskSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: TaskWithRelations
+  /** Create a new task filled in from this one (Duplicate). */
+  duplicateOf?: TaskWithRelations
   canManage: boolean
   admins: DbUser[]
   defaultStatus: BoardColumnId
@@ -98,6 +100,7 @@ export const useTaskSheetState = ({
   open,
   onOpenChange,
   task,
+  duplicateOf,
   canManage,
   admins,
   defaultStatus,
@@ -127,6 +130,7 @@ export const useTaskSheetState = ({
 
   const { form, defaultValues, sheetTitle, editorKey } = useTaskSheetForm({
     task,
+    duplicateOf,
     defaultStatus,
     defaultDueOn,
     defaultProjectId,
@@ -171,7 +175,7 @@ export const useTaskSheetState = ({
     onOpenChange,
     isDirty: form.formState.isDirty || attachmentsDirty,
     onReset: resetFormState,
-    resetKey: task?.id ?? null,
+    resetKey: task?.id ?? (duplicateOf ? `copy-${duplicateOf.id}` : null),
   })
 
   const handleFormSubmit = useCallback(

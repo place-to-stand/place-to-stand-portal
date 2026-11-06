@@ -18,6 +18,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { EmptyValue } from '@/components/table/empty-value'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
@@ -148,203 +149,226 @@ export function CompaniesTable({
         <TableBody>
           {companies.map(company => {
             return (
-              <TableRow
+              <RecordContextMenu
                 key={company.id}
-                {...getClickableRowProps(() => open('company', company.id))}
-                className={cn(
-                  CLICKABLE_ROW_CLASS,
-                  company.deletedAt && ARCHIVED_ROW_CLASS
-                )}
+                entity='company'
+                id={company.id}
+                onEdit={() => open('company', company.id)}
+                onArchive={
+                  mode === 'active'
+                    ? () => setArchiveTarget(company)
+                    : undefined
+                }
+                onRestore={
+                  mode === 'archive'
+                    ? () => runAction(company, 'restore')
+                    : undefined
+                }
+                archiveDisabledReason={company.archiveRefusal}
+                pending={isPending && pendingId === company.id}
               >
-                <TableCell>
-                  <div className='flex min-w-0 items-center gap-2'>
-                    <ENTITY_ICONS.company
-                      className={cn(
-                        ENTITY_ACCENTS.company.icon,
-                        'h-4 w-4 shrink-0'
-                      )}
-                    />
-                    <span className='truncate font-medium' title={company.name}>
-                      {company.name}
-                    </span>
-                    {/* Billed now: the Client badge, for everyone (billing
-                        details stay admin-only). */}
-                    {company.companyId ? (
-                      <ClientBadge className='shrink-0' />
-                    ) : null}
-                  </div>
-                </TableCell>
-                {seesBilling ? (
-                  <TableCell label='Billing type'>
-                    {/* Billed now: Prepaid / Net 30. Not billed: the dash. */}
-                    {company.companyId && company.billingType ? (
-                      <BillingTypeBadge billingType={company.billingType} />
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                ) : null}
-                {seesBilling ? (
-                  <TableCell label='Hours' className='text-sm tabular-nums'>
-                    {company.hours ? (
-                      <span className='inline-flex items-center gap-1.5 whitespace-nowrap'>
-                        <ENTITY_ICONS.timeLog
-                          className={cn(
-                            ENTITY_ACCENTS.timeLog.icon,
-                            'size-4 shrink-0'
-                          )}
-                          aria-hidden
-                        />
-                        <span
-                          className={cn(
-                            'font-medium',
-                            BALANCE_TONE_CLASS[
-                              balanceTone(company.hours.remaining)
-                            ]
-                          )}
-                        >
-                          {formatHours(company.hours.remaining)} left
-                        </span>
-                        <span className='text-muted-foreground'>
-                          ({formatHours(company.hours.purchased)} total)
-                        </span>
+                <TableRow
+                  {...getClickableRowProps(() => open('company', company.id))}
+                  className={cn(
+                    CLICKABLE_ROW_CLASS,
+                    company.deletedAt && ARCHIVED_ROW_CLASS
+                  )}
+                >
+                  <TableCell>
+                    <div className='flex min-w-0 items-center gap-2'>
+                      <ENTITY_ICONS.company
+                        className={cn(
+                          ENTITY_ACCENTS.company.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
+                      <span
+                        className='truncate font-medium'
+                        title={company.name}
+                      >
+                        {company.name}
                       </span>
-                    ) : (
-                      <EmptyValue />
-                    )}
+                      {/* Billed now: the Client badge, for everyone (billing
+                        details stay admin-only). */}
+                      {company.companyId ? (
+                        <ClientBadge className='shrink-0' />
+                      ) : null}
+                    </div>
                   </TableCell>
-                ) : null}
-                <TableCell
-                  label='People'
-                  className='text-sm tabular-nums md:text-center'
-                >
-                  <LinkedRecordsHoverCell
-                    count={company.contactCount}
-                    withIcon
-                    icon={ENTITY_ICONS.contact}
-                    iconClassName={ENTITY_ACCENTS.contact.icon}
-                    ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'person' : 'people'}`}
-                    items={company.people.map(person => ({
-                      id: person.id,
-                      label: person.name,
-                      sublabel: person.jobTitle ?? person.email,
-                      href: contactSheetHref(person.id),
-                      // The primary contact, starred as on the company sheet.
-                      trailing: person.isPrimary ? (
-                        <Star
-                          className='text-warning size-3.5 shrink-0 fill-current'
-                          aria-label='Primary contact'
-                        />
-                      ) : null,
-                    }))}
-                  />
-                </TableCell>
-                <TableCell
-                  label='Open leads'
-                  className='text-sm tabular-nums md:text-center'
-                >
-                  <LinkedRecordsHoverCell
-                    count={company.openLeadCount}
-                    withIcon
-                    icon={ENTITY_ICONS.lead}
-                    iconClassName={ENTITY_ACCENTS.lead.icon}
-                    ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
-                    contentClassName='min-w-72'
-                    items={company.openLeads.map(lead => ({
-                      id: lead.id,
-                      label: lead.contactName,
-                      href: leadHref(lead.id),
-                      trailing: <LeadStatusBadge status={lead.status} />,
-                    }))}
-                  />
-                </TableCell>
-                <TableCell
-                  label='Projects'
-                  className='text-sm tabular-nums md:text-center'
-                >
-                  <LinkedRecordsHoverCell
-                    count={company.projects.length}
-                    withIcon
-                    icon={ENTITY_ICONS.project}
-                    iconClassName={ENTITY_ACCENTS.project.icon}
-                    ariaLabel={`${company.projects.length} ${company.projects.length === 1 ? 'project' : 'projects'}`}
-                    items={company.projects.map(project => ({
-                      id: project.id,
-                      label: project.name,
-                      href:
-                        company.slug && project.slug
-                          ? projectBoardHref(company.slug, project.slug)
-                          : undefined,
-                    }))}
-                  />
-                </TableCell>
-                {seesBilling ? (
-                  <>
-                    <TableCell label='Origination' className='md:text-center'>
-                      {company.origination ? (
-                        <PersonAvatar
-                          name={company.origination.name}
-                          userId={company.origination.userId ?? undefined}
-                          contactId={company.origination.contactId ?? undefined}
-                          ariaLabel={`Originated by ${company.origination.name}`}
-                        />
+                  {seesBilling ? (
+                    <TableCell label='Billing type'>
+                      {/* Billed now: Prepaid / Net 30. Not billed: the dash. */}
+                      {company.companyId && company.billingType ? (
+                        <BillingTypeBadge billingType={company.billingType} />
                       ) : (
                         <EmptyValue />
                       )}
                     </TableCell>
-                    <TableCell label='Closer' className='md:text-center'>
-                      {company.closers.length ? (
-                        <span className='inline-flex -space-x-1.5 [&>span]:rounded-full [&>span]:ring-2 [&>span]:ring-[var(--card)]'>
-                          {company.closers.map(closer => (
-                            <PersonAvatar
-                              key={`${closer.kind}:${closer.id}`}
-                              name={closer.name}
-                              userId={
-                                closer.kind === 'user' ? closer.id : undefined
-                              }
-                              contactId={
-                                closer.kind === 'contact'
-                                  ? closer.id
-                                  : undefined
-                              }
-                              ariaLabel={`Closed by ${closer.name}`}
-                            />
-                          ))}
+                  ) : null}
+                  {seesBilling ? (
+                    <TableCell label='Hours' className='text-sm tabular-nums'>
+                      {company.hours ? (
+                        <span className='inline-flex items-center gap-1.5 whitespace-nowrap'>
+                          <ENTITY_ICONS.timeLog
+                            className={cn(
+                              ENTITY_ACCENTS.timeLog.icon,
+                              'size-4 shrink-0'
+                            )}
+                            aria-hidden
+                          />
+                          <span
+                            className={cn(
+                              'font-medium',
+                              BALANCE_TONE_CLASS[
+                                balanceTone(company.hours.remaining)
+                              ]
+                            )}
+                          >
+                            {formatHours(company.hours.remaining)} left
+                          </span>
+                          <span className='text-muted-foreground'>
+                            ({formatHours(company.hours.purchased)} total)
+                          </span>
                         </span>
                       ) : (
                         <EmptyValue />
                       )}
                     </TableCell>
-                  </>
-                ) : null}
-                <TableCell className='text-right max-md:ml-auto'>
-                  <RecordRowActions>
-                    {mode === 'active' ? (
-                      <RecordRowAction
-                        kind='archive'
-                        entity='company'
-                        disabled={
-                          Boolean(company.archiveRefusal) ||
-                          (isPending && pendingId === company.id)
-                        }
-                        disabledReason={company.archiveRefusal}
-                        onClick={() => setArchiveTarget(company)}
-                      />
-                    ) : (
-                      <RecordRowAction
-                        kind='restore'
-                        entity='company'
-                        disabled={
-                          Boolean(company.archiveRefusal) ||
-                          (isPending && pendingId === company.id)
-                        }
-                        disabledReason={company.archiveRefusal}
-                        onClick={() => runAction(company, 'restore')}
-                      />
-                    )}
-                  </RecordRowActions>
-                </TableCell>
-              </TableRow>
+                  ) : null}
+                  <TableCell
+                    label='People'
+                    className='text-sm tabular-nums md:text-center'
+                  >
+                    <LinkedRecordsHoverCell
+                      count={company.contactCount}
+                      withIcon
+                      icon={ENTITY_ICONS.contact}
+                      iconClassName={ENTITY_ACCENTS.contact.icon}
+                      ariaLabel={`${company.contactCount} ${company.contactCount === 1 ? 'person' : 'people'}`}
+                      items={company.people.map(person => ({
+                        id: person.id,
+                        label: person.name,
+                        sublabel: person.jobTitle ?? person.email,
+                        href: contactSheetHref(person.id),
+                        // The primary contact, starred as on the company sheet.
+                        trailing: person.isPrimary ? (
+                          <Star
+                            className='text-warning size-3.5 shrink-0 fill-current'
+                            aria-label='Primary contact'
+                          />
+                        ) : null,
+                      }))}
+                    />
+                  </TableCell>
+                  <TableCell
+                    label='Open leads'
+                    className='text-sm tabular-nums md:text-center'
+                  >
+                    <LinkedRecordsHoverCell
+                      count={company.openLeadCount}
+                      withIcon
+                      icon={ENTITY_ICONS.lead}
+                      iconClassName={ENTITY_ACCENTS.lead.icon}
+                      ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
+                      contentClassName='min-w-72'
+                      items={company.openLeads.map(lead => ({
+                        id: lead.id,
+                        label: lead.contactName,
+                        href: leadHref(lead.id),
+                        trailing: <LeadStatusBadge status={lead.status} />,
+                      }))}
+                    />
+                  </TableCell>
+                  <TableCell
+                    label='Projects'
+                    className='text-sm tabular-nums md:text-center'
+                  >
+                    <LinkedRecordsHoverCell
+                      count={company.projects.length}
+                      withIcon
+                      icon={ENTITY_ICONS.project}
+                      iconClassName={ENTITY_ACCENTS.project.icon}
+                      ariaLabel={`${company.projects.length} ${company.projects.length === 1 ? 'project' : 'projects'}`}
+                      items={company.projects.map(project => ({
+                        id: project.id,
+                        label: project.name,
+                        href:
+                          company.slug && project.slug
+                            ? projectBoardHref(company.slug, project.slug)
+                            : undefined,
+                      }))}
+                    />
+                  </TableCell>
+                  {seesBilling ? (
+                    <>
+                      <TableCell label='Origination' className='md:text-center'>
+                        {company.origination ? (
+                          <PersonAvatar
+                            name={company.origination.name}
+                            userId={company.origination.userId ?? undefined}
+                            contactId={
+                              company.origination.contactId ?? undefined
+                            }
+                            ariaLabel={`Originated by ${company.origination.name}`}
+                          />
+                        ) : (
+                          <EmptyValue />
+                        )}
+                      </TableCell>
+                      <TableCell label='Closer' className='md:text-center'>
+                        {company.closers.length ? (
+                          <span className='inline-flex -space-x-1.5 [&>span]:rounded-full [&>span]:ring-2 [&>span]:ring-[var(--card)]'>
+                            {company.closers.map(closer => (
+                              <PersonAvatar
+                                key={`${closer.kind}:${closer.id}`}
+                                name={closer.name}
+                                userId={
+                                  closer.kind === 'user' ? closer.id : undefined
+                                }
+                                contactId={
+                                  closer.kind === 'contact'
+                                    ? closer.id
+                                    : undefined
+                                }
+                                ariaLabel={`Closed by ${closer.name}`}
+                              />
+                            ))}
+                          </span>
+                        ) : (
+                          <EmptyValue />
+                        )}
+                      </TableCell>
+                    </>
+                  ) : null}
+                  <TableCell className='text-right max-md:ml-auto'>
+                    <RecordRowActions>
+                      {mode === 'active' ? (
+                        <RecordRowAction
+                          kind='archive'
+                          entity='company'
+                          disabled={
+                            Boolean(company.archiveRefusal) ||
+                            (isPending && pendingId === company.id)
+                          }
+                          disabledReason={company.archiveRefusal}
+                          onClick={() => setArchiveTarget(company)}
+                        />
+                      ) : (
+                        <RecordRowAction
+                          kind='restore'
+                          entity='company'
+                          disabled={
+                            Boolean(company.archiveRefusal) ||
+                            (isPending && pendingId === company.id)
+                          }
+                          disabledReason={company.archiveRefusal}
+                          onClick={() => runAction(company, 'restore')}
+                        />
+                      )}
+                    </RecordRowActions>
+                  </TableCell>
+                </TableRow>
+              </RecordContextMenu>
             )
           })}
           {companies.length === 0 ? (

@@ -65,6 +65,8 @@ type TaskSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: TaskWithRelations
+  /** Create a new task filled in from this one (Duplicate). */
+  duplicateOf?: TaskWithRelations
   canManage: boolean
   admins: DbUser[]
   currentUserId: string
@@ -116,6 +118,7 @@ export function TaskSheet(props: TaskSheetProps) {
     open: props.open,
     onOpenChange: props.onOpenChange,
     task: props.task,
+    duplicateOf: props.duplicateOf,
     canManage: props.canManage,
     admins: props.admins,
     defaultStatus: props.defaultStatus,

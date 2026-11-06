@@ -15,6 +15,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -247,104 +248,119 @@ export function InvoicesTableSection({
               : null
 
             return (
-              <TableRow
+              <RecordContextMenu
                 key={invoice.id}
-                {...getClickableRowProps(() => onEdit(invoice))}
-                className={cn(
-                  CLICKABLE_ROW_CLASS,
-                  isArchived && ARCHIVED_ROW_CLASS
-                )}
+                entity='invoice'
+                id={invoice.id}
+                onEdit={() => onEdit(invoice)}
+                onArchive={
+                  showArchive ? () => onRequestDelete(invoice) : undefined
+                }
+                onRestore={showRestore ? () => onRestore(invoice) : undefined}
+                archiveDisabledReason={
+                  showRestore ? restoreDisabledReason : archiveDisabledReason
+                }
               >
-                <TableCell className='text-sm font-medium'>
-                  <div className='flex items-center gap-2'>
-                    <ENTITY_ICONS.invoice
-                      aria-hidden
-                      className={cn(
-                        'h-4 w-4 shrink-0',
-                        ENTITY_ACCENTS.invoice.icon
-                      )}
-                    />
-                    {invoice.invoice_number ? (
-                      invoice.invoice_number
-                    ) : (
-                      <Badge variant='secondary'>Draft</Badge>
-                    )}
-                    {invoice.billing_type === 'net_30' ? (
-                      <BillingTypeBadge billingType='net_30' />
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <ENTITY_ICONS.client
-                      className={cn(
-                        ENTITY_ACCENTS.client.icon,
-                        'h-4 w-4 shrink-0'
-                      )}
-                    />
-                    {client ? (
-                      client.company_id ? (
-                        <Link
-                          href={companySheetHref(client.company_id)}
-                          className='hover:text-foreground truncate-link hover:underline'
-                        >
-                          {client.name}
-                        </Link>
-                      ) : (
-                        <span className='truncate'>{client.name}</span>
-                      )
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </div>
-                  {client?.deleted_at ? (
-                    <p className='text-destructive text-xs'>Client archived</p>
-                  ) : null}
-                </TableCell>
-                <TableCell>
-                  <InvoiceStatusBadge status={invoice.status} />
-                </TableCell>
-                <TableCell className='text-right text-sm tabular-nums'>
-                  {formatCurrency(invoice.total)}
-                </TableCell>
-                <TableCell label='Hours'>
-                  <InvoiceHourBlocksCell
-                    hourBlocks={invoice.hour_blocks ?? []}
-                    invoiceNumber={invoice.invoice_number}
-                  />
-                </TableCell>
-                <TableCell
-                  label='Issued'
-                  className='text-muted-foreground text-sm'
+                <TableRow
+                  {...getClickableRowProps(() => onEdit(invoice))}
+                  className={cn(
+                    CLICKABLE_ROW_CLASS,
+                    isArchived && ARCHIVED_ROW_CLASS
+                  )}
                 >
-                  {formatDate(invoice.issued_date)}
-                </TableCell>
-                <TableCell label='Share link'>
-                  <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
-                </TableCell>
-                <TableCell className='text-right max-md:ml-auto'>
-                  <RecordRowActions>
-                    {showArchive ? (
-                      <RecordRowAction
-                        kind='archive'
-                        entity='invoice'
-                        onClick={() => onRequestDelete(invoice)}
-                        disabled={archiveDisabled}
-                        disabledReason={archiveDisabledReason}
+                  <TableCell className='text-sm font-medium'>
+                    <div className='flex items-center gap-2'>
+                      <ENTITY_ICONS.invoice
+                        aria-hidden
+                        className={cn(
+                          'h-4 w-4 shrink-0',
+                          ENTITY_ACCENTS.invoice.icon
+                        )}
                       />
-                    ) : null}
-                    {showRestore ? (
-                      <RecordRowAction
-                        kind='restore'
-                        entity='invoice'
-                        onClick={() => onRestore(invoice)}
-                        disabled={restoreDisabled}
-                        disabledReason={restoreDisabledReason}
+                      {invoice.invoice_number ? (
+                        invoice.invoice_number
+                      ) : (
+                        <Badge variant='secondary'>Draft</Badge>
+                      )}
+                      {invoice.billing_type === 'net_30' ? (
+                        <BillingTypeBadge billingType='net_30' />
+                      ) : null}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className='flex min-w-0 items-center gap-2 text-sm'>
+                      <ENTITY_ICONS.client
+                        className={cn(
+                          ENTITY_ACCENTS.client.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
                       />
+                      {client ? (
+                        client.company_id ? (
+                          <Link
+                            href={companySheetHref(client.company_id)}
+                            className='hover:text-foreground truncate-link hover:underline'
+                          >
+                            {client.name}
+                          </Link>
+                        ) : (
+                          <span className='truncate'>{client.name}</span>
+                        )
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </div>
+                    {client?.deleted_at ? (
+                      <p className='text-destructive text-xs'>
+                        Client archived
+                      </p>
                     ) : null}
-                  </RecordRowActions>
-                </TableCell>
-              </TableRow>
+                  </TableCell>
+                  <TableCell>
+                    <InvoiceStatusBadge status={invoice.status} />
+                  </TableCell>
+                  <TableCell className='text-right text-sm tabular-nums'>
+                    {formatCurrency(invoice.total)}
+                  </TableCell>
+                  <TableCell label='Hours'>
+                    <InvoiceHourBlocksCell
+                      hourBlocks={invoice.hour_blocks ?? []}
+                      invoiceNumber={invoice.invoice_number}
+                    />
+                  </TableCell>
+                  <TableCell
+                    label='Issued'
+                    className='text-muted-foreground text-sm'
+                  >
+                    {formatDate(invoice.issued_date)}
+                  </TableCell>
+                  <TableCell label='Share link'>
+                    <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
+                  </TableCell>
+                  <TableCell className='text-right max-md:ml-auto'>
+                    <RecordRowActions>
+                      {showArchive ? (
+                        <RecordRowAction
+                          kind='archive'
+                          entity='invoice'
+                          onClick={() => onRequestDelete(invoice)}
+                          disabled={archiveDisabled}
+                          disabledReason={archiveDisabledReason}
+                        />
+                      ) : null}
+                      {showRestore ? (
+                        <RecordRowAction
+                          kind='restore'
+                          entity='invoice'
+                          onClick={() => onRestore(invoice)}
+                          disabled={restoreDisabled}
+                          disabledReason={restoreDisabledReason}
+                        />
+                      ) : null}
+                    </RecordRowActions>
+                  </TableCell>
+                </TableRow>
+              </RecordContextMenu>
             )
           })}
           {invoiceList.length === 0 ? (

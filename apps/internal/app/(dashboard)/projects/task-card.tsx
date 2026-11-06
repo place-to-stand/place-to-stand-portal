@@ -23,6 +23,7 @@ import {
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { TaskContextMenu } from './task-context-menu'
 import { cn } from '@/lib/utils'
 import type {
   ProjectTypeValue,
@@ -252,43 +253,50 @@ export function TaskCard({
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...(isMounted ? attributes : cleanedAttributes)}
-      {...listenersMap}
-      // dnd-kit's attributes set this too; stated so the focus rule sees it.
-      tabIndex={0}
-      role='button'
-      onClick={() => onEdit(task)}
-      onKeyDown={event => {
-        draggableKeyDown?.(event)
-        if (event.defaultPrevented) {
-          return
-        }
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onEdit(task)
-        }
-      }}
-      className={cn(
-        'group bg-card rounded-lg border p-4 text-left shadow-sm transition',
-        draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-        // A touch drag starts on press-and-hold; keep iOS from selecting the
-        // card's text or opening its callout menu first.
-        draggable &&
-          'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
-        isDragging && 'ring-primary ring-2',
-        (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
-        !isActive && !isDragging && !isCompleted && ENTITY_ACCENTS.task.card,
-        !isActive &&
-          !isDragging &&
-          isCompleted &&
-          'hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md'
-      )}
+    <TaskContextMenu
+      task={task}
+      onEdit={() => onEdit(task)}
+      draggable={draggable}
     >
-      <CardContent task={task} assignees={assignees} context={context} />
-    </div>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...(isMounted ? attributes : cleanedAttributes)}
+        {...listenersMap}
+        // dnd-kit's attributes set this too; stated so the focus rule sees it.
+        tabIndex={0}
+        role='button'
+        onClick={() => onEdit(task)}
+        onKeyDown={event => {
+          draggableKeyDown?.(event)
+          if (event.defaultPrevented) {
+            return
+          }
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onEdit(task)
+          }
+        }}
+        className={cn(
+          'group bg-card rounded-lg border p-4 text-left shadow-sm transition',
+          draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+          // A touch drag starts on press-and-hold; keep iOS from selecting the
+          // card's text or opening its callout menu first.
+          draggable &&
+            'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
+          isDragging && 'ring-primary ring-2',
+          (isActive || isDragging) &&
+            'border-primary/50 bg-primary/5 shadow-md',
+          !isActive && !isDragging && !isCompleted && ENTITY_ACCENTS.task.card,
+          !isActive &&
+            !isDragging &&
+            isCompleted &&
+            'hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md'
+        )}
+      >
+        <CardContent task={task} assignees={assignees} context={context} />
+      </div>
+    </TaskContextMenu>
   )
 }
 
@@ -313,26 +321,28 @@ export function TaskCardStatic({
   const isCompleted = task.status === 'DONE'
 
   return (
-    <div
-      role='button'
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onClick()
-        }
-      }}
-      className={cn(
-        'group bg-card cursor-pointer rounded-lg border p-4 text-left shadow-sm transition',
-        isCompleted
-          ? 'hover:border-muted-foreground/30 hover:bg-muted/20 opacity-65 hover:shadow-md'
-          : ENTITY_ACCENTS.task.card,
-        className
-      )}
-    >
-      <CardContent task={task} assignees={assignees} context={context} />
-    </div>
+    <TaskContextMenu task={task} onEdit={onClick}>
+      <div
+        role='button'
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onClick()
+          }
+        }}
+        className={cn(
+          'group bg-card cursor-pointer rounded-lg border p-4 text-left shadow-sm transition',
+          isCompleted
+            ? 'hover:border-muted-foreground/30 hover:bg-muted/20 opacity-65 hover:shadow-md'
+            : ENTITY_ACCENTS.task.card,
+          className
+        )}
+      >
+        <CardContent task={task} assignees={assignees} context={context} />
+      </div>
+    </TaskContextMenu>
   )
 }
 

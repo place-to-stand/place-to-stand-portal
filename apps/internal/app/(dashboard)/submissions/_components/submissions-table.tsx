@@ -8,6 +8,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { Badge } from '@pts/ui/badge'
@@ -405,192 +406,212 @@ export function SubmissionsTable({
                 const source = describeAttribution(submission)
 
                 return (
-                  <TableRow
+                  <RecordContextMenu
                     key={submission.id}
-                    {...getClickableRowProps(() => handleSelect(submission.id))}
-                    className={cn(
-                      CLICKABLE_ROW_CLASS,
-                      unacknowledged && 'font-medium',
-                      // Anonymous rows are mostly unfinished audits: keep
-                      // them, but let identified visitors carry the page.
-                      anonymous && 'text-muted-foreground',
-                      submission.deletedAt && ARCHIVED_ROW_CLASS
-                    )}
+                    entity='submission'
+                    id={submission.id}
+                    onEdit={() => handleSelect(submission.id)}
+                    onArchive={
+                      mode === 'active'
+                        ? () => setArchiveTarget(submission)
+                        : undefined
+                    }
+                    onRestore={
+                      mode === 'active'
+                        ? undefined
+                        : () => handleRestore(submission)
+                    }
+                    pending={pendingId === submission.id}
                   >
-                    <TableCell
-                      className='max-md:first:basis-auto'
-                      title={
-                        formatCalendarDate(
-                          submission.lastActivityAt,
-                          RECEIVED_TITLE_STYLE
-                        ) ?? undefined
-                      }
-                    >
-                      {/* The unread dot lives in a fixed slot so the times
-                          stay aligned whether or not a row is acknowledged. */}
-                      <div className='flex items-center gap-2'>
-                        <span
-                          className={cn(
-                            'size-2 shrink-0 rounded-full',
-                            unacknowledged && 'bg-primary'
-                          )}
-                          aria-hidden='true'
-                        />
-                        {unacknowledged ? (
-                          <span className='sr-only'>Unacknowledged</span>
-                        ) : null}
-                        <span className='truncate'>
-                          {formatRelativeTime(submission.lastActivityAt)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant='outline'
-                        className={cn(
-                          FORM_SUBMISSION_KIND_TOKENS[submission.kind]
-                        )}
-                      >
-                        {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className='max-md:order-first max-md:basis-full'>
-                      {submission.contactName || submission.contactEmail ? (
-                        // Single line so every row is the same height: the
-                        // name truncates, the email collapses to a mailto
-                        // icon (address in the tooltip) that never shrinks.
-                        // The row click ignores anchors, so the icon doesn't
-                        // also open the sheet.
-                        <div className='flex min-w-0 items-center gap-1.5'>
-                          <span className='min-w-0 truncate'>
-                            {submission.contactName ?? submission.contactEmail}
-                          </span>
-                          {submission.contactEmail ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <a
-                                  href={`mailto:${submission.contactEmail}`}
-                                  aria-label={`Email ${submission.contactEmail}`}
-                                  className='text-muted-foreground hover:text-foreground shrink-0 transition'
-                                >
-                                  <Mail className='h-3.5 w-3.5' aria-hidden />
-                                </a>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {submission.contactEmail}
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className='text-muted-foreground italic'>
-                          Anonymous
-                        </span>
+                    <TableRow
+                      {...getClickableRowProps(() =>
+                        handleSelect(submission.id)
                       )}
-                    </TableCell>
-                    <TableCell
-                      className={columnClasses.companyCell}
-                      title={submission.contactCompany ?? undefined}
+                      className={cn(
+                        CLICKABLE_ROW_CLASS,
+                        unacknowledged && 'font-medium',
+                        // Anonymous rows are mostly unfinished audits: keep
+                        // them, but let identified visitors carry the page.
+                        anonymous && 'text-muted-foreground',
+                        submission.deletedAt && ARCHIVED_ROW_CLASS
+                      )}
                     >
-                      {submission.contactCompany ?? <EmptyValue />}
-                    </TableCell>
-                    <TableCell>
-                      {/* Single line so rows keep a uniform height: the
-                          badge never shrinks, the detail truncates. */}
-                      <div className='flex min-w-0 items-center gap-2'>
-                        <Badge
-                          variant='outline'
-                          className={cn(
-                            'shrink-0',
-                            FORM_SUBMISSION_STATUS_TOKENS[submission.status]
-                          )}
-                        >
-                          {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
-                        </Badge>
-                        {outcome ? (
-                          <span className='min-w-0 truncate' title={outcome}>
-                            {outcome}
-                          </span>
-                        ) : null}
-                        {submission.feedbackHelpful === true ? (
-                          <ThumbsUp
-                            className='text-success size-3.5 shrink-0'
-                            aria-label='Found results helpful'
-                          />
-                        ) : submission.feedbackHelpful === false ? (
-                          <ThumbsDown
-                            className='text-destructive size-3.5 shrink-0'
-                            aria-label='Did not find results helpful'
-                          />
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div
-                        className='flex min-w-0 items-center gap-2'
-                        title={source.label}
+                      <TableCell
+                        className='max-md:first:basis-auto'
+                        title={
+                          formatCalendarDate(
+                            submission.lastActivityAt,
+                            RECEIVED_TITLE_STYLE
+                          ) ?? undefined
+                        }
                       >
-                        <Badge
-                          variant='outline'
-                          className={cn(
-                            'shrink-0',
-                            ATTRIBUTION_CHANNEL_TOKENS[source.channel]
-                          )}
-                        >
-                          {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
-                        </Badge>
-                        {source.detail ? (
+                        {/* The unread dot lives in a fixed slot so the times
+                          stay aligned whether or not a row is acknowledged. */}
+                        <div className='flex items-center gap-2'>
                           <span
                             className={cn(
-                              'text-muted-foreground hidden min-w-0 truncate text-xs',
-                              columnClasses.sourceDetail
+                              'size-2 shrink-0 rounded-full',
+                              unacknowledged && 'bg-primary'
                             )}
-                          >
-                            {source.detail}
+                            aria-hidden='true'
+                          />
+                          {unacknowledged ? (
+                            <span className='sr-only'>Unacknowledged</span>
+                          ) : null}
+                          <span className='truncate'>
+                            {formatRelativeTime(submission.lastActivityAt)}
                           </span>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    {mode === 'archive' ? (
-                      <TableCell
-                        label='Archived'
-                        className='text-muted-foreground text-sm whitespace-nowrap'
-                      >
-                        {submission.deletedAt ? (
-                          formatRelativeTime(submission.deletedAt)
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant='outline'
+                          className={cn(
+                            FORM_SUBMISSION_KIND_TOKENS[submission.kind]
+                          )}
+                        >
+                          {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className='max-md:order-first max-md:basis-full'>
+                        {submission.contactName || submission.contactEmail ? (
+                          // Single line so every row is the same height: the
+                          // name truncates, the email collapses to a mailto
+                          // icon (address in the tooltip) that never shrinks.
+                          // The row click ignores anchors, so the icon doesn't
+                          // also open the sheet.
+                          <div className='flex min-w-0 items-center gap-1.5'>
+                            <span className='min-w-0 truncate'>
+                              {submission.contactName ??
+                                submission.contactEmail}
+                            </span>
+                            {submission.contactEmail ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={`mailto:${submission.contactEmail}`}
+                                    aria-label={`Email ${submission.contactEmail}`}
+                                    className='text-muted-foreground hover:text-foreground shrink-0 transition'
+                                  >
+                                    <Mail className='h-3.5 w-3.5' aria-hidden />
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {submission.contactEmail}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : null}
+                          </div>
                         ) : (
-                          <EmptyValue />
+                          <span className='text-muted-foreground italic'>
+                            Anonymous
+                          </span>
                         )}
                       </TableCell>
-                    ) : null}
-                    <TableCell className='text-right max-md:ml-auto'>
-                      <RecordRowActions>
-                        {unacknowledged ? (
-                          <RecordRowAction
-                            kind='acknowledge'
-                            entity='submission'
-                            disabled={pendingId === submission.id}
-                            onClick={() => handleAcknowledge(submission)}
-                          />
-                        ) : null}
-                        {mode === 'active' ? (
-                          <RecordRowAction
-                            kind='archive'
-                            entity='submission'
-                            disabled={pendingId === submission.id}
-                            onClick={() => setArchiveTarget(submission)}
-                          />
-                        ) : (
-                          <RecordRowAction
-                            kind='restore'
-                            entity='submission'
-                            disabled={pendingId === submission.id}
-                            onClick={() => handleRestore(submission)}
-                          />
-                        )}
-                      </RecordRowActions>
-                    </TableCell>
-                  </TableRow>
+                      <TableCell
+                        className={columnClasses.companyCell}
+                        title={submission.contactCompany ?? undefined}
+                      >
+                        {submission.contactCompany ?? <EmptyValue />}
+                      </TableCell>
+                      <TableCell>
+                        {/* Single line so rows keep a uniform height: the
+                          badge never shrinks, the detail truncates. */}
+                        <div className='flex min-w-0 items-center gap-2'>
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'shrink-0',
+                              FORM_SUBMISSION_STATUS_TOKENS[submission.status]
+                            )}
+                          >
+                            {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
+                          </Badge>
+                          {outcome ? (
+                            <span className='min-w-0 truncate' title={outcome}>
+                              {outcome}
+                            </span>
+                          ) : null}
+                          {submission.feedbackHelpful === true ? (
+                            <ThumbsUp
+                              className='text-success size-3.5 shrink-0'
+                              aria-label='Found results helpful'
+                            />
+                          ) : submission.feedbackHelpful === false ? (
+                            <ThumbsDown
+                              className='text-destructive size-3.5 shrink-0'
+                              aria-label='Did not find results helpful'
+                            />
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className='flex min-w-0 items-center gap-2'
+                          title={source.label}
+                        >
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'shrink-0',
+                              ATTRIBUTION_CHANNEL_TOKENS[source.channel]
+                            )}
+                          >
+                            {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
+                          </Badge>
+                          {source.detail ? (
+                            <span
+                              className={cn(
+                                'text-muted-foreground hidden min-w-0 truncate text-xs',
+                                columnClasses.sourceDetail
+                              )}
+                            >
+                              {source.detail}
+                            </span>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      {mode === 'archive' ? (
+                        <TableCell
+                          label='Archived'
+                          className='text-muted-foreground text-sm whitespace-nowrap'
+                        >
+                          {submission.deletedAt ? (
+                            formatRelativeTime(submission.deletedAt)
+                          ) : (
+                            <EmptyValue />
+                          )}
+                        </TableCell>
+                      ) : null}
+                      <TableCell className='text-right max-md:ml-auto'>
+                        <RecordRowActions>
+                          {unacknowledged ? (
+                            <RecordRowAction
+                              kind='acknowledge'
+                              entity='submission'
+                              disabled={pendingId === submission.id}
+                              onClick={() => handleAcknowledge(submission)}
+                            />
+                          ) : null}
+                          {mode === 'active' ? (
+                            <RecordRowAction
+                              kind='archive'
+                              entity='submission'
+                              disabled={pendingId === submission.id}
+                              onClick={() => setArchiveTarget(submission)}
+                            />
+                          ) : (
+                            <RecordRowAction
+                              kind='restore'
+                              entity='submission'
+                              disabled={pendingId === submission.id}
+                              onClick={() => handleRestore(submission)}
+                            />
+                          )}
+                        </RecordRowActions>
+                      </TableCell>
+                    </TableRow>
+                  </RecordContextMenu>
                 )
               })
             )}

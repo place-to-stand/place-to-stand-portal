@@ -80,6 +80,8 @@ export type UseInvoiceSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
+  /** Create a new invoice filled in from this one (Duplicate). */
+  duplicateOf?: InvoiceWithClient | null
   clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
@@ -124,6 +126,7 @@ export function useInvoiceSheetState({
   onOpenChange,
   onComplete,
   invoice,
+  duplicateOf = null,
   clients,
   productCatalog,
   taxRates,
@@ -226,6 +229,35 @@ export function useInvoiceSheetState({
       return
     }
 
+    if (!invoice && duplicateOf) {
+      // Duplicate — a new draft with the source's client, notes, tax and
+      // lines. Line ids are dropped so saving inserts fresh rows.
+      invoiceWithLineItemsRef.current = null
+      startLoadTransition(async () => {
+        try {
+          const source = await getInvoiceDetails(duplicateOf.id)
+          loadedClientIdRef.current = source?.company_id ?? null
+          const defaults = buildInvoiceFormDefaults(source)
+          form.reset({
+            ...defaults,
+            lineItems: defaults.lineItems.map(line => ({
+              ...line,
+              id: undefined,
+            })),
+          })
+          form.clearErrors()
+        } catch {
+          toast({
+            title: 'Unable to load invoice',
+            description: 'Close the sheet and open it again.',
+            variant: 'destructive',
+            link: toastLink('invoice', duplicateOf.id),
+          })
+        }
+      })
+      return
+    }
+
     if (!invoice) {
       // Create mode — check for proposal pre-fill data
       invoiceWithLineItemsRef.current = null
@@ -287,6 +319,7 @@ export function useInvoiceSheetState({
   }, [
     open,
     invoice,
+    duplicateOf,
     form,
     resetFormState,
     productCatalog,

@@ -22,6 +22,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -145,139 +146,156 @@ export function TimeLogsTable({
           <TableBody>
             {items.map(item => {
               return (
-                <TableRow
+                <RecordContextMenu
                   key={item.id}
-                  {...(isArchive
-                    ? {}
-                    : {
-                        ...getClickableRowProps(
-                          () => void editor.open(item.id)
-                        ),
-                        className: CLICKABLE_ROW_CLASS,
-                      })}
+                  entity='time-log'
+                  id={item.id}
+                  onEdit={() => void editor.open(item.id)}
+                  onArchive={
+                    isArchive
+                      ? undefined
+                      : () => actions.archiveConfirm.request(item)
+                  }
+                  onRestore={
+                    isArchive ? () => actions.restore(item) : undefined
+                  }
+                  pending={actions.isMutating}
                 >
-                  {/* Hours first: it's what you scan a time log for. */}
-                  <TableCell className='text-sm font-medium tabular-nums'>
-                    <span className='inline-flex items-center gap-2'>
-                      <ENTITY_ICONS.timeLog
-                        className={cn(
-                          ENTITY_ACCENTS.timeLog.icon,
-                          'h-4 w-4 shrink-0'
-                        )}
-                      />
-                      {formatHours(item.hours)}
-                    </span>
-                  </TableCell>
-                  <TableCell label='Date' className='text-sm tabular-nums'>
-                    {formatCalendarDate(item.loggedOn)}
-                  </TableCell>
-                  <TableCell label='Person'>
-                    <div className='flex items-center justify-center'>
-                      <PersonAvatar
-                        userId={item.userId}
-                        name={item.userName ?? 'Unknown'}
-                        hasPhoto={Boolean(item.userAvatarUrl)}
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell label='Client' className='text-sm'>
-                    {item.clientName ? (
-                      <div className='flex min-w-0 items-center gap-2'>
-                        <ENTITY_ICONS.client
+                  <TableRow
+                    {...(isArchive
+                      ? {}
+                      : {
+                          ...getClickableRowProps(
+                            () => void editor.open(item.id)
+                          ),
+                          className: CLICKABLE_ROW_CLASS,
+                        })}
+                  >
+                    {/* Hours first: it's what you scan a time log for. */}
+                    <TableCell className='text-sm font-medium tabular-nums'>
+                      <span className='inline-flex items-center gap-2'>
+                        <ENTITY_ICONS.timeLog
                           className={cn(
-                            ENTITY_ACCENTS.client.icon,
+                            ENTITY_ACCENTS.timeLog.icon,
                             'h-4 w-4 shrink-0'
                           )}
                         />
-                        {item.companyId ? (
-                          // The row ignores clicks on links.
+                        {formatHours(item.hours)}
+                      </span>
+                    </TableCell>
+                    <TableCell label='Date' className='text-sm tabular-nums'>
+                      {formatCalendarDate(item.loggedOn)}
+                    </TableCell>
+                    <TableCell label='Person'>
+                      <div className='flex items-center justify-center'>
+                        <PersonAvatar
+                          userId={item.userId}
+                          name={item.userName ?? 'Unknown'}
+                          hasPhoto={Boolean(item.userAvatarUrl)}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell label='Client' className='text-sm'>
+                      {item.clientName ? (
+                        <div className='flex min-w-0 items-center gap-2'>
+                          <ENTITY_ICONS.client
+                            className={cn(
+                              ENTITY_ACCENTS.client.icon,
+                              'h-4 w-4 shrink-0'
+                            )}
+                          />
+                          {item.companyId ? (
+                            // The row ignores clicks on links.
+                            <Link
+                              href={companySheetHref(item.companyId)}
+                              title={item.clientName}
+                              className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
+                            >
+                              {item.clientName}
+                            </Link>
+                          ) : (
+                            <span className='truncate' title={item.clientName}>
+                              {item.clientName}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                    <TableCell label='Project' className='text-sm'>
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <ENTITY_ICONS.project
+                          className={cn(
+                            ENTITY_ACCENTS.project.icon,
+                            'h-4 w-4 shrink-0'
+                          )}
+                        />
+                        {projectTasksHref(item) ? (
                           <Link
-                            href={companySheetHref(item.companyId)}
-                            title={item.clientName}
+                            href={projectTasksHref(item)!}
+                            title={item.projectName}
                             className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
                           >
-                            {item.clientName}
+                            {item.projectName}
                           </Link>
                         ) : (
-                          <span className='truncate' title={item.clientName}>
-                            {item.clientName}
+                          <span className='truncate' title={item.projectName}>
+                            {item.projectName}
                           </span>
                         )}
                       </div>
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                  <TableCell label='Project' className='text-sm'>
-                    <div className='flex min-w-0 items-center gap-2'>
-                      <ENTITY_ICONS.project
-                        className={cn(
-                          ENTITY_ACCENTS.project.icon,
-                          'h-4 w-4 shrink-0'
-                        )}
+                    </TableCell>
+                    <TableCell
+                      label='Tasks'
+                      className='text-sm tabular-nums md:text-center'
+                    >
+                      <LinkedRecordsHoverCell
+                        withIcon
+                        count={item.tasks.length}
+                        icon={ENTITY_ICONS.task}
+                        iconClassName={ENTITY_ACCENTS.task.icon}
+                        ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
+                        items={item.tasks.map(task => ({
+                          id: task.id,
+                          label: task.title,
+                          onSelect: () => openSheet('task', task.id),
+                        }))}
                       />
-                      {projectTasksHref(item) ? (
-                        <Link
-                          href={projectTasksHref(item)!}
-                          title={item.projectName}
-                          className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
-                        >
-                          {item.projectName}
-                        </Link>
-                      ) : (
-                        <span className='truncate' title={item.projectName}>
-                          {item.projectName}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell
-                    label='Tasks'
-                    className='text-sm tabular-nums md:text-center'
-                  >
-                    <LinkedRecordsHoverCell
-                      withIcon
-                      count={item.tasks.length}
-                      icon={ENTITY_ICONS.task}
-                      iconClassName={ENTITY_ACCENTS.task.icon}
-                      ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
-                      items={item.tasks.map(task => ({
-                        id: task.id,
-                        label: task.title,
-                        onSelect: () => openSheet('task', task.id),
-                      }))}
-                    />
-                  </TableCell>
-                  <TableCell className='text-right max-md:ml-auto'>
-                    <RecordRowActions>
-                      {isArchive ? (
-                        <RecordRowAction
-                          kind='restore'
-                          entity='time log'
-                          onClick={() => actions.restore(item)}
-                          disabled={actions.isMutating}
-                          pending={actions.busyEntryId === item.id}
-                        />
-                      ) : (
-                        <>
+                    </TableCell>
+                    <TableCell className='text-right max-md:ml-auto'>
+                      <RecordRowActions>
+                        {isArchive ? (
                           <RecordRowAction
-                            kind='edit'
+                            kind='restore'
                             entity='time log'
-                            onClick={() => void editor.open(item.id)}
-                            pending={editor.openingEntryId === item.id}
-                          />
-                          <RecordRowAction
-                            kind='archive'
-                            entity='time log'
-                            onClick={() => actions.archiveConfirm.request(item)}
+                            onClick={() => actions.restore(item)}
                             disabled={actions.isMutating}
                             pending={actions.busyEntryId === item.id}
                           />
-                        </>
-                      )}
-                    </RecordRowActions>
-                  </TableCell>
-                </TableRow>
+                        ) : (
+                          <>
+                            <RecordRowAction
+                              kind='edit'
+                              entity='time log'
+                              onClick={() => void editor.open(item.id)}
+                              pending={editor.openingEntryId === item.id}
+                            />
+                            <RecordRowAction
+                              kind='archive'
+                              entity='time log'
+                              onClick={() =>
+                                actions.archiveConfirm.request(item)
+                              }
+                              disabled={actions.isMutating}
+                              pending={actions.busyEntryId === item.id}
+                            />
+                          </>
+                        )}
+                      </RecordRowActions>
+                    </TableCell>
+                  </TableRow>
+                </RecordContextMenu>
               )
             })}
           </TableBody>

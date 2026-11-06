@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { useForm, type Resolver, type UseFormReturn } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import {
@@ -9,7 +9,6 @@ import {
   softDeleteHourBlock,
 } from '@/app/(dashboard)/hour-blocks/actions'
 import { toastLink, useToast } from '@/components/ui/use-toast'
-import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
   finishSettingsInteraction,
@@ -21,9 +20,7 @@ import {
   hourBlockFormSchema,
   HOUR_BLOCK_FORM_FIELDS,
   sortClientsByName,
-  type HourBlockClient,
   type HourBlockFormValues,
-  type HourBlockWithClient,
 } from './hour-block-form'
 export type { HourBlockFormValues } from './hour-block-form'
 import { buildClientOptions, type ClientOption } from './hour-block-options'
@@ -36,42 +33,26 @@ import {
   type FieldState,
   type SubmitButtonState,
 } from './hour-block-ui-state'
+import type {
+  UseHourBlockSheetStateArgs,
+  UseHourBlockSheetStateReturn,
+} from './use-hour-block-sheet-state-types'
 
-export type UseHourBlockSheetStateArgs = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onComplete: () => void
-  hourBlock: HourBlockWithClient | null
-  clients: HourBlockClient[]
-}
-
-export type UseHourBlockSheetStateReturn = {
-  form: UseFormReturn<HourBlockFormValues>
-  isEditing: boolean
-  isPending: boolean
-  clientOptions: ClientOption[]
-  clientField: FieldState
-  hoursField: FieldState
-  notesField: FieldState
-  submitButton: SubmitButtonState
-  deleteButton: DeleteButtonState
-  isDeleteDialogOpen: boolean
-  unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
-  handleSheetOpenChange: (open: boolean) => void
-  handleSubmit: (values: HourBlockFormValues) => void
-  handleRequestDelete: () => void
-  handleCancelDelete: () => void
-  handleConfirmDelete: () => void
-}
+export type {
+  UseHourBlockSheetStateArgs,
+  UseHourBlockSheetStateReturn,
+} from './use-hour-block-sheet-state-types'
 
 export function useHourBlockSheetState({
   open,
   onOpenChange,
   onComplete,
   hourBlock,
+  duplicateOf = null,
   clients,
 }: UseHourBlockSheetStateArgs): UseHourBlockSheetStateReturn {
   const isEditing = Boolean(hourBlock)
+  const source = hourBlock ?? duplicateOf // A copy starts from its source.
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const { toast } = useToast()
 
@@ -88,13 +69,13 @@ export function useHourBlockSheetState({
 
   const form = useForm<HourBlockFormValues>({
     resolver,
-    defaultValues: buildHourBlockFormDefaults(hourBlock),
+    defaultValues: buildHourBlockFormDefaults(source),
   })
 
   const resetFormState = useCallback(() => {
-    form.reset(buildHourBlockFormDefaults(hourBlock))
+    form.reset(buildHourBlockFormDefaults(source))
     form.clearErrors()
-  }, [form, hourBlock])
+  }, [form, source])
 
   const {
     isSaving: isPending,
@@ -106,7 +87,7 @@ export function useHourBlockSheetState({
     onOpenChange,
     isDirty: form.formState.isDirty,
     onReset: resetFormState,
-    resetKey: hourBlock?.id ?? null,
+    resetKey: hourBlock?.id ?? (duplicateOf && `copy-${duplicateOf.id}`),
   })
 
   const applyServerFieldErrors = useCallback(

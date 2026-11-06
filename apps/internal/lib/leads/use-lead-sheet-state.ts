@@ -34,6 +34,7 @@ export function useLeadSheetState({
   open,
   onOpenChange,
   lead,
+  duplicateOf,
   initialStatus,
   initialCompanyError,
   onSuccess,
@@ -58,27 +59,30 @@ export function useLeadSheetState({
   const canManageClients = roleCan(role, 'clients.manage')
   const { toast } = useToast()
 
+  // A duplicate starts from its source's values; it is still a new lead.
+  const source = lead ?? duplicateOf ?? null
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
-      contact: lead?.contactId
+      contact: source?.contactId
         ? {
-            id: lead.contactId,
-            name: lead.contactName,
-            email: lead.contactEmail ?? null,
-            phone: lead.contactPhone ?? null,
+            id: source.contactId,
+            name: source.contactName,
+            email: source.contactEmail ?? null,
+            phone: source.contactPhone ?? null,
           }
         : null,
-      company: lead?.companyId
-        ? { id: lead.companyId, name: lead.companyName ?? '' }
+      company: source?.companyId
+        ? { id: source.companyId, name: source.companyName ?? '' }
         : null,
-      sourceType: lead?.sourceType ?? null,
-      sourceDetail: lead?.sourceDetail ?? '',
+      sourceType: source?.sourceType ?? null,
+      sourceDetail: source?.sourceDetail ?? '',
+      // A copy is a new opportunity: it starts at the first stage.
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       // A new lead starts assigned to you, like a new task.
-      assigneeId: lead ? (lead.assigneeId ?? null) : userId,
-      notes: lead?.notesHtml ?? initialValues?.notes ?? '',
+      assigneeId: source ? (source.assigneeId ?? null) : userId,
+      notes: source?.notesHtml ?? initialValues?.notes ?? '',
     }),
-    [lead, initialStatus, initialValues, userId]
+    [lead, source, initialStatus, initialValues, userId]
   )
 
   const form = useForm<LeadFormValues>({
@@ -92,7 +96,9 @@ export function useLeadSheetState({
   // company just picked from that sheet.
   const resetKey = lead
     ? `${lead.id}:${lead.updatedAt}`
-    : `new:${initialStatus ?? ''}`
+    : duplicateOf
+      ? `copy:${duplicateOf.id}`
+      : `new:${initialStatus ?? ''}`
   const lastResetKey = useRef<string | null>(null)
   useEffect(() => {
     // Closing forgets the key, so reopening always starts from the record.

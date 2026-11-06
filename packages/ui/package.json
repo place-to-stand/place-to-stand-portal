@@ -22,6 +22,7 @@
     "./cn": "./src/cn.ts",
     "./collapsible": "./src/collapsible.tsx",
     "./confirm-dialog": "./src/confirm-dialog.tsx",
+    "./context-menu": "./src/context-menu.tsx",
     "./dates": "./src/dates.ts",
     "./dialog": "./src/dialog.tsx",
     "./dropdown-menu": "./src/dropdown-menu.tsx",

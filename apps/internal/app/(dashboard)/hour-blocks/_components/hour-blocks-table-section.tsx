@@ -9,6 +9,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { EmptyValue } from '@/components/table/empty-value'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
@@ -148,120 +149,135 @@ export function HourBlocksTableSection({
               : null
 
             return (
-              <TableRow
+              <RecordContextMenu
                 key={block.id}
-                {...getClickableRowProps(() => onEdit(block))}
-                className={cn(
-                  CLICKABLE_ROW_CLASS,
-                  isArchived && ARCHIVED_ROW_CLASS
-                )}
+                entity='hour-block'
+                id={block.id}
+                onEdit={() => onEdit(block)}
+                onArchive={
+                  showArchive ? () => onRequestDelete(block) : undefined
+                }
+                onRestore={showRestore ? () => onRestore(block) : undefined}
+                archiveDisabledReason={
+                  showRestore ? restoreDisabledReason : archiveDisabledReason
+                }
               >
-                <TableCell label='Hours' className='text-sm'>
-                  <span className='inline-flex items-center gap-2'>
-                    <ENTITY_ICONS.hourBlock
-                      className={cn(
-                        ENTITY_ACCENTS.hourBlock.icon,
-                        'h-4 w-4 shrink-0'
-                      )}
-                    />
-                    {formatHours(block.hours_purchased)}
-                    {block.notes ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span
-                            className='cursor-default'
-                            aria-label='Hour block notes'
-                          >
-                            <Info className='text-muted-foreground h-3.5 w-3.5' />
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent className='max-w-xs whitespace-pre-wrap'>
-                          {block.notes}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : null}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <ENTITY_ICONS.client
-                      className={cn(
-                        ENTITY_ACCENTS.client.icon,
-                        'h-4 w-4 shrink-0'
-                      )}
-                    />
-                    {client ? (
-                      // Opens the client; the row ignores clicks on links.
-                      <Link
-                        href={companySheetHref(client.company_id)}
-                        title={client.name}
-                        className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
-                      >
-                        {client.name}
-                      </Link>
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </div>
-                  {client?.deleted_at ? (
-                    <p className='text-destructive text-xs'>Client archived</p>
-                  ) : null}
-                </TableCell>
-                <TableCell label='Invoice' className='text-sm'>
-                  {block.invoice_number ? (
-                    <div className='flex min-w-0 items-center gap-2'>
-                      <ENTITY_ICONS.invoice
+                <TableRow
+                  {...getClickableRowProps(() => onEdit(block))}
+                  className={cn(
+                    CLICKABLE_ROW_CLASS,
+                    isArchived && ARCHIVED_ROW_CLASS
+                  )}
+                >
+                  <TableCell label='Hours' className='text-sm'>
+                    <span className='inline-flex items-center gap-2'>
+                      <ENTITY_ICONS.hourBlock
                         className={cn(
-                          ENTITY_ACCENTS.invoice.icon,
+                          ENTITY_ACCENTS.hourBlock.icon,
                           'h-4 w-4 shrink-0'
                         )}
                       />
-                      {block.invoice_id ? (
+                      {formatHours(block.hours_purchased)}
+                      {block.notes ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className='cursor-default'
+                              aria-label='Hour block notes'
+                            >
+                              <Info className='text-muted-foreground h-3.5 w-3.5' />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className='max-w-xs whitespace-pre-wrap'>
+                            {block.notes}
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : null}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className='flex min-w-0 items-center gap-2 text-sm'>
+                      <ENTITY_ICONS.client
+                        className={cn(
+                          ENTITY_ACCENTS.client.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
+                      />
+                      {client ? (
+                        // Opens the client; the row ignores clicks on links.
                         <Link
-                          href={invoiceHref(block.invoice_id)}
-                          className='text-muted-foreground hover:text-foreground truncate hover:underline'
+                          href={companySheetHref(client.company_id)}
+                          title={client.name}
+                          className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
                         >
-                          {block.invoice_number}
+                          {client.name}
                         </Link>
                       ) : (
-                        <span className='text-muted-foreground truncate'>
-                          {block.invoice_number}
-                        </span>
+                        <EmptyValue />
                       )}
                     </div>
-                  ) : (
-                    <EmptyValue />
-                  )}
-                </TableCell>
-                <TableCell
-                  label='Created'
-                  className='text-muted-foreground text-sm'
-                >
-                  {formatTimestamp(block.created_at)}
-                </TableCell>
-                <TableCell className='text-right max-md:ml-auto'>
-                  <RecordRowActions>
-                    {showRestore ? (
-                      <RecordRowAction
-                        kind='restore'
-                        entity='hour block'
-                        onClick={() => onRestore(block)}
-                        disabled={restoreDisabled}
-                        disabledReason={restoreDisabledReason}
-                      />
+                    {client?.deleted_at ? (
+                      <p className='text-destructive text-xs'>
+                        Client archived
+                      </p>
                     ) : null}
-                    {showArchive ? (
-                      <RecordRowAction
-                        kind='archive'
-                        entity='hour block'
-                        onClick={() => onRequestDelete(block)}
-                        disabled={archiveDisabled}
-                        disabledReason={archiveDisabledReason}
-                      />
-                    ) : null}
-                  </RecordRowActions>
-                </TableCell>
-              </TableRow>
+                  </TableCell>
+                  <TableCell label='Invoice' className='text-sm'>
+                    {block.invoice_number ? (
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <ENTITY_ICONS.invoice
+                          className={cn(
+                            ENTITY_ACCENTS.invoice.icon,
+                            'h-4 w-4 shrink-0'
+                          )}
+                        />
+                        {block.invoice_id ? (
+                          <Link
+                            href={invoiceHref(block.invoice_id)}
+                            className='text-muted-foreground hover:text-foreground truncate hover:underline'
+                          >
+                            {block.invoice_number}
+                          </Link>
+                        ) : (
+                          <span className='text-muted-foreground truncate'>
+                            {block.invoice_number}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </TableCell>
+                  <TableCell
+                    label='Created'
+                    className='text-muted-foreground text-sm'
+                  >
+                    {formatTimestamp(block.created_at)}
+                  </TableCell>
+                  <TableCell className='text-right max-md:ml-auto'>
+                    <RecordRowActions>
+                      {showRestore ? (
+                        <RecordRowAction
+                          kind='restore'
+                          entity='hour block'
+                          onClick={() => onRestore(block)}
+                          disabled={restoreDisabled}
+                          disabledReason={restoreDisabledReason}
+                        />
+                      ) : null}
+                      {showArchive ? (
+                        <RecordRowAction
+                          kind='archive'
+                          entity='hour block'
+                          onClick={() => onRequestDelete(block)}
+                          disabled={archiveDisabled}
+                          disabledReason={archiveDisabledReason}
+                        />
+                      ) : null}
+                    </RecordRowActions>
+                  </TableCell>
+                </TableRow>
+              </RecordContextMenu>
             )
           })}
           {hourBlocks.length === 0 ? (
