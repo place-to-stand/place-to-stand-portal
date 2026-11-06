@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Mail, Phone } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
@@ -34,7 +33,6 @@ import {
   PREVIEW_UNAVAILABLE_REASON,
 } from '@/lib/people/portal-preview'
 import { cn } from '@/lib/utils'
-import { companySheetHref } from '@/lib/sheets/hrefs'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
@@ -50,6 +48,7 @@ import {
   SelectRowCell,
   type RowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink } from '@/components/ui/sheet-link'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -247,12 +246,14 @@ export function ContactsTableSection({
                           company, not the contact. */}
                           {/* Names only get a tooltip when they're cut off. */}
                           <TruncationTooltip content={contact.companyName}>
-                            <Link
-                              href={companySheetHref(contact.companyId)}
-                              className='hover:text-foreground truncate-link min-w-0 underline-offset-4 transition hover:underline'
+                            <SheetLink
+                              sheet={{
+                                entity: 'company',
+                                id: contact.companyId,
+                              }}
                             >
                               {contact.companyName}
-                            </Link>
+                            </SheetLink>
                           </TruncationTooltip>
                           <CompanyClientMark
                             company={contact.companies.find(
@@ -271,7 +272,7 @@ export function ContactsTableSection({
                               items={contact.companies.map(company => ({
                                 id: company.id,
                                 label: company.name,
-                                href: companySheetHref(company.id),
+                                sheet: { entity: 'company', id: company.id },
                                 trailing: (
                                   <CompanyClientMark company={company} />
                                 ),

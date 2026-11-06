@@ -35,6 +35,7 @@ import {
   noDetailsSection,
   noRawTypeSize,
   popoverShadow,
+  sheetLinkInPlace,
   underlineNotClipped,
 } from './rules/design.mjs'
 import { clientBoundary, queryLayerPurity } from './rules/layering.mjs'
@@ -66,6 +67,7 @@ export const pts = {
     'no-details-section': noDetailsSection,
     'no-raw-type-size': noRawTypeSize,
     'underline-not-clipped': underlineNotClipped,
+    'sheet-link-in-place': sheetLinkInPlace,
     'sheet-url-through-builders': sheetUrlThroughBuilders,
     'shortcut-registry': shortcutRegistry,
     'no-hard-delete': noHardDelete,

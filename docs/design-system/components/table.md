@@ -18,11 +18,12 @@ The data table: plain semantic markup with shadcn styling and three options, `de
 - Dates render through `formatCalendarDate` ("Sep 23, 2026"). (guard: eslint `pts/dates-through-ui`)
 - Lists with an Archive or Restore row action lead with the bulk select column (`bulk-select.md`). (guard: review)
 - Row actions are `RowActionButton`s (every icon-only one, so each has a hover tooltip) or a DropdownMenu; in-row toggles may apply instantly (unlike sheet controls). (guard: eslint `pts/no-title-tooltip`; review)
+- **A linked record opens in place.** A record named in a cell (the Client on an hour block, the Company on a person, a project on a time log) or in a hover-card row opens its sheet over the list you're on, stacked like any sheet, never by going to the record's own list. The link is `SheetLink` (`components/ui/sheet-link.tsx`, look `cellLinkClass`); on a card or meta line it's `MetaLink` with `sheet`, in a hover card the row's `sheet`. A new-tab click opens the same list with the sheet open. The same goes for cards and home widgets. (guard: eslint `pts/sheet-link-in-place`)
 - Page counts come from `PageShell` ("Showing 24 of 118 clients"); empty states are one sentence ("No matching tasks."). (guard: review)
 
 ## LinkedRecordsHoverCell
 
-`components/ui/linked-records-hover-cell.tsx`: a count in a table cell (people on a company, projects on a client, tasks on a time log). Hovering or focusing it opens a card listing the records behind it; each row opens its record (`href`, or `onSelect` for a sheet over the page). A zero is the shared dash with no card; a single record can use a lone icon `trigger` (with `ariaLabel`). `withIcon` puts the entity icon before the count, as list columns do.
+`components/ui/linked-records-hover-cell.tsx`: a count in a table cell (people on a company, projects on a client, tasks on a time log). Hovering or focusing it opens a card listing the records behind it; each row opens its record's sheet over the page (`sheet`); `href` is only for a record with no sheet. A zero is the shared dash with no card; a single record can use a lone icon `trigger` (with `ariaLabel`). `withIcon` puts the entity icon before the count, as list columns do.
 
 **Use it** in list tables, where a row has room for one number. In a sheet, show the records themselves as cards with `EntityList` / `SheetRecordList` instead: a sheet is where you work with them, a table is where you glance. (guard: review)
 

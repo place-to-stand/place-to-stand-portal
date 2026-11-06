@@ -7,7 +7,6 @@ import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
-import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 
 import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
@@ -96,8 +95,6 @@ function TimeLogRow({
   onOpen: (entryId: string) => void
   isOpening: boolean
 }) {
-  const projectHref = getProjectHref(entry)
-  const clientHref = getClientHref(entry)
   // A log can span several tasks; the first names the row and the rest
   // collapse into a count so the primary line stays one line.
   const [firstTask, ...otherTasks] = entry.taskTitles
@@ -140,9 +137,9 @@ function TimeLogRow({
             </span>
             {entry.clientName ? (
               <>
-                {clientHref ? (
+                {entry.companyId ? (
                   <MetaLink
-                    href={clientHref}
+                    sheet={{ entity: 'company', id: entry.companyId }}
                     className='pointer-events-auto relative z-20'
                     icon={renderProjectTypeIcon(entry.projectType)}
                   >
@@ -159,33 +156,23 @@ function TimeLogRow({
                 </span>
               </>
             ) : null}
-            {projectHref ? (
-              <MetaLink
-                href={projectHref}
-                className='pointer-events-auto relative z-20'
-                icon={
-                  <>
-                    {entry.clientName
-                      ? null
-                      : renderProjectTypeIcon(entry.projectType)}
-                    <ENTITY_ICONS.project
-                      className='size-3 shrink-0'
-                      aria-hidden
-                    />
-                  </>
-                }
-              >
-                {entry.projectName}
-              </MetaLink>
-            ) : (
-              <span className='inline-flex min-w-0 items-center gap-1'>
-                {entry.clientName
-                  ? null
-                  : renderProjectTypeIcon(entry.projectType)}
-                <ENTITY_ICONS.project className='size-3 shrink-0' aria-hidden />
-                <span className='truncate'>{entry.projectName}</span>
-              </span>
-            )}
+            <MetaLink
+              sheet={{ entity: 'project', id: entry.projectId }}
+              className='pointer-events-auto relative z-20'
+              icon={
+                <>
+                  {entry.clientName
+                    ? null
+                    : renderProjectTypeIcon(entry.projectType)}
+                  <ENTITY_ICONS.project
+                    className='size-3 shrink-0'
+                    aria-hidden
+                  />
+                </>
+              }
+            >
+              {entry.projectName}
+            </MetaLink>
           </div>
         </div>
         {/*
@@ -202,20 +189,6 @@ function TimeLogRow({
       </div>
     </li>
   )
-}
-
-function getProjectHref(entry: DashboardTimeLogEntry) {
-  // The tasks tab is a project's default view -- same target the My Tasks
-  // widget uses, so both widgets land in the same place.
-  return projectTasksHref(entry)
-}
-
-function getClientHref(entry: DashboardTimeLogEntry) {
-  if (!entry.companyId) {
-    return null
-  }
-
-  return companySheetHref(entry.companyId)
 }
 
 function renderProjectTypeIcon(projectType: string) {

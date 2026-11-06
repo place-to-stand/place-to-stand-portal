@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
 
 import { useRouter } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -29,9 +28,7 @@ import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 import { cn } from '@/lib/utils'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
 import {
@@ -48,6 +45,7 @@ import {
   SelectRowCell,
   useRowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink } from '@/components/ui/sheet-link'
 
 type TimeLogsTableProps = {
   items: DashboardTimeLogEntry[]
@@ -76,7 +74,6 @@ export function TimeLogsTable({
   sort,
 }: TimeLogsTableProps) {
   const router = useRouter()
-  const { open: openSheet } = useSheetParams()
   const { update } = useListParams({
     basePath: mode === 'archive' ? '/time-logs/archive' : '/time-logs',
     resetKeys: ['page'],
@@ -225,14 +222,15 @@ export function TimeLogsTable({
                               )}
                             />
                             {item.companyId ? (
-                              // The row ignores clicks on links.
-                              <Link
-                                href={companySheetHref(item.companyId)}
+                              <SheetLink
+                                sheet={{
+                                  entity: 'company',
+                                  id: item.companyId,
+                                }}
                                 title={item.clientName}
-                                className='hover:text-foreground truncate-link transition hover:underline'
                               >
                                 {item.clientName}
-                              </Link>
+                              </SheetLink>
                             ) : (
                               <span
                                 className='truncate'
@@ -254,19 +252,12 @@ export function TimeLogsTable({
                               'h-4 w-4 shrink-0'
                             )}
                           />
-                          {projectTasksHref(item) ? (
-                            <Link
-                              href={projectTasksHref(item)!}
-                              title={item.projectName}
-                              className='hover:text-foreground truncate-link transition hover:underline'
-                            >
-                              {item.projectName}
-                            </Link>
-                          ) : (
-                            <span className='truncate' title={item.projectName}>
-                              {item.projectName}
-                            </span>
-                          )}
+                          <SheetLink
+                            sheet={{ entity: 'project', id: item.projectId }}
+                            title={item.projectName}
+                          >
+                            {item.projectName}
+                          </SheetLink>
                         </div>
                       </TableCell>
                       <TableCell
@@ -282,7 +273,7 @@ export function TimeLogsTable({
                           items={item.tasks.map(task => ({
                             id: task.id,
                             label: task.title,
-                            onSelect: () => openSheet('task', task.id),
+                            sheet: { entity: 'task', id: task.id },
                           }))}
                         />
                       </TableCell>

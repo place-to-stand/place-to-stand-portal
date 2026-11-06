@@ -22,7 +22,6 @@ import {
 import { MetaLink } from '@/components/ui/meta-link'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { TaskContextMenu } from './task-context-menu'
 import { cn } from '@/lib/utils'
 import type {
@@ -39,9 +38,10 @@ type AssigneeInfo = CardAssignee
 
 type TaskContextDetails = {
   clientLabel?: string
-  clientHref?: string | null
+  /** The client's company, opened over the page; none for other work. */
+  clientCompanyId?: string | null
   projectLabel?: string
-  projectHref?: string | null
+  projectId?: string | null
   layout?: 'inline' | 'stacked'
   projectType?: ProjectTypeValue
 }
@@ -101,10 +101,10 @@ function CardContent({
             >
               {/* Internal, personal and unbilled projects have no company to
                   open; the project name says enough. */}
-              {context.clientLabel && context.clientHref ? (
+              {context.clientLabel && context.clientCompanyId ? (
                 <div className='flex max-w-full min-w-0 items-center gap-1'>
                   <MetaLink
-                    href={context.clientHref}
+                    sheet={{ entity: 'company', id: context.clientCompanyId }}
                     title={context.clientLabel}
                     onClick={event => event.stopPropagation()}
                     icon={renderProjectTypeIcon(
@@ -117,10 +117,10 @@ function CardContent({
                 </div>
               ) : null}
               {context.projectLabel ? (
-                context.projectHref ? (
+                context.projectId ? (
                   <div className='flex max-w-full min-w-0 items-center gap-1'>
                     <MetaLink
-                      href={context.projectHref}
+                      sheet={{ entity: 'project', id: context.projectId }}
                       title={context.projectLabel}
                       onClick={event => event.stopPropagation()}
                       icon={
@@ -381,14 +381,11 @@ export function TaskCardPreview({
 
 /** The linked lead; a click stacks its sheet over the board. */
 function CardLeadLink({ lead }: { lead: { id: string; name: string } }) {
-  const { open } = useSheetParams()
   return (
     <MetaLink
+      sheet={{ entity: 'lead', id: lead.id }}
       className='text-muted-foreground self-start text-xs'
-      onClick={event => {
-        event.stopPropagation()
-        open('lead', lead.id)
-      }}
+      onClick={event => event.stopPropagation()}
       onKeyDown={event => event.stopPropagation()}
       icon={<ENTITY_ICONS.lead className='h-3.5 w-3.5 shrink-0' aria-hidden />}
     >
