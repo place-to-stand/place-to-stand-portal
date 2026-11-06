@@ -187,22 +187,17 @@ export function useLeadSheetState({
           return
         }
 
-        toast({
-          title: isEditing ? 'Lead saved' : 'Lead created',
-          description: contact?.name || undefined,
-          link: toastLink('lead', result.leadId ?? lead?.id),
-        })
-
-        // What was saved is the clean state now.
-        const rebaseline = () => form.reset(values)
-
-        // Keep open: stay on the lead. A just-won lead's billing is one
-        // click away on its company, so nothing opens over it.
+        const rebaseline = () => form.reset(values) // saved = clean state
         if (mode === 'stay') {
           stay({ id: result.leadId ?? lead?.id, rebaseline })
           return
         }
 
+        toast({
+          title: isEditing ? 'Lead saved' : 'Lead created',
+          description: contact?.name || undefined,
+          link: toastLink('lead', result.leadId ?? lead?.id),
+        })
         rebaseline()
         setArchiveDialogOpen(false)
         onOpenChange(false)

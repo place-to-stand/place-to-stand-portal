@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 import { matchesShortcut } from '@/lib/keyboard/match'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { announceSaveMode, type SheetSaveMode } from '@/lib/sheets/save-mode'
 
 export type KeyboardShortcutArgs = {
   isActive: boolean
@@ -40,7 +40,9 @@ export function useHistoryKeyboardShortcuts({
         event.stopPropagation()
         if (!canSave) return
         flushPendingSnapshots()
-        onSave(stay ? 'stay' : 'close')
+        const mode = stay ? 'stay' : 'close'
+        announceSaveMode(mode)
+        onSave(mode)
         return
       }
 

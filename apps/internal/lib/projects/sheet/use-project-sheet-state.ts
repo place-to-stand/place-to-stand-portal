@@ -313,11 +313,14 @@ export function useProjectSheetState({
             targetId: targetProjectId ?? null,
           })
 
-          toast({
-            title: isEditing ? 'Project saved' : 'Project created',
-            description: payload.name,
-            link: toastLink('project', targetProjectId),
-          })
+          // Keep open: no toast; stay() makes its Save button say "Saved".
+          if (mode === 'close') {
+            toast({
+              title: isEditing ? 'Project saved' : 'Project created',
+              description: payload.name,
+              link: toastLink('project', targetProjectId),
+            })
+          }
 
           form.reset({
             name: payload.name,

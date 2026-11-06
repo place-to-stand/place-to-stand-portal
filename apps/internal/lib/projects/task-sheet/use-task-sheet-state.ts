@@ -222,11 +222,14 @@ export const useTaskSheetState = ({
             return
           }
 
-          toast({
-            title: task ? 'Task saved' : 'Task created',
-            description: values.title.trim(),
-            link: toastLink('task', result.taskId),
-          })
+          // Keep open: no toast; stay() makes its Save button say "Saved".
+          if (mode === 'close') {
+            toast({
+              title: task ? 'Task saved' : 'Task created',
+              description: values.title.trim(),
+              link: toastLink('task', result.taskId),
+            })
+          }
 
           if (mode === 'stay') {
             stay({
