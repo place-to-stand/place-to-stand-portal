@@ -54,7 +54,7 @@ type PickedRecordCardProps = {
   /** The record's name, for the open button's accessible name. */
   name: string
   description?: React.ReactNode
-  /** Clears the pick; no × without it (a required field). */
+  /** Clears the pick. Required fields pass it too: the form's check stops an empty save. */
   onClear?: () => void
   /** Read-only: the card still opens the record but can't change. */
   disabled?: boolean

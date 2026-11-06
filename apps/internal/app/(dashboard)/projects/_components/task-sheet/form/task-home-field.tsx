@@ -85,6 +85,12 @@ export function TaskHomeField({
                   searchPlaceholder='Search projects and leads…'
                   emptyMessage='No projects or leads found.'
                   disabled={disabled}
+                  // Clearing leaves neither: the schema's "Choose a project
+                  // or a lead" stops the save.
+                  onClear={() => {
+                    field.onChange(null)
+                    form.setValue('leadId', null, { shouldDirty: true })
+                  }}
                   record={{
                     icon: ENTITY_ICONS[home.leadId ? 'lead' : 'project'],
                     entityLabel: home.leadId ? 'lead' : 'project',
