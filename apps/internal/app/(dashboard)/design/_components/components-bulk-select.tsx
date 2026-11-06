@@ -68,7 +68,7 @@ export function ComponentsBulkSelect() {
     <DesignSection
       id='bulk-select'
       title='Bulk select'
-      when='Every list with an Archive row action. The first column holds a box that shows on hover (the header box while the table is hovered); once one row is ticked every box shows and the bulk bar rises from the bottom. An unread dot shares the column and gives way to the box on hover, while the row keeps its unread weight and tint. The header box ticks the page, then the bar offers every matching row across pages.'
+      when='Every list with an Archive row action. The first column holds a box that shows on hover (the header box always shows); once one row is ticked every box shows and the bulk bar rises from the bottom. An unread dot shares the column and gives way to the box on hover, while the row keeps its unread weight and tint. The header box ticks the page, then the bar offers every matching row across pages.'
     >
       <Specimen
         label='RowSelectionProvider, SelectAllHead, SelectRowCell, BulkActionBar'

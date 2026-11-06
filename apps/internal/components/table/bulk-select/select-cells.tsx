@@ -51,14 +51,15 @@ function useSelection() {
 }
 
 /**
- * The leading column, sized so its 16px box sits on the cell padding. One
- * width on every list, so names start at the same place everywhere.
+ * The leading column: 12px either side of the 16px box (its own left
+ * padding, then 4px plus the next cell's 8px). One width on every list,
+ * so names start at the same place everywhere.
  */
-const COLUMN_CLASS = 'w-9 pr-0'
+const COLUMN_CLASS = 'w-8 pl-3 pr-0'
 
 /**
  * Boxes stay out of sight until they are useful: a row's box shows while
- * the row is hovered or focused, the header's while the table is, and once
+ * the row is hovered or focused, and once
  * any row is ticked every box shows. Phones have no hover, so the column
  * is hidden there.
  */
@@ -81,23 +82,22 @@ export function SelectAllHead({ ids }: { ids?: string[] }) {
       data-slot='table-select-head'
       className={cn(COLUMN_CLASS, 'align-middle')}
     >
-      <Checkbox
-        aria-label={
-          ids
-            ? `Select all ${label} in this table`
-            : `Select all ${label} on this page`
-        }
-        checked={state === 'all'}
-        indeterminate={state === 'some'}
-        onCheckedChange={() =>
-          ids ? selection.toggleGroup(ids) : selection.toggleAll()
-        }
-        className={cn(
-          'block cursor-pointer',
-          !selection.active &&
-            'opacity-0 transition-opacity focus-visible:opacity-100 [table:hover_&]:opacity-100'
-        )}
-      />
+      {/* Wrapped so the table's checkbox nudge (translate-y-0.5) skips it. */}
+      <div className='flex items-center'>
+        <Checkbox
+          aria-label={
+            ids
+              ? `Select all ${label} in this table`
+              : `Select all ${label} on this page`
+          }
+          checked={state === 'all'}
+          indeterminate={state === 'some'}
+          onCheckedChange={() =>
+            ids ? selection.toggleGroup(ids) : selection.toggleAll()
+          }
+          className='cursor-pointer'
+        />
+      </div>
     </TableHead>
   )
 }
