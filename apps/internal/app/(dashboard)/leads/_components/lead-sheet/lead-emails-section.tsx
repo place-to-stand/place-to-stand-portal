@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
+import { Button } from '@pts/ui/button'
 import { formatRelativeTime } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
@@ -90,16 +91,22 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
     status = (
       <EmptyState
         message={`Connect your Google account to see your emails with ${who}. Only you see them.`}
-        label='Connect Google'
-        onClick={connectGoogle}
+        action={
+          <Button variant='outline' size='sm' onClick={connectGoogle}>
+            Connect Google
+          </Button>
+        }
       />
     )
   } else if (data?.state === 'reconnect') {
     status = (
       <EmptyState
         message='Your Google connection has expired. Reconnect it to see your emails.'
-        label='Reconnect Google'
-        onClick={connectGoogle}
+        action={
+          <Button variant='outline' size='sm' onClick={connectGoogle}>
+            Reconnect Google
+          </Button>
+        }
       />
     )
   } else if (data?.state === 'no_email') {
