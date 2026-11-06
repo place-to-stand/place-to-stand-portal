@@ -24,7 +24,7 @@ import {
 
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me'
 /** Threads per account per page; "Load more" fetches the next page. */
-export const THREADS_PAGE_SIZE = 5
+export const THREADS_PAGE_SIZE = 3
 /** Thread reads at once, well inside Gmail's per-user rate limit. */
 const CONCURRENCY = 5
 
