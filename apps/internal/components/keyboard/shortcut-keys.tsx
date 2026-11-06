@@ -23,8 +23,6 @@ type Props = {
   /** Leave out the alternatives (`Ctrl+Y` for redo) where space is tight. */
   primaryOnly?: boolean
   className?: string
-  /** Extra classes for each key chip (e.g. inverted inside a solid button). */
-  kbdClassName?: string
 }
 
 /** A registry shortcut as key chips, in the viewer's platform labels. */
@@ -33,7 +31,6 @@ export function ShortcutKeys({
   size = 'default',
   primaryOnly = false,
   className,
-  kbdClassName,
 }: Props) {
   const isMac = useIsMac()
   const combos = primaryOnly
@@ -47,9 +44,7 @@ export function ShortcutKeys({
           {index > 0 ? (
             <span className='text-muted-foreground mx-1 text-xs'>or</span>
           ) : null}
-          <Kbd size={size} className={kbdClassName}>
-            {formatShortcut(keys, isMac)}
-          </Kbd>
+          <Kbd size={size}>{formatShortcut(keys, isMac)}</Kbd>
         </Fragment>
       ))}
     </span>

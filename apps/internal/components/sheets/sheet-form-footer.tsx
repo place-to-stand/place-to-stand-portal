@@ -1,20 +1,48 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import { type ReactElement, type ReactNode } from 'react'
 import { Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
+import type { Shortcut } from '@/lib/keyboard/shortcuts'
 import { rowActionShortcut } from '@/components/keyboard/shortcut-tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { ariaKeyShortcuts } from '@/lib/keyboard/format'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
-/** The key chip inside the solid primary button, inverted to stay readable. */
-const ON_PRIMARY =
-  'border-primary-foreground/25 bg-primary-foreground/10 text-primary-foreground'
+/**
+ * A save button's hover hint: what it does and its keys, in the same tooltip
+ * style as Undo and Redo ("Save and close ⌘S"). The keys stay out of the
+ * button itself (Jason, Nov 6). A disabled button shows its reason instead.
+ */
+function SaveKeysTooltip({
+  label,
+  shortcut,
+  disabled,
+  children,
+}: {
+  label: string
+  shortcut: Shortcut
+  disabled: boolean
+  children: ReactElement
+}) {
+  if (disabled) return children
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>
+        {label}
+        <span className='ml-2'>
+          <ShortcutKeys shortcut={shortcut} />
+        </span>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
 
 /**
  * The sheet footer chrome on its own — for sheets whose actions aren't the
@@ -106,42 +134,46 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           disabled={submitDisabled}
           reason={submitDisabledReason}
         >
-          <Button
-            type='button'
-            variant='outline'
-            // xs (28px) to match the icon actions: one height per row.
-            size='xs'
+          <SaveKeysTooltip
+            label={`${verb} and keep open`}
+            shortcut={SHORTCUTS.saveAndStay}
             disabled={submitDisabled}
-            onClick={() => onSave('stay')}
-            aria-label={`${verb} and keep open`}
-            aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.saveAndStay)}
           >
-            {verb}
-            {/* The key sits in the button itself (Jason, Nov 6): the save
-                keys are the ones used every day. */}
-            <ShortcutKeys shortcut={SHORTCUTS.saveAndStay} size='sm' />
-          </Button>
+            <Button
+              type='button'
+              variant='outline'
+              // xs (28px) to match the icon actions: one height per row.
+              size='xs'
+              disabled={submitDisabled}
+              onClick={() => onSave('stay')}
+              aria-label={`${verb} and keep open`}
+              aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.saveAndStay)}
+            >
+              {verb}
+            </Button>
+          </SaveKeysTooltip>
         </DisabledFieldTooltip>
         <DisabledFieldTooltip
           disabled={submitDisabled}
           reason={submitDisabledReason}
         >
           {/* Submits the form, so Enter in a field also saves and closes. */}
-          <Button
-            type='submit'
-            form={formId}
-            size='xs'
+          <SaveKeysTooltip
+            label={`${verb} and close`}
+            shortcut={SHORTCUTS.save}
             disabled={submitDisabled}
-            aria-label={`${verb} and close`}
-            aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
           >
-            {inFlight ? saveLabel : `${verb} and close`}
-            <ShortcutKeys
-              shortcut={SHORTCUTS.save}
-              size='sm'
-              kbdClassName={ON_PRIMARY}
-            />
-          </Button>
+            <Button
+              type='submit'
+              form={formId}
+              size='xs'
+              disabled={submitDisabled}
+              aria-label={`${verb} and close`}
+              aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
+            >
+              {inFlight ? saveLabel : `${verb} and close`}
+            </Button>
+          </SaveKeysTooltip>
         </DisabledFieldTooltip>
       </div>
     </SheetFooterBar>
