@@ -648,5 +648,6 @@ function mapClientRow(row: ClientDirectoryRow): InvoiceClient {
     billing_type: row.billingType,
     state: row.state,
     deleted_at: row.deletedAt,
+    search_hints: row.searchHints,
   }
 }

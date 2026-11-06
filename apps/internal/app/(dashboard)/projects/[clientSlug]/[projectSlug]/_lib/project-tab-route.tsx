@@ -12,7 +12,10 @@ import { requirePage } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { getProjectClientSegment } from '@/lib/projects/board/board-utils'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
-import { listClientDirectory } from '@/lib/queries/companies/billing'
+import {
+  listClientDirectory,
+  toClientPickerRow,
+} from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import { roleCan } from '@/lib/auth/capabilities'
@@ -86,11 +89,7 @@ export async function renderProjectTabRoute({
     ? await scopeProjectsForViewer(user, allLiteProjects)
     : allLiteProjects
 
-  const allClients: ClientPickerRow[] = clientDirectory.map(c => ({
-    id: c.id,
-    name: c.name,
-    deleted_at: c.deletedAt,
-  }))
+  const allClients: ClientPickerRow[] = clientDirectory.map(toClientPickerRow)
   const clients = buildClientList(liteProjects)
   const clientSlugById = new Map<string, string | null>(
     clients.map(client => [client.id, client.slug ?? null])

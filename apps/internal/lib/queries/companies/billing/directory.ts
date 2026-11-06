@@ -5,7 +5,9 @@ import 'server-only'
 import { asc } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
+import type { ClientPickerRow } from '@/lib/types'
 import { companies } from '@/lib/db/schema'
+import { companySearchHintsSql } from '@/lib/queries/companies/search-hints'
 
 /** A company that is or was a client, as every client picker lists it. */
 export type ClientDirectoryRow = {
@@ -17,7 +19,19 @@ export type ClientDirectoryRow = {
   billingType: string
   /** When billing ended (null: billed now). */
   deletedAt: string | null
+  /** Its people and projects, which the pickers also search (`companySearchHintsSql`). */
+  searchHints: string[]
 }
+
+/** A directory row as the client pickers take it. */
+export const toClientPickerRow = (
+  row: ClientDirectoryRow
+): ClientPickerRow => ({
+  id: row.id,
+  name: row.name,
+  deleted_at: row.deletedAt,
+  search_hints: row.searchHints,
+})
 
 /**
  * Every company that is or was a client, by name: the one list behind the
@@ -34,6 +48,7 @@ export async function listClientDirectory(): Promise<ClientDirectoryRow[]> {
       state: companies.state,
       billingType: currentBillingTypeSql(),
       deletedAt: clientEndedAtSql,
+      searchHints: companySearchHintsSql(),
     })
     .from(companies)
     .where(wasClientCompany())
