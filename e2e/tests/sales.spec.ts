@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { expect, test, type Page } from '@playwright/test'
 
-import { expectHealthy, archiveFromSheetMenu } from './helpers'
+import { FIRST_CELL, expectHealthy, archiveFromSheetMenu } from './helpers'
 
 // Sales: the CRM plus projects they're a member of (projects.view_member).
 test('sales sees the CRM and member projects only', async ({ page }) => {
@@ -77,7 +77,7 @@ test('sales sees no billing or sign-in controls on a company', async ({
   page,
 }) => {
   await page.goto('/companies')
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab', { name: 'Billing' })).toHaveCount(0)
@@ -99,7 +99,7 @@ test('sales sees no portal switches on a client company’s people', async ({
   await page.goto('/companies?type=client')
   const clientRow = page.locator('tbody tr').first()
   test.skip((await clientRow.count()) === 0, 'no client company to open')
-  await clientRow.locator('td').first().click()
+  await clientRow.locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(
@@ -117,7 +117,7 @@ async function openClientPeople(page: Page) {
   const name = (
     (await clientRow.locator('span.font-medium').first().textContent()) ?? ''
   ).trim()
-  await clientRow.locator('td').first().click()
+  await clientRow.locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   return { sheet, name }

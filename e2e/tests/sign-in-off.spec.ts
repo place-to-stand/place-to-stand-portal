@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { expect, test, type Browser, type Page } from '@playwright/test'
-import { archiveFromSheetMenu } from './helpers'
+import { FIRST_CELL, archiveFromSheetMenu } from './helpers'
 import postgres from 'postgres'
 
 /**
@@ -118,7 +118,7 @@ async function accessToken(page: Page): Promise<string | null> {
 
 async function setCanSignIn(page: Page, email: string, on: boolean) {
   await page.goto(`/people?q=${encodeURIComponent(email)}`)
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   const toggle = sheet.getByRole('switch', { name: 'Can sign in' })
   // Locked while their sign-in loads: wait until it can be used.
@@ -202,7 +202,7 @@ for (const [role, home] of [
 
     // Put it back: archive the person (their sign-in goes off with them).
     await page.goto(`/people?q=${encodeURIComponent(email)}`)
-    await page.locator('tbody tr').first().locator('td').first().click()
+    await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
     await archiveFromSheetMenu(page.getByRole('dialog'))
     await page
       .getByRole('button', { name: /^Archive/ })
@@ -254,7 +254,7 @@ test('a token whose session was ended is refused on the next request', async ({
 
   // Put it back: archive the person.
   await page.goto(`/people?q=${encodeURIComponent(email)}`)
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   await archiveFromSheetMenu(page.getByRole('dialog'))
   await page
     .getByRole('button', { name: /^Archive/ })

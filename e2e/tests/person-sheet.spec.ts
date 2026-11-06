@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Request } from '@playwright/test'
 
-import { expectHealthy, archiveFromSheetMenu } from './helpers'
+import { FIRST_CELL, expectHealthy, archiveFromSheetMenu } from './helpers'
 
 /**
  * The person sheet: create and edit are the same sheet (Sign-in included),
@@ -26,7 +26,7 @@ test('changing a role asks which month it starts', async ({ page }) => {
   const salesEmail = process.env.E2E_SALES_EMAIL ?? 'dave@local.test'
   await page.goto(`/people?q=${encodeURIComponent(salesEmail)}`)
   await expectHealthy(page)
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   // A live Sales sign-in: Can sign in on, Role Sales.
   const canSignIn = sheet.getByRole('switch', { name: 'Can sign in' })
@@ -77,7 +77,7 @@ test('a client sign-in sees the companies whose Portal is on', async ({
     .locator('tbody tr')
     .filter({ has: page.locator('[data-slot="badge"]', { hasText: 'Client' }) })
   test.skip((await rows.count()) === 0, 'needs a person with a client sign-in')
-  await rows.first().locator('td').first().click()
+  await rows.first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(
     sheet.getByRole('switch', { name: 'Can sign in' })
@@ -115,7 +115,7 @@ test('stopping being Admin starts next month, and warns about this month', async
     (await rows.count()) === 0,
     'needs a second person with an Admin sign-in'
   )
-  await rows.first().locator('td').first().click()
+  await rows.first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(
     sheet.getByRole('switch', { name: 'Can sign in' })
@@ -168,7 +168,7 @@ test.describe('writes', () => {
 
       // Reopen: Client is on offer, and Save says they leave the staff company.
       await page.goto(`/people?q=${encodeURIComponent(email)}`)
-      await page.locator('tbody tr').first().locator('td').first().click()
+      await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
       sheet = page.getByRole('dialog')
       const role = sheet.getByRole('combobox', { name: 'Role', exact: true })
       await expect(role).toContainText(teamRole)
@@ -190,7 +190,7 @@ test.describe('writes', () => {
       await expect(
         row.locator('[data-slot="badge"]', { hasText: 'Client' })
       ).toBeVisible()
-      await row.locator('td').first().click()
+      await row.locator(FIRST_CELL).first().click()
       sheet = page.getByRole('dialog')
       await expect(
         sheet.getByRole('combobox', { name: 'Role', exact: true })
@@ -260,7 +260,7 @@ test.describe('writes', () => {
     ).toBeVisible()
 
     // Put it back: archiving the person switches their sign-in off.
-    await row.locator('td').first().click()
+    await row.locator(FIRST_CELL).first().click()
     await archiveFromSheetMenu(page.getByRole('dialog'))
     await page
       .getByRole('alertdialog')
@@ -293,7 +293,7 @@ test.describe('writes', () => {
         .locator('tbody tr')
         .filter({ hasText: name })
         .first()
-        .locator('td')
+        .locator(FIRST_CELL)
         .first()
         .click()
       const sheet = tab.getByRole('dialog')
