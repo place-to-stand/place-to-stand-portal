@@ -119,6 +119,7 @@ export function ComponentsBulkSelect() {
           mode='active'
           nameOf={id => rows.find(row => row.id === id)?.name}
           onDone={() => undefined}
+          resolveMatching={async () => ({ ids: rows.map(row => row.id) })}
           runAction={async ({ selection: input }) => {
             const ids =
               input.kind === 'ids' ? input.ids : rows.map(row => row.id)

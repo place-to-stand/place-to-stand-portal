@@ -43,6 +43,12 @@ export type BulkArchiveEntity = keyof typeof BULK_ARCHIVE_ENTITIES
 export const BULK_ACTION_LIMIT = 500
 
 /**
+ * Rows per server call. The bar sends a long selection in chunks, so no
+ * single call runs long enough to hit the function time limit.
+ */
+export const BULK_CHUNK_SIZE = 25
+
+/**
  * Which rows a bulk action covers: the ticked ones, or every row matching
  * the list's current filters (its URL params), across all pages.
  */

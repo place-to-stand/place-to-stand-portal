@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useState } from 'react'
 
+import { BULK_ACTION_LIMIT } from '@/lib/bulk/archive-entities'
+
 export type HeadCheckState = 'none' | 'some' | 'all'
 
 type State = {
@@ -132,11 +134,15 @@ export function useRowSelection(pageIds: string[], matchingCount: number) {
       /** Any row ticked: every row shows its box. */
       active: current.ids.size > 0,
       headState,
-      /** Offer "Select all N" once the whole page is ticked. */
+      /**
+       * Offer "Select all N" once the whole page is ticked, up to the most
+       * one bulk action takes; past that, narrow the filters first.
+       */
       canSelectAllMatching:
         headState === 'all' &&
         !current.allMatching &&
-        matchingCount > pageIds.length,
+        matchingCount > pageIds.length &&
+        matchingCount <= BULK_ACTION_LIMIT,
       isSelected: (id: string) => current.ids.has(id),
       groupState: (groupIds: string[]): HeadCheckState => {
         const on = groupIds.filter(id => current.ids.has(id)).length

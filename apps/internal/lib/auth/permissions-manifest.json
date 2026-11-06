@@ -85,6 +85,13 @@
   },
   {
     "type": "action",
+    "name": "resolveBulkMatchingIds",
+    "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
     "name": "signOut",
     "file": "apps/internal/app/(dashboard)/_actions/sign-out.ts",
     "kind": "public",

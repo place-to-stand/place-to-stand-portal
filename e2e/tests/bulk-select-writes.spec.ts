@@ -195,3 +195,21 @@ test('submissions: acknowledge every unread row', async ({ page }) => {
   await open(page, '/submissions?unacknowledged=1')
   await expect(page.locator('td[data-slot=table-select-cell]')).toHaveCount(0)
 })
+
+test('a failed call shows a toast and keeps the page', async ({ page }) => {
+  await open(page, '/companies?q=Company%2005')
+  await tick(page, ['Company 051', 'Company 052'])
+  // The server action never answers (a timeout, a lost connection).
+  await page.route('**/*', route =>
+    route.request().method() === 'POST' &&
+    route.request().headers()['next-action']
+      ? route.abort('failed')
+      : route.continue()
+  )
+  await confirmArchive(page)
+  await expectToast(page, /Unable to archive/)
+  await expectHealthy(page)
+  await page.unroute('**/*')
+  await open(page, '/companies?q=Company%2005')
+  await expectRows(page, ['Company 051', 'Company 052'], 1)
+})

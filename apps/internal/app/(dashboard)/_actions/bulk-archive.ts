@@ -64,3 +64,29 @@ export async function bulkSetArchived(input: {
     config.apply(user, id, archive, context?.get(id))
   )
 }
+
+const matchingSchema = z.object({
+  entity: inputSchema.shape.entity,
+  params: z.record(z.string(), z.string()),
+  archived: z.boolean(),
+})
+
+/**
+ * The ids of every row a list shows for its URL filters, on every page
+ * (`archived` reads its Archive tab), so the bar can act on them in chunks.
+ */
+// permission: portal.sign_in — then the list's own capability (BULK_ARCHIVE_REGISTRY)
+export async function resolveBulkMatchingIds(input: {
+  entity: BulkArchiveEntity
+  params: Record<string, string>
+  archived: boolean
+}): Promise<{ ids: string[] } | { error: string }> {
+  const parsed = matchingSchema.safeParse(input)
+  if (!parsed.success) return { error: 'Invalid request.' }
+  const { entity, params, archived } = parsed.data
+  const user = await requirePage('portal.sign_in')
+  if (!roleCan(user.role, BULK_ARCHIVE_REGISTRY[entity].capability)) {
+    return { error: 'You do not have access to do that.' }
+  }
+  return resolveBulkIds(user, entity, { kind: 'matching', params }, archived)
+}

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { BulkActionResult } from '@/lib/bulk/archive-entities'
+import { HttpError } from '@/lib/errors/http'
 
 /** What one row's change came to. */
 export type RowOutcome = { error?: string; warning?: string | null }
@@ -27,12 +28,13 @@ export async function runBulk(
         try {
           return await applyRow(id)
         } catch (error) {
-          return {
-            error:
-              error instanceof Error && error.message
-                ? error.message
-                : 'Something went wrong.',
+          // Only our own refusals are worded for people; anything else
+          // (a database error) stays in the logs, not in the toast.
+          if (error instanceof HttpError && error.message) {
+            return { error: error.message }
           }
+          console.error('Bulk action row failed', id, error)
+          return { error: 'Something went wrong.' }
         }
       })
     )

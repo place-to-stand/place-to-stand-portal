@@ -15,10 +15,14 @@ import {
   type BulkArchiveEntity,
   type BulkSelectionInput,
 } from '@/lib/bulk/archive-entities'
-import { bulkSetArchived } from '@/app/(dashboard)/_actions/bulk-archive'
+import {
+  bulkSetArchived,
+  resolveBulkMatchingIds,
+} from '@/app/(dashboard)/_actions/bulk-archive'
 
 import type { RowSelection } from './use-row-selection'
 import { describeBulkResult, type BulkVerb } from './bulk-result-toast'
+import { CHUNK_FAILED, runInChunks } from '@/lib/bulk/run-in-chunks'
 
 /** URL params that open sheets or page the list, not filters. */
 const NON_FILTER_PARAMS = new Set(['page'])
@@ -47,8 +51,9 @@ type BulkActionBarProps = {
   onDone?: () => void
   /** The list's own actions, shown before Archive or Restore. */
   actions?: BulkBarAction[]
-  /** Stands in for the server action (the /design demo). */
+  /** Stands in for the server actions (the /design demo). */
   runAction?: typeof bulkSetArchived
+  resolveMatching?: typeof resolveBulkMatchingIds
 }
 
 /**
@@ -66,6 +71,7 @@ export function BulkActionBar({
   onDone,
   actions = [],
   runAction = bulkSetArchived,
+  resolveMatching = resolveBulkMatchingIds,
 }: BulkActionBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -85,20 +91,30 @@ export function BulkActionBar({
     label: string,
     action: (input: BulkSelectionInput) => Promise<BulkActionResult>
   ) => {
-    const input: BulkSelectionInput = selection.allMatching
-      ? {
-          kind: 'matching',
-          params: Object.fromEntries(
-            [...searchParams.entries()].filter(
-              ([key]) => !NON_FILTER_PARAMS.has(key)
-            )
-          ),
-        }
-      : { kind: 'ids', ids: [...selection.ids] }
+    const params = Object.fromEntries(
+      [...searchParams.entries()].filter(([key]) => !NON_FILTER_PARAMS.has(key))
+    )
+    const allMatching = selection.allMatching
+    const pageIds = [...selection.ids]
 
     setPendingLabel(label)
     startTransition(async () => {
-      const result = await action(input)
+      let result: BulkActionResult
+      try {
+        const resolved = allMatching
+          ? await resolveMatching({
+              entity,
+              params,
+              archived: mode === 'archive',
+            })
+          : { ids: pageIds }
+        result =
+          'error' in resolved
+            ? { done: 0, failed: [], warnings: [], error: resolved.error }
+            : await runInChunks(resolved.ids, action)
+      } catch {
+        result = { done: 0, failed: [], warnings: [], error: CHUNK_FAILED }
+      }
       setConfirming(false)
       setPendingLabel(null)
       for (const message of describeBulkResult({
@@ -109,7 +125,8 @@ export function BulkActionBar({
       })) {
         toast(message)
       }
-      if (result.done > 0) {
+      // Rows done before a failure changed too, so the list refreshes.
+      if (result.done > 0 || result.error === CHUNK_FAILED) {
         selection.clear()
         if (onDone) onDone()
         else router.refresh()
