@@ -27,7 +27,7 @@ async function setBilling(page: Page, on: boolean) {
   const toggle = sheet.getByRole('switch', { name: 'Bill this company' })
   if ((await toggle.getAttribute('aria-checked')) !== String(on))
     await toggle.click()
-  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await sheet.getByRole('button', { name: 'Save and close' }).click()
   await expect(sheet).toBeHidden()
 }
 
