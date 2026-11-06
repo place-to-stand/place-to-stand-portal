@@ -19,11 +19,12 @@ import {
   parseFromName,
   type GmailAccount,
   type GmailThreadSummary,
+  type ThreadsCursor,
 } from './threads-utils'
 
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me'
-/** Newest threads per account; enough to scan without a "load more". */
-const MAX_THREADS = 15
+/** Threads per account per page; "Load more" fetches the next page. */
+export const THREADS_PAGE_SIZE = 5
 /** Thread reads at once, well inside Gmail's per-user rate limit. */
 const CONCURRENCY = 5
 
@@ -36,10 +37,13 @@ export type ViewerThreadsResult =
       accounts: GmailAccount[]
       /** Another of the viewer's Google accounts needs reconnecting. */
       someNeedReconnect: boolean
+      /** Pass back to get the next page; null when there is none. */
+      nextCursor: ThreadsCursor | null
     }
 
 type ThreadListResponse = {
   threads?: { id: string; snippet?: string }[]
+  nextPageToken?: string
 }
 
 type ThreadResponse = {
@@ -89,12 +93,14 @@ function header(
 async function threadsForConnection(
   userId: string,
   connection: GmailAccount,
-  query: string
-): Promise<GmailThreadSummary[]> {
+  query: string,
+  pageToken: string | undefined
+): Promise<{ threads: GmailThreadSummary[]; nextPageToken: string | null }> {
   const { accessToken } = await getValidAccessToken(userId, connection.id)
+  const page = pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ''
   const list = await gmailGet<ThreadListResponse>(
     accessToken,
-    `/threads?maxResults=${MAX_THREADS}&q=${encodeURIComponent(query)}`
+    `/threads?maxResults=${THREADS_PAGE_SIZE}&q=${encodeURIComponent(query)}${page}`
   )
 
   const metadata =
@@ -137,7 +143,7 @@ async function threadsForConnection(
       console.warn('[Gmail] Skipped a thread:', result.reason)
     }
   }
-  return threads
+  return { threads, nextPageToken: list.nextPageToken ?? null }
 }
 
 /**
@@ -148,7 +154,8 @@ async function threadsForConnection(
  */
 export async function listViewerThreadsWith(
   userId: string,
-  addresses: string[]
+  addresses: string[],
+  cursor: ThreadsCursor | null = null
 ): Promise<ViewerThreadsResult> {
   const rows = await db
     .select({
@@ -169,14 +176,33 @@ export async function listViewerThreadsWith(
 
   const query = buildAddressQuery(addresses)
   if (!query) {
-    return { state: 'ok', threads: [], accounts, someNeedReconnect: false }
+    return {
+      state: 'ok',
+      threads: [],
+      accounts,
+      someNeedReconnect: false,
+      nextCursor: null,
+    }
   }
 
+  // A later page reads only the accounts that still have more.
+  const toRead = cursor
+    ? accounts.filter(account => cursor[account.id])
+    : accounts
+
   let reconnects = 0
+  const nextCursor: ThreadsCursor = {}
   const perConnection = await Promise.all(
-    accounts.map(async account => {
+    toRead.map(async account => {
       try {
-        return await threadsForConnection(userId, account, query)
+        const page = await threadsForConnection(
+          userId,
+          account,
+          query,
+          cursor?.[account.id]
+        )
+        if (page.nextPageToken) nextCursor[account.id] = page.nextPageToken
+        return page.threads
       } catch (error) {
         if (error instanceof GmailAuthError) {
           await markConnectionNeedsReauth(account.id, error.message)
@@ -192,10 +218,18 @@ export async function listViewerThreadsWith(
     })
   )
 
-  if (reconnects === accounts.length) return { state: 'reconnect', accounts }
+  if (!cursor && reconnects === accounts.length) {
+    return { state: 'reconnect', accounts }
+  }
 
   const threads = perConnection
     .flat()
     .sort((a, b) => (b.lastAt ?? '').localeCompare(a.lastAt ?? ''))
-  return { state: 'ok', threads, accounts, someNeedReconnect: reconnects > 0 }
+  return {
+    state: 'ok',
+    threads,
+    accounts,
+    someNeedReconnect: reconnects > 0,
+    nextCursor: Object.keys(nextCursor).length > 0 ? nextCursor : null,
+  }
 }

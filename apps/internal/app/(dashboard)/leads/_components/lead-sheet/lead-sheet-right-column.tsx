@@ -58,15 +58,15 @@ export function LeadSheetRightColumn({
             canManage={canManage}
             onSuccess={onSuccess}
           />
-          {/* Updates sit below Tasks (D6) — keeps the at-a-glance "last touched
-              12 days ago, 2 open tasks" read that tabs would hide. */}
+          {/* The viewer's own Gmail threads with the lead's contact. */}
+          <LeadEmailsSection key={lead.id} lead={lead} />
+          {/* Updates sit below Tasks and Email threads (D6), not in tabs, so
+              "last touched 12 days ago, 2 open tasks" reads at a glance. */}
           <LeadUpdatesSection
             lead={lead}
             canManage={canManage}
             onSuccess={onSuccess}
           />
-          {/* The viewer's own Gmail threads with the lead's contact. */}
-          <LeadEmailsSection key={lead.id} lead={lead} />
         </div>
       ) : (
         // Tasks and updates are their own records, saved on their own, and
@@ -84,6 +84,12 @@ export function LeadSheetRightColumn({
             emptyMessage='Add tasks after you save the lead.'
           />
           <EntityList
+            title='Email threads'
+            icon={Mail}
+            isEmpty
+            emptyMessage='Your emails with this person show after you save the lead.'
+          />
+          <EntityList
             title='Updates'
             icon={MessageSquareText}
             add={{
@@ -92,12 +98,6 @@ export function LeadSheetRightColumn({
             }}
             isEmpty
             emptyMessage='Add updates after you save the lead.'
-          />
-          <EntityList
-            title='Email threads'
-            icon={Mail}
-            isEmpty
-            emptyMessage='Your emails with this person show after you save the lead.'
           />
         </div>
       )}

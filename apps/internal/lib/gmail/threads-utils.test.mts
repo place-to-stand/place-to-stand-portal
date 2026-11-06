@@ -9,6 +9,7 @@ import {
   isGmailAuthFailure,
   mapWithConcurrency,
   parseFromName,
+  parseThreadsCursor,
 } from './threads-utils.ts'
 
 test('searches from, to and cc for each address, once', () => {
@@ -78,4 +79,19 @@ test('runs a few at a time, keeps order, and keeps going past a failure', async 
     results.map(r => (r.status === 'fulfilled' ? r.value : 'x')),
     [10, 20, 'x', 40, 50, 60]
   )
+})
+
+test('reads a cursor of page tokens and ignores anything else', () => {
+  assert.deepEqual(parseThreadsCursor('{"a":"tok1","b":"tok2"}'), {
+    a: 'tok1',
+    b: 'tok2',
+  })
+  assert.deepEqual(parseThreadsCursor('{"a":"tok","b":5,"c":""}'), {
+    a: 'tok',
+  })
+  assert.equal(parseThreadsCursor(null), null)
+  assert.equal(parseThreadsCursor('not json'), null)
+  assert.equal(parseThreadsCursor('["tok"]'), null)
+  assert.equal(parseThreadsCursor('{}'), null)
+  assert.equal(parseThreadsCursor('x'.repeat(5000)), null)
 })
