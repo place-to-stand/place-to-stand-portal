@@ -425,10 +425,7 @@ export function ProjectsLanding({
     const progressPercentage =
       totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0
 
-    // The select column already sets project rows in from the client row,
-    // so the tree line only shows without it.
-    const treeLine =
-      options?.indent && !selectable ? (options.isLast ? '└' : '├') : null
+    const treeLine = options?.indent ? (options.isLast ? '└' : '├') : null
     const externalLinks = buildExternalLinks(project)
 
     return (
