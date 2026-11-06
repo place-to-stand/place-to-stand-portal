@@ -49,10 +49,7 @@ type ContactSheetFormProps = {
   pendingReason: string
   submitDisabled: boolean
   submitDisabledReason: string | null
-  deleteDisabled: boolean
-  deleteDisabledReason: string | null
   onSubmit: (data: ContactFormValues, mode?: SheetSaveMode) => void
-  onRequestDelete: () => void
   isSheetOpen: boolean
   historyKey: string
   // Promote to client props
@@ -87,10 +84,7 @@ export function ContactSheetForm({
   pendingReason,
   submitDisabled,
   submitDisabledReason,
-  deleteDisabled,
-  deleteDisabledReason,
   onSubmit,
-  onRequestDelete,
   isSheetOpen,
   historyKey,
   contactId,
@@ -359,10 +353,6 @@ export function ContactSheetForm({
         canUndo={canUndo}
         canRedo={canRedo}
         isEditing={isEditing}
-        archiveDisabled={deleteDisabled}
-        archiveDisabledReason={deleteDisabledReason}
-        onRequestArchive={onRequestDelete}
-        archiveAriaLabel='Archive person'
       />
     </Form>
   )

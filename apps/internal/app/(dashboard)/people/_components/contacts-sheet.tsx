@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import {
   useContactSheetState,
   type UseContactSheetStateOptions,
@@ -102,6 +103,16 @@ export function ContactsSheet(props: ContactsSheetProps) {
                 />
               ) : null
             }
+            menu={
+              isEditing ? (
+                <SheetRecordMenu
+                  noun='Person'
+                  onRequestArchive={handleRequestDelete}
+                  archiveDisabled={deleteDisabled}
+                  archiveDisabledReason={deleteDisabledReason}
+                />
+              ) : null
+            }
           />
 
           <ContactSheetForm
@@ -113,10 +124,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
             pendingReason={pendingReason}
             submitDisabled={submitDisabled}
             submitDisabledReason={submitDisabledReason}
-            deleteDisabled={deleteDisabled}
-            deleteDisabledReason={deleteDisabledReason}
             onSubmit={handleFormSubmit}
-            onRequestDelete={handleRequestDelete}
             isSheetOpen={open}
             historyKey={contact?.id ?? 'contact:new'}
             contactId={contact?.id ?? null}

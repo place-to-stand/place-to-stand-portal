@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
@@ -401,6 +402,16 @@ export function InvoiceSheet({
                 entity='invoice'
                 title={sheetTitle}
                 className='flex-shrink-0'
+                menu={
+                  isEditing ? (
+                    <SheetRecordMenu
+                      noun='Invoice'
+                      onRequestArchive={handleRequestDelete}
+                      archiveDisabled={deleteButton.disabled}
+                      archiveDisabledReason={deleteButton.reason}
+                    />
+                  ) : null
+                }
               />
 
               {/* ────────────────────────────────────────────────────── */}
@@ -593,10 +604,6 @@ export function InvoiceSheet({
                         canUndo={canUndo}
                         canRedo={canRedo}
                         isEditing={isEditing}
-                        archiveDisabled={deleteButton.disabled}
-                        archiveDisabledReason={deleteButton.reason}
-                        onRequestArchive={handleRequestDelete}
-                        archiveAriaLabel='Archive invoice'
                       />
                     </div>
                   ) : null}

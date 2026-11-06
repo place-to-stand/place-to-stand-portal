@@ -35,7 +35,6 @@ import { PROJECT_TYPE_OPTIONS } from '@/lib/projects/sheet/project-sheet-form'
 import type { ProjectSheetFormValues } from '@/lib/projects/sheet/use-project-sheet-state'
 import type {
   ClientOption,
-  DeleteButtonState,
   OwnerOption,
   SubmitButtonState,
 } from '@/lib/projects/sheet/project-sheet-ui-state'
@@ -64,14 +63,12 @@ export type ProjectSheetFormProps = {
   clientOptions: ClientOption[]
   ownerOptions: OwnerOption[]
   submitButton: SubmitButtonState
-  deleteButton: DeleteButtonState
   onSubmit: (
     values: ProjectSheetFormValues,
     changes: ProjectSheetLinkChanges,
     mode?: SheetSaveMode,
     onLinksSaved?: () => void
   ) => void
-  onRequestDelete: () => void
   onReposDirtyChange: (isDirty: boolean) => void
   isSheetOpen: boolean
   historyKey: string
@@ -93,9 +90,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     clientOptions,
     ownerOptions,
     submitButton,
-    deleteButton,
     onSubmit,
-    onRequestDelete,
     onReposDirtyChange,
     isSheetOpen,
     historyKey,
@@ -573,10 +568,6 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
               canUndo={canUndo}
               canRedo={canRedo}
               isEditing={isEditing}
-              archiveDisabled={deleteButton.disabled}
-              archiveDisabledReason={deleteButton.reason}
-              onRequestArchive={onRequestDelete}
-              archiveAriaLabel='Archive project'
             />
           </div>
         </div>

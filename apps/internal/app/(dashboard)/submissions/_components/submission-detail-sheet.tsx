@@ -4,7 +4,6 @@ import { EmptyState } from '@pts/ui/empty-state'
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Archive,
   Check,
   CalendarClock,
   ExternalLink,
@@ -25,10 +24,10 @@ import {
 } from '@/components/ui/sheet'
 import { SheetFooterBar } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { formatCalendarDate, formatRelativeTime } from '@pts/ui/dates'
-import { RowActionButton } from '@pts/ui/row-action-button'
 import { RETRY_MAX_AGE_HOURS } from '@/lib/form-submissions/delivery/constants'
 import { cn } from '@/lib/utils'
 import {
@@ -364,6 +363,15 @@ export function SubmissionDetailSheet({
         <SheetFormHeader
           entity='submission'
           title={`${FORM_SUBMISSION_KIND_LABELS[displaySubmission.kind]} submission`}
+          menu={
+            mode === 'active' ? (
+              <SheetRecordMenu
+                noun='Submission'
+                onRequestArchive={() => setArchiveConfirmOpen(true)}
+                archiveDisabled={isPending}
+              />
+            ) : null
+          }
         />
 
         {/* Two columns: what the visitor sent on the left (with the
@@ -573,35 +581,13 @@ export function SubmissionDetailSheet({
                 </>
               )}
             </div>
-            <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
-              <SheetFooterBar>
-                <div className='flex items-center gap-1.5'>
-                  {mode === 'active' ? (
-                    warrantsAttention ? (
-                      unacknowledged ? (
-                        <Button
-                          type='button'
-                          size='sm'
-                          disabled={isPending}
-                          onClick={handleAcknowledge}
-                        >
-                          <Check />
-                          {isPending ? 'Acknowledging…' : 'Acknowledge'}
-                        </Button>
-                      ) : (
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          disabled={isPending}
-                          onClick={handleUnacknowledge}
-                        >
-                          <Undo2 />
-                          Unacknowledge
-                        </Button>
-                      )
-                    ) : null
-                  ) : (
+            {/* Only the submission's own step lives here, on the right like
+                a save; Archive is in the header's ⋯ menu. */}
+            {mode !== 'active' || warrantsAttention ? (
+              <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
+                <SheetFooterBar>
+                  <span />
+                  {mode !== 'active' ? (
                     <Button
                       type='button'
                       variant='outline'
@@ -612,20 +598,31 @@ export function SubmissionDetailSheet({
                       <RefreshCw className='h-4 w-4' />
                       Restore
                     </Button>
+                  ) : unacknowledged ? (
+                    <Button
+                      type='button'
+                      size='sm'
+                      disabled={isPending}
+                      onClick={handleAcknowledge}
+                    >
+                      <Check />
+                      {isPending ? 'Acknowledging…' : 'Acknowledge'}
+                    </Button>
+                  ) : (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      disabled={isPending}
+                      onClick={handleUnacknowledge}
+                    >
+                      <Undo2 />
+                      Unacknowledge
+                    </Button>
                   )}
-                </div>
-                {mode === 'active' ? (
-                  <RowActionButton
-                    type='button'
-                    label='Archive submission'
-                    icon={<Archive />}
-                    variant='destructive'
-                    disabled={isPending}
-                    onClick={() => setArchiveConfirmOpen(true)}
-                  />
-                ) : null}
-              </SheetFooterBar>
-            </div>
+                </SheetFooterBar>
+              </div>
+            ) : null}
           </div>
           <div
             className={cn(

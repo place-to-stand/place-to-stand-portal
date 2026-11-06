@@ -7,6 +7,7 @@ import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { useLeadSheetState } from '@/lib/leads/use-lead-sheet-state'
 import { cn } from '@/lib/utils'
 
@@ -58,6 +59,16 @@ export function LeadSheet(props: LeadSheetProps) {
             entity='lead'
             title={isEditing ? lead?.contactName || 'Lead' : 'Create lead'}
             className='flex-shrink-0'
+            menu={
+              isEditing ? (
+                <SheetRecordMenu
+                  noun='Lead'
+                  onRequestArchive={() => setArchiveDialogOpen(true)}
+                  archiveDisabled={submitDisabled}
+                  archiveDisabledReason={archiveDisabledReason}
+                />
+              ) : null
+            }
           />
 
           {/* Two Column Layout. Below lg the columns stack into one scroll
@@ -96,10 +107,6 @@ export function LeadSheet(props: LeadSheetProps) {
                     canUndo={canUndo}
                     canRedo={canRedo}
                     isEditing={isEditing}
-                    archiveDisabled={submitDisabled}
-                    archiveDisabledReason={archiveDisabledReason}
-                    onRequestArchive={() => setArchiveDialogOpen(true)}
-                    archiveAriaLabel='Archive lead'
                   />
                 </div>
               </div>

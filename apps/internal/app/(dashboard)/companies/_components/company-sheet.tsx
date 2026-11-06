@@ -16,6 +16,7 @@ import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { toastLink, useToast } from '@/components/ui/use-toast'
@@ -445,6 +446,19 @@ export function CompanySheet({
               />
             }
             className='flex-shrink-0'
+            menu={
+              // An archived company is restored from the archive list.
+              isEditing && company && !isArchived ? (
+                <SheetRecordMenu
+                  noun='Company'
+                  onRequestArchive={() => setArchiveOpen(true)}
+                  archiveDisabled={isPending || Boolean(archiveRefusal)}
+                  archiveDisabledReason={
+                    isPending ? PENDING_REASON : archiveRefusal
+                  }
+                />
+              ) : null
+            }
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>
@@ -555,18 +569,8 @@ export function CompanySheet({
                         redo={redo}
                         canUndo={canUndo}
                         canRedo={canRedo}
-                        // An archived company has no archive action here.
                         isEditing={isEditing}
-                        hideArchive={isArchived}
                         onSave={handleSave}
-                        archiveDisabled={
-                          isPending || !isEditing || Boolean(archiveRefusal)
-                        }
-                        archiveDisabledReason={
-                          isPending ? PENDING_REASON : archiveRefusal
-                        }
-                        onRequestArchive={() => setArchiveOpen(true)}
-                        archiveAriaLabel='Archive company'
                       />
                     </div>
                   </div>

@@ -1,17 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { MoreHorizontal, type LucideIcon } from 'lucide-react'
+import { type LucideIcon } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@pts/ui/dropdown-menu'
 import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import {
@@ -33,6 +27,7 @@ import { EntityList } from '@/components/sheets/entity-list'
 import { SheetActivityDisclosure } from '@/components/sheets/sheet-activity-section'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   Sheet,
@@ -204,21 +199,13 @@ function SampleEntitySheet({
               )
             }
             menu={
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant='ghost'
-                    size='icon-sm'
-                    aria-label={`${shown.noun} actions`}
-                  >
-                    <MoreHorizontal />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align='end'>
-                  <DropdownMenuItem>Copy link</DropdownMenuItem>
-                  <DropdownMenuItem>View activity</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <SheetRecordMenu
+                noun={capitalise(shown.noun)}
+                onDuplicate={() =>
+                  toast({ title: `${capitalise(shown.noun)} duplicated` })
+                }
+                onRequestArchive={() => setArchiveOpen(true)}
+              />
             }
           />
           {/* Two columns: the record's form, then a side column (the
@@ -309,7 +296,9 @@ function SampleEntitySheet({
                 <SheetFormFooter
                   formId={FORM_ID}
                   saveLabel='Save'
-                  onSave={() => undefined}
+                  onSave={() => {
+                    toast({ title: `${capitalise(shown.noun)} saved` })
+                  }}
                   submitDisabled={false}
                   submitDisabledReason={null}
                   undo={() => undefined}
@@ -317,12 +306,6 @@ function SampleEntitySheet({
                   canUndo={false}
                   canRedo={false}
                   isEditing
-                  archiveDisabled={false}
-                  archiveDisabledReason={null}
-                  onRequestArchive={() => setArchiveOpen(true)}
-                  archiveAriaLabel={`Archive ${shown.noun}`}
-                  onDuplicate={() => undefined}
-                  duplicateAriaLabel={`Duplicate ${shown.noun}`}
                 />
               </div>
             </div>
