@@ -240,7 +240,7 @@ test('a billed company is not archived: stop billing first', async ({
   await sheet.getByRole('button', { name: 'Create and close' }).click()
   await expect(sheet).toBeHidden()
 
-  // The sheet's Archive (in its header's ⋯ menu) is disabled, with the
+  // The sheet's Archive (in its header's Actions menu) is disabled, with the
   // reason shown in the menu.
   const saved = await openCompany(page, name)
   await saved.getByRole('button', { name: 'Company actions' }).click()

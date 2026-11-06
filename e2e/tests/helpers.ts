@@ -62,7 +62,7 @@ export async function rowHeights(page: Page) {
   )
 }
 
-/** A sheet's Archive lives in its header's ⋯ menu: open it and pick Archive. */
+/** A sheet's Archive lives in its header's Actions menu: open it and pick Archive. */
 export async function archiveFromSheetMenu(sheet: Locator) {
   await sheet.getByRole('button', { name: / actions$/ }).click()
   await sheet.page().getByRole('menuitem', { name: 'Archive' }).click()

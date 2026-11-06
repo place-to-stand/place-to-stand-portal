@@ -582,7 +582,7 @@ export function SubmissionDetailSheet({
               )}
             </div>
             {/* Only the submission's own step lives here, on the right like
-                a save; Archive is in the header's ⋯ menu. */}
+                a save; Archive is in the header's Actions menu. */}
             {mode !== 'active' || warrantsAttention ? (
               <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
                 <SheetFooterBar>

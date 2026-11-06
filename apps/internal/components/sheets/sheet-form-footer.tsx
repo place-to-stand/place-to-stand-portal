@@ -56,7 +56,7 @@ export type SheetFormFooterProps = {
  * The sheet footer: it only saves. Undo and redo on the left; Save (keep
  * open) and the primary Save and close on the right, primary last like the
  * portal's dialogs. The record's own actions (Duplicate, Archive) live in the
- * header's ⋯ menu (`SheetRecordMenu`).
+ * header's Actions menu (`SheetRecordMenu`).
  */
 export function SheetFormFooter(props: SheetFormFooterProps) {
   const {

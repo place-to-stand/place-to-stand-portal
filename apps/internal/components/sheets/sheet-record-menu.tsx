@@ -1,6 +1,6 @@
 'use client'
 
-import { Archive, Copy, MoreHorizontal } from 'lucide-react'
+import { Archive, ChevronDown, Copy } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import {
@@ -27,7 +27,7 @@ export type SheetRecordMenuProps = {
 }
 
 /**
- * The ⋯ menu in an edit sheet's header: the record's own actions,
+ * The Actions menu in an edit sheet's header: the record's own actions,
  * Duplicate then Archive, in the same order and with the same icons as the
  * right-click menu on its rows. The footer only saves. Pass it as
  * `SheetFormHeader`'s `menu`; create sheets have none.
@@ -46,8 +46,17 @@ export function SheetRecordMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' size='icon-sm' aria-label={`${noun} actions`}>
-          <MoreHorizontal />
+        {/* Labelled, like the Notifications button: the same outline xs
+            look, so the header's controls read as one set. */}
+        <Button
+          type='button'
+          variant='outline'
+          size='xs'
+          aria-label={`${noun} actions`}
+          className='has-[>svg]:px-2 [&_svg]:size-3.5'
+        >
+          Actions
+          <ChevronDown aria-hidden />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
