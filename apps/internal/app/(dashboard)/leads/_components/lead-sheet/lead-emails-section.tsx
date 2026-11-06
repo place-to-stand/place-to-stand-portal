@@ -10,6 +10,7 @@ import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import type {
@@ -255,20 +256,13 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
         />
       ))}
       {cursor ? (
-        <div className='flex flex-col items-center gap-1'>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={loadMore}
-            disabled={loadingMore}
-          >
-            {loadingMore ? 'Loading…' : 'Load more'}
-          </Button>
+        <div className='border-t pt-1.5'>
           {moreFailed ? (
-            <p className='text-muted-foreground text-xs'>
+            <p className='text-destructive px-2 pb-1 text-xs'>
               Couldn’t load more from Gmail. Try again.
             </p>
           ) : null}
+          <LoadMoreButton onClick={loadMore} loading={loadingMore} />
         </div>
       ) : null}
     </EntityList>

@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import { CalendarDays, ChevronRight, Loader2, User, Users } from 'lucide-react'
+import { CalendarDays, ChevronRight, User, Users } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
-import { Button } from '@pts/ui/button'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { MY_TASKS_WIDGET_PAGE_SIZE } from '@/lib/dashboard/types'
 import { companySheetHref, leadHref, myTaskHref } from '@/lib/sheets/hrefs'
 import type { AssignedTaskSummary } from '@/lib/data/tasks'
@@ -59,23 +59,11 @@ export function TaskList({
             <p className='text-destructive px-2 pb-1 text-xs'>{error}</p>
           ) : null}
           {remaining > 0 ? (
-            <Button
-              type='button'
-              variant='ghost'
-              size='xs'
-              className='w-full'
+            <LoadMoreButton
               onClick={onLoadMore}
-              disabled={isLoadingMore}
-            >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
-                  Loading...
-                </>
-              ) : (
-                `Load ${Math.min(MY_TASKS_WIDGET_PAGE_SIZE, remaining)} more`
-              )}
-            </Button>
+              loading={isLoadingMore}
+              label={`Load ${Math.min(MY_TASKS_WIDGET_PAGE_SIZE, remaining)} more`}
+            />
           ) : null}
         </div>
       ) : null}
