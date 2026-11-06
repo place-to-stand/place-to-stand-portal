@@ -109,6 +109,9 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
   const accounts =
     data?.state === 'ok' || data?.state === 'reconnect' ? data.accounts : []
 
+  const showReconnect = data?.state === 'ok' && data.someNeedReconnect
+  const showDisconnect = canDisconnectHere && accounts.length === 1
+
   let status: ReactNode
   if (load.kind === 'loading') {
     status = (
@@ -164,13 +167,9 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
       emptyMessage={`No emails with ${contactEmail ?? who} in your Gmail.`}
       status={status}
       footer={
-        accounts.length > 0 ? (
+        showReconnect || showDisconnect ? (
           <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs'>
-            <span>
-              From your Gmail:{' '}
-              {accounts.map(account => account.email).join(', ')}
-            </span>
-            {data?.state === 'ok' && data.someNeedReconnect ? (
+            {showReconnect ? (
               <Button
                 variant='link'
                 size='xs'
@@ -180,7 +179,7 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
                 Reconnect an expired account
               </Button>
             ) : null}
-            {canDisconnectHere && accounts.length === 1 ? (
+            {showDisconnect ? (
               <Button
                 variant='link'
                 size='xs'
