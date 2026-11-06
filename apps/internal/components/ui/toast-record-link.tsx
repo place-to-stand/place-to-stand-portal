@@ -83,12 +83,7 @@ export function ToastRecordLink({
     ? ARCHIVED_HREF[link.entity]?.(link.id)
     : undefined
 
-  // No link to a record that isn't reachable, or whose sheet is already open
-  // (a Save that keeps the sheet open).
-  if (
-    (link.archived && !archivedHref) ||
-    (!link.archived && get(link.entity) === link.id)
-  ) {
+  if (link.archived && !archivedHref) {
     return null
   }
 
