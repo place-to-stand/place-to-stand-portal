@@ -154,12 +154,12 @@ export function CompaniesTable({
               slack, so the select and Actions columns keep their widths. */}
               {sortHead('name', 'Company', '')}
               {seesBilling
-                ? sortHead('client', 'Billing type', 'w-[10%]')
+                ? sortHead('client', 'Billing type', 'w-[9%]')
                 : null}
-              {seesBilling ? sortHead('hours', 'Hours', 'w-[17%]') : null}
+              {seesBilling ? sortHead('hours', 'Hours', 'w-[18%]') : null}
               {sortHead('people', 'People', 'w-[8%]', 'center')}
               {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
-              {sortHead('projects', 'Projects', 'w-[8%]', 'center')}
+              {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
               {seesBilling ? (
                 <>
                   {sortHead('origination', 'Origination', 'w-[10%]', 'center')}

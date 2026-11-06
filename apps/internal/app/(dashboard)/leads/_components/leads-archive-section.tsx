@@ -258,11 +258,11 @@ export function LeadsArchiveSection({
                 sort={sortParam}
                 defaultSort='archived:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[15%]'
+                className='w-[13%]'
               >
                 Archived
               </SortableTableHead>
-              <TableHead className='w-24 text-right'>Actions</TableHead>
+              <TableHead className='w-16 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

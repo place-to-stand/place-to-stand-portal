@@ -226,8 +226,8 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
         <Table density='compact' layout='fixed' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead className='w-[25%]'>State</TableHead>
-              <TableHead className='w-[17%] text-right'>Rate (%)</TableHead>
+              <TableHead className='w-[21%]'>State</TableHead>
+              <TableHead className='w-[11%] text-right'>Rate (%)</TableHead>
               <SortableTableHead
                 field='label'
                 sort={sort}
@@ -236,7 +236,7 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
               >
                 Label
               </SortableTableHead>
-              <TableHead className='w-[15%]'>Active</TableHead>
+              <TableHead className='w-[9%]'>Active</TableHead>
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>

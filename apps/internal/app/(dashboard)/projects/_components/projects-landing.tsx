@@ -555,11 +555,11 @@ export function ProjectsLanding({
     // Unsized on purpose: in a fixed layout the one auto column absorbs the
     // slack, so the select and Actions columns keep their widths.
     project: '',
-    status: 'w-[14%]',
-    progress: 'w-[20%]',
-    owner: 'w-[10%]',
-    links: 'w-[14%]',
-    actions: 'w-24',
+    status: 'w-[13%]',
+    progress: 'w-[19%]',
+    owner: 'w-[8%]',
+    links: 'w-[9%]',
+    actions: 'w-20',
   }
 
   /**

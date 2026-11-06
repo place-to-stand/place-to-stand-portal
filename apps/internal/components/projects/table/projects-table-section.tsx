@@ -90,7 +90,7 @@ export function ProjectsTableSection({
               >
                 Timeline
               </SortableTableHead>
-              <TableHead className='w-24 text-right'>Actions</TableHead>
+              <TableHead className='w-20 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

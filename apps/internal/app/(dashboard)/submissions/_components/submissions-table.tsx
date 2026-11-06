@@ -410,7 +410,7 @@ export function SubmissionsTable({
                 >
                   Received
                 </SortableTableHead>
-                <TableHead className='w-[11%]'>Form</TableHead>
+                <TableHead className='w-[12%]'>Form</TableHead>
                 {/* copy-check: allow — the visitor's contact details, not a person record */}
                 <TableHead>Contact</TableHead>
                 <TableHead className={columnClasses.company}>Company</TableHead>
@@ -419,7 +419,7 @@ export function SubmissionsTable({
                 {mode === 'archive' ? (
                   <TableHead className='w-[13%]'>Archived</TableHead>
                 ) : null}
-                <TableHead className='w-24 text-right'>Actions</TableHead>
+                <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

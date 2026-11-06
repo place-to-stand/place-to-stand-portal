@@ -327,11 +327,11 @@ export function ProductCatalogSection({
               >
                 Name
               </SortableTableHead>
-              <TableHead className='w-[15%] text-right'>Unit price</TableHead>
-              <TableHead className='w-[15%]'>Unit label</TableHead>
-              <TableHead className='w-[12%]'>Min qty</TableHead>
-              <TableHead className='w-[15%]'>Hour block</TableHead>
-              <TableHead className='w-[12%]'>Active</TableHead>
+              <TableHead className='w-[12%] text-right'>Unit price</TableHead>
+              <TableHead className='w-[10%]'>Unit label</TableHead>
+              <TableHead className='w-[8%]'>Min qty</TableHead>
+              <TableHead className='w-[11%]'>Hour block</TableHead>
+              <TableHead className='w-[7%]'>Active</TableHead>
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>
