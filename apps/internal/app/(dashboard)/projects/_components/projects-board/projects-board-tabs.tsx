@@ -183,6 +183,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
       />
       <ReviewTabContent
         isActive={initialTab === 'review'}
+        canManageTasks={canManageTasks}
         activeProject={activeProject}
         feedback={feedback}
         doneTasks={doneTasks}

@@ -26,6 +26,9 @@ import {
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
+import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+
 import { UserMenu } from './user-menu'
 import { useCommandPalette } from './command-palette'
 import { NAV_GROUPS } from './navigation-config'
@@ -108,13 +111,16 @@ export function Sidebar({ user, badges }: Props) {
               <span className='group-data-[collapsible=icon]:hidden'>
                 Search
               </span>
-              <kbd className='bg-muted text-muted-foreground text-micro pointer-events-none ml-auto rounded-sm border px-1 font-mono group-data-[collapsible=icon]:hidden'>
-                ⌘K
-              </kbd>
+              <ShortcutKeys
+                shortcut={SHORTCUTS.commandPalette}
+                size='sm'
+                className='ml-auto group-data-[collapsible=icon]:hidden'
+              />
             </button>
           </TooltipTrigger>
           <TooltipContent side='right' hidden={sidebarState !== 'collapsed'}>
-            Search <kbd className='text-micro ml-1 font-mono'>⌘K</kbd>
+            Search{' '}
+            <ShortcutKeys shortcut={SHORTCUTS.commandPalette} size='sm' />
           </TooltipContent>
         </Tooltip>
       </SidebarHeader>
@@ -141,6 +147,10 @@ export function Sidebar({ user, badges }: Props) {
                         tooltip={item.label}
                         className={cn(
                           'h-auto gap-2 rounded-sm px-2 py-1.5 text-xs leading-normal',
+                          // Snap between the full row and the icon square
+                          // rather than animating the row's width, which
+                          // squeezed each label to "Compan…" mid-animation.
+                          'transition-[color,background-color]',
                           'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-normal',
                           // The primitive's hover swaps to the accent surface,
                           // inverting the active pill; just dim it instead.
@@ -154,7 +164,9 @@ export function Sidebar({ user, badges }: Props) {
                           aria-current={isActive ? 'page' : undefined}
                         >
                           <Icon className='size-3.5 shrink-0' />
-                          <span>{item.label}</span>
+                          <span className='transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0'>
+                            {item.label}
+                          </span>
                           {badgeCount ? (
                             <span className='sr-only'>
                               ({badgeCount} unacknowledged)

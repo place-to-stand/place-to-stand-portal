@@ -6,6 +6,9 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   NEW_SHEET_VALUE,
   SHEET_ENTITIES,
+  duplicateSheetValue,
+  parseDuplicateSourceId,
+  type DuplicableSheetEntity,
   isSheetEntityClaimed,
   isSheetEntityKey,
   isValidSheetParamValue,
@@ -52,7 +55,7 @@ export function useSheetParams() {
       if (
         isSheetEntityKey(key) &&
         value &&
-        isValidSheetParamValue(value) &&
+        isValidSheetParamValue(value, key) &&
         !items.some(item => item.entity === key)
       ) {
         items.push({ entity: key, value })
@@ -133,6 +136,33 @@ export function useSheetParams() {
     [open]
   )
 
+  /** Open the create sheet filled in from record `id` (`?task=copy-<id>`). */
+  const duplicate = useCallback(
+    (entity: DuplicableSheetEntity, id: string) =>
+      open(entity, duplicateSheetValue(id), undefined, { shallow: true }),
+    [open]
+  )
+
+  /**
+   * Point an open sheet at another record in place (history replace): a
+   * create sheet saved with "keep open" becomes the new record's sheet. The
+   * param keeps its stack position. A page that renders this sheet itself
+   * resolves the record on the server, so that write goes through
+   * `router.replace`.
+   */
+  const swap = useCallback(
+    (entity: SheetEntityKey, value: string) => {
+      emitSheetOpen(entity, value)
+      const url = hrefFor(entity, value)
+      if (isSheetEntityClaimed(entity, pathname, value)) {
+        router.replace(url, { scroll: false })
+      } else {
+        writeShallowUrl(url, 'replace')
+      }
+    },
+    [hrefFor, pathname, router]
+  )
+
   const close = useCallback(
     (entity: SheetEntityKey) => {
       writeShallowUrl(
@@ -148,7 +178,17 @@ export function useSheetParams() {
     [buildUrl]
   )
 
-  return { stack, get, getAux, hrefFor, open, openNew, close }
+  return {
+    stack,
+    get,
+    getAux,
+    hrefFor,
+    open,
+    openNew,
+    duplicate,
+    swap,
+    close,
+  }
 }
 
 /**
@@ -160,7 +200,9 @@ export function useSheetParams() {
  */
 export function useSheetParamSelection(entity: SheetEntityKey) {
   const { get, open, openNew, close } = useSheetParams()
-  const param = get(entity)
+  // A duplicate (`copy-<uuid>`) is the SheetHost's, never the page's own.
+  const rawParam = get(entity)
+  const param = parseDuplicateSourceId(rawParam) ? null : rawParam
 
   const [selectedValue, setSelectedValue] = useState<string | null>(param)
   const [lastParam, setLastParam] = useState<string | null>(param)

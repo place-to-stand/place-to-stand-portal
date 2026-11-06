@@ -22,6 +22,7 @@ import {
 import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
 import { usePageParam } from '@/hooks/use-page-param'
+import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
 
 type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
@@ -98,6 +99,10 @@ export function ContactsManagementTable({
   )
 
   const handlePageChange = usePageParam()
+  const selection = useRowSelection(
+    contacts.map(contact => contact.id),
+    totalCount
+  )
 
   return (
     <div className='space-y-4'>
@@ -115,6 +120,7 @@ export function ContactsManagementTable({
       />
       <ContactsTableSection
         contacts={contacts}
+        selection={selection}
         basePath={basePath}
         mode={mode === 'archive' ? 'archive' : 'active'}
         onEdit={openEdit}
@@ -134,6 +140,12 @@ export function ContactsManagementTable({
         totalItems={totalCount}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+      />
+      <BulkActionBar
+        selection={selection}
+        entity='contact'
+        mode={mode}
+        nameOf={id => contacts.find(contact => contact.id === id)?.name}
       />
       <ContactsSheet
         open={sheetOpen}

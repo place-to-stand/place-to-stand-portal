@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { FIRST_CELL } from './helpers'
+
 /**
  * Tests that change data. They run only with E2E_WRITES=1, against a
  * throwaway database (a rehearsal copy), and put back what they change.
@@ -10,7 +12,7 @@ async function openFirstNonClientCompany(page: Page) {
   // The Companies list's "Not a client" filter.
   await page.goto('/companies?type=none')
   const row = page.locator('tbody tr').first()
-  await row.locator('td').first().click()
+  await row.locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   // Not a client: the Client column's Bill this company switch is off.
   await expect(
@@ -27,7 +29,7 @@ async function setBilling(page: Page, on: boolean) {
   const toggle = sheet.getByRole('switch', { name: 'Bill this company' })
   if ((await toggle.getAttribute('aria-checked')) !== String(on))
     await toggle.click()
-  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await sheet.getByRole('button', { name: 'Save and close' }).click()
   await expect(sheet).toBeHidden()
 }
 

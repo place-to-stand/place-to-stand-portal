@@ -13,8 +13,16 @@ import { cn } from './cn'
 const ARROW_SIZE = 8
 const ARROW_TIP_OFFSET = Math.ceil(ARROW_SIZE / Math.SQRT2)
 
+/**
+ * How long the pointer rests on a control before its first tooltip shows.
+ * Once one is open, neighbours open at once (Base UI groups tooltips under a
+ * shared provider), so a pointer passing by sees nothing and someone reading a
+ * toolbar isn't slowed down. Each app mounts one TooltipProvider at its root.
+ */
+export const TOOLTIP_DELAY_MS = 500
+
 function TooltipProvider({
-  delayDuration = 0,
+  delayDuration = TOOLTIP_DELAY_MS,
   ...props
 }: Omit<TooltipPrimitive.Provider.Props, 'delay'> & {
   delayDuration?: number
@@ -32,13 +40,12 @@ function Tooltip({
   delayDuration,
   ...props
 }: TooltipPrimitive.Root.Props & {
+  /** Only to opt out of the app-wide delay; this tooltip then stops grouping. */
   delayDuration?: number
 }) {
-  return (
-    <TooltipProvider delayDuration={delayDuration}>
-      <TooltipPrimitive.Root data-slot='tooltip' {...props} />
-    </TooltipProvider>
-  )
+  const root = <TooltipPrimitive.Root data-slot='tooltip' {...props} />
+  if (delayDuration === undefined) return root
+  return <TooltipProvider delayDuration={delayDuration}>{root}</TooltipProvider>
 }
 
 function TooltipTrigger({

@@ -12,7 +12,11 @@ import {
   fetchLeadAssignees,
   fetchLeadsBoard,
 } from '@/lib/data/leads'
-import { NEW_SHEET_VALUE, UUID_PATTERN } from '@/lib/sheets/entities'
+import {
+  NEW_SHEET_VALUE,
+  UUID_PATTERN,
+  parseDuplicateSourceId,
+} from '@/lib/sheets/entities'
 import { leadHref } from '@/lib/sheets/hrefs'
 
 import { filterArchivedLeads } from '../_lib/archive-filters'
@@ -41,7 +45,11 @@ export default async function LeadsArchivePage({
   // Deep-link resolution: a uuid param that isn't archived is either still
   // active (cross-redirect to the board) or gone (not-found notice).
   let leadNotFound = false
-  if (leadParam && leadParam !== NEW_SHEET_VALUE) {
+  if (
+    leadParam &&
+    leadParam !== NEW_SHEET_VALUE &&
+    !parseDuplicateSourceId(leadParam)
+  ) {
     if (!UUID_PATTERN.test(leadParam)) {
       leadNotFound = true
     } else if (!archivedLeads.some(lead => lead.id === leadParam)) {

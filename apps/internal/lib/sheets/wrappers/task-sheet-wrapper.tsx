@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 
 import { TaskSheet } from '@/app/(dashboard)/projects/task-sheet'
 
-import { NEW_SHEET_VALUE } from '../entities'
+import { NEW_SHEET_VALUE, parseDuplicateSourceId } from '../entities'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
@@ -15,7 +15,9 @@ export function TaskSheetWrapper({
   onRequestClose,
 }: SheetWrapperProps) {
   const router = useRouter()
-  const data = useSheetInit('task', value)
+  // A duplicate loads its source task and opens it as a new one.
+  const sourceId = parseDuplicateSourceId(value)
+  const data = useSheetInit('task', sourceId ?? value)
 
   if (!data) {
     return null
@@ -39,14 +41,15 @@ export function TaskSheetWrapper({
           router.refresh()
         }
       }}
-      task={data.task ?? undefined}
+      task={sourceId ? undefined : (data.task ?? undefined)}
+      duplicateOf={sourceId ? (data.task ?? undefined) : undefined}
       canManage
       admins={data.admins}
       currentUserId={data.currentUserId}
       defaultStatus='ON_DECK'
       defaultDueOn={null}
       projects={data.projects}
-      defaultProjectId={data.task?.project_id ?? null}
+      defaultProjectId={sourceId ? null : (data.task?.project_id ?? null)}
       defaultAssigneeId={data.currentUserId}
       defaultLeadId={leadId}
     />

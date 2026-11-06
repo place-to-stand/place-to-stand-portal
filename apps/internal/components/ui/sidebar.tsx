@@ -7,6 +7,8 @@ import { SlotNamespace as Slot } from '@pts/ui/slot'
 
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 import { cn } from '@/lib/utils'
+import { isEditableTarget, matchesShortcut } from '@/lib/keyboard/match'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Separator } from '@pts/ui/separator'
@@ -30,7 +32,6 @@ const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
-const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
 
 type SidebarContextProps = {
   state: 'expanded' | 'collapsed'
@@ -40,30 +41,6 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
-}
-
-/**
- * True when the event landed in something that accepts typing — an input, a
- * textarea, or any contentEditable host (which is what TipTap renders). Used
- * to keep the sidebar's Cmd/Ctrl+B from stealing the editor's bold shortcut.
- */
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false
-  }
-
-  if (target.isContentEditable) {
-    return true
-  }
-
-  const tagName = target.tagName
-  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
-    return true
-  }
-
-  // Guards the case where the event target is a node inside the editable
-  // host rather than the host itself.
-  return target.closest('[contenteditable="true"]') !== null
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -120,10 +97,7 @@ function SidebarProvider({
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
-        (event.metaKey || event.ctrlKey)
-      ) {
+      if (matchesShortcut(event, SHORTCUTS.toggleSidebar)) {
         // Cmd/Ctrl+B means bold while the caret is in a text field, and the
         // rich text editor is the obvious case: toggling bold in a task
         // description was also collapsing the sidebar behind the sheet.
@@ -161,7 +135,7 @@ function SidebarProvider({
 
   return (
     <SidebarContext.Provider value={contextValue}>
-      <TooltipProvider delayDuration={0}>
+      <TooltipProvider>
         <div
           data-slot='sidebar-wrapper'
           style={
@@ -262,7 +236,9 @@ function Sidebar({
       <div
         data-slot='sidebar-container'
         className={cn(
-          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-300 ease-in-out md:flex',
+          // overflow-hidden: while the width animates, nothing may spill
+          // past the sidebar's edge onto the page.
+          'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) overflow-hidden transition-[left,right,width] duration-300 ease-in-out md:flex',
           side === 'left'
             ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
             : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
@@ -277,7 +253,11 @@ function Sidebar({
         <div
           data-sidebar='sidebar'
           data-slot='sidebar-inner'
-          className='bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm'
+          // The open layout keeps its full width while the sidebar grows, so
+          // labels are uncovered from the left instead of squeezed, cut off
+          // with an ellipsis, or pushed out of their boxes. The icon layout
+          // follows the container's width.
+          className='bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full min-w-(--sidebar-width) flex-col group-data-[collapsible=icon]:min-w-0 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm'
         >
           {children}
         </div>

@@ -11,6 +11,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { IntegrationProviderIcon } from '@/components/integrations/provider-icon'
 import { formatIntegrationLinkLabel } from '@/lib/types/integrations'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -54,6 +55,13 @@ import {
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { companySheetHref } from '@/lib/sheets/hrefs'
+import {
+  BulkActionBar,
+  RowSelectionProvider,
+  SelectAllHead,
+  SelectRowCell,
+  useRowSelection,
+} from '@/components/table/bulk-select'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
 // column in all three section tables; grouping semantics stay unchanged —
@@ -362,6 +370,23 @@ export function ProjectsLanding({
     return path ?? '#'
   }
 
+  // One selection across the three tables, so a bulk archive can take
+  // client, internal and personal projects together. The landing isn't
+  // paged: every match is on screen.
+  const clientSectionProjects = clientSections.flatMap(
+    section => section.projects
+  )
+  const visibleProjects = [
+    ...clientSectionProjects,
+    ...internalProjects,
+    ...personalProjects,
+  ]
+  const selection = useRowSelection(
+    visibleProjects.map(project => project.id),
+    visibleProjects.length
+  )
+  const selectable = !readOnly
+
   const allSectionsEmpty =
     clientSections.length === 0 &&
     internalProjects.length === 0 &&
@@ -404,107 +429,130 @@ export function ProjectsLanding({
     const externalLinks = buildExternalLinks(project)
 
     return (
-      <TableRow
+      <RecordContextMenu
         key={project.id}
-        {...(href !== '#' ? getClickableRowProps(() => router.push(href)) : {})}
-        className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
+        entity='project'
+        id={project.id}
+        disabled={readOnly}
+        // The row opens the board; Edit opens the project's sheet, as the
+        // pencil does.
+        onEdit={() => openProjectSheet(project.id)}
+        onArchive={() => handleRequestDelete(project)}
+        archiveDisabledReason={isArchivePending ? PENDING_REASON : null}
       >
-        <TableCell>
-          <div className='flex min-w-0 items-center'>
-            {treeLine && (
-              <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono max-md:hidden'>
-                {treeLine}
-              </span>
-            )}
-            <Link href={href} className='flex min-w-0 items-center gap-2 py-1'>
-              <ENTITY_ICONS.project
-                className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
-              />
-              <span className='truncate font-medium' title={project.name}>
-                {project.name}
-              </span>
-            </Link>
-          </div>
-        </TableCell>
-        <TableCell>
-          <ProjectStatusCell
-            projectId={project.id}
-            status={project.status}
-            onStatusChange={handleProjectStatusChange}
-            disabled={readOnly}
-          />
-        </TableCell>
-        <TableCell>
-          <div className='flex items-center gap-3'>
-            <Progress value={progressPercentage} className='h-2 w-24' />
-            <span className='text-muted-foreground text-xs'>
-              {doneCount}/{totalCount}
-            </span>
-          </div>
-        </TableCell>
-        <TableCell label='Owner' className='align-middle'>
-          <ProjectOwnerCell
-            projectId={project.id}
-            owner={project.owner}
-            admins={admins}
-            onOwnerChange={handleProjectOwnerChange}
-            readOnly={readOnly}
-          />
-        </TableCell>
-        <TableCell
-          className={cn(
-            'align-middle',
-            externalLinks.length === 0 && 'max-md:hidden'
-          )}
+        <TableRow
+          {...(href !== '#'
+            ? getClickableRowProps(() => router.push(href))
+            : {})}
+          data-selected={selection.isSelected(project.id) || undefined}
+          className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
         >
-          <div className='flex h-full flex-wrap items-center gap-1.5'>
-            {externalLinks.length > 0 ? (
-              externalLinks.map(link => (
-                <Tooltip key={link.key}>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={link.href}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      aria-label={link.label}
-                      className='text-muted-foreground hover:text-foreground inline-flex items-center transition-colors'
-                    >
-                      {link.icon}
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>{link.label}</TooltipContent>
-                </Tooltip>
-              ))
-            ) : (
-              <EmptyValue />
+          {selectable ? (
+            <SelectRowCell id={project.id} label={project.name} />
+          ) : null}
+          <TableCell>
+            <div className='flex min-w-0 items-center'>
+              {treeLine && (
+                <span className='text-muted-foreground/30 mr-2 w-4 shrink-0 text-center font-mono max-md:hidden'>
+                  {treeLine}
+                </span>
+              )}
+              <Link
+                href={href}
+                className='flex min-w-0 items-center gap-2 py-1'
+              >
+                <ENTITY_ICONS.project
+                  className={cn(
+                    ENTITY_ACCENTS.project.icon,
+                    'h-4 w-4 shrink-0'
+                  )}
+                />
+                <span className='truncate font-medium' title={project.name}>
+                  {project.name}
+                </span>
+              </Link>
+            </div>
+          </TableCell>
+          <TableCell>
+            <ProjectStatusCell
+              projectId={project.id}
+              status={project.status}
+              onStatusChange={handleProjectStatusChange}
+              disabled={readOnly}
+            />
+          </TableCell>
+          <TableCell>
+            <div className='flex items-center gap-3'>
+              <Progress value={progressPercentage} className='h-2 w-24' />
+              <span className='text-muted-foreground text-xs'>
+                {doneCount}/{totalCount}
+              </span>
+            </div>
+          </TableCell>
+          <TableCell label='Owner' className='align-middle'>
+            <ProjectOwnerCell
+              projectId={project.id}
+              owner={project.owner}
+              admins={admins}
+              onOwnerChange={handleProjectOwnerChange}
+              readOnly={readOnly}
+            />
+          </TableCell>
+          <TableCell
+            className={cn(
+              'align-middle',
+              externalLinks.length === 0 && 'max-md:hidden'
             )}
-          </div>
-        </TableCell>
-        <TableCell className='text-right max-md:ml-auto'>
-          {readOnly ? null : (
-            <RecordRowActions>
-              <RecordRowAction
-                kind='edit'
-                entity='project'
-                onClick={() => openProjectSheet(project.id)}
-                disabled={isArchivePending}
-              />
-              <RecordRowAction
-                kind='archive'
-                entity='project'
-                onClick={() => handleRequestDelete(project)}
-                disabled={isArchivePending}
-                disabledReason={isArchivePending ? PENDING_REASON : null}
-              />
-            </RecordRowActions>
-          )}
-        </TableCell>
-      </TableRow>
+          >
+            <div className='flex h-full flex-wrap items-center gap-1.5'>
+              {externalLinks.length > 0 ? (
+                externalLinks.map(link => (
+                  <Tooltip key={link.key}>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={link.href}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        aria-label={link.label}
+                        className='text-muted-foreground hover:text-foreground inline-flex items-center transition-colors'
+                      >
+                        {link.icon}
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>{link.label}</TooltipContent>
+                  </Tooltip>
+                ))
+              ) : (
+                <EmptyValue />
+              )}
+            </div>
+          </TableCell>
+          <TableCell className='text-right max-md:ml-auto'>
+            {readOnly ? null : (
+              <RecordRowActions>
+                <RecordRowAction
+                  kind='edit'
+                  entity='project'
+                  onClick={() => openProjectSheet(project.id)}
+                  disabled={isArchivePending}
+                />
+                <RecordRowAction
+                  kind='archive'
+                  entity='project'
+                  onClick={() => handleRequestDelete(project)}
+                  disabled={isArchivePending}
+                  disabledReason={isArchivePending ? PENDING_REASON : null}
+                />
+              </RecordRowActions>
+            )}
+          </TableCell>
+        </TableRow>
+      </RecordContextMenu>
     )
   }
 
   const tableColumnWidths = {
-    project: 'w-[35%]',
+    project: 'w-[33%]',
     status: 'w-[11%]',
     progress: 'w-[22%]',
     owner: 'w-[7%]',
@@ -512,8 +560,11 @@ export function ProjectsLanding({
     actions: 'w-24',
   }
 
-  /** One header for every section table; `rows` is the table body. */
-  const renderProjectTable = (rows: ReactNode) => (
+  /**
+   * One header for every section table; `rows` is the table body and `ids`
+   * its projects, for the header's select box.
+   */
+  const renderProjectTable = (rows: ReactNode, ids: string[]) => (
     <div className='overflow-hidden rounded-lg border'>
       <Table
         density='compact'
@@ -523,6 +574,7 @@ export function ProjectsLanding({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
+            {selectable ? <SelectAllHead ids={ids} /> : null}
             <SortableTableHead
               field='name'
               sort={sort}
@@ -562,7 +614,7 @@ export function ProjectsLanding({
         className='border-t-muted hover:bg-transparent max-md:p-0'
       >
         <TableCell
-          colSpan={6}
+          colSpan={selectable ? 7 : 6}
           className={cn(
             // The shared cell sets the height: same as the project rows.
             ENTITY_ACCENTS.client.band,
@@ -646,7 +698,8 @@ export function ProjectsLanding({
                 isLast: index === clientProjects.length - 1,
               })
             ),
-          ])
+          ]),
+          clientSectionProjects.map(project => project.id)
         )
       : renderSectionEmptyState(
           unfilteredCounts.clientCount > 0
@@ -677,7 +730,8 @@ export function ProjectsLanding({
       content:
         internalProjects.length > 0
           ? renderProjectTable(
-              internalProjects.map(project => renderProjectRow(project))
+              internalProjects.map(project => renderProjectRow(project)),
+              internalProjects.map(project => project.id)
             )
           : renderSectionEmptyState(getInternalEmptyMessage()),
     },
@@ -689,38 +743,51 @@ export function ProjectsLanding({
       content:
         personalProjects.length > 0
           ? renderProjectTable(
-              personalProjects.map(project => renderProjectRow(project))
+              personalProjects.map(project => renderProjectRow(project)),
+              personalProjects.map(project => project.id)
             )
           : renderSectionEmptyState(getPersonalEmptyMessage()),
     },
   ]
 
   return (
-    <div className='space-y-12'>
-      <ArchiveConfirmDialog
-        open={Boolean(deleteTarget)}
-        entity='project'
-        name={deleteTarget?.name ?? 'this project'}
-        list='active projects'
-        pending={isArchivePending}
-        onCancel={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-      />
-      <div className='space-y-6'>{clientSectionContent}</div>
-      {sectionConfigs.map(
-        ({ key, title, icon: Icon, count, content, className }) => (
-          <div key={key} className={cn('space-y-4', className)}>
-            <div className='flex items-center gap-2'>
-              <div className='bg-accent flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
-                <Icon className='text-muted-foreground h-4 w-4' />
+    <RowSelectionProvider selection={selection} entity='project'>
+      <div className='space-y-12'>
+        {selectable ? (
+          <BulkActionBar
+            selection={selection}
+            entity='project'
+            mode='active'
+            nameOf={id =>
+              visibleProjects.find(project => project.id === id)?.name
+            }
+          />
+        ) : null}
+        <ArchiveConfirmDialog
+          open={Boolean(deleteTarget)}
+          entity='project'
+          name={deleteTarget?.name ?? 'this project'}
+          list='active projects'
+          pending={isArchivePending}
+          onCancel={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+        />
+        <div className='space-y-6'>{clientSectionContent}</div>
+        {sectionConfigs.map(
+          ({ key, title, icon: Icon, count, content, className }) => (
+            <div key={key} className={cn('space-y-4', className)}>
+              <div className='flex items-center gap-2'>
+                <div className='bg-accent flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
+                  <Icon className='text-muted-foreground h-4 w-4' />
+                </div>
+                <h2 className='text-base font-semibold'>{title}</h2>
+                <span className='text-muted-foreground text-sm'>({count})</span>
               </div>
-              <h2 className='text-base font-semibold'>{title}</h2>
-              <span className='text-muted-foreground text-sm'>({count})</span>
+              <div>{content}</div>
             </div>
-            <div>{content}</div>
-          </div>
-        )
-      )}
-    </div>
+          )
+        )}
+      </div>
+    </RowSelectionProvider>
   )
 }

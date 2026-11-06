@@ -22,6 +22,7 @@ import {
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
 import { MetaLink } from '@/components/ui/meta-link'
+import { LeadContextMenu } from './lead-context-menu'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
@@ -116,39 +117,46 @@ export const LeadCard = memo(function LeadCard({
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...(isMounted ? attributes : cleanedAttributes)}
-      {...listenersMap}
-      // dnd-kit's attributes set this too; stated so the focus rule sees it.
-      tabIndex={0}
-      role='button'
-      onClick={() => onEditLead(lead)}
-      onKeyDown={event => {
-        draggableKeyDown?.(event)
-        if (event.defaultPrevented) {
-          return
-        }
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onEditLead(lead)
-        }
-      }}
-      className={cn(
-        'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-[3px] focus-visible:outline-none',
-        canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-        // A touch drag starts on press-and-hold; keep iOS from selecting the
-        // card's text or opening its callout menu first.
-        canManage &&
-          'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
-        isDragging && 'ring-primary ring-2',
-        (isActive || isDragging) && 'border-primary/50 bg-primary/5 shadow-md',
-        !isActive && !isDragging && ENTITY_ACCENTS.lead.card
-      )}
+    <LeadContextMenu
+      lead={lead}
+      onEdit={() => onEditLead(lead)}
+      canManage={canManage}
     >
-      <LeadCardContent lead={lead} />
-    </div>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...(isMounted ? attributes : cleanedAttributes)}
+        {...listenersMap}
+        // dnd-kit's attributes set this too; stated so the focus rule sees it.
+        tabIndex={0}
+        role='button'
+        onClick={() => onEditLead(lead)}
+        onKeyDown={event => {
+          draggableKeyDown?.(event)
+          if (event.defaultPrevented) {
+            return
+          }
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onEditLead(lead)
+          }
+        }}
+        className={cn(
+          'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-[3px] focus-visible:outline-none',
+          canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+          // A touch drag starts on press-and-hold; keep iOS from selecting the
+          // card's text or opening its callout menu first.
+          canManage &&
+            'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
+          isDragging && 'ring-primary ring-2',
+          (isActive || isDragging) &&
+            'border-primary/50 bg-primary/5 shadow-md',
+          !isActive && !isDragging && ENTITY_ACCENTS.lead.card
+        )}
+      >
+        <LeadCardContent lead={lead} />
+      </div>
+    </LeadContextMenu>
   )
 })
 

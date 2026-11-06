@@ -4,6 +4,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { TableCell, TableRow } from '@pts/ui/table'
 import { formatProjectDateRange } from '@/lib/projects/sheet/project-formatters'
 import { cn } from '@/lib/utils'
@@ -16,6 +17,10 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import {
+  SelectRowCell,
+  useSelectedRowProps,
+} from '@/components/table/bulk-select'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -59,66 +64,80 @@ export function ProjectsTableRow({
   const showRestore = mode === 'archive'
 
   const isArchived = Boolean(project.deleted_at)
+  const selectedRowProps = useSelectedRowProps(project.id)
 
   return (
-    <TableRow
-      {...getClickableRowProps(() => onEdit(project))}
-      className={cn(CLICKABLE_ROW_CLASS, isArchived && ARCHIVED_ROW_CLASS)}
+    <RecordContextMenu
+      entity='project'
+      id={project.id}
+      onEdit={() => onEdit(project)}
+      onArchive={showArchive ? () => onRequestDelete(project) : undefined}
+      onRestore={showRestore ? () => onRestore(project) : undefined}
+      archiveDisabledReason={
+        showRestore ? restoreDisabledReason : deleteDisabledReason
+      }
     >
-      <TableCell>
-        <div className='flex min-w-0 items-center gap-2'>
-          <ENTITY_ICONS.project
-            className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
-          />
-          <span className='truncate font-medium' title={project.name}>
-            {project.name}
-          </span>
-        </div>
-      </TableCell>
-      <TableCell label='Owner'>
-        <div className='flex min-w-0 items-center gap-2 text-sm'>
-          <ownerDisplay.Icon className='text-muted-foreground h-4 w-4 shrink-0' />
-          <span className='truncate'>{ownerDisplay.label}</span>
-        </div>
-        {ownerDisplay.message ? (
-          <p
-            className={cn(
-              'text-xs',
-              ownerDisplay.messageTone === 'destructive'
-                ? 'text-destructive'
-                : 'text-muted-foreground'
-            )}
-          >
-            {ownerDisplay.message}
-          </p>
-        ) : null}
-      </TableCell>
-      <TableCell label='Timeline' className='text-muted-foreground text-sm'>
-        {formatProjectDateRange(project.starts_on, project.ends_on)}
-      </TableCell>
-      <TableCell className='text-right max-md:ml-auto'>
-        <RecordRowActions>
-          {showRestore ? (
-            <RecordRowAction
-              kind='restore'
-              entity='project'
-              onClick={() => onRestore(project)}
-              disabled={restoreDisabled}
-              disabledReason={restoreDisabledReason}
+      <TableRow
+        {...getClickableRowProps(() => onEdit(project))}
+        {...selectedRowProps}
+        className={cn(CLICKABLE_ROW_CLASS, isArchived && ARCHIVED_ROW_CLASS)}
+      >
+        <SelectRowCell id={project.id} label={project.name} />
+        <TableCell>
+          <div className='flex min-w-0 items-center gap-2'>
+            <ENTITY_ICONS.project
+              className={cn(ENTITY_ACCENTS.project.icon, 'h-4 w-4 shrink-0')}
             />
+            <span className='truncate font-medium' title={project.name}>
+              {project.name}
+            </span>
+          </div>
+        </TableCell>
+        <TableCell label='Owner'>
+          <div className='flex min-w-0 items-center gap-2 text-sm'>
+            <ownerDisplay.Icon className='text-muted-foreground h-4 w-4 shrink-0' />
+            <span className='truncate'>{ownerDisplay.label}</span>
+          </div>
+          {ownerDisplay.message ? (
+            <p
+              className={cn(
+                'text-xs',
+                ownerDisplay.messageTone === 'destructive'
+                  ? 'text-destructive'
+                  : 'text-muted-foreground'
+              )}
+            >
+              {ownerDisplay.message}
+            </p>
           ) : null}
-          {showArchive ? (
-            <RecordRowAction
-              kind='archive'
-              entity='project'
-              onClick={() => onRequestDelete(project)}
-              disabled={deleteDisabled}
-              disabledReason={deleteDisabledReason}
-            />
-          ) : null}
-        </RecordRowActions>
-      </TableCell>
-    </TableRow>
+        </TableCell>
+        <TableCell label='Timeline' className='text-muted-foreground text-sm'>
+          {formatProjectDateRange(project.starts_on, project.ends_on)}
+        </TableCell>
+        <TableCell className='text-right max-md:ml-auto'>
+          <RecordRowActions>
+            {showRestore ? (
+              <RecordRowAction
+                kind='restore'
+                entity='project'
+                onClick={() => onRestore(project)}
+                disabled={restoreDisabled}
+                disabledReason={restoreDisabledReason}
+              />
+            ) : null}
+            {showArchive ? (
+              <RecordRowAction
+                kind='archive'
+                entity='project'
+                onClick={() => onRequestDelete(project)}
+                disabled={deleteDisabled}
+                disabledReason={deleteDisabledReason}
+              />
+            ) : null}
+          </RecordRowActions>
+        </TableCell>
+      </TableRow>
+    </RecordContextMenu>
   )
 }
 

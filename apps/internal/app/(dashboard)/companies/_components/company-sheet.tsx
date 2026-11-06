@@ -16,6 +16,7 @@ import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { toastLink, useToast } from '@/components/ui/use-toast'
@@ -24,6 +25,11 @@ import { CONTACT_OPTIONS_QUERY_KEY } from '@/components/contacts/contact-link-pi
 import { roleCan } from '@/lib/auth/capabilities'
 import { PENDING_REASON, getSubmitLabel } from '@/lib/forms/form-controls'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import {
+  announceKeptOpenSave,
+  type SheetSaveMode,
+} from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { CompanyBillingIntent } from '@/lib/companies/sheet-save-schema'
 
@@ -129,32 +135,43 @@ export function CompanySheet({
   const seededFor = useRef<string | null>(null)
   const seededUpdatedAt = useRef<string | null>(null)
   const isDirty = form.formState.isDirty || billingDirty
+  // Seeds the form from a loaded company. `keepEdits` keeps fields edited
+  // since (a keep-open save re-seeding from what it just wrote).
+  const seed = useCallback(
+    (loaded: typeof company, keepEdits: boolean) => {
+      seededFor.current = loaded ? `${loaded.id}:${loaded.updatedAt}` : 'new'
+      seededUpdatedAt.current = loaded?.updatedAt ?? null
+      form.reset(
+        {
+          name: loaded?.name ?? initialName ?? '',
+          website: loaded?.website ?? '',
+          linkedinUrl: loaded?.linkedinUrl ?? '',
+          notes: loaded?.notes ?? '',
+          primaryContactId: loaded?.primaryContactId ?? null,
+          addedContacts: [],
+          removedContactIds: [],
+          titles: Object.fromEntries(
+            (loaded?.contacts ?? []).map(contact => [
+              contact.id,
+              contact.jobTitle ?? '',
+            ])
+          ),
+          portalAccessIds: (loaded?.contacts ?? [])
+            .filter(contact => contact.portalAccess)
+            .map(contact => contact.id),
+        },
+        { keepDirtyValues: keepEdits }
+      )
+    },
+    [form, initialName]
+  )
   useEffect(() => {
     if (!data) return
     const key = company ? `${company.id}:${company.updatedAt}` : 'new'
     if (seededFor.current === key) return
     if (seededFor.current !== null && isDirty) return
-    seededFor.current = key
-    seededUpdatedAt.current = company?.updatedAt ?? null
-    form.reset({
-      name: company?.name ?? initialName ?? '',
-      website: company?.website ?? '',
-      linkedinUrl: company?.linkedinUrl ?? '',
-      notes: company?.notes ?? '',
-      primaryContactId: company?.primaryContactId ?? null,
-      addedContacts: [],
-      removedContactIds: [],
-      titles: Object.fromEntries(
-        (company?.contacts ?? []).map(contact => [
-          contact.id,
-          contact.jobTitle ?? '',
-        ])
-      ),
-      portalAccessIds: (company?.contacts ?? [])
-        .filter(contact => contact.portalAccess)
-        .map(contact => contact.id),
-    })
-  }, [company, data, form, initialName, isDirty])
+    seed(company, false)
+  }, [company, data, isDirty, seed])
 
   const { requestConfirmation, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty })
@@ -232,8 +249,10 @@ export function CompanySheet({
     Record<string, string> | undefined
   const seededPrimaryContactId =
     form.formState.defaultValues?.primaryContactId ?? null
+  const { stay, isReopening } = useSaveAndStay('company', companyId, open)
+
   const handleSubmit = useCallback(
-    (values: CompanyFormValues) => {
+    (values: CompanyFormValues, mode: SheetSaveMode = 'close') => {
       const handle = billingRef.current
       let billing: CompanyBillingIntent = { kind: 'none' }
       if (isAdmin && handle) {
@@ -308,15 +327,34 @@ export function CompanySheet({
         if (!isEditing && result.id) {
           onCreated?.({ id: result.id, name: values.name.trim() })
         }
-        toast({
-          title: isEditing ? 'Company saved' : 'Company created',
-          description: values.name,
-          link: toastLink('company', result.id ?? companyId),
-        })
+        // Keep open: no toast; its Save button says "Saved".
+        if (mode === 'close') {
+          toast({
+            title: isEditing ? 'Company saved' : 'Company created',
+            description: values.name,
+            link: toastLink('company', result.id ?? companyId),
+          })
+        }
         form.reset(values)
         setBillingDirty(false)
+        if (mode === 'stay' && isEditing) {
+          // Refetch while still saving, then re-seed from the saved company
+          // (people added here become its people, and Save checks its new
+          // version), keeping anything typed since.
+          await refresh(false)
+          const saved = queryClient.getQueryData<typeof data>(
+            companySheetQueryKey(companyId)
+          )?.company
+          if (saved) seed(saved, true)
+          announceKeptOpenSave()
+          return
+        }
         await refresh()
-        // Save = done = close, for create and edit alike.
+        if (mode === 'stay') {
+          // A new company: reopen as its own sheet.
+          stay({ id: result.id, rebaseline: () => {} })
+          return
+        }
         onClose()
       })
     },
@@ -328,19 +366,25 @@ export function CompanySheet({
       isEditing,
       onClose,
       onCreated,
+      queryClient,
       refresh,
+      seed,
       seededPrimaryContactId,
       seededTitles,
+      stay,
       toast,
     ]
   )
 
   const handleSave = useCallback(
-    () => form.handleSubmit(handleSubmit)(),
+    (mode: SheetSaveMode = 'close') => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values => handleSubmit(values, mode))()
+    },
     [form, handleSubmit]
   )
 
-  const submitDisabled = isPending || isLoading || isArchived
+  const submitDisabled = isPending || isReopening || isLoading || isArchived
   const { undo, redo, canUndo, canRedo } = useSheetFormControls({
     form,
     isActive: open,
@@ -426,6 +470,19 @@ export function CompanySheet({
               />
             }
             className='flex-shrink-0'
+            menu={
+              // An archived company is restored from the archive list.
+              isEditing && company && !isArchived ? (
+                <SheetRecordMenu
+                  noun='Company'
+                  onRequestArchive={() => setArchiveOpen(true)}
+                  archiveDisabled={isPending || Boolean(archiveRefusal)}
+                  archiveDisabledReason={
+                    isPending ? PENDING_REASON : archiveRefusal
+                  }
+                />
+              ) : null
+            }
           />
           {isError || (isEditing && data === null) ? (
             <p className='text-muted-foreground p-6 text-sm'>
@@ -457,7 +514,7 @@ export function CompanySheet({
                   onSubmit={event => {
                     event.preventDefault()
                     // The save reports its own result as a toast.
-                    void handleSave()
+                    handleSave()
                   }}
                   className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
                 >
@@ -536,16 +593,8 @@ export function CompanySheet({
                         redo={redo}
                         canUndo={canUndo}
                         canRedo={canRedo}
-                        // An archived company has no archive action here.
-                        isEditing={isEditing && !isArchived}
-                        archiveDisabled={
-                          isPending || !isEditing || Boolean(archiveRefusal)
-                        }
-                        archiveDisabledReason={
-                          isPending ? PENDING_REASON : archiveRefusal
-                        }
-                        onRequestArchive={() => setArchiveOpen(true)}
-                        archiveAriaLabel='Archive company'
+                        isEditing={isEditing}
+                        onSave={handleSave}
                       />
                     </div>
                   </div>

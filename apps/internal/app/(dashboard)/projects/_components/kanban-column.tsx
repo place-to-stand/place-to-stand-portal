@@ -146,6 +146,7 @@ export function KanbanColumn({
                   assignees={renderAssignees(task)}
                   onEdit={onEditTask}
                   draggable={canManage}
+                  canManage={canManage}
                   isActive={task.id === activeTaskId}
                   disableDropTransition={task.id === recentlyMovedTaskId}
                   context={cardOptions.context}

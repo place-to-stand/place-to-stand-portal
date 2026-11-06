@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 
 import { HourBlockSheet } from '@/app/(dashboard)/hour-blocks/hour-block-sheet'
 
+import { parseDuplicateSourceId } from '../entities'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
@@ -13,7 +14,9 @@ export function HourBlockSheetWrapper({
   onRequestClose,
 }: SheetWrapperProps) {
   const router = useRouter()
-  const data = useSheetInit('hour-block', value)
+  // A duplicate loads its source block and opens it as a new one.
+  const sourceId = parseDuplicateSourceId(value)
+  const data = useSheetInit('hour-block', sourceId ?? value)
 
   if (!data) {
     return null
@@ -31,7 +34,8 @@ export function HourBlockSheetWrapper({
         router.refresh()
         onRequestClose()
       }}
-      hourBlock={data.hourBlock}
+      hourBlock={sourceId ? null : data.hourBlock}
+      duplicateOf={sourceId ? data.hourBlock : null}
       clients={data.clients}
     />
   )

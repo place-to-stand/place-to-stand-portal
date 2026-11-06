@@ -51,19 +51,30 @@ export function toastLinkLabel(entity: SheetEntityKey) {
 /**
  * The look of a toast's record link, shared by the live link and /design.
  */
-export function ToastRecordLinkContent({ entity }: { entity: SheetEntityKey }) {
+export function ToastRecordLinkContent({
+  entity,
+  name,
+}: {
+  entity: SheetEntityKey
+  /** The record's name: shown (on one line) in place of "Open task". */
+  name?: string
+}) {
   const accent = ENTITIES[SHEET_ENTITY[entity]].accent
   const { icon: Icon, label } = toastLinkLabel(entity)
   return (
     <>
       <Icon aria-hidden className={cn('size-4 shrink-0', accent.icon)} />
-      <span>{label}</span>
+      {name ? (
+        <span className='truncate-link'>{name}</span>
+      ) : (
+        <span>{label}</span>
+      )}
     </>
   )
 }
 
 export const toastRecordLinkClass =
-  'text-foreground inline-flex w-fit cursor-pointer items-center gap-1.5 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none'
+  'text-foreground inline-flex w-fit max-w-full min-w-0 cursor-pointer items-center gap-1.5 font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none'
 
 /**
  * A toast's link to the record it's about: opens that record's sheet over
@@ -72,9 +83,12 @@ export const toastRecordLinkClass =
  */
 export function ToastRecordLink({
   link,
+  name,
   onOpen,
 }: {
   link: ToastLink
+  /** The record's name, shown as the link (see `ToastRecordLinkContent`). */
+  name?: string
   onOpen: () => void
 }) {
   const router = useRouter()
@@ -111,8 +125,9 @@ export function ToastRecordLink({
       href={archivedHref ?? hrefFor(link.entity, link.id)}
       onClick={handleClick}
       className={toastRecordLinkClass}
+      title={name}
     >
-      <ToastRecordLinkContent entity={link.entity} />
+      <ToastRecordLinkContent entity={link.entity} name={name} />
     </a>
   )
 }

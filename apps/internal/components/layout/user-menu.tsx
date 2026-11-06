@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Loader2, LogOut, Moon, Sun, UserCog } from 'lucide-react'
+import { Keyboard, Loader2, LogOut, Moon, Sun, UserCog } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import {
@@ -18,6 +18,9 @@ import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'
 import { signOut } from '@/app/(dashboard)/_actions/sign-out'
 import { useTheme } from '@/components/providers/theme-provider'
+import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
+import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 import { EditProfileDialog } from './edit-profile-dialog'
 
@@ -33,6 +36,7 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
+  const { setOpen: setShortcutsOpen } = useKeyboardShortcuts()
 
   const initials = user.full_name
     ? user.full_name
@@ -120,6 +124,22 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
                 <Moon className='h-4 w-4' />
               )}
               <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={event => {
+                event.preventDefault()
+                setIsMenuOpen(false)
+                setShortcutsOpen(true)
+              }}
+              className='flex items-center gap-2'
+            >
+              <Keyboard className='h-4 w-4' />
+              <span>Keyboard shortcuts</span>
+              <ShortcutKeys
+                shortcut={SHORTCUTS.showShortcuts}
+                size='sm'
+                className='ml-auto'
+              />
             </DropdownMenuItem>
             <DropdownMenuItem
               disabled={isPending}

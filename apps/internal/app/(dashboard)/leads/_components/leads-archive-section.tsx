@@ -12,6 +12,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { FilterBar } from '@/components/table-toolbar/filter-bar'
 import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
@@ -270,62 +271,70 @@ export function LeadsArchiveSection({
               const isRestoring = isPending && pendingRestoreId === lead.id
 
               return (
-                <TableRow
+                <RecordContextMenu
                   key={lead.id}
-                  {...getClickableRowProps(() => {
-                    select(lead.id)
-                  })}
-                  className={cn(CLICKABLE_ROW_CLASS, ARCHIVED_ROW_CLASS)}
+                  entity='lead'
+                  id={lead.id}
+                  onEdit={() => select(lead.id)}
+                  onRestore={() => handleRestore(lead)}
+                  pending={isRestoring}
                 >
-                  <TableCell
-                    className='truncate font-medium'
-                    title={lead.contactName}
+                  <TableRow
+                    {...getClickableRowProps(() => {
+                      select(lead.id)
+                    })}
+                    className={cn(CLICKABLE_ROW_CLASS, ARCHIVED_ROW_CLASS)}
                   >
-                    {lead.contactName}
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'truncate',
-                      !lead.companyName && 'max-md:hidden'
-                    )}
-                    title={lead.companyName ?? undefined}
-                  >
-                    {lead.companyName ?? <EmptyValue />}
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'truncate',
-                      !lead.contactEmail && 'max-md:hidden'
-                    )}
-                    title={lead.contactEmail ?? undefined}
-                  >
-                    {lead.contactEmail ? (
+                    <TableCell
+                      className='truncate font-medium'
+                      title={lead.contactName}
+                    >
+                      {lead.contactName}
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        'truncate',
+                        !lead.companyName && 'max-md:hidden'
+                      )}
+                      title={lead.companyName ?? undefined}
+                    >
+                      {lead.companyName ?? <EmptyValue />}
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        'truncate',
+                        !lead.contactEmail && 'max-md:hidden'
+                      )}
+                      title={lead.contactEmail ?? undefined}
+                    >
+                      {lead.contactEmail ? (
+                        <span className='text-muted-foreground text-sm'>
+                          {lead.contactEmail}
+                        </span>
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                    <TableCell label='Last status'>
+                      <LeadStatusBadge status={lead.status} />
+                    </TableCell>
+                    <TableCell label='Archived'>
                       <span className='text-muted-foreground text-sm'>
-                        {lead.contactEmail}
+                        {formatRelativeTime(lead.deletedAt)}
                       </span>
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                  <TableCell label='Last status'>
-                    <LeadStatusBadge status={lead.status} />
-                  </TableCell>
-                  <TableCell label='Archived'>
-                    <span className='text-muted-foreground text-sm'>
-                      {formatRelativeTime(lead.deletedAt)}
-                    </span>
-                  </TableCell>
-                  <TableCell className='text-right max-md:ml-auto'>
-                    <RecordRowActions>
-                      <RecordRowAction
-                        kind='restore'
-                        entity='lead'
-                        onClick={() => handleRestore(lead)}
-                        disabled={isRestoring}
-                      />
-                    </RecordRowActions>
-                  </TableCell>
-                </TableRow>
+                    </TableCell>
+                    <TableCell className='text-right max-md:ml-auto'>
+                      <RecordRowActions>
+                        <RecordRowAction
+                          kind='restore'
+                          entity='lead'
+                          onClick={() => handleRestore(lead)}
+                          disabled={isRestoring}
+                        />
+                      </RecordRowActions>
+                    </TableCell>
+                  </TableRow>
+                </RecordContextMenu>
               )
             })}
             {visibleLeads.length === 0 ? (

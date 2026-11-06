@@ -8,7 +8,11 @@ import {
   fetchLeadsBoard,
   isArchivedLead,
 } from '@/lib/data/leads'
-import { NEW_SHEET_VALUE, UUID_PATTERN } from '@/lib/sheets/entities'
+import {
+  NEW_SHEET_VALUE,
+  UUID_PATTERN,
+  parseDuplicateSourceId,
+} from '@/lib/sheets/entities'
 import { leadHref } from '@/lib/sheets/hrefs'
 
 import { LeadsWorkspace } from './_components/leads-workspace'
@@ -47,7 +51,11 @@ export default async function LeadsBoardPage({
   // that isn't on it is either archived (cross-redirect so shared links keep
   // working, submissions precedent) or gone (not-found notice).
   let leadNotFound = false
-  if (leadParam && leadParam !== NEW_SHEET_VALUE) {
+  if (
+    leadParam &&
+    leadParam !== NEW_SHEET_VALUE &&
+    !parseDuplicateSourceId(leadParam)
+  ) {
     if (!UUID_PATTERN.test(leadParam)) {
       leadNotFound = true
     } else {

@@ -3,7 +3,7 @@
 import { EmptyState } from '@pts/ui/empty-state'
 import { Loader2, User, Users } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
@@ -76,23 +76,11 @@ export function TimeLogList({
       */}
       {remaining > 0 ? (
         <div className='-mx-4 -mb-3 border-t px-2 py-1.5'>
-          <Button
-            type='button'
-            variant='ghost'
-            size='xs'
-            className='w-full'
+          <LoadMoreButton
             onClick={onLoadMore}
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <>
-                <Loader2 className='h-3.5 w-3.5 animate-spin' aria-hidden />
-                Loading...
-              </>
-            ) : (
-              `Load ${Math.min(5, remaining)} more`
-            )}
-          </Button>
+            loading={isLoadingMore}
+            label={`Load ${Math.min(5, remaining)} more`}
+          />
         </div>
       ) : null}
     </div>

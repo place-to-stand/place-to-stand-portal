@@ -23,6 +23,7 @@ import { HeadingThreeIcon } from '@/components/tiptap-icons/heading-three-icon'
 import { HeadingFourIcon } from '@/components/tiptap-icons/heading-four-icon'
 import { HeadingFiveIcon } from '@/components/tiptap-icons/heading-five-icon'
 import { HeadingSixIcon } from '@/components/tiptap-icons/heading-six-icon'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 export type Level = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -59,12 +60,12 @@ export const headingIcons = {
 }
 
 export const HEADING_SHORTCUT_KEYS: Record<Level, string> = {
-  1: 'ctrl+alt+1',
-  2: 'ctrl+alt+2',
-  3: 'ctrl+alt+3',
-  4: 'ctrl+alt+4',
-  5: 'ctrl+alt+5',
-  6: 'ctrl+alt+6',
+  1: SHORTCUTS.heading1.keys,
+  2: SHORTCUTS.heading2.keys,
+  3: SHORTCUTS.heading3.keys,
+  4: SHORTCUTS.heading4.keys,
+  5: SHORTCUTS.heading5.keys,
+  6: SHORTCUTS.heading6.keys,
 }
 
 /**

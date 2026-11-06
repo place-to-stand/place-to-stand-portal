@@ -3,6 +3,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import {
   Table,
   TableBody,
@@ -25,6 +26,7 @@ import { PagePanel } from '@/components/layout/page-panel'
 
 type ReviewArchivedSectionProps = {
   tasks: TaskWithRelations[]
+  canManageTasks: boolean
   renderAssignees: RenderAssigneeFn
   onEditTask: (task: TaskWithRelations) => void
   onRestoreTask: (taskId: string) => void
@@ -38,6 +40,7 @@ const ARCHIVED_BADGE = getTaskStatusToken('ARCHIVED')
 
 export function ReviewArchivedSection({
   tasks,
+  canManageTasks,
   renderAssignees,
   onEditTask,
   onRestoreTask,
@@ -104,41 +107,51 @@ export function ReviewArchivedSection({
                   task.deleted_at ?? task.updated_at ?? null
 
                 return (
-                  <TableRow
+                  <RecordContextMenu
                     key={task.id}
-                    data-selected={isActive || undefined}
-                    role='button'
-                    tabIndex={0}
-                    onClick={() => onEditTask(task)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        onEditTask(task)
-                      }
-                    }}
-                    className={cn(
-                      'group focus-visible:border-ring focus-visible:ring-ring/50 cursor-pointer transition-colors outline-none focus-visible:ring-[3px]',
-                      isActive ? 'bg-primary/5' : 'hover:bg-muted/50'
-                    )}
+                    entity='task'
+                    id={task.id}
+                    onEdit={() => onEditTask(task)}
+                    duplicable={canManageTasks}
+                    onRestore={() => onRestoreTask(task.id)}
+                    archiveDisabledReason={disabledReason}
+                    pending={isRestoreAction}
                   >
-                    <ReviewTaskDataCells
-                      task={task}
-                      renderAssignees={renderAssignees}
-                      updatedAtOverride={updatedOverride}
-                    />
-                    <TableCell className='text-right max-md:ml-auto'>
-                      <RecordRowActions>
-                        <RecordRowAction
-                          kind='restore'
-                          entity='task'
-                          onClick={() => onRestoreTask(task.id)}
-                          disabled={Boolean(disabledReason)}
-                          disabledReason={disabledReason}
-                          pending={isRestoreAction}
-                        />
-                      </RecordRowActions>
-                    </TableCell>
-                  </TableRow>
+                    <TableRow
+                      data-selected={isActive || undefined}
+                      role='button'
+                      tabIndex={0}
+                      onClick={() => onEditTask(task)}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onEditTask(task)
+                        }
+                      }}
+                      className={cn(
+                        'group focus-visible:border-ring focus-visible:ring-ring/50 cursor-pointer transition-colors outline-none focus-visible:ring-[3px]',
+                        isActive ? 'bg-primary/5' : 'hover:bg-muted/50'
+                      )}
+                    >
+                      <ReviewTaskDataCells
+                        task={task}
+                        renderAssignees={renderAssignees}
+                        updatedAtOverride={updatedOverride}
+                      />
+                      <TableCell className='text-right max-md:ml-auto'>
+                        <RecordRowActions>
+                          <RecordRowAction
+                            kind='restore'
+                            entity='task'
+                            onClick={() => onRestoreTask(task.id)}
+                            disabled={Boolean(disabledReason)}
+                            disabledReason={disabledReason}
+                            pending={isRestoreAction}
+                          />
+                        </RecordRowActions>
+                      </TableCell>
+                    </TableRow>
+                  </RecordContextMenu>
                 )
               })
             )}

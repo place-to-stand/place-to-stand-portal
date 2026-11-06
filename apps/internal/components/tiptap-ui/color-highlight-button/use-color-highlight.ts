@@ -17,8 +17,9 @@ import {
 
 // --- Icons ---
 import { HighlighterIcon } from '@/components/tiptap-icons/highlighter-icon'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
-export const COLOR_HIGHLIGHT_SHORTCUT_KEY = 'mod+shift+h'
+export const COLOR_HIGHLIGHT_SHORTCUT_KEY = SHORTCUTS.highlight.keys
 export const HIGHLIGHT_COLORS = [
   {
     label: 'Default background',

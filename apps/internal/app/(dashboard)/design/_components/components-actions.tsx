@@ -14,11 +14,13 @@ import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { EntityList } from '@/components/sheets/entity-list'
 import { InlineReveal } from '@/components/ui/inline-reveal'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { InvoiceStatusBadge } from '@/app/(dashboard)/invoices/_components/invoice-status-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
@@ -200,6 +202,38 @@ export function ComponentsButtons() {
               pending
             />
           </RecordRowActions>
+        </Example>
+      </Specimen>
+      <Specimen label='Load more' note='LoadMoreButton'>
+        <Example caption='Foot of a list: home widgets, Email threads'>
+          <div className='bg-card w-72 rounded-lg border'>
+            <div className='px-4 py-3 text-sm'>Update the homepage copy</div>
+            <div className='border-t px-2 py-1.5'>
+              <LoadMoreButton
+                onClick={noop}
+                loading={false}
+                label='Load 3 more'
+              />
+            </div>
+          </div>
+        </Example>
+      </Specimen>
+      <Specimen
+        label='Right-click menu'
+        note='RecordContextMenu, on @pts/ui/context-menu'
+      >
+        <Example caption='Right-click the card: Edit, Duplicate, Archive'>
+          <RecordContextMenu
+            entity='task'
+            id='00000000-0000-4000-8000-000000000000'
+            onEdit={noop}
+            onDuplicate={noop}
+            onArchive={noop}
+          >
+            <div className='bg-card w-64 rounded-lg border p-4 text-sm font-semibold shadow-sm'>
+              Update the homepage copy
+            </div>
+          </RecordContextMenu>
         </Example>
       </Specimen>
     </DesignSection>

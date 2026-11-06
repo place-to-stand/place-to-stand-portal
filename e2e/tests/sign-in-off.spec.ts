@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { expect, test, type Browser, type Page } from '@playwright/test'
+import { FIRST_CELL, archiveFromSheetMenu } from './helpers'
 import postgres from 'postgres'
 
 /**
@@ -117,7 +118,7 @@ async function accessToken(page: Page): Promise<string | null> {
 
 async function setCanSignIn(page: Page, email: string, on: boolean) {
   await page.goto(`/people?q=${encodeURIComponent(email)}`)
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   const toggle = sheet.getByRole('switch', { name: 'Can sign in' })
   // Locked while their sign-in loads: wait until it can be used.
@@ -126,7 +127,7 @@ async function setCanSignIn(page: Page, email: string, on: boolean) {
     await toggle.click()
   }
   await expect(toggle).toHaveAttribute('aria-checked', String(on))
-  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await sheet.getByRole('button', { name: 'Save and close' }).click()
   await expect(sheet).toBeHidden()
 }
 
@@ -150,7 +151,7 @@ for (const [role, home] of [
     await sheet.getByRole('switch', { name: 'Can sign in' }).click()
     await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
     await page.getByRole('option', { name: role }).click()
-    await sheet.getByRole('button', { name: 'Create person' }).click()
+    await sheet.getByRole('button', { name: 'Create and close' }).click()
     await expect(sheet).toBeHidden()
 
     // They sign in (past the first-sign-in password step), and their
@@ -201,11 +202,8 @@ for (const [role, home] of [
 
     // Put it back: archive the person (their sign-in goes off with them).
     await page.goto(`/people?q=${encodeURIComponent(email)}`)
-    await page.locator('tbody tr').first().locator('td').first().click()
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: 'Archive person' })
-      .click()
+    await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
+    await archiveFromSheetMenu(page.getByRole('dialog'))
     await page
       .getByRole('button', { name: /^Archive/ })
       .last()
@@ -235,7 +233,7 @@ test('a token whose session was ended is refused on the next request', async ({
   await sheet.getByRole('switch', { name: 'Can sign in' }).click()
   await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
   await page.getByRole('option', { name: 'Admin' }).click()
-  await sheet.getByRole('button', { name: 'Create person' }).click()
+  await sheet.getByRole('button', { name: 'Create and close' }).click()
   await expect(sheet).toBeHidden()
 
   await skipFirstPasswordReset(email)
@@ -256,11 +254,8 @@ test('a token whose session was ended is refused on the next request', async ({
 
   // Put it back: archive the person.
   await page.goto(`/people?q=${encodeURIComponent(email)}`)
-  await page.locator('tbody tr').first().locator('td').first().click()
-  await page
-    .getByRole('dialog')
-    .getByRole('button', { name: 'Archive person' })
-    .click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
+  await archiveFromSheetMenu(page.getByRole('dialog'))
   await page
     .getByRole('button', { name: /^Archive/ })
     .last()

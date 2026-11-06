@@ -18,6 +18,8 @@ import {
 } from '@/app/(dashboard)/projects/project-sheet-actions'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
   finishSettingsInteraction,
@@ -104,7 +106,9 @@ export type UseProjectSheetStateReturn = {
   handleSheetOpenChange: (open: boolean) => void
   handleSubmit: (
     values: ProjectSheetFormValues,
-    changes: ProjectSheetLinkChanges
+    changes: ProjectSheetLinkChanges,
+    mode?: SheetSaveMode,
+    onLinksSaved?: () => void
   ) => void
   handleReposDirtyChange: (isDirty: boolean) => void
   handleRequestDelete: () => void
@@ -205,8 +209,20 @@ export function useProjectSheetState({
     resetKey: project?.id ?? null,
   })
 
+  const { stay, isReopening } = useSaveAndStay(
+    'project',
+    project?.id ?? null,
+    open
+  )
+
   const handleSubmit = useCallback(
-    (values: ProjectSheetFormValues, changes: ProjectSheetLinkChanges) => {
+    (
+      values: ProjectSheetFormValues,
+      changes: ProjectSheetLinkChanges,
+      mode: SheetSaveMode = 'close',
+      /** Keep-open saves: forget the link edits Save just applied. */
+      onLinksSaved?: () => void
+    ) => {
       const {
         pendingRepos,
         removedRepoIds,
@@ -297,11 +313,14 @@ export function useProjectSheetState({
             targetId: targetProjectId ?? null,
           })
 
-          toast({
-            title: isEditing ? 'Project saved' : 'Project created',
-            description: payload.name,
-            link: toastLink('project', targetProjectId),
-          })
+          // Keep open: no toast; stay() makes its Save button say "Saved".
+          if (mode === 'close') {
+            toast({
+              title: isEditing ? 'Project saved' : 'Project created',
+              description: payload.name,
+              link: toastLink('project', targetProjectId),
+            })
+          }
 
           form.reset({
             name: payload.name,
@@ -314,6 +333,14 @@ export function useProjectSheetState({
             ownerId: payload.ownerId ?? '',
             memberIds: payload.memberIds,
           })
+
+          if (mode === 'stay') {
+            stay({
+              id: targetProjectId,
+              rebaseline: () => onLinksSaved?.(),
+            })
+            return
+          }
 
           onOpenChange(false)
           onComplete()
@@ -341,6 +368,7 @@ export function useProjectSheetState({
       onOpenChange,
       project,
       startSave,
+      stay,
       toast,
     ]
   )
@@ -429,12 +457,12 @@ export function useProjectSheetState({
   const submitButton = useMemo(
     () =>
       deriveSubmitButtonState(
-        isPending,
+        isPending || isReopening,
         isEditing,
         clientOptions,
         requiresClientSelection
       ),
-    [clientOptions, isEditing, isPending, requiresClientSelection]
+    [clientOptions, isEditing, isPending, isReopening, requiresClientSelection]
   )
 
   const deleteButton = useMemo(

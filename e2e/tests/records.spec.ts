@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test'
 
-import { expectHealthy } from './helpers'
+import { FIRST_CELL, expectHealthy } from './helpers'
 
 test('company sheet: two columns, no tabs, Billing reachable by deep link', async ({
   page,
 }) => {
   await page.goto('/companies?type=client')
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   // Company on the left, Client on the right: no tabs.
   await expect(sheet.getByRole('tab')).toHaveCount(0)
@@ -33,7 +33,7 @@ test('a client company shows the Client badge and its projects', async ({
   await expect(
     row.locator('[data-slot="badge"]', { hasText: /Prepaid|Net 30/ })
   ).toBeVisible()
-  await row.locator('td').first().click()
+  await row.locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(
     sheet.getByRole('heading', { name: 'Projects', exact: true })
@@ -42,13 +42,13 @@ test('a client company shows the Client badge and its projects', async ({
 
 test('person sheet is one stacked form, sign-in included', async ({ page }) => {
   await page.goto('/people')
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab')).toHaveCount(0)
   await expect(sheet.getByRole('switch', { name: 'Can sign in' })).toBeVisible()
   await expect(
-    sheet.getByRole('button', { name: /^Save changes/ })
+    sheet.getByRole('button', { name: /^Save and close/ })
   ).toHaveCount(1)
 })
 

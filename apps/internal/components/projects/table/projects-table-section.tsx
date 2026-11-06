@@ -12,9 +12,15 @@ import { EmptyState } from '@pts/ui/empty-state'
 
 import type { ProjectWithClient, ProjectsTableMode } from './types'
 import { ProjectsTableRow } from './projects-table-row'
+import {
+  RowSelectionProvider,
+  SelectAllHead,
+  type RowSelection,
+} from '@/components/table/bulk-select'
 
 type ProjectsTableSectionProps = {
   projects: ProjectWithClient[]
+  selection: RowSelection
   mode: ProjectsTableMode
   onEdit: (project: ProjectWithClient) => void
   onRequestDelete: (project: ProjectWithClient) => void
@@ -36,6 +42,7 @@ function isProjectSortValue(value: string): boolean {
 
 export function ProjectsTableSection({
   projects,
+  selection,
   mode,
   onEdit,
   onRequestDelete,
@@ -55,59 +62,62 @@ export function ProjectsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table
-        density='compact'
-        layout='fixed'
-        stack
-        className='md:min-w-[40rem]'
-      >
-        <TableHeader>
-          <TableRow className='bg-muted/40'>
-            <SortableTableHead
-              field='name'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className='w-[40%]'
-            >
-              Name
-            </SortableTableHead>
-            <TableHead className='w-[25%]'>Owner</TableHead>
-            <SortableTableHead
-              field='created'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-            >
-              Timeline
-            </SortableTableHead>
-            <TableHead className='w-24 text-right'>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {projects.map(project => (
-            <ProjectsTableRow
-              key={project.id}
-              project={project}
-              mode={mode}
-              isPending={isPending}
-              pendingReason={pendingReason}
-              pendingDeleteId={pendingDeleteId}
-              pendingRestoreId={pendingRestoreId}
-              onEdit={onEdit}
-              onRequestDelete={onRequestDelete}
-              onRestore={onRestore}
-            />
-          ))}
-          {projects.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className='p-4'>
-                <EmptyState message={emptyMessage} />
-              </TableCell>
+      <RowSelectionProvider selection={selection} entity='project'>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[40rem]'
+        >
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <SelectAllHead />
+              <SortableTableHead
+                field='name'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-[38%]'
+              >
+                Name
+              </SortableTableHead>
+              <TableHead className='w-[25%]'>Owner</TableHead>
+              <SortableTableHead
+                field='created'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+              >
+                Timeline
+              </SortableTableHead>
+              <TableHead className='w-24 text-right'>Actions</TableHead>
             </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {projects.map(project => (
+              <ProjectsTableRow
+                key={project.id}
+                project={project}
+                mode={mode}
+                isPending={isPending}
+                pendingReason={pendingReason}
+                pendingDeleteId={pendingDeleteId}
+                pendingRestoreId={pendingRestoreId}
+                onEdit={onEdit}
+                onRequestDelete={onRequestDelete}
+                onRestore={onRestore}
+              />
+            ))}
+            {projects.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className='p-4'>
+                  <EmptyState message={emptyMessage} />
+                </TableCell>
+              </TableRow>
+            ) : null}
+          </TableBody>
+        </Table>
+      </RowSelectionProvider>
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { useMemo } from 'react'
 
 import {
@@ -87,6 +88,16 @@ export function ProjectSheet(props: Props) {
             title={
               isEditing ? props.project?.name || 'Project' : 'Create project'
             }
+            menu={
+              isEditing ? (
+                <SheetRecordMenu
+                  noun='Project'
+                  onRequestArchive={handleRequestDelete}
+                  archiveDisabled={deleteButton.disabled}
+                  archiveDisabledReason={deleteButton.reason}
+                />
+              ) : null
+            }
           />
           <ProjectSheetForm
             form={form}
@@ -96,9 +107,7 @@ export function ProjectSheet(props: Props) {
             clientOptions={clientOptions}
             ownerOptions={ownerOptions}
             submitButton={submitButton}
-            deleteButton={deleteButton}
             onSubmit={handleSubmit}
-            onRequestDelete={handleRequestDelete}
             onReposDirtyChange={handleReposDirtyChange}
             isSheetOpen={props.open}
             historyKey={props.project?.id ?? 'project:new'}

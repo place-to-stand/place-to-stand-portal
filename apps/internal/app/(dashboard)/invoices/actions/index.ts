@@ -1,4 +1,3 @@
-export { getInvoiceDetails } from './get-invoice-details'
 export { saveInvoice } from './save-invoice'
 export { sendInvoiceAction } from './send-invoice'
 export { emailInvoice, getInvoiceEmailDraft } from './email-invoice'

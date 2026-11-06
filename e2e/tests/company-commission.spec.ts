@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+import { FIRST_CELL } from './helpers'
+
 /**
  * Commission on a client's billing uses the shared entity list: removing a
  * closer leaves a "Pending removal" card with Undo, nothing saves until Save.
@@ -13,7 +15,7 @@ test('removing a closer can be undone before saving', async ({ page }) => {
   const count = Math.min(await rows.count(), 8)
   let found = false
   for (let i = 0; i < count && !found; i++) {
-    await rows.nth(i).locator('td').first().click()
+    await rows.nth(i).locator(FIRST_CELL).first().click()
     await expect(
       sheet.getByRole('heading', { name: 'Commission', exact: true })
     ).toBeVisible()

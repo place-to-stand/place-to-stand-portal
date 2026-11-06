@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import { expect, test, type Page } from '@playwright/test'
 
-import { expectHealthy } from './helpers'
+import { FIRST_CELL, expectHealthy, archiveFromSheetMenu } from './helpers'
 
 // Sales: the CRM plus projects they're a member of (projects.view_member).
 test('sales sees the CRM and member projects only', async ({ page }) => {
@@ -69,7 +69,7 @@ test('sales sees a person with a sign-in read-only, access locked', async ({
   await expect(sheet.getByText('Role', { exact: true })).toHaveCount(0)
   await expect(sheet.getByText('Portal access')).toHaveCount(0)
   await expect(
-    sheet.getByRole('button', { name: 'Save changes' })
+    sheet.getByRole('button', { name: 'Save and close' })
   ).toBeDisabled()
 })
 
@@ -77,7 +77,7 @@ test('sales sees no billing or sign-in controls on a company', async ({
   page,
 }) => {
   await page.goto('/companies')
-  await page.locator('tbody tr').first().locator('td').first().click()
+  await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(sheet.getByRole('tab', { name: 'Billing' })).toHaveCount(0)
@@ -99,7 +99,7 @@ test('sales sees no portal switches on a client company’s people', async ({
   await page.goto('/companies?type=client')
   const clientRow = page.locator('tbody tr').first()
   test.skip((await clientRow.count()) === 0, 'no client company to open')
-  await clientRow.locator('td').first().click()
+  await clientRow.locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await expect(
@@ -117,7 +117,7 @@ async function openClientPeople(page: Page) {
   const name = (
     (await clientRow.locator('span.font-medium').first().textContent()) ?? ''
   ).trim()
-  await clientRow.locator('td').first().click()
+  await clientRow.locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   return { sheet, name }
@@ -154,7 +154,7 @@ test('sales adds a person to a client company, never with portal access', async 
   await page.goto('/people?contact=new')
   const created = page.getByRole('dialog')
   await created.getByPlaceholder('John Doe').fill(personName)
-  await created.getByRole('button', { name: 'Create person' }).click()
+  await created.getByRole('button', { name: 'Create and close' }).click()
   await expect(created).toBeHidden()
 
   let companyName: string | null = null
@@ -179,7 +179,7 @@ test('sales adds a person to a client company, never with portal access', async 
         Boolean(request.headers()['next-action']) &&
         (request.postData() ?? '').includes('addContactIds')
     )
-    await sheet.getByRole('button', { name: 'Save changes' }).click()
+    await sheet.getByRole('button', { name: 'Save and close' }).click()
     const captured = await saveRequest
     await expect(sheet).toBeHidden()
 
@@ -217,7 +217,7 @@ test('sales adds a person to a client company, never with portal access', async 
       })
       if (await remove.count()) {
         await remove.click()
-        await sheet.getByRole('button', { name: 'Save changes' }).click()
+        await sheet.getByRole('button', { name: 'Save and close' }).click()
         await expect(sheet).toBeHidden()
       }
     }
@@ -227,10 +227,7 @@ test('sales adds a person to a client company, never with portal access', async 
       .filter({ hasText: personName })
       .first()
       .click()
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: 'Archive person' })
-      .click()
+    await archiveFromSheetMenu(page.getByRole('dialog'))
     await page
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Archive' })
@@ -255,7 +252,7 @@ test('sales can’t rename the staff company', async ({ page }) => {
   const sheet = page.getByRole('dialog')
   await expect(sheet).toBeVisible()
   await sheet.getByLabel('Name').fill(`${staffName} (renamed)`)
-  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await sheet.getByRole('button', { name: 'Save and close' }).click()
   await expect(
     page.getByText(`Only an admin can change ${staffName}.`)
   ).toBeVisible()

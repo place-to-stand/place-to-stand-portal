@@ -21,6 +21,8 @@ The action control: six variants, seven sizes, a 2px (`gap-2`) icon gap built in
 - Give icon-only buttons an `aria-label`.
 - In sheets, keep Save enabled; disable only while the save is in flight ("Saving…") or when a real validation precondition fails.
 
+**Load more** is always `LoadMoreButton` (`apps/internal/components/ui/load-more-button.tsx`): a full-width ghost `xs` row with a spinner while loading, at the foot of the list (in a card, under the card's `border-t` footer; in a sheet list, no line). Label "Load N more" when the count is known, else "Load more". The home widgets and the lead sheet's Email threads use it. (guard: review)
+
 **Don't**
 
 - Add `mr-*`/`ml-*` to an icon inside a Button.

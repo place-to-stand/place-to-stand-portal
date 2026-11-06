@@ -36,6 +36,8 @@ import {
 } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
@@ -64,6 +66,7 @@ import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-colum
 import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
 import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
 import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 const INVOICE_FORM_ID = 'invoice-form'
 
@@ -72,6 +75,8 @@ type Props = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
+  /** Create a new invoice filled in from this one (Duplicate). */
+  duplicateOf?: InvoiceWithClient | null
   clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
@@ -82,10 +87,12 @@ export function InvoiceSheet({
   onOpenChange,
   onComplete,
   invoice,
+  duplicateOf = null,
   clients,
   productCatalog,
   taxRates,
 }: Props) {
+  const { duplicate } = useSheetParams()
   const {
     form,
     fieldArray,
@@ -100,6 +107,7 @@ export function InvoiceSheet({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
+    confirmDiscard,
     totals,
     taxRateLabel,
     handleSheetOpenChange,
@@ -118,6 +126,7 @@ export function InvoiceSheet({
     onOpenChange,
     onComplete,
     invoice,
+    duplicateOf,
     clients,
     productCatalog,
     taxRates,
@@ -151,8 +160,12 @@ export function InvoiceSheet({
   )
 
   const handleSave = useCallback(
-    () =>
-      form.handleSubmit((values: InvoiceFormValues) => handleSubmit(values))(),
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit((values: InvoiceFormValues) =>
+        handleSubmit(values, mode)
+      )()
+    },
     [form, handleSubmit]
   )
 
@@ -371,7 +384,9 @@ export function InvoiceSheet({
     ? invoice?.invoice_number
       ? `Invoice ${invoice.invoice_number}`
       : 'Draft invoice'
-    : 'Create invoice'
+    : duplicateOf
+      ? 'Duplicate invoice'
+      : 'Create invoice'
 
   const combinedPending = isPending || actionPending
 
@@ -398,6 +413,24 @@ export function InvoiceSheet({
                 entity='invoice'
                 title={sheetTitle}
                 className='flex-shrink-0'
+                menu={
+                  isEditing ? (
+                    <SheetRecordMenu
+                      noun='Invoice'
+                      onDuplicate={
+                        invoice
+                          ? () =>
+                              confirmDiscard(() =>
+                                duplicate('invoice', invoice.id)
+                              )
+                          : undefined
+                      }
+                      onRequestArchive={handleRequestDelete}
+                      archiveDisabled={deleteButton.disabled}
+                      archiveDisabledReason={deleteButton.reason}
+                    />
+                  ) : null
+                }
               />
 
               {/* ────────────────────────────────────────────────────── */}
@@ -584,6 +617,7 @@ export function InvoiceSheet({
                       <SheetFormFooter
                         formId={INVOICE_FORM_ID}
                         saveLabel={submitButton.label}
+                        onSave={handleSave}
                         submitDisabled={submitButton.disabled}
                         submitDisabledReason={submitButton.reason}
                         undo={undo}
@@ -591,10 +625,6 @@ export function InvoiceSheet({
                         canUndo={canUndo}
                         canRedo={canRedo}
                         isEditing={isEditing}
-                        archiveDisabled={deleteButton.disabled}
-                        archiveDisabledReason={deleteButton.reason}
-                        onRequestArchive={handleRequestDelete}
-                        archiveAriaLabel='Archive invoice'
                       />
                     </div>
                   ) : null}

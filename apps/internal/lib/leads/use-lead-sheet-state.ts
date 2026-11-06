@@ -15,6 +15,8 @@ import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
@@ -34,6 +36,7 @@ export function useLeadSheetState({
   open,
   onOpenChange,
   lead,
+  duplicateOf,
   initialStatus,
   initialCompanyError,
   onSuccess,
@@ -58,27 +61,30 @@ export function useLeadSheetState({
   const canManageClients = roleCan(role, 'clients.manage')
   const { toast } = useToast()
 
+  // A duplicate starts from its source's values; it is still a new lead.
+  const source = lead ?? duplicateOf ?? null
   const defaultValues = useMemo<LeadFormValues>(
     () => ({
-      contact: lead?.contactId
+      contact: source?.contactId
         ? {
-            id: lead.contactId,
-            name: lead.contactName,
-            email: lead.contactEmail ?? null,
-            phone: lead.contactPhone ?? null,
+            id: source.contactId,
+            name: source.contactName,
+            email: source.contactEmail ?? null,
+            phone: source.contactPhone ?? null,
           }
         : null,
-      company: lead?.companyId
-        ? { id: lead.companyId, name: lead.companyName ?? '' }
+      company: source?.companyId
+        ? { id: source.companyId, name: source.companyName ?? '' }
         : null,
-      sourceType: lead?.sourceType ?? null,
-      sourceDetail: lead?.sourceDetail ?? '',
+      sourceType: source?.sourceType ?? null,
+      sourceDetail: source?.sourceDetail ?? '',
+      // A copy is a new opportunity: it starts at the first stage.
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       // A new lead starts assigned to you, like a new task.
-      assigneeId: lead ? (lead.assigneeId ?? null) : userId,
-      notes: lead?.notesHtml ?? initialValues?.notes ?? '',
+      assigneeId: source ? (source.assigneeId ?? null) : userId,
+      notes: source?.notesHtml ?? initialValues?.notes ?? '',
     }),
-    [lead, initialStatus, initialValues, userId]
+    [lead, source, initialStatus, initialValues, userId]
   )
 
   const form = useForm<LeadFormValues>({
@@ -92,7 +98,9 @@ export function useLeadSheetState({
   // company just picked from that sheet.
   const resetKey = lead
     ? `${lead.id}:${lead.updatedAt}`
-    : `new:${initialStatus ?? ''}`
+    : duplicateOf
+      ? `copy:${duplicateOf.id}`
+      : `new:${initialStatus ?? ''}`
   const lastResetKey = useRef<string | null>(null)
   useEffect(() => {
     // Closing forgets the key, so reopening always starts from the record.
@@ -101,9 +109,13 @@ export function useLeadSheetState({
       return
     }
     if (lastResetKey.current === resetKey) return
+    const sameLead =
+      Boolean(lead) && lastResetKey.current?.startsWith(`${lead?.id}:`)
     lastResetKey.current = resetKey
-    form.reset(defaultValues)
-  }, [defaultValues, form, open, resetKey])
+    // A newer save of the same lead (e.g. the refresh after a keep-open
+    // save) takes the server's values but keeps fields edited since.
+    form.reset(defaultValues, { keepDirtyValues: Boolean(sameLead) })
+  }, [defaultValues, form, lead, open, resetKey])
 
   // Shown after the reset above, which clears errors: e.g. the board refused
   // a Won drag because the lead has no company.
@@ -127,11 +139,12 @@ export function useLeadSheetState({
     }
   }, [form, selectedSourceType])
 
-  const submitDisabled = isSaving || isArchiving
+  const { stay, isReopening } = useSaveAndStay('lead', lead?.id ?? null, open)
+  const submitDisabled = isSaving || isArchiving || isReopening
   const historyKey = lead?.id ?? 'lead:new'
 
   const handleFormSubmit = useCallback(
-    (values: LeadFormValues) => {
+    (values: LeadFormValues, mode: SheetSaveMode = 'close') => {
       // Decision 7: Won needs a company. Say so on the field before asking
       // the server, which enforces the same rule.
       const existingWonState = lead
@@ -174,23 +187,18 @@ export function useLeadSheetState({
           return
         }
 
+        const rebaseline = () => form.reset(values) // saved = clean state
+        if (mode === 'stay') {
+          stay({ id: result.leadId ?? lead?.id, rebaseline })
+          return
+        }
+
         toast({
           title: isEditing ? 'Lead saved' : 'Lead created',
           description: contact?.name || undefined,
           link: toastLink('lead', result.leadId ?? lead?.id),
         })
-
-        form.reset({
-          ...values,
-          contact: values.contact ?? null,
-          company: values.company ?? null,
-          sourceType: values.sourceType ?? null,
-          sourceDetail: values.sourceDetail ?? '',
-          status: values.status,
-          assigneeId: values.assigneeId ?? null,
-          notes: values.notes ?? '',
-        })
-
+        rebaseline()
         setArchiveDialogOpen(false)
         onOpenChange(false)
         onSuccess()
@@ -218,12 +226,16 @@ export function useLeadSheetState({
       onSuccess,
       onCreated,
       openSheet,
+      stay,
       toast,
     ]
   )
 
-  const handleSaveShortcut = useCallback(
-    () => form.handleSubmit(handleFormSubmit)(),
+  const handleSave = useCallback(
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values => handleFormSubmit(values, mode))()
+    },
     [form, handleFormSubmit]
   )
 
@@ -232,21 +244,27 @@ export function useLeadSheetState({
       form,
       isActive: open,
       canSave: !submitDisabled,
-      onSave: handleSaveShortcut,
+      onSave: handleSave,
       historyKey,
     }
   )
 
   const saveLabel = useMemo(
-    () => getSubmitLabel({ isSaving, isEditing, createLabel: 'Create lead' }),
-    [isEditing, isSaving]
+    () =>
+      getSubmitLabel({
+        isSaving: isSaving || isReopening,
+        isEditing,
+        createLabel: 'Create lead',
+      }),
+    [isEditing, isReopening, isSaving]
   )
 
-  const submitDisabledReason = isSaving
-    ? 'Saving lead...'
-    : isArchiving
-      ? 'Archiving lead...'
-      : null
+  const submitDisabledReason =
+    isSaving || isReopening
+      ? 'Saving lead...'
+      : isArchiving
+        ? 'Archiving lead...'
+        : null
 
   const archiveDisabledReason = isSaving
     ? 'Finish saving before archiving.'
@@ -282,17 +300,15 @@ export function useLeadSheetState({
     })
   }, [lead, onOpenChange, onSuccess, toast])
 
-  const {
-    requestConfirmation: requestCloseConfirmation,
-    dialog: unsavedChangesDialog,
-  } = useUnsavedChangesWarning({
-    isDirty: form.formState.isDirty,
-    title: 'Discard lead changes?',
-    description:
-      'You have unsaved updates for this lead. Continue without saving?',
-    confirmLabel: 'Discard',
-    cancelLabel: 'Keep editing',
-  })
+  const { requestConfirmation: confirmDiscard, dialog: unsavedChangesDialog } =
+    useUnsavedChangesWarning({
+      isDirty: form.formState.isDirty,
+      title: 'Discard lead changes?',
+      description:
+        'You have unsaved updates for this lead. Continue without saving?',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+    })
 
   const handleSheetOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -300,13 +316,12 @@ export function useLeadSheetState({
         onOpenChange(true)
         return
       }
-
-      requestCloseConfirmation(() => {
+      confirmDiscard(() => {
         setArchiveDialogOpen(false)
         onOpenChange(false)
       })
     },
-    [onOpenChange, requestCloseConfirmation]
+    [onOpenChange, confirmDiscard]
   )
 
   return {
@@ -327,7 +342,9 @@ export function useLeadSheetState({
     canUndo,
     canRedo,
     unsavedChangesDialog,
+    confirmDiscard,
     handleFormSubmit,
+    handleSave,
     handleArchive,
     handleSheetOpenChange,
   }

@@ -7,6 +7,8 @@ import type { AppUser } from '@/lib/auth/session'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { ViewerAccessProvider } from '@/components/providers/viewer-access-provider'
 
+import { KeyboardShortcutsProvider } from '@/components/keyboard/keyboard-shortcuts-dialog'
+
 import { Sidebar } from './sidebar'
 import { CommandPaletteProvider } from './command-palette'
 
@@ -40,20 +42,23 @@ export function AppShell({
 
   return (
     // Palette provider wraps the sidebar too — the search affordance lives
-    // there (user-revised placement of PW1).
+    // there (user-revised placement of PW1). The shortcuts provider sits
+    // outside it so the palette and the user menu can both open the list.
     <ViewerAccessProvider role={user.role} userId={user.id}>
-      <CommandPaletteProvider>
-        <SidebarProvider
-          defaultOpen={sidebarDefaultOpen}
-          style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
-          className='bg-muted h-dvh min-h-0 overflow-hidden'
-        >
-          <Sidebar user={user} badges={navBadges} />
-          <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
-            {children}
-          </div>
-        </SidebarProvider>
-      </CommandPaletteProvider>
+      <KeyboardShortcutsProvider>
+        <CommandPaletteProvider>
+          <SidebarProvider
+            defaultOpen={sidebarDefaultOpen}
+            style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+            className='bg-muted h-dvh min-h-0 overflow-hidden'
+          >
+            <Sidebar user={user} badges={navBadges} />
+            <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
+              {children}
+            </div>
+          </SidebarProvider>
+        </CommandPaletteProvider>
+      </KeyboardShortcutsProvider>
     </ViewerAccessProvider>
   )
 }

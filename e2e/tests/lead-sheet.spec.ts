@@ -74,7 +74,7 @@ test('lead: a lead without a company can’t be saved as Won', async ({
     if (request.method() === 'POST' && request.headers()['next-action'])
       saveRequests++
   })
-  await sheet.getByRole('button', { name: 'Create lead' }).click()
+  await sheet.getByRole('button', { name: 'Create and close' }).click()
 
   await expect(sheet.getByText(WON_NEEDS_COMPANY)).toBeVisible()
   // Refused before anything is written: the sheet stays open, no save sent.

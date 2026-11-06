@@ -8,6 +8,7 @@ import {
   RecordRowAction,
   RecordRowActions,
 } from '@/components/table/record-row-action'
+import { RecordContextMenu } from '@/components/table/record-context-menu'
 import {
   Table,
   TableBody,
@@ -161,51 +162,63 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
   )
 
   return (
-    <TableRow>
-      {/* Hours first, as on the Time logs list. */}
-      <TableCell className='text-right font-semibold tabular-nums max-md:first:basis-auto'>
-        {formatHours(log.hours ?? 0)}
-      </TableCell>
-      <TableCell label='Logged on'>
-        <div className='flex flex-col'>
-          <span className='font-medium'>{loggedDate}</span>
-        </div>
-      </TableCell>
-      <TableCell label='Tasks' className='text-sm tabular-nums md:text-center'>
-        <LinkedRecordsHoverCell
-          count={visibleTaskLinks.length}
-          icon={ENTITY_ICONS.task}
-          iconClassName={ENTITY_ACCENTS.task.icon}
-          ariaLabel={`${visibleTaskLinks.length} ${visibleTaskLinks.length === 1 ? 'task' : 'tasks'}`}
-          items={visibleTaskLinks.map(link => ({
-            id: link.task?.id ?? link.id,
-            label: link.task?.title ?? 'Untitled task',
-            onSelect: link.task
-              ? () => openSheet('task', link.task!.id)
-              : undefined,
-          }))}
-        />
-      </TableCell>
-      <TableCell>
-        <span className='line-clamp-2 text-sm'>{authorName}</span>
-      </TableCell>
-      <TableCell className='text-right max-md:ml-auto'>
-        <RecordRowActions>
-          <RecordRowAction
-            kind='edit'
-            entity='time log'
-            onClick={() => onEditRequest(log)}
+    <RecordContextMenu
+      entity='time-log'
+      id={log.id}
+      onEdit={() => onEditRequest(log)}
+      onArchive={() => onDeleteRequest(log)}
+      archiveDisabledReason={deleteReason}
+      pending={isDeleting && pendingDeleteId === log.id}
+    >
+      <TableRow>
+        {/* Hours first, as on the Time logs list. */}
+        <TableCell className='max-md:first-cell:basis-auto text-right font-semibold tabular-nums'>
+          {formatHours(log.hours ?? 0)}
+        </TableCell>
+        <TableCell label='Logged on'>
+          <div className='flex flex-col'>
+            <span className='font-medium'>{loggedDate}</span>
+          </div>
+        </TableCell>
+        <TableCell
+          label='Tasks'
+          className='text-sm tabular-nums md:text-center'
+        >
+          <LinkedRecordsHoverCell
+            count={visibleTaskLinks.length}
+            icon={ENTITY_ICONS.task}
+            iconClassName={ENTITY_ACCENTS.task.icon}
+            ariaLabel={`${visibleTaskLinks.length} ${visibleTaskLinks.length === 1 ? 'task' : 'tasks'}`}
+            items={visibleTaskLinks.map(link => ({
+              id: link.task?.id ?? link.id,
+              label: link.task?.title ?? 'Untitled task',
+              onSelect: link.task
+                ? () => openSheet('task', link.task!.id)
+                : undefined,
+            }))}
           />
-          <RecordRowAction
-            kind='archive'
-            entity='time log'
-            onClick={() => onDeleteRequest(log)}
-            disabled={deleteDisabled}
-            disabledReason={deleteReason}
-            pending={isDeleting && pendingDeleteId === log.id}
-          />
-        </RecordRowActions>
-      </TableCell>
-    </TableRow>
+        </TableCell>
+        <TableCell>
+          <span className='line-clamp-2 text-sm'>{authorName}</span>
+        </TableCell>
+        <TableCell className='text-right max-md:ml-auto'>
+          <RecordRowActions>
+            <RecordRowAction
+              kind='edit'
+              entity='time log'
+              onClick={() => onEditRequest(log)}
+            />
+            <RecordRowAction
+              kind='archive'
+              entity='time log'
+              onClick={() => onDeleteRequest(log)}
+              disabled={deleteDisabled}
+              disabledReason={deleteReason}
+              pending={isDeleting && pendingDeleteId === log.id}
+            />
+          </RecordRowActions>
+        </TableCell>
+      </TableRow>
+    </RecordContextMenu>
   )
 }

@@ -54,6 +54,11 @@ export type SheetLifecycle = {
   /** Wire straight to the sheet's `onOpenChange`. */
   handleSheetOpenChange: (next: boolean) => void
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
+  /**
+   * Run `next` once unsaved edits are dealt with: at once when clean, after
+   * "Discard" when dirty (Duplicate from the Actions menu).
+   */
+  confirmDiscard: (next: () => void) => void
 }
 
 /**
@@ -132,5 +137,6 @@ export const useSheetLifecycle = ({
     startQuiet: startQuietTransition,
     handleSheetOpenChange,
     unsavedChangesDialog,
+    confirmDiscard: requestConfirmation,
   }
 }

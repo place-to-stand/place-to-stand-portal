@@ -78,6 +78,20 @@
   },
   {
     "type": "action",
+    "name": "bulkSetArchived",
+    "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "resolveBulkMatchingIds",
+    "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
     "name": "signOut",
     "file": "apps/internal/app/(dashboard)/_actions/sign-out.ts",
     "kind": "public",
@@ -213,13 +227,6 @@
     "type": "action",
     "name": "emailInvoice",
     "file": "apps/internal/app/(dashboard)/invoices/actions/email-invoice.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "getInvoiceDetails",
-    "file": "apps/internal/app/(dashboard)/invoices/actions/get-invoice-details.ts",
     "kind": "admin",
     "capability": null
   },
@@ -701,6 +708,13 @@
   },
   {
     "type": "action",
+    "name": "bulkAcknowledgeSubmissions",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/bulk-acknowledge-submissions.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
     "name": "restoreSubmission",
     "file": "apps/internal/app/(dashboard)/submissions/actions/restore-submission.ts",
     "kind": "admin",
@@ -794,8 +808,8 @@
     "type": "route",
     "name": "GET /api/auth/callback/google",
     "file": "apps/internal/app/api/auth/callback/google/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.google"
   },
   {
     "type": "route",
@@ -808,8 +822,8 @@
     "type": "route",
     "name": "GET /api/auth/google",
     "file": "apps/internal/app/api/auth/google/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.google"
   },
   {
     "type": "route",
@@ -1173,14 +1187,14 @@
     "name": "POST /api/integrations/google/disconnect",
     "file": "apps/internal/app/api/integrations/google/disconnect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.google"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/google/status",
     "file": "apps/internal/app/api/integrations/google/status/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.google"
   },
   {
     "type": "route",
@@ -1212,10 +1226,24 @@
   },
   {
     "type": "route",
+    "name": "GET /api/invoices/[id]",
+    "file": "apps/internal/app/api/invoices/[id]/route.ts",
+    "kind": "capability",
+    "capability": "billing.manage"
+  },
+  {
+    "type": "route",
     "name": "GET /api/leads/[leadId]/conversion",
     "file": "apps/internal/app/api/leads/[leadId]/conversion/route.ts",
     "kind": "capability",
     "capability": "leads.convert"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/leads/[leadId]/emails",
+    "file": "apps/internal/app/api/leads/[leadId]/emails/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
   },
   {
     "type": "route",
