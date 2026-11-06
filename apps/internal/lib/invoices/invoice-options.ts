@@ -4,6 +4,7 @@ export type ClientOption = {
   value: string
   label: string
   keywords: string[]
+  matchHints?: string[]
   billingType: string
   state: string | null
 }
@@ -25,6 +26,7 @@ export const buildClientOptions = (clients: InvoiceClient[]): ClientOption[] =>
       value: client.id,
       label: client.name,
       keywords: [client.name],
+      matchHints: client.search_hints,
       billingType: client.billing_type,
       state: client.state ?? null,
     }))

@@ -25,7 +25,10 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { assertCan } from '@/lib/auth/permissions'
 import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
-import { listClientDirectory } from '@/lib/queries/companies/billing'
+import {
+  listClientDirectory,
+  toClientPickerRow,
+} from '@/lib/queries/companies/billing'
 import { getContactSheetInputById } from '@/lib/queries/contacts'
 import {
   getHourBlockWithClientById,
@@ -163,11 +166,7 @@ const resolveProjectInit: SheetInitResolver<'project'> = async (user, id) => {
     fetchAdminUsers(),
   ])
 
-  const clientRows = clientDirectory.map(client => ({
-    id: client.id,
-    name: client.name,
-    deleted_at: client.deletedAt,
-  }))
+  const clientRows = clientDirectory.map(toClientPickerRow)
   const adminUsers = adminUsersResult.map(admin => ({
     id: admin.id,
     full_name: admin.full_name,
