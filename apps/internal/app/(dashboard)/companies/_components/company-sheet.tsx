@@ -24,6 +24,8 @@ import { CONTACT_OPTIONS_QUERY_KEY } from '@/components/contacts/contact-link-pi
 import { roleCan } from '@/lib/auth/capabilities'
 import { PENDING_REASON, getSubmitLabel } from '@/lib/forms/form-controls'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { CompanyBillingIntent } from '@/lib/companies/sheet-save-schema'
 
@@ -232,8 +234,10 @@ export function CompanySheet({
     Record<string, string> | undefined
   const seededPrimaryContactId =
     form.formState.defaultValues?.primaryContactId ?? null
+  const { stay, isReopening } = useSaveAndStay('company', companyId, open)
+
   const handleSubmit = useCallback(
-    (values: CompanyFormValues) => {
+    (values: CompanyFormValues, mode: SheetSaveMode = 'close') => {
       const handle = billingRef.current
       let billing: CompanyBillingIntent = { kind: 'none' }
       if (isAdmin && handle) {
@@ -315,8 +319,19 @@ export function CompanySheet({
         })
         form.reset(values)
         setBillingDirty(false)
+        if (mode === 'stay' && isEditing) {
+          // Refetch while still saving: the form re-seeds from the saved
+          // company (people added here become its people) before Save
+          // frees up again.
+          await refresh(false)
+          return
+        }
         await refresh()
-        // Save = done = close, for create and edit alike.
+        if (mode === 'stay') {
+          // A new company: reopen as its own sheet.
+          stay({ id: result.id, rebaseline: () => {} })
+          return
+        }
         onClose()
       })
     },
@@ -331,16 +346,20 @@ export function CompanySheet({
       refresh,
       seededPrimaryContactId,
       seededTitles,
+      stay,
       toast,
     ]
   )
 
   const handleSave = useCallback(
-    () => form.handleSubmit(handleSubmit)(),
+    (mode: SheetSaveMode = 'close') => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values => handleSubmit(values, mode))()
+    },
     [form, handleSubmit]
   )
 
-  const submitDisabled = isPending || isLoading || isArchived
+  const submitDisabled = isPending || isReopening || isLoading || isArchived
   const { undo, redo, canUndo, canRedo } = useSheetFormControls({
     form,
     isActive: open,
@@ -457,7 +476,7 @@ export function CompanySheet({
                   onSubmit={event => {
                     event.preventDefault()
                     // The save reports its own result as a toast.
-                    void handleSave()
+                    handleSave()
                   }}
                   className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
                 >
@@ -537,7 +556,9 @@ export function CompanySheet({
                         canUndo={canUndo}
                         canRedo={canRedo}
                         // An archived company has no archive action here.
-                        isEditing={isEditing && !isArchived}
+                        isEditing={isEditing}
+                        hideArchive={isArchived}
+                        onSave={handleSave}
                         archiveDisabled={
                           isPending || !isEditing || Boolean(archiveRefusal)
                         }

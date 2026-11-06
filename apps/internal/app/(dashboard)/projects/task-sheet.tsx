@@ -28,6 +28,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { LEADS_FIRST_ROLES } from '@/lib/auth/roles'
 import { useLeadOptions } from '@/lib/leads/use-lead-options'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 import type {
   DbUser,
@@ -185,7 +186,10 @@ export function TaskSheet(props: TaskSheetProps) {
   const historyKey = props.task?.id ?? 'task:new'
 
   const handleSave = useCallback(
-    () => form.handleSubmit(handleFormSubmit)(),
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values => handleFormSubmit(values, mode))()
+    },
     [form, handleFormSubmit]
   )
 
@@ -516,6 +520,7 @@ export function TaskSheet(props: TaskSheetProps) {
                 formId={TASK_FORM_ID}
                 archiveAriaLabel='Archive task'
                 saveLabel={saveLabel}
+                onSave={handleSave}
                 submitDisabled={submitDisabled}
                 submitDisabledReason={submitDisabledReason}
                 undo={undo}

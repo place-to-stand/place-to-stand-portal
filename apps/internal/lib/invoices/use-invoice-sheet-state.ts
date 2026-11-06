@@ -24,6 +24,8 @@ import {
   archiveInvoice,
 } from '@/app/(dashboard)/invoices/actions'
 import { toastLink, useToast } from '@/components/ui/use-toast'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import {
   useSheetLifecycle,
   type SheetLifecycle,
@@ -102,7 +104,7 @@ export type UseInvoiceSheetStateReturn = {
   totals: { subtotal: number; taxAmount: number; total: number }
   taxRateLabel: string | null
   handleSheetOpenChange: (open: boolean) => void
-  handleSubmit: (values: InvoiceFormValues) => void
+  handleSubmit: (values: InvoiceFormValues, mode?: SheetSaveMode) => void
   handleRequestDelete: () => void
   handleCancelDelete: () => void
   handleConfirmDelete: () => void
@@ -371,8 +373,14 @@ export function useInvoiceSheetState({
   // Submit
   // ---------------------------------------------------------------------------
 
+  const { stay, isReopening } = useSaveAndStay(
+    'invoice',
+    invoice?.id ?? null,
+    open
+  )
+
   const handleSubmit = useCallback(
-    (values: InvoiceFormValues) => {
+    (values: InvoiceFormValues, mode: SheetSaveMode = 'close') => {
       if (readOnly) return
 
       startSave(async () => {
@@ -421,6 +429,20 @@ export function useInvoiceSheetState({
             link: toastLink('invoice', result.id),
           })
 
+          if (mode === 'stay') {
+            if (isEditing && result.id) {
+              // Reload before the save settles: new line items only get
+              // their ids from the server, and a second save without them
+              // would add those lines again.
+              const fullInvoice = await getInvoiceDetails(result.id)
+              invoiceWithLineItemsRef.current = fullInvoice
+              loadedClientIdRef.current = fullInvoice?.company_id ?? null
+              resetFormState(fullInvoice)
+            }
+            stay({ id: result.id, rebaseline: () => {} })
+            return
+          }
+
           resetFormState(null)
           onOpenChange(false)
           onComplete()
@@ -448,6 +470,7 @@ export function useInvoiceSheetState({
       readOnly,
       resetFormState,
       startSave,
+      stay,
       toast,
     ]
   )
@@ -641,13 +664,13 @@ export function useInvoiceSheetState({
   const submitButton: SubmitButtonState = useMemo(
     () =>
       deriveSubmitButtonState(
-        isPending,
+        isPending || isReopening,
         isEditing,
         clientOptions,
         invoiceStatus,
-        isBusy
+        isBusy || isReopening
       ),
-    [clientOptions, invoiceStatus, isEditing, isPending, isBusy]
+    [clientOptions, invoiceStatus, isEditing, isPending, isBusy, isReopening]
   )
 
   const deleteButton: DeleteButtonState = useMemo(

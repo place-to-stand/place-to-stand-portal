@@ -25,6 +25,8 @@ import type { RoleMonthOption } from '@/lib/users/role-months'
 import { USER_ROLES } from '@/lib/users/user-validation'
 import type { ContactsTableContact } from '@/lib/people/use-contacts-table-state'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 
 /** The record handed to `onCreated` (and to a host picker underneath). */
 export type CreatedContact = ContactSheetInput
@@ -126,6 +128,10 @@ export function useContactSheetState({
   // The person's `updated_at` as loaded: Save sends it back, and the server
   // refuses if someone else saved them since.
   const [loadedUpdatedAt, setLoadedUpdatedAt] = useState<string | null>(null)
+  // A keep-open save reloads the person from the server (bumps the token);
+  // Save waits until that read lands, so it never checks an old version.
+  const [reloadToken, setReloadToken] = useState(0)
+  const [isReloading, setIsReloading] = useState(false)
   // Their live sign-in's role as saved (null: they can't sign in). Shown
   // read-only in Access to people who can't change sign-ins.
   const [savedSignInRole, setSavedSignInRole] = useState<
@@ -230,6 +236,7 @@ export function useContactSheetState({
       .then(data => {
         if (cancelled) return
         setCompaniesLoaded(true)
+        setIsReloading(false)
         if (data.person) {
           setLoadedUpdatedAt(data.person.updatedAt)
           setSavedSignInRole(data.person.signInRole)
@@ -270,13 +277,24 @@ export function useContactSheetState({
       })
       .catch(err => {
         console.error('Failed to fetch contact sheet data:', err)
-        if (!cancelled) setCompaniesLoadFailed(true)
+        if (!cancelled) {
+          setCompaniesLoadFailed(true)
+          setIsReloading(false)
+        }
       })
 
     return () => {
       cancelled = true
     }
-  }, [open, contactKey, form, initialName, initialCompanyId, canManageSignIn])
+  }, [
+    open,
+    contactKey,
+    reloadToken,
+    form,
+    initialName,
+    initialCompanyId,
+    canManageSignIn,
+  ])
 
   // Their sign-in, loaded after the reset like the companies: it becomes
   // the saved state of the Sign-in fields, not an edit.
@@ -320,6 +338,7 @@ export function useContactSheetState({
   }, [
     open,
     contactKey,
+    reloadToken,
     initialName,
     initialCompanyId,
     signInUserId,
@@ -333,14 +352,21 @@ export function useContactSheetState({
   const { requestConfirmation, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty: form.formState.isDirty })
 
-  const submitDisabled = isPending || isAvatarUploading || readOnly
-  const submitDisabledReason = isPending
-    ? PENDING_REASON
-    : isAvatarUploading
-      ? 'Wait for the photo to finish uploading.'
-      : readOnly
-        ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
-        : null
+  const { stay, isReopening } = useSaveAndStay(
+    'contact',
+    contact?.id ?? null,
+    open
+  )
+  const submitDisabled =
+    isPending || isReopening || isReloading || isAvatarUploading || readOnly
+  const submitDisabledReason =
+    isPending || isReopening || isReloading
+      ? PENDING_REASON
+      : isAvatarUploading
+        ? 'Wait for the photo to finish uploading.'
+        : readOnly
+          ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
+          : null
 
   const deleteDisabled = isPending || !isEditing
   const deleteDisabledReason = isPending
@@ -364,7 +390,7 @@ export function useContactSheetState({
   )
 
   const handleFormSubmit = useCallback(
-    (data: ContactFormData) => {
+    (data: ContactFormData, mode: SheetSaveMode = 'close') => {
       startTransition(async () => {
         // One Save: the person, their companies, photo and sign-in in one
         // request (one transaction on the server).
@@ -444,10 +470,24 @@ export function useContactSheetState({
           })
         }
 
+        if (mode === 'stay') {
+          stay({
+            id: result.id ?? contact?.id,
+            // Read the person back: their version, companies, photo and
+            // sign-in as saved.
+            rebaseline: () => {
+              setIsReloading(true)
+              setReloadToken(token => token + 1)
+            },
+          })
+          return
+        }
+
         onComplete()
       })
     },
     [
+      stay,
       contact?.id,
       companiesLoaded,
       loadedUpdatedAt,

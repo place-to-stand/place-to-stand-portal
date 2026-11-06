@@ -38,6 +38,7 @@ export function LeadSheet(props: LeadSheetProps) {
     canRedo,
     unsavedChangesDialog,
     handleFormSubmit,
+    handleSave,
     handleArchive,
     handleSheetOpenChange,
   } = useLeadSheetState(props)
@@ -66,7 +67,7 @@ export function LeadSheet(props: LeadSheetProps) {
             <form
               id={LEAD_FORM_ID}
               className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
-              onSubmit={form.handleSubmit(handleFormSubmit)}
+              onSubmit={form.handleSubmit(values => handleFormSubmit(values))}
             >
               {/* Left Column - Form Fields */}
               <div
@@ -87,6 +88,7 @@ export function LeadSheet(props: LeadSheetProps) {
                   <SheetFormFooter
                     formId={LEAD_FORM_ID}
                     saveLabel={saveLabel}
+                    onSave={handleSave}
                     submitDisabled={submitDisabled}
                     submitDisabledReason={submitDisabledReason}
                     undo={undo}

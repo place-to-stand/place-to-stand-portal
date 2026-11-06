@@ -80,7 +80,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
   )
 
   const submitHandler = useMemo(
-    () => form.handleSubmit(onSubmit),
+    () => form.handleSubmit(values => onSubmit(values)),
     [form, onSubmit]
   )
 

@@ -40,6 +40,7 @@ import type {
   SubmitButtonState,
 } from '@/lib/projects/sheet/project-sheet-ui-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 import type { ProjectSheetFieldState } from './project-sheet-field-state'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { creatableProjectTypes } from '@/lib/auth/capabilities'
@@ -66,7 +67,9 @@ export type ProjectSheetFormProps = {
   deleteButton: DeleteButtonState
   onSubmit: (
     values: ProjectSheetFormValues,
-    changes: ProjectSheetLinkChanges
+    changes: ProjectSheetLinkChanges,
+    mode?: SheetSaveMode,
+    onLinksSaved?: () => void
   ) => void
   onRequestDelete: () => void
   onReposDirtyChange: (isDirty: boolean) => void
@@ -145,22 +148,42 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     setRemovedRepoIds(ids)
   }, [])
 
-  const handleSave = useCallback(
-    (e?: React.BaseSyntheticEvent) => {
+  // A keep-open save applied the link edits: they are saved, not pending.
+  const clearSavedLinks = useCallback(() => {
+    setPendingRepos([])
+    setRemovedRepoIds(new Set())
+    setPendingLinks([])
+    setRemovedLinkIds(new Set())
+  }, [])
+
+  const save = useCallback(
+    (mode: SheetSaveMode, e?: React.BaseSyntheticEvent) => {
       e?.preventDefault()
       // Convert removedRepoIds Set to array for submission
       // onSubmit reports its own result; validation errors stay on fields.
       void form.handleSubmit(values =>
-        onSubmit(values, {
-          pendingRepos: pendingReposRef.current,
-          removedRepoIds: Array.from(removedRepoIdsRef.current),
-          pendingIntegrationLinks: pendingLinksRef.current,
-          removedIntegrationLinkIds: Array.from(removedLinkIdsRef.current),
-        })
+        onSubmit(
+          values,
+          {
+            pendingRepos: pendingReposRef.current,
+            removedRepoIds: Array.from(removedRepoIdsRef.current),
+            pendingIntegrationLinks: pendingLinksRef.current,
+            removedIntegrationLinkIds: Array.from(removedLinkIdsRef.current),
+          },
+          mode,
+          clearSavedLinks
+        )
       )(e)
     },
-    [form, onSubmit]
+    [clearSavedLinks, form, onSubmit]
   )
+
+  // The form's own submit (the primary button, Enter): save and close.
+  const handleFormSubmit = useCallback(
+    (e?: React.BaseSyntheticEvent) => save('close', e),
+    [save]
+  )
+  const handleSave = useCallback((mode: SheetSaveMode) => save(mode), [save])
 
   // External state for undo/redo (repos)
   // IMPORTANT: getExternalState must be stable (no state dependencies) because the
@@ -249,7 +272,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           one scroll with the footer pinned to the bottom. */}
       <form
         id={PROJECT_FORM_ID}
-        onSubmit={handleSave}
+        onSubmit={handleFormSubmit}
         className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
       >
         <div
@@ -542,6 +565,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
             <SheetFormFooter
               formId={PROJECT_FORM_ID}
               saveLabel={submitButton.label}
+              onSave={handleSave}
               submitDisabled={submitButton.disabled}
               submitDisabledReason={submitButton.reason}
               undo={undo}

@@ -309,6 +309,7 @@ function SampleEntitySheet({
                 <SheetFormFooter
                   formId={FORM_ID}
                   saveLabel='Save'
+                  onSave={() => undefined}
                   submitDisabled={false}
                   submitDisabledReason={null}
                   undo={() => undefined}

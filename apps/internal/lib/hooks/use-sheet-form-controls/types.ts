@@ -1,5 +1,7 @@
 import type { FieldValues, UseFormReturn } from 'react-hook-form'
 
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+
 export type FormSnapshot<T extends FieldValues> = {
   values: T
   externalState?: unknown
@@ -10,7 +12,8 @@ export type UseSheetFormControlsOptions<T extends FieldValues> = {
   form: UseFormReturn<T>
   isActive: boolean
   canSave: boolean
-  onSave: () => void
+  /** ⌘S calls it with `close`, ⇧⌘S with `stay`. */
+  onSave: (mode: SheetSaveMode) => void
   historyKey: string | number
   maxSnapshots?: number
   debounceMs?: number

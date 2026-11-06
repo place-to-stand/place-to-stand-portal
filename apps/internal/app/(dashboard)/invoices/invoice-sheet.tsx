@@ -63,6 +63,7 @@ import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-colum
 import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
 import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
 import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 const INVOICE_FORM_ID = 'invoice-form'
 
@@ -149,8 +150,12 @@ export function InvoiceSheet({
   )
 
   const handleSave = useCallback(
-    () =>
-      form.handleSubmit((values: InvoiceFormValues) => handleSubmit(values))(),
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit((values: InvoiceFormValues) =>
+        handleSubmit(values, mode)
+      )()
+    },
     [form, handleSubmit]
   )
 
@@ -580,6 +585,7 @@ export function InvoiceSheet({
                       <SheetFormFooter
                         formId={INVOICE_FORM_ID}
                         saveLabel={submitButton.label}
+                        onSave={handleSave}
                         submitDisabled={submitButton.disabled}
                         submitDisabledReason={submitButton.reason}
                         undo={undo}

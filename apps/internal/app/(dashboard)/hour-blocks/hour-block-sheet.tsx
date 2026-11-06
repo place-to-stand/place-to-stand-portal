@@ -24,6 +24,7 @@ import {
   type HourBlockFormValues,
 } from '@/lib/hour-blocks/use-hour-block-sheet-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 import type {
   HourBlockClient,
   HourBlockWithClient,
@@ -74,10 +75,12 @@ export function HourBlockSheet({
   })
 
   const handleSave = useCallback(
-    () =>
-      form.handleSubmit((values: HourBlockFormValues) =>
-        handleSubmit(values)
-      )(),
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit((values: HourBlockFormValues) =>
+        handleSubmit(values, mode)
+      )()
+    },
     [form, handleSubmit]
   )
 
@@ -219,6 +222,7 @@ export function HourBlockSheet({
             <SheetFormFooter
               formId={HOUR_BLOCK_FORM_ID}
               saveLabel={submitButton.label}
+              onSave={handleSave}
               submitDisabled={submitButton.disabled}
               submitDisabledReason={submitButton.reason}
               undo={undo}

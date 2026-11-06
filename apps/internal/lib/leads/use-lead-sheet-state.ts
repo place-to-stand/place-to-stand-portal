@@ -15,6 +15,8 @@ import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import { archiveLead, saveLead } from '@/app/(dashboard)/leads/actions'
 import { getSubmitLabel } from '@/lib/forms/form-controls'
@@ -127,11 +129,12 @@ export function useLeadSheetState({
     }
   }, [form, selectedSourceType])
 
-  const submitDisabled = isSaving || isArchiving
+  const { stay, isReopening } = useSaveAndStay('lead', lead?.id ?? null, open)
+  const submitDisabled = isSaving || isArchiving || isReopening
   const historyKey = lead?.id ?? 'lead:new'
 
   const handleFormSubmit = useCallback(
-    (values: LeadFormValues) => {
+    (values: LeadFormValues, mode: SheetSaveMode = 'close') => {
       // Decision 7: Won needs a company. Say so on the field before asking
       // the server, which enforces the same rule.
       const existingWonState = lead
@@ -180,17 +183,26 @@ export function useLeadSheetState({
           link: toastLink('lead', result.leadId ?? lead?.id),
         })
 
-        form.reset({
-          ...values,
-          contact: values.contact ?? null,
-          company: values.company ?? null,
-          sourceType: values.sourceType ?? null,
-          sourceDetail: values.sourceDetail ?? '',
-          status: values.status,
-          assigneeId: values.assigneeId ?? null,
-          notes: values.notes ?? '',
-        })
+        const rebaseline = () =>
+          form.reset({
+            ...values,
+            contact: values.contact ?? null,
+            company: values.company ?? null,
+            sourceType: values.sourceType ?? null,
+            sourceDetail: values.sourceDetail ?? '',
+            status: values.status,
+            assigneeId: values.assigneeId ?? null,
+            notes: values.notes ?? '',
+          })
 
+        // Keep open: stay on the lead. A just-won lead's billing is one
+        // click away on its company, so nothing opens over it.
+        if (mode === 'stay') {
+          stay({ id: result.leadId ?? lead?.id, rebaseline })
+          return
+        }
+
+        rebaseline()
         setArchiveDialogOpen(false)
         onOpenChange(false)
         onSuccess()
@@ -218,12 +230,16 @@ export function useLeadSheetState({
       onSuccess,
       onCreated,
       openSheet,
+      stay,
       toast,
     ]
   )
 
-  const handleSaveShortcut = useCallback(
-    () => form.handleSubmit(handleFormSubmit)(),
+  const handleSave = useCallback(
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values => handleFormSubmit(values, mode))()
+    },
     [form, handleFormSubmit]
   )
 
@@ -232,7 +248,7 @@ export function useLeadSheetState({
       form,
       isActive: open,
       canSave: !submitDisabled,
-      onSave: handleSaveShortcut,
+      onSave: handleSave,
       historyKey,
     }
   )
@@ -242,11 +258,12 @@ export function useLeadSheetState({
     [isEditing, isSaving]
   )
 
-  const submitDisabledReason = isSaving
-    ? 'Saving lead...'
-    : isArchiving
-      ? 'Archiving lead...'
-      : null
+  const submitDisabledReason =
+    isSaving || isReopening
+      ? 'Saving lead...'
+      : isArchiving
+        ? 'Archiving lead...'
+        : null
 
   const archiveDisabledReason = isSaving
     ? 'Finish saving before archiving.'
@@ -328,6 +345,7 @@ export function useLeadSheetState({
     canRedo,
     unsavedChangesDialog,
     handleFormSubmit,
+    handleSave,
     handleArchive,
     handleSheetOpenChange,
   }

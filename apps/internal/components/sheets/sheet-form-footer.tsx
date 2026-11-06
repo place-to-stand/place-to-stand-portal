@@ -6,6 +6,11 @@ import { Archive, Redo2, Undo2 } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import {
+  SAVE_AND_CLOSE_SHORTCUT,
+  SAVE_AND_STAY_SHORTCUT,
+  type SheetSaveMode,
+} from '@/lib/sheets/save-mode'
 
 /**
  * The sheet footer chrome on its own — for sheets whose actions aren't the
@@ -26,7 +31,18 @@ export function SheetFooterBar({ children }: { children: ReactNode }) {
 export type SheetFormFooterProps = {
   /** The id of the <form> the submit button targets. */
   formId: string
+  /**
+   * The sheet's submit label ("Save changes", "Create task", "Saving...").
+   * Only its in-flight form ("Saving...", "Creating...") is shown as is; at
+   * rest the two buttons read "Save and close" / "Save" (create: "Create and
+   * close" / "Create").
+   */
   saveLabel: string
+  /**
+   * Save and keep the sheet open: the second button and ⇧⌘S. Must run the
+   * same submit function as the primary button, with mode `stay`.
+   */
+  onSave: (mode: SheetSaveMode) => void
   submitDisabled: boolean
   submitDisabledReason: string | null
   undo: () => void
@@ -34,6 +50,8 @@ export type SheetFormFooterProps = {
   canUndo: boolean
   canRedo: boolean
   isEditing: boolean
+  /** Hide the archive action on an existing record (an archived one). */
+  hideArchive?: boolean
   archiveDisabled: boolean
   archiveDisabledReason: string | null
   onRequestArchive: () => void
@@ -56,7 +74,12 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
     archiveDisabledReason,
     onRequestArchive,
     archiveAriaLabel,
+    onSave,
+    hideArchive = false,
   } = props
+
+  const verb = isEditing ? 'Save' : 'Create'
+  const inFlight = saveLabel.endsWith('...')
 
   return (
     <SheetFooterBar>
@@ -65,15 +88,31 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           disabled={submitDisabled}
           reason={submitDisabledReason}
         >
+          {/* Submits the form, so Enter in a field also saves and closes. */}
           <Button
             type='submit'
             form={formId}
             // xs (28px) to match the icon actions beside it: one height per row.
             size='xs'
             disabled={submitDisabled}
-            aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
+            aria-label={`${verb} and close (${SAVE_AND_CLOSE_SHORTCUT})`}
           >
-            {saveLabel}
+            {inFlight ? saveLabel : `${verb} and close`}
+          </Button>
+        </DisabledFieldTooltip>
+        <DisabledFieldTooltip
+          disabled={submitDisabled}
+          reason={submitDisabledReason}
+        >
+          <Button
+            type='button'
+            variant='outline'
+            size='xs'
+            disabled={submitDisabled}
+            onClick={() => onSave('stay')}
+            aria-label={`${verb} and keep open (${SAVE_AND_STAY_SHORTCUT})`}
+          >
+            {verb}
           </Button>
         </DisabledFieldTooltip>
         <RowActionButton
@@ -93,7 +132,7 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           icon={<Redo2 />}
         />
       </div>
-      {isEditing ? (
+      {isEditing && !hideArchive ? (
         <DisabledFieldTooltip
           disabled={archiveDisabled}
           reason={archiveDisabledReason}
