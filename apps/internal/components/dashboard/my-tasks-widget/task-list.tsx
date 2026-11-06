@@ -68,6 +68,13 @@ export function TaskList({
 function TaskListItem({ task }: { task: AssignedTaskSummary }) {
   const dueMeta = getTaskDueMeta(task.dueOn, { status: task.status })
   const clientCompanyId = getClientCompanyId(task)
+  const projectHref = task.project
+    ? projectTasksHref({
+        projectSlug: task.project.slug,
+        projectType: task.project.type,
+        clientSlug: task.client?.slug ?? null,
+      })
+    : null
   const statusToken = getTaskStatusToken(task.status)
   const statusLabel = getTaskStatusLabel(task.status)
   const clientLabel = getClientDisplayName(task)
@@ -137,16 +144,18 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
                 </>
               ) : null}
               {/* A lead task has no project: its lead line says where it is. */}
-              {!task.project ? null : (
+              {!task.project ? null : !projectHref ? (
+                <span className='inline-flex min-w-0 items-center gap-1'>
+                  <ENTITY_ICONS.project
+                    className='size-3 shrink-0'
+                    aria-hidden
+                  />
+                  <span className='truncate'>{task.project.name}</span>
+                </span>
+              ) : (
                 <MetaLink
                   // A project opens its board, not its sheet.
-                  href={
-                    projectTasksHref({
-                      projectSlug: task.project.slug,
-                      projectType: task.project.type,
-                      clientSlug: task.client?.slug ?? null,
-                    }) ?? undefined
-                  }
+                  href={projectHref}
                   onClick={e => e.stopPropagation()}
                   className='pointer-events-auto relative z-20'
                   icon={

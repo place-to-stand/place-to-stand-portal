@@ -96,6 +96,7 @@ function TimeLogRow({
   onOpen: (entryId: string) => void
   isOpening: boolean
 }) {
+  const projectHref = projectTasksHref(entry)
   // A log can span several tasks; the first names the row and the rest
   // collapse into a count so the primary line stays one line.
   const [firstTask, ...otherTasks] = entry.taskTitles
@@ -157,24 +158,34 @@ function TimeLogRow({
                 </span>
               </>
             ) : null}
-            <MetaLink
-              // A project opens its board, not its sheet.
-              href={projectTasksHref(entry) ?? undefined}
-              className='pointer-events-auto relative z-20'
-              icon={
-                <>
-                  {entry.clientName
-                    ? null
-                    : renderProjectTypeIcon(entry.projectType)}
-                  <ENTITY_ICONS.project
-                    className='size-3 shrink-0'
-                    aria-hidden
-                  />
-                </>
-              }
-            >
-              {entry.projectName}
-            </MetaLink>
+            {projectHref ? (
+              <MetaLink
+                // A project opens its board, not its sheet.
+                href={projectHref}
+                className='pointer-events-auto relative z-20'
+                icon={
+                  <>
+                    {entry.clientName
+                      ? null
+                      : renderProjectTypeIcon(entry.projectType)}
+                    <ENTITY_ICONS.project
+                      className='size-3 shrink-0'
+                      aria-hidden
+                    />
+                  </>
+                }
+              >
+                {entry.projectName}
+              </MetaLink>
+            ) : (
+              <span className='inline-flex min-w-0 items-center gap-1'>
+                {entry.clientName
+                  ? null
+                  : renderProjectTypeIcon(entry.projectType)}
+                <ENTITY_ICONS.project className='size-3 shrink-0' aria-hidden />
+                <span className='truncate'>{entry.projectName}</span>
+              </span>
+            )}
           </div>
         </div>
         {/*
