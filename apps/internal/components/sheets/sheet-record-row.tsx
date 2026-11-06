@@ -73,7 +73,6 @@ export function SheetRecordRow({
   /**
    * `field`: exactly a form field's height (36px), for a card standing in
    * for a field (a picked record), so it lines up with the fields beside it.
-   * The description then sits after the title on the same line.
    */
   size?: 'default' | 'field'
   className?: string
@@ -103,7 +102,6 @@ export function SheetRecordRow({
     )
     className = cn('opacity-60', className)
   }
-  const fieldSize = size === 'field'
   const body = (
     <>
       {leading ? (
@@ -117,31 +115,19 @@ export function SheetRecordRow({
           aria-hidden
         />
       ) : null}
-      {fieldSize ? (
-        // One line at field height: the detail follows the name, muted,
-        // and gives way first when space runs out.
-        <span className='flex min-w-0 flex-1 items-baseline gap-2 text-left text-sm'>
-          <span className='min-w-0 truncate font-medium'>{title}</span>
-          {description ? (
-            <span className='text-muted-foreground min-w-0 shrink-[999] truncate'>
-              {description}
-            </span>
-          ) : null}
-        </span>
-      ) : (
-        <span className='flex min-w-0 flex-1 flex-col text-left text-sm leading-tight'>
-          <span className='truncate font-medium'>{title}</span>
-          {description ? (
-            <span className='text-muted-foreground truncate text-xs'>
-              {description}
-            </span>
-          ) : null}
-        </span>
-      )}
+      <span className='flex min-w-0 flex-1 flex-col text-left text-sm leading-tight'>
+        <span className='truncate font-medium'>{title}</span>
+        {description ? (
+          <span className='text-muted-foreground truncate text-xs'>
+            {description}
+          </span>
+        ) : null}
+      </span>
       {badge ? <span className='shrink-0 pr-1.5'>{badge}</span> : null}
     </>
   )
 
+  const fieldSize = size === 'field'
   const openClassName = cn(
     'focus-visible:ring-ring/50 -ml-3 flex min-w-0 flex-1 cursor-pointer items-center gap-3 self-stretch rounded-l-md pl-3 outline-none focus-visible:ring-2',
     !fieldSize && '-my-1.5 py-1.5'
@@ -179,7 +165,7 @@ export function SheetRecordRow({
   )
   const lineClassName = cn(
     'flex items-center gap-3 pl-3',
-    fieldSize ? 'h-9 pr-1' : 'min-h-11 py-1.5 pr-1.5'
+    fieldSize ? 'h-9 pr-1.5' : 'min-h-11 py-1.5 pr-1.5'
   )
 
   if (!fields) {

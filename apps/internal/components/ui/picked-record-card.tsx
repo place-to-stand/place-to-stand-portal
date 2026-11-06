@@ -93,8 +93,9 @@ export const PickedRecordCard = React.forwardRef<
         description={description}
         onOpen={record.onOpen}
         openLabel={`Open ${name}`}
-        // Same height as the fields beside it.
-        size='field'
+        // One line sits at the fields' height; a detail line gets the
+        // roomier two-line card.
+        size={description ? 'default' : 'field'}
         actions={
           disabled ? undefined : (
             <>
