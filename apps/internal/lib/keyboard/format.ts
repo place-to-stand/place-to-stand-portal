@@ -3,16 +3,24 @@ import type { Shortcut } from './shortcuts'
 const MAC_LABELS: Record<string, string> = {
   mod: '⌘',
   meta: '⌘',
+  command: '⌘',
   ctrl: '⌃',
+  control: '⌃',
   alt: '⌥',
+  option: '⌥',
   shift: '⇧',
   enter: '↩',
   escape: 'Esc',
   backspace: '⌫',
+  delete: '⌦',
+  capslock: '⇪',
 }
 
 const OTHER_LABELS: Record<string, string> = {
   mod: 'Ctrl',
+  command: 'Ctrl',
+  control: 'Ctrl',
+  option: 'Alt',
   meta: 'Win',
   ctrl: 'Ctrl',
   alt: 'Alt',
@@ -27,7 +35,10 @@ export function formatKey(part: string, isMac: boolean): string {
   const lower = part.toLowerCase()
   const label = (isMac ? MAC_LABELS : OTHER_LABELS)[lower]
   if (label) return label
-  return part.length === 1 ? part.toUpperCase() : part
+  // `k` → `K`, `tab` → `Tab`
+  return part.length === 1
+    ? part.toUpperCase()
+    : part.charAt(0).toUpperCase() + part.slice(1)
 }
 
 /** `mod+shift+z` → `['⌘', '⇧', 'Z']` on a Mac, `['Ctrl', 'Shift', 'Z']` elsewhere. */

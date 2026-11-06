@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-import { matchesShortcut } from '@/lib/keyboard/match'
+import { isEditableTarget, matchesShortcut } from '@/lib/keyboard/match'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 type UseRecordCycleOptions = {
@@ -25,6 +25,8 @@ export function useRecordCycle({
 }: UseRecordCycleOptions) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // A sheet open over the board keeps its fields' keys to itself.
+      if (isEditableTarget(e.target)) return
       if (matchesShortcut(e, SHORTCUTS.previousProject) && canPrevious) {
         e.preventDefault()
         onPrevious()

@@ -28,8 +28,8 @@ import {
   onePagePanel,
   optionalLabel,
   sheetUrlThroughBuilders,
-  shortcutRegistry,
 } from './rules/guards.mjs'
+import { shortcutRegistry } from './rules/shortcuts.mjs'
 import {
   figureCellAligned,
   noDetailsSection,

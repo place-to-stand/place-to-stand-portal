@@ -44,11 +44,11 @@ function matchesKeys(event: KeyEventLike, keys: string): boolean {
     return false
   }
 
-  if (want.alt !== event.altKey) return false
-  // Shift is part of a symbol like `?` or `[`, so only letters, digits and
-  // named keys check it (`mod+z` must not fire on ⌘⇧Z).
-  if (SHIFT_IS_SEPARATE.test(want.key) && want.shift !== event.shiftKey) {
-    return false
+  // Shift and Alt (AltGr) are how many layouts type a symbol like `?` or `[`
+  // (German: AltGr+8), so only letters, digits and named keys check them
+  // (`mod+z` must not fire on ⌘⇧Z).
+  if (SHIFT_IS_SEPARATE.test(want.key)) {
+    if (want.shift !== event.shiftKey || want.alt !== event.altKey) return false
   }
   return true
 }
@@ -72,5 +72,8 @@ export function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   if (target.isContentEditable) return true
   const tag = target.tagName
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+  // A node inside the editor (a link, a task-list checkbox) rather than the
+  // editable host itself.
+  return target.closest('[contenteditable="true"]') !== null
 }

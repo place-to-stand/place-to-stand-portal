@@ -69,3 +69,33 @@ test('every shortcut is listed, and none twice in one group', () => {
     assert.equal(new Set(keys).size, keys.length, section.group)
   }
 })
+
+test('AltGr symbols still match (German [ is AltGr+8)', () => {
+  assert.ok(
+    matchesShortcut(
+      press('[', { ctrlKey: true, altKey: true }),
+      SHORTCUTS.previousProject
+    )
+  )
+  assert.ok(
+    !matchesShortcut(
+      press('s', { metaKey: true, altKey: true }),
+      SHORTCUTS.save
+    )
+  )
+})
+
+test('named keys read as words', () => {
+  assert.equal(formatShortcut('shift+tab', false), 'Shift+Tab')
+  assert.equal(formatShortcut('option+delete', true), '⌥⌦')
+})
+
+test('Enter sends, Shift+Enter does not', () => {
+  assert.ok(matchesShortcut(press('Enter'), SHORTCUTS.sendPlanningMessage))
+  assert.ok(
+    !matchesShortcut(
+      press('Enter', { shiftKey: true }),
+      SHORTCUTS.sendPlanningMessage
+    )
+  )
+})

@@ -59,12 +59,13 @@ export const headingIcons = {
   6: HeadingSixIcon,
 }
 
-/** Read from the shortcut registry; levels 5 and 6 are not in the toolbar. */
-export const HEADING_SHORTCUT_KEYS: Partial<Record<Level, string>> = {
+export const HEADING_SHORTCUT_KEYS: Record<Level, string> = {
   1: SHORTCUTS.heading1.keys,
   2: SHORTCUTS.heading2.keys,
   3: SHORTCUTS.heading3.keys,
   4: SHORTCUTS.heading4.keys,
+  5: SHORTCUTS.heading5.keys,
+  6: SHORTCUTS.heading6.keys,
 }
 
 /**

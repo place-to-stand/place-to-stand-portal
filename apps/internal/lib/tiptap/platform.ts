@@ -20,8 +20,9 @@ const formatShortcutKey = (
 ) => {
   // Same labels as the keyboard shortcuts list (lib/keyboard/format.ts).
   const label = formatKey(key, isMacPlatform)
-  if (label !== key && label !== key.toUpperCase()) return label
-  return capitalize ? key.toUpperCase() : key
+  if (capitalize) return label
+  // Uncapitalised: keep the key as written unless it maps to a symbol.
+  return label.toLowerCase() === key.toLowerCase() ? key : label
 }
 
 /**

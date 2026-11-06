@@ -100,6 +100,8 @@ export const SHORTCUTS = {
   heading2: { keys: 'mod+alt+2', label: 'Heading 2', group: 'Text editor' },
   heading3: { keys: 'mod+alt+3', label: 'Heading 3', group: 'Text editor' },
   heading4: { keys: 'mod+alt+4', label: 'Heading 4', group: 'Text editor' },
+  heading5: { keys: 'mod+alt+5', label: 'Heading 5', group: 'Text editor' },
+  heading6: { keys: 'mod+alt+6', label: 'Heading 6', group: 'Text editor' },
   bulletList: {
     keys: 'mod+shift+8',
     label: 'Bullet list',
@@ -122,6 +124,11 @@ export const SHORTCUTS = {
   alignRight: {
     keys: 'mod+shift+r',
     label: 'Align right',
+    group: 'Text editor',
+  },
+  alignJustify: {
+    keys: 'mod+shift+j',
+    label: 'Justify',
     group: 'Text editor',
   },
 } as const satisfies Record<string, Shortcut>

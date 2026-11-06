@@ -56,6 +56,9 @@ import {
 import { deployPlan } from '../../actions/trigger-worker'
 import type { WorkerStatusResult } from '@/lib/tasks/worker-status'
 import { WORKER_STATUS_KEY } from './use-worker-status'
+import { matchesShortcut } from '@/lib/keyboard/match'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+
 import { GitHubIcon } from './github-icon'
 import {
   PLANNING_MODEL_TIERS,
@@ -474,7 +477,7 @@ export function PlanningPanel({ task, githubRepos }: PlanningPanelProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (matchesShortcut(e, SHORTCUTS.sendPlanningMessage)) {
         e.preventDefault()
         handleFeedbackSubmit()
       }

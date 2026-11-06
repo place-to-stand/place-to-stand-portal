@@ -23,7 +23,6 @@ import { SHORTCUTS, shortcutsByGroup } from '@/lib/keyboard/shortcuts'
 import { ShortcutKeys } from './shortcut-keys'
 
 type KeyboardShortcutsContextValue = {
-  open: boolean
   setOpen: (open: boolean) => void
 }
 
@@ -49,7 +48,8 @@ export function KeyboardShortcutsProvider({
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       // `?` is a question mark while typing; only claim it outside fields.
-      if (event.defaultPrevented || isEditableTarget(event.target)) return
+      if (event.defaultPrevented || event.repeat) return
+      if (isEditableTarget(event.target)) return
       if (matchesShortcut(event, SHORTCUTS.showShortcuts)) {
         event.preventDefault()
         setOpen(current => !current)
@@ -60,7 +60,8 @@ export function KeyboardShortcutsProvider({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const value = useMemo(() => ({ open, setOpen }), [open])
+  // Only the setter is shared, so opening the dialog re-renders no caller.
+  const value = useMemo(() => ({ setOpen }), [])
 
   return (
     <KeyboardShortcutsContext.Provider value={value}>

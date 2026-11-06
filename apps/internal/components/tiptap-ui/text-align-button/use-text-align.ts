@@ -42,10 +42,11 @@ export interface UseTextAlignConfig {
   onAligned?: () => void
 }
 
-export const TEXT_ALIGN_SHORTCUT_KEYS: Partial<Record<TextAlign, string>> = {
+export const TEXT_ALIGN_SHORTCUT_KEYS: Record<TextAlign, string> = {
   left: SHORTCUTS.alignLeft.keys,
   center: SHORTCUTS.alignCenter.keys,
   right: SHORTCUTS.alignRight.keys,
+  justify: SHORTCUTS.alignJustify.keys,
 }
 
 export const textAlignIcons = {
