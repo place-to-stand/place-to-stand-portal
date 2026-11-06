@@ -321,6 +321,8 @@ function SampleEntitySheet({
                   archiveDisabledReason={null}
                   onRequestArchive={() => setArchiveOpen(true)}
                   archiveAriaLabel={`Archive ${shown.noun}`}
+                  onDuplicate={() => undefined}
+                  duplicateAriaLabel={`Duplicate ${shown.noun}`}
                 />
               </div>
             </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { type ReactNode } from 'react'
-import { Archive, Redo2, Undo2 } from 'lucide-react'
+import { Archive, Copy, Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -52,6 +52,15 @@ export type SheetFormFooterProps = {
   isEditing: boolean
   /** Hide the archive action on an existing record (an archived one). */
   hideArchive?: boolean
+  /**
+   * Open a new create sheet filled in from this record (saved values, not
+   * unsaved edits). Shown on existing records when given; entities that
+   * can't be copied leave it out.
+   */
+  onDuplicate?: () => void
+  /** Accessible label for Duplicate, e.g. 'Duplicate task'. */
+  duplicateAriaLabel?: string
+  duplicateDisabled?: boolean
   archiveDisabled: boolean
   archiveDisabledReason: string | null
   onRequestArchive: () => void
@@ -76,7 +85,13 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
     archiveAriaLabel,
     onSave,
     hideArchive = false,
+    onDuplicate,
+    duplicateAriaLabel = 'Duplicate',
+    duplicateDisabled = false,
   } = props
+
+  const showDuplicate = isEditing && Boolean(onDuplicate)
+  const showArchive = isEditing && !hideArchive
 
   const verb = isEditing ? 'Save' : 'Create'
   const inFlight = saveLabel.endsWith('...')
@@ -132,20 +147,34 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           icon={<Redo2 />}
         />
       </div>
-      {isEditing && !hideArchive ? (
-        <DisabledFieldTooltip
-          disabled={archiveDisabled}
-          reason={archiveDisabledReason}
-        >
-          <RowActionButton
-            type='button'
-            variant='destructive'
-            onClick={onRequestArchive}
-            disabled={archiveDisabled}
-            label={archiveAriaLabel}
-            icon={<Archive />}
-          />
-        </DisabledFieldTooltip>
+      {showDuplicate || showArchive ? (
+        <div className='flex items-center gap-1.5'>
+          {showDuplicate ? (
+            <RowActionButton
+              type='button'
+              variant='outline'
+              onClick={onDuplicate}
+              disabled={duplicateDisabled}
+              label={duplicateAriaLabel}
+              icon={<Copy />}
+            />
+          ) : null}
+          {showArchive ? (
+            <DisabledFieldTooltip
+              disabled={archiveDisabled}
+              reason={archiveDisabledReason}
+            >
+              <RowActionButton
+                type='button'
+                variant='destructive'
+                onClick={onRequestArchive}
+                disabled={archiveDisabled}
+                label={archiveAriaLabel}
+                icon={<Archive />}
+              />
+            </DisabledFieldTooltip>
+          ) : null}
+        </div>
       ) : null}
     </SheetFooterBar>
   )
