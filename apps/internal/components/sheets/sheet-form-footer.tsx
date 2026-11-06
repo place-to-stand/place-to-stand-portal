@@ -5,11 +5,9 @@ import { Archive, Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import {
-  rowActionShortcut,
-  ShortcutTooltip,
-} from '@/components/keyboard/shortcut-tooltip'
+import { rowActionShortcut } from '@/components/keyboard/shortcut-tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { ariaKeyShortcuts } from '@/lib/keyboard/format'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 /**
@@ -63,30 +61,26 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
     archiveAriaLabel,
   } = props
 
-  const saveButton = (
-    <Button
-      type='submit'
-      form={formId}
-      // xs (28px) to match the icon actions beside it: one height per row.
-      size='xs'
-      disabled={submitDisabled}
-    >
-      {saveLabel}
-    </Button>
-  )
-
   return (
     <SheetFooterBar>
       <div className='flex items-center gap-1.5'>
-        {submitDisabled && submitDisabledReason ? (
-          <DisabledFieldTooltip disabled reason={submitDisabledReason}>
-            {saveButton}
-          </DisabledFieldTooltip>
-        ) : (
-          <ShortcutTooltip shortcut={SHORTCUTS.save}>
-            {saveButton}
-          </ShortcutTooltip>
-        )}
+        {/* No shortcut tooltip: it would restate the visible "Save" just to
+            show ⌘S, which the shortcuts list (?) covers. */}
+        <DisabledFieldTooltip
+          disabled={submitDisabled}
+          reason={submitDisabledReason}
+        >
+          <Button
+            type='submit'
+            form={formId}
+            // xs (28px) to match the icon actions beside it: one height per row.
+            size='xs'
+            disabled={submitDisabled}
+            aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
+          >
+            {saveLabel}
+          </Button>
+        </DisabledFieldTooltip>
         <RowActionButton
           type='button'
           variant='outline'
