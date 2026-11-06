@@ -116,7 +116,7 @@ export function TaskAttachmentsField({
           className='text-primary truncate-link inline-flex items-center gap-2 font-medium hover:underline'
         >
           <CONCEPT_ICONS.attachment className='h-4 w-4 shrink-0' />
-          <span className='truncate'>{truncateName(attachment.name)}</span>
+          <span className='truncate-link'>{truncateName(attachment.name)}</span>
         </a>
       ) : (
         <span className='text-muted-foreground inline-flex items-center gap-2 truncate font-medium'>

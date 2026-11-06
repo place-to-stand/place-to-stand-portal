@@ -34,6 +34,7 @@ import {
   noDetailsSection,
   noRawTypeSize,
   popoverShadow,
+  underlineNotClipped,
 } from './rules/design.mjs'
 import { clientBoundary, queryLayerPurity } from './rules/layering.mjs'
 
@@ -63,6 +64,7 @@ export const pts = {
     'figure-cell-aligned': figureCellAligned,
     'no-details-section': noDetailsSection,
     'no-raw-type-size': noRawTypeSize,
+    'underline-not-clipped': underlineNotClipped,
     'sheet-url-through-builders': sheetUrlThroughBuilders,
     'no-hard-delete': noHardDelete,
     'optional-label': optionalLabel,

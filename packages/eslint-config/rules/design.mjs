@@ -183,3 +183,47 @@ export const noRawTypeSize = {
     }
   },
 }
+
+const UNDERLINES = /(?:^|\s)(?:[\w-]+:)*underline(?:\s|$)/
+const TRUNCATE = /(?:^|\s)truncate(?:\s|$)/
+
+const classTokens = node => attributeStrings(attribute(node, 'className'))
+
+/**
+ * README → Text links: link text that truncates uses `truncate-link`, never
+ * `truncate`, whose overflow: hidden clips the underline so the hover only
+ * changes colour (the task card's links did this while the lead card's
+ * underlined).
+ */
+export const underlineNotClipped = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Underlined link text truncates with truncate-link' },
+    schema: [],
+    messages: {
+      clipped: `README → Text links (${README}): "When the link text truncates, use truncate-link, never truncate": truncate's overflow: hidden clips the underline, so the hover only changes colour. Use truncate-link here, or MetaLink (components/ui/meta-link.tsx) for a card or meta-line link.`,
+    },
+  },
+  create(context) {
+    const visitChildren = element => {
+      for (const child of element.children ?? []) {
+        if (child.type !== 'JSXElement') continue
+        const strings = classTokens(child.openingElement)
+        if (strings.some(s => TRUNCATE.test(s))) {
+          context.report({ node: child.openingElement, messageId: 'clipped' })
+        }
+        visitChildren(child)
+      }
+    }
+    return {
+      JSXElement(element) {
+        const strings = classTokens(element.openingElement)
+        if (!strings.some(s => UNDERLINES.test(s))) return
+        if (strings.some(s => TRUNCATE.test(s))) {
+          context.report({ node: element.openingElement, messageId: 'clipped' })
+        }
+        visitChildren(element)
+      },
+    }
+  },
+}

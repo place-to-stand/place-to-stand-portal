@@ -43,7 +43,11 @@ export async function loadTimeLogsList(
 
   const clients = clientDirectory
     .filter(client => !client.deletedAt)
-    .map(client => ({ value: client.id, label: client.name }))
+    .map(client => ({
+      value: client.id,
+      label: client.name,
+      matchHints: client.searchHints,
+    }))
   const projectOptions = toProjectOptions(
     projects.filter(
       project => !params.companyId || project.company_id === params.companyId
