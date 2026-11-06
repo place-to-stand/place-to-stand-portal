@@ -7,7 +7,6 @@ import { ChevronsUpDownIcon, XIcon } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { PopoverTrigger } from '@pts/ui/popover'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
@@ -106,24 +105,24 @@ export const PickedRecordCard = React.forwardRef<
                   onClick={onClear}
                 />
               ) : null}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <PopoverTrigger asChild>
-                    <Button
-                      ref={triggerRef}
-                      type='button'
-                      variant='ghost'
-                      size='icon-sm'
-                      className='text-muted-foreground'
-                      {...triggerProps}
-                      aria-label={changeLabel}
-                    >
-                      <ChevronsUpDownIcon aria-hidden />
-                    </Button>
-                  </PopoverTrigger>
-                </TooltipTrigger>
-                <TooltipContent>{changeLabel}</TooltipContent>
-              </Tooltip>
+              {/* No tooltip: the sheet focuses this on open, and a tooltip
+                  would pop up every time. Its aria-label names it. */}
+              <PopoverTrigger asChild>
+                <Button
+                  ref={triggerRef}
+                  type='button'
+                  // The field's trigger, so the sheet's first-field focus
+                  // and screen readers find it as the picker it is.
+                  role='combobox'
+                  variant='ghost'
+                  size='icon-sm'
+                  className='text-muted-foreground'
+                  {...triggerProps}
+                  aria-label={changeLabel}
+                >
+                  <ChevronsUpDownIcon aria-hidden />
+                </Button>
+              </PopoverTrigger>
             </>
           )
         }

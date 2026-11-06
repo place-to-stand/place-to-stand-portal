@@ -371,6 +371,9 @@ export const SearchableCombobox = React.forwardRef<
                     ? () => {
                         onClear()
                         onBlur?.()
+                        // The card gives way to the empty field: keep focus
+                        // there, not lost with the × that just unmounted.
+                        requestAnimationFrame(() => triggerRef.current?.focus())
                       }
                     : undefined
                 }
