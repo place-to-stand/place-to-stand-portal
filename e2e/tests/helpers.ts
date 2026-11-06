@@ -67,3 +67,9 @@ export async function archiveFromSheetMenu(sheet: Locator) {
   await sheet.getByRole('button', { name: / actions$/ }).click()
   await sheet.page().getByRole('menuitem', { name: 'Archive' }).click()
 }
+
+/**
+ * A row's first content cell. Lists with bulk select lead with a checkbox
+ * cell, and clicking it ticks the row instead of opening its sheet.
+ */
+export const FIRST_CELL = 'td:not([data-slot=table-select-cell])'
