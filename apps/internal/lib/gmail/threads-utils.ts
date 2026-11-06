@@ -16,6 +16,34 @@ export type GmailThreadSummary = {
 /** One of the viewer's connected Google accounts. */
 export type GmailAccount = { id: string; email: string | null }
 
+/** Where the next page starts: Gmail's page token per connected account. */
+export type ThreadsCursor = Record<string, string>
+
+/**
+ * Reads a cursor sent back by the browser. Anything that isn't a small map
+ * of short strings is ignored, and the server only ever looks up the
+ * viewer's own account ids in it.
+ */
+export function parseThreadsCursor(value: string | null): ThreadsCursor | null {
+  if (!value || value.length > 4000) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(value)
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return null
+  }
+  const cursor: ThreadsCursor = {}
+  for (const [key, token] of Object.entries(parsed)) {
+    if (typeof token === 'string' && token.length > 0 && token.length < 1000) {
+      cursor[key] = token
+    }
+  }
+  return Object.keys(cursor).length > 0 ? cursor : null
+}
+
 const ADDRESS_PATTERN = /^[^\s@"(){}<>]+@[^\s@"(){}<>]+\.[^\s@"(){}<>]+$/
 
 /**

@@ -5,6 +5,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { fetchLeadById } from '@/lib/data/leads'
 import { NotFoundError } from '@/lib/errors/http'
 import { listViewerThreadsWith } from '@/lib/gmail/threads'
+import { parseThreadsCursor } from '@/lib/gmail/threads-utils'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 /**
@@ -12,10 +13,11 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
  *
  * The viewer's own Gmail threads with the lead's contact, read live from
  * their connected Google account. Only ever the viewer's mailbox: one
- * person never sees another's mail here.
+ * person never sees another's mail here. `?cursor=` (the last answer's
+ * `nextCursor`, as JSON) gets the next page.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: RouteContext<'/api/leads/[leadId]/emails'>
 ) {
   const { user, denied } = await authorizeRoute('leads.manage')
@@ -34,7 +36,14 @@ export async function GET(
     if (!lead.contactEmail) {
       return NextResponse.json({ state: 'no_email' })
     }
-    const result = await listViewerThreadsWith(user.id, [lead.contactEmail])
+    const cursor = parseThreadsCursor(
+      new URL(request.url).searchParams.get('cursor')
+    )
+    const result = await listViewerThreadsWith(
+      user.id,
+      [lead.contactEmail],
+      cursor
+    )
     return NextResponse.json(result)
   } catch (error) {
     if (error instanceof NotFoundError) {
