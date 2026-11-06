@@ -1,7 +1,6 @@
 'use client'
 
 import { EmptyState } from '@pts/ui/empty-state'
-import Link from 'next/link'
 import { Loader2, User, Users } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -10,6 +9,7 @@ import { formatHours } from '@pts/ui/numbers'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 
+import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TimeLogListProps = {
@@ -153,13 +153,13 @@ function TimeLogRow({
             {entry.clientName ? (
               <>
                 {clientHref ? (
-                  <Link
+                  <MetaLink
                     href={clientHref}
-                    className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                    className='pointer-events-auto relative z-20'
+                    icon={renderProjectTypeIcon(entry.projectType)}
                   >
-                    {renderProjectTypeIcon(entry.projectType)}
-                    <span className='truncate-link'>{entry.clientName}</span>
-                  </Link>
+                    {entry.clientName}
+                  </MetaLink>
                 ) : (
                   <span className='inline-flex min-w-0 items-center gap-1'>
                     {renderProjectTypeIcon(entry.projectType)}
@@ -172,16 +172,23 @@ function TimeLogRow({
               </>
             ) : null}
             {projectHref ? (
-              <Link
+              <MetaLink
                 href={projectHref}
-                className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                className='pointer-events-auto relative z-20'
+                icon={
+                  <>
+                    {entry.clientName
+                      ? null
+                      : renderProjectTypeIcon(entry.projectType)}
+                    <ENTITY_ICONS.project
+                      className='size-3 shrink-0'
+                      aria-hidden
+                    />
+                  </>
+                }
               >
-                {entry.clientName
-                  ? null
-                  : renderProjectTypeIcon(entry.projectType)}
-                <ENTITY_ICONS.project className='size-3 shrink-0' aria-hidden />
-                <span className='truncate-link'>{entry.projectName}</span>
-              </Link>
+                {entry.projectName}
+              </MetaLink>
             ) : (
               <span className='inline-flex min-w-0 items-center gap-1'>
                 {entry.clientName

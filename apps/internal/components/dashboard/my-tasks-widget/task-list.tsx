@@ -17,6 +17,7 @@ import {
 } from '@/lib/projects/task-status'
 import { cn } from '@/lib/utils'
 import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
+import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TaskListProps = {
@@ -131,52 +132,58 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
             <div className='text-muted-foreground flex min-w-0 items-center gap-1.5 text-xs'>
               {task.lead ? (
                 <>
-                  <Link
+                  <MetaLink
                     href={leadHref(task.lead.id)}
                     onClick={e => e.stopPropagation()}
-                    className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                    className='pointer-events-auto relative z-20'
+                    icon={
+                      <ENTITY_ICONS.lead
+                        className='size-3 shrink-0'
+                        aria-hidden
+                      />
+                    }
                   >
-                    <ENTITY_ICONS.lead
-                      className='size-3 shrink-0'
-                      aria-hidden
-                    />
-                    <span className='truncate-link'>{task.lead.name}</span>
-                  </Link>
+                    {task.lead.name}
+                  </MetaLink>
                   {task.project ? <MetaSeparator /> : null}
                 </>
               ) : null}
               {/* No company to open for internal or personal work. */}
               {clientLinkMeta.href ? (
                 <>
-                  <Link
+                  <MetaLink
                     href={clientLinkMeta.href}
                     onClick={e => e.stopPropagation()}
-                    className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                    className='pointer-events-auto relative z-20'
+                    icon={
+                      task.project
+                        ? renderProjectTypeIcon(
+                            task.project.type,
+                            'size-3 shrink-0'
+                          )
+                        : null
+                    }
                   >
-                    {task.project
-                      ? renderProjectTypeIcon(
-                          task.project.type,
-                          'size-3 shrink-0'
-                        )
-                      : null}
-                    <span className='truncate-link'>{clientLabel}</span>
-                  </Link>
+                    {clientLabel}
+                  </MetaLink>
                   <MetaSeparator />
                 </>
               ) : null}
               {/* A lead task has no project: its lead line says where it is. */}
               {!task.project ? null : projectLinkMeta.href ? (
-                <Link
+                <MetaLink
                   href={projectLinkMeta.href}
                   onClick={e => e.stopPropagation()}
-                  className='hover:text-foreground pointer-events-auto relative z-20 inline-flex min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
+                  className='pointer-events-auto relative z-20'
+                  icon={
+                    <ENTITY_ICONS.project
+                      className='size-3 shrink-0'
+                      aria-hidden
+                    />
+                  }
                 >
-                  <ENTITY_ICONS.project
-                    className='size-3 shrink-0'
-                    aria-hidden
-                  />
-                  <span className='truncate-link'>{task.project.name}</span>
-                </Link>
+                  {task.project.name}
+                </MetaLink>
               ) : (
                 <span className='inline-flex min-w-0 items-center gap-1'>
                   <ENTITY_ICONS.project

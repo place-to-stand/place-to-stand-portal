@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
+import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import {
@@ -295,15 +296,14 @@ type AnchorRowProps = {
 
 function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
   return (
-    <a
+    <MetaLink
       href={href}
-      className='hover:text-foreground inline-flex max-w-full min-w-0 items-center gap-1 underline-offset-4 transition hover:underline'
       onClick={event => event.stopPropagation()}
       title={value}
+      icon={<Icon className='h-3.5 w-3.5 shrink-0' aria-hidden />}
     >
-      <Icon className='h-3.5 w-3.5 shrink-0' aria-hidden />
-      <span className='truncate-link'>{value}</span>
-    </a>
+      {value}
+    </MetaLink>
   )
 }
 

@@ -195,7 +195,7 @@ export function HourBlocksTableSection({
                       <Link
                         href={companySheetHref(client.company_id)}
                         title={client.name}
-                        className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
+                        className='hover:text-foreground truncate-link transition hover:underline'
                       >
                         {client.name}
                       </Link>
@@ -219,7 +219,7 @@ export function HourBlocksTableSection({
                       {block.invoice_id ? (
                         <Link
                           href={invoiceHref(block.invoice_id)}
-                          className='text-muted-foreground hover:text-foreground truncate hover:underline'
+                          className='text-muted-foreground hover:text-foreground truncate-link hover:underline'
                         >
                           {block.invoice_number}
                         </Link>
