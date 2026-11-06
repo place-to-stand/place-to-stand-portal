@@ -27,7 +27,7 @@ const SAMPLE_ROWS = [
   {
     id: 'a',
     name: 'Ada Lovelace',
-    form: 'Contact',
+    form: 'Subscribe',
     when: '2 hours ago',
     unread: true,
   },
@@ -41,7 +41,7 @@ const SAMPLE_ROWS = [
   {
     id: 'c',
     name: 'Alan Turing',
-    form: 'Contact',
+    form: 'Subscribe',
     when: '3 days ago',
     unread: false,
   },
@@ -83,7 +83,7 @@ export function ComponentsBulkSelect() {
                   <SelectAllHead />
                   <TableHead className='w-32'>Received</TableHead>
                   <TableHead className='w-28'>Form</TableHead>
-                  <TableHead>Contact</TableHead>
+                  <TableHead>Person</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
