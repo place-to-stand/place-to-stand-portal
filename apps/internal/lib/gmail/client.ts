@@ -1,7 +1,7 @@
 import { decryptToken, encryptToken } from '@/lib/oauth/encryption'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { refreshAccessToken } from '@/lib/oauth/google'
 
 /**
@@ -38,7 +38,8 @@ async function getGoogleConnection(userId: string, connectionId?: string) {
         and(
           eq(oauthConnections.id, connectionId),
           eq(oauthConnections.userId, userId),
-          eq(oauthConnections.provider, 'GOOGLE')
+          eq(oauthConnections.provider, 'GOOGLE'),
+          isNull(oauthConnections.deletedAt)
         )
       )
       .limit(1)
@@ -52,14 +53,15 @@ async function getGoogleConnection(userId: string, connectionId?: string) {
     .where(
       and(
         eq(oauthConnections.userId, userId),
-        eq(oauthConnections.provider, 'GOOGLE')
+        eq(oauthConnections.provider, 'GOOGLE'),
+        isNull(oauthConnections.deletedAt)
       )
     )
     .limit(1)
   return row ?? null
 }
 
-async function getValidAccessToken(
+export async function getValidAccessToken(
   userId: string,
   connectionId?: string
 ): Promise<GetAccessTokenResult> {

@@ -794,8 +794,8 @@
     "type": "route",
     "name": "GET /api/auth/callback/google",
     "file": "apps/internal/app/api/auth/callback/google/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.google"
   },
   {
     "type": "route",
@@ -808,8 +808,8 @@
     "type": "route",
     "name": "GET /api/auth/google",
     "file": "apps/internal/app/api/auth/google/route.ts",
-    "kind": "admin",
-    "capability": null
+    "kind": "capability",
+    "capability": "integrations.google"
   },
   {
     "type": "route",
@@ -1216,6 +1216,13 @@
     "file": "apps/internal/app/api/leads/[leadId]/conversion/route.ts",
     "kind": "capability",
     "capability": "leads.convert"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/leads/[leadId]/emails",
+    "file": "apps/internal/app/api/leads/[leadId]/emails/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
   },
   {
     "type": "route",

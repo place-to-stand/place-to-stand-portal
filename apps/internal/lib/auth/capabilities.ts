@@ -335,6 +335,14 @@ export const CAPABILITIES = {
     roles: ADMIN_ONLY,
     surfaces: ['cli'],
   },
+  'integrations.google': {
+    area: 'Integrations',
+    label: 'Connect their own Google account',
+    description:
+      'Shows their own Gmail threads with a lead’s contact on the lead sheet. Nobody else sees their mail.',
+    roles: STAFF,
+    surfaces: ['app'],
+  },
   'integrations.manage': {
     area: 'Integrations',
     label: 'Connect Google, GitHub, Vercel and Supabase',
