@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Archive, Loader2, RefreshCw, X } from 'lucide-react'
+import { Archive, CheckCheck, Loader2, RefreshCw, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -115,11 +115,11 @@ export function BulkActionBar({
           {selection.canSelectAllMatching ? (
             <Button
               type='button'
-              variant='link'
+              variant='outline'
               size='sm'
-              className='h-auto px-0'
               onClick={selection.selectAllMatching}
             >
+              <CheckCheck />
               Select all {countLabel(entity, selection.matchingCount)}
             </Button>
           ) : null}

@@ -145,7 +145,7 @@ export function SelectRowCell({
         COLUMN_CLASS,
         'cursor-pointer',
         // Stacked phone cards have no hover and no room: the column goes,
-        // and an unread row keeps its leading bar.
+        // and an unread row keeps its tint.
         'max-md:hidden'
       )}
     >
