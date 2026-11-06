@@ -1,7 +1,7 @@
 'use client'
 
-import { type ReactElement, type ReactNode } from 'react'
-import { Redo2, Undo2 } from 'lucide-react'
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react'
+import { Check, Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -12,7 +12,15 @@ import { rowActionShortcut } from '@/components/keyboard/shortcut-tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { ariaKeyShortcuts } from '@/lib/keyboard/format'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import {
+  announceSaveMode,
+  modeInFlight,
+  modeOfFormSubmit,
+  msSinceKeptOpenSave,
+  onKeptOpenSave,
+  onSaveModeAnnounced,
+  type SheetSaveMode,
+} from '@/lib/sheets/save-mode'
 
 /**
  * A save button's hover hint: what it does and its keys, in the same tooltip
@@ -60,6 +68,9 @@ export function SheetFooterBar({ children }: { children: ReactNode }) {
   )
 }
 
+/** How long Save reads "Saved" after a keep-open save. */
+const SAVED_FOR_MS = 2000
+
 export type SheetFormFooterProps = {
   /** The id of the <form> the submit button targets. */
   formId: string
@@ -106,6 +117,52 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
 
   const verb = isEditing ? 'Save' : 'Create'
   const inFlight = saveLabel.endsWith('...')
+  // Which save is running, so "Saving..." shows on the button that started
+  // it. Read on mount too: some sheets remount the footer while they reload.
+  const [mode, setMode] = useState<SheetSaveMode>(modeInFlight)
+  useEffect(() => {
+    const form = document.getElementById(formId)
+    const onSubmit = () => setMode(modeOfFormSubmit())
+    form?.addEventListener('submit', onSubmit)
+    const stop = onSaveModeAnnounced(setMode)
+    return () => {
+      form?.removeEventListener('submit', onSubmit)
+      stop()
+    }
+  }, [formId])
+  // After a keep-open save the sheet doesn't change, so Save confirms it.
+  const [justSaved, setJustSaved] = useState(
+    () => msSinceKeptOpenSave() < SAVED_FOR_MS
+  )
+  // Bumped on every keep-open save, so a second one restarts the timer.
+  const [savedCount, setSavedCount] = useState(0)
+  useEffect(
+    () =>
+      onKeptOpenSave(() => {
+        setJustSaved(true)
+        setSavedCount(count => count + 1)
+      }),
+    []
+  )
+  useEffect(() => {
+    if (!justSaved) return
+    const left = Math.max(SAVED_FOR_MS - msSinceKeptOpenSave(), 0)
+    const timer = setTimeout(() => setJustSaved(false), left)
+    return () => clearTimeout(timer)
+  }, [justSaved, savedCount])
+  const stayLabel =
+    inFlight && mode === 'stay' ? (
+      saveLabel
+    ) : justSaved && !inFlight ? (
+      <>
+        <Check aria-hidden />
+        Saved
+      </>
+    ) : (
+      verb
+    )
+  const closeLabel =
+    inFlight && mode === 'close' ? saveLabel : `${verb} and close`
 
   return (
     <SheetFooterBar>
@@ -130,6 +187,9 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
         />
       </div>
       <div className='flex items-center gap-1.5'>
+        <span className='sr-only' aria-live='polite'>
+          {justSaved ? 'Saved' : ''}
+        </span>
         <DisabledFieldTooltip
           disabled={submitDisabled}
           reason={submitDisabledReason}
@@ -145,11 +205,14 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
               // xs (28px) to match the icon actions: one height per row.
               size='xs'
               disabled={submitDisabled}
-              onClick={() => onSave('stay')}
+              onClick={() => {
+                announceSaveMode('stay')
+                onSave('stay')
+              }}
               aria-label={`${verb} and keep open`}
               aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.saveAndStay)}
             >
-              {verb}
+              {stayLabel}
             </Button>
           </SaveKeysTooltip>
         </DisabledFieldTooltip>
@@ -171,7 +234,7 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
               aria-label={`${verb} and close`}
               aria-keyshortcuts={ariaKeyShortcuts(SHORTCUTS.save)}
             >
-              {inFlight ? saveLabel : `${verb} and close`}
+              {closeLabel}
             </Button>
           </SaveKeysTooltip>
         </DisabledFieldTooltip>

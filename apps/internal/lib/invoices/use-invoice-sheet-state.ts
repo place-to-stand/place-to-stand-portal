@@ -492,10 +492,13 @@ export function useInvoiceSheetState({
             targetId: payload.id ?? null,
           })
 
-          toast({
-            title: isEditing ? 'Invoice saved' : 'Invoice created',
-            link: toastLink('invoice', result.id),
-          })
+          // Keep open: no toast; stay() makes its Save button say "Saved".
+          if (mode === 'close') {
+            toast({
+              title: isEditing ? 'Invoice saved' : 'Invoice created',
+              link: toastLink('invoice', result.id),
+            })
+          }
 
           if (mode === 'stay' && isEditing && result.id) {
             // Reload before the save settles: new line items only get

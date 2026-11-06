@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 import type { SheetEntityKey } from './entities'
 import { emitSheetRecordSaved } from './record-saved'
+import { announceKeptOpenSave } from './save-mode'
 import { useSheetParams } from './use-sheet-params'
 
 /** Holds Save off when a create came back without an id. */
@@ -52,6 +53,8 @@ export function useSaveAndStay(
   const stay = useCallback(
     ({ id, rebaseline }: StayArgs) => {
       rebaseline()
+      // The sheet stays, so its Save button says "Saved" (no toast).
+      announceKeptOpenSave()
       if (recordId) {
         emitSheetRecordSaved(entity, recordId)
         router.refresh()

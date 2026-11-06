@@ -25,7 +25,10 @@ import { CONTACT_OPTIONS_QUERY_KEY } from '@/components/contacts/contact-link-pi
 import { roleCan } from '@/lib/auth/capabilities'
 import { PENDING_REASON, getSubmitLabel } from '@/lib/forms/form-controls'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
-import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import {
+  announceKeptOpenSave,
+  type SheetSaveMode,
+} from '@/lib/sheets/save-mode'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { CompanyBillingIntent } from '@/lib/companies/sheet-save-schema'
@@ -324,11 +327,14 @@ export function CompanySheet({
         if (!isEditing && result.id) {
           onCreated?.({ id: result.id, name: values.name.trim() })
         }
-        toast({
-          title: isEditing ? 'Company saved' : 'Company created',
-          description: values.name,
-          link: toastLink('company', result.id ?? companyId),
-        })
+        // Keep open: no toast; its Save button says "Saved".
+        if (mode === 'close') {
+          toast({
+            title: isEditing ? 'Company saved' : 'Company created',
+            description: values.name,
+            link: toastLink('company', result.id ?? companyId),
+          })
+        }
         form.reset(values)
         setBillingDirty(false)
         if (mode === 'stay' && isEditing) {
@@ -340,6 +346,7 @@ export function CompanySheet({
             companySheetQueryKey(companyId)
           )?.company
           if (saved) seed(saved, true)
+          announceKeptOpenSave()
           return
         }
         await refresh()

@@ -18,12 +18,16 @@ const CLIENT = process.env.E2E_CLIENT_NAME ?? 'Seed Client'
 const keepOpenButton = (sheet: Locator) =>
   sheet.getByRole('button', { name: /^(Save|Create) and keep open/ })
 
-/** Saves with the button, waits for the toast, and checks the sheet stayed. */
+/**
+ * Saves with the button and checks the sheet stayed: the button reads
+ * "Saved" and no success toast shows (the sheet itself is the result).
+ */
 async function keepOpen(page: Page, sheet: Locator, toast: RegExp) {
   await keepOpenButton(sheet).click()
-  await expect(page.getByText(toast).last()).toBeVisible()
+  await expect(keepOpenButton(sheet)).toHaveText('Saved')
   await expect(sheet).toBeVisible()
   await expect(keepOpenButton(sheet)).toBeEnabled()
+  await expect(page.getByText(toast)).toHaveCount(0)
 }
 
 /** The create sheet became the record's edit sheet: returns its id. */
@@ -76,7 +80,7 @@ test('company: create, then two keep-open edits, then close clean', async ({
   await sheet.getByPlaceholder('acme.com').fill('stay-two.example')
   // The keyboard shortcut does the same as the button.
   await page.keyboard.press('ControlOrMeta+Shift+S')
-  await expect(page.getByText(/Company saved/).last()).toBeVisible()
+  await expect(keepOpenButton(sheet)).toHaveText('Saved')
   await expect(sheet).toBeVisible()
   await expect(keepOpenButton(sheet)).toBeEnabled()
   await expect(

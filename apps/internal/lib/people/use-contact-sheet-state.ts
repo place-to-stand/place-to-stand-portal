@@ -464,11 +464,15 @@ export function useContactSheetState({
           queryKey: CONTACT_OPTIONS_QUERY_KEY,
         })
 
-        toast({
-          title: isEditing ? 'Person saved' : 'Person created',
-          description: result.warning ?? (data.name || data.email),
-          link: toastLink('contact', result.id ?? contact?.id),
-        })
+        // Keep open: no toast (stay() makes Save say "Saved"); a warning
+        // still toasts.
+        if (mode === 'close' || result.warning) {
+          toast({
+            title: isEditing ? 'Person saved' : 'Person created',
+            description: result.warning ?? (data.name || data.email),
+            link: toastLink('contact', result.id ?? contact?.id),
+          })
+        }
 
         // Call onCreated with the new contact ID if this was a create operation
         if (!isEditing && result.id && onCreated) {

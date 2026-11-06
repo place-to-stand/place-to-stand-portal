@@ -49,7 +49,8 @@ export function Toaster() {
 
   return (
     <div
-      className='pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center px-4 sm:items-end'
+      // Above an open sheet's footer, so a toast never covers its save buttons.
+      className='pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center px-4 transition-[bottom] duration-200 sm:items-end [body:has([data-slot=sheet-content])_&]:bottom-16'
       style={{ gap: TOAST_GAP }}
       aria-live='polite'
     >

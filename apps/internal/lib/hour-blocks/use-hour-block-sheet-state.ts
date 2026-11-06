@@ -150,10 +150,13 @@ export function useHourBlockSheetState({
             targetId: payload.id ?? null,
           })
 
-          toast({
-            title: isEditing ? 'Hour block saved' : 'Hour block created',
-            link: toastLink('hour-block', result.id),
-          })
+          // Keep open: no toast; stay() makes its Save button say "Saved".
+          if (mode === 'close') {
+            toast({
+              title: isEditing ? 'Hour block saved' : 'Hour block created',
+              link: toastLink('hour-block', result.id),
+            })
+          }
 
           // PRD 002 section 05: closed-month / future-billing notice.
           if (result.warning) {
