@@ -57,6 +57,7 @@ export function CompaniesPageBody({
         />
         <CompaniesTable
           companies={companies}
+          matchingCount={filteredCount}
           sort={params.sortParam}
           basePath={basePath}
           mode={mode}

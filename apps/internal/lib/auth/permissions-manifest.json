@@ -78,6 +78,20 @@
   },
   {
     "type": "action",
+    "name": "bulkSetArchived",
+    "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "resolveBulkMatchingIds",
+    "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
     "name": "signOut",
     "file": "apps/internal/app/(dashboard)/_actions/sign-out.ts",
     "kind": "public",
@@ -698,6 +712,13 @@
     "file": "apps/internal/app/(dashboard)/submissions/actions/archive-submission.ts",
     "kind": "admin",
     "capability": null
+  },
+  {
+    "type": "action",
+    "name": "bulkAcknowledgeSubmissions",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/bulk-acknowledge-submissions.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",

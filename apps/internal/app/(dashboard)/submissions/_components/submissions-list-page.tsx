@@ -1,14 +1,7 @@
 import { PageShell } from '@/components/layout/page-shell'
 import { requirePage } from '@/lib/auth/session'
 import { fetchFormSubmissions } from '@/lib/data/form-submissions'
-import {
-  isFormSubmissionKind,
-  isFormSubmissionStatus,
-} from '@/lib/form-submissions/constants'
-import {
-  parseContactFilter,
-  parseSubmissionsSort,
-} from '@/lib/form-submissions/filters'
+import { parseSubmissionsListParams } from '@/lib/form-submissions/list-params'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
@@ -52,24 +45,16 @@ export async function SubmissionsListPage({
   const currentUser = await requirePage('submissions.manage')
   const pageSize = await readPageSize()
 
-  const currentPage = Math.max(
-    1,
-    Number.parseInt(firstParam(params.page) ?? '1', 10) || 1
-  )
-
-  const kindParam = firstParam(params.kind)
-  const statusParam = firstParam(params.status)
-  const kind = isFormSubmissionKind(kindParam) ? kindParam : undefined
-  const status = isFormSubmissionStatus(statusParam) ? statusParam : undefined
-  // One param, two states: '1' = needs attention, '0' = already cleared.
-  // The archive has no acknowledgement filter.
-  const ackParam =
-    mode === 'active' ? firstParam(params.unacknowledged) : undefined
-  const unacknowledgedOnly = ackParam === '1'
-  const acknowledgedOnly = ackParam === '0'
-  const search = firstParam(params.q)?.trim() || undefined
-  const hasContact = parseContactFilter(firstParam(params.contact))
-  const sort = parseSubmissionsSort(firstParam(params.sort))
+  const {
+    page: currentPage,
+    kind,
+    status,
+    unacknowledgedOnly,
+    acknowledgedOnly,
+    search,
+    hasContact,
+    sort,
+  } = parseSubmissionsListParams(params, mode)
 
   // Share links: ?submission=<id> opens the detail sheet directly (redirects
   // to the other tab when the row was archived or restored).

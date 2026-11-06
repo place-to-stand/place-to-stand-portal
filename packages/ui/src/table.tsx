@@ -165,7 +165,7 @@ function TableCell({
           ? 'box-content h-7 px-2 py-1.5'
           : 'box-content h-7 p-2',
         stack &&
-          'max-md:box-border max-md:h-auto max-md:min-w-0 max-md:p-0 max-md:first:basis-full',
+          'max-md:first-cell:basis-full max-md:box-border max-md:h-auto max-md:min-w-0 max-md:p-0',
         showLabel && 'max-md:flex max-md:items-center max-md:gap-1.5',
         className
       )}

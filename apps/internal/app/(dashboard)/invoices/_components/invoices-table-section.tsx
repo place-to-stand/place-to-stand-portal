@@ -42,11 +42,18 @@ import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
 import { InvoiceStatusBadge } from './invoice-status-badge'
 import { companySheetHref } from '@/lib/sheets/hrefs'
+import {
+  RowSelectionProvider,
+  SelectAllHead,
+  SelectRowCell,
+  type RowSelection,
+} from '@/components/table/bulk-select'
 
 type InvoicesTableMode = 'active' | 'archive'
 
 export type InvoicesTableSectionProps = {
   invoices: InvoiceWithClient[]
+  selection: RowSelection
   mode: InvoicesTableMode
   isPending: boolean
   pendingReason: string
@@ -151,6 +158,7 @@ function ShareLinkCell({
 
 export function InvoicesTableSection({
   invoices: invoiceList,
+  selection,
   mode,
   isPending,
   pendingReason,
@@ -172,190 +180,203 @@ export function InvoicesTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table
-        density='compact'
-        layout='fixed'
-        stack
-        className='md:min-w-[50rem]'
-      >
-        <TableHeader>
-          <TableRow className='bg-muted/40'>
-            <SortableTableHead
-              field='number'
-              sort={sort}
-              defaultSort='created:desc'
-              onSortChange={next => update({ sort: next })}
-              className='w-[12%]'
-            >
-              Invoice #
-            </SortableTableHead>
-            {/* Unsized on purpose: in a fixed layout the one auto column
+      <RowSelectionProvider selection={selection} entity='invoice'>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[50rem]'
+        >
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <SelectAllHead />
+              <SortableTableHead
+                field='number'
+                sort={sort}
+                defaultSort='created:desc'
+                onSortChange={next => update({ sort: next })}
+                className='w-[12%]'
+              >
+                Invoice #
+              </SortableTableHead>
+              {/* Unsized on purpose: in a fixed layout the one auto column
                 absorbs the slack, so Actions stays at its own width. */}
-            <SortableTableHead
-              field='client'
-              sort={sort}
-              defaultSort='created:desc'
-              onSortChange={next => update({ sort: next })}
-            >
-              Client
-            </SortableTableHead>
-            <TableHead className='w-20'>Status</TableHead>
-            <TableHead className='w-[10%] text-right'>Total</TableHead>
-            <TableHead className='w-20'>Hours</TableHead>
-            <SortableTableHead
-              field='created'
-              sort={sort}
-              defaultSort='created:desc'
-              onSortChange={next => update({ sort: next })}
-              className='w-[14%]'
-            >
-              Issued
-            </SortableTableHead>
-            <TableHead className='w-[22%]'>Share link</TableHead>
-            {/* Sized to the row's buttons: one in active, two in archive. */}
-            <TableHead
-              className={cn('text-right', mode === 'archive' ? 'w-24' : 'w-16')}
-            >
-              Actions
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invoiceList.map(invoice => {
-            const client = invoice.client
-            const isArchived = Boolean(invoice.deleted_at)
-            const isDeleting = isPending && pendingDeleteId === invoice.id
-            const isRestoring = isPending && pendingRestoreId === invoice.id
-            const isBusy = isDeleting || isRestoring
-
-            const showArchive = mode === 'active'
-            const showRestore = mode === 'archive'
-
-            const archiveDisabled = isBusy || isArchived
-            const restoreDisabled = isBusy || !isArchived
-
-            const archiveDisabledReason = archiveDisabled
-              ? isArchived
-                ? 'Invoice already archived.'
-                : pendingReason
-              : null
-
-            const restoreDisabledReason = restoreDisabled
-              ? isArchived
-                ? pendingReason
-                : 'Invoice is already active.'
-              : null
-
-            return (
-              <TableRow
-                key={invoice.id}
-                {...getClickableRowProps(() => onEdit(invoice))}
+              <SortableTableHead
+                field='client'
+                sort={sort}
+                defaultSort='created:desc'
+                onSortChange={next => update({ sort: next })}
+              >
+                Client
+              </SortableTableHead>
+              <TableHead className='w-20'>Status</TableHead>
+              <TableHead className='w-[10%] text-right'>Total</TableHead>
+              <TableHead className='w-20'>Hours</TableHead>
+              <SortableTableHead
+                field='created'
+                sort={sort}
+                defaultSort='created:desc'
+                onSortChange={next => update({ sort: next })}
+                className='w-[14%]'
+              >
+                Issued
+              </SortableTableHead>
+              <TableHead className='w-[22%]'>Share link</TableHead>
+              {/* Sized to the row's buttons: one in active, two in archive. */}
+              <TableHead
                 className={cn(
-                  CLICKABLE_ROW_CLASS,
-                  isArchived && ARCHIVED_ROW_CLASS
+                  'text-right',
+                  mode === 'archive' ? 'w-24' : 'w-16'
                 )}
               >
-                <TableCell className='text-sm font-medium'>
-                  <div className='flex items-center gap-2'>
-                    <ENTITY_ICONS.invoice
-                      aria-hidden
-                      className={cn(
-                        'h-4 w-4 shrink-0',
-                        ENTITY_ACCENTS.invoice.icon
-                      )}
-                    />
-                    {invoice.invoice_number ? (
-                      invoice.invoice_number
-                    ) : (
-                      <Badge variant='secondary'>Draft</Badge>
-                    )}
-                    {invoice.billing_type === 'net_30' ? (
-                      <BillingTypeBadge billingType='net_30' />
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className='flex min-w-0 items-center gap-2 text-sm'>
-                    <ENTITY_ICONS.client
-                      className={cn(
-                        ENTITY_ACCENTS.client.icon,
-                        'h-4 w-4 shrink-0'
-                      )}
-                    />
-                    {client ? (
-                      client.company_id ? (
-                        <Link
-                          href={companySheetHref(client.company_id)}
-                          className='hover:text-foreground truncate-link hover:underline'
-                        >
-                          {client.name}
-                        </Link>
-                      ) : (
-                        <span className='truncate'>{client.name}</span>
-                      )
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </div>
-                  {client?.deleted_at ? (
-                    <p className='text-destructive text-xs'>Client archived</p>
-                  ) : null}
-                </TableCell>
-                <TableCell>
-                  <InvoiceStatusBadge status={invoice.status} />
-                </TableCell>
-                <TableCell className='text-right text-sm tabular-nums'>
-                  {formatCurrency(invoice.total)}
-                </TableCell>
-                <TableCell label='Hours'>
-                  <InvoiceHourBlocksCell
-                    hourBlocks={invoice.hour_blocks ?? []}
-                    invoiceNumber={invoice.invoice_number}
-                  />
-                </TableCell>
-                <TableCell
-                  label='Issued'
-                  className='text-muted-foreground text-sm'
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {invoiceList.map(invoice => {
+              const client = invoice.client
+              const isArchived = Boolean(invoice.deleted_at)
+              const isDeleting = isPending && pendingDeleteId === invoice.id
+              const isRestoring = isPending && pendingRestoreId === invoice.id
+              const isBusy = isDeleting || isRestoring
+
+              const showArchive = mode === 'active'
+              const showRestore = mode === 'archive'
+
+              const archiveDisabled = isBusy || isArchived
+              const restoreDisabled = isBusy || !isArchived
+
+              const archiveDisabledReason = archiveDisabled
+                ? isArchived
+                  ? 'Invoice already archived.'
+                  : pendingReason
+                : null
+
+              const restoreDisabledReason = restoreDisabled
+                ? isArchived
+                  ? pendingReason
+                  : 'Invoice is already active.'
+                : null
+
+              return (
+                <TableRow
+                  key={invoice.id}
+                  {...getClickableRowProps(() => onEdit(invoice))}
+                  data-selected={selection.isSelected(invoice.id) || undefined}
+                  className={cn(
+                    CLICKABLE_ROW_CLASS,
+                    isArchived && ARCHIVED_ROW_CLASS
+                  )}
                 >
-                  {formatDate(invoice.issued_date)}
-                </TableCell>
-                <TableCell label='Share link'>
-                  <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
-                </TableCell>
-                <TableCell className='text-right max-md:ml-auto'>
-                  <RecordRowActions>
-                    {showArchive ? (
-                      <RecordRowAction
-                        kind='archive'
-                        entity='invoice'
-                        onClick={() => onRequestDelete(invoice)}
-                        disabled={archiveDisabled}
-                        disabledReason={archiveDisabledReason}
+                  <SelectRowCell
+                    id={invoice.id}
+                    label={invoice.invoice_number ?? 'draft invoice'}
+                  />
+                  <TableCell className='text-sm font-medium'>
+                    <div className='flex items-center gap-2'>
+                      <ENTITY_ICONS.invoice
+                        aria-hidden
+                        className={cn(
+                          'h-4 w-4 shrink-0',
+                          ENTITY_ACCENTS.invoice.icon
+                        )}
                       />
-                    ) : null}
-                    {showRestore ? (
-                      <RecordRowAction
-                        kind='restore'
-                        entity='invoice'
-                        onClick={() => onRestore(invoice)}
-                        disabled={restoreDisabled}
-                        disabledReason={restoreDisabledReason}
+                      {invoice.invoice_number ? (
+                        invoice.invoice_number
+                      ) : (
+                        <Badge variant='secondary'>Draft</Badge>
+                      )}
+                      {invoice.billing_type === 'net_30' ? (
+                        <BillingTypeBadge billingType='net_30' />
+                      ) : null}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className='flex min-w-0 items-center gap-2 text-sm'>
+                      <ENTITY_ICONS.client
+                        className={cn(
+                          ENTITY_ACCENTS.client.icon,
+                          'h-4 w-4 shrink-0'
+                        )}
                       />
+                      {client ? (
+                        client.company_id ? (
+                          <Link
+                            href={companySheetHref(client.company_id)}
+                            className='hover:text-foreground truncate-link hover:underline'
+                          >
+                            {client.name}
+                          </Link>
+                        ) : (
+                          <span className='truncate'>{client.name}</span>
+                        )
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </div>
+                    {client?.deleted_at ? (
+                      <p className='text-destructive text-xs'>
+                        Client archived
+                      </p>
                     ) : null}
-                  </RecordRowActions>
+                  </TableCell>
+                  <TableCell>
+                    <InvoiceStatusBadge status={invoice.status} />
+                  </TableCell>
+                  <TableCell className='text-right text-sm tabular-nums'>
+                    {formatCurrency(invoice.total)}
+                  </TableCell>
+                  <TableCell label='Hours'>
+                    <InvoiceHourBlocksCell
+                      hourBlocks={invoice.hour_blocks ?? []}
+                      invoiceNumber={invoice.invoice_number}
+                    />
+                  </TableCell>
+                  <TableCell
+                    label='Issued'
+                    className='text-muted-foreground text-sm'
+                  >
+                    {formatDate(invoice.issued_date)}
+                  </TableCell>
+                  <TableCell label='Share link'>
+                    <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
+                  </TableCell>
+                  <TableCell className='text-right max-md:ml-auto'>
+                    <RecordRowActions>
+                      {showArchive ? (
+                        <RecordRowAction
+                          kind='archive'
+                          entity='invoice'
+                          onClick={() => onRequestDelete(invoice)}
+                          disabled={archiveDisabled}
+                          disabledReason={archiveDisabledReason}
+                        />
+                      ) : null}
+                      {showRestore ? (
+                        <RecordRowAction
+                          kind='restore'
+                          entity='invoice'
+                          onClick={() => onRestore(invoice)}
+                          disabled={restoreDisabled}
+                          disabledReason={restoreDisabledReason}
+                        />
+                      ) : null}
+                    </RecordRowActions>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+            {invoiceList.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className='p-4'>
+                  <EmptyState message={emptyMessage} />
                 </TableCell>
               </TableRow>
-            )
-          })}
-          {invoiceList.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={8} className='p-4'>
-                <EmptyState message={emptyMessage} />
-              </TableCell>
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
+            ) : null}
+          </TableBody>
+        </Table>
+      </RowSelectionProvider>
     </div>
   )
 }

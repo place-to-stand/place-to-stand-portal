@@ -16,6 +16,7 @@ import { HourBlockArchiveDialog } from './hour-block-archive-dialog'
 import { HourBlocksTableSection } from './hour-blocks-table-section'
 import { HourBlockSheet } from '../hour-block-sheet'
 import { usePageParam } from '@/hooks/use-page-param'
+import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
 
 type HourBlocksManagementTableProps = {
   hourBlocks: HourBlockWithClient[]
@@ -86,6 +87,11 @@ export function HourBlocksManagementTable({
 
   const handlePageChange = usePageParam()
 
+  const selection = useRowSelection(
+    hourBlocks.map(row => row.id),
+    totalCount
+  )
+
   return (
     <div className='space-y-4'>
       {showHourBlockNotFound ? (
@@ -102,6 +108,7 @@ export function HourBlocksManagementTable({
       />
       <HourBlocksTableSection
         hourBlocks={hourBlocks}
+        selection={selection}
         mode={mode}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}
@@ -120,6 +127,15 @@ export function HourBlocksManagementTable({
         totalItems={totalCount}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+      />
+      <BulkActionBar
+        selection={selection}
+        entity='hourBlock'
+        mode={mode}
+        nameOf={id => {
+          const row = hourBlocks.find(item => item.id === id)
+          return row ? (row.client?.name ?? undefined) : undefined
+        }}
       />
       <HourBlockSheet
         open={sheetOpen}
