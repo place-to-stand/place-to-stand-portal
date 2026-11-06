@@ -10,6 +10,15 @@
  * every token to appear as a contiguous substring of the option text (label
  * plus keywords). Matches are ranked so exact and prefix hits float above
  * mid-word hits; ties keep the caller's order because cmdk's sort is stable.
+ *
+ * Two forgiving fallbacks rank below every plain match, so they only add
+ * options and never reorder the ones a plain search finds:
+ * - spacing: "warmintro" finds "Warm Intro" and "warm intro" finds
+ *   "WarmIntro" (the text compared with its spaces taken out);
+ * - one slip per word: a word of 4+ letters that starts with the right
+ *   letter may have one letter wrong, missing, extra or swapped ("smtih"
+ *   finds "Smith"). Keeping the first letter fixed stops "sales" matching
+ *   "tales".
  */
 
 const normalize = (input: string) =>
@@ -17,6 +26,8 @@ const normalize = (input: string) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    // "O'Brien" and "obrien" are the same name.
+    .replace(/['\u2019]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 
@@ -44,6 +55,8 @@ export const SEARCH_SCORE = {
   phraseAtWordStart: 0.8,
   tokensAtWordStart: 0.7,
   substring: 0.5,
+  spacing: 0.3,
+  typo: 0.2,
   none: 0,
 } as const
 
@@ -66,7 +79,7 @@ export function scoreSearchMatch(
   const tokens = query.split(' ')
 
   if (!tokens.every(token => haystack.includes(token))) {
-    return SEARCH_SCORE.none
+    return forgivingScore(haystack, query, tokens)
   }
 
   if (label === query) {
@@ -86,4 +99,69 @@ export function scoreSearchMatch(
   }
 
   return SEARCH_SCORE.substring
+}
+
+/** Shortest query a fallback applies to: shorter ones match too much. */
+const MIN_FORGIVING_LENGTH = 4
+
+const WORD_SPLIT = /[^\p{L}\p{N}]+/u
+
+/** The fallbacks for a query a plain search doesn't match. */
+function forgivingScore(
+  haystack: string,
+  query: string,
+  tokens: string[]
+): number {
+  const compactQuery = query.replace(/ /g, '')
+  if (
+    compactQuery.length >= MIN_FORGIVING_LENGTH &&
+    haystack.replace(/ /g, '').includes(compactQuery)
+  ) {
+    return SEARCH_SCORE.spacing
+  }
+
+  const words = haystack.split(WORD_SPLIT).filter(Boolean)
+  const tokenMatches = (token: string) =>
+    haystack.includes(token) ||
+    (token.length >= MIN_FORGIVING_LENGTH &&
+      words.some(word => startsWithOneSlip(word, token)))
+
+  return tokens.every(tokenMatches) ? SEARCH_SCORE.typo : SEARCH_SCORE.none
+}
+
+/**
+ * Whether `word` starts with `token` give or take one slip (a letter wrong,
+ * missing, extra or two swapped), keeping the first letter.
+ */
+function startsWithOneSlip(word: string, token: string): boolean {
+  if (word[0] !== token[0]) return false
+  for (const length of [token.length - 1, token.length, token.length + 1]) {
+    if (length > word.length) break
+    if (editDistance(token, word.slice(0, length)) <= 1) return true
+  }
+  return false
+}
+
+/** Optimal string alignment distance (Levenshtein plus swaps). */
+function editDistance(a: string, b: string): number {
+  const rows: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) =>
+      i === 0 ? j : j === 0 ? i : 0
+    )
+  )
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      let best = Math.min(
+        rows[i - 1]![j]! + 1,
+        rows[i]![j - 1]! + 1,
+        rows[i - 1]![j - 1]! + cost
+      )
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        best = Math.min(best, rows[i - 2]![j - 2]! + 1)
+      }
+      rows[i]![j] = best
+    }
+  }
+  return rows[a.length]![b.length]!
 }

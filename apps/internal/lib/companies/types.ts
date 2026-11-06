@@ -117,6 +117,8 @@ export type CompanyOption = {
   id: string
   name: string
   website: string | null
+  /** Its people's names and emails, which the pickers also search. */
+  contactSearchTerms: string[]
 }
 
 export type CompanyActionResult = {

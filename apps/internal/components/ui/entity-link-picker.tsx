@@ -23,6 +23,8 @@ export type EntityLinkOption = {
   label: string
   /** Second line in the list, e.g. an email. */
   description?: string | null
+  /** More text search matches but the list doesn't show (a company's people). */
+  keywords?: readonly string[]
   /** A person's avatar (photo, else initials); see `SearchableComboboxItem`. */
   avatar?: SearchableComboboxItem['avatar']
 }
@@ -126,7 +128,10 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       value: option.id,
       label: option.label,
       description: option.description ?? undefined,
-      keywords: option.description ? [option.description] : undefined,
+      keywords: [
+        ...(option.description ? [option.description] : []),
+        ...(option.keywords ?? []),
+      ],
       // Options of one entity carry no icon: the field's label shows it.
       avatar: option.avatar,
     }))

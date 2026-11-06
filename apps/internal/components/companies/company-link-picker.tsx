@@ -81,7 +81,12 @@ export function CompanyLinkPicker({
       onChange={option =>
         onChange(option ? { id: option.id, name: option.label } : null)
       }
-      options={data.filter(company => !excluded.has(company.id)).map(toOption)}
+      options={data
+        .filter(company => !excluded.has(company.id))
+        .map(company => ({
+          ...toOption(company),
+          keywords: company.contactSearchTerms,
+        }))}
       disabled={disabled}
       placeholder={placeholder}
       toOption={toOption}

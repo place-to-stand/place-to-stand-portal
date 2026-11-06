@@ -24,7 +24,7 @@ export const buildClientOptions = (clients: InvoiceClient[]): ClientOption[] =>
     .map(client => ({
       value: client.id,
       label: client.name,
-      keywords: [client.name],
+      keywords: [client.name, ...(client.contact_search_terms ?? [])],
       billingType: client.billing_type,
       state: client.state ?? null,
     }))

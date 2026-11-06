@@ -44,6 +44,7 @@ import { db } from '@/lib/db'
 import { ARCHIVE_BILLED_REFUSAL } from '@/lib/companies/archive-refusal'
 import { companies, contacts, leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
+import { companyContactSearchTermsSql } from '@/lib/queries/companies/contact-search-terms'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
 const CLOSED_LEAD_STATUSES_SQL = sql`('CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED')`
@@ -355,6 +356,7 @@ export async function listCompanyOptions(
       id: companies.id,
       name: companies.name,
       website: companies.website,
+      contactSearchTerms: companyContactSearchTermsSql(),
     })
     .from(companies)
     .where(isNull(companies.deletedAt))
