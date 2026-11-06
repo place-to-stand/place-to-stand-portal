@@ -94,7 +94,7 @@ export function LeadSheetRightColumn({
             emptyMessage='Add updates after you save the lead.'
           />
           <EntityList
-            title='Emails'
+            title='Email threads'
             icon={Mail}
             isEmpty
             emptyMessage='Your emails with this person show after you save the lead.'

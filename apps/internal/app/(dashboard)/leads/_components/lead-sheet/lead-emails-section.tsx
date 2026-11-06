@@ -119,7 +119,7 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
 
   return (
     <EntityList
-      title='Emails'
+      title='Email threads'
       icon={Mail}
       titleAddon={
         threads.length > 0 ? (
