@@ -25,6 +25,7 @@ import { InvoicesTableSection } from './invoices-table-section'
 import { InvoiceSheet } from '../invoice-sheet'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { usePageParam } from '@/hooks/use-page-param'
+import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
 
 type InvoicesManagementTableProps = {
   invoices: InvoiceWithClient[]
@@ -251,6 +252,11 @@ export function InvoicesManagementTable({
 
   const handlePageChange = usePageParam()
 
+  const selection = useRowSelection(
+    invoices.map(row => row.id),
+    totalCount
+  )
+
   return (
     <div className='space-y-4'>
       {showInvoiceNotFound ? (
@@ -264,6 +270,7 @@ export function InvoicesManagementTable({
       />
       <InvoicesTableSection
         invoices={invoices}
+        selection={selection}
         mode={mode}
         onEdit={openEdit}
         onRequestDelete={handleRequestDelete}
@@ -283,6 +290,15 @@ export function InvoicesManagementTable({
         totalItems={totalCount}
         pageSize={pageSize}
         onPageChange={handlePageChange}
+      />
+      <BulkActionBar
+        selection={selection}
+        entity='invoice'
+        mode={mode}
+        nameOf={id => {
+          const row = invoices.find(item => item.id === id)
+          return row ? (row.invoice_number ?? undefined) : undefined
+        }}
       />
       <InvoiceSheet
         open={sheetOpen}

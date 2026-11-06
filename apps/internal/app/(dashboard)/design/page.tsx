@@ -12,6 +12,7 @@ import {
   ComponentsRecordRows,
   ComponentsTables,
 } from './_components/components-data'
+import { ComponentsBulkSelect } from './_components/components-bulk-select'
 import {
   ComponentsDates,
   ComponentsRichText,
@@ -80,6 +81,7 @@ export default async function DesignPage() {
         <ComponentsStats />
         <ComponentsAccess />
         <ComponentsTables />
+        <ComponentsBulkSelect />
         <ComponentsEmptyLoading />
         <ComponentsFeedback />
         <ComponentsOverlays />

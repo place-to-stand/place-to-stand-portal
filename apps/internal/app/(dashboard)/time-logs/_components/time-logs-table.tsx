@@ -41,6 +41,13 @@ import {
 
 import { useTimeLogRowActions } from '../_lib/use-time-log-row-actions'
 import { usePageParam } from '@/hooks/use-page-param'
+import {
+  BulkActionBar,
+  RowSelectionProvider,
+  SelectAllHead,
+  SelectRowCell,
+  useRowSelection,
+} from '@/components/table/bulk-select'
 
 type TimeLogsTableProps = {
   items: DashboardTimeLogEntry[]
@@ -95,6 +102,10 @@ export function TimeLogsTable({
   const editor = useTimeLogEditContext()
   const actions = useTimeLogRowActions()
   const isArchive = mode === 'archive'
+  const selection = useRowSelection(
+    items.map(item => item.id),
+    totalCount
+  )
 
   const goToPage = usePageParam()
 
@@ -126,182 +137,193 @@ export function TimeLogsTable({
         </p>
       ) : null}
       <div className='overflow-hidden rounded-lg border'>
-        <Table
-          density='compact'
-          layout='fixed'
-          stack
-          className='md:min-w-[64rem]'
-        >
-          <TableHeader>
-            <TableRow className='bg-muted/40'>
-              {sortHead('hours', 'Hours', 'w-[10%]')}
-              {sortHead('date', 'Date', 'w-[10%]')}
-              {sortHead('person', 'Person', 'w-20', 'center')}
-              {sortHead('client', 'Client', 'w-[24%]')}
-              {sortHead('project', 'Project', 'w-[30%]')}
-              <TableHead className='w-[10%] text-center'>Tasks</TableHead>
-              <TableHead className='w-32 text-right'>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map(item => {
-              return (
-                <RecordContextMenu
-                  key={item.id}
-                  entity='time-log'
-                  id={item.id}
-                  onEdit={() => void editor.open(item.id)}
-                  // Archived logs don't open; the list only restores them.
-                  editable={!isArchive}
-                  onArchive={
-                    isArchive
-                      ? undefined
-                      : () => actions.archiveConfirm.request(item)
-                  }
-                  onRestore={
-                    isArchive ? () => actions.restore(item) : undefined
-                  }
-                  pending={actions.isMutating}
-                >
-                  <TableRow
-                    {...(isArchive
-                      ? {}
-                      : {
-                          ...getClickableRowProps(
-                            () => void editor.open(item.id)
-                          ),
-                          className: CLICKABLE_ROW_CLASS,
-                        })}
+        <RowSelectionProvider selection={selection} entity='timeLog'>
+          <Table
+            density='compact'
+            layout='fixed'
+            stack
+            className='md:min-w-[64rem]'
+          >
+            <TableHeader>
+              <TableRow className='bg-muted/40'>
+                <SelectAllHead />
+                {sortHead('hours', 'Hours', 'w-[10%]')}
+                {sortHead('date', 'Date', 'w-[10%]')}
+                {sortHead('person', 'Person', 'w-20', 'center')}
+                {sortHead('client', 'Client', 'w-[24%]')}
+                {sortHead('project', 'Project', 'w-[27%]')}
+                <TableHead className='w-[10%] text-center'>Tasks</TableHead>
+                <TableHead className='w-32 text-right'>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map(item => {
+                return (
+                  <RecordContextMenu
+                    key={item.id}
+                    entity='time-log'
+                    id={item.id}
+                    onEdit={() => void editor.open(item.id)}
+                    // Archived logs don't open; the list only restores them.
+                    editable={!isArchive}
+                    onArchive={
+                      isArchive
+                        ? undefined
+                        : () => actions.archiveConfirm.request(item)
+                    }
+                    onRestore={
+                      isArchive ? () => actions.restore(item) : undefined
+                    }
+                    pending={actions.isMutating}
                   >
-                    {/* Hours first: it's what you scan a time log for. */}
-                    <TableCell className='text-sm font-medium tabular-nums'>
-                      <span className='inline-flex items-center gap-2'>
-                        <ENTITY_ICONS.timeLog
-                          className={cn(
-                            ENTITY_ACCENTS.timeLog.icon,
-                            'h-4 w-4 shrink-0'
-                          )}
-                        />
-                        {formatHours(item.hours)}
-                      </span>
-                    </TableCell>
-                    <TableCell label='Date' className='text-sm tabular-nums'>
-                      {formatCalendarDate(item.loggedOn)}
-                    </TableCell>
-                    <TableCell label='Person'>
-                      <div className='flex items-center justify-center'>
-                        <PersonAvatar
-                          userId={item.userId}
-                          name={item.userName ?? 'Unknown'}
-                          hasPhoto={Boolean(item.userAvatarUrl)}
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell label='Client' className='text-sm'>
-                      {item.clientName ? (
-                        <div className='flex min-w-0 items-center gap-2'>
-                          <ENTITY_ICONS.client
+                    <TableRow
+                      data-selected={selection.isSelected(item.id) || undefined}
+                      {...(isArchive
+                        ? {}
+                        : {
+                            ...getClickableRowProps(
+                              () => void editor.open(item.id)
+                            ),
+                            className: CLICKABLE_ROW_CLASS,
+                          })}
+                    >
+                      <SelectRowCell
+                        id={item.id}
+                        label={`${formatHours(item.hours)} on ${item.projectName}`}
+                      />
+                      {/* Hours first: it's what you scan a time log for. */}
+                      <TableCell className='text-sm font-medium tabular-nums'>
+                        <span className='inline-flex items-center gap-2'>
+                          <ENTITY_ICONS.timeLog
                             className={cn(
-                              ENTITY_ACCENTS.client.icon,
+                              ENTITY_ACCENTS.timeLog.icon,
                               'h-4 w-4 shrink-0'
                             )}
                           />
-                          {item.companyId ? (
-                            // The row ignores clicks on links.
+                          {formatHours(item.hours)}
+                        </span>
+                      </TableCell>
+                      <TableCell label='Date' className='text-sm tabular-nums'>
+                        {formatCalendarDate(item.loggedOn)}
+                      </TableCell>
+                      <TableCell label='Person'>
+                        <div className='flex items-center justify-center'>
+                          <PersonAvatar
+                            userId={item.userId}
+                            name={item.userName ?? 'Unknown'}
+                            hasPhoto={Boolean(item.userAvatarUrl)}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell label='Client' className='text-sm'>
+                        {item.clientName ? (
+                          <div className='flex min-w-0 items-center gap-2'>
+                            <ENTITY_ICONS.client
+                              className={cn(
+                                ENTITY_ACCENTS.client.icon,
+                                'h-4 w-4 shrink-0'
+                              )}
+                            />
+                            {item.companyId ? (
+                              // The row ignores clicks on links.
+                              <Link
+                                href={companySheetHref(item.companyId)}
+                                title={item.clientName}
+                                className='hover:text-foreground truncate-link transition hover:underline'
+                              >
+                                {item.clientName}
+                              </Link>
+                            ) : (
+                              <span
+                                className='truncate'
+                                title={item.clientName}
+                              >
+                                {item.clientName}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <EmptyValue />
+                        )}
+                      </TableCell>
+                      <TableCell label='Project' className='text-sm'>
+                        <div className='flex min-w-0 items-center gap-2'>
+                          <ENTITY_ICONS.project
+                            className={cn(
+                              ENTITY_ACCENTS.project.icon,
+                              'h-4 w-4 shrink-0'
+                            )}
+                          />
+                          {projectTasksHref(item) ? (
                             <Link
-                              href={companySheetHref(item.companyId)}
-                              title={item.clientName}
+                              href={projectTasksHref(item)!}
+                              title={item.projectName}
                               className='hover:text-foreground truncate-link transition hover:underline'
                             >
-                              {item.clientName}
+                              {item.projectName}
                             </Link>
                           ) : (
-                            <span className='truncate' title={item.clientName}>
-                              {item.clientName}
+                            <span className='truncate' title={item.projectName}>
+                              {item.projectName}
                             </span>
                           )}
                         </div>
-                      ) : (
-                        <EmptyValue />
-                      )}
-                    </TableCell>
-                    <TableCell label='Project' className='text-sm'>
-                      <div className='flex min-w-0 items-center gap-2'>
-                        <ENTITY_ICONS.project
-                          className={cn(
-                            ENTITY_ACCENTS.project.icon,
-                            'h-4 w-4 shrink-0'
-                          )}
+                      </TableCell>
+                      <TableCell
+                        label='Tasks'
+                        className='text-sm tabular-nums md:text-center'
+                      >
+                        <LinkedRecordsHoverCell
+                          withIcon
+                          count={item.tasks.length}
+                          icon={ENTITY_ICONS.task}
+                          iconClassName={ENTITY_ACCENTS.task.icon}
+                          ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
+                          items={item.tasks.map(task => ({
+                            id: task.id,
+                            label: task.title,
+                            onSelect: () => openSheet('task', task.id),
+                          }))}
                         />
-                        {projectTasksHref(item) ? (
-                          <Link
-                            href={projectTasksHref(item)!}
-                            title={item.projectName}
-                            className='hover:text-foreground truncate-link transition hover:underline'
-                          >
-                            {item.projectName}
-                          </Link>
-                        ) : (
-                          <span className='truncate' title={item.projectName}>
-                            {item.projectName}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      label='Tasks'
-                      className='text-sm tabular-nums md:text-center'
-                    >
-                      <LinkedRecordsHoverCell
-                        withIcon
-                        count={item.tasks.length}
-                        icon={ENTITY_ICONS.task}
-                        iconClassName={ENTITY_ACCENTS.task.icon}
-                        ariaLabel={`${item.tasks.length} ${item.tasks.length === 1 ? 'task' : 'tasks'}`}
-                        items={item.tasks.map(task => ({
-                          id: task.id,
-                          label: task.title,
-                          onSelect: () => openSheet('task', task.id),
-                        }))}
-                      />
-                    </TableCell>
-                    <TableCell className='text-right max-md:ml-auto'>
-                      <RecordRowActions>
-                        {isArchive ? (
-                          <RecordRowAction
-                            kind='restore'
-                            entity='time log'
-                            onClick={() => actions.restore(item)}
-                            disabled={actions.isMutating}
-                            pending={actions.busyEntryId === item.id}
-                          />
-                        ) : (
-                          <>
+                      </TableCell>
+                      <TableCell className='text-right max-md:ml-auto'>
+                        <RecordRowActions>
+                          {isArchive ? (
                             <RecordRowAction
-                              kind='edit'
+                              kind='restore'
                               entity='time log'
-                              onClick={() => void editor.open(item.id)}
-                              pending={editor.openingEntryId === item.id}
-                            />
-                            <RecordRowAction
-                              kind='archive'
-                              entity='time log'
-                              onClick={() =>
-                                actions.archiveConfirm.request(item)
-                              }
+                              onClick={() => actions.restore(item)}
                               disabled={actions.isMutating}
                               pending={actions.busyEntryId === item.id}
                             />
-                          </>
-                        )}
-                      </RecordRowActions>
-                    </TableCell>
-                  </TableRow>
-                </RecordContextMenu>
-              )
-            })}
-          </TableBody>
-        </Table>
+                          ) : (
+                            <>
+                              <RecordRowAction
+                                kind='edit'
+                                entity='time log'
+                                onClick={() => void editor.open(item.id)}
+                                pending={editor.openingEntryId === item.id}
+                              />
+                              <RecordRowAction
+                                kind='archive'
+                                entity='time log'
+                                onClick={() =>
+                                  actions.archiveConfirm.request(item)
+                                }
+                                disabled={actions.isMutating}
+                                pending={actions.busyEntryId === item.id}
+                              />
+                            </>
+                          )}
+                        </RecordRowActions>
+                      </TableCell>
+                    </TableRow>
+                  </RecordContextMenu>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </RowSelectionProvider>
       </div>
       <PaginationControls
         mode='paged'
@@ -318,6 +340,12 @@ export function TimeLogsTable({
             </span>
           </>
         }
+      />
+      <BulkActionBar
+        selection={selection}
+        entity='timeLog'
+        mode={mode}
+        archiveExtra="They no longer count toward their projects' hours."
       />
       <ArchiveConfirmDialog
         open={actions.archiveConfirm.open}

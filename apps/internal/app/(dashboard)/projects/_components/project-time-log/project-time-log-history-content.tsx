@@ -172,7 +172,7 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
     >
       <TableRow>
         {/* Hours first, as on the Time logs list. */}
-        <TableCell className='text-right font-semibold tabular-nums max-md:first:basis-auto'>
+        <TableCell className='max-md:first-cell:basis-auto text-right font-semibold tabular-nums'>
           {formatHours(log.hours ?? 0)}
         </TableCell>
         <TableCell label='Logged on'>

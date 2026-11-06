@@ -44,9 +44,16 @@ import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { RoleBadge } from '@/components/auth/role-badge'
+import {
+  RowSelectionProvider,
+  SelectAllHead,
+  SelectRowCell,
+  type RowSelection,
+} from '@/components/table/bulk-select'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
+  selection: RowSelection
   mode: 'active' | 'archive'
   onEdit: (contact: ContactsTableContact) => void
   onRequestDelete: (contact: ContactsTableContact) => void
@@ -63,6 +70,7 @@ export type ContactsTableSectionProps = {
 
 export function ContactsTableSection({
   contacts,
+  selection,
   mode,
   basePath,
   onEdit,
@@ -89,264 +97,275 @@ export function ContactsTableSection({
 
   return (
     <div className='overflow-hidden rounded-lg border'>
-      <Table
-        density='compact'
-        layout='fixed'
-        stack
-        className='md:min-w-[50rem]'
-      >
-        <TableHeader>
-          <TableRow className='bg-muted/40'>
-            <SortableTableHead
-              field='name'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className='w-[22%]'
-            >
-              Name
-            </SortableTableHead>
-            {seesAccess ? (
+      <RowSelectionProvider selection={selection} entity='contact'>
+        <Table
+          density='compact'
+          layout='fixed'
+          stack
+          className='md:min-w-[50rem]'
+        >
+          <TableHeader>
+            <TableRow className='bg-muted/40'>
+              <SelectAllHead />
               <SortableTableHead
-                field='signIn'
+                field='name'
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-28'
+                className='w-[22%]'
               >
-                Role
+                Name
               </SortableTableHead>
-            ) : null}
-            <SortableTableHead
-              field='companies'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className='w-[26%]'
-            >
-              Companies
-            </SortableTableHead>
-            <SortableTableHead
-              field='email'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className='w-[22%]'
-            >
-              Email
-            </SortableTableHead>
-            <SortableTableHead
-              field='phone'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className='w-40'
-            >
-              Phone
-            </SortableTableHead>
-            <TableHead className='w-32 text-right'>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {contacts.map(contact => {
-            const isDeleting = isPending && pendingDeleteId === contact.id
-            const isRestoring = isPending && pendingRestoreId === contact.id
-
-            const deleteDisabled =
-              isDeleting || isRestoring || Boolean(contact.deletedAt)
-            const deleteDisabledReason = deleteDisabled
-              ? isDeleting || isRestoring
-                ? pendingReason
-                : contact.deletedAt
-                  ? 'Person already archived.'
-                  : null
-              : null
-
-            const restoreDisabled = isRestoring || isDeleting
-            const restoreDisabledReason = restoreDisabled ? pendingReason : null
-
-            const showSoftDelete = mode === 'active'
-            const showRestore = mode === 'archive'
-            // Portal preview is admin-only.
-            const showPreview = isAdmin && mode === 'active'
-            const canPreview = canPreviewAsClient(contact)
-
-            return (
-              <RecordContextMenu
-                key={contact.id}
-                entity='contact'
-                id={contact.id}
-                onEdit={() => onEdit(contact)}
-                onArchive={
-                  showSoftDelete ? () => onRequestDelete(contact) : undefined
-                }
-                onRestore={showRestore ? () => onRestore(contact) : undefined}
-                archiveDisabledReason={
-                  showRestore ? restoreDisabledReason : deleteDisabledReason
-                }
-              >
-                <TableRow
-                  {...getClickableRowProps(() => onEdit(contact))}
-                  className={cn(
-                    CLICKABLE_ROW_CLASS,
-                    contact.deletedAt && ARCHIVED_ROW_CLASS
-                  )}
+              {seesAccess ? (
+                <SortableTableHead
+                  field='signIn'
+                  sort={sort}
+                  defaultSort='name:asc'
+                  onSortChange={next => update({ sort: next })}
+                  className='w-28'
                 >
-                  <TableCell>
-                    <div className='flex min-w-0 items-center gap-2'>
-                      <UserAvatar
-                        contactId={contact.id}
-                        name={contact.name}
-                        hasPhoto={Boolean(contact.userHasPhoto)}
-                        size='xs'
-                        alt=''
-                      />
-                      <span
-                        className='truncate font-medium'
-                        title={contact.name}
-                      >
-                        {contact.name}
-                      </span>
-                    </div>
-                  </TableCell>
-                  {seesAccess ? (
-                    <TableCell label='Role' className='text-sm'>
-                      {contact.signInRole ? (
-                        <RoleBadge role={contact.signInRole} />
+                  Role
+                </SortableTableHead>
+              ) : null}
+              <SortableTableHead
+                field='companies'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-[26%]'
+              >
+                Companies
+              </SortableTableHead>
+              <SortableTableHead
+                field='email'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-[22%]'
+              >
+                Email
+              </SortableTableHead>
+              <SortableTableHead
+                field='phone'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-40'
+              >
+                Phone
+              </SortableTableHead>
+              <TableHead className='w-32 text-right'>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {contacts.map(contact => {
+              const isDeleting = isPending && pendingDeleteId === contact.id
+              const isRestoring = isPending && pendingRestoreId === contact.id
+
+              const deleteDisabled =
+                isDeleting || isRestoring || Boolean(contact.deletedAt)
+              const deleteDisabledReason = deleteDisabled
+                ? isDeleting || isRestoring
+                  ? pendingReason
+                  : contact.deletedAt
+                    ? 'Person already archived.'
+                    : null
+                : null
+
+              const restoreDisabled = isRestoring || isDeleting
+              const restoreDisabledReason = restoreDisabled
+                ? pendingReason
+                : null
+
+              const showSoftDelete = mode === 'active'
+              const showRestore = mode === 'archive'
+              // Portal preview is admin-only.
+              const showPreview = isAdmin && mode === 'active'
+              const canPreview = canPreviewAsClient(contact)
+
+              return (
+                <RecordContextMenu
+                  key={contact.id}
+                  entity='contact'
+                  id={contact.id}
+                  onEdit={() => onEdit(contact)}
+                  onArchive={
+                    showSoftDelete ? () => onRequestDelete(contact) : undefined
+                  }
+                  onRestore={showRestore ? () => onRestore(contact) : undefined}
+                  archiveDisabledReason={
+                    showRestore ? restoreDisabledReason : deleteDisabledReason
+                  }
+                >
+                  <TableRow
+                    {...getClickableRowProps(() => onEdit(contact))}
+                    data-selected={
+                      selection.isSelected(contact.id) || undefined
+                    }
+                    className={cn(
+                      CLICKABLE_ROW_CLASS,
+                      contact.deletedAt && ARCHIVED_ROW_CLASS
+                    )}
+                  >
+                    <SelectRowCell id={contact.id} label={contact.name} />
+                    <TableCell>
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <UserAvatar
+                          contactId={contact.id}
+                          name={contact.name}
+                          hasPhoto={Boolean(contact.userHasPhoto)}
+                          size='xs'
+                          alt=''
+                        />
+                        <span
+                          className='truncate font-medium'
+                          title={contact.name}
+                        >
+                          {contact.name}
+                        </span>
+                      </div>
+                    </TableCell>
+                    {seesAccess ? (
+                      <TableCell label='Role' className='text-sm'>
+                        {contact.signInRole ? (
+                          <RoleBadge role={contact.signInRole} />
+                        ) : (
+                          <EmptyValue />
+                        )}
+                      </TableCell>
+                    ) : null}
+                    <TableCell label='Companies' className='text-sm'>
+                      {contact.companyId && contact.companyName ? (
+                        <span className='flex min-w-0 items-center gap-2'>
+                          <ENTITY_ICONS.company
+                            className={cn(
+                              ENTITY_ACCENTS.company.icon,
+                              'h-4 w-4 shrink-0'
+                            )}
+                          />
+                          {/* The row ignores clicks on links, so this opens the
+                          company, not the contact. */}
+                          {/* Names only get a tooltip when they're cut off. */}
+                          <TruncationTooltip content={contact.companyName}>
+                            <Link
+                              href={companySheetHref(contact.companyId)}
+                              className='hover:text-foreground truncate-link min-w-0 underline-offset-4 transition hover:underline'
+                            >
+                              {contact.companyName}
+                            </Link>
+                          </TruncationTooltip>
+                          <CompanyClientMark
+                            company={contact.companies.find(
+                              company => company.id === contact.companyId
+                            )}
+                            className='shrink-0'
+                          />
+                          {contact.companies.length > 1 ? (
+                            <LinkedRecordsHoverCell
+                              count={contact.companies.length}
+                              triggerLabel={`+${contact.companies.length - 1}`}
+                              triggerClassName='text-muted-foreground shrink-0'
+                              icon={ENTITY_ICONS.company}
+                              iconClassName={ENTITY_ACCENTS.company.icon}
+                              ariaLabel={`${contact.companies.length} companies`}
+                              items={contact.companies.map(company => ({
+                                id: company.id,
+                                label: company.name,
+                                href: companySheetHref(company.id),
+                                trailing: (
+                                  <CompanyClientMark company={company} />
+                                ),
+                              }))}
+                            />
+                          ) : null}
+                        </span>
                       ) : (
                         <EmptyValue />
                       )}
                     </TableCell>
-                  ) : null}
-                  <TableCell label='Companies' className='text-sm'>
-                    {contact.companyId && contact.companyName ? (
-                      <span className='flex min-w-0 items-center gap-2'>
-                        <ENTITY_ICONS.company
-                          className={cn(
-                            ENTITY_ACCENTS.company.icon,
-                            'h-4 w-4 shrink-0'
-                          )}
-                        />
-                        {/* The row ignores clicks on links, so this opens the
-                          company, not the contact. */}
-                        {/* Names only get a tooltip when they're cut off. */}
-                        <TruncationTooltip content={contact.companyName}>
-                          <Link
-                            href={companySheetHref(contact.companyId)}
-                            className='hover:text-foreground truncate-link min-w-0 underline-offset-4 transition hover:underline'
-                          >
-                            {contact.companyName}
-                          </Link>
-                        </TruncationTooltip>
-                        <CompanyClientMark
-                          company={contact.companies.find(
-                            company => company.id === contact.companyId
-                          )}
-                          className='shrink-0'
-                        />
-                        {contact.companies.length > 1 ? (
-                          <LinkedRecordsHoverCell
-                            count={contact.companies.length}
-                            triggerLabel={`+${contact.companies.length - 1}`}
-                            triggerClassName='text-muted-foreground shrink-0'
-                            icon={ENTITY_ICONS.company}
-                            iconClassName={ENTITY_ACCENTS.company.icon}
-                            ariaLabel={`${contact.companies.length} companies`}
-                            items={contact.companies.map(company => ({
-                              id: company.id,
-                              label: company.name,
-                              href: companySheetHref(company.id),
-                              trailing: <CompanyClientMark company={company} />,
-                            }))}
+                    <TableCell className='text-muted-foreground text-sm'>
+                      {contact.email ? (
+                        <a
+                          href={`mailto:${contact.email}`}
+                          title={contact.email}
+                          className='hover:text-foreground inline-flex max-w-full items-center gap-1.5 transition'
+                        >
+                          <Mail className='h-3 w-3 shrink-0' />
+                          <span className='truncate'>{contact.email}</span>
+                        </a>
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        'text-muted-foreground truncate text-sm whitespace-nowrap',
+                        !contact.phone && 'max-md:hidden'
+                      )}
+                      title={contact.phone ?? undefined}
+                    >
+                      {contact.phone ? (
+                        <a
+                          href={`tel:${contact.phone}`}
+                          className='hover:text-foreground inline-flex items-center gap-1.5 transition'
+                        >
+                          <Phone className='h-3 w-3' />
+                          {contact.phone}
+                        </a>
+                      ) : (
+                        <EmptyValue />
+                      )}
+                    </TableCell>
+                    <TableCell className='text-right max-md:ml-auto'>
+                      <RecordRowActions>
+                        {showPreview ? (
+                          <RecordRowAction
+                            kind='preview'
+                            onClick={() => onRequestPreview(contact)}
+                            disabled={isPending || !canPreview}
+                            disabledReason={
+                              isPending
+                                ? pendingReason
+                                : canPreview
+                                  ? null
+                                  : PREVIEW_UNAVAILABLE_REASON
+                            }
                           />
                         ) : null}
-                      </span>
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                  <TableCell className='text-muted-foreground text-sm'>
-                    {contact.email ? (
-                      <a
-                        href={`mailto:${contact.email}`}
-                        title={contact.email}
-                        className='hover:text-foreground inline-flex max-w-full items-center gap-1.5 transition'
-                      >
-                        <Mail className='h-3 w-3 shrink-0' />
-                        <span className='truncate'>{contact.email}</span>
-                      </a>
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                  <TableCell
-                    className={cn(
-                      'text-muted-foreground truncate text-sm whitespace-nowrap',
-                      !contact.phone && 'max-md:hidden'
-                    )}
-                    title={contact.phone ?? undefined}
-                  >
-                    {contact.phone ? (
-                      <a
-                        href={`tel:${contact.phone}`}
-                        className='hover:text-foreground inline-flex items-center gap-1.5 transition'
-                      >
-                        <Phone className='h-3 w-3' />
-                        {contact.phone}
-                      </a>
-                    ) : (
-                      <EmptyValue />
-                    )}
-                  </TableCell>
-                  <TableCell className='text-right max-md:ml-auto'>
-                    <RecordRowActions>
-                      {showPreview ? (
-                        <RecordRowAction
-                          kind='preview'
-                          onClick={() => onRequestPreview(contact)}
-                          disabled={isPending || !canPreview}
-                          disabledReason={
-                            isPending
-                              ? pendingReason
-                              : canPreview
-                                ? null
-                                : PREVIEW_UNAVAILABLE_REASON
-                          }
-                        />
-                      ) : null}
-                      {showRestore ? (
-                        <RecordRowAction
-                          kind='restore'
-                          entity='person'
-                          onClick={() => onRestore(contact)}
-                          disabled={restoreDisabled}
-                          disabledReason={restoreDisabledReason}
-                        />
-                      ) : null}
-                      {showSoftDelete ? (
-                        <RecordRowAction
-                          kind='archive'
-                          entity='person'
-                          onClick={() => onRequestDelete(contact)}
-                          disabled={deleteDisabled}
-                          disabledReason={deleteDisabledReason}
-                        />
-                      ) : null}
-                    </RecordRowActions>
-                  </TableCell>
-                </TableRow>
-              </RecordContextMenu>
-            )
-          })}
-          {contacts.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={seesAccess ? 6 : 5} className='p-4'>
-                <EmptyState message={emptyMessage} />
-              </TableCell>
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
+                        {showRestore ? (
+                          <RecordRowAction
+                            kind='restore'
+                            entity='person'
+                            onClick={() => onRestore(contact)}
+                            disabled={restoreDisabled}
+                            disabledReason={restoreDisabledReason}
+                          />
+                        ) : null}
+                        {showSoftDelete ? (
+                          <RecordRowAction
+                            kind='archive'
+                            entity='person'
+                            onClick={() => onRequestDelete(contact)}
+                            disabled={deleteDisabled}
+                            disabledReason={deleteDisabledReason}
+                          />
+                        ) : null}
+                      </RecordRowActions>
+                    </TableCell>
+                  </TableRow>
+                </RecordContextMenu>
+              )
+            })}
+            {contacts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={seesAccess ? 7 : 6} className='p-4'>
+                  <EmptyState message={emptyMessage} />
+                </TableCell>
+              </TableRow>
+            ) : null}
+          </TableBody>
+        </Table>
+      </RowSelectionProvider>
     </div>
   )
 }

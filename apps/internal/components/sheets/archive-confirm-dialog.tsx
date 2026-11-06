@@ -12,6 +12,11 @@ type ArchiveConfirmDialogProps = {
   list: string
   /** One more sentence, for consequences beyond hiding it. */
   extra?: string
+  /**
+   * Several records at once (the bulk bar): `entity` and `name` carry the
+   * count ("12 companies", "these 12 companies") and the copy says "them".
+   */
+  many?: boolean
   /** Disables the confirm button and says "Archiving…". */
   pending?: boolean
   onCancel: () => void
@@ -29,11 +34,12 @@ export function ArchiveConfirmDialog({
   name,
   list,
   extra,
+  many = false,
   pending = false,
   onCancel,
   onConfirm,
 }: ArchiveConfirmDialogProps) {
-  const description = `Archiving ${name} hides it from ${list}. Its history stays.${
+  const description = `Archiving ${name} hides ${many ? 'them' : 'it'} from ${list}. ${many ? 'Their' : 'Its'} history stays.${
     extra ? ` ${extra}` : ''
   }`
 

@@ -15,6 +15,7 @@ import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-st
 import { ProjectSheet } from '@/app/(dashboard)/projects/project-sheet'
 import { ProjectLifecycleDialogs } from '@/components/projects/table/project-lifecycle-dialogs'
 import { ProjectsTableSection } from '@/components/projects/table/projects-table-section'
+import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
 import { type ContractorUserSummary } from '@/components/projects/table/types'
 import { useProjectsSettingsController } from '@/components/projects/table/use-projects-settings-controller'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
@@ -92,6 +93,11 @@ export function ProjectsManagementSection({
       ? 'No projects yet.'
       : 'No archived projects.'
 
+  const selection = useRowSelection(
+    projects.map(project => project.id),
+    totalCount
+  )
+
   return (
     <div className='space-y-4'>
       {/* Main Container with Background */}
@@ -105,6 +111,7 @@ export function ProjectsManagementSection({
         {filters}
         <ProjectsTableSection
           projects={projects}
+          selection={selection}
           mode={mode}
           onEdit={openEdit}
           onRequestDelete={requestDelete}
@@ -122,6 +129,12 @@ export function ProjectsManagementSection({
           totalItems={totalCount}
           pageSize={pageSize}
           onPageChange={handlePageChange}
+        />
+        <BulkActionBar
+          selection={selection}
+          entity='project'
+          mode={mode}
+          nameOf={id => projects.find(project => project.id === id)?.name}
         />
       </PagePanel>
       <ProjectSheet
