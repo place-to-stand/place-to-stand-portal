@@ -404,23 +404,22 @@ export function SampleProjectList({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={setSort}
-                className='w-[38%]'
               >
                 Project
               </SortableTableHead>
               <TableHead className='w-[22%]'>Company</TableHead>
-              <TableHead className='w-[14%]'>Status</TableHead>
-              <TableHead className='w-[10%]'>People</TableHead>
+              <TableHead className='w-28'>Status</TableHead>
+              <TableHead className='w-24'>People</TableHead>
               <SortableTableHead
                 field='hours'
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={setSort}
-                className='w-[8%]'
+                className='w-24'
               >
                 Hours
               </SortableTableHead>
-              <TableHead className='w-[8%] text-right'>
+              <TableHead className='w-16 text-right'>
                 <span className='sr-only'>Actions</span>
               </TableHead>
             </TableRow>

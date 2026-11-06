@@ -102,7 +102,7 @@ export function ContactsTableSection({
           density='compact'
           layout='fixed'
           stack
-          className='md:min-w-[50rem]'
+          className='md:min-w-[56rem]'
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
@@ -112,7 +112,6 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[22%]'
               >
                 Name
               </SortableTableHead>
@@ -132,7 +131,7 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[26%]'
+                className='w-[20%]'
               >
                 Companies
               </SortableTableHead>
@@ -141,7 +140,7 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[22%]'
+                className='w-[18%]'
               >
                 Email
               </SortableTableHead>

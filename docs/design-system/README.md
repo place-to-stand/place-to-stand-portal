@@ -220,6 +220,7 @@ All of these run in `npm run lint` (and so in CI). The `pts/*` rules live in `pa
 | eslint `pts/one-page-panel`                            | Borders: page panels are `PagePanel` / `pagePanelClass`, never a copy of their classes (internal app)                                           |
 | eslint `pts/popover-shadow`                            | Borders, select.md: floating panels keep `shadow-popover`, no other shadow                                                                      |
 | eslint `pts/figure-cell-aligned`                       | table.md: a cell printing money, hours or a percent is `text-right tabular-nums`                                                                |
+| eslint `pts/fixed-table-columns`                       | table.md: a fixed-layout table has one unsized column; a short column (Actions, Status, a date, hours) is never `%`                             |
 | eslint `pts/no-details-section`                        | sheet.md: no generic "Details" section heading                                                                                                  |
 | eslint `pts/no-raw-type-size`                          | Type: sizes come from the roles, never `text-[Npx]`                                                                                             |
 | eslint `pts/underline-not-clipped`                     | Text links: link text truncates with `truncate-link`, so the hover underline shows                                                              |

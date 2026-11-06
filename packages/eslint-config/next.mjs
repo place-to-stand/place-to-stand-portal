@@ -34,6 +34,7 @@ export const HOUSE_RULES = {
   'pts/optional-label': 'error', // input.md: <FormLabel optional>
   'pts/popover-shadow': 'error', // select.md: one elevation
   'pts/figure-cell-aligned': 'error', // table.md: figures right, tabular
+  'pts/fixed-table-columns': 'error', // table.md: short columns fixed, text grows
   'pts/no-details-section': 'error', // sheet.md: no "Details" heading
   'pts/no-raw-type-size': 'error', // README → Type: role utilities
   'pts/underline-not-clipped': 'error', // README → Text links: truncate-link
