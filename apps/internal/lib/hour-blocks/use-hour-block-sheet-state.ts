@@ -4,12 +4,11 @@ import { useCallback, useMemo, useState } from 'react'
 import { useForm, type Resolver, type UseFormReturn } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import {
-  saveHourBlock,
-  softDeleteHourBlock,
-} from '@/app/(dashboard)/hour-blocks/actions'
+import { saveHourBlock } from '@/app/(dashboard)/hour-blocks/actions'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
   finishSettingsInteraction,
@@ -26,6 +25,7 @@ import {
   type HourBlockWithClient,
 } from './hour-block-form'
 export type { HourBlockFormValues } from './hour-block-form'
+import { archiveHourBlockFromSheet } from './hour-block-archive-flow'
 import { buildClientOptions, type ClientOption } from './hour-block-options'
 import {
   deriveClientFieldState,
@@ -58,7 +58,7 @@ export type UseHourBlockSheetStateReturn = {
   isDeleteDialogOpen: boolean
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
   handleSheetOpenChange: (open: boolean) => void
-  handleSubmit: (values: HourBlockFormValues) => void
+  handleSubmit: (values: HourBlockFormValues, mode?: SheetSaveMode) => void
   handleRequestDelete: () => void
   handleCancelDelete: () => void
   handleConfirmDelete: () => void
@@ -109,6 +109,12 @@ export function useHourBlockSheetState({
     resetKey: hourBlock?.id ?? null,
   })
 
+  const { stay, isReopening } = useSaveAndStay(
+    'hour-block',
+    hourBlock?.id ?? null,
+    open
+  )
+
   const applyServerFieldErrors = useCallback(
     (fieldErrors?: Record<string, string[]>) => {
       if (!fieldErrors) return
@@ -123,7 +129,7 @@ export function useHourBlockSheetState({
   )
 
   const handleSubmit = useCallback(
-    (values: HourBlockFormValues) => {
+    (values: HourBlockFormValues, mode: SheetSaveMode = 'close') => {
       startSave(async () => {
         form.clearErrors()
 
@@ -176,6 +182,11 @@ export function useHourBlockSheetState({
             })
           }
 
+          if (mode === 'stay') {
+            stay({ id: result.id, rebaseline: () => form.reset(values) })
+            return
+          }
+
           resetFormState()
           onOpenChange(false)
           onComplete()
@@ -203,6 +214,7 @@ export function useHourBlockSheetState({
       onOpenChange,
       resetFormState,
       startSave,
+      stay,
       toast,
     ]
   )
@@ -231,68 +243,9 @@ export function useHourBlockSheetState({
     setIsDeleteDialogOpen(false)
     startSave(async () => {
       form.clearErrors()
-      const interaction = startSettingsInteraction({
-        entity: 'hour_block',
-        mode: 'delete',
-        targetId: hourBlock.id,
-        metadata: {
-          companyId: hourBlock.client?.id ?? null,
-        },
-      })
-
-      try {
-        const result = await softDeleteHourBlock({ id: hourBlock.id })
-
-        if (result.error) {
-          finishSettingsInteraction(interaction, {
-            status: 'error',
-            targetId: hourBlock.id,
-            error: result.error,
-          })
-          toast({
-            title: 'Unable to archive hour block',
-            description: result.error,
-            variant: 'destructive',
-            link: toastLink('hour-block', hourBlock.id),
-          })
-          return
-        }
-
-        finishSettingsInteraction(interaction, {
-          status: 'success',
-          targetId: hourBlock.id,
-        })
-
-        toast({
-          title: 'Hour block archived',
-          description:
-            'It will be hidden from active tracking but remains available historically.',
-          link: toastLink('hour-block', hourBlock.id, { archived: true }),
-        })
-        if (result.warning) {
-          toast({
-            title: 'Closed month affected',
-            description: result.warning,
-            variant: 'warning',
-            link: toastLink('hour-block', hourBlock.id, { archived: true }),
-          })
-        }
-
+      if (await archiveHourBlockFromSheet(hourBlock, toast)) {
         onOpenChange(false)
         onComplete()
-      } catch (error) {
-        finishSettingsInteraction(interaction, {
-          status: 'error',
-          targetId: hourBlock.id,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
-        toast({
-          title: 'Unable to archive hour block',
-          description:
-            error instanceof Error ? error.message : 'Unknown error.',
-          variant: 'destructive',
-          link: toastLink('hour-block', hourBlock.id),
-        })
       }
     })
   }, [form, hourBlock, isPending, onComplete, onOpenChange, startSave, toast])
@@ -310,8 +263,13 @@ export function useHourBlockSheetState({
   const notesField = hoursField
 
   const submitButton: SubmitButtonState = useMemo(
-    () => deriveSubmitButtonState(isPending, isEditing, clientOptions),
-    [clientOptions, isEditing, isPending]
+    () =>
+      deriveSubmitButtonState(
+        isPending || isReopening,
+        isEditing,
+        clientOptions
+      ),
+    [clientOptions, isEditing, isPending, isReopening]
   )
 
   const deleteButton: DeleteButtonState = useMemo(

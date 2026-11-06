@@ -12,6 +12,7 @@ import {
   ComponentsRecordRows,
   ComponentsTables,
 } from './_components/components-data'
+import { ComponentsBulkSelect } from './_components/components-bulk-select'
 import {
   ComponentsDates,
   ComponentsRichText,
@@ -30,6 +31,7 @@ import {
 import {
   ComponentsPageShell,
   ComponentsTabs,
+  ComponentsTextLinks,
 } from './_components/components-navigation'
 import { ComponentsSheets } from './_components/components-sheet'
 import { ComponentsStats } from './_components/components-stats'
@@ -79,12 +81,14 @@ export default async function DesignPage() {
         <ComponentsStats />
         <ComponentsAccess />
         <ComponentsTables />
+        <ComponentsBulkSelect />
         <ComponentsEmptyLoading />
         <ComponentsFeedback />
         <ComponentsOverlays />
         <ComponentsDialogs />
         <ComponentsSheets />
         <ComponentsTabs />
+        <ComponentsTextLinks />
         <ComponentsPageShell />
 
         <PatternsHouseRules />

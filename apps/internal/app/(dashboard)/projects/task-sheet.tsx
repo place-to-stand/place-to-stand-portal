@@ -28,6 +28,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { LEADS_FIRST_ROLES } from '@/lib/auth/roles'
 import { useLeadOptions } from '@/lib/leads/use-lead-options'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 import type {
   DbUser,
@@ -46,6 +47,7 @@ import {
 import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
@@ -185,7 +187,10 @@ export function TaskSheet(props: TaskSheetProps) {
   const historyKey = props.task?.id ?? 'task:new'
 
   const handleSave = useCallback(
-    () => form.handleSubmit(handleFormSubmit)(),
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values => handleFormSubmit(values, mode))()
+    },
     [form, handleFormSubmit]
   )
 
@@ -402,7 +407,20 @@ export function TaskSheet(props: TaskSheetProps) {
           }
         >
           {/* Header — spans full width */}
-          <SheetFormHeader entity='task' title={sheetTitle} />
+          <SheetFormHeader
+            entity='task'
+            title={sheetTitle}
+            menu={
+              isEditing ? (
+                <SheetRecordMenu
+                  noun='Task'
+                  onRequestArchive={handleRequestDelete}
+                  archiveDisabled={deleteDisabled}
+                  archiveDisabledReason={deleteDisabledReason}
+                />
+              ) : null
+            }
+          />
 
           {/* Two-column body */}
           <div className='relative flex flex-1 overflow-hidden'>
@@ -514,8 +532,8 @@ export function TaskSheet(props: TaskSheetProps) {
               {/* Footer — always at bottom, outside scroll area */}
               <SheetFormFooter
                 formId={TASK_FORM_ID}
-                archiveAriaLabel='Archive task'
                 saveLabel={saveLabel}
+                onSave={handleSave}
                 submitDisabled={submitDisabled}
                 submitDisabledReason={submitDisabledReason}
                 undo={undo}
@@ -523,9 +541,6 @@ export function TaskSheet(props: TaskSheetProps) {
                 canUndo={canUndo}
                 canRedo={canRedo}
                 isEditing={isEditing}
-                archiveDisabled={deleteDisabled}
-                archiveDisabledReason={deleteDisabledReason}
-                onRequestArchive={handleRequestDelete}
               />
             </div>
 

@@ -2,11 +2,12 @@ import { useEffect } from 'react'
 
 import { matchesShortcut } from '@/lib/keyboard/match'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 export type KeyboardShortcutArgs = {
   isActive: boolean
   canSave: boolean
-  onSave: () => void
+  onSave: (mode: SheetSaveMode) => void
   undo: () => void
   redo: () => void
   canUndo: boolean
@@ -30,12 +31,16 @@ export function useHistoryKeyboardShortcuts({
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (matchesShortcut(event, SHORTCUTS.save)) {
-        if (!canSave) return
+      // ⌘S saves and closes; ⇧⌘S saves and keeps the sheet open.
+      const stay = matchesShortcut(event, SHORTCUTS.saveAndStay)
+      if (stay || matchesShortcut(event, SHORTCUTS.save)) {
+        // Claim the key even when saving is blocked, so the browser's own
+        // Save (or Save As) dialog never opens over a sheet.
         event.preventDefault()
         event.stopPropagation()
+        if (!canSave) return
         flushPendingSnapshots()
-        onSave()
+        onSave(stay ? 'stay' : 'close')
         return
       }
 

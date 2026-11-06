@@ -41,12 +41,19 @@ export function formatKey(part: string, isMac: boolean): string {
     : part.charAt(0).toUpperCase() + part.slice(1)
 }
 
-/** `mod+shift+z` → `['⌘', '⇧', 'Z']` on a Mac, `['Ctrl', 'Shift', 'Z']` elsewhere. */
+/** Apple's modifier order: ⌃ ⌥ ⇧ ⌘ (menus read ⇧⌘Z, not ⌘⇧Z). */
+const MAC_ORDER = ['⌃', '⌥', '⇧', '⌘']
+
+/** `mod+shift+z` → `['⇧', '⌘', 'Z']` on a Mac, `['Ctrl', 'Shift', 'Z']` elsewhere. */
 export function formatShortcutKeys(keys: string, isMac: boolean): string[] {
-  return keys.split(/\+(?!$)/).map(part => formatKey(part, isMac))
+  const parts = keys.split(/\+(?!$)/).map(part => formatKey(part, isMac))
+  if (!isMac) return parts
+  const key = parts.pop() ?? ''
+  const rank = (label: string) => MAC_ORDER.indexOf(label)
+  return [...parts.sort((a, b) => rank(a) - rank(b)), key]
 }
 
-/** `mod+shift+z` → `⌘⇧Z` on a Mac, `Ctrl+Shift+Z` elsewhere. */
+/** `mod+shift+z` → `⇧⌘Z` on a Mac, `Ctrl+Shift+Z` elsewhere. */
 export function formatShortcut(keys: string, isMac: boolean): string {
   return formatShortcutKeys(keys, isMac).join(isMac ? '' : '+')
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { useToast } from '@/components/ui/use-toast'
 
+import { subscribeSheetRecordSaved } from '../record-saved'
 import { useSheetParams } from '../use-sheet-params'
 import type { SheetEntityKey } from '../entities'
 import type { SheetInitEntity, SheetInitPayloads } from '../init/payloads'
@@ -135,6 +136,26 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
       cancelled = true
     }
   }, [entity, value])
+
+  // A save that keeps the sheet open: reload the record so the sheet shows
+  // what the server now holds (its title, derived fields, version).
+  useEffect(
+    () =>
+      subscribeSheetRecordSaved(saved => {
+        if (saved.entity !== entity || saved.id !== value) {
+          return
+        }
+        fetchSheetInit(entity, value)
+          .then(payload => {
+            if (requestedValueRef.current === value) {
+              setData(payload as SheetInitPayloads[E])
+            }
+          })
+          // The sheet keeps what it has; the next open loads fresh.
+          .catch(() => {})
+      }),
+    [entity, value]
+  )
 
   return data
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Mail, Plus } from 'lucide-react'
 
 import {
   Breadcrumb,
@@ -14,6 +14,8 @@ import { Button } from '@pts/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
 import { TabsNav, type TabsNavTab } from '@/components/layout/tabs-nav'
+import { MetaLink } from '@/components/ui/meta-link'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 import { SampleProjectList } from './components-data'
 import { DesignSection, Example, Specimen } from './specimen'
@@ -95,6 +97,58 @@ export function ComponentsTabs() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+        </Example>
+      </Specimen>
+    </DesignSection>
+  )
+}
+
+export function ComponentsTextLinks() {
+  return (
+    <DesignSection
+      id='text-links'
+      title='Text links'
+      when='A link on a card, board, widget or meta line is MetaLink: muted text that turns foreground and underlines on hover, with a label that truncates without clipping the underline. Hover these to check.'
+    >
+      <Specimen
+        label='MetaLink'
+        className='grid grid-cols-1 items-start gap-8 md:grid-cols-2'
+      >
+        <Example caption='Task card: company and project'>
+          <div className='text-muted-foreground flex w-56 flex-col items-start gap-2 text-xs'>
+            <MetaLink
+              href='/design'
+              icon={
+                <ENTITY_ICONS.company
+                  className='h-3.5 w-3.5 shrink-0'
+                  aria-hidden
+                />
+              }
+            >
+              Heatonist
+            </MetaLink>
+            <MetaLink
+              href='/design'
+              icon={
+                <ENTITY_ICONS.project
+                  className='h-3.5 w-3.5 shrink-0'
+                  aria-hidden
+                />
+              }
+            >
+              Hot Ones storefront rebuild and checkout migration
+            </MetaLink>
+          </div>
+        </Example>
+        <Example caption='Lead card: email (plain anchor)'>
+          <div className='text-muted-foreground flex w-56 flex-col items-start gap-2 text-xs'>
+            <MetaLink
+              href='mailto:someone@example.com'
+              icon={<Mail className='h-3.5 w-3.5 shrink-0' aria-hidden />}
+            >
+              someone.with.a.long.address@example.com
+            </MetaLink>
+          </div>
         </Example>
       </Specimen>
     </DesignSection>

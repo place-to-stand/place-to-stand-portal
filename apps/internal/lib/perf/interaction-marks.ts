@@ -25,28 +25,25 @@ const performanceApi =
     ? globalThis.performance
     : undefined
 
+/**
+ * Times one interaction. The start time is held by the handle, not by a
+ * named performance mark: marks are global, so two interactions starting in
+ * the same millisecond (a bulk action's rows, two people saving at once)
+ * would share a name, and the first to end would clear the other's mark.
+ */
 export function startInteraction(
   name: InteractionEventName,
   options?: InteractionOptions
 ): InteractionHandle {
-  const markId = `${name}-start-${Date.now()}`
-  performanceApi?.mark(markId)
+  const startedAt = performanceApi?.now()
 
   return {
     name,
     end: (properties?: InteractionProperties) => {
-      const endMarkId = `${name}-end-${Date.now()}`
-      const measureId = `${name}-duration-${Date.now()}`
-
-      performanceApi?.mark(endMarkId)
-      performanceApi?.measure(measureId, markId, endMarkId)
-
-      const measureEntry = performanceApi?.getEntriesByName(measureId).at(-1)
-      const duration = measureEntry?.duration
-
-      performanceApi?.clearMarks(markId)
-      performanceApi?.clearMarks(endMarkId)
-      performanceApi?.clearMeasures(measureId)
+      const duration =
+        startedAt === undefined || !performanceApi
+          ? undefined
+          : performanceApi.now() - startedAt
 
       const payload: InteractionEmitPayload = {
         name,

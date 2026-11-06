@@ -26,6 +26,7 @@ import { PERSON_WITH_SIGN_IN_ADMIN_ONLY } from '@/lib/people/person-sheet-copy'
 import type { RoleMonthOption } from '@/lib/users/role-months'
 
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 import type { ContactFormData } from '@/lib/people/use-contact-sheet-state'
 
@@ -48,10 +49,7 @@ type ContactSheetFormProps = {
   pendingReason: string
   submitDisabled: boolean
   submitDisabledReason: string | null
-  deleteDisabled: boolean
-  deleteDisabledReason: string | null
-  onSubmit: (data: ContactFormValues) => void
-  onRequestDelete: () => void
+  onSubmit: (data: ContactFormValues, mode?: SheetSaveMode) => void
   isSheetOpen: boolean
   historyKey: string
   // Promote to client props
@@ -86,10 +84,7 @@ export function ContactSheetForm({
   pendingReason,
   submitDisabled,
   submitDisabledReason,
-  deleteDisabled,
-  deleteDisabledReason,
   onSubmit,
-  onRequestDelete,
   isSheetOpen,
   historyKey,
   contactId,
@@ -110,7 +105,10 @@ export function ContactSheetForm({
     useWatch({ control: form.control, name: 'name' }) ?? ''
   ).trim()
   const handleSave = useCallback(
-    () => form.handleSubmit(onSubmit)(),
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit(values => onSubmit(values, mode))()
+    },
     [form, onSubmit]
   )
 
@@ -166,7 +164,7 @@ export function ContactSheetForm({
       <div className='flex-1 overflow-y-auto'>
         <form
           id={CONTACT_FORM_ID}
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(values => onSubmit(values))}
           className='flex flex-col'
         >
           <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
@@ -347,6 +345,7 @@ export function ContactSheetForm({
       <SheetFormFooter
         formId={CONTACT_FORM_ID}
         saveLabel={saveLabel}
+        onSave={handleSave}
         submitDisabled={submitDisabled}
         submitDisabledReason={submitDisabledReason}
         undo={undo}
@@ -354,10 +353,6 @@ export function ContactSheetForm({
         canUndo={canUndo}
         canRedo={canRedo}
         isEditing={isEditing}
-        archiveDisabled={deleteDisabled}
-        archiveDisabledReason={deleteDisabledReason}
-        onRequestArchive={onRequestDelete}
-        archiveAriaLabel='Archive person'
       />
     </Form>
   )

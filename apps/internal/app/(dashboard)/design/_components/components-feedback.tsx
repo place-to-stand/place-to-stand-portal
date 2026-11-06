@@ -537,7 +537,11 @@ export function ComponentsDialogs() {
             </DialogHeader>
             <ul className='space-y-2 text-sm'>
               <li className='flex justify-between'>
-                Save <ShortcutKeys shortcut={SHORTCUTS.save} />
+                Save and close <ShortcutKeys shortcut={SHORTCUTS.save} />
+              </li>
+              <li className='flex justify-between'>
+                Save and keep open{' '}
+                <ShortcutKeys shortcut={SHORTCUTS.saveAndStay} />
               </li>
               <li className='flex justify-between'>
                 Search <ShortcutKeys shortcut={SHORTCUTS.commandPalette} />

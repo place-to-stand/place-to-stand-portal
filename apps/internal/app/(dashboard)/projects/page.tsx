@@ -16,7 +16,10 @@ import { requirePage } from '@/lib/auth/session'
 import type { AppUser } from '@/lib/auth/session'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import type { LandingProject } from '@/lib/data/projects'
-import { listClientDirectory } from '@/lib/queries/companies/billing'
+import {
+  listClientDirectory,
+  toClientPickerRow,
+} from '@/lib/queries/companies/billing'
 import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import type { ProjectWithRelations } from '@/lib/types'
@@ -60,11 +63,7 @@ export default async function ProjectsPage({
   const filteredProjectCount = countVisibleProjects(projects, user.id)
   const clientHoursMap = buildClientHoursMap(clientHoursSummaries)
 
-  const clientRows: ClientPickerRow[] = clientDirectory.map(client => ({
-    id: client.id,
-    name: client.name,
-    deleted_at: client.deletedAt,
-  }))
+  const clientRows: ClientPickerRow[] = clientDirectory.map(toClientPickerRow)
 
   const adminUsers: AdminUserForOwner[] = admins.map(admin => ({
     id: admin.id,

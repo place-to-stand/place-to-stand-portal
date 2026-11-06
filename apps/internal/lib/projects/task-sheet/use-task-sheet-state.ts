@@ -12,6 +12,8 @@ import type {
 } from '@/lib/types'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 
@@ -77,7 +79,7 @@ type UseTaskSheetStateReturn = {
   submitDisabledReason: string | null
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
   handleSheetOpenChange: (next: boolean) => void
-  handleFormSubmit: (values: TaskSheetFormValues) => void
+  handleFormSubmit: (values: TaskSheetFormValues, mode?: SheetSaveMode) => void
   handleRequestDelete: () => void
   handleCancelDelete: () => void
   handleConfirmDelete: () => void
@@ -174,8 +176,10 @@ export const useTaskSheetState = ({
     resetKey: task?.id ?? null,
   })
 
+  const { stay, isReopening } = useSaveAndStay('task', task?.id ?? null, open)
+
   const handleFormSubmit = useCallback(
-    (values: TaskSheetFormValues) => {
+    (values: TaskSheetFormValues, mode: SheetSaveMode = 'close') => {
       if (!canManage || submitLockRef.current) {
         return
       }
@@ -218,6 +222,18 @@ export const useTaskSheetState = ({
             link: toastLink('task', result.taskId),
           })
 
+          if (mode === 'stay') {
+            stay({
+              id: result.taskId,
+              rebaseline: () => {
+                form.reset(values)
+                // Uploads are claimed now; reload the saved list.
+                resetAttachmentsState({ preservePending: true })
+              },
+            })
+            return
+          }
+
           resetFormState({ preservePending: true })
           onOpenChange(false)
           router.refresh()
@@ -229,10 +245,13 @@ export const useTaskSheetState = ({
     [
       buildSubmissionPayload,
       canManage,
+      form,
       onOpenChange,
+      resetAttachmentsState,
       router,
       startSave,
       resetFormState,
+      stay,
       task,
       toast,
     ]
@@ -307,7 +326,7 @@ export const useTaskSheetState = ({
 
   const deleteDisabled = isPending || !canManage
   const deleteDisabledReason = resolveDisabledReason(deleteDisabled)
-  const submitDisabled = isPending || !canManage || isUploading
+  const submitDisabled = isPending || isReopening || !canManage || isUploading
   const submitDisabledReason = isUploading
     ? 'Please wait for uploads to finish.'
     : resolveDisabledReason(submitDisabled)

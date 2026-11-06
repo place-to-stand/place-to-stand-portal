@@ -17,7 +17,7 @@ async function setStatus(page: Page, leadUrl: string, label: string) {
   await expect(sheet).toBeVisible()
   await sheet.getByRole('combobox', { name: 'Status' }).click()
   await page.getByRole('option', { name: label }).click()
-  await sheet.getByRole('button', { name: 'Save changes' }).click()
+  await sheet.getByRole('button', { name: 'Save and close' }).click()
   await expect(page.getByText('Lead saved').first()).toBeVisible()
 }
 

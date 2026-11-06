@@ -399,11 +399,15 @@ export function ComponentsToggles() {
       </Specimen>
       <Specimen
         label='Checkbox'
-        className='grid grid-cols-1 gap-4 sm:grid-cols-3'
+        className='grid grid-cols-1 gap-4 sm:grid-cols-4'
       >
         <div className='flex items-center gap-2'>
           <Checkbox id='design-check-on' defaultChecked />
           <Label htmlFor='design-check-on'>Primary contact</Label>
+        </div>
+        <div className='flex items-center gap-2'>
+          <Checkbox id='design-check-some' indeterminate />
+          <Label htmlFor='design-check-some'>Some selected</Label>
         </div>
         <div className='flex items-center gap-2'>
           <Checkbox id='design-check-off' />

@@ -15,4 +15,4 @@ A small pill of status or label text. From `@pts/ui/badge`: one size for every b
 
 **Consumer provides:** one to three words; optional 12px icon (`[&>svg]:size-3`, `gap-1`).
 
-**Don't:** use a badge as a button, invent new coloured variants, or rely on colour alone for status. Count bubbles on the sidebar and the notifications bell are counters, not badges.
+**Don't:** use a badge as a button, invent new coloured variants, or rely on colour alone for status. Count bubbles on the sidebar and the Notifications button are counters, not badges.

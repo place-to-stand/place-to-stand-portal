@@ -54,7 +54,12 @@ export const SHORTCUTS = {
   },
 
   // Sheets (use-sheet-form-controls)
-  save: { keys: 'mod+s', label: 'Save', group: 'Sheets' },
+  save: { keys: 'mod+s', label: 'Save and close', group: 'Sheets' },
+  saveAndStay: {
+    keys: 'mod+shift+s',
+    label: 'Save and keep open',
+    group: 'Sheets',
+  },
   undo: { keys: 'mod+z', label: 'Undo', group: 'Sheets' },
   redo: {
     keys: 'mod+shift+z',

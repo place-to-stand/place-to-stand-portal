@@ -29,6 +29,8 @@ const SCOPE_ROWS: { type: HideableProjectType; label: string }[] = [
 export type ClientSelectorOption = {
   id: string
   name: string
+  /** Its people and projects, which search also matches. */
+  searchHints?: string[]
 }
 
 type ClientSelectorProps = {
@@ -143,6 +145,7 @@ export function ClientSelector({
         label: client.name,
         // The id keeps two same-named clients distinct rows for cmdk.
         keywords: [client.id],
+        matchHints: client.searchHints,
       })),
     [sortedClients]
   )

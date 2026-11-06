@@ -195,3 +195,22 @@ run('shortcut-registry', {
     },
   ],
 })
+
+run('underline-not-clipped', {
+  valid: [
+    "<a className='hover:underline'><span className='truncate-link'>x</span></a>",
+    "<Link className='truncate-link hover:underline'>x</Link>",
+    "<div className='truncate'>x</div>",
+    "<span className='truncate'><a className='hover:underline'>x</a></span>",
+  ],
+  invalid: [
+    {
+      code: "<Link className='hover:text-foreground truncate hover:underline'>x</Link>",
+      errors: [{ messageId: 'clipped' }],
+    },
+    {
+      code: "<a className={cn('inline-flex hover:underline')}><Icon /><span className='truncate'>x</span></a>",
+      errors: [{ messageId: 'clipped' }],
+    },
+  ],
+})

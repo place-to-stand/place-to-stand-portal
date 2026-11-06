@@ -1,4 +1,5 @@
 import { expect, test, type Request } from '@playwright/test'
+import { archiveFromSheetMenu } from './helpers'
 
 /**
  * The project sheet saves everything — the project row, its members and its
@@ -70,7 +71,7 @@ test('project: create with a member in one save', async ({ page }) => {
     body = await response.text()
     await route.fulfill({ response, body })
   })
-  await sheet.getByRole('button', { name: /^Create project/ }).click()
+  await sheet.getByRole('button', { name: /^Create and close/ }).click()
   await expect.poll(() => body).not.toBe('')
   await page.unroute('**/*')
   await expect(sheet).toBeHidden()
@@ -90,7 +91,7 @@ test('project: create with a member in one save', async ({ page }) => {
   ).toBeVisible()
 
   // Put it back: archive the project.
-  await edit.getByRole('button', { name: 'Archive project' }).click()
+  await archiveFromSheetMenu(edit)
   await page
     .getByRole('alertdialog')
     .getByRole('button', { name: 'Archive project', exact: true })

@@ -46,7 +46,7 @@ function matchesKeys(event: KeyEventLike, keys: string): boolean {
 
   // Shift and Alt (AltGr) are how many layouts type a symbol like `?` or `[`
   // (German: AltGr+8), so only letters, digits and named keys check them
-  // (`mod+z` must not fire on ⌘⇧Z).
+  // (`mod+z` must not fire on ⇧⌘Z).
   if (SHIFT_IS_SEPARATE.test(want.key)) {
     if (want.shift !== event.shiftKey || want.alt !== event.altKey) return false
   }

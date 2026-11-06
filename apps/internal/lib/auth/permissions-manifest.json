@@ -78,6 +78,20 @@
   },
   {
     "type": "action",
+    "name": "bulkSetArchived",
+    "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
+    "name": "resolveBulkMatchingIds",
+    "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
     "name": "signOut",
     "file": "apps/internal/app/(dashboard)/_actions/sign-out.ts",
     "kind": "public",
@@ -213,13 +227,6 @@
     "type": "action",
     "name": "emailInvoice",
     "file": "apps/internal/app/(dashboard)/invoices/actions/email-invoice.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
-    "name": "getInvoiceDetails",
-    "file": "apps/internal/app/(dashboard)/invoices/actions/get-invoice-details.ts",
     "kind": "admin",
     "capability": null
   },
@@ -698,6 +705,13 @@
     "file": "apps/internal/app/(dashboard)/submissions/actions/archive-submission.ts",
     "kind": "admin",
     "capability": null
+  },
+  {
+    "type": "action",
+    "name": "bulkAcknowledgeSubmissions",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/bulk-acknowledge-submissions.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
   },
   {
     "type": "action",
@@ -1207,6 +1221,13 @@
     "type": "route",
     "name": "POST /api/invoices/[id]/checkout",
     "file": "apps/internal/app/api/invoices/[id]/checkout/route.ts",
+    "kind": "capability",
+    "capability": "billing.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/invoices/[id]",
+    "file": "apps/internal/app/api/invoices/[id]/route.ts",
     "kind": "capability",
     "capability": "billing.manage"
   },

@@ -54,7 +54,8 @@ test('brackets cycle projects', () => {
 })
 
 test('labels follow the platform', () => {
-  assert.equal(formatShortcut('mod+shift+z', true), '⌘⇧Z')
+  assert.equal(formatShortcut('mod+shift+z', true), '⇧⌘Z')
+  assert.equal(formatShortcut('mod+alt+1', true), '⌥⌘1')
   assert.equal(formatShortcut('mod+shift+z', false), 'Ctrl+Shift+Z')
   assert.equal(formatShortcut('mod+,', true), '⌘,')
   assert.equal(formatShortcut('escape', false), 'Esc')

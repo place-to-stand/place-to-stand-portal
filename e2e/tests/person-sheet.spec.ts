@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Request } from '@playwright/test'
 
-import { expectHealthy } from './helpers'
+import { expectHealthy, archiveFromSheetMenu } from './helpers'
 
 /**
  * The person sheet: create and edit are the same sheet (Sign-in included),
@@ -163,7 +163,7 @@ test.describe('writes', () => {
       await sheet.getByRole('switch', { name: 'Can sign in' }).click()
       await sheet.getByRole('combobox', { name: 'Role', exact: true }).click()
       await page.getByRole('option', { name: teamRole }).click()
-      await sheet.getByRole('button', { name: 'Create person' }).click()
+      await sheet.getByRole('button', { name: 'Create and close' }).click()
       await expect(sheet).toBeHidden()
 
       // Reopen: Client is on offer, and Save says they leave the staff company.
@@ -181,7 +181,7 @@ test.describe('writes', () => {
         await starts.click()
         await page.getByRole('option', { name: /\(this month\)/ }).click()
       }
-      await sheet.getByRole('button', { name: 'Save changes' }).click()
+      await sheet.getByRole('button', { name: 'Save and close' }).click()
       await expect(sheet).toBeHidden()
 
       // Saved: a Client now (this month), no longer at the staff company.
@@ -200,7 +200,7 @@ test.describe('writes', () => {
       ).toHaveCount(0)
 
       // Put it back: archive the person.
-      await sheet.getByRole('button', { name: 'Archive person' }).click()
+      await archiveFromSheetMenu(sheet)
       await page
         .getByRole('button', { name: /^Archive/ })
         .last()
@@ -245,7 +245,7 @@ test.describe('writes', () => {
         response.request().method() === 'POST' &&
         Boolean(response.request().headers()['next-action'])
     )
-    await sheet.getByRole('button', { name: 'Create person' }).click()
+    await sheet.getByRole('button', { name: 'Create and close' }).click()
     await answered
     onSave.stop()
     expect(onSave.actions).toHaveLength(1)
@@ -261,10 +261,7 @@ test.describe('writes', () => {
 
     // Put it back: archiving the person switches their sign-in off.
     await row.locator('td').first().click()
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: 'Archive person' })
-      .click()
+    await archiveFromSheetMenu(page.getByRole('dialog'))
     await page
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Archive' })
@@ -285,7 +282,7 @@ test.describe('writes', () => {
     const created = page.getByRole('dialog')
     await created.getByPlaceholder('John Doe').fill(name)
     await created.getByPlaceholder('contact@example.com').fill(email)
-    await created.getByRole('button', { name: 'Create person' }).click()
+    await created.getByRole('button', { name: 'Create and close' }).click()
     await expect(created).toBeHidden()
 
     // Two tabs open the same person (each waits for the sheet's load,
@@ -312,7 +309,7 @@ test.describe('writes', () => {
     await first
       .getByPlaceholder('linkedin.com/in/jane-doe')
       .fill(`linkedin.com/in/first-${stamp}`)
-    await first.getByRole('button', { name: 'Save changes' }).click()
+    await first.getByRole('button', { name: 'Save and close' }).click()
     await expect(first).toBeHidden()
 
     // The second, loaded before that save, is refused with a toast and
@@ -320,7 +317,7 @@ test.describe('writes', () => {
     await second
       .getByPlaceholder('linkedin.com/in/jane-doe')
       .fill(`linkedin.com/in/second-${stamp}`)
-    await second.getByRole('button', { name: 'Save changes' }).click()
+    await second.getByRole('button', { name: 'Save and close' }).click()
     await expect(
       other.getByText(
         'Someone else saved this person. Reload to see their changes.'
@@ -334,7 +331,7 @@ test.describe('writes', () => {
     await expect(
       reopened.getByPlaceholder('linkedin.com/in/jane-doe')
     ).toHaveValue(new RegExp(`linkedin\\.com/in/first-${stamp}$`))
-    await reopened.getByRole('button', { name: 'Archive person' }).click()
+    await archiveFromSheetMenu(reopened)
     await page
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Archive' })
