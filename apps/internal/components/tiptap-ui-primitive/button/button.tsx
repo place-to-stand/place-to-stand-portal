@@ -1,6 +1,8 @@
 'use client'
 
-import { forwardRef, Fragment, useMemo } from 'react'
+import { forwardRef } from 'react'
+
+import { Kbd } from '@pts/ui/kbd'
 
 // --- Shared UI ---
 // Toolbar tooltips use the portal-wide tooltip so their offset, arrow and
@@ -8,7 +10,9 @@ import { forwardRef, Fragment, useMemo } from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 // --- Lib ---
-import { cn, parseShortcutKeys } from '@/lib/tiptap-utils'
+import { useIsMac } from '@/components/keyboard/shortcut-keys'
+import { formatShortcut } from '@/lib/keyboard/format'
+import { cn } from '@/lib/tiptap-utils'
 
 import '@/components/tiptap-ui-primitive/button/button-colors.scss'
 import '@/components/tiptap-ui-primitive/button/button-group.scss'
@@ -21,21 +25,14 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   shortcutKeys?: string
 }
 
-export const ShortcutDisplay: React.FC<{ shortcuts: string[] }> = ({
-  shortcuts,
-}) => {
-  if (shortcuts.length === 0) return null
-
-  return (
-    <div className='text-center'>
-      {shortcuts.map((key, index) => (
-        <Fragment key={index}>
-          {index > 0 && <kbd className='tiptap-shortcut-key'>+</kbd>}
-          <kbd className='tiptap-shortcut-key'>{key}</kbd>
-        </Fragment>
-      ))}
-    </div>
-  )
+/**
+ * The shortcut after the tooltip's label, as the same key chip every other
+ * tooltip uses (RowActionButton: "Undo ⌘Z").
+ */
+function ShortcutChip({ shortcutKeys }: { shortcutKeys?: string }) {
+  const isMac = useIsMac()
+  if (!shortcutKeys) return null
+  return <Kbd className='ml-2'>{formatShortcut(shortcutKeys, isMac)}</Kbd>
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -51,11 +48,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const shortcuts = useMemo<string[]>(
-      () => parseShortcutKeys({ shortcutKeys }),
-      [shortcutKeys]
-    )
-
     if (!tooltip || !showTooltip) {
       return (
         <button
@@ -81,9 +73,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {children}
           </button>
         </TooltipTrigger>
-        <TooltipContent className='text-center font-medium'>
+        <TooltipContent>
           {tooltip}
-          <ShortcutDisplay shortcuts={shortcuts} />
+          <ShortcutChip shortcutKeys={shortcutKeys} />
         </TooltipContent>
       </Tooltip>
     )
