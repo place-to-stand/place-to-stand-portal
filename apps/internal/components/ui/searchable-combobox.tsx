@@ -6,6 +6,7 @@ import { CheckIcon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/users/initials'
+import { matchedHint } from '@/lib/utils/search-match'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Command,
@@ -19,7 +20,6 @@ import {
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import { FieldClearButton } from '@/components/ui/field-clear-button'
 import { FieldTrigger } from '@/components/ui/field-trigger'
-import { matchedHint } from '@/lib/utils/search-match'
 
 export type SearchableComboboxItem = {
   value: string
