@@ -1,3 +1,5 @@
+import type { Shortcut } from './shortcuts'
+
 const MAC_LABELS: Record<string, string> = {
   mod: '⌘',
   meta: '⌘',
@@ -43,4 +45,41 @@ export function detectMac(): boolean {
     typeof navigator !== 'undefined' &&
     /mac|iphone|ipad/i.test(navigator.platform)
   )
+}
+
+const ARIA_NAMES: Record<string, string> = {
+  ctrl: 'Control',
+  alt: 'Alt',
+  shift: 'Shift',
+  enter: 'Enter',
+  escape: 'Escape',
+}
+
+/**
+ * The `aria-keyshortcuts` value for a combination list, so screen readers
+ * announce the shortcut: `mod+s` → `Meta+S Control+S`.
+ */
+export function ariaKeyShortcuts(
+  shortcut: Pick<Shortcut, 'keys' | 'alternatives'>
+): string {
+  const combos = [shortcut.keys, ...(shortcut.alternatives ?? [])]
+  return combos
+    .flatMap(keys => {
+      const parts = keys.split(/\+(?!$)/)
+      const names = parts.map(part => {
+        const lower = part.toLowerCase()
+        return (
+          ARIA_NAMES[lower] ?? (part.length === 1 ? part.toUpperCase() : part)
+        )
+      })
+      if (!parts.some(part => part.toLowerCase() === 'mod')) {
+        return [names.join('+')]
+      }
+      return ['Meta', 'Control'].map(mod =>
+        names
+          .map((name, i) => (parts[i].toLowerCase() === 'mod' ? mod : name))
+          .join('+')
+      )
+    })
+    .join(' ')
 }

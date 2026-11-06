@@ -61,7 +61,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -385,7 +384,6 @@ export function ComponentsOverlays() {
               <DropdownMenuItem>
                 <Pencil />
                 Edit company
-                <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
               </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>Copy</DropdownMenuSubTrigger>

@@ -5,7 +5,12 @@ import { Archive, Redo2, Undo2 } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import {
+  rowActionShortcut,
+  ShortcutTooltip,
+} from '@/components/keyboard/shortcut-tooltip'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 /**
  * The sheet footer chrome on its own — for sheets whose actions aren't the
@@ -58,30 +63,37 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
     archiveAriaLabel,
   } = props
 
+  const saveButton = (
+    <Button
+      type='submit'
+      form={formId}
+      // xs (28px) to match the icon actions beside it: one height per row.
+      size='xs'
+      disabled={submitDisabled}
+    >
+      {saveLabel}
+    </Button>
+  )
+
   return (
     <SheetFooterBar>
       <div className='flex items-center gap-1.5'>
-        <DisabledFieldTooltip
-          disabled={submitDisabled}
-          reason={submitDisabledReason}
-        >
-          <Button
-            type='submit'
-            form={formId}
-            // xs (28px) to match the icon actions beside it: one height per row.
-            size='xs'
-            disabled={submitDisabled}
-            aria-label={`${saveLabel} (⌘S / Ctrl+S)`}
-          >
-            {saveLabel}
-          </Button>
-        </DisabledFieldTooltip>
+        {submitDisabled && submitDisabledReason ? (
+          <DisabledFieldTooltip disabled reason={submitDisabledReason}>
+            {saveButton}
+          </DisabledFieldTooltip>
+        ) : (
+          <ShortcutTooltip shortcut={SHORTCUTS.save}>
+            {saveButton}
+          </ShortcutTooltip>
+        )}
         <RowActionButton
           type='button'
           variant='outline'
           onClick={undo}
           disabled={!canUndo}
-          label='Undo (⌘Z / Ctrl+Z)'
+          label='Undo'
+          {...rowActionShortcut(SHORTCUTS.undo)}
           icon={<Undo2 />}
         />
         <RowActionButton
@@ -89,7 +101,8 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
           variant='outline'
           onClick={redo}
           disabled={!canRedo}
-          label='Redo (⇧⌘Z / Ctrl+Shift+Z)'
+          label='Redo'
+          {...rowActionShortcut(SHORTCUTS.redo)}
           icon={<Redo2 />}
         />
       </div>
