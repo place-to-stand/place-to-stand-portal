@@ -22,6 +22,7 @@ export function SheetRecordRow({
   leading,
   title,
   description,
+  badge,
   actions,
   onOpen,
   href,
@@ -37,6 +38,11 @@ export function SheetRecordRow({
   title: ReactNode
   /** One muted line under the title: an email, a status, "Pending save". */
   description?: ReactNode
+  /**
+   * A status badge on the right, part of the row's click target: clicking
+   * it opens the record like the name does.
+   */
+  badge?: ReactNode
   /** Trailing controls (star, remove), right-aligned. */
   actions?: ReactNode
   /**
@@ -72,6 +78,7 @@ export function SheetRecordRow({
       </span>
     )
     fields = undefined
+    badge = undefined
     onOpen = undefined
     href = undefined
     actions = (
@@ -110,6 +117,7 @@ export function SheetRecordRow({
           </span>
         ) : null}
       </span>
+      {badge ? <span className='shrink-0 pr-1.5'>{badge}</span> : null}
     </>
   )
 
