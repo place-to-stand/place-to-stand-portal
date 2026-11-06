@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@pts/ui/select'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
+import { useClientRecord } from '@/components/ui/picked-record-card'
 import { Badge } from '@pts/ui/badge'
 import {
   PROJECT_STATUS_OPTIONS,
@@ -79,6 +80,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
   // Non-admins get a personal-board sheet: no client, owner, members or
   // integrations (`saveProject` enforces the same rule).
   const { isAdmin, role } = useViewerAccess()
+  const clientRecord = useClientRecord()
   const creatableTypes = creatableProjectTypes(
     role,
     PROJECT_TYPE_OPTIONS.map(option => option.value)
@@ -378,6 +380,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                             onChange={field.onChange}
                             onBlur={field.onBlur}
                             items={clientOptions}
+                            record={clientRecord(field.value)}
                             searchPlaceholder='Search clients…'
                             emptyMessage='No clients found.'
                             disabled={fieldState.client.disabled}

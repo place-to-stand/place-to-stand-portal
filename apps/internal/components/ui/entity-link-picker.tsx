@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import { Plus } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
-import { OpenRecordButton } from '@/components/ui/open-record-button'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
@@ -17,6 +16,7 @@ import {
   type SheetCreatedRecords,
 } from '@/lib/sheets/created'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 export type EntityLinkOption = {
   id: string
@@ -73,8 +73,9 @@ const pluralize = (noun: string) =>
  * The portal's one pattern for linking a record to another, built on
  * `SearchableCombobox`: search existing records, "Create …" (opens that
  * entity's create sheet on top of the current one and selects the new record
- * when it saves), clear with one click, and open the linked record. The link
- * itself is saved with the host form, never on selection.
+ * when it saves), clear with one click, and open the linked record (the
+ * picked record shows as its preview card, `record`). The link itself is
+ * saved with the host form, never on selection.
  */
 export function EntityLinkPicker<E extends SheetCreatedEntity>({
   entity,
@@ -175,17 +176,15 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       clearLabel={entityLabel}
       onCreate={allowCreate ? startCreate : undefined}
       onClear={() => onChange(null)}
+      record={{
+        icon: ENTITY_ICONS[entity],
+        entityLabel,
+        onOpen: value ? () => openSheet(entity, value.id) : undefined,
+      }}
       trailingAction={
         <>
-          {value ? (
-            <OpenRecordButton
-              name={value.label}
-              entityLabel={entityLabel}
-              onOpen={() => openSheet(entity, value.id)}
-            />
-          ) : null}
-          {/* Only while empty: a set value shows Open, and the list's
-            Create row still replaces it. */}
+          {/* Only while empty: a set value shows as its card, and the
+            list's Create row still replaces it. */}
           {showCreateButton && allowCreate && !trigger && !value ? (
             <Tooltip>
               <TooltipTrigger asChild>

@@ -19,6 +19,7 @@ import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
+import { useClientRecord } from '@/components/ui/picked-record-card'
 import {
   useHourBlockSheetState,
   type HourBlockFormValues,
@@ -48,6 +49,7 @@ export function HourBlockSheet({
   hourBlock,
   clients,
 }: Props) {
+  const clientRecord = useClientRecord()
   const {
     form,
     isEditing,
@@ -148,6 +150,7 @@ export function HourBlockSheet({
                                 onChange={field.onChange}
                                 onBlur={field.onBlur}
                                 items={clientOptions}
+                                record={clientRecord(field.value)}
                                 searchPlaceholder='Search clients…'
                                 emptyMessage='No clients found.'
                                 disabled={clientField.disabled}

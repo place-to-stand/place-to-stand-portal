@@ -39,11 +39,14 @@ function PopoverContent({
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 4,
+  // Positions the popup against another element than its trigger (a picked
+  // record's card, whose small change button is the trigger).
+  anchor,
   ...props
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
-    'align' | 'alignOffset' | 'side' | 'sideOffset'
+    'align' | 'alignOffset' | 'side' | 'sideOffset' | 'anchor'
   >) {
   return (
     <PopoverPrimitive.Portal>
@@ -52,6 +55,7 @@ function PopoverContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
+        anchor={anchor}
       >
         <PopoverPrimitive.Popup
           data-slot='popover-content'
