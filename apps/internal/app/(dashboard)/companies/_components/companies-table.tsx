@@ -150,7 +150,9 @@ export function CompaniesTable({
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SelectAllHead />
-              {sortHead('name', 'Company', 'w-[28%]')}
+              {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
+              slack, so the select and Actions columns keep their widths. */}
+              {sortHead('name', 'Company', '')}
               {seesBilling
                 ? sortHead('client', 'Billing type', 'w-[11%]')
                 : null}

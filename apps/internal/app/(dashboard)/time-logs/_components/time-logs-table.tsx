@@ -151,7 +151,9 @@ export function TimeLogsTable({
                 {sortHead('date', 'Date', 'w-[10%]')}
                 {sortHead('person', 'Person', 'w-20', 'center')}
                 {sortHead('client', 'Client', 'w-[24%]')}
-                {sortHead('project', 'Project', 'w-[27%]')}
+                {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
+                slack, so the select and Actions columns keep their widths. */}
+                {sortHead('project', 'Project', '')}
                 <TableHead className='w-[10%] text-center'>Tasks</TableHead>
                 <TableHead className='w-32 text-right'>Actions</TableHead>
               </TableRow>

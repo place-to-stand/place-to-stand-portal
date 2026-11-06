@@ -108,7 +108,6 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[34%]'
               >
                 Client
               </SortableTableHead>
