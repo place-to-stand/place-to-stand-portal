@@ -49,6 +49,7 @@ import {
   SelectRowCell,
   useRowSelection,
 } from '@/components/table/bulk-select'
+import { projectBoardHref } from '@/lib/sheets/hrefs'
 
 const BULK_ARCHIVE_EXTRA =
   'Their people and leads stay as they are. People at former clients lose portal access.'
@@ -312,7 +313,11 @@ export function CompaniesTable({
                         items={company.projects.map(project => ({
                           id: project.id,
                           label: project.name,
-                          sheet: { entity: 'project', id: project.id },
+                          // A project opens its board, not its sheet.
+                          href:
+                            company.slug && project.slug
+                              ? projectBoardHref(company.slug, project.slug)
+                              : undefined,
                         }))}
                       />
                     </TableCell>

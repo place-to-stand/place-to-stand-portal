@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { MetaLink } from '@/components/ui/meta-link'
 import { SheetLink } from '@/components/ui/sheet-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TaskListProps = {
   items: AssignedTaskSummary[]
@@ -138,7 +139,14 @@ function TaskListItem({ task }: { task: AssignedTaskSummary }) {
               {/* A lead task has no project: its lead line says where it is. */}
               {!task.project ? null : (
                 <MetaLink
-                  sheet={{ entity: 'project', id: task.project.id }}
+                  // A project opens its board, not its sheet.
+                  href={
+                    projectTasksHref({
+                      projectSlug: task.project.slug,
+                      projectType: task.project.type,
+                      clientSlug: task.client?.slug ?? null,
+                    }) ?? undefined
+                  }
                   onClick={e => e.stopPropagation()}
                   className='pointer-events-auto relative z-20'
                   icon={

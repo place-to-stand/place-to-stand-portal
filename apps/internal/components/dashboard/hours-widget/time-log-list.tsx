@@ -10,6 +10,7 @@ import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 
 import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TimeLogListProps = {
   items: DashboardTimeLogEntry[]
@@ -157,7 +158,8 @@ function TimeLogRow({
               </>
             ) : null}
             <MetaLink
-              sheet={{ entity: 'project', id: entry.projectId }}
+              // A project opens its board, not its sheet.
+              href={projectTasksHref(entry) ?? undefined}
               className='pointer-events-auto relative z-20'
               icon={
                 <>

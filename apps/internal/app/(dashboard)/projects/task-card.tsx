@@ -41,7 +41,8 @@ type TaskContextDetails = {
   /** The client's company, opened over the page; none for other work. */
   clientCompanyId?: string | null
   projectLabel?: string
-  projectId?: string | null
+  /** The project's board. */
+  projectHref?: string | null
   layout?: 'inline' | 'stacked'
   projectType?: ProjectTypeValue
 }
@@ -117,10 +118,10 @@ function CardContent({
                 </div>
               ) : null}
               {context.projectLabel ? (
-                context.projectId ? (
+                context.projectHref ? (
                   <div className='flex max-w-full min-w-0 items-center gap-1'>
                     <MetaLink
-                      sheet={{ entity: 'project', id: context.projectId }}
+                      href={context.projectHref}
                       title={context.projectLabel}
                       onClick={event => event.stopPropagation()}
                       icon={

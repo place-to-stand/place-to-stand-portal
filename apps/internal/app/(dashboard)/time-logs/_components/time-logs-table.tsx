@@ -45,7 +45,9 @@ import {
   SelectRowCell,
   useRowSelection,
 } from '@/components/table/bulk-select'
-import { SheetLink } from '@/components/ui/sheet-link'
+import Link from 'next/link'
+import { SheetLink, cellLinkClass } from '@/components/ui/sheet-link'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TimeLogsTableProps = {
   items: DashboardTimeLogEntry[]
@@ -252,12 +254,20 @@ export function TimeLogsTable({
                               'h-4 w-4 shrink-0'
                             )}
                           />
-                          <SheetLink
-                            sheet={{ entity: 'project', id: item.projectId }}
-                            title={item.projectName}
-                          >
-                            {item.projectName}
-                          </SheetLink>
+                          {/* A project opens its board, not its sheet. */}
+                          {projectTasksHref(item) ? (
+                            <Link
+                              href={projectTasksHref(item)!}
+                              title={item.projectName}
+                              className={cellLinkClass}
+                            >
+                              {item.projectName}
+                            </Link>
+                          ) : (
+                            <span className='truncate' title={item.projectName}>
+                              {item.projectName}
+                            </span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell

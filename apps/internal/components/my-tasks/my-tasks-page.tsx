@@ -37,6 +37,7 @@ import {
   useOptimisticBoardScope,
 } from './use-optimistic-board-scope'
 import { Plus } from 'lucide-react'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -606,7 +607,8 @@ type TaskContextMeta = {
   /** The client's company, opened from the card; null for other work. */
   clientCompanyId: string | null
   projectLabel: string
-  projectId: string
+  /** The project's board. */
+  projectHref: string | null
   layout: 'inline' | 'stacked'
   projectType: ProjectTypeValue
 }
@@ -695,7 +697,11 @@ function buildTaskContextLookup(
       clientCompanyId:
         project.type === 'CLIENT' ? (project.client?.company_id ?? null) : null,
       projectLabel: project.name,
-      projectId: project.id,
+      projectHref: projectTasksHref({
+        projectSlug: project.slug,
+        projectType: project.type,
+        clientSlug: project.client?.slug ?? null,
+      }),
       layout: 'stacked',
       projectType: project.type,
     })
