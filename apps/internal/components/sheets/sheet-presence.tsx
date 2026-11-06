@@ -3,20 +3,11 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
-import { TriangleAlert } from 'lucide-react'
-
-import {
-  Alert,
-  AlertAction,
-  AlertContent,
-  AlertDescription,
-} from '@pts/ui/alert'
-import { Button } from '@pts/ui/button'
+import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
 import {
   type SheetViewer,
-  type TheirSave,
   useSheetPresence,
 } from '@/lib/sheets/presence/use-sheet-presence'
 import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
@@ -41,11 +32,10 @@ function joinNames(names: string[]): string {
 }
 
 /**
- * Who else has the record open, in the sheet's title row, and when one of
- * them saves. An untouched sheet just takes their save; one with edits
- * shows a warning under the header with Load theirs, so the conflict
- * dialog is rarely needed. Renders nothing when the sheet is the only one
- * open.
+ * Who else has the record open, as a yellow alert above the form's first
+ * field. When one of them saves, an untouched sheet just takes their save;
+ * one with edits keeps them, and its next Save opens the conflict dialog.
+ * Renders nothing when the sheet is the only one open.
  */
 export function SheetPresence({
   entity,
@@ -72,57 +62,10 @@ export function SheetPresence({
   }, [theirSave, isDirty, clearTheirSave, onLoadTheirs])
 
   const noticeSlot = useSheetNoticeSlot()
-  // One alert above the first field: their save over your edits wins over
-  // who else is here.
   const notice =
-    isDirty && theirSave ? (
-      <SheetSaveNotice
-        noun={noun}
-        theirSave={theirSave}
-        onLoadTheirs={() => {
-          clearTheirSave()
-          onLoadTheirs()
-        }}
-      />
-    ) : others.length > 0 ? (
-      <SheetViewers noun={noun} others={others} />
-    ) : null
+    others.length > 0 ? <SheetViewers noun={noun} others={others} /> : null
 
   return notice && noticeSlot ? createPortal(notice, noticeSlot) : null
-}
-
-/** Someone saved while this sheet has unsaved edits. Also the /design specimen. */
-export function SheetSaveNotice({
-  noun,
-  theirSave,
-  onLoadTheirs,
-}: {
-  noun: string
-  theirSave: TheirSave
-  onLoadTheirs: () => void
-}) {
-  return (
-    <Alert variant='warning'>
-      <TriangleAlert />
-      <AlertContent>
-        <AlertDescription>
-          {theirSave.mine
-            ? `You saved this ${noun} in another tab. Saving here now would replace that save.`
-            : `${theirSave.name} saved this ${noun}. Saving yours now would replace their changes.`}
-        </AlertDescription>
-      </AlertContent>
-      <AlertAction>
-        <Button
-          type='button'
-          size='sm'
-          variant='outline'
-          onClick={onLoadTheirs}
-        >
-          Load theirs
-        </Button>
-      </AlertAction>
-    </Alert>
-  )
 }
 
 /**
@@ -149,7 +92,7 @@ export function SheetViewers({
       : `${names} ${one ? 'has' : 'have'} this ${noun} open.`
 
   return (
-    <Alert role='status'>
+    <Alert variant='warning' role='status'>
       <span className='flex h-[1lh] shrink-0 items-center -space-x-1.5'>
         {others.map(viewer => (
           <PersonAvatar

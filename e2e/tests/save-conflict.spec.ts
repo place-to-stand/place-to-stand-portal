@@ -46,12 +46,11 @@ test('a second save over a teammate asks first', async ({ browser, page }) => {
     await website(sales.sheet).fill('sales.example')
     await expect(admin.sheet.getByText(/is editing this company/)).toBeVisible()
 
-    // The admin saves first; the sales sheet is told at once.
+    // The admin saves first; the sales sheet keeps its edits.
     await website(admin.sheet).fill('admin.example')
     await saveAndStay(admin.sheet)
-    await expect(
-      sales.sheet.getByText(/saved this company\. Saving yours now/)
-    ).toBeVisible()
+    await expect(admin.sheet.getByText('Saved', { exact: false })).toBeVisible()
+    await expect(website(sales.sheet)).toHaveValue('sales.example')
 
     // Sales saves anyway: nothing is written until they choose.
     await saveAndStay(sales.sheet)

@@ -4,10 +4,7 @@ import { useState } from 'react'
 
 import { Button } from '@pts/ui/button'
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
-import {
-  SheetSaveNotice,
-  SheetViewers,
-} from '@/components/sheets/sheet-presence'
+import { SheetViewers } from '@/components/sheets/sheet-presence'
 import type { SheetViewer } from '@/lib/sheets/presence/use-sheet-presence'
 import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
@@ -64,21 +61,6 @@ export function SheetConflictSpecimens() {
           <SheetViewers noun='company' others={[KRIS]} />
           <SheetViewers noun='company' others={[{ ...KRIS, editing: true }]} />
         </div>
-      </Specimen>
-      <Specimen
-        label='They saved while you were editing'
-        note='SheetPresence’s warning, in its place above the first field'
-      >
-        <SheetSaveNotice
-          noun='company'
-          theirSave={{
-            userId: KRIS.userId,
-            name: KRIS.name,
-            mine: false,
-            version: SAMPLE_CONFLICT.savedAt,
-          }}
-          onLoadTheirs={() => {}}
-        />
       </Specimen>
       <Specimen
         label='Someone saved first'

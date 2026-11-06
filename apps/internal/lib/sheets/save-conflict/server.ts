@@ -82,6 +82,9 @@ export async function readSavedVersion(
  * activity log, with the same scoping the record's History tab uses. A
  * reader who may not see activity still gets the conflict, without detail.
  */
+/** How long after a save its activity row can land. */
+const SAME_SAVE_WINDOW_MS = 2000
+
 export async function describeSaveConflict(
   user: AppUser,
   targetType: ActivityTargetType,
@@ -98,12 +101,16 @@ export async function describeSaveConflict(
       limit: 5,
     })
     const savedAtMs = versionMs(error.savedAt)
+    const sinceMs = since ? versionMs(since) : null
     changes = logs
-      // The reader's own last save logs just after the version they hold;
-      // anything of theirs older than the conflicting version is that.
+      // The save that made the version this sheet holds logs just after
+      // that version (whoever made it), so it shows up "since" too. Keep
+      // the latest save always; drop older logs within a moment of `since`.
       .filter(
         log =>
-          !(log.actor?.id === user.id && versionMs(log.created_at) < savedAtMs)
+          versionMs(log.created_at) >= savedAtMs ||
+          sinceMs === null ||
+          versionMs(log.created_at) > sinceMs + SAME_SAVE_WINDOW_MS
       )
       .map(log => ({
         // Your own save from another sheet or tab reads as yours.
