@@ -51,10 +51,11 @@ function useSelection() {
 }
 
 /**
- * The leading column, sized so its 16px box sits on the cell padding. One
- * width on every list, so names start at the same place everywhere.
+ * The leading column: 12px either side of the 16px box (its own left
+ * padding, then 4px plus the next cell's 8px). One width on every list,
+ * so names start at the same place everywhere.
  */
-const COLUMN_CLASS = 'w-7 pr-0'
+const COLUMN_CLASS = 'w-8 pl-3 pr-0'
 
 /**
  * Boxes stay out of sight until they are useful: a row's box shows while
