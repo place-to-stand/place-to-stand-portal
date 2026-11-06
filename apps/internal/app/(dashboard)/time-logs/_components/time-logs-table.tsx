@@ -151,6 +151,8 @@ export function TimeLogsTable({
                   entity='time-log'
                   id={item.id}
                   onEdit={() => void editor.open(item.id)}
+                  // Archived logs don't open; the list only restores them.
+                  editable={!isArchive}
                   onArchive={
                     isArchive
                       ? undefined

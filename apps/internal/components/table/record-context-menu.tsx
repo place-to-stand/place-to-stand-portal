@@ -35,6 +35,10 @@ type RecordContextMenuProps = {
    * list's own row handler where the page renders the sheet itself.
    */
   onEdit?: () => void
+  /** False hides Edit (rows the list itself doesn't open, e.g. archived logs). */
+  editable?: boolean
+  /** False hides Duplicate (a viewer who can't create the record). */
+  duplicable?: boolean
   /** Replaces the default duplicate (the /design specimen). */
   onDuplicate?: () => void
   /** The list's archive handler (its confirm dialog). Omit when archived. */
@@ -61,27 +65,16 @@ type RecordContextMenuProps = {
  * already run, so the menu adds a way in, never a second behaviour.
  */
 export function RecordContextMenu({
-  entity,
-  id,
   children,
-  onEdit,
-  onDuplicate,
-  onArchive,
-  onRestore,
-  archiveDisabledReason = null,
-  pending = false,
   draggable = false,
   disabled = false,
+  ...itemProps
 }: RecordContextMenuProps) {
-  const { open, duplicate } = useSheetParams()
-  const canDuplicate = isDuplicableSheetEntity(entity)
-  const lifecycleDisabled = pending || Boolean(archiveDisabledReason)
-
   return (
     <ContextMenu
       disabled={disabled}
       onOpenChange={(next, details) => {
-        if (next && draggable && details.event?.type.startsWith('touch')) {
+        if (next && draggable && isTouchOpen(details.event)) {
           details.cancel()
         }
       }}
@@ -90,6 +83,49 @@ export function RecordContextMenu({
       {/* The menu is portaled, but React still bubbles its clicks to the
           row, whose own click would open the record too. */}
       <ContextMenuContent onClick={event => event.stopPropagation()}>
+        <RecordContextMenuItems {...itemProps} />
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
+/**
+ * A press-and-hold rather than a right click: the touch timer, or the
+ * contextmenu event Android fires on a long press (a touch PointerEvent).
+ */
+function isTouchOpen(event: Event | undefined) {
+  if (!event) return false
+  if (event.type.startsWith('touch')) return true
+  if ('pointerType' in event && event.pointerType === 'touch') return true
+  const capabilities = (
+    event as Event & { sourceCapabilities?: { firesTouchEvents?: boolean } }
+  ).sourceCapabilities
+  return capabilities?.firesTouchEvents === true
+}
+
+/**
+ * The items, mounted only while the menu is open, so a row or card doesn't
+ * re-render every time the URL changes.
+ */
+function RecordContextMenuItems({
+  entity,
+  id,
+  onEdit,
+  editable = true,
+  duplicable = true,
+  onDuplicate,
+  onArchive,
+  onRestore,
+  archiveDisabledReason = null,
+  pending = false,
+}: Omit<RecordContextMenuProps, 'children' | 'draggable' | 'disabled'>) {
+  const { open, duplicate } = useSheetParams()
+  const canDuplicate = duplicable && isDuplicableSheetEntity(entity)
+  const lifecycleDisabled = pending || Boolean(archiveDisabledReason)
+
+  return (
+    <>
+      {editable ? (
         <ContextMenuItem
           onClick={() => {
             if (onEdit) onEdit()
@@ -99,39 +135,39 @@ export function RecordContextMenu({
           <Pencil />
           Edit
         </ContextMenuItem>
-        {canDuplicate ? (
-          <ContextMenuItem
-            onClick={() =>
-              onDuplicate ? onDuplicate() : duplicate(entity, id)
-            }
-          >
-            <Copy />
-            Duplicate
-          </ContextMenuItem>
-        ) : null}
-        {onArchive || onRestore ? <ContextMenuSeparator /> : null}
-        {onArchive ? (
-          <ContextMenuItem
-            variant='destructive'
-            disabled={lifecycleDisabled}
-            onClick={onArchive}
-          >
-            <Archive />
-            Archive
-          </ContextMenuItem>
-        ) : null}
-        {onRestore ? (
-          <ContextMenuItem disabled={lifecycleDisabled} onClick={onRestore}>
-            <RefreshCw />
-            Restore
-          </ContextMenuItem>
-        ) : null}
-        {archiveDisabledReason ? (
-          <p className='text-muted-foreground max-w-64 px-1.5 py-1 text-xs'>
-            {archiveDisabledReason}
-          </p>
-        ) : null}
-      </ContextMenuContent>
-    </ContextMenu>
+      ) : null}
+      {canDuplicate ? (
+        <ContextMenuItem
+          onClick={() => (onDuplicate ? onDuplicate() : duplicate(entity, id))}
+        >
+          <Copy />
+          Duplicate
+        </ContextMenuItem>
+      ) : null}
+      {(editable || canDuplicate) && (onArchive || onRestore) ? (
+        <ContextMenuSeparator />
+      ) : null}
+      {onArchive ? (
+        <ContextMenuItem
+          variant='destructive'
+          disabled={lifecycleDisabled}
+          onClick={onArchive}
+        >
+          <Archive />
+          Archive
+        </ContextMenuItem>
+      ) : null}
+      {onRestore ? (
+        <ContextMenuItem disabled={lifecycleDisabled} onClick={onRestore}>
+          <RefreshCw />
+          Restore
+        </ContextMenuItem>
+      ) : null}
+      {archiveDisabledReason ? (
+        <p className='text-muted-foreground max-w-64 px-1.5 py-1 text-xs'>
+          {archiveDisabledReason}
+        </p>
+      ) : null}
+    </>
   )
 }

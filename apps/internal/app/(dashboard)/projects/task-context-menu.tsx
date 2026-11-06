@@ -10,16 +10,22 @@ import { removeTask } from './actions'
 
 /**
  * Right-click on a task card: Edit, Duplicate, Archive. Archive confirms with
- * the same dialog as the task sheet's.
+ * the same dialog as the task sheet's. A viewer who can't manage tasks gets
+ * Edit only (it opens the sheet read-only).
  */
 export function TaskContextMenu({
   task,
   onEdit,
+  canManage,
+  archivable = true,
   draggable = false,
   children,
 }: {
   task: TaskWithRelations
   onEdit: () => void
+  canManage: boolean
+  /** False where the list can't drop an archived card (the lead sheet). */
+  archivable?: boolean
   draggable?: boolean
   children: ReactElement<Record<string, unknown>>
 }) {
@@ -35,7 +41,12 @@ export function TaskContextMenu({
         entity='task'
         id={task.id}
         onEdit={onEdit}
-        onArchive={() => requestArchive({ id: task.id, name: task.title })}
+        duplicable={canManage}
+        onArchive={
+          canManage && archivable
+            ? () => requestArchive({ id: task.id, name: task.title })
+            : undefined
+        }
         pending={isPending}
         draggable={draggable}
       >

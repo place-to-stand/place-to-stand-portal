@@ -50,10 +50,18 @@ export const parseDuplicateSourceId = (value: string | null | undefined) => {
   return UUID_PATTERN.test(id) ? id : null
 }
 
-export const isValidSheetParamValue = (value: string) =>
-  value === NEW_SHEET_VALUE ||
-  UUID_PATTERN.test(value) ||
-  parseDuplicateSourceId(value) !== null
+/** `new` or a record id: what a sheet loads (a copy loads its source's id). */
+export const isSheetRecordValue = (value: string) =>
+  value === NEW_SHEET_VALUE || UUID_PATTERN.test(value)
+
+/**
+ * A value the `entity` param may hold: `new`, a record id, or `copy-<id>` for
+ * entities that can be duplicated. Anything else is ignored, never sent on to
+ * a lookup that casts it to a uuid.
+ */
+export const isValidSheetParamValue = (value: string, entity: string) =>
+  isSheetRecordValue(value) ||
+  (isDuplicableSheetEntity(entity) && parseDuplicateSourceId(value) !== null)
 
 /**
  * The entities whose create sheet can start from a copy of an existing

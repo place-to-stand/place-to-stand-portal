@@ -55,7 +55,7 @@ export function useSheetParams() {
       if (
         isSheetEntityKey(key) &&
         value &&
-        isValidSheetParamValue(value) &&
+        isValidSheetParamValue(value, key) &&
         !items.some(item => item.entity === key)
       ) {
         items.push({ entity: key, value })

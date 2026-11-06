@@ -51,6 +51,8 @@ type TaskCardProps = {
   assignees: AssigneeInfo[]
   onEdit: (task: TaskWithRelations) => void
   draggable: boolean
+  /** Shows Duplicate and Archive in the card's right-click menu. */
+  canManage: boolean
   isActive?: boolean
   disableDropTransition?: boolean
   context?: TaskContextDetails
@@ -197,6 +199,7 @@ export function TaskCard({
   assignees,
   onEdit,
   draggable,
+  canManage,
   isActive = false,
   disableDropTransition = false,
   context,
@@ -256,6 +259,7 @@ export function TaskCard({
     <TaskContextMenu
       task={task}
       onEdit={() => onEdit(task)}
+      canManage={canManage}
       draggable={draggable}
     >
       <div
@@ -309,19 +313,26 @@ export function TaskCardStatic({
   task,
   assignees,
   onClick,
+  canManage,
   className,
   context,
 }: {
   task: TaskWithRelations
   assignees: AssigneeInfo[]
   onClick: () => void
+  canManage: boolean
   className?: string
   context?: TaskContextDetails
 }) {
   const isCompleted = task.status === 'DONE'
 
   return (
-    <TaskContextMenu task={task} onEdit={onClick}>
+    <TaskContextMenu
+      task={task}
+      onEdit={onClick}
+      canManage={canManage}
+      archivable={false}
+    >
       <div
         role='button'
         tabIndex={0}

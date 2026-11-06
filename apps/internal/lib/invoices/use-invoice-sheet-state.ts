@@ -145,6 +145,12 @@ export function useInvoiceSheetState({
   // Track the client ID loaded from the database / pre-fill so we only
   // auto-fill when the user actively picks a *different* client.
   const loadedClientIdRef = useRef<string | null>(null)
+  // Read inside the load effect without re-running it (a new callback each
+  // render would reset the form mid-edit).
+  const onOpenChangeRef = useRef(onOpenChange)
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange
+  }, [onOpenChange])
   const { toast } = useToast()
 
   const clientOptions = useMemo<ClientOption[]>(
@@ -236,7 +242,18 @@ export function useInvoiceSheetState({
       startLoadTransition(async () => {
         try {
           const source = await getInvoiceDetails(duplicateOf.id)
-          loadedClientIdRef.current = source?.company_id ?? null
+          if (!source) {
+            // Gone since the menu opened: say so and close, never leave a
+            // blank "copy" that could be saved.
+            toast({
+              title: 'Unable to duplicate invoice',
+              description: 'That invoice no longer exists.',
+              variant: 'destructive',
+            })
+            onOpenChangeRef.current(false)
+            return
+          }
+          loadedClientIdRef.current = source.company_id
           const defaults = buildInvoiceFormDefaults(source)
           form.reset({
             ...defaults,
