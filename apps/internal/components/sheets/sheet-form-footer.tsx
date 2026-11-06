@@ -122,7 +122,8 @@ export function SheetFormFooter(props: SheetFormFooterProps) {
   const [mode, setMode] = useState<SheetSaveMode>(modeInFlight)
   useEffect(() => {
     const form = document.getElementById(formId)
-    const onSubmit = () => setMode(modeOfFormSubmit())
+    // Announced, not just set: the toaster reads it to tell a closing sheet.
+    const onSubmit = () => announceSaveMode(modeOfFormSubmit())
     form?.addEventListener('submit', onSubmit)
     const stop = onSaveModeAnnounced(setMode)
     return () => {
