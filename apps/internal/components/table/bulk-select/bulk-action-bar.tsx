@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Archive, CheckCheck, Loader2, RefreshCw, X } from 'lucide-react'
 
@@ -11,16 +11,28 @@ import { useToast } from '@/components/ui/use-toast'
 import {
   BULK_ARCHIVE_ENTITIES,
   countLabel,
+  type BulkActionResult,
   type BulkArchiveEntity,
   type BulkSelectionInput,
 } from '@/lib/bulk/archive-entities'
 import { bulkSetArchived } from '@/app/(dashboard)/_actions/bulk-archive'
 
 import type { RowSelection } from './use-row-selection'
-import { describeBulkResult } from './bulk-result-toast'
+import { describeBulkResult, type BulkVerb } from './bulk-result-toast'
 
 /** URL params that open sheets or page the list, not filters. */
 const NON_FILTER_PARAMS = new Set(['page'])
+
+/**
+ * A list's own bulk action beside Archive (Submissions: Mark acknowledged).
+ * It runs over the same selection and reports through the same toasts.
+ */
+export type BulkBarAction = BulkVerb & {
+  label: string
+  pendingLabel: string
+  icon: ReactNode
+  run: (selection: BulkSelectionInput) => Promise<BulkActionResult>
+}
 
 type BulkActionBarProps = {
   selection: RowSelection
@@ -33,6 +45,8 @@ type BulkActionBarProps = {
   nameOf?: (id: string) => string | undefined
   /** Runs after a bulk change lands (defaults to a router refresh). */
   onDone?: () => void
+  /** The list's own actions, shown before Archive or Restore. */
+  actions?: BulkBarAction[]
   /** Stands in for the server action (the /design demo). */
   runAction?: typeof bulkSetArchived
 }
@@ -50,6 +64,7 @@ export function BulkActionBar({
   archiveExtra,
   nameOf,
   onDone,
+  actions = [],
   runAction = bulkSetArchived,
 }: BulkActionBarProps) {
   const router = useRouter()
@@ -57,6 +72,7 @@ export function BulkActionBar({
   const { toast } = useToast()
   const [confirming, setConfirming] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [pendingLabel, setPendingLabel] = useState<string | null>(null)
   const words = BULK_ARCHIVE_ENTITIES[entity]
   const archive = mode === 'active'
 
@@ -64,7 +80,11 @@ export function BulkActionBar({
 
   const selected = countLabel(entity, selection.count)
 
-  const run = () => {
+  const runWith = (
+    verb: BulkVerb,
+    label: string,
+    action: (input: BulkSelectionInput) => Promise<BulkActionResult>
+  ) => {
     const input: BulkSelectionInput = selection.allMatching
       ? {
           kind: 'matching',
@@ -76,17 +96,15 @@ export function BulkActionBar({
         }
       : { kind: 'ids', ids: [...selection.ids] }
 
+    setPendingLabel(label)
     startTransition(async () => {
-      const result = await runAction({
-        entity,
-        archive,
-        selection: input,
-      })
+      const result = await action(input)
       setConfirming(false)
+      setPendingLabel(null)
       for (const message of describeBulkResult({
         result,
         entity,
-        archive,
+        verb,
         nameOf,
       })) {
         toast(message)
@@ -98,6 +116,15 @@ export function BulkActionBar({
       }
     })
   }
+
+  const run = () =>
+    runWith(
+      archive
+        ? { verb: 'archive', past: 'archived' }
+        : { verb: 'restore', past: 'restored' },
+      archive ? 'archive' : 'restore',
+      input => runAction({ entity, archive, selection: input })
+    )
 
   return (
     <>
@@ -124,6 +151,25 @@ export function BulkActionBar({
             </Button>
           ) : null}
           <div className='flex items-center gap-2'>
+            {actions.map(action => (
+              <Button
+                key={action.label}
+                type='button'
+                variant='outline'
+                size='sm'
+                disabled={isPending}
+                onClick={() => runWith(action, action.label, action.run)}
+              >
+                {pendingLabel === action.label ? (
+                  <Loader2 className='animate-spin' />
+                ) : (
+                  action.icon
+                )}
+                {pendingLabel === action.label
+                  ? action.pendingLabel
+                  : action.label}
+              </Button>
+            ))}
             {archive ? (
               <Button
                 type='button'
@@ -143,12 +189,12 @@ export function BulkActionBar({
                 disabled={isPending}
                 onClick={run}
               >
-                {isPending ? (
+                {pendingLabel === 'restore' ? (
                   <Loader2 className='animate-spin' />
                 ) : (
                   <RefreshCw />
                 )}
-                {isPending ? 'Restoring…' : 'Restore'}
+                {pendingLabel === 'restore' ? 'Restoring…' : 'Restore'}
               </Button>
             )}
             <RowActionButton

@@ -708,6 +708,13 @@
   },
   {
     "type": "action",
+    "name": "bulkAcknowledgeSubmissions",
+    "file": "apps/internal/app/(dashboard)/submissions/actions/bulk-acknowledge-submissions.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
     "name": "restoreSubmission",
     "file": "apps/internal/app/(dashboard)/submissions/actions/restore-submission.ts",
     "kind": "admin",

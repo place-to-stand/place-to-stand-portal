@@ -8,24 +8,24 @@ import {
 /** Refused rows named in the toast before it says "and N more". */
 const NAMED_FAILURES = 3
 
+/** A bulk action's verb, as the toasts say it ("archive", "archived"). */
+export type BulkVerb = { verb: string; past: string }
+
 /**
- * The toasts for one bulk archive or restore: what changed, which rows
- * were refused and why, and any closed-month notes.
+ * The toasts for one bulk action: what changed, which rows were refused
+ * and why, and any closed-month notes.
  */
 export function describeBulkResult({
   result,
   entity,
-  archive,
+  verb: { verb, past },
   nameOf,
 }: {
   result: BulkActionResult
   entity: BulkArchiveEntity
-  archive: boolean
+  verb: BulkVerb
   nameOf?: (id: string) => string | undefined
 }): ToastOptions[] {
-  const verb = archive ? 'archive' : 'restore'
-  const past = archive ? 'archived' : 'restored'
-
   if (result.error) {
     return [
       {

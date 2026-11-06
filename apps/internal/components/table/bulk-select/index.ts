@@ -5,4 +5,4 @@ export {
   SelectRowCell,
   useSelectedRowProps,
 } from './select-cells'
-export { BulkActionBar } from './bulk-action-bar'
+export { BulkActionBar, type BulkBarAction } from './bulk-action-bar'

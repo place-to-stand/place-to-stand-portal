@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Mail, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { Check, Mail, ThumbsDown, ThumbsUp } from 'lucide-react'
 
 import {
   RecordRowAction,
@@ -54,6 +54,7 @@ import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
   archiveSubmission,
+  bulkAcknowledgeSubmissions,
   restoreSubmission,
 } from '../actions'
 
@@ -63,6 +64,7 @@ import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import { UNREAD_ROW_CLASS } from '@/lib/table/unread-row'
 import {
   BulkActionBar,
+  type BulkBarAction,
   RowSelectionProvider,
   SelectAllHead,
   SelectRowCell,
@@ -176,6 +178,26 @@ export function SubmissionsTable({
     submissions.map(submission => submission.id),
     totalCount
   )
+
+  // Ticked rows send the version each was rendered at, so one that changed
+  // since is refused rather than acknowledged unseen (the row's own guard).
+  const acknowledgeAction: BulkBarAction = {
+    label: 'Acknowledge',
+    pendingLabel: 'Acknowledging…',
+    icon: <Check />,
+    verb: 'acknowledge',
+    past: 'acknowledged',
+    run: input =>
+      bulkAcknowledgeSubmissions({
+        selection: input,
+        versions: Object.fromEntries(
+          submissions.map(submission => [
+            submission.id,
+            submission.lastActivityAt,
+          ])
+        ),
+      }),
+  }
 
   // The archive tab shows when each row was archived; active mode doesn't.
   const columnCount = mode === 'archive' ? 9 : 8
@@ -627,6 +649,7 @@ export function SubmissionsTable({
         selection={selection}
         entity='submission'
         mode={mode}
+        actions={mode === 'active' ? [acknowledgeAction] : undefined}
         nameOf={id => {
           const row = submissions.find(submission => submission.id === id)
           return row?.contactName ?? row?.contactEmail ?? undefined

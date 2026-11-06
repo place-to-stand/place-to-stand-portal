@@ -35,14 +35,13 @@ import { archiveCompany, restoreCompany } from '../companies/actions'
 import { restoreContact, softDeleteContact } from '../people/actions'
 import { restoreHourBlock, softDeleteHourBlock } from '../hour-blocks/actions'
 import { archiveInvoice, restoreInvoice } from '../invoices/actions'
-import { archiveSubmission, restoreSubmission } from '../submissions/actions'
+import { archiveSubmission } from '../submissions/actions/archive-submission'
+import { restoreSubmission } from '../submissions/actions/restore-submission'
+import type { RowOutcome } from './run-bulk'
 import { parseProjectsLandingSearchParams } from '../projects/_lib/parse-projects-search-params'
 import { parseProjectsSearchParams } from '../projects/_lib/parse-projects-search-params'
 
 type Params = Record<string, string>
-
-/** What one row's archive or restore came to. */
-export type RowOutcome = { error?: string; warning?: string | null }
 
 type Page = { ids: string[]; total: number }
 
