@@ -71,7 +71,7 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
   const data = load.kind === 'loaded' ? load.data : null
   if (data?.state === 'not_allowed') return null
 
-  const who = lead.contactName || contactEmail || 'this contact'
+  const who = lead.contactName || contactEmail || 'this person'
   const threads = data?.state === 'ok' ? data.threads : []
 
   let status: ReactNode

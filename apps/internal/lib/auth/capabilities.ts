@@ -339,7 +339,7 @@ export const CAPABILITIES = {
     area: 'Integrations',
     label: 'Connect their own Google account',
     description:
-      'Shows their own Gmail threads with a lead’s contact on the lead sheet. Nobody else sees their mail.',
+      'Shows their own Gmail threads with a lead’s person on the lead sheet. Nobody else sees their mail.',
     roles: STAFF,
     surfaces: ['app'],
   },

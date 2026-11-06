@@ -97,7 +97,7 @@ export function LeadSheetRightColumn({
             title='Emails'
             icon={Mail}
             isEmpty
-            emptyMessage='Your emails with this contact show after you save the lead.'
+            emptyMessage='Your emails with this person show after you save the lead.'
           />
         </div>
       )}
