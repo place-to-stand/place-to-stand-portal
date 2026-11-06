@@ -14,8 +14,8 @@ import {
 } from './notification-feed'
 
 /**
- * The header's notifications button, on every page: unread count badge and a
- * popover with the same stream as the home widget. Opening an item closes
+ * The header's notifications button, on every page: a labelled outline button
+ * (icon only on phones) with the unread count, and a popover with the same stream as the home widget. Opening an item closes
  * the popover.
  */
 export function NotificationsBell() {
@@ -37,16 +37,20 @@ export function NotificationsBell() {
       <PopoverTrigger asChild>
         <Button
           type='button'
-          variant='ghost'
-          size='icon-sm'
+          variant='outline'
+          // xs keeps the header row at the same height as before, so the
+          // page tabs stay level with the sidebar's search box.
+          size='xs'
           aria-label={label}
-          className='relative'
+          className='has-[>svg]:px-2 [&_svg]:size-3.5'
         >
           <Bell aria-hidden />
+          <span className='hidden sm:inline'>Notifications</span>
           {count ? (
+            // The same count bubble as the sidebar's nav counts.
             <span
               aria-hidden
-              className='bg-primary text-primary-foreground text-micro absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 leading-none font-semibold tabular-nums'
+              className='bg-primary text-primary-foreground text-micro flex h-4 min-w-4 items-center justify-center rounded-full px-1 leading-none font-semibold tabular-nums'
             >
               {count > 99 ? '99+' : count}
             </span>

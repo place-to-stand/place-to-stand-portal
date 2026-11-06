@@ -6,6 +6,7 @@ import { CheckIcon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/users/initials'
+import { matchedHint } from '@/lib/utils/search-match'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
   Command,
@@ -31,6 +32,12 @@ export type SearchableComboboxItem = {
   label: string
   description?: string
   keywords?: string[]
+  /**
+   * More text search matches (a company's people, "Name · email"). When an
+   * option matched only through one, that one shows under its label, so
+   * the list says why it's there.
+   */
+  matchHints?: string[]
   disabled?: boolean
   avatarUrl?: string | null
   userId?: string
@@ -273,6 +280,9 @@ export const SearchableCombobox = React.forwardRef<
     }
 
     const renderItem = (item: SearchableComboboxItem, key: string) => {
+      const description =
+        item.description ??
+        matchedHint(item.label, item.keywords, item.matchHints, query)
       return (
         <CommandItem
           key={key}
@@ -290,9 +300,9 @@ export const SearchableCombobox = React.forwardRef<
                 {item.label}
               </span>
             )}
-            {item.description ? (
+            {description ? (
               <span className='text-muted-foreground truncate text-xs whitespace-nowrap'>
-                {item.description}
+                {description}
               </span>
             ) : null}
           </div>
@@ -506,9 +516,15 @@ export const SearchableCombobox = React.forwardRef<
 
 SearchableCombobox.displayName = 'SearchableCombobox'
 
-/** The cmdk value of an option: what search matches (label + keywords). */
+/** The cmdk value of an option: what search matches (label, keywords, hints). */
 function commandValueOf(item: SearchableComboboxItem): string {
-  const searchValue = [item.label, ...(item.keywords ?? [])].join(' ').trim()
+  const searchValue = [
+    item.label,
+    ...(item.keywords ?? []),
+    ...(item.matchHints ?? []),
+  ]
+    .join(' ')
+    .trim()
   return searchValue.length > 0 ? searchValue : item.value
 }
 
