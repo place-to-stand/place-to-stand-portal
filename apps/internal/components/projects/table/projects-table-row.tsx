@@ -16,6 +16,10 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import {
+  SelectRowCell,
+  useSelectedRowProps,
+} from '@/components/table/bulk-select'
 
 type ProjectsTableRowProps = {
   project: ProjectWithClient
@@ -59,12 +63,15 @@ export function ProjectsTableRow({
   const showRestore = mode === 'archive'
 
   const isArchived = Boolean(project.deleted_at)
+  const selectedRowProps = useSelectedRowProps(project.id)
 
   return (
     <TableRow
       {...getClickableRowProps(() => onEdit(project))}
+      {...selectedRowProps}
       className={cn(CLICKABLE_ROW_CLASS, isArchived && ARCHIVED_ROW_CLASS)}
     >
+      <SelectRowCell id={project.id} label={project.name} />
       <TableCell>
         <div className='flex min-w-0 items-center gap-2'>
           <ENTITY_ICONS.project

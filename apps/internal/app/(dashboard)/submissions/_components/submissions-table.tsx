@@ -60,6 +60,14 @@ import {
 import { SubmissionArchiveDialog } from './submission-archive-dialog'
 import { SubmissionDetailSheet } from './submission-detail-sheet'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
+import { UNREAD_ROW_CLASS } from '@/lib/table/unread-row'
+import {
+  BulkActionBar,
+  RowSelectionProvider,
+  SelectAllHead,
+  SelectRowCell,
+  useRowSelection,
+} from '@/components/table/bulk-select'
 import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
@@ -164,9 +172,13 @@ export function SubmissionsTable({
     useState<FormSubmissionRecord | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [, startTransition] = useTransition()
+  const selection = useRowSelection(
+    submissions.map(submission => submission.id),
+    totalCount
+  )
 
   // The archive tab shows when each row was archived; active mode doesn't.
-  const columnCount = mode === 'archive' ? 8 : 7
+  const columnCount = mode === 'archive' ? 9 : 8
   const columnClasses = COLUMN_CLASSES[mode]
 
   // Sort changes route through useListParams so they reset offset paging
@@ -356,246 +368,248 @@ export function SubmissionsTable({
             column needs a wider floor and holds Company back until 2xl (see
             COLUMN_CLASSES). On a phone the rows stack, led by the contact
             instead of the time. */}
-        <Table
-          density='compact'
-          layout='fixed'
-          stack
-          className={columnClasses.table}
-        >
-          <TableHeader>
-            <TableRow className='bg-muted/40'>
-              <SortableTableHead
-                field='received'
-                sort={sort}
-                defaultSort='received:desc'
-                onSortChange={next => updateListParams({ sort: next })}
-                className='w-40'
-              >
-                {/* The rows' unread-dot slot (8px dot + 8px gap), so
-                    "Received" lines up with the times below it. */}
-                <span aria-hidden className='inline-block w-4' />
-                Received
-              </SortableTableHead>
-              <TableHead className='w-24'>Form</TableHead>
-              {/* copy-check: allow — the visitor's contact details, not a person record */}
-              <TableHead>Contact</TableHead>
-              <TableHead className={columnClasses.company}>Company</TableHead>
-              <TableHead className={columnClasses.outcome}>Outcome</TableHead>
-              <TableHead className={columnClasses.source}>Source</TableHead>
-              {mode === 'archive' ? (
-                <TableHead className='w-32'>Archived</TableHead>
-              ) : null}
-              <TableHead className='w-24 text-right'>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {submissions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columnCount} className='p-4'>
-                  <EmptyState message={emptyMessage} />
-                </TableCell>
+        <RowSelectionProvider selection={selection} entity='submission'>
+          <Table
+            density='compact'
+            layout='fixed'
+            stack
+            className={columnClasses.table}
+          >
+            <TableHeader>
+              <TableRow className='bg-muted/40'>
+                <SelectAllHead />
+                <SortableTableHead
+                  field='received'
+                  sort={sort}
+                  defaultSort='received:desc'
+                  onSortChange={next => updateListParams({ sort: next })}
+                  className='w-32'
+                >
+                  Received
+                </SortableTableHead>
+                <TableHead className='w-24'>Form</TableHead>
+                {/* copy-check: allow — the visitor's contact details, not a person record */}
+                <TableHead>Contact</TableHead>
+                <TableHead className={columnClasses.company}>Company</TableHead>
+                <TableHead className={columnClasses.outcome}>Outcome</TableHead>
+                <TableHead className={columnClasses.source}>Source</TableHead>
+                {mode === 'archive' ? (
+                  <TableHead className='w-32'>Archived</TableHead>
+                ) : null}
+                <TableHead className='w-24 text-right'>Actions</TableHead>
               </TableRow>
-            ) : (
-              submissions.map(submission => {
-                const unacknowledged =
-                  mode === 'active' && isUnacknowledgedSubmission(submission)
-                const anonymous =
-                  !submission.contactName && !submission.contactEmail
-                const outcome = describeSubmissionOutcome(submission)
-                const source = describeAttribution(submission)
+            </TableHeader>
+            <TableBody>
+              {submissions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columnCount} className='p-4'>
+                    <EmptyState message={emptyMessage} />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                submissions.map(submission => {
+                  const unacknowledged =
+                    mode === 'active' && isUnacknowledgedSubmission(submission)
+                  const anonymous =
+                    !submission.contactName && !submission.contactEmail
+                  const outcome = describeSubmissionOutcome(submission)
+                  const source = describeAttribution(submission)
 
-                return (
-                  <TableRow
-                    key={submission.id}
-                    {...getClickableRowProps(() => handleSelect(submission.id))}
-                    className={cn(
-                      CLICKABLE_ROW_CLASS,
-                      unacknowledged && 'font-medium',
-                      // Anonymous rows are mostly unfinished audits: keep
-                      // them, but let identified visitors carry the page.
-                      anonymous && 'text-muted-foreground',
-                      submission.deletedAt && ARCHIVED_ROW_CLASS
-                    )}
-                  >
-                    <TableCell
-                      className='max-md:first:basis-auto'
-                      title={
-                        formatCalendarDate(
-                          submission.lastActivityAt,
-                          RECEIVED_TITLE_STYLE
-                        ) ?? undefined
+                  return (
+                    <TableRow
+                      key={submission.id}
+                      {...getClickableRowProps(() =>
+                        handleSelect(submission.id)
+                      )}
+                      data-selected={
+                        selection.isSelected(submission.id) || undefined
                       }
+                      className={cn(
+                        CLICKABLE_ROW_CLASS,
+                        unacknowledged && UNREAD_ROW_CLASS,
+                        // Anonymous rows are mostly unfinished audits: keep
+                        // them, but let identified visitors carry the page.
+                        anonymous && 'text-muted-foreground',
+                        submission.deletedAt && ARCHIVED_ROW_CLASS
+                      )}
                     >
-                      {/* The unread dot lives in a fixed slot so the times
-                          stay aligned whether or not a row is acknowledged. */}
-                      <div className='flex items-center gap-2'>
-                        <span
-                          className={cn(
-                            'size-2 shrink-0 rounded-full',
-                            unacknowledged && 'bg-primary'
-                          )}
-                          aria-hidden='true'
-                        />
-                        {unacknowledged ? (
-                          <span className='sr-only'>Unacknowledged</span>
-                        ) : null}
-                        <span className='truncate'>
+                      <SelectRowCell
+                        id={submission.id}
+                        label={
+                          submission.contactName ??
+                          submission.contactEmail ??
+                          'anonymous submission'
+                        }
+                        unread={unacknowledged}
+                        unreadLabel='Unacknowledged'
+                      />
+                      <TableCell
+                        className='max-md:first-cell:basis-auto'
+                        title={
+                          formatCalendarDate(
+                            submission.lastActivityAt,
+                            RECEIVED_TITLE_STYLE
+                          ) ?? undefined
+                        }
+                      >
+                        <span className='block truncate'>
                           {formatRelativeTime(submission.lastActivityAt)}
                         </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant='outline'
-                        className={cn(
-                          FORM_SUBMISSION_KIND_TOKENS[submission.kind]
-                        )}
-                      >
-                        {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className='max-md:order-first max-md:basis-full'>
-                      {submission.contactName || submission.contactEmail ? (
-                        // Single line so every row is the same height: the
-                        // name truncates, the email collapses to a mailto
-                        // icon (address in the tooltip) that never shrinks.
-                        // The row click ignores anchors, so the icon doesn't
-                        // also open the sheet.
-                        <div className='flex min-w-0 items-center gap-1.5'>
-                          <span className='min-w-0 truncate'>
-                            {submission.contactName ?? submission.contactEmail}
-                          </span>
-                          {submission.contactEmail ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <a
-                                  href={`mailto:${submission.contactEmail}`}
-                                  aria-label={`Email ${submission.contactEmail}`}
-                                  className='text-muted-foreground hover:text-foreground shrink-0 transition'
-                                >
-                                  <Mail className='h-3.5 w-3.5' aria-hidden />
-                                </a>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {submission.contactEmail}
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className='text-muted-foreground italic'>
-                          Anonymous
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className={columnClasses.companyCell}
-                      title={submission.contactCompany ?? undefined}
-                    >
-                      {submission.contactCompany ?? <EmptyValue />}
-                    </TableCell>
-                    <TableCell>
-                      {/* Single line so rows keep a uniform height: the
-                          badge never shrinks, the detail truncates. */}
-                      <div className='flex min-w-0 items-center gap-2'>
+                      </TableCell>
+                      <TableCell>
                         <Badge
                           variant='outline'
                           className={cn(
-                            'shrink-0',
-                            FORM_SUBMISSION_STATUS_TOKENS[submission.status]
+                            FORM_SUBMISSION_KIND_TOKENS[submission.kind]
                           )}
                         >
-                          {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
+                          {FORM_SUBMISSION_KIND_LABELS[submission.kind]}
                         </Badge>
-                        {outcome ? (
-                          <span className='min-w-0 truncate' title={outcome}>
-                            {outcome}
-                          </span>
-                        ) : null}
-                        {submission.feedbackHelpful === true ? (
-                          <ThumbsUp
-                            className='text-success size-3.5 shrink-0'
-                            aria-label='Found results helpful'
-                          />
-                        ) : submission.feedbackHelpful === false ? (
-                          <ThumbsDown
-                            className='text-destructive size-3.5 shrink-0'
-                            aria-label='Did not find results helpful'
-                          />
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div
-                        className='flex min-w-0 items-center gap-2'
-                        title={source.label}
-                      >
-                        <Badge
-                          variant='outline'
-                          className={cn(
-                            'shrink-0',
-                            ATTRIBUTION_CHANNEL_TOKENS[source.channel]
-                          )}
-                        >
-                          {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
-                        </Badge>
-                        {source.detail ? (
-                          <span
-                            className={cn(
-                              'text-muted-foreground hidden min-w-0 truncate text-xs',
-                              columnClasses.sourceDetail
-                            )}
-                          >
-                            {source.detail}
-                          </span>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    {mode === 'archive' ? (
-                      <TableCell
-                        label='Archived'
-                        className='text-muted-foreground text-sm whitespace-nowrap'
-                      >
-                        {submission.deletedAt ? (
-                          formatRelativeTime(submission.deletedAt)
+                      </TableCell>
+                      <TableCell className='max-md:order-first max-md:basis-full'>
+                        {submission.contactName || submission.contactEmail ? (
+                          // Single line so every row is the same height: the
+                          // name truncates, the email collapses to a mailto
+                          // icon (address in the tooltip) that never shrinks.
+                          // The row click ignores anchors, so the icon doesn't
+                          // also open the sheet.
+                          <div className='flex min-w-0 items-center gap-1.5'>
+                            <span className='min-w-0 truncate'>
+                              {submission.contactName ??
+                                submission.contactEmail}
+                            </span>
+                            {submission.contactEmail ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <a
+                                    href={`mailto:${submission.contactEmail}`}
+                                    aria-label={`Email ${submission.contactEmail}`}
+                                    className='text-muted-foreground hover:text-foreground shrink-0 transition'
+                                  >
+                                    <Mail className='h-3.5 w-3.5' aria-hidden />
+                                  </a>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {submission.contactEmail}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : null}
+                          </div>
                         ) : (
-                          <EmptyValue />
+                          <span className='text-muted-foreground italic'>
+                            Anonymous
+                          </span>
                         )}
                       </TableCell>
-                    ) : null}
-                    <TableCell className='text-right max-md:ml-auto'>
-                      <RecordRowActions>
-                        {unacknowledged ? (
-                          <RecordRowAction
-                            kind='acknowledge'
-                            entity='submission'
-                            disabled={pendingId === submission.id}
-                            onClick={() => handleAcknowledge(submission)}
-                          />
-                        ) : null}
-                        {mode === 'active' ? (
-                          <RecordRowAction
-                            kind='archive'
-                            entity='submission'
-                            disabled={pendingId === submission.id}
-                            onClick={() => setArchiveTarget(submission)}
-                          />
-                        ) : (
-                          <RecordRowAction
-                            kind='restore'
-                            entity='submission'
-                            disabled={pendingId === submission.id}
-                            onClick={() => handleRestore(submission)}
-                          />
-                        )}
-                      </RecordRowActions>
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
+                      <TableCell
+                        className={columnClasses.companyCell}
+                        title={submission.contactCompany ?? undefined}
+                      >
+                        {submission.contactCompany ?? <EmptyValue />}
+                      </TableCell>
+                      <TableCell>
+                        {/* Single line so rows keep a uniform height: the
+                          badge never shrinks, the detail truncates. */}
+                        <div className='flex min-w-0 items-center gap-2'>
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'shrink-0',
+                              FORM_SUBMISSION_STATUS_TOKENS[submission.status]
+                            )}
+                          >
+                            {FORM_SUBMISSION_STATUS_LABELS[submission.status]}
+                          </Badge>
+                          {outcome ? (
+                            <span className='min-w-0 truncate' title={outcome}>
+                              {outcome}
+                            </span>
+                          ) : null}
+                          {submission.feedbackHelpful === true ? (
+                            <ThumbsUp
+                              className='text-success size-3.5 shrink-0'
+                              aria-label='Found results helpful'
+                            />
+                          ) : submission.feedbackHelpful === false ? (
+                            <ThumbsDown
+                              className='text-destructive size-3.5 shrink-0'
+                              aria-label='Did not find results helpful'
+                            />
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div
+                          className='flex min-w-0 items-center gap-2'
+                          title={source.label}
+                        >
+                          <Badge
+                            variant='outline'
+                            className={cn(
+                              'shrink-0',
+                              ATTRIBUTION_CHANNEL_TOKENS[source.channel]
+                            )}
+                          >
+                            {ATTRIBUTION_CHANNEL_LABELS[source.channel]}
+                          </Badge>
+                          {source.detail ? (
+                            <span
+                              className={cn(
+                                'text-muted-foreground hidden min-w-0 truncate text-xs',
+                                columnClasses.sourceDetail
+                              )}
+                            >
+                              {source.detail}
+                            </span>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      {mode === 'archive' ? (
+                        <TableCell
+                          label='Archived'
+                          className='text-muted-foreground text-sm whitespace-nowrap'
+                        >
+                          {submission.deletedAt ? (
+                            formatRelativeTime(submission.deletedAt)
+                          ) : (
+                            <EmptyValue />
+                          )}
+                        </TableCell>
+                      ) : null}
+                      <TableCell className='text-right max-md:ml-auto'>
+                        <RecordRowActions>
+                          {unacknowledged ? (
+                            <RecordRowAction
+                              kind='acknowledge'
+                              entity='submission'
+                              disabled={pendingId === submission.id}
+                              onClick={() => handleAcknowledge(submission)}
+                            />
+                          ) : null}
+                          {mode === 'active' ? (
+                            <RecordRowAction
+                              kind='archive'
+                              entity='submission'
+                              disabled={pendingId === submission.id}
+                              onClick={() => setArchiveTarget(submission)}
+                            />
+                          ) : (
+                            <RecordRowAction
+                              kind='restore'
+                              entity='submission'
+                              disabled={pendingId === submission.id}
+                              onClick={() => handleRestore(submission)}
+                            />
+                          )}
+                        </RecordRowActions>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </RowSelectionProvider>
       </div>
 
       <PaginationControls
@@ -607,6 +621,16 @@ export function SubmissionsTable({
         onPageChange={page =>
           updateParams({ page: page === 1 ? undefined : String(page) })
         }
+      />
+
+      <BulkActionBar
+        selection={selection}
+        entity='submission'
+        mode={mode}
+        nameOf={id => {
+          const row = submissions.find(submission => submission.id === id)
+          return row?.contactName ?? row?.contactEmail ?? undefined
+        }}
       />
 
       <SubmissionArchiveDialog

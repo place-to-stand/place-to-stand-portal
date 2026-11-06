@@ -30,6 +30,7 @@ export const DESIGN_SECTION_GROUPS = [
       { id: 'stats', label: 'Stat cards' },
       { id: 'access', label: 'Person access' },
       { id: 'tables', label: 'Tables and toolbar' },
+      { id: 'bulk-select', label: 'Bulk select' },
       { id: 'empty-loading', label: 'Empty and loading' },
       { id: 'feedback', label: 'Alerts, toasts and errors' },
       { id: 'overlays', label: 'Tooltips and menus' },

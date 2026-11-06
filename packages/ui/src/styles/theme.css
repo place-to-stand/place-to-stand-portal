@@ -12,6 +12,9 @@
  */
 
 @custom-variant dark (&:is(.dark *));
+/* A stacked table row's title cell: its first real cell, skipping the
+   leading select column (data-slot="table-select-cell"). */
+@custom-variant first-cell (&:nth-child(1 of [data-slot='table-cell']));
 
 :root {
   color-scheme: light;

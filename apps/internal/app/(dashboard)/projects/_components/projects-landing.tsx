@@ -54,6 +54,13 @@ import {
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { companySheetHref } from '@/lib/sheets/hrefs'
+import {
+  BulkActionBar,
+  RowSelectionProvider,
+  SelectAllHead,
+  SelectRowCell,
+  useRowSelection,
+} from '@/components/table/bulk-select'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
 // column in all three section tables; grouping semantics stay unchanged —
@@ -362,6 +369,23 @@ export function ProjectsLanding({
     return path ?? '#'
   }
 
+  // One selection across the three tables, so a bulk archive can take
+  // client, internal and personal projects together. The landing isn't
+  // paged: every match is on screen.
+  const clientSectionProjects = clientSections.flatMap(
+    section => section.projects
+  )
+  const visibleProjects = [
+    ...clientSectionProjects,
+    ...internalProjects,
+    ...personalProjects,
+  ]
+  const selection = useRowSelection(
+    visibleProjects.map(project => project.id),
+    visibleProjects.length
+  )
+  const selectable = !readOnly
+
   const allSectionsEmpty =
     clientSections.length === 0 &&
     internalProjects.length === 0 &&
@@ -407,8 +431,12 @@ export function ProjectsLanding({
       <TableRow
         key={project.id}
         {...(href !== '#' ? getClickableRowProps(() => router.push(href)) : {})}
+        data-selected={selection.isSelected(project.id) || undefined}
         className={href !== '#' ? CLICKABLE_ROW_CLASS : undefined}
       >
+        {selectable ? (
+          <SelectRowCell id={project.id} label={project.name} />
+        ) : null}
         <TableCell>
           <div className='flex min-w-0 items-center'>
             {treeLine && (
@@ -504,7 +532,7 @@ export function ProjectsLanding({
   }
 
   const tableColumnWidths = {
-    project: 'w-[35%]',
+    project: 'w-[33%]',
     status: 'w-[11%]',
     progress: 'w-[22%]',
     owner: 'w-[7%]',
@@ -512,8 +540,11 @@ export function ProjectsLanding({
     actions: 'w-24',
   }
 
-  /** One header for every section table; `rows` is the table body. */
-  const renderProjectTable = (rows: ReactNode) => (
+  /**
+   * One header for every section table; `rows` is the table body and `ids`
+   * its projects, for the header's select box.
+   */
+  const renderProjectTable = (rows: ReactNode, ids: string[]) => (
     <div className='overflow-hidden rounded-lg border'>
       <Table
         density='compact'
@@ -523,6 +554,7 @@ export function ProjectsLanding({
       >
         <TableHeader>
           <TableRow className='bg-muted/40'>
+            {selectable ? <SelectAllHead ids={ids} /> : null}
             <SortableTableHead
               field='name'
               sort={sort}
@@ -562,7 +594,7 @@ export function ProjectsLanding({
         className='border-t-muted hover:bg-transparent max-md:p-0'
       >
         <TableCell
-          colSpan={6}
+          colSpan={selectable ? 7 : 6}
           className={cn(
             // The shared cell sets the height: same as the project rows.
             ENTITY_ACCENTS.client.band,
@@ -646,7 +678,8 @@ export function ProjectsLanding({
                 isLast: index === clientProjects.length - 1,
               })
             ),
-          ])
+          ]),
+          clientSectionProjects.map(project => project.id)
         )
       : renderSectionEmptyState(
           unfilteredCounts.clientCount > 0
@@ -677,7 +710,8 @@ export function ProjectsLanding({
       content:
         internalProjects.length > 0
           ? renderProjectTable(
-              internalProjects.map(project => renderProjectRow(project))
+              internalProjects.map(project => renderProjectRow(project)),
+              internalProjects.map(project => project.id)
             )
           : renderSectionEmptyState(getInternalEmptyMessage()),
     },
@@ -689,38 +723,51 @@ export function ProjectsLanding({
       content:
         personalProjects.length > 0
           ? renderProjectTable(
-              personalProjects.map(project => renderProjectRow(project))
+              personalProjects.map(project => renderProjectRow(project)),
+              personalProjects.map(project => project.id)
             )
           : renderSectionEmptyState(getPersonalEmptyMessage()),
     },
   ]
 
   return (
-    <div className='space-y-12'>
-      <ArchiveConfirmDialog
-        open={Boolean(deleteTarget)}
-        entity='project'
-        name={deleteTarget?.name ?? 'this project'}
-        list='active projects'
-        pending={isArchivePending}
-        onCancel={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-      />
-      <div className='space-y-6'>{clientSectionContent}</div>
-      {sectionConfigs.map(
-        ({ key, title, icon: Icon, count, content, className }) => (
-          <div key={key} className={cn('space-y-4', className)}>
-            <div className='flex items-center gap-2'>
-              <div className='bg-accent flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
-                <Icon className='text-muted-foreground h-4 w-4' />
+    <RowSelectionProvider selection={selection} entity='project'>
+      <div className='space-y-12'>
+        {selectable ? (
+          <BulkActionBar
+            selection={selection}
+            entity='project'
+            mode='active'
+            nameOf={id =>
+              visibleProjects.find(project => project.id === id)?.name
+            }
+          />
+        ) : null}
+        <ArchiveConfirmDialog
+          open={Boolean(deleteTarget)}
+          entity='project'
+          name={deleteTarget?.name ?? 'this project'}
+          list='active projects'
+          pending={isArchivePending}
+          onCancel={handleCancelDelete}
+          onConfirm={handleConfirmDelete}
+        />
+        <div className='space-y-6'>{clientSectionContent}</div>
+        {sectionConfigs.map(
+          ({ key, title, icon: Icon, count, content, className }) => (
+            <div key={key} className={cn('space-y-4', className)}>
+              <div className='flex items-center gap-2'>
+                <div className='bg-accent flex h-8 w-8 items-center justify-center rounded-md border shadow-sm'>
+                  <Icon className='text-muted-foreground h-4 w-4' />
+                </div>
+                <h2 className='text-base font-semibold'>{title}</h2>
+                <span className='text-muted-foreground text-sm'>({count})</span>
               </div>
-              <h2 className='text-base font-semibold'>{title}</h2>
-              <span className='text-muted-foreground text-sm'>({count})</span>
+              <div>{content}</div>
             </div>
-            <div>{content}</div>
-          </div>
-        )
-      )}
-    </div>
+          )
+        )}
+      </div>
+    </RowSelectionProvider>
   )
 }
