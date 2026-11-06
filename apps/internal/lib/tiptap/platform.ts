@@ -1,20 +1,9 @@
-import { MAC_SYMBOLS } from './constants'
+import { detectMac, formatKey } from '@/lib/keyboard/format'
 
 export function cn(
   ...classes: Array<string | boolean | undefined | null>
 ): string {
   return classes.filter(Boolean).join(' ')
-}
-
-/**
- * Determines if the current platform is macOS
- * @returns boolean indicating if the current platform is Mac
- */
-function isMac(): boolean {
-  return (
-    typeof navigator !== 'undefined' &&
-    navigator.platform.toLowerCase().includes('mac')
-  )
 }
 
 /**
@@ -29,12 +18,10 @@ const formatShortcutKey = (
   isMacPlatform: boolean,
   capitalize: boolean = true
 ) => {
-  if (isMacPlatform) {
-    const lowerKey = key.toLowerCase()
-    return MAC_SYMBOLS[lowerKey] || (capitalize ? key.toUpperCase() : key)
-  }
-
-  return capitalize ? key.charAt(0).toUpperCase() + key.slice(1) : key
+  // Same labels as the keyboard shortcuts list (lib/keyboard/format.ts).
+  const label = formatKey(key, isMacPlatform)
+  if (label !== key && label !== key.toUpperCase()) return label
+  return capitalize ? key.toUpperCase() : key
 }
 
 /**
@@ -56,5 +43,5 @@ export const parseShortcutKeys = (props: {
   return shortcutKeys
     .split(delimiter)
     .map(key => key.trim())
-    .map(key => formatShortcutKey(key, isMac(), capitalize))
+    .map(key => formatShortcutKey(key, detectMac(), capitalize))
 }

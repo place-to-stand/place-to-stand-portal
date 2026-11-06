@@ -170,3 +170,22 @@ run('env-through-schema', {
     { code: "const k = process.env['APP_BASE_URL']", errors: 1 },
   ],
 })
+
+run('shortcut-registry', {
+  valid: [
+    'function onKey(e) { if (matchesShortcut(e, SHORTCUTS.save)) save() }',
+    // ⌘-click opens in a new tab: modifiers without a key are not a shortcut.
+    'const onClick = event => { if (event.metaKey || event.ctrlKey) return }',
+    "function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) send() }",
+  ],
+  invalid: [
+    {
+      code: "function onKey(e) { if (e.key === 'k' && (e.metaKey || e.ctrlKey)) open() }",
+      errors: 2,
+    },
+    {
+      code: "window.addEventListener('keydown', event => { const mod = () => event.metaKey; if (mod() && event.key === 's') save() })",
+      errors: 1,
+    },
+  ],
+})

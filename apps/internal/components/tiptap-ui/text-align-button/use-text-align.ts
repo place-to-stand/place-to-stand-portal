@@ -15,6 +15,7 @@ import { AlignCenterIcon } from '@/components/tiptap-icons/align-center-icon'
 import { AlignJustifyIcon } from '@/components/tiptap-icons/align-justify-icon'
 import { AlignLeftIcon } from '@/components/tiptap-icons/align-left-icon'
 import { AlignRightIcon } from '@/components/tiptap-icons/align-right-icon'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 export type TextAlign = 'left' | 'center' | 'right' | 'justify'
 
@@ -41,11 +42,10 @@ export interface UseTextAlignConfig {
   onAligned?: () => void
 }
 
-export const TEXT_ALIGN_SHORTCUT_KEYS: Record<TextAlign, string> = {
-  left: 'mod+shift+l',
-  center: 'mod+shift+e',
-  right: 'mod+shift+r',
-  justify: 'mod+shift+j',
+export const TEXT_ALIGN_SHORTCUT_KEYS: Partial<Record<TextAlign, string>> = {
+  left: SHORTCUTS.alignLeft.keys,
+  center: SHORTCUTS.alignCenter.keys,
+  right: SHORTCUTS.alignRight.keys,
 }
 
 export const textAlignIcons = {

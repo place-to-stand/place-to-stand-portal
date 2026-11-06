@@ -117,6 +117,8 @@ export function nextApp({
         // Env vars go through the zod schema (lib/env.server.ts), so an empty
         // value in Vercel reads the same everywhere.
         'pts/env-through-schema': 'error',
+        // README rule 16: keyboard shortcuts come from lib/keyboard/shortcuts.
+        'pts/shortcut-registry': 'error',
         ...(sheetRegistry && {
           'pts/sheet-url-through-builders': [
             'error',
@@ -141,6 +143,11 @@ export function nextApp({
       ? [{ files: [entityRegistry], rules: { 'no-restricted-syntax': 'off' } }]
       : []),
     { files: ENV_READERS, rules: { 'pts/env-through-schema': 'off' } },
+    {
+      // The registry's own matcher is the one place that reads the modifiers.
+      files: ['lib/keyboard/**'],
+      rules: { 'pts/shortcut-registry': 'off' },
+    },
     {
       // The sheet links' own home, and the proxy's mapping of retired params.
       files: ['lib/sheets/**', 'lib/projects/board/board-utils.ts', 'proxy.ts'],

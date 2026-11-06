@@ -17,6 +17,7 @@ import { StrikeIcon } from '@/components/tiptap-icons/strike-icon'
 import { SubscriptIcon } from '@/components/tiptap-icons/subscript-icon'
 import { SuperscriptIcon } from '@/components/tiptap-icons/superscript-icon'
 import { UnderlineIcon } from '@/components/tiptap-icons/underline-icon'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 export type Mark =
   | 'bold'
@@ -61,13 +62,13 @@ export const markIcons = {
 }
 
 export const MARK_SHORTCUT_KEYS: Record<Mark, string> = {
-  bold: 'mod+b',
-  italic: 'mod+i',
-  underline: 'mod+u',
-  strike: 'mod+shift+x',
-  code: 'mod+e',
-  superscript: 'mod+.',
-  subscript: 'mod+,',
+  bold: SHORTCUTS.bold.keys,
+  italic: SHORTCUTS.italic.keys,
+  underline: SHORTCUTS.underline.keys,
+  strike: SHORTCUTS.strike.keys,
+  code: SHORTCUTS.code.keys,
+  superscript: SHORTCUTS.superscript.keys,
+  subscript: SHORTCUTS.subscript.keys,
 }
 
 /**

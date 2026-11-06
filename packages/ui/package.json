@@ -28,6 +28,7 @@
     "./empty-state": "./src/empty-state.tsx",
     "./hooks/use-mobile": "./src/hooks/use-mobile.ts",
     "./input": "./src/input.tsx",
+    "./kbd": "./src/kbd.tsx",
     "./label": "./src/label.tsx",
     "./numbers": "./src/numbers.ts",
     "./popover": "./src/popover.tsx",

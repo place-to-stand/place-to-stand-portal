@@ -2,6 +2,9 @@
 
 import { useEffect } from 'react'
 
+import { matchesShortcut } from '@/lib/keyboard/match'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+
 type UseRecordCycleOptions = {
   onPrevious: () => void
   onNext: () => void
@@ -22,12 +25,10 @@ export function useRecordCycle({
 }: UseRecordCycleOptions) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (!(e.metaKey || e.ctrlKey)) return
-
-      if (e.key === '[' && canPrevious) {
+      if (matchesShortcut(e, SHORTCUTS.previousProject) && canPrevious) {
         e.preventDefault()
         onPrevious()
-      } else if (e.key === ']' && canNext) {
+      } else if (matchesShortcut(e, SHORTCUTS.nextProject) && canNext) {
         e.preventDefault()
         onNext()
       }

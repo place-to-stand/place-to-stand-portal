@@ -20,6 +20,7 @@ import {
   isValidPosition,
   selectionWithinConvertibleTypes,
 } from '@/lib/tiptap-utils'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 export type ListType = 'bulletList' | 'orderedList' | 'taskList'
 
@@ -59,9 +60,9 @@ export const listLabels: Record<ListType, string> = {
 }
 
 export const LIST_SHORTCUT_KEYS: Record<ListType, string> = {
-  bulletList: 'mod+shift+8',
-  orderedList: 'mod+shift+7',
-  taskList: 'mod+shift+9',
+  bulletList: SHORTCUTS.bulletList.keys,
+  orderedList: SHORTCUTS.orderedList.keys,
+  taskList: SHORTCUTS.taskList.keys,
 }
 
 /**

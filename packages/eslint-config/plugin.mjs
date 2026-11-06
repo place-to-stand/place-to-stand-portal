@@ -28,6 +28,7 @@ import {
   onePagePanel,
   optionalLabel,
   sheetUrlThroughBuilders,
+  shortcutRegistry,
 } from './rules/guards.mjs'
 import {
   figureCellAligned,
@@ -64,6 +65,7 @@ export const pts = {
     'no-details-section': noDetailsSection,
     'no-raw-type-size': noRawTypeSize,
     'sheet-url-through-builders': sheetUrlThroughBuilders,
+    'shortcut-registry': shortcutRegistry,
     'no-hard-delete': noHardDelete,
     'optional-label': optionalLabel,
     'env-through-schema': envThroughSchema,

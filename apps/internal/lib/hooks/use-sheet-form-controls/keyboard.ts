@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
 
+import { matchesShortcut } from '@/lib/keyboard/match'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+
 export type KeyboardShortcutArgs = {
   isActive: boolean
   canSave: boolean
@@ -27,22 +30,8 @@ export function useHistoryKeyboardShortcuts({
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!event.key) return
-      const key = event.key.toLowerCase()
-      const hasMeta = event.metaKey
-      const hasCtrl = event.ctrlKey
-      const modifierActive = hasMeta || hasCtrl
-
-      if (!modifierActive) {
-        return
-      }
-
-      // Handle save shortcut
-      if (key === 's') {
-        if (!canSave) {
-          return
-        }
-
+      if (matchesShortcut(event, SHORTCUTS.save)) {
+        if (!canSave) return
         event.preventDefault()
         event.stopPropagation()
         flushPendingSnapshots()
@@ -50,27 +39,9 @@ export function useHistoryKeyboardShortcuts({
         return
       }
 
-      // Handle undo/redo shortcuts
-      // These should work even when inputs/editors are focused
-      if (key === 'z') {
-        if (event.shiftKey) {
-          // Shift+Z for redo (Cmd+Shift+Z or Ctrl+Shift+Z)
-          if (!canRedo) {
-            return
-          }
-
-          event.preventDefault()
-          event.stopPropagation()
-          flushPendingSnapshots()
-          redo()
-          return
-        }
-
-        // Z for undo (Cmd+Z or Ctrl+Z)
-        if (!canUndo) {
-          return
-        }
-
+      // Undo and redo work even while an input or the editor has focus.
+      if (matchesShortcut(event, SHORTCUTS.undo)) {
+        if (!canUndo) return
         event.preventDefault()
         event.stopPropagation()
         flushPendingSnapshots()
@@ -78,12 +49,8 @@ export function useHistoryKeyboardShortcuts({
         return
       }
 
-      // Handle Y for redo (Ctrl+Y on Windows/Linux)
-      if (key === 'y' && hasCtrl && !hasMeta) {
-        if (!canRedo) {
-          return
-        }
-
+      if (matchesShortcut(event, SHORTCUTS.redo)) {
+        if (!canRedo) return
         event.preventDefault()
         event.stopPropagation()
         flushPendingSnapshots()

@@ -26,6 +26,9 @@ import {
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
+import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
+import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
+
 import { UserMenu } from './user-menu'
 import { useCommandPalette } from './command-palette'
 import { NAV_GROUPS } from './navigation-config'
@@ -108,13 +111,16 @@ export function Sidebar({ user, badges }: Props) {
               <span className='group-data-[collapsible=icon]:hidden'>
                 Search
               </span>
-              <kbd className='bg-muted text-muted-foreground text-micro pointer-events-none ml-auto rounded-sm border px-1 font-mono group-data-[collapsible=icon]:hidden'>
-                ⌘K
-              </kbd>
+              <ShortcutKeys
+                shortcut={SHORTCUTS.commandPalette}
+                size='sm'
+                className='ml-auto group-data-[collapsible=icon]:hidden'
+              />
             </button>
           </TooltipTrigger>
           <TooltipContent side='right' hidden={sidebarState !== 'collapsed'}>
-            Search <kbd className='text-micro ml-1 font-mono'>⌘K</kbd>
+            Search{' '}
+            <ShortcutKeys shortcut={SHORTCUTS.commandPalette} size='sm' />
           </TooltipContent>
         </Tooltip>
       </SidebarHeader>
