@@ -14,6 +14,7 @@ import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { EntityList } from '@/components/sheets/entity-list'
 import { InlineReveal } from '@/components/ui/inline-reveal'
+import { LoadMoreButton } from '@/components/ui/load-more-button'
 import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 import {
   RecordRowAction,
@@ -201,6 +202,20 @@ export function ComponentsButtons() {
               pending
             />
           </RecordRowActions>
+        </Example>
+      </Specimen>
+      <Specimen label='Load more' note='LoadMoreButton'>
+        <Example caption='Foot of a list: home widgets, Email threads'>
+          <div className='bg-card w-72 rounded-lg border'>
+            <div className='px-4 py-3 text-sm'>Update the homepage copy</div>
+            <div className='border-t px-2 py-1.5'>
+              <LoadMoreButton
+                onClick={noop}
+                loading={false}
+                label='Load 3 more'
+              />
+            </div>
+          </div>
         </Example>
       </Specimen>
       <Specimen
