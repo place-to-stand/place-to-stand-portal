@@ -14,5 +14,5 @@ export const buildClientOptions = (
     value: client.id,
     label: client.deleted_at ? `${client.name} (Archived)` : client.name,
     keywords: client.deleted_at ? [client.name, 'archived'] : [client.name],
-    matchHints: client.contact_search_terms,
+    matchHints: client.search_hints,
   }))

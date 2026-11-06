@@ -492,13 +492,13 @@ function mapHourBlockWithClient(row: HourBlockSelection): HourBlockWithClient {
 
 function mapClientRow(
   row: Pick<ClientDirectoryRow, 'id' | 'name' | 'deletedAt'> &
-    Partial<Pick<ClientDirectoryRow, 'contactSearchTerms'>>
+    Partial<Pick<ClientDirectoryRow, 'searchHints'>>
 ): HourBlockClient {
   return {
     id: row.id,
     name: row.name,
     company_id: row.id,
     deleted_at: row.deletedAt,
-    contact_search_terms: row.contactSearchTerms,
+    search_hints: row.searchHints,
   }
 }

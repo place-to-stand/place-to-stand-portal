@@ -221,7 +221,7 @@ export default async function MyTasksViewRoute({
       clients={activeClients.map(client => ({
         id: client.id,
         name: client.name,
-        contactSearchTerms: client.contactSearchTerms,
+        searchHints: client.searchHints,
       }))}
       now={now}
       initialOlderDoneCount={assignedSummaries.olderDoneCount}

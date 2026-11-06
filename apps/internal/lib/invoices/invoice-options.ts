@@ -26,7 +26,7 @@ export const buildClientOptions = (clients: InvoiceClient[]): ClientOption[] =>
       value: client.id,
       label: client.name,
       keywords: [client.name],
-      matchHints: client.contact_search_terms,
+      matchHints: client.search_hints,
       billingType: client.billing_type,
       state: client.state ?? null,
     }))

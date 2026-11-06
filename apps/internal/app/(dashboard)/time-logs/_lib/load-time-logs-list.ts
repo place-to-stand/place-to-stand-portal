@@ -46,7 +46,7 @@ export async function loadTimeLogsList(
     .map(client => ({
       value: client.id,
       label: client.name,
-      matchHints: client.contactSearchTerms,
+      matchHints: client.searchHints,
     }))
   const projectOptions = toProjectOptions(
     projects.filter(
