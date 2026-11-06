@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 /** Every list page this PR touches, with its heading. */
 export const LIST_PAGES = [
@@ -60,4 +60,10 @@ export async function rowHeights(page: Page) {
         group: Boolean(row.querySelector('td[colspan]')),
       }))
   )
+}
+
+/** A sheet's Archive lives in its header's Actions menu: open it and pick Archive. */
+export async function archiveFromSheetMenu(sheet: Locator) {
+  await sheet.getByRole('button', { name: / actions$/ }).click()
+  await sheet.page().getByRole('menuitem', { name: 'Archive' }).click()
 }

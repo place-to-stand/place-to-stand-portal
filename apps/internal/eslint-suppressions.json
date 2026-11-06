@@ -30,9 +30,6 @@
     }
   },
   "app/(dashboard)/companies/_components/company-sheet.tsx": {
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
     "max-lines": {
       "count": 1
     }
@@ -95,7 +92,7 @@
   },
   "app/(dashboard)/hour-blocks/hour-block-sheet.tsx": {
     "@typescript-eslint/no-misused-promises": {
-      "count": 2
+      "count": 1
     }
   },
   "app/(dashboard)/invoices/_components/invoice-email-dialog.tsx": {
@@ -136,7 +133,7 @@
   },
   "app/(dashboard)/invoices/invoice-sheet.tsx": {
     "@typescript-eslint/no-misused-promises": {
-      "count": 3
+      "count": 2
     },
     "max-lines": {
       "count": 1
@@ -213,7 +210,7 @@
       "count": 1
     },
     "@typescript-eslint/no-misused-promises": {
-      "count": 2
+      "count": 1
     },
     "max-lines": {
       "count": 1
@@ -329,9 +326,6 @@
     }
   },
   "app/(dashboard)/projects/task-sheet.tsx": {
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
     "max-lines": {
       "count": 1
     }
@@ -777,11 +771,6 @@
   "lib/leads/save-lead-fields.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 4
-    }
-  },
-  "lib/leads/use-lead-sheet-state.ts": {
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
     }
   },
   "lib/mcp/tools/activity.ts": {

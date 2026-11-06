@@ -17,6 +17,8 @@ import { Textarea } from '@pts/ui/textarea'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
@@ -24,6 +26,7 @@ import {
   type HourBlockFormValues,
 } from '@/lib/hour-blocks/use-hour-block-sheet-state'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 import type {
   HourBlockClient,
   HourBlockWithClient,
@@ -51,6 +54,7 @@ export function HourBlockSheet({
   duplicateOf = null,
   clients,
 }: Props) {
+  const { duplicate } = useSheetParams()
   const {
     form,
     isEditing,
@@ -63,6 +67,7 @@ export function HourBlockSheet({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
+    confirmDiscard,
     handleSheetOpenChange,
     handleSubmit,
     handleRequestDelete,
@@ -78,10 +83,12 @@ export function HourBlockSheet({
   })
 
   const handleSave = useCallback(
-    () =>
-      form.handleSubmit((values: HourBlockFormValues) =>
-        handleSubmit(values)
-      )(),
+    (mode: SheetSaveMode) => {
+      // Reports its own result; validation errors stay on fields.
+      void form.handleSubmit((values: HourBlockFormValues) =>
+        handleSubmit(values, mode)
+      )()
+    },
     [form, handleSubmit]
   )
 
@@ -123,6 +130,24 @@ export function HourBlockSheet({
                 : hourBlock?.client?.name
                   ? `Hour block for ${hourBlock.client.name}`
                   : 'Hour block'
+            }
+            menu={
+              isEditing ? (
+                <SheetRecordMenu
+                  noun='Hour block'
+                  onDuplicate={
+                    hourBlock
+                      ? () =>
+                          confirmDiscard(() =>
+                            duplicate('hour-block', hourBlock.id)
+                          )
+                      : undefined
+                  }
+                  onRequestArchive={handleRequestDelete}
+                  archiveDisabled={deleteButton.disabled}
+                  archiveDisabledReason={deleteButton.reason}
+                />
+              ) : null
             }
           />
           <Form {...form}>
@@ -225,6 +250,7 @@ export function HourBlockSheet({
             <SheetFormFooter
               formId={HOUR_BLOCK_FORM_ID}
               saveLabel={submitButton.label}
+              onSave={handleSave}
               submitDisabled={submitButton.disabled}
               submitDisabledReason={submitButton.reason}
               undo={undo}
@@ -232,10 +258,6 @@ export function HourBlockSheet({
               canUndo={canUndo}
               canRedo={canRedo}
               isEditing={isEditing}
-              archiveDisabled={deleteButton.disabled}
-              archiveDisabledReason={deleteButton.reason}
-              onRequestArchive={handleRequestDelete}
-              archiveAriaLabel='Archive hour block'
             />
           </Form>
         </SheetContent>

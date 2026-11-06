@@ -516,7 +516,10 @@ export function ComponentsDialogs() {
             </DialogHeader>
             <ul className='space-y-2 text-sm'>
               <li className='flex justify-between'>
-                Save <kbd className='font-mono text-xs'>⌘S</kbd>
+                Save and close <kbd className='font-mono text-xs'>⌘S</kbd>
+              </li>
+              <li className='flex justify-between'>
+                Save and keep open <kbd className='font-mono text-xs'>⇧⌘S</kbd>
               </li>
               <li className='flex justify-between'>
                 Search <kbd className='font-mono text-xs'>⌘K</kbd>
