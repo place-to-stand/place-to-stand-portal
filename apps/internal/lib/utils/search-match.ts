@@ -101,6 +101,50 @@ export function scoreSearchMatch(
   return SEARCH_SCORE.substring
 }
 
+/**
+ * The hint to show under an option that matched through one of its `hints`
+ * (a company found by one of its people) rather than its own text: the
+ * best-matching hint, else the one holding most typed words the option's
+ * own text lacks. Null when the label
+ * or keywords match on their own, so a plain match shows no hint.
+ */
+export function matchedHint(
+  label: string,
+  keywords: readonly string[] | undefined,
+  hints: readonly string[] | undefined,
+  search: string
+): string | null {
+  if (!hints?.length || normalize(search).length === 0) return null
+  if (scoreSearchMatch(label, search, keywords ? [...keywords] : undefined)) {
+    return null
+  }
+  let best: string | null = null
+  let bestScore: number = SEARCH_SCORE.none
+  for (const hint of hints) {
+    const score = scoreSearchMatch(hint, search)
+    if (score > bestScore) {
+      best = hint
+      bestScore = score
+    }
+  }
+  if (best) return best
+  // The words split between the option and a hint: name the hint holding
+  // most of the words the option's own text lacks.
+  const own = [label, ...(keywords ?? [])]
+  const missing = normalize(search)
+    .split(' ')
+    .filter(token => !scoreSearchMatch(label, token, [...own]))
+  let mostCount = 0
+  for (const hint of hints) {
+    const count = missing.filter(token => scoreSearchMatch(hint, token)).length
+    if (count > mostCount) {
+      best = hint
+      mostCount = count
+    }
+  }
+  return best
+}
+
 /** Shortest query a fallback applies to: shorter ones match too much. */
 const MIN_FORGIVING_LENGTH = 4
 

@@ -21,6 +21,7 @@ export type ClientOption = {
   value: string
   label: string
   keywords: string[]
+  matchHints?: string[]
 }
 
 export type OwnerOption = {
@@ -94,11 +95,8 @@ export const buildClientOptions = (
   clients.map(client => ({
     value: client.id,
     label: client.deleted_at ? `${client.name} (Archived)` : client.name,
-    keywords: [
-      client.name,
-      ...(client.deleted_at ? ['archived'] : []),
-      ...(client.contact_search_terms ?? []),
-    ],
+    keywords: client.deleted_at ? [client.name, 'archived'] : [client.name],
+    matchHints: client.contact_search_terms,
   }))
 
 export const deriveSubmitButtonState = (

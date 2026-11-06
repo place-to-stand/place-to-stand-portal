@@ -85,7 +85,7 @@ export function CompanyLinkPicker({
         .filter(company => !excluded.has(company.id))
         .map(company => ({
           ...toOption(company),
-          keywords: company.contactSearchTerms,
+          matchHints: company.contactSearchTerms,
         }))}
       disabled={disabled}
       placeholder={placeholder}

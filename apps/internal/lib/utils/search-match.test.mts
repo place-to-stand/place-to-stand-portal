@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { SEARCH_SCORE, scoreSearchMatch } from './search-match.ts'
+import { SEARCH_SCORE, matchedHint, scoreSearchMatch } from './search-match.ts'
 
 const contacts = ['Jane Smith', 'jane@warmintro.com', "Sean O'Brien"]
 const score = (search: string, keywords = contacts) =>
@@ -63,4 +63,18 @@ test('the old guard against letter-sequence noise holds', () => {
     scoreSearchMatch('Bass Marketing / Landing pages', 'sales'),
     SEARCH_SCORE.none
   )
+})
+
+test('a match through a person names that person', () => {
+  const hints = ['Jane Smith · jane@warmintro.com', 'Marcus Lee · marcus@x.com']
+  const hint = (q: string) =>
+    matchedHint('Warm Intro', ['Warm Intro'], hints, q)
+  assert.equal(hint('jane'), hints[0])
+  assert.equal(hint('marcus@'), hints[1])
+  assert.equal(hint('smtih'), hints[0])
+  assert.equal(hint('warm'), null)
+  assert.equal(hint(''), null)
+  assert.equal(hint('zzz'), null)
+  // Words split between the company and a person: name the person.
+  assert.equal(hint('warm marcus'), hints[1])
 })

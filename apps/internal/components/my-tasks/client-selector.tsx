@@ -144,7 +144,8 @@ export function ClientSelector({
         value: client.id,
         label: client.name,
         // The id keeps two same-named clients distinct rows for cmdk.
-        keywords: [client.id, ...(client.contactSearchTerms ?? [])],
+        keywords: [client.id],
+        matchHints: client.contactSearchTerms,
       })),
     [sortedClients]
   )
