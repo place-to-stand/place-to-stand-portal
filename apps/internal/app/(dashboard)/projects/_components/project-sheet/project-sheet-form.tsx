@@ -1,5 +1,7 @@
 'use client'
 
+import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
+import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
@@ -52,6 +54,7 @@ import {
   type PendingIntegrationLink,
 } from './integration-links-section'
 import type { ProjectSheetLinkChanges } from '@/lib/projects/sheet/use-project-sheet-state'
+import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 
 const PROJECT_FORM_ID = 'project-form'
 
@@ -73,6 +76,10 @@ export type ProjectSheetFormProps = {
   isSheetOpen: boolean
   historyKey: string
   projectId?: string
+  /** The save check (see `useSheetLifecycle`). */
+  saveConflict: SaveConflictGuard
+  /** Drops the edits and reloads the project (link edits are dropped here). */
+  onLoadTheirs: () => void
 }
 
 export function ProjectSheetForm(props: ProjectSheetFormProps) {
@@ -95,6 +102,8 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     isSheetOpen,
     historyKey,
     projectId,
+    saveConflict,
+    onLoadTheirs,
   } = props
 
   // Track repos in state for undo/redo integration
@@ -280,6 +289,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           )}
         >
           <div className='flex flex-1 flex-col gap-6 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'>
+            <SheetNoticeSlot />
             <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
               <FormField
                 control={form.control}
@@ -571,6 +581,15 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
               canUndo={canUndo}
               canRedo={canRedo}
               isEditing={isEditing}
+            />
+            <SaveConflictDialog
+              guard={saveConflict}
+              noun='project'
+              onOverwrite={handleSave}
+              onLoadTheirs={() => {
+                clearSavedLinks()
+                onLoadTheirs()
+              }}
             />
           </div>
         </div>

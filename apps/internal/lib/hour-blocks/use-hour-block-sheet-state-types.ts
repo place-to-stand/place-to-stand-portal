@@ -1,6 +1,7 @@
 import type { UseFormReturn } from 'react-hook-form'
 
 import type { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 import type {
@@ -38,6 +39,8 @@ export type UseHourBlockSheetStateReturn = {
   isDeleteDialogOpen: boolean
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
   confirmDiscard: (next: () => void) => void
+  saveConflict: SaveConflictGuard
+  handleLoadTheirs: () => void
   handleSheetOpenChange: (open: boolean) => void
   handleSubmit: (values: HourBlockFormValues, mode?: SheetSaveMode) => void
   handleRequestDelete: () => void

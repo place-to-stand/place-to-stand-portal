@@ -1,3 +1,4 @@
+import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { z } from 'zod'
 
 import { hourBlockSchema, deleteSchema, restoreSchema } from './schemas'
@@ -9,6 +10,10 @@ export type ActionResult = {
   /** Non-blocking notice (closed-month drift, future billing month). */
   warning?: string
   fieldErrors?: Record<string, string[]>
+  /** The block's version after a save; the sheet's next expected one. */
+  updatedAt?: string
+  /** Set when someone else saved first and nothing was written. */
+  conflict?: SaveConflict
 }
 
 export type HourBlockInput = z.infer<typeof hourBlockSchema>

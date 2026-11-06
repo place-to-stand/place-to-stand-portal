@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useTransition } from 'react'
 import type { TransitionStartFunction } from 'react'
 
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import {
+  useSaveConflict,
+  type SaveConflictGuard,
+} from '@/lib/sheets/save-conflict/use-save-conflict'
 
 type UnsavedChangesCopy = Parameters<typeof useUnsavedChangesWarning>[0]
 
@@ -33,6 +37,13 @@ export type UseSheetLifecycleArgs = {
   resetOnOpen?: boolean
   /** Overrides for the discard dialog's wording. */
   discardCopy?: Omit<UnsavedChangesCopy, 'isDirty'>
+  /**
+   * The record's `updated_at` as the sheet holds it. Each re-baseline takes
+   * it as the version Save sends back (`saveConflict.expected()`), and a
+   * newer one arriving while the form is clean re-baselines again, so an
+   * untouched sheet follows the record and an edited one is never wiped.
+   */
+  version?: string | null
 }
 
 export type SheetLifecycle = {
@@ -59,6 +70,8 @@ export type SheetLifecycle = {
    * "Discard" when dirty (Duplicate from the Actions menu).
    */
   confirmDiscard: (next: () => void) => void
+  /** The save check: send `expected()`, feed results to `catchConflict`. */
+  saveConflict: SaveConflictGuard
 }
 
 /**
@@ -78,6 +91,7 @@ export const useSheetLifecycle = ({
   resetKey = null,
   resetOnOpen = true,
   discardCopy,
+  version = null,
 }: UseSheetLifecycleArgs): SheetLifecycle => {
   const [isSaving, startSaveTransition] = useTransition()
   const [, startQuietTransition] = useTransition()
@@ -88,6 +102,9 @@ export const useSheetLifecycle = ({
   // `undefined` means "closed / not yet baselined", which is distinct from a
   // create sheet's `null` key.
   const lastResetKeyRef = useRef<string | null | undefined>(undefined)
+  const saveConflict = useSaveConflict()
+  // The version the form was last re-baselined to.
+  const seededVersionRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!open) {
@@ -107,10 +124,41 @@ export const useSheetLifecycle = ({
     }
 
     lastResetKeyRef.current = resetKey
+    seededVersionRef.current = version
+    saveConflict.seed(version)
     startQuietTransition(() => {
       onReset()
     })
-  }, [open, resetKey, resetOnOpen, onReset, startQuietTransition])
+  }, [
+    open,
+    resetKey,
+    resetOnOpen,
+    onReset,
+    startQuietTransition,
+    version,
+    saveConflict,
+  ])
+
+  // A newer version of the same record (a refresh after someone's save, or
+  // Load theirs) re-baselines a clean form. A dirty one keeps its edits;
+  // Save then reports the conflict.
+  useEffect(() => {
+    if (!open || lastResetKeyRef.current !== resetKey) return
+    if (version === seededVersionRef.current || isDirty) return
+    seededVersionRef.current = version
+    saveConflict.seed(version)
+    startQuietTransition(() => {
+      onReset()
+    })
+  }, [
+    open,
+    resetKey,
+    version,
+    isDirty,
+    onReset,
+    saveConflict,
+    startQuietTransition,
+  ])
 
   const handleSheetOpenChange = useCallback(
     (next: boolean) => {
@@ -138,5 +186,6 @@ export const useSheetLifecycle = ({
     handleSheetOpenChange,
     unsavedChangesDialog,
     confirmDiscard: requestConfirmation,
+    saveConflict,
   }
 }

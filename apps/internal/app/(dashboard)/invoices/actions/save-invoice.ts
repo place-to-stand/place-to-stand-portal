@@ -23,6 +23,12 @@ import { companies, invoices, invoiceLineItems } from '@/lib/db/schema'
 import { invoiceSchema } from './schemas'
 import type { ActionResult, InvoiceInput } from './types'
 import { INVOICES_PATH } from './helpers'
+import {
+  describeSaveConflict,
+  lockForSave,
+  readSavedVersion,
+  SaveConflictError,
+} from '@/lib/sheets/save-conflict/server'
 
 /**
  * Best effort: an intent that can still be paid would charge the old
@@ -120,6 +126,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
 
   const { subtotal, taxAmount, total } = invoiceTotals(lineItems, taxRate)
   let savedId = id
+  let savedVersion: string | null = null
 
   if (!id) {
     try {
@@ -221,12 +228,28 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       return { error: 'Invoice not found.' }
     }
 
-    if (existing.status === 'PAID') {
-      return { error: 'Paid invoices cannot be edited.' }
+    if (existing.status === 'PAID' || existing.status === 'VOID') {
+      return { error: CLOSED_INVOICE_MESSAGE[existing.status] }
     }
 
+    // Read again under the save's lock: status and the payment intent can
+    // change without moving the version (a client paying, a checkout).
+    let staleIntentId: string | null = null
+
     try {
-      await db.transaction(async tx => {
+      savedVersion = await db.transaction(async tx => {
+        await lockForSave(tx, invoices, id, parsed.data.expectedUpdatedAt)
+        const [locked] = await tx
+          .select({
+            status: invoices.status,
+            stripePaymentIntentId: invoices.stripePaymentIntentId,
+          })
+          .from(invoices)
+          .where(eq(invoices.id, id))
+        if (locked?.status === 'PAID' || locked?.status === 'VOID') {
+          throw new ClosedInvoiceError(locked.status)
+        }
+        staleIntentId = locked?.stripePaymentIntentId ?? null
         const updateData: Record<string, unknown> = {
           companyId,
           notes: notes ?? null,
@@ -242,12 +265,12 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
           updateData.billingType = client.billingType
         }
 
-        if (existing.status === 'SENT') {
+        if (locked?.status === 'SENT' || locked?.status === 'VIEWED') {
           updateData.stripeCheckoutSessionId = null
         }
         // A payment intent was made for the old total: drop it so checkout
         // makes one for the new total (and cancel it below).
-        if (existing.stripePaymentIntentId) {
+        if (staleIntentId) {
           updateData.stripePaymentIntentId = null
         }
 
@@ -310,8 +333,24 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
             })
           }
         }
+        return readSavedVersion(tx, invoices, id)
       })
     } catch (error) {
+      if (error instanceof ClosedInvoiceError) {
+        return { error: CLOSED_INVOICE_MESSAGE[error.status] }
+      }
+      if (error instanceof SaveConflictError) {
+        return {
+          error: INVOICE_SAVED_ELSEWHERE,
+          conflict: await describeSaveConflict(
+            user,
+            'INVOICE',
+            id,
+            error,
+            parsed.data.expectedUpdatedAt
+          ),
+        }
+      }
       console.error('Failed to update invoice', error)
 
       return {
@@ -320,8 +359,8 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       }
     }
 
-    if (existing.stripePaymentIntentId) {
-      await cancelStalePaymentIntent(existing.stripePaymentIntentId)
+    if (staleIntentId) {
+      await cancelStalePaymentIntent(staleIntentId)
     }
 
     const changedFields: string[] = []
@@ -396,5 +435,23 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
 
   revalidatePath(INVOICES_PATH)
 
-  return { id: savedId }
+  return savedVersion
+    ? { id: savedId, updatedAt: savedVersion }
+    : { id: savedId }
+}
+
+/** Someone or something saved the invoice after the sheet loaded it. */
+const INVOICE_SAVED_ELSEWHERE =
+  'This invoice changed since you opened it. Reload to see the changes.'
+
+const CLOSED_INVOICE_MESSAGE = {
+  PAID: 'Paid invoices cannot be edited.',
+  VOID: 'Void invoices cannot be edited.',
+} as const
+
+/** The invoice was paid or voided after the sheet loaded it. */
+class ClosedInvoiceError extends Error {
+  constructor(readonly status: keyof typeof CLOSED_INVOICE_MESSAGE) {
+    super(CLOSED_INVOICE_MESSAGE[status])
+  }
 }

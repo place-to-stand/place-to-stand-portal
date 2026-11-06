@@ -166,6 +166,8 @@ export type ProjectSavePayload = {
   slug: string | null
   ownerId: string | null
   memberIds?: string[]
+  /** Edit: the version the sheet loaded; a newer save refuses this one. */
+  expectedUpdatedAt?: string
   /** Saved with the project, in the same transaction (`saveProject`). */
   repoLinks?: {
     add: Array<{

@@ -227,8 +227,8 @@ export async function POST(request: Request) {
             await db
               .update(invoices)
               .set({
+                // Bookkeeping, not an edit: the version stays.
                 stripeCheckoutSessionId: null,
-                updatedAt: sql`timezone('utc'::text, now())`,
               })
               .where(eq(invoices.stripeCheckoutSessionId, session.id))
           }
@@ -262,8 +262,8 @@ export async function POST(request: Request) {
           await db
             .update(invoices)
             .set({
+              // Bookkeeping, not an edit: the version stays.
               stripeCheckoutSessionId: null,
-              updatedAt: sql`timezone('utc'::text, now())`,
             })
             .where(eq(invoices.stripeCheckoutSessionId, session.id))
         }

@@ -4,6 +4,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
+import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { useMemo } from 'react'
 
 import {
@@ -46,6 +47,9 @@ export function ProjectSheet(props: Props) {
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
+    saveConflict,
+    hasUnsavedChanges,
+    handleLoadTheirs,
     handleSheetOpenChange,
     handleSubmit,
     handleReposDirtyChange,
@@ -85,6 +89,17 @@ export function ProjectSheet(props: Props) {
         >
           <SheetFormHeader
             entity='project'
+            presence={
+              <SheetPresence
+                entity='project'
+                noun='project'
+                recordId={props.project?.id ?? null}
+                open={props.open}
+                isDirty={hasUnsavedChanges}
+                guard={saveConflict}
+                onLoadTheirs={handleLoadTheirs}
+              />
+            }
             title={
               isEditing ? props.project?.name || 'Project' : 'Create project'
             }
@@ -112,6 +127,8 @@ export function ProjectSheet(props: Props) {
             isSheetOpen={props.open}
             historyKey={props.project?.id ?? 'project:new'}
             projectId={props.project?.id}
+            saveConflict={saveConflict}
+            onLoadTheirs={handleLoadTheirs}
           />
         </SheetContent>
       </Sheet>
