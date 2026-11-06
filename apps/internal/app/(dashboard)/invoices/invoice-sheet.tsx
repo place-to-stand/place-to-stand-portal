@@ -41,7 +41,6 @@ import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { useClientRecord } from '@/components/ui/picked-record-card'
 import { Textarea } from '@pts/ui/textarea'
 import { Separator } from '@pts/ui/separator'
 import { toastLink, useToast } from '@/components/ui/use-toast'
@@ -134,7 +133,6 @@ export function InvoiceSheet({
 
   const router = useRouter()
   const { toast } = useToast()
-  const clientRecord = useClientRecord()
   const [voidDialogOpen, setVoidDialogOpen] = useState(false)
   // "Mark as sent" and "Revert to draft" confirm first, like Void.
   const [statusConfirm, setStatusConfirm] = useState<'send' | 'unsend' | null>(
@@ -465,8 +463,6 @@ export function InvoiceSheet({
                                     onChange={field.onChange}
                                     onBlur={field.onBlur}
                                     items={clientOptions}
-                                    onClear={() => field.onChange('')}
-                                    record={clientRecord(field.value)}
                                     searchPlaceholder='Search clients…'
                                     emptyMessage='No clients found.'
                                     disabled={

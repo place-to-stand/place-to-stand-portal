@@ -21,7 +21,6 @@ import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
-import { useClientRecord } from '@/components/ui/picked-record-card'
 import {
   useHourBlockSheetState,
   type HourBlockFormValues,
@@ -180,8 +179,6 @@ export function HourBlockSheet({
                                 onChange={field.onChange}
                                 onBlur={field.onBlur}
                                 items={clientOptions}
-                                onClear={() => field.onChange('')}
-                                record={clientRecord(field.value)}
                                 searchPlaceholder='Search clients…'
                                 emptyMessage='No clients found.'
                                 disabled={clientField.disabled}

@@ -31,7 +31,6 @@ export function SheetRecordRow({
   fields,
   fieldsClassName,
   pendingRemoval,
-  size = 'default',
   className,
 }: {
   icon?: LucideIcon
@@ -73,11 +72,6 @@ export function SheetRecordRow({
   external?: boolean
   /** Accessible name for the open button or link: "Open Acme". */
   openLabel?: string
-  /**
-   * `field`: exactly a form field's height (36px), for a card standing in
-   * for a field (a picked record), so it lines up with the fields beside it.
-   */
-  size?: 'default' | 'field'
   className?: string
 }) {
   if (pendingRemoval) {
@@ -130,11 +124,8 @@ export function SheetRecordRow({
     </>
   )
 
-  const fieldSize = size === 'field'
-  const openClassName = cn(
-    'focus-visible:ring-ring/50 -ml-3 flex min-w-0 flex-1 cursor-pointer items-center gap-3 self-stretch rounded-l-md pl-3 outline-none focus-visible:ring-2',
-    !fieldSize && '-my-1.5 py-1.5'
-  )
+  const openClassName =
+    'focus-visible:ring-ring/50 -my-1.5 -ml-3 flex min-w-0 flex-1 cursor-pointer items-center gap-3 self-stretch rounded-l-md py-1.5 pl-3 outline-none focus-visible:ring-2'
 
   const line = (
     <>
@@ -176,10 +167,7 @@ export function SheetRecordRow({
     (onOpen || href) && 'hover:bg-muted hover:border-foreground/20',
     className
   )
-  const lineClassName = cn(
-    'flex items-center gap-3 pl-3',
-    fieldSize ? 'h-9 pr-1.5' : 'min-h-11 py-1.5 pr-1.5'
-  )
+  const lineClassName = 'flex min-h-11 items-center gap-3 py-1.5 pr-1.5 pl-3'
 
   if (!fields) {
     return <div className={cn(lineClassName, cardClassName)}>{line}</div>

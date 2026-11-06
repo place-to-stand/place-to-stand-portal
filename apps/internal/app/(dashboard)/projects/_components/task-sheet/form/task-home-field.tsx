@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import { OpenRecordButton } from '@/components/ui/open-record-button'
 import {
   SearchableCombobox,
   type SearchableComboboxGroup,
@@ -22,7 +23,6 @@ import {
 } from '@/lib/projects/task-sheet/task-home-options'
 import type { TaskSheetFormValues } from '@/lib/projects/task-sheet/task-sheet-schema'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
-import { ENTITY_ICONS } from '@/lib/entity-accents'
 
 type TaskHomeFieldProps = {
   form: UseFormReturn<TaskSheetFormValues>
@@ -36,8 +36,8 @@ type TaskHomeFieldProps = {
 
 /**
  * Where the task lives: one project or one lead, never both. Picking one
- * clears the other. The picked record shows as its preview card, which opens
- * it, stacked as its sheet.
+ * clears the other. The button on the right opens the picked record, stacked
+ * as its sheet.
  */
 export function TaskHomeField({
   form,
@@ -56,6 +56,7 @@ export function TaskHomeField({
       render={({ field }) => {
         const leadId = form.watch('leadId') ?? null
         const value = encodeTaskHome({ projectId: field.value ?? null, leadId })
+        const selected = items.find(item => item.value === value) ?? null
         const home = decodeTaskHome(value)
         const openable = home.leadId !== null || canOpenProject
 
@@ -85,22 +86,19 @@ export function TaskHomeField({
                   searchPlaceholder='Search projects and leads…'
                   emptyMessage='No projects or leads found.'
                   disabled={disabled}
-                  // Clearing leaves neither: the schema's "Choose a project
-                  // or a lead" stops the save.
-                  onClear={() => {
-                    field.onChange(null)
-                    form.setValue('leadId', null, { shouldDirty: true })
-                  }}
-                  record={{
-                    icon: ENTITY_ICONS[home.leadId ? 'lead' : 'project'],
-                    entityLabel: home.leadId ? 'lead' : 'project',
-                    onOpen: openable
-                      ? () =>
+                  trailingAction={
+                    selected && openable ? (
+                      <OpenRecordButton
+                        name={selected.label}
+                        entityLabel={home.leadId ? 'lead' : 'project'}
+                        onOpen={() =>
                           home.leadId
                             ? open('lead', home.leadId)
                             : home.projectId && open('project', home.projectId)
-                      : undefined,
-                  }}
+                        }
+                      />
+                    ) : null
+                  }
                 />
               </DisabledFieldTooltip>
             </FormControl>

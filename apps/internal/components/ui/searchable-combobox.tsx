@@ -20,12 +20,6 @@ import {
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import { FieldClearButton } from '@/components/ui/field-clear-button'
 import { FieldTrigger } from '@/components/ui/field-trigger'
-import { OpenRecordButton } from '@/components/ui/open-record-button'
-import {
-  PICKED_RECORD_CARDS,
-  PickedRecordCard,
-  type PickedRecord,
-} from '@/components/ui/picked-record-card'
 
 export type SearchableComboboxItem = {
   value: string
@@ -121,12 +115,6 @@ type SearchableComboboxProps = {
    * as cmdk `CommandGroup`s so they share the list's keyboard navigation.
    */
   listHeader?: React.ReactNode
-  /**
-   * The options are records that open as sheets (a company, a lead): once
-   * one is picked it shows as its preview card, which opens it, with × to
-   * clear (`onClear`) and a chevron to pick again (`PickedRecordCard`).
-   */
-  record?: PickedRecord
 }
 
 const itemWrapperClasses = 'flex min-w-0 flex-1 flex-col text-sm leading-tight'
@@ -164,7 +152,6 @@ export const SearchableCombobox = React.forwardRef<
       onOpenChange,
       trailingAction,
       listHeader,
-      record,
     },
     forwardedRef
   ) => {
@@ -179,8 +166,6 @@ export const SearchableCombobox = React.forwardRef<
     )
     const [query, setQuery] = React.useState('')
     const triggerRef = React.useRef<HTMLButtonElement | null>(null)
-    // The picked record's card: the list opens under it, at its width.
-    const cardRef = React.useRef<HTMLDivElement | null>(null)
     const [contentWidth, setContentWidth] = React.useState<number>()
     // Natural width of the popup measured once per open, while every option
     // is still rendered. Freezing it stops the popup from reflowing as
@@ -235,20 +220,15 @@ export const SearchableCombobox = React.forwardRef<
       [flattenedItems, value]
     )
 
-    const showCard = Boolean(
-      PICKED_RECORD_CARDS && record && selectedItem && !trigger
-    )
-
     React.useEffect(() => {
       if (!open) {
         return
       }
 
-      const anchor = showCard ? cardRef.current : triggerRef.current
-      if (anchor) {
-        setContentWidth(anchor.offsetWidth)
+      if (triggerRef.current) {
+        setContentWidth(triggerRef.current.offsetWidth)
       }
-    }, [open, showCard])
+    }, [open])
 
     const handleOpenChange = (next: boolean) => {
       if (disabled) {
@@ -367,72 +347,39 @@ export const SearchableCombobox = React.forwardRef<
         <div className='relative min-w-0 flex-1'>
           <input type='hidden' name={name} value={value ?? ''} />
           <Popover open={open} onOpenChange={handleOpenChange} modal>
-            {showCard && record && selectedItem ? (
-              <PickedRecordCard
-                ref={cardRef}
-                triggerRef={mergedRef}
-                record={record}
-                title={selectedItem.render ?? selectedItem.label}
-                name={selectedItem.label}
-                description={selectedItem.description}
-                disabled={disabled}
-                onClear={
-                  onClear
-                    ? () => {
-                        onClear()
-                        onBlur?.()
-                        // The card gives way to the empty field: keep focus
-                        // there, not lost with the × that just unmounted.
-                        requestAnimationFrame(() => triggerRef.current?.focus())
-                      }
-                    : undefined
-                }
-                triggerProps={{
-                  id,
-                  'aria-expanded': open,
-                  'aria-haspopup': 'listbox',
-                  'aria-labelledby': ariaLabelledBy,
-                  'aria-describedby': ariaDescribedBy,
-                  'aria-invalid': ariaInvalid ? true : undefined,
-                }}
-              />
-            ) : (
-              <PopoverTrigger asChild>
-                {trigger ?? (
-                  <FieldTrigger
-                    ref={mergedRef}
-                    role='combobox'
-                    aria-expanded={open}
-                    aria-haspopup='listbox'
-                    aria-label={ariaLabel}
-                    aria-labelledby={ariaLabelledBy}
-                    aria-describedby={ariaDescribedBy}
-                    aria-invalid={ariaInvalid ? true : undefined}
-                    disabled={disabled}
-                    id={id}
-                    placeholder={!selectedItem && !unmatched}
-                    clearable={showClear}
-                    className={triggerClassName}
-                    labelTitle={
-                      selectedItem?.label ??
-                      (unmatched ? 'Not in this list' : resolvedPlaceholder)
-                    }
-                    leading={
-                      selectedItem
-                        ? renderLeading(selectedItem, 'trigger')
-                        : null
-                    }
-                    label={
-                      selectedItem
-                        ? (selectedItem.render ?? selectedItem.label)
-                        : unmatched
-                          ? 'Not in this list'
-                          : resolvedPlaceholder
-                    }
-                  />
-                )}
-              </PopoverTrigger>
-            )}
+            <PopoverTrigger asChild>
+              {trigger ?? (
+                <FieldTrigger
+                  ref={mergedRef}
+                  role='combobox'
+                  aria-expanded={open}
+                  aria-haspopup='listbox'
+                  aria-label={ariaLabel}
+                  aria-labelledby={ariaLabelledBy}
+                  aria-describedby={ariaDescribedBy}
+                  aria-invalid={ariaInvalid ? true : undefined}
+                  disabled={disabled}
+                  id={id}
+                  placeholder={!selectedItem && !unmatched}
+                  clearable={showClear}
+                  className={triggerClassName}
+                  labelTitle={
+                    selectedItem?.label ??
+                    (unmatched ? 'Not in this list' : resolvedPlaceholder)
+                  }
+                  leading={
+                    selectedItem ? renderLeading(selectedItem, 'trigger') : null
+                  }
+                  label={
+                    selectedItem
+                      ? (selectedItem.render ?? selectedItem.label)
+                      : unmatched
+                        ? 'Not in this list'
+                        : resolvedPlaceholder
+                  }
+                />
+              )}
+            </PopoverTrigger>
             <PopoverContent
               ref={contentRef}
               // Never narrower than the trigger; grows to fit an option on one line,
@@ -443,7 +390,6 @@ export const SearchableCombobox = React.forwardRef<
               // inside the content column. A field opens under its left edge.
               align={trigger ? 'end' : 'start'}
               sideOffset={trigger ? 4 : 8}
-              anchor={showCard ? cardRef : undefined}
               style={contentStyle}
             >
               <Command className='max-h-80' defaultValue={selectedCommandValue}>
@@ -490,7 +436,7 @@ export const SearchableCombobox = React.forwardRef<
               </Command>
             </PopoverContent>
           </Popover>
-          {showClear && !showCard ? (
+          {showClear ? (
             <FieldClearButton
               label={(clearLabel ?? ariaLabel)?.toLowerCase()}
               onClear={() => {
@@ -500,14 +446,6 @@ export const SearchableCombobox = React.forwardRef<
             />
           ) : null}
         </div>
-        {/* With cards off, a picked record opens from a button instead. */}
-        {!PICKED_RECORD_CARDS && record?.onOpen && selectedItem && !trigger ? (
-          <OpenRecordButton
-            name={selectedItem.label}
-            entityLabel={record.entityLabel}
-            onOpen={record.onOpen}
-          />
-        ) : null}
         {trailingAction}
       </div>
     )

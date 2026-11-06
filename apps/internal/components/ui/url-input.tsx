@@ -44,7 +44,9 @@ export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
     return (
       <div
         className={cn(
-          'flex w-full min-w-0 items-center gap-1',
+          // Field to its Open button: the same 8px as a picker to its Open
+          // button (SearchableCombobox).
+          'flex w-full min-w-0 items-center gap-2',
           wrapperClassName
         )}
       >
