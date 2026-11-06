@@ -65,7 +65,10 @@ export type ClientCompanyView = {
 export type ClientPickerRow = Pick<
   ClientCompanyView,
   'id' | 'name' | 'deleted_at'
->
+> & {
+  /** Its people and projects, which the picker also searches. */
+  search_hints?: string[]
+}
 
 /** A portal login with access to a client (from `client_portal_access`). */
 export type DbClientMember = {
