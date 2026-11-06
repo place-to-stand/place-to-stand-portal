@@ -79,6 +79,8 @@ export type UseInvoiceSheetStateArgs = {
   onOpenChange: (open: boolean) => void
   onComplete: () => void
   invoice: InvoiceWithClient | null
+  /** Create a new invoice filled in from this one (Duplicate). */
+  duplicateOf?: InvoiceWithClient | null
   clients: InvoiceClient[]
   productCatalog: ProductCatalogItemRow[]
   taxRates: TaxRateData[]
@@ -98,6 +100,7 @@ export type UseInvoiceSheetStateReturn = {
   deleteButton: DeleteButtonState
   isDeleteDialogOpen: boolean
   unsavedChangesDialog: SheetLifecycle['unsavedChangesDialog']
+  confirmDiscard: SheetLifecycle['confirmDiscard']
   totals: { subtotal: number; taxAmount: number; total: number }
   taxRateLabel: string | null
   handleSheetOpenChange: (open: boolean) => void
@@ -126,6 +129,7 @@ export function useInvoiceSheetState({
   onOpenChange,
   onComplete,
   invoice,
+  duplicateOf = null,
   clients,
   productCatalog,
   taxRates,
@@ -144,6 +148,12 @@ export function useInvoiceSheetState({
   // Track the client ID loaded from the database / pre-fill so we only
   // auto-fill when the user actively picks a *different* client.
   const loadedClientIdRef = useRef<string | null>(null)
+  // Read inside the load effect without re-running it (a new callback each
+  // render would reset the form mid-edit).
+  const onOpenChangeRef = useRef(onOpenChange)
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange
+  }, [onOpenChange])
   const { toast } = useToast()
 
   const clientOptions = useMemo<ClientOption[]>(
@@ -186,6 +196,7 @@ export function useInvoiceSheetState({
     startQuiet: startResetTransition,
     handleSheetOpenChange,
     unsavedChangesDialog,
+    confirmDiscard,
   } = useSheetLifecycle({
     open,
     onOpenChange,
@@ -227,6 +238,7 @@ export function useInvoiceSheetState({
   // `invoice`, and reloading the version already shown (e.g. the one a
   // keep-open save just read back) would overwrite edits made since.
   const invoiceId = invoice?.id ?? null
+  const duplicateOfId = duplicateOf?.id ?? null
   const invoiceVersion = invoice ? `${invoice.id}:${invoice.updated_at}` : null
   const shownVersion = useRef<string | null>(null)
   useEffect(() => {
@@ -235,6 +247,47 @@ export function useInvoiceSheetState({
       return
     }
     if (invoiceVersion && invoiceVersion === shownVersion.current) {
+      return
+    }
+
+    if (!invoiceId && duplicateOfId) {
+      // Duplicate — a new draft with the source's client, notes, tax and
+      // lines. Line ids are dropped so saving inserts fresh rows.
+      invoiceWithLineItemsRef.current = null
+      startLoadTransition(async () => {
+        try {
+          const source = await loadInvoice(duplicateOfId)
+          if (!source) {
+            // Gone since the menu opened: say so and close, never leave a
+            // blank "copy" that could be saved.
+            toast({
+              title: 'Unable to duplicate invoice',
+              description: 'That invoice no longer exists.',
+              variant: 'destructive',
+            })
+            onOpenChangeRef.current(false)
+            return
+          }
+          loadedClientIdRef.current = source.company_id
+          const defaults = buildInvoiceFormDefaults(source)
+          form.reset({
+            ...defaults,
+            lineItems: defaults.lineItems.map(line => ({
+              ...line,
+              id: undefined,
+            })),
+          })
+          form.clearErrors()
+        } catch {
+          toast({
+            title: 'Unable to duplicate invoice',
+            description: 'It may have been deleted. Try again from the list.',
+            variant: 'destructive',
+            link: toastLink('invoice', duplicateOfId),
+          })
+          onOpenChangeRef.current(false)
+        }
+      })
       return
     }
 
@@ -303,6 +356,7 @@ export function useInvoiceSheetState({
     open,
     invoiceId,
     invoiceVersion,
+    duplicateOfId,
     form,
     resetFormState,
     productCatalog,
@@ -721,6 +775,7 @@ export function useInvoiceSheetState({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
+    confirmDiscard,
     totals,
     taxRateLabel,
     handleSheetOpenChange,

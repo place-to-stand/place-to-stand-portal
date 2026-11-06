@@ -33,6 +33,8 @@ export type LeadSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   lead: LeadRecord | null
+  /** Create a new lead filled in from this one (Duplicate). */
+  duplicateOf?: LeadRecord | null
   initialStatus?: LeadStatusValue | null
   /** An error to show on the Company field when the sheet opens. */
   initialCompanyError?: string | null

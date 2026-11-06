@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 
 import { InvoiceSheet } from '@/app/(dashboard)/invoices/invoice-sheet'
 
+import { parseDuplicateSourceId } from '../entities'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
@@ -13,7 +14,9 @@ export function InvoiceSheetWrapper({
   onRequestClose,
 }: SheetWrapperProps) {
   const router = useRouter()
-  const data = useSheetInit('invoice', value)
+  // A duplicate loads its source invoice and opens it as a new draft.
+  const sourceId = parseDuplicateSourceId(value)
+  const data = useSheetInit('invoice', sourceId ?? value)
 
   if (!data) {
     return null
@@ -31,7 +34,8 @@ export function InvoiceSheetWrapper({
         router.refresh()
         onRequestClose()
       }}
-      invoice={data.invoice}
+      invoice={sourceId ? null : data.invoice}
+      duplicateOf={sourceId ? data.invoice : null}
       clients={data.clients}
       productCatalog={data.productCatalog}
       taxRates={data.taxRates}

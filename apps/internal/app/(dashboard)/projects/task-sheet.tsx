@@ -47,6 +47,7 @@ import {
 import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
@@ -67,6 +68,8 @@ type TaskSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: TaskWithRelations
+  /** Create a new task filled in from this one (Duplicate). */
+  duplicateOf?: TaskWithRelations
   canManage: boolean
   admins: DbUser[]
   currentUserId: string
@@ -98,6 +101,7 @@ export function TaskSheet(props: TaskSheetProps) {
     submitDisabled,
     submitDisabledReason,
     unsavedChangesDialog,
+    confirmDiscard,
     handleSheetOpenChange,
     handleFormSubmit,
     handleRequestDelete,
@@ -118,6 +122,7 @@ export function TaskSheet(props: TaskSheetProps) {
     open: props.open,
     onOpenChange: props.onOpenChange,
     task: props.task,
+    duplicateOf: props.duplicateOf,
     canManage: props.canManage,
     admins: props.admins,
     defaultStatus: props.defaultStatus,
@@ -184,6 +189,7 @@ export function TaskSheet(props: TaskSheetProps) {
 
   // ---- Form controls (undo/redo, keyboard shortcuts) ----
   const isEditing = Boolean(props.task)
+  const { duplicate } = useSheetParams()
   const historyKey = props.task?.id ?? 'task:new'
 
   const handleSave = useCallback(
@@ -414,6 +420,14 @@ export function TaskSheet(props: TaskSheetProps) {
               isEditing ? (
                 <SheetRecordMenu
                   noun='Task'
+                  onDuplicate={
+                    props.task && props.canManage
+                      ? () =>
+                          confirmDiscard(() =>
+                            duplicate('task', props.task!.id)
+                          )
+                      : undefined
+                  }
                   onRequestArchive={handleRequestDelete}
                   archiveDisabled={deleteDisabled}
                   archiveDisabledReason={deleteDisabledReason}

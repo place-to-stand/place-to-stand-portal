@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { SALES_SHEET_ENTITIES } from '@/lib/auth/roles'
 import { ForbiddenError, NotFoundError } from '@/lib/errors/http'
-import { isValidSheetParamValue } from '@/lib/sheets/entities'
+import { isSheetRecordValue } from '@/lib/sheets/entities'
 import {
   isSheetInitEntity,
   resolveSheetInit,
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       )
     }
 
-    if (!id || !isValidSheetParamValue(id)) {
+    if (!id || !isSheetRecordValue(id)) {
       return NextResponse.json(
         { ok: false, error: 'Invalid sheet id' },
         { status: 400 }

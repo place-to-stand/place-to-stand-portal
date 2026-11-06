@@ -48,6 +48,8 @@ export type UseTaskSheetStateArgs = {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: TaskWithRelations
+  /** Create a new task filled in from this one (Duplicate). */
+  duplicateOf?: TaskWithRelations
   canManage: boolean
   admins: DbUser[]
   defaultStatus: BoardColumnId
@@ -78,6 +80,7 @@ type UseTaskSheetStateReturn = {
   submitDisabled: boolean
   submitDisabledReason: string | null
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
+  confirmDiscard: (next: () => void) => void
   handleSheetOpenChange: (next: boolean) => void
   handleFormSubmit: (values: TaskSheetFormValues, mode?: SheetSaveMode) => void
   handleRequestDelete: () => void
@@ -100,6 +103,7 @@ export const useTaskSheetState = ({
   open,
   onOpenChange,
   task,
+  duplicateOf,
   canManage,
   admins,
   defaultStatus,
@@ -129,6 +133,7 @@ export const useTaskSheetState = ({
 
   const { form, defaultValues, sheetTitle, editorKey } = useTaskSheetForm({
     task,
+    duplicateOf,
     defaultStatus,
     defaultDueOn,
     defaultProjectId,
@@ -168,12 +173,13 @@ export const useTaskSheetState = ({
     startSave,
     handleSheetOpenChange,
     unsavedChangesDialog,
+    confirmDiscard,
   } = useSheetLifecycle({
     open,
     onOpenChange,
     isDirty: form.formState.isDirty || attachmentsDirty,
     onReset: resetFormState,
-    resetKey: task?.id ?? null,
+    resetKey: task?.id ?? (duplicateOf ? `copy-${duplicateOf.id}` : null),
   })
 
   const { stay, isReopening } = useSaveAndStay('task', task?.id ?? null, open)
@@ -375,6 +381,7 @@ export const useTaskSheetState = ({
     submitDisabled,
     submitDisabledReason,
     unsavedChangesDialog,
+    confirmDiscard,
     handleSheetOpenChange,
     handleFormSubmit,
     handleRequestDelete,

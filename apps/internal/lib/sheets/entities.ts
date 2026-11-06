@@ -30,8 +30,59 @@ export const NEW_SHEET_VALUE = 'new'
 
 export { UUID_PATTERN }
 
-export const isValidSheetParamValue = (value: string) =>
+/**
+ * Param value prefix that opens an entity's create sheet filled in from an
+ * existing record: `?task=copy-<uuid>` duplicates that task. Saving creates a
+ * new record; the source is never touched.
+ */
+const DUPLICATE_SHEET_PREFIX = 'copy-'
+
+/** The param value that duplicates `id` (`copy-<uuid>`). */
+export const duplicateSheetValue = (id: string) =>
+  `${DUPLICATE_SHEET_PREFIX}${id}`
+
+/** The source record's id when `value` is a duplicate, else null. */
+export const parseDuplicateSourceId = (value: string | null | undefined) => {
+  if (!value?.startsWith(DUPLICATE_SHEET_PREFIX)) {
+    return null
+  }
+  const id = value.slice(DUPLICATE_SHEET_PREFIX.length)
+  return UUID_PATTERN.test(id) ? id : null
+}
+
+/** `new` or a record id: what a sheet loads (a copy loads its source's id). */
+export const isSheetRecordValue = (value: string) =>
   value === NEW_SHEET_VALUE || UUID_PATTERN.test(value)
+
+/**
+ * A value the `entity` param may hold: `new`, a record id, or `copy-<id>` for
+ * entities that can be duplicated. Anything else is ignored, never sent on to
+ * a lookup that casts it to a uuid.
+ */
+export const isValidSheetParamValue = (value: string, entity: string) =>
+  isSheetRecordValue(value) ||
+  (isDuplicableSheetEntity(entity) && parseDuplicateSourceId(value) !== null)
+
+/**
+ * The entities whose create sheet can start from a copy of an existing
+ * record. Companies and people are one-of-a-kind (a second "Acme" is a
+ * mistake, not a copy), submissions arrive from the website, and a project's
+ * worth is its tasks, which a copy of its details wouldn't carry, so those
+ * have no Duplicate.
+ */
+export const DUPLICABLE_SHEET_ENTITIES = [
+  'task',
+  'lead',
+  'invoice',
+  'hour-block',
+] as const satisfies readonly SheetEntityKey[]
+
+export type DuplicableSheetEntity = (typeof DUPLICABLE_SHEET_ENTITIES)[number]
+
+export const isDuplicableSheetEntity = (
+  entity: string
+): entity is DuplicableSheetEntity =>
+  (DUPLICABLE_SHEET_ENTITIES as readonly string[]).includes(entity)
 
 type SheetEntityConfig = {
   /**
@@ -109,9 +160,15 @@ export const SHEET_ENTITIES: Record<SheetEntityKey, SheetEntityConfig> = {
 export const isSheetEntityKey = (value: string): value is SheetEntityKey =>
   (SHEET_ENTITY_KEYS as readonly string[]).includes(value)
 
-/** True when the page renders its own sheet for this entity + value. */
+/**
+ * True when the page renders its own sheet for this entity + value. A
+ * duplicate (`copy-<uuid>`) is never claimed: the SheetHost's wrappers load
+ * the source record, so every page gets the same copy flow.
+ */
 export const isSheetEntityClaimed = (
   entity: SheetEntityKey,
   pathname: string,
   value: string
-) => SHEET_ENTITIES[entity].claimsPathname(pathname, value)
+) =>
+  parseDuplicateSourceId(value) === null &&
+  SHEET_ENTITIES[entity].claimsPathname(pathname, value)

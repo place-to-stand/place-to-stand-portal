@@ -19,7 +19,7 @@ import type { LeadSheetProps } from './types'
 const LEAD_FORM_ID = 'lead-form'
 
 export function LeadSheet(props: LeadSheetProps) {
-  const { open: openSheet } = useSheetParams()
+  const { open: openSheet, duplicate } = useSheetParams()
   const { open, lead, assignees, canManage = false, onSuccess } = props
   const {
     form,
@@ -38,6 +38,7 @@ export function LeadSheet(props: LeadSheetProps) {
     canUndo,
     canRedo,
     unsavedChangesDialog,
+    confirmDiscard,
     handleFormSubmit,
     handleSave,
     handleArchive,
@@ -57,12 +58,23 @@ export function LeadSheet(props: LeadSheetProps) {
           {/* Header */}
           <SheetFormHeader
             entity='lead'
-            title={isEditing ? lead?.contactName || 'Lead' : 'Create lead'}
+            title={
+              isEditing
+                ? lead?.contactName || 'Lead'
+                : props.duplicateOf
+                  ? 'Duplicate lead'
+                  : 'Create lead'
+            }
             className='flex-shrink-0'
             menu={
               isEditing ? (
                 <SheetRecordMenu
                   noun='Lead'
+                  onDuplicate={
+                    lead && canManage
+                      ? () => confirmDiscard(() => duplicate('lead', lead.id))
+                      : undefined
+                  }
                   onRequestArchive={() => setArchiveDialogOpen(true)}
                   archiveDisabled={submitDisabled}
                   archiveDisabledReason={archiveDisabledReason}

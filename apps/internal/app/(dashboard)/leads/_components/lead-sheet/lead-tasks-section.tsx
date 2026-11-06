@@ -150,6 +150,7 @@ export function LeadTasksSection({
               task={task}
               assignees={resolveAssignees(task)}
               onClick={() => openTask(task)}
+              canManage={canManage}
             />
           ))}
         </div>
@@ -174,6 +175,7 @@ export function LeadTasksSection({
                 task={task}
                 assignees={resolveAssignees(task)}
                 onClick={() => openTask(task)}
+                canManage={canManage}
               />
             ))}
           </CollapsibleContent>

@@ -18,6 +18,7 @@ import type { ReviewActionKind } from './review-tab/review-tab.types'
 
 export type ReviewTabContentProps = {
   isActive: boolean
+  canManageTasks: boolean
   feedback: string | null
   activeProject: ProjectsBoardActiveProject
   doneTasks: TaskWithRelations[]
@@ -41,6 +42,7 @@ export type ReviewTabContentProps = {
 export function ReviewTabContent(props: ReviewTabContentProps) {
   const {
     isActive,
+    canManageTasks,
     feedback,
     activeProject,
     doneTasks,
@@ -111,6 +113,7 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
 
           <ReviewArchivedSection
             tasks={archivedTasks}
+            canManageTasks={canManageTasks}
             renderAssignees={renderAssignees}
             onEditTask={onEditTask}
             onRestoreTask={onRestoreTask}
