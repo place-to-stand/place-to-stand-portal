@@ -7,7 +7,7 @@
 --     still counts, and so does a touch (touchContacts);
 --   * otherwise any changed column moves it, as set_updated_at() does,
 --   * except the machine-written columns named in the trigger's arguments
---     (worker status, invoice views, Stripe ids): an UPDATE changing only
+--     (board rank, worker status, invoice views, Stripe ids): an UPDATE changing only
 --     those, or nothing, leaves it alone, so they never look like a
 --     teammate's save. Their writers don't set updated_at.
 --
@@ -55,12 +55,12 @@ CREATE TRIGGER "companies_set_updated_at" BEFORE UPDATE ON "companies" FOR EACH 
 DROP TRIGGER IF EXISTS "contacts_set_updated_at" ON "contacts";--> statement-breakpoint
 CREATE TRIGGER "contacts_set_updated_at" BEFORE UPDATE ON "contacts" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at();--> statement-breakpoint
 DROP TRIGGER IF EXISTS "leads_set_updated_at" ON "leads";--> statement-breakpoint
-CREATE TRIGGER "leads_set_updated_at" BEFORE UPDATE ON "leads" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at();--> statement-breakpoint
+CREATE TRIGGER "leads_set_updated_at" BEFORE UPDATE ON "leads" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at('rank');--> statement-breakpoint
 DROP TRIGGER IF EXISTS "projects_set_updated_at" ON "projects";--> statement-breakpoint
 CREATE TRIGGER "projects_set_updated_at" BEFORE UPDATE ON "projects" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at();--> statement-breakpoint
 DROP TRIGGER IF EXISTS "hour_blocks_set_updated_at" ON "hour_blocks";--> statement-breakpoint
 CREATE TRIGGER "hour_blocks_set_updated_at" BEFORE UPDATE ON "hour_blocks" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at();--> statement-breakpoint
 DROP TRIGGER IF EXISTS "tasks_set_updated_at" ON "tasks";--> statement-breakpoint
-CREATE TRIGGER "tasks_set_updated_at" BEFORE UPDATE ON "tasks" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at('worker_status', 'github_issue_number', 'github_issue_url');--> statement-breakpoint
+CREATE TRIGGER "tasks_set_updated_at" BEFORE UPDATE ON "tasks" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at('rank', 'worker_status', 'github_issue_number', 'github_issue_url');--> statement-breakpoint
 DROP TRIGGER IF EXISTS "invoices_set_updated_at" ON "invoices";--> statement-breakpoint
 CREATE TRIGGER "invoices_set_updated_at" BEFORE UPDATE ON "invoices" FOR EACH ROW EXECUTE FUNCTION public.set_sheet_updated_at('viewed_at', 'viewed_count', 'stripe_checkout_session_id', 'stripe_payment_intent_id', 'status:SENT>VIEWED');
