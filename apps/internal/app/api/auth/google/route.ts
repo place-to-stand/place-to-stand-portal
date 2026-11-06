@@ -1,15 +1,39 @@
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-import { requireUser } from '@/lib/auth/session'
-import { getGoogleAuthUrl } from '@/lib/oauth/google'
-import { generateOAuthState } from '@/lib/oauth/state'
+import { requirePage } from '@/lib/auth/session'
+import { roleCan } from '@/lib/auth/capabilities'
+import {
+  getGoogleAuthUrl,
+  GOOGLE_READ_MAIL_SCOPES,
+  GOOGLE_SCOPES,
+} from '@/lib/oauth/google'
+import {
+  generateOAuthState,
+  safeReturnPath,
+  setOAuthReturnTo,
+} from '@/lib/oauth/state'
 
-export async function GET() {
-  // Ensure user is logged in
-  await requireUser()
+/**
+ * Starts connecting the signed-in person's own Google account. Admins come
+ * from Settings → Integrations; anyone else from the lead sheet's Emails
+ * section, which passes `returnTo` so the callback lands back on the lead.
+ */
+export async function GET(request: NextRequest) {
+  const user = await requirePage('integrations.google')
 
   const state = await generateOAuthState()
-  const authUrl = getGoogleAuthUrl(state)
+  await setOAuthReturnTo(
+    safeReturnPath(request.nextUrl.searchParams.get('returnTo'))
+  )
+  // Agency integrations (Calendar, Drive, sending) are admin-only, so
+  // everyone else is asked for read-only Gmail and nothing more.
+  const authUrl = getGoogleAuthUrl(
+    state,
+    roleCan(user.role, 'integrations.manage')
+      ? GOOGLE_SCOPES
+      : GOOGLE_READ_MAIL_SCOPES
+  )
 
   return NextResponse.redirect(authUrl)
 }

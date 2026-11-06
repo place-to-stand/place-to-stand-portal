@@ -25,6 +25,7 @@ export function SheetRecordRow({
   actions,
   onOpen,
   href,
+  external = false,
   openLabel,
   fields,
   fieldsClassName,
@@ -61,6 +62,8 @@ export function SheetRecordRow({
   onOpen?: () => void
   /** Makes the row's body a link instead (a record that is a page, e.g. a project board). */
   href?: string
+  /** `href` is another site (a Gmail thread): opens in a new tab. */
+  external?: boolean
   /** Accessible name for the open button or link: "Open Acme". */
   openLabel?: string
   className?: string
@@ -118,7 +121,17 @@ export function SheetRecordRow({
 
   const line = (
     <>
-      {href ? (
+      {href && external ? (
+        <a
+          href={href}
+          target='_blank'
+          rel='noopener noreferrer'
+          aria-label={openLabel}
+          className={openClassName}
+        >
+          {body}
+        </a>
+      ) : href ? (
         <Link href={href} aria-label={openLabel} className={openClassName}>
           {body}
         </Link>

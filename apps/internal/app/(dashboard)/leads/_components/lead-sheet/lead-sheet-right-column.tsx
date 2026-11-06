@@ -3,13 +3,14 @@
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_SECTIONS_CLASS } from '@/components/sheets/sheet-section'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
-import { MessageSquareText } from 'lucide-react'
+import { Mail, MessageSquareText } from 'lucide-react'
 import { SHEET_SIDE_COLUMN_CLASSES } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { LeadConversionSection } from './lead-conversion-section'
+import { LeadEmailsSection } from './lead-emails-section'
 import { LeadTasksSection } from './lead-tasks-section'
 import { LeadUpdatesSection } from './updates/lead-updates-section'
 
@@ -64,6 +65,8 @@ export function LeadSheetRightColumn({
             canManage={canManage}
             onSuccess={onSuccess}
           />
+          {/* The viewer's own Gmail threads with the lead's contact. */}
+          <LeadEmailsSection key={lead.id} lead={lead} />
         </div>
       ) : (
         // Tasks and updates are their own records, saved on their own, and
@@ -89,6 +92,12 @@ export function LeadSheetRightColumn({
             }}
             isEmpty
             emptyMessage='Add updates after you save the lead.'
+          />
+          <EntityList
+            title='Email threads'
+            icon={Mail}
+            isEmpty
+            emptyMessage='Your emails with this person show after you save the lead.'
           />
         </div>
       )}

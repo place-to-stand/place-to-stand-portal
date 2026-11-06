@@ -6,7 +6,7 @@ import { oauthConnections } from '@/lib/db/schema'
 import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function GET() {
-  const { user, denied } = await authorizeRoute('integrations.manage')
+  const { user, denied } = await authorizeRoute('integrations.google')
   if (denied) return denied
 
   // Fetch all Google accounts for this user (multi-account support)

@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { eq, and } from 'drizzle-orm'
 
-import { requireUser } from '@/lib/auth/session'
+import { roleCan } from '@/lib/auth/capabilities'
+import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
-import { validateOAuthState } from '@/lib/oauth/state'
+import { consumeOAuthReturnTo, validateOAuthState } from '@/lib/oauth/state'
 import {
   exchangeCodeForTokens,
   getGoogleUserInfo,
@@ -16,8 +17,18 @@ import { logActivity } from '@/lib/activity/logger'
 import { oauthConnectedEvent } from '@/lib/activity/events'
 
 export async function GET(request: NextRequest) {
-  const user = await requireUser()
+  const user = await requirePage('integrations.google')
   const searchParams = request.nextUrl.searchParams
+  // Set when the flow started outside Settings (the lead sheet): land back
+  // there, where the Emails section shows the result for itself.
+  const returnTo = await consumeOAuthReturnTo()
+  // Without a start page (its cookie expired), only admins have Settings.
+  const fallback = (settingsPath: string) =>
+    roleCan(user.role, 'integrations.manage') ? settingsPath : '/leads'
+  const landing = (settingsPath: string) =>
+    NextResponse.redirect(
+      new URL(returnTo ?? fallback(settingsPath), request.url)
+    )
 
   const code = searchParams.get('code')
   const state = searchParams.get('state')
@@ -25,24 +36,18 @@ export async function GET(request: NextRequest) {
 
   // Handle user denial
   if (error) {
-    return NextResponse.redirect(
-      new URL('/settings/integrations?error=access_denied', request.url)
-    )
+    return landing('/settings/integrations?error=access_denied')
   }
 
   // Validate required params
   if (!code || !state) {
-    return NextResponse.redirect(
-      new URL('/settings/integrations?error=invalid_request', request.url)
-    )
+    return landing('/settings/integrations?error=invalid_request')
   }
 
   // Validate state
   const isValidState = await validateOAuthState(state)
   if (!isValidState) {
-    return NextResponse.redirect(
-      new URL('/settings/integrations?error=invalid_state', request.url)
-    )
+    return landing('/settings/integrations?error=invalid_state')
   }
 
   try {
@@ -54,6 +59,11 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date(
       Date.now() + tokens.expires_in * 1000
     ).toISOString()
+
+    // What Google actually granted (a user can untick scopes).
+    const grantedScopes = tokens.scope
+      ? tokens.scope.split(' ').filter(Boolean)
+      : GOOGLE_SCOPES
 
     // Encrypt tokens
     const encryptedAccessToken = encryptToken(tokens.access_token)
@@ -93,7 +103,7 @@ export async function GET(request: NextRequest) {
             accessToken: encryptedAccessToken,
             refreshToken: encryptedRefreshToken,
             accessTokenExpiresAt: expiresAt,
-            scopes: GOOGLE_SCOPES,
+            scopes: grantedScopes,
             status: 'ACTIVE',
             providerEmail: userInfo.email,
             displayName: userInfo.email,
@@ -114,7 +124,7 @@ export async function GET(request: NextRequest) {
           accessToken: encryptedAccessToken,
           refreshToken: encryptedRefreshToken,
           accessTokenExpiresAt: expiresAt,
-          scopes: GOOGLE_SCOPES,
+          scopes: grantedScopes,
           status: 'ACTIVE',
           providerEmail: userInfo.email,
           displayName: userInfo.email,
@@ -143,13 +153,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    return NextResponse.redirect(
-      new URL('/settings/integrations?success=google_connected', request.url)
-    )
+    return landing('/settings/integrations?success=google_connected')
   } catch (err) {
     console.error('Google OAuth error:', err)
-    return NextResponse.redirect(
-      new URL('/settings/integrations?error=oauth_failed', request.url)
-    )
+    return landing('/settings/integrations?error=oauth_failed')
   }
 }

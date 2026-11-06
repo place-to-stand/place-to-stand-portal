@@ -45,14 +45,27 @@ export interface GoogleUserInfo {
 }
 
 /**
+ * What staff without agency integrations ask Google for: who they are and
+ * read-only Gmail, enough for a lead's Email threads and nothing more.
+ */
+export const GOOGLE_READ_MAIL_SCOPES = [
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/gmail.readonly',
+]
+
+/**
  * Generate Google OAuth authorization URL
  */
-export function getGoogleAuthUrl(state: string): string {
+export function getGoogleAuthUrl(
+  state: string,
+  scopes: readonly string[] = GOOGLE_SCOPES
+): string {
   const params = new URLSearchParams({
     client_id: serverEnv.GOOGLE_CLIENT_ID,
     redirect_uri: serverEnv.GOOGLE_REDIRECT_URI,
     response_type: 'code',
-    scope: GOOGLE_SCOPES.join(' '),
+    scope: scopes.join(' '),
     access_type: 'offline', // Required for refresh token
     prompt: 'consent', // Force consent to get refresh token
     state,
