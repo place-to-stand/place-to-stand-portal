@@ -194,7 +194,7 @@ export function TimeLogsTable({
                           <Link
                             href={companySheetHref(item.companyId)}
                             title={item.clientName}
-                            className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
+                            className='hover:text-foreground truncate-link transition hover:underline'
                           >
                             {item.clientName}
                           </Link>
@@ -220,7 +220,7 @@ export function TimeLogsTable({
                         <Link
                           href={projectTasksHref(item)!}
                           title={item.projectName}
-                          className='hover:text-foreground truncate underline-offset-4 transition hover:underline'
+                          className='hover:text-foreground truncate-link transition hover:underline'
                         >
                           {item.projectName}
                         </Link>

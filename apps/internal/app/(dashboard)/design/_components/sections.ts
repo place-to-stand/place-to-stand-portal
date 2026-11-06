@@ -36,6 +36,7 @@ export const DESIGN_SECTION_GROUPS = [
       { id: 'dialogs', label: 'Dialogs' },
       { id: 'sheets', label: 'Sheets' },
       { id: 'tabs', label: 'Tabs' },
+      { id: 'text-links', label: 'Text links' },
       { id: 'page-shell', label: 'Page shell' },
     ],
   },

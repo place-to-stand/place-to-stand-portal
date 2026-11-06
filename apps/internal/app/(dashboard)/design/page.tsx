@@ -30,6 +30,7 @@ import {
 import {
   ComponentsPageShell,
   ComponentsTabs,
+  ComponentsTextLinks,
 } from './_components/components-navigation'
 import { ComponentsSheets } from './_components/components-sheet'
 import { ComponentsStats } from './_components/components-stats'
@@ -85,6 +86,7 @@ export default async function DesignPage() {
         <ComponentsDialogs />
         <ComponentsSheets />
         <ComponentsTabs />
+        <ComponentsTextLinks />
         <ComponentsPageShell />
 
         <PatternsHouseRules />
