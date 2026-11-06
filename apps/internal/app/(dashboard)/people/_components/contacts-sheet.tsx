@@ -35,6 +35,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
   const {
     form,
     isPending,
+    isReloading,
     companiesLoaded,
     companiesLoadFailed,
     isEditing,
@@ -117,7 +118,8 @@ export function ContactsSheet(props: ContactsSheetProps) {
 
           <ContactSheetForm
             form={form}
-            isPending={isPending}
+            // A keep-open save reads the person back: hold the fields too.
+            isPending={isPending || isReloading}
             companiesLoaded={companiesLoaded}
             companiesLoadFailed={companiesLoadFailed}
             isEditing={isEditing}

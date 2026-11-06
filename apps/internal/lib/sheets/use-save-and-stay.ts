@@ -7,13 +7,17 @@ import type { SheetEntityKey } from './entities'
 import { emitSheetRecordSaved } from './record-saved'
 import { useSheetParams } from './use-sheet-params'
 
+/** Holds Save off when a create came back without an id. */
+const MISSING_ID = '__missing__'
+
 type StayArgs = {
   /** The saved record's id (a create returns the new one). */
   id: string | null | undefined
   /**
    * Make what was just saved the form's clean state, so the sheet no longer
-   * reads as dirty. Only an edit sheet calls it: a create sheet reloads as
-   * the new record's sheet instead.
+   * reads as dirty (and anything it holds as pending, such as uploads or
+   * links, counts as saved). Runs on create too, before the sheet reloads
+   * as the new record's sheet.
    */
   rebaseline: () => void
 }
@@ -47,12 +51,18 @@ export function useSaveAndStay(
 
   const stay = useCallback(
     ({ id, rebaseline }: StayArgs) => {
-      if (recordId || !id) {
-        rebaseline()
-        if (recordId) {
-          emitSheetRecordSaved(entity, recordId)
-        }
+      rebaseline()
+      if (recordId) {
+        emitSheetRecordSaved(entity, recordId)
         router.refresh()
+        return
+      }
+      if (!id) {
+        // A create that reported no id can't become its edit sheet. Keep
+        // Save off (until the sheet closes) so a second press can't create
+        // the record again.
+        console.error(`Keep-open save of a new ${entity} returned no id.`)
+        setPendingId(MISSING_ID)
         return
       }
       setPendingId(id)

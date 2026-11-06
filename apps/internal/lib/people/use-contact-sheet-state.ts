@@ -174,6 +174,10 @@ export function useContactSheetState({
     contactRef.current = contact
   })
   const contactKey = contact?.id ?? null
+  const lastLoad = useRef<{ key: string | null; token: number }>({
+    key: null,
+    token: 0,
+  })
 
   // Initialize the form and load the contact's clients when the sheet opens
   useEffect(() => {
@@ -183,50 +187,58 @@ export function useContactSheetState({
 
     const contact = contactRef.current
     const contactId = contact?.id
+    // A keep-open save only re-reads the person: the form already holds
+    // what was saved (and anything typed since stays).
+    const rereadOnly =
+      lastLoad.current.key === contactKey &&
+      lastLoad.current.token !== reloadToken
+    lastLoad.current = { key: contactKey, token: reloadToken }
 
-    form.reset({
-      avatarPath: null,
-      avatarRemoved: false,
-      // No sign-in yet: off, and Client if they turn it on. Shown on create
-      // too, so a new person can get a sign-in in the same Save.
-      signIn: canManageSignIn
-        ? {
-            enabled: false,
-            role: 'CLIENT',
-            effectiveFrom: currentMonthStartUtc(),
-          }
-        : undefined,
-      email: contact?.email ?? '',
-      name: contact?.name ?? initialName ?? '',
-      phone: contact?.phone ?? '',
-      linkedinUrl: contact?.linkedinUrl ?? '',
-      // Notes come with the sheet's own read below, not the list's copy.
-      notes: '',
-      // A create from a company (e.g. the lead sheet) starts there; the
-      // picker names it.
-      companies:
-        !contact && initialCompanyId
-          ? [
-              {
-                companyId: initialCompanyId,
-                companyName: '',
-                title: '',
-                isPrimary: false,
-                portalAccess: false,
-                clientCompanyId: null,
-                clientName: null,
-              },
-            ]
-          : [],
-    })
+    if (!rereadOnly) {
+      form.reset({
+        avatarPath: null,
+        avatarRemoved: false,
+        // No sign-in yet: off, and Client if they turn it on. Shown on create
+        // too, so a new person can get a sign-in in the same Save.
+        signIn: canManageSignIn
+          ? {
+              enabled: false,
+              role: 'CLIENT',
+              effectiveFrom: currentMonthStartUtc(),
+            }
+          : undefined,
+        email: contact?.email ?? '',
+        name: contact?.name ?? initialName ?? '',
+        phone: contact?.phone ?? '',
+        linkedinUrl: contact?.linkedinUrl ?? '',
+        // Notes come with the sheet's own read below, not the list's copy.
+        notes: '',
+        // A create from a company (e.g. the lead sheet) starts there; the
+        // picker names it.
+        companies:
+          !contact && initialCompanyId
+            ? [
+                {
+                  companyId: initialCompanyId,
+                  companyName: '',
+                  title: '',
+                  isPrimary: false,
+                  portalAccess: false,
+                  clientCompanyId: null,
+                  clientName: null,
+                },
+              ]
+            : [],
+      })
 
-    // Reset state - intentional setState during effect to sync UI with prop changes
-    setCompaniesLoaded(!contactId)
-    setCompaniesLoadFailed(false)
-    setLoadedUpdatedAt(null)
-    setSavedSignInRole(
-      contact && 'signInRole' in contact ? (contact.signInRole ?? null) : null
-    )
+      // Reset state - intentional setState during effect to sync UI with prop changes
+      setCompaniesLoaded(!contactId)
+      setCompaniesLoadFailed(false)
+      setLoadedUpdatedAt(null)
+      setSavedSignInRole(
+        contact && 'signInRole' in contact ? (contact.signInRole ?? null) : null
+      )
+    }
     if (!contactId) {
       return
     }
@@ -476,6 +488,9 @@ export function useContactSheetState({
             // Read the person back: their version, companies, photo and
             // sign-in as saved.
             rebaseline: () => {
+              // What was saved is the clean state now.
+              form.reset(form.getValues())
+              if (!contact?.id) return
               setIsReloading(true)
               setReloadToken(token => token + 1)
             },
@@ -559,6 +574,7 @@ export function useContactSheetState({
     pendingReason: PENDING_REASON,
     sheetTitle,
     contactDisplayName,
+    isReloading,
     submitDisabled,
     submitDisabledReason,
     deleteDisabled,

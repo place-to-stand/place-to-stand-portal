@@ -144,7 +144,10 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
   }, [])
 
   // A keep-open save applied the link edits: they are saved, not pending.
+  const [repoReloadKey, setRepoReloadKey] = useState(0)
   const clearSavedLinks = useCallback(() => {
+    // The repo list loads itself: read it back with the saved changes.
+    setRepoReloadKey(key => key + 1)
     setPendingRepos([])
     setRemovedRepoIds(new Set())
     setPendingLinks([])
@@ -586,6 +589,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
                 onPendingReposChange={handlePendingReposChange}
                 onRemovedRepoIdsChange={handleRemovedRepoIdsChange}
                 onDirtyChange={setReposDirty}
+                reloadKey={repoReloadKey}
               />
 
               <IntegrationLinksSection

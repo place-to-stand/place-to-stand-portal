@@ -218,13 +218,6 @@
   },
   {
     "type": "action",
-    "name": "getInvoiceDetails",
-    "file": "apps/internal/app/(dashboard)/invoices/actions/get-invoice-details.ts",
-    "kind": "admin",
-    "capability": null
-  },
-  {
-    "type": "action",
     "name": "restoreInvoice",
     "file": "apps/internal/app/(dashboard)/invoices/actions/restore-invoice.ts",
     "kind": "admin",
@@ -1207,6 +1200,13 @@
     "type": "route",
     "name": "POST /api/invoices/[id]/checkout",
     "file": "apps/internal/app/api/invoices/[id]/checkout/route.ts",
+    "kind": "capability",
+    "capability": "billing.manage"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/invoices/[id]",
+    "file": "apps/internal/app/api/invoices/[id]/route.ts",
     "kind": "capability",
     "capability": "billing.manage"
   },

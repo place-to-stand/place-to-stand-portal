@@ -103,9 +103,13 @@ export function useLeadSheetState({
       return
     }
     if (lastResetKey.current === resetKey) return
+    const sameLead =
+      Boolean(lead) && lastResetKey.current?.startsWith(`${lead?.id}:`)
     lastResetKey.current = resetKey
-    form.reset(defaultValues)
-  }, [defaultValues, form, open, resetKey])
+    // A newer save of the same lead (e.g. the refresh after a keep-open
+    // save) takes the server's values but keeps fields edited since.
+    form.reset(defaultValues, { keepDirtyValues: Boolean(sameLead) })
+  }, [defaultValues, form, lead, open, resetKey])
 
   // Shown after the reset above, which clears errors: e.g. the board refused
   // a Won drag because the lead has no company.
@@ -183,17 +187,8 @@ export function useLeadSheetState({
           link: toastLink('lead', result.leadId ?? lead?.id),
         })
 
-        const rebaseline = () =>
-          form.reset({
-            ...values,
-            contact: values.contact ?? null,
-            company: values.company ?? null,
-            sourceType: values.sourceType ?? null,
-            sourceDetail: values.sourceDetail ?? '',
-            status: values.status,
-            assigneeId: values.assigneeId ?? null,
-            notes: values.notes ?? '',
-          })
+        // What was saved is the clean state now.
+        const rebaseline = () => form.reset(values)
 
         // Keep open: stay on the lead. A just-won lead's billing is one
         // click away on its company, so nothing opens over it.
@@ -254,8 +249,13 @@ export function useLeadSheetState({
   )
 
   const saveLabel = useMemo(
-    () => getSubmitLabel({ isSaving, isEditing, createLabel: 'Create lead' }),
-    [isEditing, isSaving]
+    () =>
+      getSubmitLabel({
+        isSaving: isSaving || isReopening,
+        isEditing,
+        createLabel: 'Create lead',
+      }),
+    [isEditing, isReopening, isSaving]
   )
 
   const submitDisabledReason =

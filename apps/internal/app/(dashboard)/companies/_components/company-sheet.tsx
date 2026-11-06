@@ -132,32 +132,43 @@ export function CompanySheet({
   const seededFor = useRef<string | null>(null)
   const seededUpdatedAt = useRef<string | null>(null)
   const isDirty = form.formState.isDirty || billingDirty
+  // Seeds the form from a loaded company. `keepEdits` keeps fields edited
+  // since (a keep-open save re-seeding from what it just wrote).
+  const seed = useCallback(
+    (loaded: typeof company, keepEdits: boolean) => {
+      seededFor.current = loaded ? `${loaded.id}:${loaded.updatedAt}` : 'new'
+      seededUpdatedAt.current = loaded?.updatedAt ?? null
+      form.reset(
+        {
+          name: loaded?.name ?? initialName ?? '',
+          website: loaded?.website ?? '',
+          linkedinUrl: loaded?.linkedinUrl ?? '',
+          notes: loaded?.notes ?? '',
+          primaryContactId: loaded?.primaryContactId ?? null,
+          addedContacts: [],
+          removedContactIds: [],
+          titles: Object.fromEntries(
+            (loaded?.contacts ?? []).map(contact => [
+              contact.id,
+              contact.jobTitle ?? '',
+            ])
+          ),
+          portalAccessIds: (loaded?.contacts ?? [])
+            .filter(contact => contact.portalAccess)
+            .map(contact => contact.id),
+        },
+        { keepDirtyValues: keepEdits }
+      )
+    },
+    [form, initialName]
+  )
   useEffect(() => {
     if (!data) return
     const key = company ? `${company.id}:${company.updatedAt}` : 'new'
     if (seededFor.current === key) return
     if (seededFor.current !== null && isDirty) return
-    seededFor.current = key
-    seededUpdatedAt.current = company?.updatedAt ?? null
-    form.reset({
-      name: company?.name ?? initialName ?? '',
-      website: company?.website ?? '',
-      linkedinUrl: company?.linkedinUrl ?? '',
-      notes: company?.notes ?? '',
-      primaryContactId: company?.primaryContactId ?? null,
-      addedContacts: [],
-      removedContactIds: [],
-      titles: Object.fromEntries(
-        (company?.contacts ?? []).map(contact => [
-          contact.id,
-          contact.jobTitle ?? '',
-        ])
-      ),
-      portalAccessIds: (company?.contacts ?? [])
-        .filter(contact => contact.portalAccess)
-        .map(contact => contact.id),
-    })
-  }, [company, data, form, initialName, isDirty])
+    seed(company, false)
+  }, [company, data, isDirty, seed])
 
   const { requestConfirmation, dialog: unsavedChangesDialog } =
     useUnsavedChangesWarning({ isDirty })
@@ -321,10 +332,14 @@ export function CompanySheet({
         form.reset(values)
         setBillingDirty(false)
         if (mode === 'stay' && isEditing) {
-          // Refetch while still saving: the form re-seeds from the saved
-          // company (people added here become its people) before Save
-          // frees up again.
+          // Refetch while still saving, then re-seed from the saved company
+          // (people added here become its people, and Save checks its new
+          // version), keeping anything typed since.
           await refresh(false)
+          const saved = queryClient.getQueryData<typeof data>(
+            companySheetQueryKey(companyId)
+          )?.company
+          if (saved) seed(saved, true)
           return
         }
         await refresh()
@@ -344,7 +359,9 @@ export function CompanySheet({
       isEditing,
       onClose,
       onCreated,
+      queryClient,
       refresh,
+      seed,
       seededPrimaryContactId,
       seededTitles,
       stay,

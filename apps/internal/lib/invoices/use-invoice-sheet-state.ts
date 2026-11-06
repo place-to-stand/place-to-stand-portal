@@ -18,12 +18,9 @@ import {
 } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
-import {
-  getInvoiceDetails,
-  saveInvoice,
-  archiveInvoice,
-} from '@/app/(dashboard)/invoices/actions'
+import { saveInvoice, archiveInvoice } from '@/app/(dashboard)/invoices/actions'
 import { toastLink, useToast } from '@/components/ui/use-toast'
+import { getJson } from '@/lib/http/get-json'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import {
@@ -120,6 +117,9 @@ export type UseInvoiceSheetStateReturn = {
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
+
+const loadInvoice = (id: string) =>
+  getJson<InvoiceWithLineItems>(`/api/invoices/${id}`)
 
 export function useInvoiceSheetState({
   open,
@@ -223,12 +223,22 @@ export function useInvoiceSheetState({
   // Reset and load
   // ---------------------------------------------------------------------------
 
+  // Load by version, not by object: a refresh hands over a new but equal
+  // `invoice`, and reloading the version already shown (e.g. the one a
+  // keep-open save just read back) would overwrite edits made since.
+  const invoiceId = invoice?.id ?? null
+  const invoiceVersion = invoice ? `${invoice.id}:${invoice.updated_at}` : null
+  const shownVersion = useRef<string | null>(null)
   useEffect(() => {
     if (!open) {
+      shownVersion.current = null
+      return
+    }
+    if (invoiceVersion && invoiceVersion === shownVersion.current) {
       return
     }
 
-    if (!invoice) {
+    if (!invoiceId) {
       // Create mode — check for proposal pre-fill data
       invoiceWithLineItemsRef.current = null
 
@@ -272,7 +282,10 @@ export function useInvoiceSheetState({
     // React 19 async transitions keep the flag true until resolved.
     startLoadTransition(async () => {
       try {
-        const fullInvoice = await getInvoiceDetails(invoice.id)
+        const fullInvoice = await loadInvoice(invoiceId)
+        shownVersion.current = fullInvoice
+          ? `${fullInvoice.id}:${fullInvoice.updated_at}`
+          : null
         // Mark the loaded client so auto-fill skips hydration
         loadedClientIdRef.current = fullInvoice?.company_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
@@ -282,13 +295,14 @@ export function useInvoiceSheetState({
           title: 'Unable to load invoice',
           description: 'Close the sheet and open it again.',
           variant: 'destructive',
-          link: toastLink('invoice', invoice.id),
+          link: toastLink('invoice', invoiceId),
         })
       }
     })
   }, [
     open,
-    invoice,
+    invoiceId,
+    invoiceVersion,
     form,
     resetFormState,
     productCatalog,
@@ -429,16 +443,27 @@ export function useInvoiceSheetState({
             link: toastLink('invoice', result.id),
           })
 
-          if (mode === 'stay') {
-            if (isEditing && result.id) {
-              // Reload before the save settles: new line items only get
-              // their ids from the server, and a second save without them
-              // would add those lines again.
-              const fullInvoice = await getInvoiceDetails(result.id)
+          if (mode === 'stay' && isEditing && result.id) {
+            // Reload before the save settles: new line items only get
+            // their ids from the server, and a second save without them
+            // would add those lines again.
+            const fullInvoice = await loadInvoice(result.id).catch(() => null)
+            if (fullInvoice) {
+              shownVersion.current = `${fullInvoice.id}:${fullInvoice.updated_at}`
               invoiceWithLineItemsRef.current = fullInvoice
-              loadedClientIdRef.current = fullInvoice?.company_id ?? null
+              loadedClientIdRef.current = fullInvoice.company_id ?? null
               resetFormState(fullInvoice)
+              stay({ id: result.id, rebaseline: () => {} })
+              return
             }
+            // Saved, but the sheet can't show what was saved: close it
+            // rather than risk saving the new lines twice.
+            toast({
+              title: 'Invoice saved, but it could not be reloaded',
+              description: 'Open it again to keep editing.',
+              link: toastLink('invoice', result.id),
+            })
+          } else if (mode === 'stay') {
             stay({ id: result.id, rebaseline: () => {} })
             return
           }
