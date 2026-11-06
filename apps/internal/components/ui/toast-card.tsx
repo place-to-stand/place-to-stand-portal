@@ -80,7 +80,7 @@ export function ToastCard({
         {description ? (
           <p className='text-muted-foreground'>{description}</p>
         ) : null}
-        {link ? <div className='mt-1'>{link}</div> : null}
+        {link ? <div className='mt-1.5'>{link}</div> : null}
       </div>
       {onDismiss ? (
         <div className='-mr-1.5 flex h-[1lh] shrink-0 items-center'>

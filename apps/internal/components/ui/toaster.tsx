@@ -112,9 +112,9 @@ export function Toaster() {
           <ToastCard
             key={toast.id}
             title={toast.title}
-            description={name ? link : toast.description}
+            description={name ? undefined : toast.description}
             variant={toast.variant}
-            link={name ? null : link}
+            link={link}
             onDismiss={() => dismiss(toast.id)}
           />
         )

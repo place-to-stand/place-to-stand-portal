@@ -304,9 +304,7 @@ export function ComponentsFeedback() {
         <ToastCard
           title='Company saved'
           // A success names its record as the link.
-          description={
-            <SpecimenToastLink entity='company' name='Acme Industries' />
-          }
+          link={<SpecimenToastLink entity='company' name='Acme Industries' />}
           onDismiss={() => {}}
         />
         <ToastCard
