@@ -8,8 +8,8 @@ const SIZES = {
 } as const
 
 /**
- * A key or key combination (`⌘K`). Mono on the muted surface with a hairline
- * border, the same look in the sidebar, menus, tooltips and the shortcuts list.
+ * One key (`⌘`, `K`). The system font, which draws ⌘ ⇧ ⌥ properly (the
+ * brand fonts don't have them), on the muted surface with a hairline border, the same look in the sidebar, menus, tooltips and the shortcuts list.
  */
 function Kbd({
   className,
@@ -20,7 +20,7 @@ function Kbd({
     <kbd
       data-slot='kbd'
       className={cn(
-        'bg-muted text-muted-foreground pointer-events-none inline-flex items-center justify-center rounded-sm border font-mono leading-none whitespace-nowrap select-none',
+        'bg-muted text-muted-foreground pointer-events-none inline-flex items-center justify-center rounded-sm border font-[system-ui] leading-none whitespace-nowrap select-none',
         // Inside a tooltip (dark on light) the chip inverts to stay readable.
         'in-data-[slot=tooltip-content]:border-primary-foreground/25 in-data-[slot=tooltip-content]:bg-primary-foreground/10 in-data-[slot=tooltip-content]:text-primary-foreground',
         SIZES[size],

@@ -2,16 +2,13 @@
 
 import { forwardRef } from 'react'
 
-import { Kbd } from '@pts/ui/kbd'
-
 // --- Shared UI ---
 // Toolbar tooltips use the portal-wide tooltip so their offset, arrow and
 // colours match every other tooltip instead of a separate floating-ui copy.
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 
 // --- Lib ---
-import { useIsMac } from '@/components/keyboard/shortcut-keys'
-import { formatShortcut } from '@/lib/keyboard/format'
+import { KeyCaps } from '@/components/keyboard/shortcut-keys'
 import { cn } from '@/lib/tiptap-utils'
 
 import '@/components/tiptap-ui-primitive/button/button-colors.scss'
@@ -30,9 +27,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
  * tooltip uses (RowActionButton: "Undo ⌘Z").
  */
 function ShortcutChip({ shortcutKeys }: { shortcutKeys?: string }) {
-  const isMac = useIsMac()
   if (!shortcutKeys) return null
-  return <Kbd className='ml-2'>{formatShortcut(shortcutKeys, isMac)}</Kbd>
+  return (
+    <span className='ml-2'>
+      <KeyCaps keys={shortcutKeys} />
+    </span>
+  )
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
