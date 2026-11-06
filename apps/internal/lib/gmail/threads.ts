@@ -5,22 +5,38 @@ import { and, eq, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
 
-import { getValidAccessToken, OAuthReconnectRequiredError } from './client'
+import {
+  getValidAccessToken,
+  markConnectionNeedsReauth,
+  OAuthReconnectRequiredError,
+} from './client'
 import {
   buildAddressQuery,
   decodeGmailSnippet,
   gmailThreadUrl,
+  isGmailAuthFailure,
+  mapWithConcurrency,
   parseFromName,
+  type GmailAccount,
   type GmailThreadSummary,
 } from './threads-utils'
 
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me'
-const MAX_THREADS = 25
+/** Newest threads per account; enough to scan without a "load more". */
+const MAX_THREADS = 15
+/** Thread reads at once, well inside Gmail's per-user rate limit. */
+const CONCURRENCY = 5
 
 export type ViewerThreadsResult =
   | { state: 'not_connected' }
-  | { state: 'reconnect' }
-  | { state: 'ok'; threads: GmailThreadSummary[] }
+  | { state: 'reconnect'; accounts: GmailAccount[] }
+  | {
+      state: 'ok'
+      threads: GmailThreadSummary[]
+      accounts: GmailAccount[]
+      /** Another of the viewer's Google accounts needs reconnecting. */
+      someNeedReconnect: boolean
+    }
 
 type ThreadListResponse = {
   threads?: { id: string; snippet?: string }[]
@@ -34,25 +50,29 @@ type ThreadResponse = {
   }[]
 }
 
+/** Gmail said the token is no good: the account must be reconnected. */
+class GmailAuthError extends Error {
+  constructor(status: number) {
+    super(`Gmail refused the token: ${status}`)
+    this.name = 'GmailAuthError'
+  }
+}
+
 async function gmailGet<T>(accessToken: string, path: string): Promise<T> {
   const response = await fetch(`${GMAIL_API}${path}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: 'no-store',
   })
-  if (response.status === 401 || response.status === 403) {
-    throw new GmailAccessError(response.status)
-  }
   if (!response.ok) {
-    throw new Error(`Gmail request failed: ${response.status}`)
+    const body = await response.text().catch(() => '')
+    if (isGmailAuthFailure(response.status, body)) {
+      throw new GmailAuthError(response.status)
+    }
+    // Rate limits, a thread deleted mid-read, Google hiccups: not the
+    // user's connection, so never shown as "reconnect".
+    throw new Error(`Gmail request failed: ${response.status} ${body}`)
   }
   return (await response.json()) as T
-}
-
-class GmailAccessError extends Error {
-  constructor(status: number) {
-    super(`Gmail refused the request: ${status}`)
-    this.name = 'GmailAccessError'
-  }
 }
 
 function header(
@@ -68,7 +88,7 @@ function header(
 
 async function threadsForConnection(
   userId: string,
-  connection: { id: string; providerEmail: string | null },
+  connection: GmailAccount,
   query: string
 ): Promise<GmailThreadSummary[]> {
   const { accessToken } = await getValidAccessToken(userId, connection.id)
@@ -79,8 +99,10 @@ async function threadsForConnection(
 
   const metadata =
     '&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date'
-  return Promise.all(
-    (list.threads ?? []).map(async listed => {
+  const settled = await mapWithConcurrency(
+    list.threads ?? [],
+    CONCURRENCY,
+    async listed => {
       const thread = await gmailGet<ThreadResponse>(
         accessToken,
         `/threads/${encodeURIComponent(listed.id)}?format=metadata${metadata}`
@@ -93,16 +115,29 @@ async function threadsForConnection(
         : null
       return {
         id: thread.id,
-        accountEmail: connection.providerEmail,
+        accountEmail: connection.email,
         subject: header(first, 'Subject') || '(no subject)',
         snippet: decodeGmailSnippet(listed.snippet ?? ''),
         lastFrom: parseFromName(header(last, 'From')),
         lastAt,
         messageCount: messages.length,
-        url: gmailThreadUrl(thread.id, connection.providerEmail),
-      }
-    })
+        url: gmailThreadUrl(thread.id, connection.email),
+      } satisfies GmailThreadSummary
+    }
   )
+
+  const threads: GmailThreadSummary[] = []
+  for (const result of settled) {
+    if (result.status === 'fulfilled') {
+      threads.push(result.value)
+    } else if (result.reason instanceof GmailAuthError) {
+      throw result.reason
+    } else {
+      // One unreadable thread (deleted since the list) doesn't hide the rest.
+      console.warn('[Gmail] Skipped a thread:', result.reason)
+    }
+  }
+  return threads
 }
 
 /**
@@ -115,11 +150,10 @@ export async function listViewerThreadsWith(
   userId: string,
   addresses: string[]
 ): Promise<ViewerThreadsResult> {
-  const connections = await db
+  const rows = await db
     .select({
       id: oauthConnections.id,
-      providerEmail: oauthConnections.providerEmail,
-      status: oauthConnections.status,
+      email: oauthConnections.providerEmail,
     })
     .from(oauthConnections)
     .where(
@@ -130,22 +164,27 @@ export async function listViewerThreadsWith(
       )
     )
 
-  if (connections.length === 0) return { state: 'not_connected' }
+  if (rows.length === 0) return { state: 'not_connected' }
+  const accounts: GmailAccount[] = rows
 
   const query = buildAddressQuery(addresses)
-  if (!query) return { state: 'ok', threads: [] }
+  if (!query) {
+    return { state: 'ok', threads: [], accounts, someNeedReconnect: false }
+  }
 
-  let needsReconnect = false
+  let reconnects = 0
   const perConnection = await Promise.all(
-    connections.map(async connection => {
+    accounts.map(async account => {
       try {
-        return await threadsForConnection(userId, connection, query)
+        return await threadsForConnection(userId, account, query)
       } catch (error) {
-        if (
-          error instanceof OAuthReconnectRequiredError ||
-          error instanceof GmailAccessError
-        ) {
-          needsReconnect = true
+        if (error instanceof GmailAuthError) {
+          await markConnectionNeedsReauth(account.id, error.message)
+          reconnects += 1
+          return []
+        }
+        if (error instanceof OAuthReconnectRequiredError) {
+          reconnects += 1
           return []
         }
         throw error
@@ -153,10 +192,10 @@ export async function listViewerThreadsWith(
     })
   )
 
+  if (reconnects === accounts.length) return { state: 'reconnect', accounts }
+
   const threads = perConnection
     .flat()
     .sort((a, b) => (b.lastAt ?? '').localeCompare(a.lastAt ?? ''))
-
-  if (threads.length === 0 && needsReconnect) return { state: 'reconnect' }
-  return { state: 'ok', threads }
+  return { state: 'ok', threads, accounts, someNeedReconnect: reconnects > 0 }
 }

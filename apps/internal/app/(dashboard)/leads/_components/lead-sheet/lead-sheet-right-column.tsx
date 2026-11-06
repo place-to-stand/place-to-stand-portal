@@ -66,7 +66,7 @@ export function LeadSheetRightColumn({
             onSuccess={onSuccess}
           />
           {/* The viewer's own Gmail threads with the lead's contact. */}
-          <LeadEmailsSection lead={lead} />
+          <LeadEmailsSection key={lead.id} lead={lead} />
         </div>
       ) : (
         // Tasks and updates are their own records, saved on their own, and

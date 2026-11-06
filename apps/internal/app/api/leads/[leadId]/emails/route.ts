@@ -35,7 +35,7 @@ export async function GET(
       return NextResponse.json({ state: 'no_email' })
     }
     const result = await listViewerThreadsWith(user.id, [lead.contactEmail])
-    return NextResponse.json({ ...result, contactEmail: lead.contactEmail })
+    return NextResponse.json(result)
   } catch (error) {
     if (error instanceof NotFoundError) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 })

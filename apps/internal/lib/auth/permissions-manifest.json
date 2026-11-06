@@ -1173,14 +1173,14 @@
     "name": "POST /api/integrations/google/disconnect",
     "file": "apps/internal/app/api/integrations/google/disconnect/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.google"
   },
   {
     "type": "route",
     "name": "GET /api/integrations/google/status",
     "file": "apps/internal/app/api/integrations/google/status/route.ts",
     "kind": "capability",
-    "capability": "integrations.manage"
+    "capability": "integrations.google"
   },
   {
     "type": "route",

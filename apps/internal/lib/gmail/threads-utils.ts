@@ -13,11 +13,14 @@ export type GmailThreadSummary = {
   url: string
 }
 
+/** One of the viewer's connected Google accounts. */
+export type GmailAccount = { id: string; email: string | null }
+
 const ADDRESS_PATTERN = /^[^\s@"(){}<>]+@[^\s@"(){}<>]+\.[^\s@"(){}<>]+$/
 
 /**
  * A Gmail search for threads any of `addresses` sent, received or was
- * copied on. Addresses that don't look like one are dropped, so nothing
+ * copied (or blind copied) on. Addresses that don't look like one are dropped, so nothing
  * typed into a contact can widen the search.
  */
 export function buildAddressQuery(addresses: string[]): string | null {
@@ -33,6 +36,7 @@ export function buildAddressQuery(addresses: string[]): string | null {
     `from:${address}`,
     `to:${address}`,
     `cc:${address}`,
+    `bcc:${address}`,
   ])
   return `{${terms.join(' ')}}`
 }
@@ -66,7 +70,11 @@ export function parseFromName(from: string | null): string | null {
   return match[1]?.trim() || match[2]?.trim() || null
 }
 
-/** Opens a thread in Gmail, signed in as the account it belongs to. */
+/**
+ * Opens a thread in Gmail, signed in as the account it belongs to. The API's
+ * thread id is hex; Gmail's own links use it as a decimal `thread-f:` id
+ * (checked against the links Gmail itself returns, Nov 2026).
+ */
 export function gmailThreadUrl(
   threadId: string,
   accountEmail: string | null
@@ -74,5 +82,45 @@ export function gmailThreadUrl(
   const account = accountEmail
     ? `?authuser=${encodeURIComponent(accountEmail)}`
     : ''
-  return `https://mail.google.com/mail/${account}#all/${encodeURIComponent(threadId)}`
+  const anchor = /^[0-9a-f]{1,16}$/i.test(threadId)
+    ? `thread-f:${BigInt(`0x${threadId}`).toString()}`
+    : encodeURIComponent(threadId)
+  return `https://mail.google.com/mail/${account}#all/${anchor}`
+}
+
+/**
+ * Whether a failed Gmail response means the token itself is bad (reconnect),
+ * as opposed to a rate limit or a missing thread. Gmail answers rate limits
+ * with 403 too, so a 403 only counts when its reason isn't a limit.
+ */
+export function isGmailAuthFailure(status: number, body: string): boolean {
+  if (status === 401) return true
+  if (status !== 403) return false
+  return !/rateLimitExceeded|userRateLimitExceeded|quotaExceeded|RATE_LIMIT/i.test(
+    body
+  )
+}
+
+/** Runs `fn` over `items`, at most `limit` at a time, keeping their order. */
+export async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = new Array(items.length)
+  let next = 0
+  async function worker() {
+    while (next < items.length) {
+      const index = next++
+      try {
+        results[index] = { status: 'fulfilled', value: await fn(items[index]) }
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason }
+      }
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  )
+  return results
 }

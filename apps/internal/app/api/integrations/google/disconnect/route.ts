@@ -10,7 +10,7 @@ import { oauthDisconnectedEvent } from '@/lib/activity/events'
 import { authorizeRoute } from '@/lib/auth/guard'
 
 export async function POST(request: Request) {
-  const { user, denied } = await authorizeRoute('integrations.manage')
+  const { user, denied } = await authorizeRoute('integrations.google')
   if (denied) return denied
 
   // Get connectionId from request body (multi-account support)

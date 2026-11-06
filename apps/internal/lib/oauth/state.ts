@@ -1,6 +1,10 @@
 import { cookies } from 'next/headers'
 import { randomBytes } from 'crypto'
 
+import { safeReturnPath } from './state-path'
+
+export { safeReturnPath }
+
 const STATE_COOKIE = 'oauth_state'
 const STATE_EXPIRY = 10 * 60 * 1000 // 10 minutes
 
@@ -36,16 +40,6 @@ export async function validateOAuthState(state: string): Promise<boolean> {
 }
 
 const RETURN_TO_COOKIE = 'oauth_return_to'
-
-/**
- * Where to land after the provider sends the user back: a path inside the
- * portal (`/leads?lead=…`), never another site.
- */
-export function safeReturnPath(value: string | null | undefined) {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return null
-  if (value.includes('\\')) return null
-  return value
-}
 
 /** Remember where the connect flow started, for the callback. */
 export async function setOAuthReturnTo(path: string | null) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
@@ -10,12 +10,23 @@ import { EmptyState } from '@pts/ui/empty-state'
 import { Skeleton } from '@pts/ui/skeleton'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SheetRecordRow } from '@/components/sheets/sheet-record-row'
-import type { GmailThreadSummary } from '@/lib/gmail/threads-utils'
+import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { roleCan } from '@/lib/auth/capabilities'
+import type {
+  GmailAccount,
+  GmailThreadSummary,
+} from '@/lib/gmail/threads-utils'
 import type { LeadRecord } from '@/lib/leads/types'
 
 type EmailsResponse =
-  | { state: 'not_allowed' | 'no_email' | 'not_connected' | 'reconnect' }
-  | { state: 'ok'; threads: GmailThreadSummary[] }
+  | { state: 'not_allowed' | 'no_email' | 'not_connected' }
+  | { state: 'reconnect'; accounts: GmailAccount[] }
+  | {
+      state: 'ok'
+      threads: GmailThreadSummary[]
+      accounts: GmailAccount[]
+      someNeedReconnect: boolean
+    }
 
 type LoadState =
   | { kind: 'loading' }
@@ -47,8 +58,29 @@ function threadDetail(thread: GmailThreadSummary) {
  * their own mail, never a teammate's.
  */
 export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
+  const { role } = useViewerAccess()
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' })
+  const [reloadKey, setReloadKey] = useState(0)
+  const [disconnecting, setDisconnecting] = useState(false)
   const contactEmail = lead.contactEmail
+  // Admins manage their Google account in Settings, where it also feeds
+  // agency integrations; everyone else disconnects it here.
+  const canDisconnectHere = !roleCan(role, 'integrations.manage')
+
+  const disconnect = useCallback((account: GmailAccount) => {
+    setDisconnecting(true)
+    fetch('/api/integrations/google/disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connectionId: account.id }),
+    })
+      .catch(error => console.error('Failed to disconnect Google:', error))
+      .finally(() => {
+        setDisconnecting(false)
+        setLoad({ kind: 'loading' })
+        setReloadKey(key => key + 1)
+      })
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -67,13 +99,15 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
       cancelled = true
     }
     // The saved address is what the server searches for.
-  }, [lead.id, contactEmail])
+  }, [lead.id, contactEmail, reloadKey])
 
   const data = load.kind === 'loaded' ? load.data : null
   if (data?.state === 'not_allowed') return null
 
   const who = lead.contactName || contactEmail || 'this person'
   const threads = data?.state === 'ok' ? data.threads : []
+  const accounts =
+    data?.state === 'ok' || data?.state === 'reconnect' ? data.accounts : []
 
   let status: ReactNode
   if (load.kind === 'loading') {
@@ -129,6 +163,37 @@ export function LeadEmailsSection({ lead }: { lead: LeadRecord }) {
       isEmpty={threads.length === 0}
       emptyMessage={`No emails with ${contactEmail ?? who} in your Gmail.`}
       status={status}
+      footer={
+        accounts.length > 0 ? (
+          <div className='text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs'>
+            <span>
+              From your Gmail:{' '}
+              {accounts.map(account => account.email).join(', ')}
+            </span>
+            {data?.state === 'ok' && data.someNeedReconnect ? (
+              <Button
+                variant='link'
+                size='xs'
+                className='h-auto p-0 text-xs'
+                onClick={connectGoogle}
+              >
+                Reconnect an expired account
+              </Button>
+            ) : null}
+            {canDisconnectHere && accounts.length === 1 ? (
+              <Button
+                variant='link'
+                size='xs'
+                className='text-muted-foreground h-auto p-0 text-xs'
+                disabled={disconnecting}
+                onClick={() => disconnect(accounts[0])}
+              >
+                Disconnect
+              </Button>
+            ) : null}
+          </div>
+        ) : null
+      }
     >
       {threads.map(thread => (
         <SheetRecordRow

@@ -142,7 +142,7 @@ export async function getValidAccessToken(
 /**
  * Mark a connection as needing re-authentication
  */
-async function markConnectionNeedsReauth(
+export async function markConnectionNeedsReauth(
   connectionId: string,
   reason: string
 ): Promise<void> {

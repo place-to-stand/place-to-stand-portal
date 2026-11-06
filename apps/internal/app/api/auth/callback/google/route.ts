@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { eq, and } from 'drizzle-orm'
 
+import { roleCan } from '@/lib/auth/capabilities'
 import { requirePage } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { oauthConnections } from '@/lib/db/schema'
@@ -21,8 +22,13 @@ export async function GET(request: NextRequest) {
   // Set when the flow started outside Settings (the lead sheet): land back
   // there, where the Emails section shows the result for itself.
   const returnTo = await consumeOAuthReturnTo()
+  // Without a start page (its cookie expired), only admins have Settings.
+  const fallback = (settingsPath: string) =>
+    roleCan(user.role, 'integrations.manage') ? settingsPath : '/leads'
   const landing = (settingsPath: string) =>
-    NextResponse.redirect(new URL(returnTo ?? settingsPath, request.url))
+    NextResponse.redirect(
+      new URL(returnTo ?? fallback(settingsPath), request.url)
+    )
 
   const code = searchParams.get('code')
   const state = searchParams.get('state')
@@ -53,6 +59,11 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date(
       Date.now() + tokens.expires_in * 1000
     ).toISOString()
+
+    // What Google actually granted (a user can untick scopes).
+    const grantedScopes = tokens.scope
+      ? tokens.scope.split(' ').filter(Boolean)
+      : GOOGLE_SCOPES
 
     // Encrypt tokens
     const encryptedAccessToken = encryptToken(tokens.access_token)
@@ -92,7 +103,7 @@ export async function GET(request: NextRequest) {
             accessToken: encryptedAccessToken,
             refreshToken: encryptedRefreshToken,
             accessTokenExpiresAt: expiresAt,
-            scopes: GOOGLE_SCOPES,
+            scopes: grantedScopes,
             status: 'ACTIVE',
             providerEmail: userInfo.email,
             displayName: userInfo.email,
@@ -113,7 +124,7 @@ export async function GET(request: NextRequest) {
           accessToken: encryptedAccessToken,
           refreshToken: encryptedRefreshToken,
           accessTokenExpiresAt: expiresAt,
-          scopes: GOOGLE_SCOPES,
+          scopes: grantedScopes,
           status: 'ACTIVE',
           providerEmail: userInfo.email,
           displayName: userInfo.email,
