@@ -377,16 +377,28 @@ export function useContactSheetState({
     contact?.id ?? null,
     open
   )
+  // Save checks the version the sheet read; until that read lands (or if
+  // it failed) there is nothing to check against, so Save waits.
+  const notRead = isEditing && !companiesLoaded
   const submitDisabled =
-    isPending || isReopening || isReloading || isAvatarUploading || readOnly
+    isPending ||
+    isReopening ||
+    isReloading ||
+    notRead ||
+    isAvatarUploading ||
+    readOnly
   const submitDisabledReason =
     isPending || isReopening || isReloading
       ? PENDING_REASON
-      : isAvatarUploading
-        ? 'Wait for the photo to finish uploading.'
-        : readOnly
-          ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
-          : null
+      : notRead
+        ? companiesLoadFailed
+          ? "This person didn't load. Close the sheet and open it again."
+          : PENDING_REASON
+        : isAvatarUploading
+          ? 'Wait for the photo to finish uploading.'
+          : readOnly
+            ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
+            : null
 
   const deleteDisabled = isPending || !isEditing
   const deleteDisabledReason = isPending

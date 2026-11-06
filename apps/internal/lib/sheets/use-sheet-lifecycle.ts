@@ -8,6 +8,7 @@ import {
   useSaveConflict,
   type SaveConflictGuard,
 } from '@/lib/sheets/save-conflict/use-save-conflict'
+import { versionMs } from '@/lib/sheets/save-conflict/types'
 
 type UnsavedChangesCopy = Parameters<typeof useUnsavedChangesWarning>[0]
 
@@ -145,6 +146,14 @@ export const useSheetLifecycle = ({
   useEffect(() => {
     if (!open || lastResetKeyRef.current !== resetKey) return
     if (version === seededVersionRef.current || isDirty) return
+    // This sheet's own save (an overwrite, a keep-open save) already holds
+    // this version or a newer one: an older copy arriving late must not
+    // roll the form back to it.
+    const held = saveConflict.expected()
+    if (held && version && versionMs(version) <= versionMs(held)) {
+      seededVersionRef.current = version
+      return
+    }
     seededVersionRef.current = version
     saveConflict.seed(version)
     startQuietTransition(() => {

@@ -238,7 +238,8 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
 
     try {
       savedVersion = await db.transaction(async tx => {
-        await lockForSave(tx, invoices, id, parsed.data.expectedUpdatedAt)
+        // Closed first: a paid invoice can't be overwritten, so it must
+        // not show the conflict dialog either.
         const [locked] = await tx
           .select({
             status: invoices.status,
@@ -246,9 +247,11 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
           })
           .from(invoices)
           .where(eq(invoices.id, id))
+          .for('update')
         if (locked?.status === 'PAID' || locked?.status === 'VOID') {
           throw new ClosedInvoiceError(locked.status)
         }
+        await lockForSave(tx, invoices, id, parsed.data.expectedUpdatedAt)
         staleIntentId = locked?.stripePaymentIntentId ?? null
         const updateData: Record<string, unknown> = {
           companyId,

@@ -9,6 +9,8 @@ import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conf
 import { versionMs } from '@/lib/sheets/save-conflict/types'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
+import { createPresencePacer } from './presence-pacer'
+
 /** Someone else with the same record's sheet open. */
 export type SheetViewer = {
   userId: string
@@ -56,6 +58,13 @@ export function useSheetPresence({
   const { userId, name, hasPhoto, presenceKey } = useViewerAccess()
   const [others, setOthers] = useState<SheetViewer[]>([])
   const [theirSave, setTheirSave] = useState<TheirSave | null>(null)
+  const pacerRef = useRef<ReturnType<
+    typeof createPresencePacer<PresencePayload>
+  > | null>(null)
+  // Bumped to rejoin after the server closes the channel.
+  const [rejoins, setRejoins] = useState(0)
+  // Closes in a row, for the backoff; cleared after a minute connected.
+  const closesRef = useRef(0)
   const channelRef = useRef<RealtimeChannel | null>(null)
   const meRef = useRef<PresencePayload | null>(null)
   const guardRef = useRef(guard)
@@ -83,6 +92,8 @@ export function useSheetPresence({
     const supabase = getSupabaseBrowserClient()
     let channel: RealtimeChannel | null = null
     let closed = false
+    let retry: ReturnType<typeof setTimeout> | null = null
+    let healthy: ReturnType<typeof setTimeout> | null = null
 
     const join = async () => {
       const topic = await presenceTopic(presenceKey, entity, recordId)
@@ -101,6 +112,11 @@ export function useSheetPresence({
       })
       channel = joined
       channelRef.current = joined
+      const pacer = createPresencePacer<PresencePayload>(
+        state => void joined.track(state),
+        (a, b) => a.editing === b.editing
+      )
+      pacerRef.current = pacer
 
       joined
         .on('presence', { event: 'sync' }, () => {
@@ -137,8 +153,23 @@ export function useSheetPresence({
           })
         })
         .subscribe(status => {
-          if (status === 'SUBSCRIBED' && meRef.current) {
-            void joined.track(meRef.current)
+          if (status === 'SUBSCRIBED') {
+            if (meRef.current) pacer.joined(meRef.current)
+            if (healthy !== null) clearTimeout(healthy)
+            healthy = setTimeout(() => {
+              closesRef.current = 0
+            }, 60000)
+          }
+          // The client library retries errors and timeouts itself, but not
+          // a close from the server (a rate limit, a deploy): rejoin on a
+          // fresh channel, slower each time, so this tab never stays gone.
+          if (status === 'CLOSED' && !closed && retry === null) {
+            pacer.stop()
+            setOthers([])
+            if (healthy !== null) clearTimeout(healthy)
+            const delay = Math.min(30000, 2000 * 2 ** closesRef.current)
+            closesRef.current = Math.min(closesRef.current + 1, 4)
+            retry = setTimeout(() => setRejoins(count => count + 1), delay)
           }
         })
     }
@@ -148,12 +179,16 @@ export function useSheetPresence({
 
     return () => {
       closed = true
+      if (retry !== null) clearTimeout(retry)
+      if (healthy !== null) clearTimeout(healthy)
+      pacerRef.current?.stop()
+      pacerRef.current = null
       channelRef.current = null
       setOthers([])
       setTheirSave(null)
       if (channel) void supabase.removeChannel(channel)
     }
-  }, [active, entity, recordId, userId, name, hasPhoto, presenceKey])
+  }, [active, entity, recordId, userId, name, hasPhoto, presenceKey, rejoins])
 
   // Others see "editing" once this sheet has unsaved edits.
   useEffect(() => {
@@ -161,7 +196,7 @@ export function useSheetPresence({
     if (!me || me.editing === isDirty) return
     // Kept even before the channel joins: joining tracks the latest.
     meRef.current = { ...me, editing: isDirty }
-    void channelRef.current?.track(meRef.current)
+    pacerRef.current?.update(meRef.current)
   }, [isDirty, active])
 
   // This sheet's own saves go out to everyone else on the record.
