@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { currentMonthStartUtc } from '@/lib/billing/months'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
+import { useSaveConflict } from '@/lib/sheets/save-conflict/use-save-conflict'
 import {
   savePersonSheetAction,
   softDeleteContact,
@@ -127,11 +128,12 @@ export function useContactSheetState({
   const [companiesLoadFailed, setCompaniesLoadFailed] = useState(false)
   // The person's `updated_at` as loaded: Save sends it back, and the server
   // refuses if someone else saved them since.
-  const [loadedUpdatedAt, setLoadedUpdatedAt] = useState<string | null>(null)
-  // A keep-open save reloads the person from the server (bumps the token);
-  // Save waits until that read lands, so it never checks an old version.
+  const saveConflict = useSaveConflict()
+  // A keep-open save or Load theirs reloads the person from the server
+  // (bumps the token); Save waits until that read lands.
   const [reloadToken, setReloadToken] = useState(0)
   const [isReloading, setIsReloading] = useState(false)
+  const reloadingRef = useRef(false)
   // Their live sign-in's role as saved (null: they can't sign in). Shown
   // read-only in Access to people who can't change sign-ins.
   const [savedSignInRole, setSavedSignInRole] = useState<
@@ -234,7 +236,7 @@ export function useContactSheetState({
       // Reset state - intentional setState during effect to sync UI with prop changes
       setCompaniesLoaded(!contactId)
       setCompaniesLoadFailed(false)
-      setLoadedUpdatedAt(null)
+      saveConflict.seed(null)
       setSavedSignInRole(
         contact && 'signInRole' in contact ? (contact.signInRole ?? null) : null
       )
@@ -249,8 +251,13 @@ export function useContactSheetState({
         if (cancelled) return
         setCompaniesLoaded(true)
         setIsReloading(false)
+        // Load theirs, then typed again while it loaded: keep the edits and
+        // the old version, so Save reports the conflict instead.
+        const reloading = reloadingRef.current
+        reloadingRef.current = false
+        if (reloading && form.formState.isDirty) return
         if (data.person) {
-          setLoadedUpdatedAt(data.person.updatedAt)
+          saveConflict.seed(data.person.updatedAt)
           setSavedSignInRole(data.person.signInRole)
           // The sheet opened with the list's copy of their details, which
           // can be older than this read: show the saved ones (the version
@@ -306,6 +313,7 @@ export function useContactSheetState({
     initialName,
     initialCompanyId,
     canManageSignIn,
+    saveConflict,
   ])
 
   // Their sign-in, loaded after the reset like the companies: it becomes
@@ -369,16 +377,28 @@ export function useContactSheetState({
     contact?.id ?? null,
     open
   )
+  // Save checks the version the sheet read; until that read lands (or if
+  // it failed) there is nothing to check against, so Save waits.
+  const notRead = isEditing && !companiesLoaded
   const submitDisabled =
-    isPending || isReopening || isReloading || isAvatarUploading || readOnly
+    isPending ||
+    isReopening ||
+    isReloading ||
+    notRead ||
+    isAvatarUploading ||
+    readOnly
   const submitDisabledReason =
     isPending || isReopening || isReloading
       ? PENDING_REASON
-      : isAvatarUploading
-        ? 'Wait for the photo to finish uploading.'
-        : readOnly
-          ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
-          : null
+      : notRead
+        ? companiesLoadFailed
+          ? "This person didn't load. Close the sheet and open it again."
+          : PENDING_REASON
+        : isAvatarUploading
+          ? 'Wait for the photo to finish uploading.'
+          : readOnly
+            ? PERSON_WITH_SIGN_IN_ADMIN_ONLY
+            : null
 
   const deleteDisabled = isPending || !isEditing
   const deleteDisabledReason = isPending
@@ -409,9 +429,7 @@ export function useContactSheetState({
         const dirty = form.formState.dirtyFields
         const result = await savePersonSheetAction({
           id: contact?.id || undefined,
-          loadedUpdatedAt: contact?.id
-            ? (loadedUpdatedAt ?? undefined)
-            : undefined,
+          loadedUpdatedAt: contact?.id ? saveConflict.expected() : undefined,
           email: data.email,
           name: data.name,
           phone: data.phone || null,
@@ -447,6 +465,7 @@ export function useContactSheetState({
               : undefined,
         })
 
+        if (saveConflict.catchConflict(result, mode)) return
         if (result.error) {
           toast({
             title: isEditing
@@ -459,6 +478,7 @@ export function useContactSheetState({
           return
         }
 
+        saveConflict.saved(result.updatedAt)
         // Person pickers cache their list for 30 seconds; show this save now.
         void queryClient.invalidateQueries({
           queryKey: CONTACT_OPTIONS_QUERY_KEY,
@@ -509,7 +529,7 @@ export function useContactSheetState({
       stay,
       contact?.id,
       companiesLoaded,
-      loadedUpdatedAt,
+      saveConflict,
       form,
       canManageSignIn,
       isEditing,
@@ -569,8 +589,18 @@ export function useContactSheetState({
     })
   }, [contact, isPending, toast, onComplete])
 
+  // Drop the edits and read the person again (the open-time reads re-run).
+  const handleLoadTheirs = useCallback(() => {
+    reloadingRef.current = true
+    form.reset()
+    setIsReloading(true)
+    setReloadToken(token => token + 1)
+  }, [form])
+
   return {
     form,
+    saveConflict,
+    handleLoadTheirs,
     isPending,
     isEditing,
     companiesLoaded,

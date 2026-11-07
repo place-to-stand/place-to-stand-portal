@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
+
 import { PROJECT_STATUS_ENUM_VALUES } from '@/lib/constants'
 import {
   generateUniqueProjectSlugDrizzle,
@@ -44,6 +46,11 @@ export const projectSchema = z
      * are (the sheet sends it only once it has loaded the current list).
      */
     memberIds: z.array(z.string().uuid()).max(100).optional(),
+    /**
+     * Edit: the project's `updated_at` when the sheet loaded it. The save is
+     * refused if someone saved the project since.
+     */
+    expectedUpdatedAt: z.string().max(64).optional(),
     /** GitHub repos to link (as picked) and link ids to remove. */
     repoLinks: z
       .object({
@@ -128,7 +135,15 @@ export type ProjectActionResult = {
   error?: string
   fieldErrors?: Record<string, string[]>
   projectId?: string
+  /** The project's version after a save; the sheet's next expected one. */
+  updatedAt?: string
+  /** Set when someone else saved first and nothing was written. */
+  conflict?: SaveConflict
 }
+
+/** Someone else saved the project after the sheet loaded it. */
+export const PROJECT_SAVED_ELSEWHERE =
+  'Someone else saved this project. Reload to see their changes.'
 
 export function toProjectSlug(input: string): string {
   const base = input

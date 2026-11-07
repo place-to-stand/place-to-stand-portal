@@ -1,5 +1,6 @@
 'use client'
 
+import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useWatch } from 'react-hook-form'
@@ -37,7 +38,9 @@ import {
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
+import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { EntityList } from '@/components/sheets/entity-list'
 import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
@@ -107,6 +110,8 @@ export function InvoiceSheet({
     isDeleteDialogOpen,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    handleLoadTheirs,
     totals,
     taxRateLabel,
     handleSheetOpenChange,
@@ -409,6 +414,17 @@ export function InvoiceSheet({
               {/* ────────────────────────────────────────────────────── */}
               <SheetFormHeader
                 entity='invoice'
+                presence={
+                  <SheetPresence
+                    entity='invoice'
+                    noun='invoice'
+                    recordId={invoice?.id ?? null}
+                    open={open}
+                    isDirty={form.formState.isDirty}
+                    guard={saveConflict}
+                    onLoadTheirs={handleLoadTheirs}
+                  />
+                }
                 title={sheetTitle}
                 className='flex-shrink-0'
                 menu={
@@ -443,6 +459,7 @@ export function InvoiceSheet({
                   {/* Scrollable form body */}
                   <div className='flex-1 p-6 lg:overflow-y-auto'>
                     <div className='flex flex-col gap-6'>
+                      <SheetNoticeSlot />
                       {/* ───── Header Fields ───── */}
                       <div className='grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2'>
                         <FormField
@@ -715,10 +732,19 @@ export function InvoiceSheet({
         onConfirm={() => {
           const action = pendingDirtyAction
           setPendingDirtyAction(null)
+          // Drop the edits now, as promised: the reload that follows the
+          // action never overwrites a dirty form.
+          form.reset()
           action?.()
         }}
       />
       {unsavedChangesDialog}
+      <SaveConflictDialog
+        guard={saveConflict}
+        noun='invoice'
+        onOverwrite={handleSave}
+        onLoadTheirs={handleLoadTheirs}
+      />
     </>
   )
 }

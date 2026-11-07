@@ -11,6 +11,11 @@ type ViewerAccess = {
   userId: string | null
   /** Admin-only controls (conversion, portal accounts…). */
   isAdmin: boolean
+  /** How others see the viewer (who else has a sheet open). */
+  name: string | null
+  hasPhoto: boolean
+  /** Secret that names sheet presence channels; null outside the shell. */
+  presenceKey: string | null
 }
 
 // Defaults to the least access: a component rendered outside the dashboard
@@ -20,20 +25,36 @@ const ViewerAccessContext = createContext<ViewerAccess>({
   role: null,
   userId: null,
   isAdmin: false,
+  name: null,
+  hasPhoto: false,
+  presenceKey: null,
 })
 
 export function ViewerAccessProvider({
   role,
   userId,
+  name = null,
+  hasPhoto = false,
+  presenceKey = null,
   children,
 }: {
   role: UserRole
   userId: string
+  name?: string | null
+  hasPhoto?: boolean
+  presenceKey?: string | null
   children: ReactNode
 }) {
   const value = useMemo(
-    () => ({ role, userId, isAdmin: roleCan(role, 'portal.admin') }),
-    [role, userId]
+    () => ({
+      role,
+      userId,
+      isAdmin: roleCan(role, 'portal.admin'),
+      name,
+      hasPhoto,
+      presenceKey,
+    }),
+    [role, userId, name, hasPhoto, presenceKey]
   )
 
   return (

@@ -28,10 +28,18 @@ import {
   generateUniqueProjectSlug,
   projectSchema,
   projectSlugExists,
+  PROJECT_SAVED_ELSEWHERE,
   toProjectSlug,
   type ProjectActionResult,
   type ProjectInput,
 } from '@/lib/projects/sheet/project-service'
+
+import {
+  describeSaveConflict,
+  lockForSave,
+  readSavedVersion,
+  SaveConflictError,
+} from '@/lib/sheets/save-conflict/server'
 
 import {
   revalidateProjectDetailRoutes,
@@ -192,15 +200,39 @@ export async function saveProject(
       }
 
       let related: RelatedWrites
+      let savedVersion: string | null
       try {
-        related = await db.transaction(async tx => {
+        ;({ related, savedVersion } = await db.transaction(async tx => {
+          await lockForSave(tx, projects, id, parsed.data.expectedUpdatedAt)
           await tx
             .update(projects)
-            .set({ ...fields, slug: providedSlug })
+            // updatedAt moves the version even when only members or
+            // links changed (the row itself may be unchanged).
+            .set({
+              ...fields,
+              slug: providedSlug,
+              updatedAt: new Date().toISOString(),
+            })
             .where(eq(projects.id, id))
-          return writeRelated(tx, id)
-        })
+          const written = await writeRelated(tx, id)
+          return {
+            related: written,
+            savedVersion: await readSavedVersion(tx, projects, id),
+          }
+        }))
       } catch (error) {
+        if (error instanceof SaveConflictError) {
+          return {
+            error: PROJECT_SAVED_ELSEWHERE,
+            conflict: await describeSaveConflict(
+              user,
+              'PROJECT',
+              id,
+              error,
+              parsed.data.expectedUpdatedAt
+            ),
+          }
+        }
         if (uniqueViolation(error) === PROJECT_SLUG_INDEX) {
           return { error: 'Another project already uses this slug.' }
         }
@@ -231,7 +263,7 @@ export async function saveProject(
         })
       }
       await logRelatedChanges(user, id, related)
-      return { projectId: id }
+      return { projectId: id, updatedAt: savedVersion ?? undefined }
     }
   )
 

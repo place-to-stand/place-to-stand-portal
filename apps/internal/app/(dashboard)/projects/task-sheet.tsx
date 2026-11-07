@@ -1,5 +1,6 @@
 'use client'
 
+import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { EntityList } from '@/components/sheets/entity-list'
 import {
@@ -48,7 +49,9 @@ import { TASK_TIME_LOGS_KEY } from './_components/task-sheet/use-task-time-logs'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
+import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
 import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
@@ -102,6 +105,9 @@ export function TaskSheet(props: TaskSheetProps) {
     submitDisabledReason,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    hasUnsavedChanges,
+    handleLoadTheirs,
     handleSheetOpenChange,
     handleFormSubmit,
     handleRequestDelete,
@@ -434,6 +440,17 @@ export function TaskSheet(props: TaskSheetProps) {
                 />
               ) : null
             }
+            presence={
+              <SheetPresence
+                entity='task'
+                noun='task'
+                recordId={props.task?.id ?? null}
+                open={props.open}
+                isDirty={hasUnsavedChanges}
+                guard={saveConflict}
+                onLoadTheirs={handleLoadTheirs}
+              />
+            }
           />
 
           {/* Two-column body */}
@@ -458,6 +475,7 @@ export function TaskSheet(props: TaskSheetProps) {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
+                <SheetNoticeSlot className='px-6' />
                 <TaskSheetForm
                   form={form}
                   onSubmit={handleFormSubmit}
@@ -673,6 +691,12 @@ export function TaskSheet(props: TaskSheetProps) {
         onConfirm={handleConfirmDelete}
       />
       {unsavedChangesDialog}
+      <SaveConflictDialog
+        guard={saveConflict}
+        noun='task'
+        onOverwrite={handleSave}
+        onLoadTheirs={handleLoadTheirs}
+      />
     </>
   )
 }

@@ -42,6 +42,11 @@ export const saveLeadSchema = z.object({
   companyWebsite: z.string().trim().max(255).optional().nullable(),
   /** TipTap HTML, as the sheet's editor produces it. */
   notes: z.string().optional().nullable(),
+  /**
+   * Edit: the lead's `updated_at` when the sheet loaded it. The save is
+   * refused if someone saved the lead since. Omitted = no check (CLI).
+   */
+  expectedUpdatedAt: z.string().max(64).optional(),
 })
 
 export type SaveLeadInput = z.infer<typeof saveLeadSchema>

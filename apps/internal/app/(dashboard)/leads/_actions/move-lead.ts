@@ -102,10 +102,13 @@ export async function moveLead(
       const now = new Date().toISOString()
       const statusChanged = current.status !== targetStatus
 
+      // A reorder within a column is not an edit: it leaves updated_at
+      // alone (migration 0131 ignores rank), so an open lead sheet saves
+      // without a conflict.
       const setPayload: Record<string, unknown> = {
         status: targetStatus,
         rank: normalizedRank,
-        updatedAt: now,
+        ...(statusChanged ? { updatedAt: now } : {}),
       }
 
       if (statusChanged) {

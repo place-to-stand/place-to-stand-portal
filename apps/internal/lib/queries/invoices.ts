@@ -569,7 +569,8 @@ export async function recordInvoiceView(invoiceId: string): Promise<number> {
       viewedAt: sql`timezone('utc'::text, now())`,
       viewedCount: sql`${invoices.viewedCount} + 1`,
       status: sql`CASE WHEN ${invoices.status} = 'SENT' THEN 'VIEWED'::invoice_status ELSE ${invoices.status} END`,
-      updatedAt: sql`timezone('utc'::text, now())`,
+      // No updatedAt: a client opening the link is not an edit, so an open
+      // invoice sheet doesn't take it for someone else's save.
     })
     .where(eq(invoices.id, invoiceId))
     .returning({ previousCount: invoices.viewedCount })

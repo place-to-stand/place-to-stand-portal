@@ -1,3 +1,4 @@
+import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { z } from 'zod'
 
 import type {
@@ -14,6 +15,10 @@ export type ActionResult = {
   id?: string
   error?: string
   fieldErrors?: Record<string, string[]>
+  /** The invoice's version after a save; the sheet's next expected one. */
+  updatedAt?: string
+  /** Set when someone else saved first and nothing was written. */
+  conflict?: SaveConflict
 }
 
 export type SendResult = {

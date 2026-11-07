@@ -282,7 +282,7 @@ test.describe('writes', () => {
     const created = page.getByRole('dialog')
     await created.getByPlaceholder('John Doe').fill(name)
     await created.getByPlaceholder('contact@example.com').fill(email)
-    await created.getByRole('button', { name: 'Create and close' }).click()
+    await created.getByRole('button', { name: /^Create and close/ }).click()
     await expect(created).toBeHidden()
 
     // Two tabs open the same person (each waits for the sheet's load,
@@ -306,23 +306,22 @@ test.describe('writes', () => {
     const second = await openPerson(other)
 
     // The first tab saves.
-    await first
-      .getByPlaceholder('linkedin.com/in/jane-doe')
-      .fill(`linkedin.com/in/first-${stamp}`)
-    await first.getByRole('button', { name: 'Save and close' }).click()
-    await expect(first).toBeHidden()
-
-    // The second, loaded before that save, is refused with a toast and
-    // stays open.
+    // The second starts editing first; a clean sheet would just take the
+    // first tab's save.
     await second
       .getByPlaceholder('linkedin.com/in/jane-doe')
       .fill(`linkedin.com/in/second-${stamp}`)
-    await second.getByRole('button', { name: 'Save and close' }).click()
-    await expect(
-      other.getByText(
-        'Someone else saved this person. Reload to see their changes.'
-      )
-    ).toBeVisible()
+    await first
+      .getByPlaceholder('linkedin.com/in/jane-doe')
+      .fill(`linkedin.com/in/first-${stamp}`)
+    await first.getByRole('button', { name: /^Save and close/ }).click()
+    await expect(first).toBeHidden()
+
+    await second.getByRole('button', { name: /^Save and close/ }).click()
+    // Nothing is written: the dialog asks, and the sheet stays open.
+    const refused = other.getByRole('alertdialog')
+    await expect(refused).toContainText('Your changes weren’t saved')
+    await refused.getByRole('button', { name: 'Keep editing' }).click()
     await expect(second).toBeVisible()
     await other.close()
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { HOURS_STEP } from '@/lib/time-logs/quarter-hours'
 import { useCallback, useEffect, useRef } from 'react'
 
@@ -18,7 +19,9 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
+import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { SheetSection } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import {
@@ -68,6 +71,8 @@ export function HourBlockSheet({
     isDeleteDialogOpen,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    handleLoadTheirs,
     handleSheetOpenChange,
     handleSubmit,
     handleRequestDelete,
@@ -122,6 +127,17 @@ export function HourBlockSheet({
         >
           <SheetFormHeader
             entity='hourBlock'
+            presence={
+              <SheetPresence
+                entity='hour-block'
+                noun='hour block'
+                recordId={hourBlock?.id ?? null}
+                open={open}
+                isDirty={form.formState.isDirty}
+                guard={saveConflict}
+                onLoadTheirs={handleLoadTheirs}
+              />
+            }
             title={
               !isEditing
                 ? duplicateOf
@@ -159,6 +175,7 @@ export function HourBlockSheet({
                 )}
                 className='flex flex-col gap-6 px-6 pt-6 pb-8'
               >
+                <SheetNoticeSlot />
                 <SheetSection>
                   <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
                     <FormField
@@ -269,6 +286,12 @@ export function HourBlockSheet({
         onConfirm={handleConfirmDelete}
       />
       {unsavedChangesDialog}
+      <SaveConflictDialog
+        guard={saveConflict}
+        noun='hour block'
+        onOverwrite={handleSave}
+        onLoadTheirs={handleLoadTheirs}
+      />
     </>
   )
 }
