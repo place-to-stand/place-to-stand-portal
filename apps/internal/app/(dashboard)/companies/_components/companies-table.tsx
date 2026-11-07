@@ -231,7 +231,7 @@ export function CompaniesTable({
                     {seesBilling ? (
                       <TableCell label='Hours' className='text-sm tabular-nums'>
                         {company.hours ? (
-                          <span className='inline-flex items-center gap-1.5 whitespace-nowrap'>
+                          <span className='flex w-fit items-center gap-1.5 whitespace-nowrap'>
                             <ENTITY_ICONS.timeLog
                               className={cn(
                                 ENTITY_ACCENTS.timeLog.icon,

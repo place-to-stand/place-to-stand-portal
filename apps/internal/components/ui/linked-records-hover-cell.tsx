@@ -68,8 +68,10 @@ type LinkedRecordsHoverCellProps = {
 
 const TRIGGER_CLASS =
   'cursor-pointer border-b border-dotted border-current transition hover:border-solid outline-none focus-visible:rounded-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+// align-top on these inline-flex boxes: one led by an icon takes its baseline
+// from the icon's bottom edge, which lifts it about 1.5px in a table row.
 const ICON_TRIGGER_CLASS =
-  'text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center rounded-sm transition outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+  'text-muted-foreground hover:text-foreground inline-flex align-top cursor-pointer items-center rounded-sm transition outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 const ROW_CLASS = 'flex items-center gap-2 px-3 py-2 text-sm'
 
 /**
@@ -139,7 +141,7 @@ export function LinkedRecordsHoverCell({
   )
 
   return withIcon ? (
-    <span className='inline-flex items-center gap-2'>
+    <span className='inline-flex items-center gap-2 align-top'>
       <Icon
         className={cn(
           iconClassName ?? entityIconAccent(Icon) ?? 'text-muted-foreground',
