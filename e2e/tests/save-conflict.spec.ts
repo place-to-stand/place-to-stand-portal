@@ -49,7 +49,9 @@ test('a second save over a teammate asks first', async ({ browser, page }) => {
     // The admin saves first; the sales sheet keeps its edits.
     await website(admin.sheet).fill('admin.example')
     await saveAndStay(admin.sheet)
-    await expect(admin.sheet.getByText('Saved', { exact: false })).toBeVisible()
+    await expect(
+      admin.sheet.getByRole('button', { name: 'Save and keep open' })
+    ).toHaveText('Saved')
     await expect(website(sales.sheet)).toHaveValue('sales.example')
 
     // Sales saves anyway: nothing is written until they choose.
