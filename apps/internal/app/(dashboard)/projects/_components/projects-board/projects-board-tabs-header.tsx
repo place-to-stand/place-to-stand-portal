@@ -4,6 +4,10 @@ import { Pencil, Plus } from 'lucide-react'
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { TabsList, TabsTrigger } from '@pts/ui/tabs'
+import {
+  TOOLBAR_TAB_CLASS,
+  TOOLBAR_TABS_LIST_CLASS,
+} from '@/components/layout/tabs-nav'
 import { startBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
@@ -49,13 +53,8 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
 
   return (
     <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-      {/* Left-aligned like every tab strip; scrolls once it outgrows a phone. */}
-      <TabsList className='bg-muted/40 h-10 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1'>
-        <TabsTrigger
-          value='board'
-          className='flex-none px-3 py-1.5 text-sm'
-          asChild
-        >
+      <TabsList className={TOOLBAR_TABS_LIST_CLASS}>
+        <TabsTrigger value='board' className={TOOLBAR_TAB_CLASS} asChild>
           <Link
             href={boardHref}
             prefetch={false}
@@ -68,7 +67,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
           <>
             <TabsTrigger
               value='review'
-              className='flex-none px-3 py-1.5 text-sm'
+              className={TOOLBAR_TAB_CLASS}
               asChild
               disabled={reviewDisabled}
             >
@@ -93,7 +92,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
             </TabsTrigger>
             <TabsTrigger
               value='timeLogs'
-              className='flex-none px-3 py-1.5 text-sm'
+              className={TOOLBAR_TAB_CLASS}
               asChild
               disabled={timeLogsDisabled}
             >
@@ -120,7 +119,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
             </TabsTrigger>
             <TabsTrigger
               value='activity'
-              className='flex-none px-3 py-1.5 text-sm'
+              className={TOOLBAR_TAB_CLASS}
               asChild
               disabled={activityDisabled}
             >
@@ -149,7 +148,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         )}
       </TabsList>
       {projectActions ? (
-        <div className='flex w-full items-center justify-end gap-2 sm:w-auto'>
+        <div className='flex w-full items-center justify-end gap-2 pr-1 sm:w-auto'>
           {activeProjectId && activeProjectStatus ? (
             <ProjectStatusCell
               projectId={activeProjectId}

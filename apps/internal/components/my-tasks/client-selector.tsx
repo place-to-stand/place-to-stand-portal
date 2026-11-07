@@ -4,7 +4,10 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { startTransition, useCallback, useMemo } from 'react'
 
 import { CommandGroup, CommandSeparator } from '@/components/ui/command'
-import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
+import {
+  FILTER_TRIGGER_WIDTH,
+  TOOLBAR_FILTER_TRIGGER,
+} from '@/components/ui/field-trigger'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import type { ProjectTypeValue } from '@/lib/types'
 import {
@@ -167,6 +170,7 @@ export function ClientSelector({
       emptyMessage='No clients found.'
       disabled={disabled}
       className={FILTER_TRIGGER_WIDTH}
+      triggerClassName={TOOLBAR_FILTER_TRIGGER}
       listHeader={
         <>
           <CommandGroup heading='Show'>
