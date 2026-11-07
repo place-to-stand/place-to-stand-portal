@@ -45,7 +45,7 @@ export function TabsNav({ tabs, activeTab, className }: TabsNavProps) {
       {/* 32px, the height of the page's buttons, so the toolbar is no taller
           than its tallest control. Tabs hug the left edge at every width and scroll sideways once
           they outgrow the screen, instead of stretching or clipping. */}
-      <TabsList className='bg-muted/40 h-8 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-0.5'>
+      <TabsList className='bg-muted/40 h-8 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg px-1 py-0.5'>
         {tabs.map(tab => (
           <TabsTrigger
             key={tab.value}
