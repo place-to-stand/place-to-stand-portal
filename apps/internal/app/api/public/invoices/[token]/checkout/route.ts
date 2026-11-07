@@ -182,6 +182,8 @@ export async function POST(
           eq(invoices.id, invoice.id),
           inArray(invoices.status, ['SENT', 'VIEWED']),
           isNull(invoices.deletedAt),
+          // An edit meanwhile may have changed what the intent should charge.
+          eq(invoices.total, invoice.total),
           // A second click at once gets the same intent (idempotency key)
           // and finds it already stored.
           sql`(${invoices.stripePaymentIntentId} is not distinct from ${invoice.stripePaymentIntentId} or ${invoices.stripePaymentIntentId} = ${paymentIntent.id})`

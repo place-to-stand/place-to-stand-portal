@@ -32,9 +32,11 @@ export function stopOpenInvoicePayments(
 
 /**
  * Add to the update that follows `stopOpenInvoicePayments`: it matches only
- * while the invoice still holds the payments that were stopped, so a payment
- * the client started in between makes the update miss instead of slipping by.
+ * while the invoice holds the payments that were stopped, or none (stopping
+ * a session makes Stripe send `checkout.session.expired`, whose handler
+ * clears the id). A payment the client started in between holds a new id,
+ * so the update misses instead of slipping by.
  */
 export function paymentRefsUnchanged(refs: PaymentRefs): SQL {
-  return sql`(${invoices.stripePaymentIntentId} is not distinct from ${refs.paymentIntentId} and ${invoices.stripeCheckoutSessionId} is not distinct from ${refs.checkoutSessionId})`
+  return sql`((${invoices.stripePaymentIntentId} is null or ${invoices.stripePaymentIntentId} is not distinct from ${refs.paymentIntentId}) and (${invoices.stripeCheckoutSessionId} is null or ${invoices.stripeCheckoutSessionId} is not distinct from ${refs.checkoutSessionId}))`
 }

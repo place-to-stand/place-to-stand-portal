@@ -137,8 +137,10 @@ export const STALE_GENERATION_MINUTES = 20
 export const sessionGenerationStaleSql = sql<boolean>`${planningSessions.updatedAt} < now() - make_interval(mins => ${STALE_GENERATION_MINUTES})`
 
 /**
- * Marks the thread as writing, unless another write is already running.
- * Returns false when one is. Claiming also touches the session's
+ * Marks the thread as writing version `version`, unless another write is
+ * already running (`busy`) or the thread has moved past `version - 1` since
+ * the caller loaded it (`outdated`: a second tab would rewrite a version
+ * that exists). Claiming also touches the session's
  * `updated_at`, which is how a later claim or read tells a dead write
  * (older than STALE_GENERATION_MINUTES) from a live one. The clock is per
  * session, not per thread, so activity on a sibling thread delays a dead
@@ -148,11 +150,12 @@ export const sessionGenerationStaleSql = sql<boolean>`${planningSessions.updated
 export async function claimThreadGeneration(
   threadId: string,
   version: number
-): Promise<boolean> {
+): Promise<'claimed' | 'busy' | 'outdated'> {
   return db.transaction(async tx => {
     const [current] = await tx
       .select({
         sessionId: planThreads.sessionId,
+        currentVersion: planThreads.currentVersion,
         generationStatus: planThreads.generationStatus,
         stale: sessionGenerationStaleSql,
       })
@@ -165,10 +168,11 @@ export async function claimThreadGeneration(
       .limit(1)
       .for('update', { of: [planThreads, planningSessions] })
 
-    if (!current) return false
+    if (!current) return 'outdated'
     if (current.generationStatus === 'streaming' && !current.stale) {
-      return false
+      return 'busy'
     }
+    if (current.currentVersion !== version - 1) return 'outdated'
 
     await tx
       .update(planThreads)
@@ -185,7 +189,7 @@ export async function claimThreadGeneration(
       .set({ updatedAt: sql`now()` })
       .where(eq(planningSessions.id, current.sessionId))
 
-    return true
+    return 'claimed'
   })
 }
 

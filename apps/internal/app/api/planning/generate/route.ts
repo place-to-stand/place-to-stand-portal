@@ -165,9 +165,15 @@ export async function POST(request: Request) {
   // generation instead of showing the blank initial-planning screen. Refused
   // while another write on this thread is still running, so two clicks can't
   // start two writes.
-  if (!(await claimThreadGeneration(threadId, nextVersion))) {
+  const claim = await claimThreadGeneration(threadId, nextVersion)
+  if (claim !== 'claimed') {
     return new Response(
-      JSON.stringify({ error: 'This plan is already being written.' }),
+      JSON.stringify({
+        error:
+          claim === 'busy'
+            ? 'This plan is already being written.'
+            : 'This plan changed since you opened it. Refresh and try again.',
+      }),
       { status: 409, headers: { 'Content-Type': 'application/json' } }
     )
   }

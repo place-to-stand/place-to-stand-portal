@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, desc, eq, ne, sql } from 'drizzle-orm'
 
 import { taskWorkerStatusChangedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
@@ -261,7 +261,13 @@ export async function loadWorkerStatus(
           githubIssueNumber: deployment.githubIssueNumber,
           githubIssueUrl: deployment.githubIssueUrl,
         })
-        .where(eq(tasks.id, deployment.taskId))
+        .where(
+          and(
+            eq(tasks.id, deployment.taskId),
+            // A cancel that landed since this poll's own write wins here too.
+            sql`exists (select 1 from ${taskDeployments} where ${taskDeployments.id} = ${deploymentId} and ${taskDeployments.workerStatus} <> 'cancelled')`
+          )
+        )
     }
   }
 
