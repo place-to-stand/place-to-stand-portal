@@ -4,12 +4,7 @@ import { leadHref } from '@/lib/sheets/hrefs'
 import type { CliLeadRow } from '../queries/leads'
 import { isoTimestamp } from './timestamp'
 
-/**
- * `lastContactAt`, `awaitingReply` and `expectedCloseDate` exist on the row
- * but nothing in the app writes them (PRD 006 left them write-never), so they
- * are deliberately not exported — a null there reads as "never contacted",
- * which is wrong. Last touch is the newest entry in `leads updates`.
- */
+/** Last touch is the newest entry in `leads updates`. */
 export type CliLead = {
   id: string
   name: string
@@ -31,8 +26,6 @@ export type CliLead = {
   rank: string
   currentStageEnteredAt: string | null
   resolvedAt: string | null
-  lossReason: CliLeadRow['lossReason']
-  lossNotes: string | null
   convertedAt: string | null
   convertedToClientId: string | null
   /** Portal path that opens the lead sheet; the CLI joins it to its base URL. */
@@ -59,8 +52,6 @@ export function serializeLead(lead: CliLeadRow): CliLead {
     rank: lead.rank,
     currentStageEnteredAt: isoTimestamp(lead.currentStageEnteredAt),
     resolvedAt: isoTimestamp(lead.resolvedAt),
-    lossReason: lead.lossReason,
-    lossNotes: lead.lossNotes,
     convertedAt: isoTimestamp(lead.convertedAt),
     convertedToClientId: lead.convertedToClientId,
     path: leadHref(lead.id),

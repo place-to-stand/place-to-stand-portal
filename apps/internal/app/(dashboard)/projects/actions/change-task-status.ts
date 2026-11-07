@@ -10,7 +10,7 @@ import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { leads, projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
-import { resolveCompletedAt } from '@/lib/projects/task-status'
+import { resolveTaskStatusStamps } from '@/lib/projects/task-status'
 import { pinTaskToTopOfAssigneeBoards } from '@/lib/tasks/assignee-sort'
 
 import { revalidateProjectTaskViews } from './shared'
@@ -97,7 +97,7 @@ export async function changeTaskStatus(input: {
         rank: nextRank,
         updatedBy: user.id,
         updatedAt: new Date().toISOString(),
-        ...resolveCompletedAt(status, task.completedAt),
+        ...resolveTaskStatusStamps(status, task.completedAt),
       })
       .where(eq(tasks.id, taskId))
 

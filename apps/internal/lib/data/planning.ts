@@ -13,6 +13,7 @@ import type {
   PlanningSessionData,
 } from '@/lib/planning/types'
 import {
+  STALE_GENERATION_MINUTES,
   getPlanningContextForThread,
   getRevisions,
   getSessionByTaskId,
@@ -27,18 +28,33 @@ import type { DbTaskDeployment } from '@/lib/types'
  * the first explicit action (`startPlanningThread`).
  */
 
+const DEAD_GENERATION_MESSAGE =
+  'This plan stopped before it finished. Try again.'
+
+/**
+ * `sessionUpdatedAt` lets a write whose server function was cut off read as
+ * the error it is, instead of "writing" forever (see
+ * `claimThreadGeneration`).
+ */
 export function toPlanThreadData(
-  thread: Awaited<ReturnType<typeof getThreadsForSession>>[number]
+  thread: Awaited<ReturnType<typeof getThreadsForSession>>[number],
+  sessionUpdatedAt?: string
 ): PlanThreadData {
+  const dead =
+    thread.generationStatus === 'streaming' &&
+    sessionUpdatedAt !== undefined &&
+    Date.now() - Date.parse(sessionUpdatedAt) >
+      STALE_GENERATION_MINUTES * 60_000
+
   return {
     id: thread.id,
     model: thread.model,
     modelLabel: thread.modelLabel,
     currentVersion: thread.currentVersion,
-    generationStatus: thread.generationStatus,
+    generationStatus: dead ? 'error' : thread.generationStatus,
     generatingVersion: thread.generatingVersion,
     partialContent: thread.partialContent,
-    generationError: thread.generationError,
+    generationError: dead ? DEAD_GENERATION_MESSAGE : thread.generationError,
   }
 }
 
@@ -56,7 +72,10 @@ export async function loadPlanningSession(
 
   const threads = await getThreadsForSession(session.id)
 
-  return { sessionId: session.id, threads: threads.map(toPlanThreadData) }
+  return {
+    sessionId: session.id,
+    threads: threads.map(thread => toPlanThreadData(thread, session.updatedAt)),
+  }
 }
 
 export async function loadPlanRevisions(

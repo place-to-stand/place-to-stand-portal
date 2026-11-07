@@ -225,6 +225,10 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       return { error: 'Paid invoices cannot be edited.' }
     }
 
+    if (existing.status === 'VOID') {
+      return { error: 'Void invoices cannot be edited.' }
+    }
+
     try {
       await db.transaction(async tx => {
         const updateData: Record<string, unknown> = {

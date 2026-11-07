@@ -133,13 +133,16 @@ export const deriveDeleteButtonState = (
     return { disabled: true, reason: null }
   }
 
-  const disabled = isPending || Boolean(invoice?.deleted_at)
+  const isPaid = invoice?.status === 'PAID'
+  const disabled = isPending || Boolean(invoice?.deleted_at) || isPaid
   const reason = disabled
     ? isPending
       ? PENDING_REASON
       : invoice?.deleted_at
         ? 'This invoice is already deleted.'
-        : null
+        : isPaid
+          ? 'Paid invoices cannot be archived.'
+          : null
     : null
 
   return { disabled, reason }

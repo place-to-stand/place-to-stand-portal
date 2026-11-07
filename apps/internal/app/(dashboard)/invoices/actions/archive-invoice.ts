@@ -46,6 +46,7 @@ async function performArchiveInvoice(
   const existingRows = await db
     .select({
       id: invoices.id,
+      status: invoices.status,
       companyId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
     })
@@ -57,6 +58,12 @@ async function performArchiveInvoice(
 
   if (!existing) {
     return { error: 'Invoice not found.' }
+  }
+
+  // A paid invoice is a sale on the books: archiving it would drop it from
+  // the monthly close and sales tax reports.
+  if (existing.status === 'PAID') {
+    return { error: 'Paid invoices cannot be archived.' }
   }
 
   const clientRows = await db

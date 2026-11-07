@@ -1,6 +1,6 @@
 // permission: public — verified by Stripe signature
 import { NextResponse } from 'next/server'
-import { and, eq, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 
 import { serverEnv } from '@/lib/env.server'
 import { db } from '@/lib/db'
@@ -14,6 +14,7 @@ import { invoicePaidEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { createHourBlocksFromInvoice } from '@/lib/data/invoices'
 import { notifyInvoicePaid } from '@/lib/notifications/google-chat'
+import { captureServerException } from '@/lib/posthog/server'
 import {
   checkoutPaymentOutcome,
   coversTotal,
@@ -53,10 +54,33 @@ function coversInvoiceTotal(
   return ok
 }
 
+const PAYABLE_STATUSES: ('SENT' | 'VIEWED')[] = ['SENT', 'VIEWED']
+
 async function markInvoicePaid(
   invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceByStripeSession>>>,
   paymentIntentId: string | null
 ) {
+  // Only a Sent or Viewed invoice can be paid. Money that arrives for a Draft
+  // or Void one (voiding cancels open payments, so this should not happen)
+  // is flagged for a person to refund, never booked as a sale.
+  if (
+    invoice.status !== 'PAID' &&
+    !(PAYABLE_STATUSES as string[]).includes(invoice.status)
+  ) {
+    const error = new Error(
+      `Stripe payment received for a ${invoice.status} invoice; refund it or reissue the invoice`
+    )
+    console.error('[stripe-webhook]', error.message, {
+      invoiceId: invoice.id,
+      paymentIntentId,
+    })
+    captureServerException(error, {
+      distinctId: 'stripe-webhook',
+      properties: { invoiceId: invoice.id, paymentIntentId },
+    })
+    return
+  }
+
   // Only the delivery that flips the status logs and notifies: the update is
   // conditional, so a replayed or concurrent event finds it already paid.
   const flipped =
@@ -70,7 +94,12 @@ async function markInvoicePaid(
             paidAt: sql`timezone('utc'::text, now())`,
             updatedAt: sql`timezone('utc'::text, now())`,
           })
-          .where(and(eq(invoices.id, invoice.id), ne(invoices.status, 'PAID')))
+          .where(
+            and(
+              eq(invoices.id, invoice.id),
+              inArray(invoices.status, PAYABLE_STATUSES)
+            )
+          )
           .returning({ id: invoices.id })
   if (flipped.length > 0) {
     // Awaited before the response goes out: a fire-and-forget promise here
@@ -100,6 +129,15 @@ async function markInvoicePaid(
       total: invoice.total,
       clientName: invoice.client?.name,
     }).catch(console.error)
+  }
+
+  // Lost a race with a void: the invoice was never paid, so no hours.
+  if (flipped.length === 0 && invoice.status !== 'PAID') {
+    console.error(
+      '[stripe-webhook] Invoice left Sent/Viewed before the payment landed; not marking paid',
+      { invoiceId: invoice.id, paymentIntentId }
+    )
+    return
   }
 
   // Always attempt hour block creation — must be awaited so it completes

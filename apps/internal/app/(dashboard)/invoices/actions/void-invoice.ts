@@ -2,7 +2,7 @@
 import { isClientCompany } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -11,6 +11,10 @@ import { invoiceVoidedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { companies, invoices } from '@/lib/db/schema'
+import {
+  stopOpenInvoicePayments,
+  stopPaymentsRefusal,
+} from '@/lib/invoices/stop-open-payments'
 
 import { voidSchema } from './schemas'
 import type { ActionResult, VoidInput } from './types'
@@ -45,6 +49,8 @@ async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
       status: invoices.status,
       companyId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
+      stripePaymentIntentId: invoices.stripePaymentIntentId,
+      stripeCheckoutSessionId: invoices.stripeCheckoutSessionId,
     })
     .from(invoices)
     .where(eq(invoices.id, invoiceId))
@@ -68,14 +74,34 @@ async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
 
   const clientName = clientRows[0]?.name ?? null
 
+  // A client with the invoice open could otherwise still pay it.
+  const stopped = await stopOpenInvoicePayments({
+    paymentIntentId: existing.stripePaymentIntentId,
+    checkoutSessionId: existing.stripeCheckoutSessionId,
+  })
+  if (stopped !== 'clear') {
+    return { error: stopPaymentsRefusal(stopped, 'voided') }
+  }
+
   try {
-    await db
+    // Conditional, so a payment that landed meanwhile keeps the invoice Paid.
+    const voided = await db
       .update(invoices)
       .set({
         status: 'VOID',
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(invoices.id, invoiceId))
+      .where(
+        and(
+          eq(invoices.id, invoiceId),
+          inArray(invoices.status, ['DRAFT', 'SENT', 'VIEWED'])
+        )
+      )
+      .returning({ id: invoices.id })
+
+    if (voided.length === 0) {
+      return { error: 'This invoice cannot be voided.' }
+    }
   } catch (error) {
     console.error('Failed to void invoice', error)
 

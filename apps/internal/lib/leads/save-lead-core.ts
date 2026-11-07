@@ -11,8 +11,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { leads, leadStageHistory } from '@/lib/db/schema'
-import { isTerminalLeadStatus } from '@/lib/leads/constants'
+import { leads } from '@/lib/db/schema'
 import {
   leadCompany,
   leadCompanyJoin,
@@ -21,6 +20,8 @@ import {
   leadDisplayFields,
 } from '@/lib/leads/lead-display'
 import { markConvertedIfClient } from '@/lib/leads/mark-converted'
+import { recordLeadStageMove } from '@/lib/leads/record-stage-move'
+import { leadStageMoveFields } from '@/lib/leads/stage-rules'
 import { serializeLeadNotes } from '@/lib/leads/notes'
 import { resolveNextLeadRank } from '@/lib/leads/rank'
 import {
@@ -192,14 +193,12 @@ async function createLead(
   if (!inserted) {
     return { success: false, error: 'Unable to save lead. Please try again.' }
   }
-  await markConvertedIfClient(tx, inserted.id, timestamp)
-
-  await tx.insert(leadStageHistory).values({
+  await recordLeadStageMove(tx, {
     leadId: inserted.id,
     fromStatus: null,
     toStatus: normalized.status,
-    changedAt: timestamp,
-    changedBy: actor.id,
+    at: timestamp,
+    actorId: actor.id,
   })
 
   const leadId = inserted.id
@@ -329,39 +328,22 @@ async function updateLead(
     notes: serializeLeadNotes(normalized.notes),
     rank,
     updatedAt: timestamp,
-  }
-
-  if (statusChanged) {
-    setPayload.currentStageEnteredAt = timestamp
-
-    if (isTerminalLeadStatus(normalized.status)) {
-      setPayload.resolvedAt = timestamp
-    }
-
-    // Moving back to an active stage reopens the lead. The conversion
-    // record (`convertedAt`, which links the lead to its company as a
-    // client) is kept: a Won lead moved back stays converted.
-    if (
-      isTerminalLeadStatus(existing.status) &&
-      !isTerminalLeadStatus(normalized.status)
-    ) {
-      setPayload.resolvedAt = null
-      setPayload.lossReason = null
-      setPayload.lossNotes = null
-    }
+    ...leadStageMoveFields(existing.status, normalized.status, timestamp),
   }
 
   await tx.update(leads).set(setPayload).where(eq(leads.id, leadId))
-  await markConvertedIfClient(tx, leadId, timestamp)
 
   if (statusChanged) {
-    await tx.insert(leadStageHistory).values({
+    await recordLeadStageMove(tx, {
       leadId,
       fromStatus: existing.status,
       toStatus: normalized.status,
-      changedAt: timestamp,
-      changedBy: actor.id,
+      at: timestamp,
+      actorId: actor.id,
     })
+  } else {
+    // A company change can convert a lead that was already Won.
+    await markConvertedIfClient(tx, leadId, timestamp)
   }
 
   // Status-only edits read as a stage move; anything else is a field diff

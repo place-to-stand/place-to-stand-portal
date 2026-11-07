@@ -11,7 +11,7 @@ import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
-import { resolveCompletedAt } from '@/lib/projects/task-status'
+import { resolveTaskStatusStamps } from '@/lib/projects/task-status'
 import { revalidateProjectTaskViews } from '@/app/(dashboard)/projects/actions/shared'
 import { statusSchema } from '@/lib/tasks/schemas'
 
@@ -130,7 +130,7 @@ export async function PATCH(
       status: nextStatus,
       updatedBy: user.id,
       updatedAt,
-      ...resolveCompletedAt(nextStatus, task.completedAt),
+      ...resolveTaskStatusStamps(nextStatus, task.completedAt),
     })
     .where(eq(tasks.id, taskId))
     .returning({
