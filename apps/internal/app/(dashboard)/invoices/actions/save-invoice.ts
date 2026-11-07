@@ -17,34 +17,16 @@ import {
   invoiceTotals,
   lineItemCents,
 } from '@/lib/invoices/invoice-totals'
-import { getStripe } from '@/lib/stripe/client'
+import {
+  paymentRefsUnchanged,
+  stopOpenInvoicePayments,
+  stopPaymentsRefusal,
+} from '@/lib/invoices/stop-open-payments'
 import { companies, invoices, invoiceLineItems } from '@/lib/db/schema'
 
 import { invoiceSchema } from './schemas'
 import type { ActionResult, InvoiceInput } from './types'
 import { INVOICES_PATH } from './helpers'
-
-/**
- * Best effort: an intent that can still be paid would charge the old
- * total, and its payment would no longer match the invoice. One already
- * processing or finished can't be cancelled; the webhook's amount check
- * covers it.
- */
-async function cancelStalePaymentIntent(paymentIntentId: string) {
-  try {
-    const stripe = getStripe()
-    const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
-    if (
-      intent.status === 'requires_payment_method' ||
-      intent.status === 'requires_confirmation' ||
-      intent.status === 'requires_action'
-    ) {
-      await stripe.paymentIntents.cancel(paymentIntentId)
-    }
-  } catch (error) {
-    console.error('Failed to cancel stale payment intent', error)
-  }
-}
 
 export async function saveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const mode = input.id ? 'edit' : 'create'
@@ -210,6 +192,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         subtotal: invoices.subtotal,
         total: invoices.total,
         stripePaymentIntentId: invoices.stripePaymentIntentId,
+        stripeCheckoutSessionId: invoices.stripeCheckoutSessionId,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
@@ -229,6 +212,19 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       return { error: 'Void invoices cannot be edited.' }
     }
 
+    // A payment the client has open was made for the old total. Stop it
+    // before its ids are dropped, or nothing could stop it later.
+    const refs = {
+      paymentIntentId: existing.stripePaymentIntentId,
+      checkoutSessionId: existing.stripeCheckoutSessionId,
+    }
+    if (refs.paymentIntentId || refs.checkoutSessionId) {
+      const stopped = await stopOpenInvoicePayments(refs)
+      if (stopped !== 'clear') {
+        return { error: stopPaymentsRefusal(stopped, 'edited') }
+      }
+    }
+
     try {
       await db.transaction(async tx => {
         const updateData: Record<string, unknown> = {
@@ -246,16 +242,28 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
           updateData.billingType = client.billingType
         }
 
-        if (existing.status === 'SENT') {
-          updateData.stripeCheckoutSessionId = null
-        }
-        // A payment intent was made for the old total: drop it so checkout
-        // makes one for the new total (and cancel it below).
-        if (existing.stripePaymentIntentId) {
-          updateData.stripePaymentIntentId = null
-        }
+        // Stopped above: checkout makes new ones for the new total.
+        updateData.stripePaymentIntentId = null
+        updateData.stripeCheckoutSessionId = null
 
-        await tx.update(invoices).set(updateData).where(eq(invoices.id, id))
+        // Conditional, so a payment, void or new checkout that landed
+        // meanwhile is not overwritten.
+        const updated = await tx
+          .update(invoices)
+          .set(updateData)
+          .where(
+            and(
+              eq(invoices.id, id),
+              eq(invoices.status, existing.status),
+              paymentRefsUnchanged(refs)
+            )
+          )
+          .returning({ id: invoices.id })
+        if (updated.length === 0) {
+          throw new Error(
+            'This invoice changed while you were working on it. Refresh and try again.'
+          )
+        }
 
         const existingLineItemRows = await tx
           .select({ id: invoiceLineItems.id })
@@ -322,10 +330,6 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         error:
           error instanceof Error ? error.message : 'Unable to update invoice.',
       }
-    }
-
-    if (existing.stripePaymentIntentId) {
-      await cancelStalePaymentIntent(existing.stripePaymentIntentId)
     }
 
     const changedFields: string[] = []

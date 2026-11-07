@@ -11,6 +11,7 @@ import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
 import {
+  paymentRefsUnchanged,
   stopOpenInvoicePayments,
   stopPaymentsRefusal,
 } from '@/lib/invoices/stop-open-payments'
@@ -66,10 +67,11 @@ async function performUnsendInvoice(input: UnsendInput): Promise<ActionResult> {
   }
 
   // A draft can't be paid, so a payment the client has open must stop first.
-  const stopped = await stopOpenInvoicePayments({
+  const refs = {
     paymentIntentId: existing.stripePaymentIntentId,
     checkoutSessionId: existing.stripeCheckoutSessionId,
-  })
+  }
+  const stopped = await stopOpenInvoicePayments(refs)
   if (stopped !== 'clear') {
     return { error: stopPaymentsRefusal(stopped, 'reverted to draft') }
   }
@@ -77,7 +79,8 @@ async function performUnsendInvoice(input: UnsendInput): Promise<ActionResult> {
   try {
     const nowIso = new Date().toISOString()
 
-    // Conditional, so a view or payment that landed meanwhile wins.
+    // Conditional, so a view or payment that landed meanwhile wins, and a
+    // payment started meanwhile (new Stripe ids) is not left open.
     const reverted = await db
       .update(invoices)
       .set({
@@ -88,11 +91,20 @@ async function performUnsendInvoice(input: UnsendInput): Promise<ActionResult> {
         shareEnabled: false,
         updatedAt: nowIso,
       })
-      .where(and(eq(invoices.id, invoiceId), eq(invoices.status, 'SENT')))
+      .where(
+        and(
+          eq(invoices.id, invoiceId),
+          eq(invoices.status, 'SENT'),
+          paymentRefsUnchanged(refs)
+        )
+      )
       .returning({ id: invoices.id })
 
     if (reverted.length === 0) {
-      return { error: 'Only sent invoices can be reverted to draft.' }
+      return {
+        error:
+          'This invoice changed while you were working on it. Refresh and try again.',
+      }
     }
 
     await logActivity({

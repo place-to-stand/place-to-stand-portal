@@ -33,7 +33,7 @@ export type StopPaymentsOutcome =
 /** Why an invoice can't leave Sent yet, for each outcome but `clear`. */
 export function stopPaymentsRefusal(
   outcome: Exclude<StopPaymentsOutcome, 'clear'>,
-  action: 'voided' | 'reverted to draft'
+  action: 'voided' | 'reverted to draft' | 'archived' | 'edited'
 ): string {
   switch (outcome) {
     case 'paid':

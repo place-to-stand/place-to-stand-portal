@@ -12,6 +12,7 @@ import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { companies, invoices } from '@/lib/db/schema'
 import {
+  paymentRefsUnchanged,
   stopOpenInvoicePayments,
   stopPaymentsRefusal,
 } from '@/lib/invoices/stop-open-payments'
@@ -75,16 +76,18 @@ async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
   const clientName = clientRows[0]?.name ?? null
 
   // A client with the invoice open could otherwise still pay it.
-  const stopped = await stopOpenInvoicePayments({
+  const refs = {
     paymentIntentId: existing.stripePaymentIntentId,
     checkoutSessionId: existing.stripeCheckoutSessionId,
-  })
+  }
+  const stopped = await stopOpenInvoicePayments(refs)
   if (stopped !== 'clear') {
     return { error: stopPaymentsRefusal(stopped, 'voided') }
   }
 
   try {
-    // Conditional, so a payment that landed meanwhile keeps the invoice Paid.
+    // Conditional, so a payment that landed meanwhile keeps the invoice Paid,
+    // and a payment started meanwhile (new Stripe ids) is not left open.
     const voided = await db
       .update(invoices)
       .set({
@@ -94,13 +97,17 @@ async function performVoidInvoice(input: VoidInput): Promise<ActionResult> {
       .where(
         and(
           eq(invoices.id, invoiceId),
-          inArray(invoices.status, ['DRAFT', 'SENT', 'VIEWED'])
+          inArray(invoices.status, ['DRAFT', 'SENT', 'VIEWED']),
+          paymentRefsUnchanged(refs)
         )
       )
       .returning({ id: invoices.id })
 
     if (voided.length === 0) {
-      return { error: 'This invoice cannot be voided.' }
+      return {
+        error:
+          'This invoice changed while you were working on it. Refresh and try again.',
+      }
     }
   } catch (error) {
     console.error('Failed to void invoice', error)

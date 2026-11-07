@@ -1,6 +1,6 @@
 // permission: public — verified by Stripe signature
 import { NextResponse } from 'next/server'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { serverEnv } from '@/lib/env.server'
 import { db } from '@/lib/db'
@@ -13,7 +13,10 @@ import {
 import { invoicePaidEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 import { createHourBlocksFromInvoice } from '@/lib/data/invoices'
-import { notifyInvoicePaid } from '@/lib/notifications/google-chat'
+import {
+  notifyInvoicePaid,
+  notifyUnbookedPayment,
+} from '@/lib/notifications/google-chat'
 import { captureServerException } from '@/lib/posthog/server'
 import {
   checkoutPaymentOutcome,
@@ -56,28 +59,65 @@ function coversInvoiceTotal(
 
 const PAYABLE_STATUSES: ('SENT' | 'VIEWED')[] = ['SENT', 'VIEWED']
 
+type WebhookInvoice = NonNullable<
+  Awaited<ReturnType<typeof getInvoiceByStripeSession>>
+>
+
+/**
+ * Money arrived for an invoice that can't take it (Draft, Void or archived).
+ * It is never booked as a sale: the team is told to refund or reissue.
+ * Voiding, reverting, archiving and editing stop open payments first, so
+ * this means a race or a payment made outside the portal.
+ */
+async function flagUnbookedPayment(
+  invoice: WebhookInvoice,
+  paymentIntentId: string | null,
+  reason: string
+) {
+  const error = new Error(
+    `Stripe payment received but ${reason}; refund it or reissue the invoice`
+  )
+  console.error('[stripe-webhook]', error.message, {
+    invoiceId: invoice.id,
+    paymentIntentId,
+  })
+  captureServerException(error, {
+    distinctId: 'stripe-webhook',
+    properties: { invoiceId: invoice.id, paymentIntentId },
+  })
+  await notifyUnbookedPayment({
+    invoiceId: invoice.id,
+    invoiceNumber: invoice.invoice_number,
+    total: invoice.total,
+    clientName: invoice.client?.name,
+    reason,
+  }).catch(console.error)
+}
+
+function unbookableReason(invoice: {
+  status: string
+  deleted_at: string | null
+}): string {
+  return invoice.deleted_at
+    ? 'the invoice is archived'
+    : `the invoice is ${invoice.status.charAt(0)}${invoice.status.slice(1).toLowerCase()}`
+}
+
 async function markInvoicePaid(
-  invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceByStripeSession>>>,
+  invoice: WebhookInvoice,
   paymentIntentId: string | null
 ) {
-  // Only a Sent or Viewed invoice can be paid. Money that arrives for a Draft
-  // or Void one (voiding cancels open payments, so this should not happen)
-  // is flagged for a person to refund, never booked as a sale.
+  // Only a live Sent or Viewed invoice can be paid.
   if (
     invoice.status !== 'PAID' &&
-    !(PAYABLE_STATUSES as string[]).includes(invoice.status)
+    (invoice.deleted_at ||
+      !(PAYABLE_STATUSES as string[]).includes(invoice.status))
   ) {
-    const error = new Error(
-      `Stripe payment received for a ${invoice.status} invoice; refund it or reissue the invoice`
-    )
-    console.error('[stripe-webhook]', error.message, {
-      invoiceId: invoice.id,
+    await flagUnbookedPayment(
+      invoice,
       paymentIntentId,
-    })
-    captureServerException(error, {
-      distinctId: 'stripe-webhook',
-      properties: { invoiceId: invoice.id, paymentIntentId },
-    })
+      unbookableReason(invoice)
+    )
     return
   }
 
@@ -97,7 +137,8 @@ async function markInvoicePaid(
           .where(
             and(
               eq(invoices.id, invoice.id),
-              inArray(invoices.status, PAYABLE_STATUSES)
+              inArray(invoices.status, PAYABLE_STATUSES),
+              isNull(invoices.deletedAt)
             )
           )
           .returning({ id: invoices.id })
@@ -131,13 +172,21 @@ async function markInvoicePaid(
     }).catch(console.error)
   }
 
-  // Lost a race with a void: the invoice was never paid, so no hours.
+  // Lost a race with a void, revert or archive: the invoice was never
+  // paid, so no hours.
   if (flipped.length === 0 && invoice.status !== 'PAID') {
-    console.error(
-      '[stripe-webhook] Invoice left Sent/Viewed before the payment landed; not marking paid',
-      { invoiceId: invoice.id, paymentIntentId }
-    )
-    return
+    const [now] = await db
+      .select({ status: invoices.status, deleted_at: invoices.deletedAt })
+      .from(invoices)
+      .where(eq(invoices.id, invoice.id))
+    if (now?.status !== 'PAID') {
+      await flagUnbookedPayment(
+        invoice,
+        paymentIntentId,
+        now ? unbookableReason(now) : 'the invoice is gone'
+      )
+      return
+    }
   }
 
   // Always attempt hour block creation — must be awaited so it completes

@@ -8,6 +8,7 @@ import type { TemplateAudience } from '@/lib/templates/audience'
 import {
   buildInvoicePaidCard,
   buildStuckEmailCard,
+  buildUnbookedPaymentCard,
 } from './google-chat-messages'
 
 /** A Google Chat `cardsV2` payload, exactly as the notifier posts it. */
@@ -70,6 +71,29 @@ export function buildNotificationCatalog(): NotificationTemplateEntry[] {
         invoiceNumber: 'INV-0042',
         total: '3680.50',
         clientName: 'Acme Co',
+        invoiceUrl: `${origin}${invoiceHref(SAMPLE_INVOICE_ID)}`,
+      }),
+    },
+    {
+      id: 'invoice-payment-unbooked',
+      name: 'Payment not booked',
+      channel: 'Google Chat · Sales',
+      overview:
+        'Posted when Stripe takes money for an invoice that is void, draft or archived.',
+      description:
+        'Warns the sales space that a client paid an invoice the portal will not mark paid, so someone refunds it in Stripe or reissues the invoice. Voiding, reverting, archiving and editing stop open payments first, so this should be rare.',
+      audiences: ['team'],
+      configured,
+      triggers: [
+        'Stripe reports a successful payment for an invoice that is not Sent or Viewed, or is archived (POST /api/integrations/stripe)',
+      ],
+      delivery: CHAT_DELIVERY,
+      source: 'apps/internal/lib/notifications/google-chat-messages.ts',
+      sample: buildUnbookedPaymentCard({
+        invoiceNumber: 'INV-0042',
+        total: '3680.50',
+        clientName: 'Acme Co',
+        reason: 'the invoice is Void',
         invoiceUrl: `${origin}${invoiceHref(SAMPLE_INVOICE_ID)}`,
       }),
     },

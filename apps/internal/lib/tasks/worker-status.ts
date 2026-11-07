@@ -265,6 +265,20 @@ export async function loadWorkerStatus(
     }
   }
 
+  // A run cancelled before the worker picked it up can't be stopped (the
+  // worker only reads a 👎 on its own comment), so it may still open a PR.
+  // The run stays cancelled, but the PR link is kept so it can be found.
+  if (
+    deployment.workerStatus === 'cancelled' &&
+    prUrl &&
+    prUrl !== deployment.prUrl
+  ) {
+    await db
+      .update(taskDeployments)
+      .set({ prUrl, updatedAt: new Date().toISOString() })
+      .where(eq(taskDeployments.id, deploymentId))
+  }
+
   // The bot's last comment can still read "working" after a cancel; the
   // run's own status is the truth then.
   return {

@@ -1,6 +1,6 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -86,10 +86,16 @@ export async function acceptTask(input: {
 
   const timestamp = new Date().toISOString()
 
-  await db
+  // Conditional, so a task reopened meanwhile is not accepted.
+  const accepted = await db
     .update(tasks)
     .set({ acceptedAt: timestamp })
-    .where(eq(tasks.id, taskId))
+    .where(and(eq(tasks.id, taskId), eq(tasks.status, 'DONE')))
+    .returning({ id: tasks.id })
+
+  if (accepted.length === 0) {
+    return { error: 'Only tasks marked as Done can be accepted.' }
+  }
 
   const event = taskAcceptedEvent({ title: task.title ?? 'Task' })
 
