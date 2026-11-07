@@ -194,7 +194,7 @@ export function TimeLogsTable({
                       />
                       {/* Hours first: it's what you scan a time log for. */}
                       <TableCell className='text-sm font-medium tabular-nums'>
-                        <span className='inline-flex items-center gap-2'>
+                        <span className='flex w-fit items-center gap-2'>
                           <ENTITY_ICONS.timeLog
                             className={cn(
                               ENTITY_ACCENTS.timeLog.icon,

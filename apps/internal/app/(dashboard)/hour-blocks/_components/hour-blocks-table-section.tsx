@@ -183,7 +183,7 @@ export function HourBlocksTableSection({
                       label={block.client?.name ?? 'hour block'}
                     />
                     <TableCell label='Hours' className='text-sm'>
-                      <span className='inline-flex items-center gap-2'>
+                      <span className='flex w-fit items-center gap-2'>
                         <ENTITY_ICONS.hourBlock
                           className={cn(
                             ENTITY_ACCENTS.hourBlock.icon,
