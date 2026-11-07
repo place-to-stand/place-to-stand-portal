@@ -11,7 +11,7 @@ import { ensureTaskWorkAccess } from '@/lib/projects/access'
 import { db } from '@/lib/db'
 import { projects, tasks } from '@/lib/db/schema'
 import { NotFoundError, ForbiddenError } from '@/lib/errors/http'
-import { resolveCompletedAt } from '@/lib/projects/task-status'
+import { resolveTaskStatusStamps } from '@/lib/projects/task-status'
 import { revalidateProjectTaskViews } from '@/app/(dashboard)/projects/actions/shared'
 import { statusSchema } from '@/lib/tasks/schemas'
 
@@ -120,6 +120,7 @@ export async function PATCH(
     parsedPayload.status && parsedPayload.status !== task.status
 
   const nextStatus = statusChanged ? parsedPayload.status! : task.status
+  const updatedAt = new Date().toISOString()
 
   const updatedTaskRecords = await db
     .update(tasks)
@@ -130,8 +131,8 @@ export async function PATCH(
       // A reorder within a column is not an edit: it leaves updated_at
       // alone (migration 0131 ignores rank), so an open task sheet saves
       // without a conflict.
-      ...(statusChanged ? { updatedAt: new Date().toISOString() } : {}),
-      ...resolveCompletedAt(nextStatus, task.completedAt),
+      ...(statusChanged ? { updatedAt } : {}),
+      ...resolveTaskStatusStamps(nextStatus, task.completedAt),
     })
     .where(eq(tasks.id, taskId))
     .returning({

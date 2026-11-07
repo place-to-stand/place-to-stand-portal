@@ -161,3 +161,72 @@ export function buildStuckEmailCard(
     ],
   }
 }
+
+export type UnbookedPaymentNotice = InvoicePaidNotice & {
+  /** Why the payment was not booked, e.g. "the invoice is Void". */
+  reason: string
+}
+
+/**
+ * Build a Google Chat `cardsV2` payload warning that Stripe took money for an
+ * invoice that can't be paid (void, draft or archived). The portal does not
+ * book it, so a person must refund it or reissue the invoice.
+ */
+export function buildUnbookedPaymentCard(
+  notice: UnbookedPaymentNotice,
+  options?: { test?: boolean }
+): object {
+  return {
+    cardsV2: [
+      {
+        cardId: 'invoice-payment-unbooked',
+        card: {
+          header: {
+            title: '⚠️ Payment not booked',
+            subtitle: options?.test
+              ? '⚠️ TEST MESSAGE — not a real payment'
+              : `Stripe took a payment, but ${notice.reason}. Refund it in Stripe or reissue the invoice.`,
+          },
+          sections: [
+            {
+              widgets: [
+                {
+                  decoratedText: {
+                    topLabel: 'Client',
+                    text: notice.clientName ?? '—',
+                  },
+                },
+                {
+                  decoratedText: {
+                    topLabel: 'Invoice',
+                    text: notice.invoiceNumber ?? '—',
+                  },
+                },
+                {
+                  decoratedText: {
+                    topLabel: 'Amount',
+                    text: formatAmount(notice.total),
+                  },
+                },
+                ...(notice.invoiceUrl
+                  ? [
+                      {
+                        buttonList: {
+                          buttons: [
+                            {
+                              text: 'View invoice',
+                              onClick: { openLink: { url: notice.invoiceUrl } },
+                            },
+                          ],
+                        },
+                      },
+                    ]
+                  : []),
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  }
+}

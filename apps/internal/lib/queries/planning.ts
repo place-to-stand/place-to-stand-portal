@@ -1,4 +1,4 @@
-import { eq, and, asc, desc } from 'drizzle-orm'
+import { eq, and, asc, desc, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
   planningSessions,
@@ -126,16 +126,71 @@ export async function updateThreadVersion(
 // just-finished generation after navigating away mid-stream and back)
 // ---------------------------------------------------------------------------
 
-export async function startThreadGeneration(threadId: string, version: number) {
-  await db
-    .update(planThreads)
-    .set({
-      generationStatus: 'streaming',
-      generatingVersion: version,
-      partialContent: '',
-      generationError: null,
-    })
-    .where(eq(planThreads.id, threadId))
+/**
+ * A write still marked streaming this long after its session was last
+ * touched is dead: the server function running it was cut off before it
+ * could record the end. Longer than any Vercel function may run.
+ */
+export const STALE_GENERATION_MINUTES = 20
+
+/** SQL: the session was last touched longer ago than a write can run. */
+export const sessionGenerationStaleSql = sql<boolean>`${planningSessions.updatedAt} < now() - make_interval(mins => ${STALE_GENERATION_MINUTES})`
+
+/**
+ * Marks the thread as writing version `version`, unless another write is
+ * already running (`busy`) or the thread has moved past `version - 1` since
+ * the caller loaded it (`outdated`: a second tab would rewrite a version
+ * that exists). Claiming also touches the session's
+ * `updated_at`, which is how a later claim or read tells a dead write
+ * (older than STALE_GENERATION_MINUTES) from a live one. The clock is per
+ * session, not per thread, so activity on a sibling thread delays a dead
+ * thread's timeout; sessions have one thread today. A per-thread start
+ * column would fix that and is left for a later migration.
+ */
+export async function claimThreadGeneration(
+  threadId: string,
+  version: number
+): Promise<'claimed' | 'busy' | 'outdated'> {
+  return db.transaction(async tx => {
+    const [current] = await tx
+      .select({
+        sessionId: planThreads.sessionId,
+        currentVersion: planThreads.currentVersion,
+        generationStatus: planThreads.generationStatus,
+        stale: sessionGenerationStaleSql,
+      })
+      .from(planThreads)
+      .innerJoin(
+        planningSessions,
+        eq(planningSessions.id, planThreads.sessionId)
+      )
+      .where(eq(planThreads.id, threadId))
+      .limit(1)
+      .for('update', { of: [planThreads, planningSessions] })
+
+    if (!current) return 'outdated'
+    if (current.generationStatus === 'streaming' && !current.stale) {
+      return 'busy'
+    }
+    if (current.currentVersion !== version - 1) return 'outdated'
+
+    await tx
+      .update(planThreads)
+      .set({
+        generationStatus: 'streaming',
+        generatingVersion: version,
+        partialContent: '',
+        generationError: null,
+      })
+      .where(eq(planThreads.id, threadId))
+
+    await tx
+      .update(planningSessions)
+      .set({ updatedAt: sql`now()` })
+      .where(eq(planningSessions.id, current.sessionId))
+
+    return 'claimed'
+  })
 }
 
 export async function updateThreadPartialContent(

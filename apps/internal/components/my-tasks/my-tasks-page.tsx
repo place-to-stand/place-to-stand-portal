@@ -16,7 +16,6 @@ import type {
   TaskWithRelations,
 } from '@/lib/types'
 import { createRenderAssignees } from '@/lib/projects/board/board-selectors'
-import { PROJECT_SPECIAL_SEGMENTS } from '@/lib/projects/board/board-utils'
 import { ProjectsBoardEmpty } from '@/app/(dashboard)/projects/_components/projects-board-empty'
 import { TaskSheet } from '@/app/(dashboard)/projects/task-sheet'
 import { useMyTasksReorderMutation } from '@/lib/projects/tasks/use-my-tasks-data'
@@ -38,7 +37,7 @@ import {
   useOptimisticBoardScope,
 } from './use-optimistic-board-scope'
 import { Plus } from 'lucide-react'
-import { companySheetHref } from '@/lib/sheets/hrefs'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -515,7 +514,7 @@ export function MyTasksPage({
         <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
           {/* Below md the pickers move into a slide-out so Create task keeps
               the row; from md up they sit inline as before. */}
-          <FilterSheetButton className='md:hidden' activeCount={scopeCount}>
+          <FilterSheetButton className='h-8 md:hidden' activeCount={scopeCount}>
             {scopePickers}
           </FilterSheetButton>
           <div className='max-md:hidden md:contents'>{scopePickers}</div>
@@ -605,8 +604,10 @@ export function MyTasksPage({
 
 type TaskContextMeta = {
   clientLabel: string
-  clientHref: string | null
+  /** The client's company, opened from the card; null for other work. */
+  clientCompanyId: string | null
   projectLabel: string
+  /** The project's board. */
   projectHref: string | null
   layout: 'inline' | 'stacked'
   projectType: ProjectTypeValue
@@ -690,14 +691,17 @@ function buildTaskContextLookup(
     // A lead task's card shows its lead line instead.
     if (!project) return
     const clientLabel = resolveClientLabel(project)
-    const clientHref = buildClientHref(project)
-    const projectHref = buildProjectHref(project)
 
     map.set(taskId, {
       clientLabel,
-      clientHref,
+      clientCompanyId:
+        project.type === 'CLIENT' ? (project.client?.company_id ?? null) : null,
       projectLabel: project.name,
-      projectHref,
+      projectHref: projectTasksHref({
+        projectSlug: project.slug,
+        projectType: project.type,
+        clientSlug: project.client?.slug ?? null,
+      }),
       layout: 'stacked',
       projectType: project.type,
     })
@@ -720,35 +724,4 @@ function resolveClientLabel(project: ProjectWithRelations): string {
   }
 
   return 'Unassigned'
-}
-
-function buildClientHref(project: ProjectWithRelations): string | null {
-  // Only link to client pages for CLIENT-type projects with a valid client
-  if (project.type !== 'CLIENT' || !project.client?.company_id) {
-    return null
-  }
-
-  return companySheetHref(project.client.company_id)
-}
-
-function buildProjectHref(project: ProjectWithRelations): string | null {
-  if (!project.slug) {
-    return null
-  }
-
-  if (project.type === 'INTERNAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.INTERNAL}/${project.slug}/tasks`
-  }
-
-  if (project.type === 'PERSONAL') {
-    return `/projects/${PROJECT_SPECIAL_SEGMENTS.PERSONAL}/${project.slug}/tasks`
-  }
-
-  const clientSlug = project.client?.slug ?? null
-
-  if (!clientSlug) {
-    return null
-  }
-
-  return `/projects/${clientSlug}/${project.slug}/tasks`
 }

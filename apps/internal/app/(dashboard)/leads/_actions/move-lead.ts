@@ -8,14 +8,11 @@ import { logActivity } from '@/lib/activity/logger'
 import { requireCrmUser } from '@/lib/auth/session'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import { db } from '@/lib/db'
-import { leads, leadStageHistory } from '@/lib/db/schema'
-import { markConvertedIfClient } from '@/lib/leads/mark-converted'
+import { leads } from '@/lib/db/schema'
+import { recordLeadStageMove } from '@/lib/leads/record-stage-move'
+import { leadStageMoveFields } from '@/lib/leads/stage-rules'
 import { leadContactNameSql } from '@/lib/leads/lead-display'
-import {
-  LEAD_STATUS_VALUES,
-  isTerminalLeadStatus,
-  type LeadStatusValue,
-} from '@/lib/leads/constants'
+import { LEAD_STATUS_VALUES, type LeadStatusValue } from '@/lib/leads/constants'
 import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
   breaksWonNeedsCompany,
@@ -102,56 +99,32 @@ export async function moveLead(
       const now = new Date().toISOString()
       const statusChanged = current.status !== targetStatus
 
-      // A reorder within a column is not an edit: it leaves updated_at
-      // alone (migration 0131 ignores rank), so an open lead sheet saves
-      // without a conflict.
-      const setPayload: Record<string, unknown> = {
-        status: targetStatus,
-        rank: normalizedRank,
-        ...(statusChanged ? { updatedAt: now } : {}),
-      }
-
-      if (statusChanged) {
-        setPayload.currentStageEnteredAt = now
-
-        if (isTerminalLeadStatus(targetStatus)) {
-          setPayload.resolvedAt = now
-        }
-
-        // Winning a lead converts it only when its company is already a
-        // client (`markConvertedIfClient`, below); otherwise starting the
-        // company's billing does (`startClientBillingInTx`, admin-only).
-        // The sheet, CLI and MCP save path follows the same rule.
-
-        // Moving back to an active stage reopens the lead. The conversion
-        // record (`convertedAt`, which links the lead to its company as a
-        // client) is kept: a Won lead moved back stays converted.
-        if (
-          isTerminalLeadStatus(current.status) &&
-          !isTerminalLeadStatus(targetStatus)
-        ) {
-          setPayload.resolvedAt = null
-          setPayload.lossReason = null
-          setPayload.lossNotes = null
-        }
-      }
-
       await tx
         .update(leads)
-        .set(setPayload)
+        .set({
+          status: targetStatus,
+          rank: normalizedRank,
+          // A reorder within a column is not an edit: it leaves updated_at
+          // alone (migration 0131 ignores rank), so an open lead sheet
+          // saves without a conflict.
+          ...(statusChanged ? { updatedAt: now } : {}),
+          ...leadStageMoveFields(current.status, targetStatus, now),
+        })
         .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))
 
       if (!statusChanged) {
         return { refused: null, statusChange: null }
       }
-      await markConvertedIfClient(tx, leadId, now)
 
-      await tx.insert(leadStageHistory).values({
+      // Winning a lead converts it only when its company is already a
+      // client; otherwise starting the company's billing does
+      // (`startClientBillingInTx`, admin-only).
+      await recordLeadStageMove(tx, {
         leadId,
         fromStatus: current.status,
         toStatus: targetStatus,
-        changedAt: now,
-        changedBy: user.id,
+        at: now,
+        actorId: user.id,
       })
 
       return {

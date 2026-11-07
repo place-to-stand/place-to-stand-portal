@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import Link from 'next/link'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatCurrency } from '@pts/ui/numbers'
 import { Check, Copy, ExternalLink, Mail } from 'lucide-react'
@@ -42,13 +41,13 @@ import {
 import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
 import { InvoiceStatusBadge } from './invoice-status-badge'
-import { companySheetHref } from '@/lib/sheets/hrefs'
 import {
   RowSelectionProvider,
   SelectAllHead,
   SelectRowCell,
   type RowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink } from '@/components/ui/sheet-link'
 
 type InvoicesTableMode = 'active' | 'archive'
 
@@ -186,7 +185,7 @@ export function InvoicesTableSection({
           density='compact'
           layout='fixed'
           stack
-          className='md:min-w-[50rem]'
+          className='md:min-w-[60rem]'
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
@@ -196,7 +195,7 @@ export function InvoicesTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[12%]'
+                className='w-[11%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -210,24 +209,24 @@ export function InvoicesTableSection({
               >
                 Client
               </SortableTableHead>
-              <TableHead className='w-20'>Status</TableHead>
+              <TableHead className='w-[8%]'>Status</TableHead>
               <TableHead className='w-[10%] text-right'>Total</TableHead>
-              <TableHead className='w-20'>Hours</TableHead>
+              <TableHead className='w-[7%]'>Hours</TableHead>
               <SortableTableHead
                 field='created'
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[14%]'
+                className='w-[11%]'
               >
                 Issued
               </SortableTableHead>
-              <TableHead className='w-[22%]'>Share link</TableHead>
+              <TableHead className='w-[20%]'>Share link</TableHead>
               {/* Sized to the row's buttons: one in active, two in archive. */}
               <TableHead
                 className={cn(
                   'text-right',
-                  mode === 'archive' ? 'w-24' : 'w-16'
+                  mode === 'archive' ? 'w-20' : 'w-16'
                 )}
               >
                 Actions
@@ -245,13 +244,16 @@ export function InvoicesTableSection({
               const showArchive = mode === 'active'
               const showRestore = mode === 'archive'
 
-              const archiveDisabled = isBusy || isArchived
+              const isPaid = invoice.status === 'PAID'
+              const archiveDisabled = isBusy || isArchived || isPaid
               const restoreDisabled = isBusy || !isArchived
 
               const archiveDisabledReason = archiveDisabled
                 ? isArchived
                   ? 'Invoice already archived.'
-                  : pendingReason
+                  : isPaid
+                    ? 'Paid invoices cannot be archived.'
+                    : pendingReason
                 : null
 
               const restoreDisabledReason = restoreDisabled
@@ -267,7 +269,9 @@ export function InvoicesTableSection({
                   id={invoice.id}
                   onEdit={() => onEdit(invoice)}
                   onArchive={
-                    showArchive ? () => onRequestDelete(invoice) : undefined
+                    showArchive && !isPaid
+                      ? () => onRequestDelete(invoice)
+                      : undefined
                   }
                   onRestore={showRestore ? () => onRestore(invoice) : undefined}
                   archiveDisabledReason={
@@ -317,12 +321,15 @@ export function InvoicesTableSection({
                         />
                         {client ? (
                           client.company_id ? (
-                            <Link
-                              href={companySheetHref(client.company_id)}
-                              className='hover:text-foreground truncate-link hover:underline'
+                            <SheetLink
+                              sheet={{
+                                entity: 'company',
+                                id: client.company_id,
+                              }}
+                              title={client.name}
                             >
                               {client.name}
-                            </Link>
+                            </SheetLink>
                           ) : (
                             <span className='truncate'>{client.name}</span>
                           )
@@ -345,7 +352,6 @@ export function InvoicesTableSection({
                     <TableCell label='Hours'>
                       <InvoiceHourBlocksCell
                         hourBlocks={invoice.hour_blocks ?? []}
-                        invoiceNumber={invoice.invoice_number}
                       />
                     </TableCell>
                     <TableCell

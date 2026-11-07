@@ -4,7 +4,10 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { Users } from 'lucide-react'
 
-import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
+import {
+  FILTER_TRIGGER_WIDTH,
+  TOOLBAR_FILTER_TRIGGER,
+} from '@/components/ui/field-trigger'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
@@ -103,6 +106,7 @@ export function PersonSelector({
       emptyMessage='No people found.'
       disabled={disabled}
       className={FILTER_TRIGGER_WIDTH}
+      triggerClassName={TOOLBAR_FILTER_TRIGGER}
       itemClassName='whitespace-nowrap'
     />
   )

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
 
 import { useRouter } from 'next/navigation'
 import { formatCalendarDate } from '@pts/ui/dates'
@@ -29,9 +28,7 @@ import { useListParams } from '@/hooks/use-list-params'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { companySheetHref, projectTasksHref } from '@/lib/sheets/hrefs'
 import { cn } from '@/lib/utils'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 import { useTimeLogEditContext } from '@/lib/projects/time-log/use-time-log-edit-context'
 import {
@@ -48,6 +45,9 @@ import {
   SelectRowCell,
   useRowSelection,
 } from '@/components/table/bulk-select'
+import Link from 'next/link'
+import { SheetLink, cellLinkClass } from '@/components/ui/sheet-link'
+import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TimeLogsTableProps = {
   items: DashboardTimeLogEntry[]
@@ -76,7 +76,6 @@ export function TimeLogsTable({
   sort,
 }: TimeLogsTableProps) {
   const router = useRouter()
-  const { open: openSheet } = useSheetParams()
   const { update } = useListParams({
     basePath: mode === 'archive' ? '/time-logs/archive' : '/time-logs',
     resetKeys: ['page'],
@@ -147,13 +146,15 @@ export function TimeLogsTable({
             <TableHeader>
               <TableRow className='bg-muted/40'>
                 <SelectAllHead />
-                {sortHead('hours', 'Hours', 'w-[10%]')}
+                {sortHead('hours', 'Hours', 'w-[8%]')}
                 {sortHead('date', 'Date', 'w-[10%]')}
-                {sortHead('person', 'Person', 'w-20', 'center')}
+                {sortHead('person', 'Person', 'w-[9%]', 'center')}
                 {sortHead('client', 'Client', 'w-[24%]')}
-                {sortHead('project', 'Project', 'w-[27%]')}
-                <TableHead className='w-[10%] text-center'>Tasks</TableHead>
-                <TableHead className='w-32 text-right'>Actions</TableHead>
+                {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
+                slack, so the select and Actions columns keep their widths. */}
+                {sortHead('project', 'Project', '')}
+                <TableHead className='w-[6%] text-center'>Tasks</TableHead>
+                <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -193,7 +194,7 @@ export function TimeLogsTable({
                       />
                       {/* Hours first: it's what you scan a time log for. */}
                       <TableCell className='text-sm font-medium tabular-nums'>
-                        <span className='inline-flex items-center gap-2'>
+                        <span className='flex w-fit items-center gap-2'>
                           <ENTITY_ICONS.timeLog
                             className={cn(
                               ENTITY_ACCENTS.timeLog.icon,
@@ -225,14 +226,15 @@ export function TimeLogsTable({
                               )}
                             />
                             {item.companyId ? (
-                              // The row ignores clicks on links.
-                              <Link
-                                href={companySheetHref(item.companyId)}
+                              <SheetLink
+                                sheet={{
+                                  entity: 'company',
+                                  id: item.companyId,
+                                }}
                                 title={item.clientName}
-                                className='hover:text-foreground truncate-link transition hover:underline'
                               >
                                 {item.clientName}
-                              </Link>
+                              </SheetLink>
                             ) : (
                               <span
                                 className='truncate'
@@ -254,11 +256,12 @@ export function TimeLogsTable({
                               'h-4 w-4 shrink-0'
                             )}
                           />
+                          {/* A project opens its board, not its sheet. */}
                           {projectTasksHref(item) ? (
                             <Link
                               href={projectTasksHref(item)!}
                               title={item.projectName}
-                              className='hover:text-foreground truncate-link transition hover:underline'
+                              className={cellLinkClass}
                             >
                               {item.projectName}
                             </Link>
@@ -282,7 +285,7 @@ export function TimeLogsTable({
                           items={item.tasks.map(task => ({
                             id: task.id,
                             label: task.title,
-                            onSelect: () => openSheet('task', task.id),
+                            sheet: { entity: 'task', id: task.id },
                           }))}
                         />
                       </TableCell>

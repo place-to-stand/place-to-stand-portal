@@ -54,7 +54,6 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { companySheetHref } from '@/lib/sheets/hrefs'
 import {
   BulkActionBar,
   RowSelectionProvider,
@@ -62,6 +61,7 @@ import {
   SelectRowCell,
   useRowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink } from '@/components/ui/sheet-link'
 
 // PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
 // column in all three section tables; grouping semantics stay unchanged —
@@ -552,12 +552,14 @@ export function ProjectsLanding({
   }
 
   const tableColumnWidths = {
-    project: 'w-[33%]',
-    status: 'w-[11%]',
-    progress: 'w-[22%]',
-    owner: 'w-[7%]',
-    links: 'w-[14%]',
-    actions: 'w-24',
+    // Unsized on purpose: in a fixed layout the one auto column absorbs the
+    // slack, so the select and Actions columns keep their widths.
+    project: '',
+    status: 'w-[13%]',
+    progress: 'w-[19%]',
+    owner: 'w-[8%]',
+    links: 'w-[9%]',
+    actions: 'w-20',
   }
 
   /**
@@ -631,15 +633,15 @@ export function ProjectsLanding({
                 <span className='text-sm font-semibold'>{client.name}</span>
               </span>
             ) : client.company_id ? (
-              <Link
-                href={companySheetHref(client.company_id)}
-                className='flex w-fit shrink items-center gap-2 underline-offset-4 opacity-65 hover:underline'
+              <SheetLink
+                sheet={{ entity: 'company', id: client.company_id }}
+                className='flex w-fit shrink items-center gap-2 opacity-65 hover:underline'
               >
                 <ENTITY_ICONS.client
                   className={cn(ENTITY_ACCENTS.client.icon, 'h-4 w-4 shrink-0')}
                 />
                 <span className='text-sm font-semibold'>{client.name}</span>
-              </Link>
+              </SheetLink>
             ) : (
               <span className='flex w-fit shrink items-center gap-2 opacity-65'>
                 <ENTITY_ICONS.client

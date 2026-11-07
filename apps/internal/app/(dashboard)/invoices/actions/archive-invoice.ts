@@ -2,7 +2,7 @@
 import { isClientCompany } from '@pts/db/client-state'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -11,6 +11,11 @@ import { invoiceArchivedEvent } from '@/lib/activity/events'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { companies, invoices } from '@/lib/db/schema'
+import {
+  paymentRefsUnchanged,
+  stopOpenInvoicePayments,
+  stopPaymentsRefusal,
+} from '@/lib/invoices/stop-open-payments'
 
 import { deleteSchema } from './schemas'
 import type { ActionResult, DeleteInput } from './types'
@@ -46,8 +51,11 @@ async function performArchiveInvoice(
   const existingRows = await db
     .select({
       id: invoices.id,
+      status: invoices.status,
       companyId: invoices.companyId,
       invoiceNumber: invoices.invoiceNumber,
+      stripePaymentIntentId: invoices.stripePaymentIntentId,
+      stripeCheckoutSessionId: invoices.stripeCheckoutSessionId,
     })
     .from(invoices)
     .where(eq(invoices.id, invoiceId))
@@ -59,6 +67,12 @@ async function performArchiveInvoice(
     return { error: 'Invoice not found.' }
   }
 
+  // A paid invoice is a sale on the books: archiving it would drop it from
+  // the monthly close and sales tax reports.
+  if (existing.status === 'PAID') {
+    return { error: 'Paid invoices cannot be archived.' }
+  }
+
   const clientRows = await db
     .select({ name: companies.name })
     .from(companies)
@@ -67,14 +81,40 @@ async function performArchiveInvoice(
 
   const clientName = clientRows[0]?.name ?? null
 
+  // An archived invoice drops out of the books, so a payment the client
+  // still has open must stop first.
+  const refs = {
+    paymentIntentId: existing.stripePaymentIntentId,
+    checkoutSessionId: existing.stripeCheckoutSessionId,
+  }
+  const stopped = await stopOpenInvoicePayments(refs)
+  if (stopped !== 'clear') {
+    return { error: stopPaymentsRefusal(stopped, 'archived') }
+  }
+
   try {
-    await db
+    // Conditional, so a payment that landed or started meanwhile wins.
+    const archived = await db
       .update(invoices)
       .set({
         deletedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(invoices.id, invoiceId))
+      .where(
+        and(
+          eq(invoices.id, invoiceId),
+          ne(invoices.status, 'PAID'),
+          paymentRefsUnchanged(refs)
+        )
+      )
+      .returning({ id: invoices.id })
+
+    if (archived.length === 0) {
+      return {
+        error:
+          'This invoice changed while you were working on it. Refresh and try again.',
+      }
+    }
   } catch (error) {
     console.error('Failed to archive invoice', error)
 

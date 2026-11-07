@@ -406,20 +406,20 @@ export function SubmissionsTable({
                   sort={sort}
                   defaultSort='received:desc'
                   onSortChange={next => updateListParams({ sort: next })}
-                  className='w-32'
+                  className='w-[13%]'
                 >
                   Received
                 </SortableTableHead>
-                <TableHead className='w-24'>Form</TableHead>
+                <TableHead className='w-[12%]'>Form</TableHead>
                 {/* copy-check: allow — the visitor's contact details, not a person record */}
                 <TableHead>Contact</TableHead>
                 <TableHead className={columnClasses.company}>Company</TableHead>
                 <TableHead className={columnClasses.outcome}>Outcome</TableHead>
                 <TableHead className={columnClasses.source}>Source</TableHead>
                 {mode === 'archive' ? (
-                  <TableHead className='w-32'>Archived</TableHead>
+                  <TableHead className='w-[13%]'>Archived</TableHead>
                 ) : null}
-                <TableHead className='w-24 text-right'>Actions</TableHead>
+                <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

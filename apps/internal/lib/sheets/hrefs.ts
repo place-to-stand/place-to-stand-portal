@@ -29,10 +29,6 @@ export const invoiceHref = (id: string, options?: ArchiveOption) =>
 export const hourBlockHref = (id: string, options?: ArchiveOption) =>
   `${listPath('/hour-blocks', options)}?hour-block=${id}`
 
-/** Hour blocks list searched by invoice number (the search matches it). */
-export const hourBlocksForInvoiceHref = (invoiceNumber: string) =>
-  `/hour-blocks?q=${encodeURIComponent(invoiceNumber)}`
-
 /**
  * A project's task board. `clientSegment` is the client slug, or
  * `internal` / `personal` for those project types — see

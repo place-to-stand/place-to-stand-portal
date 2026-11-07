@@ -10,6 +10,8 @@ import {
   HoverCardTrigger,
 } from '@/components/ui/hover-card'
 import { EmptyValue } from '@/components/table/empty-value'
+import { SheetLink } from '@/components/ui/sheet-link'
+import type { SheetTarget } from '@/lib/sheets/use-sheet-link'
 import { cn } from '@/lib/utils'
 import { entityIconAccent } from '@/lib/entity-accents'
 
@@ -17,9 +19,11 @@ export type LinkedRecordItem = {
   id: string
   label: string
   sublabel?: string | null
-  /** Omit (with `onSelect`) to render the row as plain text. */
+  /** The record: the row opens its sheet over the current page. */
+  sheet?: SheetTarget
+  /** A page to go to, for records without a sheet. */
   href?: string
-  /** For rows that open in place, e.g. a sheet over the current page. */
+  /** For rows that act in place without a sheet. Omit all three for plain text. */
   onSelect?: () => void
   /** Rendered after the label, e.g. a status Badge. */
   trailing?: ReactNode
@@ -64,15 +68,17 @@ type LinkedRecordsHoverCellProps = {
 
 const TRIGGER_CLASS =
   'cursor-pointer border-b border-dotted border-current transition hover:border-solid outline-none focus-visible:rounded-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+// align-top on these inline-flex boxes: one led by an icon takes its baseline
+// from the icon's bottom edge, which lifts it about 1.5px in a table row.
 const ICON_TRIGGER_CLASS =
-  'text-muted-foreground hover:text-foreground inline-flex cursor-pointer items-center rounded-sm transition outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+  'text-muted-foreground hover:text-foreground inline-flex align-top cursor-pointer items-center rounded-sm transition outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]'
 const ROW_CLASS = 'flex items-center gap-2 px-3 py-2 text-sm'
 
 /**
  * A count that opens a HoverCard listing the records behind it — linked
  * clients on a contact, projects on a client, assignments on a user. Rows
- * link out when they carry an `href`; the zero state is a muted number with
- * no card.
+ * open their record's sheet over the page when they carry a `sheet`; the
+ * zero state is a muted number with no card.
  */
 export function LinkedRecordsHoverCell({
   count,
@@ -135,7 +141,7 @@ export function LinkedRecordsHoverCell({
   )
 
   return withIcon ? (
-    <span className='inline-flex items-center gap-2'>
+    <span className='inline-flex items-center gap-2 align-top'>
       <Icon
         className={cn(
           iconClassName ?? entityIconAccent(Icon) ?? 'text-muted-foreground',
@@ -182,6 +188,17 @@ function LinkedRecordRow({
       ) : null}
     </>
   )
+
+  if (item.sheet) {
+    return (
+      <SheetLink
+        sheet={item.sheet}
+        className={cn(ROW_CLASS, 'hover:bg-accent transition-colors')}
+      >
+        {content}
+      </SheetLink>
+    )
+  }
 
   if (item.onSelect) {
     return (

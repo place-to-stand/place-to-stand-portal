@@ -315,7 +315,7 @@ export function ProductCatalogSection({
           density='compact'
           layout='fixed'
           stack
-          className='md:min-w-[38rem]'
+          className='md:min-w-[48rem]'
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
@@ -324,15 +324,14 @@ export function ProductCatalogSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={setSort}
-                className='w-[36%]'
               >
                 Name
               </SortableTableHead>
-              <TableHead className='w-[13%] text-right'>Unit price</TableHead>
-              <TableHead className='w-[13%]'>Unit label</TableHead>
-              <TableHead className='w-[11%]'>Min qty</TableHead>
-              <TableHead className='w-[13%]'>Hour block</TableHead>
-              <TableHead className='w-[11%]'>Active</TableHead>
+              <TableHead className='w-[12%] text-right'>Unit price</TableHead>
+              <TableHead className='w-[10%]'>Unit label</TableHead>
+              <TableHead className='w-[8%]'>Min qty</TableHead>
+              <TableHead className='w-[11%]'>Hour block</TableHead>
+              <TableHead className='w-[7%]'>Active</TableHead>
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>

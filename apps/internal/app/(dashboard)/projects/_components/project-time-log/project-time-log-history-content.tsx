@@ -18,7 +18,6 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
-import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectTimeLogHistoryState } from '@/lib/projects/time-log/use-project-time-log-history'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
@@ -136,7 +135,6 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
   const { log, onDeleteRequest, onEditRequest, isDeleting, pendingDeleteId } =
     props
 
-  const { open: openSheet } = useSheetParams()
   const authorName = log.user?.full_name ?? log.user?.email ?? 'Unknown person'
   const loggedDate = formatCalendarDate(log.logged_on) ?? 'Unknown date'
   const deleteDisabled = isDeleting
@@ -192,8 +190,8 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
             items={visibleTaskLinks.map(link => ({
               id: link.task?.id ?? link.id,
               label: link.task?.title ?? 'Untitled task',
-              onSelect: link.task
-                ? () => openSheet('task', link.task!.id)
+              sheet: link.task
+                ? { entity: 'task' as const, id: link.task.id }
                 : undefined,
             }))}
           />

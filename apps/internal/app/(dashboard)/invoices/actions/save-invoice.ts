@@ -17,7 +17,11 @@ import {
   invoiceTotals,
   lineItemCents,
 } from '@/lib/invoices/invoice-totals'
-import { getStripe } from '@/lib/stripe/client'
+import {
+  paymentRefsUnchanged,
+  stopOpenInvoicePayments,
+  stopPaymentsRefusal,
+} from '@/lib/invoices/stop-open-payments'
 import { companies, invoices, invoiceLineItems } from '@/lib/db/schema'
 
 import { invoiceSchema } from './schemas'
@@ -29,28 +33,6 @@ import {
   readSavedVersion,
   SaveConflictError,
 } from '@/lib/sheets/save-conflict/server'
-
-/**
- * Best effort: an intent that can still be paid would charge the old
- * total, and its payment would no longer match the invoice. One already
- * processing or finished can't be cancelled; the webhook's amount check
- * covers it.
- */
-async function cancelStalePaymentIntent(paymentIntentId: string) {
-  try {
-    const stripe = getStripe()
-    const intent = await stripe.paymentIntents.retrieve(paymentIntentId)
-    if (
-      intent.status === 'requires_payment_method' ||
-      intent.status === 'requires_confirmation' ||
-      intent.status === 'requires_action'
-    ) {
-      await stripe.paymentIntents.cancel(paymentIntentId)
-    }
-  } catch (error) {
-    console.error('Failed to cancel stale payment intent', error)
-  }
-}
 
 export async function saveInvoice(input: InvoiceInput): Promise<ActionResult> {
   const mode = input.id ? 'edit' : 'create'
@@ -217,6 +199,7 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         subtotal: invoices.subtotal,
         total: invoices.total,
         stripePaymentIntentId: invoices.stripePaymentIntentId,
+        stripeCheckoutSessionId: invoices.stripeCheckoutSessionId,
       })
       .from(invoices)
       .where(eq(invoices.id, id))
@@ -232,19 +215,25 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
       return { error: CLOSED_INVOICE_MESSAGE[existing.status] }
     }
 
-    // Read again under the save's lock: status and the payment intent can
-    // change without moving the version (a client paying, a checkout).
-    let staleIntentId: string | null = null
+    // A payment the client has open was made for the old total. Stop it
+    // before its ids are dropped, or nothing could stop it later.
+    const refs = {
+      paymentIntentId: existing.stripePaymentIntentId,
+      checkoutSessionId: existing.stripeCheckoutSessionId,
+    }
+    if (refs.paymentIntentId || refs.checkoutSessionId) {
+      const stopped = await stopOpenInvoicePayments(refs)
+      if (stopped !== 'clear') {
+        return { error: stopPaymentsRefusal(stopped, 'edited') }
+      }
+    }
 
     try {
       savedVersion = await db.transaction(async tx => {
         // Closed first: a paid invoice can't be overwritten, so it must
         // not show the conflict dialog either.
         const [locked] = await tx
-          .select({
-            status: invoices.status,
-            stripePaymentIntentId: invoices.stripePaymentIntentId,
-          })
+          .select({ status: invoices.status })
           .from(invoices)
           .where(eq(invoices.id, id))
           .for('update')
@@ -252,7 +241,6 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
           throw new ClosedInvoiceError(locked.status)
         }
         await lockForSave(tx, invoices, id, parsed.data.expectedUpdatedAt)
-        staleIntentId = locked?.stripePaymentIntentId ?? null
         const updateData: Record<string, unknown> = {
           companyId,
           notes: notes ?? null,
@@ -268,16 +256,28 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
           updateData.billingType = client.billingType
         }
 
-        if (locked?.status === 'SENT' || locked?.status === 'VIEWED') {
-          updateData.stripeCheckoutSessionId = null
-        }
-        // A payment intent was made for the old total: drop it so checkout
-        // makes one for the new total (and cancel it below).
-        if (staleIntentId) {
-          updateData.stripePaymentIntentId = null
-        }
+        // Stopped above: checkout makes new ones for the new total.
+        updateData.stripePaymentIntentId = null
+        updateData.stripeCheckoutSessionId = null
 
-        await tx.update(invoices).set(updateData).where(eq(invoices.id, id))
+        // Conditional, so a payment, void or new checkout that landed
+        // meanwhile is not overwritten.
+        const updated = await tx
+          .update(invoices)
+          .set(updateData)
+          .where(
+            and(
+              eq(invoices.id, id),
+              eq(invoices.status, existing.status),
+              paymentRefsUnchanged(refs)
+            )
+          )
+          .returning({ id: invoices.id })
+        if (updated.length === 0) {
+          throw new Error(
+            'This invoice changed while you were working on it. Refresh and try again.'
+          )
+        }
 
         const existingLineItemRows = await tx
           .select({ id: invoiceLineItems.id })
@@ -360,10 +360,6 @@ async function performSaveInvoice(input: InvoiceInput): Promise<ActionResult> {
         error:
           error instanceof Error ? error.message : 'Unable to update invoice.',
       }
-    }
-
-    if (staleIntentId) {
-      await cancelStalePaymentIntent(staleIntentId)
     }
 
     const changedFields: string[] = []

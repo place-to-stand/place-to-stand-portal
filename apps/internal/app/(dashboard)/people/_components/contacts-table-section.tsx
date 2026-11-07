@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Mail, Phone } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
@@ -34,7 +33,6 @@ import {
   PREVIEW_UNAVAILABLE_REASON,
 } from '@/lib/people/portal-preview'
 import { cn } from '@/lib/utils'
-import { companySheetHref } from '@/lib/sheets/hrefs'
 import { ARCHIVED_ROW_CLASS } from '@/lib/table/archived-row'
 import {
   CLICKABLE_ROW_CLASS,
@@ -50,6 +48,7 @@ import {
   SelectRowCell,
   type RowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink } from '@/components/ui/sheet-link'
 
 export type ContactsTableSectionProps = {
   contacts: ContactsTableContact[]
@@ -102,7 +101,7 @@ export function ContactsTableSection({
           density='compact'
           layout='fixed'
           stack
-          className='md:min-w-[50rem]'
+          className='md:min-w-[56rem]'
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
@@ -112,7 +111,6 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[22%]'
               >
                 Name
               </SortableTableHead>
@@ -122,7 +120,7 @@ export function ContactsTableSection({
                   sort={sort}
                   defaultSort='name:asc'
                   onSortChange={next => update({ sort: next })}
-                  className='w-28'
+                  className='w-[9%]'
                 >
                   Role
                 </SortableTableHead>
@@ -132,7 +130,7 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[26%]'
+                className='w-[20%]'
               >
                 Companies
               </SortableTableHead>
@@ -141,7 +139,7 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[22%]'
+                className='w-[18%]'
               >
                 Email
               </SortableTableHead>
@@ -150,11 +148,11 @@ export function ContactsTableSection({
                 sort={sort}
                 defaultSort='name:asc'
                 onSortChange={next => update({ sort: next })}
-                className='w-40'
+                className='w-[15%]'
               >
                 Phone
               </SortableTableHead>
-              <TableHead className='w-32 text-right'>Actions</TableHead>
+              <TableHead className='w-20 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -247,12 +245,14 @@ export function ContactsTableSection({
                           company, not the contact. */}
                           {/* Names only get a tooltip when they're cut off. */}
                           <TruncationTooltip content={contact.companyName}>
-                            <Link
-                              href={companySheetHref(contact.companyId)}
-                              className='hover:text-foreground truncate-link min-w-0 underline-offset-4 transition hover:underline'
+                            <SheetLink
+                              sheet={{
+                                entity: 'company',
+                                id: contact.companyId,
+                              }}
                             >
                               {contact.companyName}
-                            </Link>
+                            </SheetLink>
                           </TruncationTooltip>
                           <CompanyClientMark
                             company={contact.companies.find(
@@ -271,7 +271,7 @@ export function ContactsTableSection({
                               items={contact.companies.map(company => ({
                                 id: company.id,
                                 label: company.name,
-                                href: companySheetHref(company.id),
+                                sheet: { entity: 'company', id: company.id },
                                 trailing: (
                                   <CompanyClientMark company={company} />
                                 ),

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Archive, CheckCheck, Loader2, RefreshCw, X } from 'lucide-react'
 
@@ -143,87 +144,93 @@ export function BulkActionBar({
       input => runAction({ entity, archive, selection: input })
     )
 
+  // The bar renders into <body>: as the list card's last child it would
+  // pick up the card's `space-y-*` gap (Tailwind v4 puts it on the child
+  // before) and grow the card while rows are selected.
   return (
     <>
-      <div className='pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-4'>
-        <div
-          role='toolbar'
-          aria-label={`Bulk actions for ${words.plural}`}
-          className='bg-popover text-popover-foreground pointer-events-auto flex max-w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border py-2 pr-2 pl-4 text-sm shadow-lg'
-        >
-          <span className='font-medium tabular-nums' aria-live='polite'>
-            {selection.allMatching
-              ? `All ${selected} selected`
-              : `${selected} selected`}
-          </span>
-          {selection.canSelectAllMatching ? (
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={selection.selectAllMatching}
-            >
-              <CheckCheck />
-              Select all {countLabel(entity, selection.matchingCount)}
-            </Button>
-          ) : null}
-          <div className='flex items-center gap-2'>
-            {actions.map(action => (
-              <Button
-                key={action.label}
-                type='button'
-                variant='outline'
-                size='sm'
-                disabled={isPending}
-                onClick={() => runWith(action, action.label, action.run)}
-              >
-                {pendingLabel === action.label ? (
-                  <Loader2 className='animate-spin' />
-                ) : (
-                  action.icon
-                )}
-                {pendingLabel === action.label
-                  ? action.pendingLabel
-                  : action.label}
-              </Button>
-            ))}
-            {archive ? (
-              <Button
-                type='button'
-                variant='destructive'
-                size='sm'
-                disabled={isPending}
-                onClick={() => setConfirming(true)}
-              >
-                <Archive />
-                Archive
-              </Button>
-            ) : (
+      {createPortal(
+        <div className='pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-4'>
+          <div
+            role='toolbar'
+            aria-label={`Bulk actions for ${words.plural}`}
+            className='bg-popover text-popover-foreground pointer-events-auto flex max-w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border py-2 pr-2 pl-4 text-sm shadow-lg'
+          >
+            <span className='font-medium tabular-nums' aria-live='polite'>
+              {selection.allMatching
+                ? `All ${selected} selected`
+                : `${selected} selected`}
+            </span>
+            {selection.canSelectAllMatching ? (
               <Button
                 type='button'
                 variant='outline'
                 size='sm'
-                disabled={isPending}
-                onClick={run}
+                onClick={selection.selectAllMatching}
               >
-                {pendingLabel === 'restore' ? (
-                  <Loader2 className='animate-spin' />
-                ) : (
-                  <RefreshCw />
-                )}
-                {pendingLabel === 'restore' ? 'Restoring…' : 'Restore'}
+                <CheckCheck />
+                Select all {countLabel(entity, selection.matchingCount)}
               </Button>
-            )}
-            <RowActionButton
-              type='button'
-              label='Clear selection'
-              icon={<X />}
-              disabled={isPending}
-              onClick={selection.clear}
-            />
+            ) : null}
+            <div className='flex items-center gap-2'>
+              {actions.map(action => (
+                <Button
+                  key={action.label}
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={isPending}
+                  onClick={() => runWith(action, action.label, action.run)}
+                >
+                  {pendingLabel === action.label ? (
+                    <Loader2 className='animate-spin' />
+                  ) : (
+                    action.icon
+                  )}
+                  {pendingLabel === action.label
+                    ? action.pendingLabel
+                    : action.label}
+                </Button>
+              ))}
+              {archive ? (
+                <Button
+                  type='button'
+                  variant='destructive'
+                  size='sm'
+                  disabled={isPending}
+                  onClick={() => setConfirming(true)}
+                >
+                  <Archive />
+                  Archive
+                </Button>
+              ) : (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={isPending}
+                  onClick={run}
+                >
+                  {pendingLabel === 'restore' ? (
+                    <Loader2 className='animate-spin' />
+                  ) : (
+                    <RefreshCw />
+                  )}
+                  {pendingLabel === 'restore' ? 'Restoring…' : 'Restore'}
+                </Button>
+              )}
+              <RowActionButton
+                type='button'
+                label='Clear selection'
+                icon={<X />}
+                disabled={isPending}
+                onClick={selection.clear}
+              />
+            </div>
           </div>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
       <ArchiveConfirmDialog
         open={confirming}
         many={selection.count !== 1}

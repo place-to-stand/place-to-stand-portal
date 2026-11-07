@@ -196,7 +196,7 @@ export function LeadsWorkspace({
         // into a slide-out below md.
         <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
           <FilterSheetButton
-            className='md:hidden'
+            className='h-8 md:hidden'
             activeCount={assigneeFilter === 'all' ? 0 : 1}
           >
             {assigneePicker}

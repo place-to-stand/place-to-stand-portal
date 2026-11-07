@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { Info } from 'lucide-react'
 
 import { EmptyState } from '@pts/ui/empty-state'
@@ -15,7 +14,6 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatHours } from '@pts/ui/numbers'
-import { companySheetHref, invoiceHref } from '@/lib/sheets/hrefs'
 import { isHourBlockSortValue } from '@/lib/hour-blocks/filters'
 import {
   Table,
@@ -39,6 +37,7 @@ import {
   SelectRowCell,
   type RowSelection,
 } from '@/components/table/bulk-select'
+import { SheetLink, cellLinkClass } from '@/components/ui/sheet-link'
 
 type HourBlocksTableMode = 'active' | 'archive'
 
@@ -99,7 +98,7 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[18%]'
+                className='w-[20%]'
               >
                 Hours purchased
               </SortableTableHead>
@@ -108,7 +107,6 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[34%]'
               >
                 Client
               </SortableTableHead>
@@ -117,7 +115,7 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[18%]'
+                className='w-[17%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -126,11 +124,11 @@ export function HourBlocksTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[18%]'
+                className='w-[15%]'
               >
                 Created on
               </SortableTableHead>
-              <TableHead className='w-24 text-right'>Actions</TableHead>
+              <TableHead className='w-20 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -185,7 +183,7 @@ export function HourBlocksTableSection({
                       label={block.client?.name ?? 'hour block'}
                     />
                     <TableCell label='Hours' className='text-sm'>
-                      <span className='inline-flex items-center gap-2'>
+                      <span className='flex w-fit items-center gap-2'>
                         <ENTITY_ICONS.hourBlock
                           className={cn(
                             ENTITY_ACCENTS.hourBlock.icon,
@@ -219,14 +217,12 @@ export function HourBlocksTableSection({
                           )}
                         />
                         {client ? (
-                          // Opens the client; the row ignores clicks on links.
-                          <Link
-                            href={companySheetHref(client.company_id)}
+                          <SheetLink
+                            sheet={{ entity: 'company', id: client.company_id }}
                             title={client.name}
-                            className='hover:text-foreground truncate-link transition hover:underline'
                           >
                             {client.name}
-                          </Link>
+                          </SheetLink>
                         ) : (
                           <EmptyValue />
                         )}
@@ -247,12 +243,18 @@ export function HourBlocksTableSection({
                             )}
                           />
                           {block.invoice_id ? (
-                            <Link
-                              href={invoiceHref(block.invoice_id)}
-                              className='text-muted-foreground hover:text-foreground truncate-link hover:underline'
+                            <SheetLink
+                              sheet={{
+                                entity: 'invoice',
+                                id: block.invoice_id,
+                              }}
+                              className={cn(
+                                'text-muted-foreground',
+                                cellLinkClass
+                              )}
                             >
                               {block.invoice_number}
-                            </Link>
+                            </SheetLink>
                           ) : (
                             <span className='text-muted-foreground truncate'>
                               {block.invoice_number}
