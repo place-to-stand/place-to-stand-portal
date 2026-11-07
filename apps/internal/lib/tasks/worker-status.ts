@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, desc } from 'drizzle-orm'
+import { and, desc, eq, ne } from 'drizzle-orm'
 
 import { taskWorkerStatusChangedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
@@ -187,21 +187,34 @@ export async function loadWorkerStatus(
   const latestStatus =
     botComments.length > 0 ? botComments[botComments.length - 1].status : null
 
-  // Persist the latest worker status to the deployment
-  if (latestStatus && latestStatus !== 'unknown') {
+  // Persist the latest worker status to the deployment. A cancelled run
+  // stays cancelled: the bot may still comment after the cancel, and that
+  // comment must not bring the run back to life. The condition is in the
+  // update too, so a cancel that lands mid-poll wins.
+  if (
+    latestStatus &&
+    latestStatus !== 'unknown' &&
+    deployment.workerStatus !== 'cancelled'
+  ) {
     const previousStatus = deployment.workerStatus
 
-    await db
+    const persisted = await db
       .update(taskDeployments)
       .set({
         workerStatus: latestStatus,
         prUrl: prUrl,
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(taskDeployments.id, deploymentId))
+      .where(
+        and(
+          eq(taskDeployments.id, deploymentId),
+          ne(taskDeployments.workerStatus, 'cancelled')
+        )
+      )
+      .returning({ id: taskDeployments.id })
 
     // This poll runs constantly; only a real transition is an event.
-    if (previousStatus !== latestStatus) {
+    if (persisted.length > 0 && previousStatus !== latestStatus) {
       const [task] = await db
         .select({
           title: tasks.title,
@@ -240,7 +253,7 @@ export async function loadWorkerStatus(
       .orderBy(desc(taskDeployments.createdAt))
       .limit(1)
 
-    if (latest && latest.id === deploymentId) {
+    if (persisted.length > 0 && latest && latest.id === deploymentId) {
       await db
         .update(tasks)
         .set({
@@ -252,5 +265,26 @@ export async function loadWorkerStatus(
     }
   }
 
-  return { comments: botComments, prUrl, latestStatus }
+  // A run cancelled before the worker picked it up can't be stopped (the
+  // worker only reads a 👎 on its own comment), so it may still open a PR.
+  // The run stays cancelled, but the PR link is kept so it can be found.
+  if (
+    deployment.workerStatus === 'cancelled' &&
+    prUrl &&
+    prUrl !== deployment.prUrl
+  ) {
+    await db
+      .update(taskDeployments)
+      .set({ prUrl, updatedAt: new Date().toISOString() })
+      .where(eq(taskDeployments.id, deploymentId))
+  }
+
+  // The bot's last comment can still read "working" after a cancel; the
+  // run's own status is the truth then.
+  return {
+    comments: botComments,
+    prUrl,
+    latestStatus:
+      deployment.workerStatus === 'cancelled' ? 'cancelled' : latestStatus,
+  }
 }

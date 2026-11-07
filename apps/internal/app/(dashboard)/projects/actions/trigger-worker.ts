@@ -1,6 +1,6 @@
 'use server'
 
-import { eq, desc } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { logActivity } from '@/lib/activity/logger'
@@ -178,14 +178,30 @@ export async function cancelDeployment(input: {
     }
   }
 
-  // Update deployment status
-  await db
+  // Update deployment status. Only a run still going can be cancelled: one
+  // that finished meanwhile keeps its result (and its PR link).
+  const cancelled = await db
     .update(taskDeployments)
     .set({
       workerStatus: 'cancelled',
       updatedAt: new Date().toISOString(),
     })
-    .where(eq(taskDeployments.id, deploymentId))
+    .where(
+      and(
+        eq(taskDeployments.id, deploymentId),
+        inArray(taskDeployments.workerStatus, [
+          'dispatched',
+          'working',
+          'plan_ready',
+          'implementing',
+        ])
+      )
+    )
+    .returning({ id: taskDeployments.id })
+
+  if (cancelled.length === 0) {
+    return { error: 'This run already finished.' }
+  }
 
   // Sync task cached status if this is the latest deployment
   const [latest] = await db

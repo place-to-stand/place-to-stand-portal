@@ -18,7 +18,7 @@ import {
   ensureTaskWorkAccess,
   findAssigneesWithoutAccess,
 } from '@/lib/projects/access'
-import { resolveCompletedAt } from '@/lib/projects/task-status'
+import { resolveTaskStatusStamps } from '@/lib/projects/task-status'
 
 import { pinTaskToTopOfAssigneeBoards } from './assignee-sort'
 import { buildTaskUpdateEvent } from './save-task-activity'
@@ -217,7 +217,7 @@ export async function updateTaskForActor(
           // does not set it here leaves the row looking untouched.
           updatedAt: new Date().toISOString(),
           rank: nextRank,
-          ...resolveCompletedAt(status, existingTask.completedAt),
+          ...resolveTaskStatusStamps(status, existingTask.completedAt),
         })
         .where(eq(tasks.id, taskId))
 

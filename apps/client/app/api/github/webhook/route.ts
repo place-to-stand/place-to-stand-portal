@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { createHmac, timingSafeEqual } from 'crypto'
 
 import { db } from '@/lib/db'
@@ -113,6 +113,8 @@ async function handleInstallationEvent(payload: {
         .where(eq(githubAppInstallations.installationId, installation.id))
       break
 
+    // A removed install stays removed: GitHub can redeliver an older
+    // suspend or unsuspend after the delete, and that must not revive it.
     case 'suspend':
       await db
         .update(githubAppInstallations)
@@ -121,7 +123,12 @@ async function handleInstallationEvent(payload: {
           suspendedAt: liveSuspendedAt ?? new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
-        .where(eq(githubAppInstallations.installationId, installation.id))
+        .where(
+          and(
+            eq(githubAppInstallations.installationId, installation.id),
+            ne(githubAppInstallations.status, 'REMOVED')
+          )
+        )
       break
 
     case 'unsuspend':
@@ -132,7 +139,12 @@ async function handleInstallationEvent(payload: {
           suspendedAt: null,
           updatedAt: new Date().toISOString(),
         })
-        .where(eq(githubAppInstallations.installationId, installation.id))
+        .where(
+          and(
+            eq(githubAppInstallations.installationId, installation.id),
+            ne(githubAppInstallations.status, 'REMOVED')
+          )
+        )
       break
 
     case 'new_permissions_accepted':

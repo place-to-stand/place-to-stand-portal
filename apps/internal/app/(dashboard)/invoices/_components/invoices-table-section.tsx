@@ -244,13 +244,16 @@ export function InvoicesTableSection({
               const showArchive = mode === 'active'
               const showRestore = mode === 'archive'
 
-              const archiveDisabled = isBusy || isArchived
+              const isPaid = invoice.status === 'PAID'
+              const archiveDisabled = isBusy || isArchived || isPaid
               const restoreDisabled = isBusy || !isArchived
 
               const archiveDisabledReason = archiveDisabled
                 ? isArchived
                   ? 'Invoice already archived.'
-                  : pendingReason
+                  : isPaid
+                    ? 'Paid invoices cannot be archived.'
+                    : pendingReason
                 : null
 
               const restoreDisabledReason = restoreDisabled
@@ -266,7 +269,9 @@ export function InvoicesTableSection({
                   id={invoice.id}
                   onEdit={() => onEdit(invoice)}
                   onArchive={
-                    showArchive ? () => onRequestDelete(invoice) : undefined
+                    showArchive && !isPaid
+                      ? () => onRequestDelete(invoice)
+                      : undefined
                   }
                   onRestore={showRestore ? () => onRestore(invoice) : undefined}
                   archiveDisabledReason={

@@ -74,11 +74,6 @@ export const fetchLeadsBoard = cache(
         rank: row.rank,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
-        // Activity Tracking
-        lastContactAt: row.lastContactAt ?? null,
-        awaitingReply: row.awaitingReply ?? false,
-        // Predictions
-        expectedCloseDate: row.expectedCloseDate ?? null,
         // Conversion
         convertedAt: row.convertedAt ?? null,
         convertedToClientId: row.convertedToClientId ?? null,
@@ -142,11 +137,6 @@ export const fetchLeadById = cache(
       rank: lead.rank,
       createdAt: lead.createdAt,
       updatedAt: lead.updatedAt,
-      // Activity Tracking
-      lastContactAt: lead.lastContactAt ?? null,
-      awaitingReply: lead.awaitingReply ?? false,
-      // Predictions
-      expectedCloseDate: lead.expectedCloseDate ?? null,
       // Conversion
       convertedAt: lead.convertedAt ?? null,
       convertedToClientId: lead.convertedToClientId ?? null,
@@ -211,11 +201,6 @@ export const fetchArchivedLeads = cache(
       rank: row.rank,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      // Activity Tracking
-      lastContactAt: row.lastContactAt ?? null,
-      awaitingReply: row.awaitingReply ?? false,
-      // Predictions
-      expectedCloseDate: row.expectedCloseDate ?? null,
       // Conversion
       convertedAt: row.convertedAt ?? null,
       convertedToClientId: row.convertedToClientId ?? null,
@@ -270,11 +255,6 @@ async function selectLeadRows({
     rank: includeRank ? leads.rank : sql<string>`'zzzzzzzz'`,
     createdAt: leads.createdAt,
     updatedAt: leads.updatedAt,
-    // Activity Tracking
-    lastContactAt: leads.lastContactAt,
-    awaitingReply: leads.awaitingReply,
-    // Predictions
-    expectedCloseDate: leads.expectedCloseDate,
     // Conversion
     convertedAt: leads.convertedAt,
     // A won lead's client is its company (0111).

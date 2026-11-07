@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 
 import { requireUser } from '@/lib/auth/session'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -10,6 +10,11 @@ import { ActivityVerbs } from '@/lib/activity/types'
 import { trackSettingsServerInteraction } from '@/lib/posthog/server'
 import { db } from '@/lib/db'
 import { invoices } from '@/lib/db/schema'
+import {
+  paymentRefsUnchanged,
+  stopOpenInvoicePayments,
+  stopPaymentsRefusal,
+} from '@/lib/invoices/stop-open-payments'
 
 import { unsendSchema } from './schemas'
 import type { ActionResult, UnsendInput } from './types'
@@ -44,6 +49,8 @@ async function performUnsendInvoice(input: UnsendInput): Promise<ActionResult> {
       status: invoices.status,
       invoiceNumber: invoices.invoiceNumber,
       companyId: invoices.companyId,
+      stripePaymentIntentId: invoices.stripePaymentIntentId,
+      stripeCheckoutSessionId: invoices.stripeCheckoutSessionId,
     })
     .from(invoices)
     .where(eq(invoices.id, invoiceId))
@@ -59,10 +66,22 @@ async function performUnsendInvoice(input: UnsendInput): Promise<ActionResult> {
     return { error: 'Only sent invoices can be reverted to draft.' }
   }
 
+  // A draft can't be paid, so a payment the client has open must stop first.
+  const refs = {
+    paymentIntentId: existing.stripePaymentIntentId,
+    checkoutSessionId: existing.stripeCheckoutSessionId,
+  }
+  const stopped = await stopOpenInvoicePayments(refs)
+  if (stopped !== 'clear') {
+    return { error: stopPaymentsRefusal(stopped, 'reverted to draft') }
+  }
+
   try {
     const nowIso = new Date().toISOString()
 
-    await db
+    // Conditional, so a view or payment that landed meanwhile wins, and a
+    // payment started meanwhile (new Stripe ids) is not left open.
+    const reverted = await db
       .update(invoices)
       .set({
         status: 'DRAFT',
@@ -72,7 +91,21 @@ async function performUnsendInvoice(input: UnsendInput): Promise<ActionResult> {
         shareEnabled: false,
         updatedAt: nowIso,
       })
-      .where(eq(invoices.id, invoiceId))
+      .where(
+        and(
+          eq(invoices.id, invoiceId),
+          eq(invoices.status, 'SENT'),
+          paymentRefsUnchanged(refs)
+        )
+      )
+      .returning({ id: invoices.id })
+
+    if (reverted.length === 0) {
+      return {
+        error:
+          'This invoice changed while you were working on it. Refresh and try again.',
+      }
+    }
 
     await logActivity({
       actorId: user.id,

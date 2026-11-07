@@ -68,7 +68,14 @@ export function usePlanStream() {
 
       if (!response.ok) {
         const errorText = await response.text()
-        setState(prev => ({ ...prev, isGenerating: false, error: errorText }))
+        let message = errorText
+        try {
+          const parsed = JSON.parse(errorText) as { error?: unknown }
+          if (typeof parsed.error === 'string') message = parsed.error
+        } catch {
+          // Not JSON: show the text as sent.
+        }
+        setState(prev => ({ ...prev, isGenerating: false, error: message }))
         return
       }
 

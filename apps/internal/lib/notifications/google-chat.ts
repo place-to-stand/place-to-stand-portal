@@ -6,8 +6,10 @@ import { invoiceHref } from '@/lib/sheets/hrefs'
 import {
   buildInvoicePaidCard,
   buildStuckEmailCard,
+  buildUnbookedPaymentCard,
   type InvoicePaidNotice,
   type StuckEmailNotice,
+  type UnbookedPaymentNotice,
 } from './google-chat-messages'
 
 /**
@@ -64,6 +66,42 @@ export async function notifyInvoicePaid(
     }
   } catch (err) {
     console.error('[google-chat] invoice-paid notification error:', err)
+  }
+}
+
+/**
+ * Warn the Sales space that Stripe took money for an invoice the portal
+ * would not book. Same contract as `notifyInvoicePaid`: no-op without the
+ * webhook, never throws.
+ */
+export async function notifyUnbookedPayment(
+  notice: UnbookedPaymentNotice & { invoiceId?: string | null }
+): Promise<void> {
+  const webhookUrl = serverEnv.GOOGLE_CHAT_SALES_WEBHOOK_URL
+
+  if (!webhookUrl) return
+
+  const { invoiceId, ...rest } = notice
+  const card = buildUnbookedPaymentCard({
+    ...rest,
+    invoiceUrl: rest.invoiceUrl ?? resolveInvoiceUrl(invoiceId),
+  })
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card),
+    })
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => '')
+      console.error(
+        `[google-chat] unbooked-payment notification failed: ${response.status} ${body}`
+      )
+    }
+  } catch (err) {
+    console.error('[google-chat] unbooked-payment notification error:', err)
   }
 }
 

@@ -1,7 +1,7 @@
 // permission: public — unguessable share token
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { allowInvoiceCheckout } from '@/lib/auth/throttle'
 import { db } from '@/lib/db'
@@ -167,14 +167,45 @@ export async function POST(
       }
     )
 
-    // Store payment intent ID on invoice for reuse and webhook lookup
-    await db
+    // Store payment intent ID on invoice for reuse and webhook lookup. Only
+    // while the invoice is still payable and unchanged: a void, revert,
+    // archive or edit that ran meanwhile stopped the payments it could see,
+    // and could not see this one, so it is cancelled instead.
+    const stored = await db
       .update(invoices)
       .set({
         stripePaymentIntentId: paymentIntent.id,
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(invoices.id, invoice.id))
+      .where(
+        and(
+          eq(invoices.id, invoice.id),
+          inArray(invoices.status, ['SENT', 'VIEWED']),
+          isNull(invoices.deletedAt),
+          // A second click at once gets the same intent (idempotency key)
+          // and finds it already stored.
+          sql`(${invoices.stripePaymentIntentId} is not distinct from ${invoice.stripePaymentIntentId} or ${invoices.stripePaymentIntentId} = ${paymentIntent.id})`
+        )
+      )
+      .returning({ id: invoices.id })
+
+    if (stored.length === 0) {
+      try {
+        await getStripe().paymentIntents.cancel(paymentIntent.id)
+      } catch (err) {
+        console.error(
+          '[api/public/invoices/checkout] Could not cancel an intent for an invoice that changed',
+          { invoiceId: invoice.id, paymentIntentId: paymentIntent.id, err }
+        )
+      }
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'This invoice changed. Refresh the page and try again.',
+        },
+        { status: 409 }
+      )
+    }
 
     return NextResponse.json({
       ok: true,
