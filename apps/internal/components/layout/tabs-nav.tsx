@@ -42,14 +42,15 @@ export function TabsNav({ tabs, activeTab, className }: TabsNavProps) {
       onValueChange={handleValueChange}
       className={cn('w-full sm:w-auto', className)}
     >
-      {/* Tabs hug the left edge at every width and scroll sideways once
+      {/* 32px, the height of the page's buttons, so the toolbar is no taller
+          than its tallest control. Tabs hug the left edge at every width and scroll sideways once
           they outgrow the screen, instead of stretching or clipping. */}
-      <TabsList className='bg-muted/40 h-10 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-1'>
+      <TabsList className='bg-muted/40 h-8 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg p-0.5'>
         {tabs.map(tab => (
           <TabsTrigger
             key={tab.value}
             value={tab.value}
-            className='flex-none px-3 py-1.5 text-sm'
+            className='h-full flex-none px-3 py-0 text-sm'
           >
             {tab.label}
           </TabsTrigger>
