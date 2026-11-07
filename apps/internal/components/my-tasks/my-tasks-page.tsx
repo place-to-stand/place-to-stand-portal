@@ -514,7 +514,7 @@ export function MyTasksPage({
         <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
           {/* Below md the pickers move into a slide-out so Create task keeps
               the row; from md up they sit inline as before. */}
-          <FilterSheetButton className='md:hidden' activeCount={scopeCount}>
+          <FilterSheetButton className='h-8 md:hidden' activeCount={scopeCount}>
             {scopePickers}
           </FilterSheetButton>
           <div className='max-md:hidden md:contents'>{scopePickers}</div>
