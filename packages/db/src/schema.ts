@@ -117,16 +117,6 @@ export const invoiceStatus = pgEnum('invoice_status', [
   'VOID',
 ])
 
-// Lead loss reason
-export const leadLossReason = pgEnum('lead_loss_reason', [
-  'BUDGET',
-  'TIMING',
-  'COMPETITOR',
-  'FIT',
-  'GHOSTED',
-  'OTHER',
-])
-
 /**
  * How a logged lead interaction happened.
  * Kept deliberately small at launch — see PRD 005 D3. TEXT_MESSAGE (SMS /
@@ -1194,23 +1184,11 @@ export const leads = pgTable(
     notes: jsonb('notes').default({}).notNull(),
     rank: text().default('zzzzzzzz').notNull(),
 
-    // Activity Tracking
-    lastContactAt: timestamp('last_contact_at', {
-      withTimezone: true,
-      mode: 'string',
-    }),
-    awaitingReply: boolean('awaiting_reply').default(false),
-
-    // Predictions
-    expectedCloseDate: date('expected_close_date'),
-
     // Pipeline tracking
     resolvedAt: timestamp('resolved_at', {
       withTimezone: true,
       mode: 'string',
     }),
-    lossReason: leadLossReason('loss_reason'),
-    lossNotes: text('loss_notes'),
     currentStageEnteredAt: timestamp('current_stage_entered_at', {
       withTimezone: true,
       mode: 'string',
