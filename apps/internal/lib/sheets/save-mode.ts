@@ -44,6 +44,17 @@ export function modeInFlight(): SheetSaveMode {
   return Date.now() - lastAnnounced.at < 10_000 ? lastAnnounced.mode : 'close'
 }
 
+/**
+ * A Save and close started in the last few seconds: its sheet is closing (or
+ * stays open only if the save failed). The toaster reads it so a success
+ * toast doesn't sit above a footer that's going away.
+ */
+export function closeSaveInFlight() {
+  return (
+    lastAnnounced.mode === 'close' && Date.now() - lastAnnounced.at < 10_000
+  )
+}
+
 export function onSaveModeAnnounced(listener: (mode: SheetSaveMode) => void) {
   const handle = (event: Event) =>
     listener((event as CustomEvent<SheetSaveMode>).detail)

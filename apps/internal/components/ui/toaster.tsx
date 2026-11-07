@@ -3,11 +3,32 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
+import { closeSaveInFlight } from '@/lib/sheets/save-mode'
+
 import { subscribe, type ToastMessage } from './toast'
 import { ToastCard } from './toast-card'
 import { ToastRecordLink } from './toast-record-link'
 
 const TOAST_GAP = 12
+
+function isSuccess(toast: ToastMessage) {
+  return (
+    !toast.variant || toast.variant === 'default' || toast.variant === 'success'
+  )
+}
+
+/**
+ * Whether a sheet's footer will still be on screen under this toast. A
+ * success from Save and close means its sheet is closing, so only a sheet
+ * stacked beneath it (if any) stays.
+ */
+function sheetStaysOpen(toast: ToastMessage) {
+  const open = document.querySelectorAll(
+    '[data-slot="sheet-content"]:not([data-closed])'
+  ).length
+  const closing = isSuccess(toast) && closeSaveInFlight() ? 1 : 0
+  return open - closing > 0
+}
 
 export function Toaster() {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
@@ -24,11 +45,7 @@ export function Toaster() {
   useEffect(() => {
     const timeouts = timeoutsRef.current
     const unsubscribe = subscribe(toast => {
-      if (shownRef.current === 0) {
-        setLifted(
-          document.querySelector('[data-slot="sheet-content"]') !== null
-        )
-      }
+      if (shownRef.current === 0) setLifted(sheetStaysOpen(toast))
       shownRef.current += 1
       setToasts(current => [...current, toast])
 
@@ -75,12 +92,10 @@ export function Toaster() {
       {toasts.map(toast => {
         // A success about a named record shows the name as its link: one
         // line instead of the name and an "Open task" line.
-        const success =
-          !toast.variant ||
-          toast.variant === 'default' ||
-          toast.variant === 'success'
         const name =
-          success && toast.link && typeof toast.description === 'string'
+          isSuccess(toast) &&
+          toast.link &&
+          typeof toast.description === 'string'
             ? toast.description
             : undefined
         const link = toast.link ? (
@@ -97,9 +112,9 @@ export function Toaster() {
           <ToastCard
             key={toast.id}
             title={toast.title}
-            description={name ? link : toast.description}
+            description={name ? undefined : toast.description}
             variant={toast.variant}
-            link={name ? null : link}
+            link={link}
             onDismiss={() => dismiss(toast.id)}
           />
         )

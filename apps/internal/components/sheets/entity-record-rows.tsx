@@ -143,14 +143,8 @@ export function LeadRecordRow({
       description={note ?? lead.assigneeName}
       onOpen={openable ? () => open('lead', lead.id) : undefined}
       openLabel={`Open lead ${lead.contactName}`}
-      actions={
-        <>
-          <span className='pr-1.5'>
-            <LeadStatusBadge status={lead.status} />
-          </span>
-          {actions}
-        </>
-      }
+      badge={<LeadStatusBadge status={lead.status} />}
+      actions={actions}
       className={className}
       pendingRemoval={pendingRemoval}
     />
@@ -186,14 +180,8 @@ export function ProjectRecordRow({
       description={note ?? counts}
       href={href ?? undefined}
       openLabel={href ? `Open ${project.name}` : undefined}
-      actions={
-        <>
-          <span className='pr-1.5'>
-            <ProjectStatusBadge status={project.status} />
-          </span>
-          {actions}
-        </>
-      }
+      badge={<ProjectStatusBadge status={project.status} />}
+      actions={actions}
       className={className}
       pendingRemoval={pendingRemoval}
     />
@@ -231,16 +219,10 @@ export function InvoiceRecordRow({
       description={note ?? (details.length ? details.join(' · ') : null)}
       onOpen={openable ? () => open('invoice', invoice.id) : undefined}
       openLabel={`Open invoice ${title}`}
-      actions={
-        <>
-          {invoice.status ? (
-            <span className='pr-1.5'>
-              <InvoiceStatusBadge status={invoice.status} />
-            </span>
-          ) : null}
-          {actions}
-        </>
+      badge={
+        invoice.status ? <InvoiceStatusBadge status={invoice.status} /> : null
       }
+      actions={actions}
       className={className}
       pendingRemoval={pendingRemoval}
     />
