@@ -18,7 +18,7 @@ import {
   appendMessage,
   createRevision,
   updateThreadVersion,
-  startThreadGeneration,
+  claimThreadGeneration,
   updateThreadPartialContent,
   finishThreadGeneration,
   failThreadGeneration,
@@ -42,6 +42,44 @@ const requestSchema = z.object({
   model: z.enum(PLANNING_MODEL_TIERS).default(DEFAULT_PLANNING_TIER),
   currentVersion: z.number().int().min(0),
 })
+
+/**
+ * The stored conversation, made to end with a user message (the Anthropic
+ * API refuses a prefill). Any prompt it adds is stored too.
+ */
+async function prepareConversation(
+  threadId: string,
+  feedback: string | undefined
+): Promise<ModelMessage[]> {
+  // Build conversation history from stored messages
+  const storedMessages = await getMessages(threadId)
+  const conversationMessages: ModelMessage[] = storedMessages
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }))
+
+  // Ensure conversation ends with a user message (required by Anthropic API)
+  if (feedback) {
+    conversationMessages.push({ role: 'user', content: feedback })
+    await appendMessage(threadId, 'user', feedback)
+  } else if (conversationMessages.length === 0) {
+    const initialPrompt =
+      'Explore the repository to understand its structure, patterns, and relevant code, then generate the implementation plan.'
+    conversationMessages.push({ role: 'user', content: initialPrompt })
+    await appendMessage(threadId, 'user', initialPrompt)
+  } else if (
+    conversationMessages[conversationMessages.length - 1].role !== 'user'
+  ) {
+    // Safety: conversation must end with user message to avoid prefill error
+    const continuePrompt = 'Continue generating the plan.'
+    conversationMessages.push({ role: 'user', content: continuePrompt })
+    await appendMessage(threadId, 'user', continuePrompt)
+  }
+
+  return conversationMessages
+}
 
 export async function POST(request: Request) {
   const user = await getCurrentAdmin()
@@ -120,50 +158,50 @@ export async function POST(request: Request) {
     repoTreePaths
   )
 
-  // Build conversation history from stored messages
-  const storedMessages = await getMessages(threadId)
-  const conversationMessages: ModelMessage[] = storedMessages
-    .filter(m => m.role === 'user' || m.role === 'assistant')
-    .map(m => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }))
-
-  // Ensure conversation ends with a user message (required by Anthropic API)
-  if (feedback) {
-    conversationMessages.push({ role: 'user', content: feedback })
-    await appendMessage(threadId, 'user', feedback)
-  } else if (conversationMessages.length === 0) {
-    const initialPrompt =
-      'Explore the repository to understand its structure, patterns, and relevant code, then generate the implementation plan.'
-    conversationMessages.push({ role: 'user', content: initialPrompt })
-    await appendMessage(threadId, 'user', initialPrompt)
-  } else if (
-    conversationMessages[conversationMessages.length - 1].role !== 'user'
-  ) {
-    // Safety: conversation must end with user message to avoid prefill error
-    const continuePrompt = 'Continue generating the plan.'
-    conversationMessages.push({ role: 'user', content: continuePrompt })
-    await appendMessage(threadId, 'user', continuePrompt)
-  }
-
-  // Create planning tools for repo access
-  const tools = createPlanningTools(
-    user.id,
-    repoLink.repoOwner,
-    repoLink.repoName,
-    repoAuth
-  )
-
   const nextVersion = currentVersion + 1
-
-  // Haiku doesn't support extended thinking
-  const supportsThinking = tierSupportsThinking(modelTier)
 
   // Mark the thread as actively generating so a client that navigates away
   // and comes back (or a fresh mount) can detect and resume this in-flight
-  // generation instead of showing the blank initial-planning screen.
-  await startThreadGeneration(threadId, nextVersion)
+  // generation instead of showing the blank initial-planning screen. Refused
+  // while another write on this thread is still running, so two clicks can't
+  // start two writes.
+  const claim = await claimThreadGeneration(threadId, nextVersion)
+  if (claim !== 'claimed') {
+    return new Response(
+      JSON.stringify({
+        error:
+          claim === 'busy'
+            ? 'This plan is already being written.'
+            : 'This plan changed since you opened it. Refresh and try again.',
+      }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
+  // Everything between the claim and the stream must release the claim if
+  // it fails, or the thread would read as writing until it goes stale.
+  let conversationMessages: ModelMessage[]
+  let tools: ReturnType<typeof createPlanningTools>
+  try {
+    conversationMessages = await prepareConversation(threadId, feedback)
+    tools = createPlanningTools(
+      user.id,
+      repoLink.repoOwner,
+      repoLink.repoName,
+      repoAuth
+    )
+  } catch (error) {
+    await failThreadGeneration(
+      threadId,
+      'The plan could not start. Try again.'
+    ).catch(persistError =>
+      console.error('[planning/generate] failed to release claim', persistError)
+    )
+    throw error
+  }
+
+  // Haiku doesn't support extended thinking
+  const supportsThinking = tierSupportsThinking(modelTier)
 
   const PARTIAL_PERSIST_INTERVAL_MS = 1500
   let accumulatedText = ''

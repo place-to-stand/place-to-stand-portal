@@ -8,7 +8,7 @@ import { logActivity } from '@/lib/activity/logger'
 import { db } from '@/lib/db'
 import { tasks } from '@/lib/db/schema'
 import { findAssigneesWithoutAccess } from '@/lib/projects/access'
-import { resolveCompletedAt } from '@/lib/projects/task-status'
+import { resolveTaskStatusStamps } from '@/lib/projects/task-status'
 import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
 
 import { assigneeAccessError } from './assignee-access'
@@ -103,7 +103,7 @@ export async function createTaskForActor({
         // A task can be created straight into DONE (e.g. logging work that
         // was already finished) — stamp it at birth rather than leaving a
         // null that the two-week window would silently drop.
-        ...resolveCompletedAt(status, null),
+        ...resolveTaskStatusStamps(status, null),
       })
 
       await syncAssignees(tx, taskId, assigneeIds)

@@ -97,15 +97,15 @@ export const integrationProvider = pgEnum('integration_provider', [
 /**
  * OAuth connection status values.
  * - ACTIVE: Connection is valid and tokens are working
- * - EXPIRED: Reserved for future use (currently tokens auto-refresh)
- * - REVOKED: Reserved for future use (currently we soft-delete on disconnect)
- * - PENDING_REAUTH: Reserved for future reauthorization flow
+ * - EXPIRED: Unused (tokens auto-refresh; a refresh that fails is PENDING_REAUTH)
+ * - REVOKED: Disconnected by the person or an admin (row is also soft-deleted)
+ * - PENDING_REAUTH: Google refused the refresh token; the person must reconnect
  */
 export const oauthConnectionStatus = pgEnum('oauth_connection_status', [
   'ACTIVE',
-  'EXPIRED', // Reserved: for explicit token expiry tracking
-  'REVOKED', // Reserved: for explicit revocation tracking
-  'PENDING_REAUTH', // Reserved: for future reauth prompt flow
+  'EXPIRED', // Unused
+  'REVOKED',
+  'PENDING_REAUTH',
 ])
 
 // Invoice status

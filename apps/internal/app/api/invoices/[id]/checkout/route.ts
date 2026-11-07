@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
 import { appOrigin } from '@/lib/app-origin'
 import { assertAdmin } from '@/lib/auth/permissions'
@@ -110,14 +110,43 @@ export async function POST(
       client_reference_id: invoice.id,
     })
 
-    // Store checkout session ID on invoice
-    await db
+    // Store checkout session ID on invoice. Only while the invoice is still
+    // payable and unchanged: a void, revert, archive or edit that ran
+    // meanwhile could not see this session, so it is expired instead.
+    const stored = await db
       .update(invoices)
       .set({
         stripeCheckoutSessionId: session.id,
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(invoices.id, id))
+      .where(
+        and(
+          eq(invoices.id, id),
+          inArray(invoices.status, ['SENT', 'VIEWED']),
+          isNull(invoices.deletedAt),
+          eq(invoices.total, invoice.total),
+          sql`${invoices.stripeCheckoutSessionId} is not distinct from ${invoice.stripeCheckoutSessionId}`
+        )
+      )
+      .returning({ id: invoices.id })
+
+    if (stored.length === 0) {
+      try {
+        await getStripe().checkout.sessions.expire(session.id)
+      } catch (err) {
+        console.error(
+          '[api/invoices/checkout] Could not expire a session for an invoice that changed',
+          { invoiceId: id, sessionId: session.id, err }
+        )
+      }
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'This invoice changed. Refresh the page and try again.',
+        },
+        { status: 409 }
+      )
+    }
 
     return NextResponse.json({
       ok: true,

@@ -94,14 +94,4 @@ export function getLeadSourceLabel(
   return LEAD_SOURCE_LABELS[source] ?? source
 }
 
-/**
- * Check if a status is terminal (lead lifecycle has ended).
- * Terminal statuses set resolvedAt and may set conversion or loss fields.
- */
-export function isTerminalLeadStatus(status: LeadStatusValue): boolean {
-  return (
-    status === 'CLOSED_WON' ||
-    status === 'CLOSED_LOST' ||
-    status === 'UNQUALIFIED'
-  )
-}
+export { isTerminalLeadStatus } from './stage-rules'

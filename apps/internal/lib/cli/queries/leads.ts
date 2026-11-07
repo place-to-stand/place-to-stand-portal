@@ -34,8 +34,6 @@ const leadFields = {
   rank: leads.rank,
   currentStageEnteredAt: leads.currentStageEnteredAt,
   resolvedAt: leads.resolvedAt,
-  lossReason: leads.lossReason,
-  lossNotes: leads.lossNotes,
   convertedAt: leads.convertedAt,
   // A won lead's client is its company (0111).
   convertedToClientId: sql<

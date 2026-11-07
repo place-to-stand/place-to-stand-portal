@@ -39,13 +39,6 @@ export type LeadRecord = {
   createdAt: string
   updatedAt: string
 
-  // Activity Tracking
-  lastContactAt: string | null
-  awaitingReply: boolean
-
-  // Predictions
-  expectedCloseDate: string | null
-
   // Conversion
   convertedAt: string | null
   convertedToClientId: string | null
