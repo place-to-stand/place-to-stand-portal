@@ -129,7 +129,7 @@ export async function PATCH(
       status: nextStatus,
       updatedBy: user.id,
       // A reorder within a column is not an edit: it leaves updated_at
-      // alone (migration 0131 ignores rank), so an open task sheet saves
+      // alone (migration 0133 ignores rank), so an open task sheet saves
       // without a conflict.
       ...(statusChanged ? { updatedAt } : {}),
       ...resolveTaskStatusStamps(nextStatus, task.completedAt),

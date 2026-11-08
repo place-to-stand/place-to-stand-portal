@@ -920,10 +920,17 @@
       "breakpoints": true
     },
     {
-      "idx": 131,
+      "idx": 132,
       "version": "7",
-      "when": 1793975162951,
-      "tag": "0131_sheet_updated_at_triggers",
+      "when": 1794087304555,
+      "tag": "0132_drop_unused_lead_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 133,
+      "version": "7",
+      "when": 1794176681885,
+      "tag": "0133_sheet_updated_at_triggers",
       "breakpoints": true
     }
   ]
