@@ -60,6 +60,8 @@ type TimeLogsTableProps = {
   mode?: 'active' | 'archive'
   /** Validated `?sort=`, or undefined for the default (newest first). */
   sort: string | undefined
+  /** Where sorting writes; defaults to this list's own page. */
+  basePath?: string
 }
 
 /**
@@ -74,10 +76,12 @@ export function TimeLogsTable({
   pageSize,
   mode = 'active',
   sort,
+  basePath,
 }: TimeLogsTableProps) {
   const router = useRouter()
   const { update } = useListParams({
-    basePath: mode === 'archive' ? '/time-logs/archive' : '/time-logs',
+    basePath:
+      basePath ?? (mode === 'archive' ? '/time-logs/archive' : '/time-logs'),
     resetKeys: ['page'],
   })
   // The same sortable headers as Companies and the other lists.

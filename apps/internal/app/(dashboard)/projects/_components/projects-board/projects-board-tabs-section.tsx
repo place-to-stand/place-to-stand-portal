@@ -64,10 +64,7 @@ type DropProps = Pick<
   'activeDropColumnId' | 'dropPreview' | 'recentlyMovedTaskId'
 >
 
-type TimeLogsProps = Pick<
-  ProjectsBoardTabsProps,
-  'currentUserId' | 'onEditTimeLogEntry'
->
+type TimeLogsProps = Pick<ProjectsBoardTabsProps, 'timeLogsList'>
 
 export type ProjectsBoardTabsSectionProps = {
   initialTab: ProjectsBoardTabsProps['initialTab']

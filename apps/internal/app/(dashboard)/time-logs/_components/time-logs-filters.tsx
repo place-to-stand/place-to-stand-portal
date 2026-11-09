@@ -13,11 +13,12 @@ import { isAllTimeRange } from '@/lib/dates/calendar-date'
 import type { TimeLogsListParams } from '@/lib/time-logs/filters'
 
 type TimeLogsFiltersProps = {
-  /** The list these filters drive: `/time-logs` or `/time-logs/archive`. */
-  basePath: '/time-logs' | '/time-logs/archive'
+  /** The list these filters drive (`/time-logs`, its archive, a project tab). */
+  basePath: string
   params: TimeLogsListParams
-  clients: SearchableComboboxItem[]
-  projects: SearchableComboboxItem[]
+  /** Left out on a project's tab, where the client and project are fixed. */
+  clients?: SearchableComboboxItem[]
+  projects?: SearchableComboboxItem[]
   people: SearchableComboboxItem[]
 }
 
@@ -76,30 +77,34 @@ export function TimeLogsFilters({
           )
         }
       />
-      <SearchableCombobox
-        className={FILTER_TRIGGER_WIDTH}
-        ariaLabel='Client'
-        items={clients}
-        value={params.companyId ?? ''}
-        onChange={value =>
-          update({ companyId: value || undefined, projectId: undefined })
-        }
-        onClear={() => update({ companyId: undefined, projectId: undefined })}
-        placeholder='All clients'
-        searchPlaceholder='Search clients…'
-        emptyMessage='No clients found.'
-      />
-      <SearchableCombobox
-        className={FILTER_TRIGGER_WIDTH}
-        ariaLabel='Project'
-        items={projects}
-        value={params.projectId ?? ''}
-        onChange={value => update({ projectId: value || undefined })}
-        onClear={() => update({ projectId: undefined })}
-        placeholder='All projects'
-        searchPlaceholder='Search projects…'
-        emptyMessage='No projects found.'
-      />
+      {clients ? (
+        <SearchableCombobox
+          className={FILTER_TRIGGER_WIDTH}
+          ariaLabel='Client'
+          items={clients}
+          value={params.companyId ?? ''}
+          onChange={value =>
+            update({ companyId: value || undefined, projectId: undefined })
+          }
+          onClear={() => update({ companyId: undefined, projectId: undefined })}
+          placeholder='All clients'
+          searchPlaceholder='Search clients…'
+          emptyMessage='No clients found.'
+        />
+      ) : null}
+      {projects ? (
+        <SearchableCombobox
+          className={FILTER_TRIGGER_WIDTH}
+          ariaLabel='Project'
+          items={projects}
+          value={params.projectId ?? ''}
+          onChange={value => update({ projectId: value || undefined })}
+          onClear={() => update({ projectId: undefined })}
+          placeholder='All projects'
+          searchPlaceholder='Search projects…'
+          emptyMessage='No projects found.'
+        />
+      ) : null}
       <SearchableCombobox
         className={FILTER_TRIGGER_WIDTH}
         ariaLabel='Person'
