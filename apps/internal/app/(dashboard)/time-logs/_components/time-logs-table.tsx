@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { ProjectTimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
+import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -134,11 +134,6 @@ export function TimeLogsTable({
 
   return (
     <div className='space-y-3'>
-      {editor.error ? (
-        <p className='text-destructive text-sm' role='alert'>
-          {editor.error}
-        </p>
-      ) : null}
       <div className='overflow-hidden rounded-lg border'>
         <RowSelectionProvider selection={selection} entity='timeLog'>
           <Table
@@ -350,15 +345,16 @@ export function TimeLogsTable({
         onCancel={actions.archiveConfirm.cancel}
         onConfirm={actions.archiveConfirm.confirm}
       />
-      {editor.editContext ? (
-        <ProjectTimeLogDialog
-          {...editor.editContext.params}
+      {editor.entryId ? (
+        <TimeLogDialog
+          params={editor.editContext?.params ?? null}
+          loadError={editor.error}
           open
           onOpenChange={next => {
             if (!next) editor.close()
           }}
           mode='edit'
-          timeLogEntry={editor.editContext.entry}
+          timeLogEntry={editor.editContext?.entry ?? null}
           onMutationSuccess={() => {
             editor.close()
             router.refresh()

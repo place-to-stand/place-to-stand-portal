@@ -139,7 +139,10 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
   }, [initialTab])
 
   return (
-    <Tabs value={initialTab} className='flex min-h-0 flex-1 flex-col gap-2'>
+    <Tabs
+      value={initialTab}
+      className='flex min-h-0 flex-1 flex-col gap-3 sm:gap-4'
+    >
       <ProjectsBoardTabsHeader
         initialTab={initialTab}
         boardHref={boardHref}

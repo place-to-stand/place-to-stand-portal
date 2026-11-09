@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef, type RefObject } from 'react'
+
 import {
   Dialog,
   DialogContent,
@@ -12,13 +14,14 @@ import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog
 import { ProjectTimeLogForm } from './project-time-log-form'
 import { InfoPanelDivider } from '@/components/ui/info-panel'
 import { TimeLogHoursSummary } from './time-log-hours-summary'
+import { TimeLogDialogSkeleton } from './time-log-dialog-skeleton'
 import { useProjectTimeLogDialog } from '@/lib/projects/time-log/use-project-time-log-dialog'
 import type {
   ProjectTimeLogDialogParams,
   TimeLogEntry,
 } from '@/lib/projects/time-log/types'
 
-export type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams & {
+type TimeLogDialogOptions = {
   open: boolean
   onOpenChange: (open: boolean) => void
   mode: 'create' | 'edit'
@@ -27,6 +30,10 @@ export type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams & {
   onMutationSuccess?: () => void
 }
 
+export type ProjectTimeLogDialogProps = ProjectTimeLogDialogParams &
+  TimeLogDialogOptions
+
+/** The Log time dialog, for callers that already hold the project's data. */
 export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
   const {
     open,
@@ -35,72 +42,132 @@ export function ProjectTimeLogDialog(props: ProjectTimeLogDialogProps) {
     timeLogEntry,
     initialLinkedTaskIds,
     onMutationSuccess,
-    ...rest
+    ...params
   } = props
 
-  const state = useProjectTimeLogDialog({
-    ...(rest as ProjectTimeLogDialogParams),
-    open,
-    onOpenChange,
-    mode,
-    timeLogEntry,
-    initialLinkedTaskIds,
-    onMutationSuccess,
-  })
+  return (
+    <TimeLogDialog
+      params={params}
+      open={open}
+      onOpenChange={onOpenChange}
+      mode={mode}
+      timeLogEntry={timeLogEntry}
+      initialLinkedTaskIds={initialLinkedTaskIds}
+      onMutationSuccess={onMutationSuccess}
+    />
+  )
+}
 
-  const dialogTitle = state.isEditMode ? 'Edit time log' : 'Create time log'
+type GuardRef = RefObject<((open: boolean) => void) | null>
+
+/**
+ * The Log time dialog. It opens at once, like a sheet: while `params` (and,
+ * to edit, `timeLogEntry`) load, it shows the same frame with placeholders,
+ * then the form; a failed load shows `loadError` in place of the form.
+ */
+export function TimeLogDialog({
+  params,
+  loadError = null,
+  ...options
+}: TimeLogDialogOptions & {
+  /** The project's data; null while it loads. */
+  params: ProjectTimeLogDialogParams | null
+  loadError?: string | null
+}) {
+  const { open, onOpenChange, mode, timeLogEntry } = options
+  // Once the form is up, closing goes through its unsaved-changes check.
+  const guardRef: GuardRef = useRef(null)
+  const ready = params !== null && (mode === 'create' || timeLogEntry !== null)
+  const dialogTitle = mode === 'edit' ? 'Edit time log' : 'Create time log'
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={next => (guardRef.current ?? onOpenChange)(next)}
+    >
+      <DialogContent className='w-full max-w-xl'>
+        <DialogHeader>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          {ready ? null : (
+            <DialogDescription className='sr-only'>
+              {loadError ?? 'Loading the time log…'}
+            </DialogDescription>
+          )}
+        </DialogHeader>
+        {ready ? (
+          <TimeLogDialogBody params={params} guardRef={guardRef} {...options} />
+        ) : loadError ? (
+          <p className='text-destructive text-sm' role='alert'>
+            {loadError}
+          </p>
+        ) : (
+          <TimeLogDialogSkeleton />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function TimeLogDialogBody({
+  params,
+  guardRef,
+  ...options
+}: TimeLogDialogOptions & {
+  params: ProjectTimeLogDialogParams
+  guardRef: GuardRef
+}) {
+  const state = useProjectTimeLogDialog({ ...params, ...options })
   const submitLabel = state.isEditMode ? 'Save changes' : 'Log time'
+
+  useEffect(() => {
+    guardRef.current = state.handleDialogOpenChange
+    return () => {
+      guardRef.current = null
+    }
+  }, [guardRef, state.handleDialogOpenChange])
 
   return (
     <>
-      <Dialog open={open} onOpenChange={state.handleDialogOpenChange}>
-        <DialogContent className='w-full max-w-xl'>
-          <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
-            {/* The project shows in the box below; screen readers get it here. */}
-            <DialogDescription className='sr-only'>
-              {state.projectLabel}
-            </DialogDescription>
-          </DialogHeader>
-          <TimeLogHoursSummary
-            projectId={rest.projectId}
-            projectLabel={state.projectLabel}
-            isClientProject={rest.projectType === 'CLIENT'}
-          />
-          <InfoPanelDivider />
-          <ProjectTimeLogForm
-            isMutating={state.isMutating}
-            disableSubmit={state.disableSubmit}
-            formErrors={state.formErrors}
-            fieldErrorIds={state.fieldErrorIds}
-            hoursInput={state.hoursInput}
-            onHoursChange={state.onHoursChange}
-            loggedOnInput={state.loggedOnInput}
-            onLoggedOnChange={state.onLoggedOnChange}
-            noteInput={state.noteInput}
-            onNoteChange={state.onNoteChange}
-            selectedUserId={state.selectedUserId}
-            onSelectUser={state.onSelectUser}
-            userComboboxItems={state.userComboboxItems}
-            getToday={state.getToday}
-            handleSubmit={state.handleSubmit}
-            availableTasks={state.availableTasks}
-            selectedTasks={state.selectedTasks}
-            onAddTask={state.onAddTask}
-            isTaskPickerOpen={state.isTaskPickerOpen}
-            onTaskPickerOpenChange={state.onTaskPickerOpenChange}
-            taskPickerButtonDisabled={state.taskPickerButtonDisabled}
-            taskPickerReason={state.taskPickerReason}
-            requestTaskRemoval={state.requestTaskRemoval}
-            submitLabel={submitLabel}
-            isEditMode={state.isEditMode}
-            onRequestDelete={
-              state.isEditMode ? state.deleteDialog.request : undefined
-            }
-          />
-        </DialogContent>
-      </Dialog>
-
+      {/* The project shows in the box below; screen readers get it here. */}
+      <DialogDescription className='sr-only'>
+        {state.projectLabel}
+      </DialogDescription>
+      <TimeLogHoursSummary
+        projectId={params.projectId}
+        projectLabel={state.projectLabel}
+        isClientProject={params.projectType === 'CLIENT'}
+      />
+      <InfoPanelDivider />
+      <ProjectTimeLogForm
+        isMutating={state.isMutating}
+        disableSubmit={state.disableSubmit}
+        formErrors={state.formErrors}
+        fieldErrorIds={state.fieldErrorIds}
+        hoursInput={state.hoursInput}
+        onHoursChange={state.onHoursChange}
+        loggedOnInput={state.loggedOnInput}
+        onLoggedOnChange={state.onLoggedOnChange}
+        noteInput={state.noteInput}
+        onNoteChange={state.onNoteChange}
+        selectedUserId={state.selectedUserId}
+        onSelectUser={state.onSelectUser}
+        userComboboxItems={state.userComboboxItems}
+        getToday={state.getToday}
+        handleSubmit={state.handleSubmit}
+        availableTasks={state.availableTasks}
+        selectedTasks={state.selectedTasks}
+        onAddTask={state.onAddTask}
+        isTaskPickerOpen={state.isTaskPickerOpen}
+        onTaskPickerOpenChange={state.onTaskPickerOpenChange}
+        taskPickerButtonDisabled={state.taskPickerButtonDisabled}
+        taskPickerReason={state.taskPickerReason}
+        requestTaskRemoval={state.requestTaskRemoval}
+        submitLabel={submitLabel}
+        isEditMode={state.isEditMode}
+        onRequestDelete={
+          state.isEditMode ? state.deleteDialog.request : undefined
+        }
+      />
       <ConfirmDialog
         open={state.overageDialog.isOpen}
         title='Hours exceed client balance'
