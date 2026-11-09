@@ -317,6 +317,7 @@ export function TaskCardStatic({
   canManage,
   className,
   context,
+  onAssigned,
 }: {
   task: TaskWithRelations
   assignees: AssigneeInfo[]
@@ -324,6 +325,8 @@ export function TaskCardStatic({
   canManage: boolean
   className?: string
   context?: TaskContextDetails
+  /** The list holds its own copy of the task: refetch after Set assignee. */
+  onAssigned?: () => void
 }) {
   const isCompleted = task.status === 'DONE'
 
@@ -333,6 +336,7 @@ export function TaskCardStatic({
       onEdit={onClick}
       canManage={canManage}
       archivable={false}
+      onAssigned={onAssigned}
     >
       <div
         role='button'

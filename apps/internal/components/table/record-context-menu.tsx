@@ -18,6 +18,8 @@ import {
 } from '@/lib/sheets/entities'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
+import { AssigneeSubmenu, type AssigneeMenuConfig } from './assignee-submenu'
+
 type RecordContextMenuProps = {
   /**
    * The record's sheet: Edit opens it, Duplicate opens its copy. Time logs
@@ -41,6 +43,11 @@ type RecordContextMenuProps = {
   duplicable?: boolean
   /** Replaces the default duplicate (the /design specimen). */
   onDuplicate?: () => void
+  /**
+   * Adds "Set assignee ›" (tasks and leads): a submenu of the people who can
+   * take the record, then "Clear assignee". Omit for viewers who can't edit.
+   */
+  assign?: AssigneeMenuConfig
   /** The list's archive handler (its confirm dialog). Omit when archived. */
   onArchive?: () => void
   /** The archive list's restore handler. */
@@ -60,8 +67,8 @@ type RecordContextMenuProps = {
 
 /**
  * The right-click menu on every record row and card: Edit, Duplicate (for
- * records that can be copied, see `DUPLICABLE_SHEET_ENTITIES`), then Archive
- * or Restore. Each action is the same one the row's buttons and the sheet
+ * records that can be copied, see `DUPLICABLE_SHEET_ENTITIES`), Set assignee
+ * (tasks and leads), then Archive or Restore. Each action is the same one the row's buttons and the sheet
  * already run, so the menu adds a way in, never a second behaviour.
  */
 export function RecordContextMenu({
@@ -114,6 +121,7 @@ function RecordContextMenuItems({
   editable = true,
   duplicable = true,
   onDuplicate,
+  assign,
   onArchive,
   onRestore,
   archiveDisabledReason = null,
@@ -144,7 +152,10 @@ function RecordContextMenuItems({
           Duplicate
         </ContextMenuItem>
       ) : null}
-      {(editable || canDuplicate) && (onArchive || onRestore) ? (
+      {assign && isSheetEntityKey(entity) ? (
+        <AssigneeSubmenu entity={entity} id={id} {...assign} />
+      ) : null}
+      {(editable || canDuplicate || assign) && (onArchive || onRestore) ? (
         <ContextMenuSeparator />
       ) : null}
       {onArchive ? (

@@ -344,6 +344,13 @@
   },
   {
     "type": "action",
+    "name": "setLeadAssignee",
+    "file": "apps/internal/app/(dashboard)/leads/_actions/set-lead-assignee.ts",
+    "kind": "capability",
+    "capability": "portal.sign_in"
+  },
+  {
+    "type": "action",
     "name": "createLeadUpdate",
     "file": "apps/internal/app/(dashboard)/leads/_actions/updates/create-lead-update.ts",
     "kind": "capability",
@@ -542,6 +549,13 @@
     "type": "action",
     "name": "saveTask",
     "file": "apps/internal/app/(dashboard)/projects/actions/save-task.ts",
+    "kind": "capability",
+    "capability": "projects.view_member"
+  },
+  {
+    "type": "action",
+    "name": "setTaskAssignee",
+    "file": "apps/internal/app/(dashboard)/projects/actions/set-task-assignee.ts",
     "kind": "capability",
     "capability": "projects.view_member"
   },
@@ -1261,6 +1275,13 @@
   },
   {
     "type": "route",
+    "name": "GET /api/leads/assignee-options",
+    "file": "apps/internal/app/api/leads/assignee-options/route.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "route",
     "name": "GET /api/leads/options",
     "file": "apps/internal/app/api/leads/options/route.ts",
     "kind": "capability",
@@ -1496,6 +1517,13 @@
     "file": "apps/internal/app/api/task-deployments/[deploymentId]/worker-status/route.ts",
     "kind": "capability",
     "capability": "projects.admin_tabs"
+  },
+  {
+    "type": "route",
+    "name": "GET /api/tasks/[taskId]/assignee-options",
+    "file": "apps/internal/app/api/tasks/[taskId]/assignee-options/route.ts",
+    "kind": "capability",
+    "capability": "projects.view_member"
   },
   {
     "type": "route",

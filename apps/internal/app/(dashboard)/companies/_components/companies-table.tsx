@@ -162,7 +162,11 @@ export function CompaniesTable({
                   {sortHead('closer', 'Closer', 'w-[8%]', 'center')}
                 </>
               ) : null}
-              <TableHead className='w-16 text-right'>Actions</TableHead>
+              {/* Archive is in the right-click menu and the bulk bar; only the
+                  Archive tab keeps a row button (Restore). */}
+              {mode === 'archive' ? (
+                <TableHead className='w-16 text-right'>Actions</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -369,20 +373,9 @@ export function CompaniesTable({
                         </TableCell>
                       </>
                     ) : null}
-                    <TableCell className='text-right max-md:ml-auto'>
-                      <RecordRowActions>
-                        {mode === 'active' ? (
-                          <RecordRowAction
-                            kind='archive'
-                            entity='company'
-                            disabled={
-                              Boolean(company.archiveRefusal) ||
-                              (isPending && pendingId === company.id)
-                            }
-                            disabledReason={company.archiveRefusal}
-                            onClick={() => setArchiveTarget(company)}
-                          />
-                        ) : (
+                    {mode === 'archive' ? (
+                      <TableCell className='text-right max-md:ml-auto'>
+                        <RecordRowActions>
                           <RecordRowAction
                             kind='restore'
                             entity='company'
@@ -393,9 +386,9 @@ export function CompaniesTable({
                             disabledReason={company.archiveRefusal}
                             onClick={() => runAction(company, 'restore')}
                           />
-                        )}
-                      </RecordRowActions>
-                    </TableCell>
+                        </RecordRowActions>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 </RecordContextMenu>
               )

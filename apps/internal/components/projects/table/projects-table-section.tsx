@@ -90,7 +90,11 @@ export function ProjectsTableSection({
               >
                 Timeline
               </SortableTableHead>
-              <TableHead className='w-20 text-right'>Actions</TableHead>
+              {/* Archive is in the right-click menu and the bulk bar; only the
+                  Archive tab keeps a row button (Restore). */}
+              {mode === 'archive' ? (
+                <TableHead className='w-20 text-right'>Actions</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -110,7 +114,7 @@ export function ProjectsTableSection({
             ))}
             {projects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className='p-4'>
+                <TableCell colSpan={mode === 'archive' ? 5 : 4} className='p-4'>
                   <EmptyState message={emptyMessage} />
                 </TableCell>
               </TableRow>

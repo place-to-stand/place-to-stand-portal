@@ -223,14 +223,11 @@ export function InvoicesTableSection({
               </SortableTableHead>
               <TableHead className='w-[20%]'>Share link</TableHead>
               {/* Sized to the row's buttons: one in active, two in archive. */}
-              <TableHead
-                className={cn(
-                  'text-right',
-                  mode === 'archive' ? 'w-20' : 'w-16'
-                )}
-              >
-                Actions
-              </TableHead>
+              {/* Archive is in the right-click menu and the bulk bar; only the
+                  Archive tab keeps a row button (Restore). */}
+              {mode === 'archive' ? (
+                <TableHead className='w-20 text-right'>Actions</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -363,18 +360,9 @@ export function InvoicesTableSection({
                     <TableCell label='Share link'>
                       <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
                     </TableCell>
-                    <TableCell className='text-right max-md:ml-auto'>
-                      <RecordRowActions>
-                        {showArchive ? (
-                          <RecordRowAction
-                            kind='archive'
-                            entity='invoice'
-                            onClick={() => onRequestDelete(invoice)}
-                            disabled={archiveDisabled}
-                            disabledReason={archiveDisabledReason}
-                          />
-                        ) : null}
-                        {showRestore ? (
+                    {showRestore ? (
+                      <TableCell className='text-right max-md:ml-auto'>
+                        <RecordRowActions>
                           <RecordRowAction
                             kind='restore'
                             entity='invoice'
@@ -382,16 +370,16 @@ export function InvoicesTableSection({
                             disabled={restoreDisabled}
                             disabledReason={restoreDisabledReason}
                           />
-                        ) : null}
-                      </RecordRowActions>
-                    </TableCell>
+                        </RecordRowActions>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 </RecordContextMenu>
               )
             })}
             {invoiceList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className='p-4'>
+                <TableCell colSpan={mode === 'archive' ? 9 : 8} className='p-4'>
                   <EmptyState message={emptyMessage} />
                 </TableCell>
               </TableRow>

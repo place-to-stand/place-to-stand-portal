@@ -7,10 +7,11 @@ import { useRecordArchive } from '@/components/table/use-record-archive'
 import type { LeadRecord } from '@/lib/leads/types'
 
 import { archiveLead } from '../_actions/archive-lead'
+import { setLeadAssignee } from '../_actions/set-lead-assignee'
 
 /**
- * Right-click on a lead card: Edit, Duplicate, Archive. Archive confirms with
- * the same dialog as the lead sheet's.
+ * Right-click on a lead card: Edit, Duplicate, Set assignee, Archive.
+ * Archive confirms with the same dialog as the lead sheet's.
  */
 export function LeadContextMenu({
   lead,
@@ -39,6 +40,12 @@ export function LeadContextMenu({
         entity='lead'
         id={lead.id}
         onEdit={onEdit}
+        assign={{
+          currentId: lead.assigneeId ?? null,
+          optionsUrl: '/api/leads/assignee-options',
+          set: assigneeId => setLeadAssignee({ leadId: lead.id, assigneeId }),
+          name: lead.contactName,
+        }}
         onArchive={() =>
           requestArchive({ id: lead.id, name: lead.contactName })
         }
