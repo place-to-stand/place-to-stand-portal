@@ -9,6 +9,7 @@ import {
   Pencil,
   RefreshCw,
   Trash2,
+  Undo2,
   UserPlus,
 } from 'lucide-react'
 
@@ -49,6 +50,11 @@ const KINDS = {
   acknowledge: {
     label: e => `Acknowledge ${e}`,
     icon: <Check />,
+    variant: 'outline',
+  },
+  unacknowledge: {
+    label: e => `Unacknowledge ${e}`,
+    icon: <Undo2 />,
     variant: 'outline',
   },
   preview: {

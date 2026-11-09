@@ -54,6 +54,7 @@ import { describeSubmissionOutcome } from '@/lib/form-submissions/outcome'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
+  unacknowledgeSubmission,
   archiveSubmission,
   bulkAcknowledgeSubmissions,
   restoreSubmission,
@@ -342,6 +343,18 @@ export function SubmissionsTable({
     [runRowAction, searchParams]
   )
 
+  const handleUnacknowledge = useCallback(
+    (submission: FormSubmissionRecord) =>
+      runRowAction(
+        submission,
+        () => unacknowledgeSubmission({ id: submission.id }),
+        'Unable to unacknowledge submission',
+        // Only removes the row when the list shows acknowledged ones only.
+        searchParams.get('unacknowledged') === '0'
+      ),
+    [runRowAction, searchParams]
+  )
+
   const handleArchiveConfirm = useCallback(() => {
     if (!archiveTarget) {
       return
@@ -623,12 +636,22 @@ export function SubmissionsTable({
                         ) : null}
                         <TableCell className='text-right max-md:ml-auto'>
                           <RecordRowActions>
-                            {unacknowledged ? (
+                            {/* Every live row has one: Acknowledge, or
+                                Unacknowledge to flag it again. */}
+                            {mode === 'active' ? (
                               <RecordRowAction
-                                kind='acknowledge'
+                                kind={
+                                  unacknowledged
+                                    ? 'acknowledge'
+                                    : 'unacknowledge'
+                                }
                                 entity='submission'
                                 disabled={pendingId === submission.id}
-                                onClick={() => handleAcknowledge(submission)}
+                                onClick={() =>
+                                  unacknowledged
+                                    ? handleAcknowledge(submission)
+                                    : handleUnacknowledge(submission)
+                                }
                               />
                             ) : null}
                             {mode === 'archive' ? (
