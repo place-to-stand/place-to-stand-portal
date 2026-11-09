@@ -45,6 +45,7 @@ import {
   isFormSubmissionKind,
   isFormSubmissionStatus,
   isUnacknowledgedSubmission,
+  submissionWarrantsAttention,
 } from '@/lib/form-submissions/constants'
 import {
   isContactFilterValue,
@@ -636,9 +637,11 @@ export function SubmissionsTable({
                         ) : null}
                         <TableCell className='text-right max-md:ml-auto'>
                           <RecordRowActions>
-                            {/* Every live row has one: Acknowledge, or
-                                Unacknowledge to flag it again. */}
-                            {mode === 'active' ? (
+                            {/* Rows that can flag (contact forms, captured
+                                audits) get Acknowledge, or Unacknowledge to
+                                flag again, as in the sheet; the rest none. */}
+                            {mode === 'active' &&
+                            submissionWarrantsAttention(submission) ? (
                               <RecordRowAction
                                 kind={
                                   unacknowledged
