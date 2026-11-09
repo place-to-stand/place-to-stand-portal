@@ -5,6 +5,7 @@ import {
   closestCenter,
   pointerWithin,
   rectIntersection,
+  type AutoScrollOptions,
   type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
@@ -223,6 +224,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
     activeColumnId,
     itemsFor,
     dndContextProps: {
+      autoScroll: BOARD_AUTO_SCROLL,
       collisionDetection,
       onDragStart: handleDragStart,
       onDragOver: handleDragOver,
@@ -230,4 +232,14 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       onDragCancel: handleDragCancel,
     },
   }
+}
+
+/**
+ * dnd-kit scrolls once the pointer is in the outer 20% of a scroll area,
+ * which on a wide board is most of the last visible column: aiming at it
+ * raced the board to its end. Scroll only near the edges, and gently.
+ */
+const BOARD_AUTO_SCROLL: AutoScrollOptions = {
+  threshold: { x: 0.08, y: 0.15 },
+  acceleration: 6,
 }
