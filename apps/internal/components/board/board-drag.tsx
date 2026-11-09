@@ -7,6 +7,8 @@ import {
   type DropAnimation,
 } from '@dnd-kit/core'
 
+import { BOARD_DROP_ANIMATION_MS } from '@/lib/dnd/kanban'
+
 /**
  * The card under the pointer while dragging on a kanban board. dnd-kit sizes
  * the overlay to the card that was picked up, so previews fill it
@@ -20,7 +22,7 @@ export function BoardDragOverlay({ children }: { children: ReactNode }) {
 }
 
 const BOARD_DROP_ANIMATION: DropAnimation = {
-  duration: 180,
+  duration: BOARD_DROP_ANIMATION_MS,
   easing: 'ease-out',
   sideEffects: defaultDropAnimationSideEffects({
     styles: { active: { opacity: '0' } },
@@ -28,8 +30,8 @@ const BOARD_DROP_ANIMATION: DropAnimation = {
 }
 
 /**
- * The dragged card's own slot in its column: an empty outline the card's
+ * The dragged card's own slot in its column: a faint outline the card's
  * exact height, which is where it will land.
  */
 export const BOARD_CARD_GHOST_CLASS =
-  'border-primary/40 bg-primary/5 border-dashed shadow-none *:invisible'
+  'border-primary/25 bg-primary/3 border-dashed shadow-none *:invisible'

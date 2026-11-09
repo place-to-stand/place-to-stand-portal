@@ -9,6 +9,13 @@ import { getRankBetween } from '@/lib/rank'
  * here once. Dragging itself is `useKanbanDrag`.
  */
 
+/**
+ * How long a dropped card's preview glides into its slot. The real card stays
+ * hidden that long, so anything that styles the card after a drop must wait
+ * at least this long (see `useRecentlyMovedItem`).
+ */
+export const BOARD_DROP_ANIMATION_MS = 180
+
 /** Where a card would land: a column and an index in its rendered list. */
 export type KanbanDropTarget<C extends string> = {
   columnId: C

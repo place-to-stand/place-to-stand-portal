@@ -284,7 +284,7 @@ export function TaskCard({
           }
         }}
         className={cn(
-          'group bg-card rounded-lg border p-4 text-left shadow-sm transition',
+          'group bg-card rounded-lg border p-4 text-left shadow-sm transition-[color,background-color,border-color,box-shadow]',
           draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
           // A touch drag starts on press-and-hold; keep iOS from selecting the
           // card's text or opening its callout menu first.

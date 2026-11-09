@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { BOARD_DROP_ANIMATION_MS } from './kanban'
+
+/**
+ * A dropped card skips its CSS transitions until its preview has finished
+ * gliding into place, plus a couple of frames. Ending sooner let the card
+ * fade back in from hidden after the preview vanished, which read as a flash.
+ */
+const RECENTLY_MOVED_MS = BOARD_DROP_ANIMATION_MS + 70
+
 export const useRecentlyMovedItem = () => {
   const [recentlyMovedId, setRecentlyMovedId] = useState<string | null>(null)
   const timerRef = useRef<number | null>(null)
@@ -17,7 +26,7 @@ export const useRecentlyMovedItem = () => {
     timerRef.current = window.setTimeout(() => {
       setRecentlyMovedId(null)
       timerRef.current = null
-    }, 150)
+    }, RECENTLY_MOVED_MS)
   }, [clearTimer])
 
   useEffect(() => {
