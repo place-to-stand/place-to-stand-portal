@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, type MutableRefObject, type UIEventHandler } from 'react'
+import type { MutableRefObject, UIEventHandler } from 'react'
 import { Plus } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -10,7 +10,6 @@ import type { LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { RowActionButton } from '@pts/ui/row-action-button'
 
-import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 
 import { LeadCard } from './lead-card'
@@ -19,15 +18,14 @@ import { pagePanelClass } from '@/components/layout/page-panel'
 type LeadColumnProps = {
   columnId: LeadStatusValue
   label: string
-  leads: LeadRecord[]
+  leads: readonly LeadRecord[]
   canManage: boolean
   /** Controls + button visibility independently from canManage (drag permission) */
   enableCreateButton?: boolean
   onEditLead: (lead: LeadRecord) => void
   onCreateLead?: (status: LeadStatusValue) => void
+  /** The dragged card is in this column now. */
   isDropTarget?: boolean
-  dropIndicatorIndex?: number | null
-  draggingLeadId?: string | null
   recentlyMovedLeadId?: string | null
   activeLeadId?: string | null
   columnScrollRef?: MutableRefObject<HTMLDivElement | null>
@@ -43,14 +41,12 @@ export function LeadColumn({
   onEditLead,
   onCreateLead,
   isDropTarget = false,
-  dropIndicatorIndex = null,
-  draggingLeadId = null,
   recentlyMovedLeadId = null,
   activeLeadId = null,
   columnScrollRef,
   onColumnScroll,
 }: LeadColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: columnId,
     data: {
       type: 'column',
@@ -58,22 +54,13 @@ export function LeadColumn({
     },
   })
 
-  const highlight = isOver || isDropTarget
-  const draggingLeadVisibleInColumn = Boolean(
-    draggingLeadId && leads.some(lead => lead.id === draggingLeadId)
-  )
-  const showPlaceholder =
-    dropIndicatorIndex !== null &&
-    draggingLeadId !== null &&
-    !draggingLeadVisibleInColumn
-
   return (
     <div
       ref={setNodeRef}
       className={cn(
         pagePanelClass,
         'flex min-h-0 w-80 shrink-0 flex-col gap-3 overflow-hidden p-3 transition',
-        highlight && 'ring-primary ring-2'
+        isDropTarget && 'ring-primary ring-2'
       )}
     >
       <div className='flex items-center justify-between gap-2'>
@@ -104,29 +91,17 @@ export function LeadColumn({
           items={leads.map(lead => lead.id)}
           strategy={verticalListSortingStrategy}
         >
-          {leads.map((lead, index) => {
-            const shouldShowPlaceholder =
-              showPlaceholder && dropIndicatorIndex === index
-
-            return (
-              <Fragment key={lead.id}>
-                {shouldShowPlaceholder ? <BoardDropPlaceholder /> : null}
-                <LeadCard
-                  lead={lead}
-                  columnId={columnId}
-                  canManage={canManage}
-                  onEditLead={onEditLead}
-                  disableDropTransition={lead.id === recentlyMovedLeadId}
-                  isActive={lead.id === activeLeadId}
-                />
-              </Fragment>
-            )
-          })}
-          {showPlaceholder &&
-          dropIndicatorIndex !== null &&
-          dropIndicatorIndex >= leads.length ? (
-            <BoardDropPlaceholder key={`${columnId}-placeholder`} />
-          ) : null}
+          {leads.map(lead => (
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              columnId={columnId}
+              canManage={canManage}
+              onEditLead={onEditLead}
+              disableDropTransition={lead.id === recentlyMovedLeadId}
+              isActive={lead.id === activeLeadId}
+            />
+          ))}
         </SortableContext>
       </div>
     </div>

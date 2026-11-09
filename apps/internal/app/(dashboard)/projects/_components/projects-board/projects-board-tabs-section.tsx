@@ -34,9 +34,7 @@ type DragProps = Pick<
   ProjectsBoardTabsProps,
   | 'sensors'
   | 'onDragStart'
-  | 'onDragOver'
-  | 'onDragEnd'
-  | 'draggingTask'
+  | 'onTaskDrop'
   | 'isPending'
   | 'boardViewportRef'
   | 'onBoardScroll'
@@ -59,10 +57,7 @@ type ReviewProps = Pick<
   | 'isReviewActionPending'
 >
 
-type DropProps = Pick<
-  ProjectsBoardTabsProps,
-  'activeDropColumnId' | 'dropPreview' | 'recentlyMovedTaskId'
->
+type DropProps = Pick<ProjectsBoardTabsProps, 'recentlyMovedTaskId'>
 
 type TimeLogsProps = Pick<
   ProjectsBoardTabsProps,

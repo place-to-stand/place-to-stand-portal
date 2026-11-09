@@ -56,7 +56,6 @@ export type ProjectsBoardState = {
   hiddenDoneCount: number
   /** Widens the window by one step; instant, all tasks are client-side. */
   widenDoneWindow: () => void
-  draggingTask: TaskWithRelations | null
   addTaskDisabled: boolean
   addTaskDisabledReason: string | null
   isSheetOpen: boolean
@@ -65,8 +64,7 @@ export type ProjectsBoardState = {
   handleSelectNextProject: () => void
   handleSelectPreviousProject: () => void
   handleDragStart: ReturnType<typeof useBoardDnDState>['handleDragStart']
-  handleDragOver: ReturnType<typeof useBoardDnDState>['handleDragOver']
-  handleDragEnd: ReturnType<typeof useBoardDnDState>['handleDragEnd']
+  handleTaskDrop: ReturnType<typeof useBoardDnDState>['handleTaskDrop']
   openCreateSheet: ReturnType<typeof useBoardSheetState>['openCreateSheet']
   handleEditTask: ReturnType<typeof useBoardSheetState>['handleEditTask']
   handleSheetOpenChange: ReturnType<
@@ -75,8 +73,6 @@ export type ProjectsBoardState = {
   defaultTaskStatus: BoardColumnId
   defaultTaskDueOn: string | null
   navigateToProject: ReturnType<typeof useBoardNavigation>
-  activeDropColumnId: ReturnType<typeof useBoardDnDState>['activeDropColumnId']
-  dropPreview: ReturnType<typeof useBoardDnDState>['dropPreview']
   recentlyMovedTaskId: ReturnType<
     typeof useBoardDnDState
   >['recentlyMovedTaskId']

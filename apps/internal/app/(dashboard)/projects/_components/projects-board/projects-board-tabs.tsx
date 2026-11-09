@@ -5,6 +5,7 @@ import type { TaskWithRelations } from '@/lib/types'
 import type { DndContextProps } from '@dnd-kit/core'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
+import type { KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 import { completeBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectStatusValue } from '@/lib/constants'
@@ -45,10 +46,8 @@ export type ProjectsBoardTabsProps = {
   onEditTask: (task: TaskWithRelations) => void
   onCreateTask: () => void
   sensors: DndContextProps['sensors']
-  onDragStart: DndContextProps['onDragStart']
-  onDragOver: DndContextProps['onDragOver']
-  onDragEnd: DndContextProps['onDragEnd']
-  draggingTask: TaskWithRelations | null
+  onDragStart: () => void
+  onTaskDrop: (drop: KanbanDrop<BoardColumnId>) => void
   isPending: boolean
   boardViewportRef: RefObject<HTMLDivElement | null>
   onBoardScroll: UIEventHandler<HTMLDivElement>
@@ -70,8 +69,6 @@ export type ProjectsBoardTabsProps = {
   reviewActionTaskId: string | null
   reviewActionType: ReviewActionKind | null
   isReviewActionPending: boolean
-  activeDropColumnId: BoardColumnId | null
-  dropPreview: { columnId: BoardColumnId; index: number } | null
   recentlyMovedTaskId: string | null
   currentUserId: string
   onEditTimeLogEntry: (entry: TimeLogEntry) => void
@@ -103,9 +100,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     onCreateTask,
     sensors,
     onDragStart,
-    onDragOver,
-    onDragEnd,
-    draggingTask,
+    onTaskDrop,
     boardViewportRef,
     onBoardScroll,
     activeSheetTaskId,
@@ -126,8 +121,6 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     reviewActionTaskId,
     reviewActionType,
     isReviewActionPending,
-    activeDropColumnId,
-    dropPreview,
     recentlyMovedTaskId,
     currentUserId,
     onEditTimeLogEntry,
@@ -168,14 +161,10 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         onCreateTask={onCreateTask}
         sensors={sensors}
         onDragStart={onDragStart}
-        onDragOver={onDragOver}
-        onDragEnd={onDragEnd}
-        draggingTask={draggingTask}
+        onTaskDrop={onTaskDrop}
         boardViewportRef={boardViewportRef}
         onBoardScroll={onBoardScroll}
         activeSheetTaskId={activeSheetTaskId}
-        activeDropColumnId={activeDropColumnId}
-        dropPreview={dropPreview}
         recentlyMovedTaskId={recentlyMovedTaskId}
         doneWeeks={doneWeeks}
         hiddenDoneCount={hiddenDoneCount}

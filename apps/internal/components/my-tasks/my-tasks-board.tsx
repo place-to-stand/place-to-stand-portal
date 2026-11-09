@@ -1,12 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import {
-  DndContext,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core'
+import { DndContext } from '@dnd-kit/core'
 
 import { KanbanColumn } from '@/app/(dashboard)/projects/_components/kanban-column'
 import { TaskDragOverlay } from '@/app/(dashboard)/projects/_components/task-drag-overlay'
@@ -23,11 +18,8 @@ import type { MyTasksReorderPayload } from '@/lib/projects/tasks/use-my-tasks-da
 import type { MyTasksInitialEntry } from './my-tasks-page'
 import { DoneWindowFooter } from '@/app/(dashboard)/projects/_components/done-window-footer'
 import type { TaskContextDetails } from '@/app/(dashboard)/projects/task-card'
-import {
-  clamp,
-  locateKanbanItem,
-  resolveKanbanDropTarget,
-} from '@/lib/dnd/kanban'
+import { clamp } from '@/lib/dnd/kanban'
+import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -106,13 +98,6 @@ export function MyTasksBoard({
     storageKey: scrollStorageKey ?? 'my-tasks-board',
     columnIds: MY_TASK_BOARD_COLUMNS.map(col => col.id),
   })
-  const [draggingTask, setDraggingTask] = useState<TaskWithRelations | null>(
-    null
-  )
-  const [dropPreview, setDropPreview] = useState<{
-    columnId: MyTaskStatus
-    index: number
-  } | null>(null)
   const [recentlyMovedTaskId, setRecentlyMovedTaskId] = useState<string | null>(
     null
   )
@@ -122,51 +107,20 @@ export function MyTasksBoard({
     () => buildRowsByColumn(entries, taskLookup),
     [entries, taskLookup]
   )
-
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      const taskId = event.active.id?.toString()
-      if (!taskId) {
-        return
-      }
-
-      const lookup = taskLookup.get(taskId)
-
-      if (!lookup) {
-        return
-      }
-
-      setDraggingTask(lookup.task)
-      setDropPreview(resolveCurrentLocation(taskId, rowsByColumn))
-    },
-    [rowsByColumn, taskLookup]
-  )
-
-  const handleDragOver = useCallback(
-    (event: DragOverEvent) => {
-      const preview = resolveDropTarget(event, rowsByColumn)
-      setDropPreview(preview)
-    },
+  const tasksIn = useCallback(
+    (status: MyTaskStatus) =>
+      (rowsByColumn.get(status) ?? []).map(row => row.task),
     [rowsByColumn]
   )
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const taskId = event.active.id?.toString()
-      const preview = dropPreview ?? resolveDropTarget(event, rowsByColumn)
-      setDraggingTask(null)
-      setDropPreview(null)
-
-      if (!taskId || !preview) {
-        return
-      }
-
+  const handleDrop = useCallback(
+    ({ id: taskId, to }: KanbanDrop<MyTaskStatus>) => {
       const change = produceReorderUpdate({
         entries,
         taskLookup,
         taskId,
-        targetStatus: preview.columnId,
-        targetIndex: preview.index,
+        targetStatus: to.columnId,
+        targetIndex: to.index,
       })
 
       if (!change) {
@@ -181,13 +135,17 @@ export function MyTasksBoard({
       })
       setTimeout(() => setRecentlyMovedTaskId(null), 300)
     },
-    [dropPreview, entries, onReorder, rowsByColumn, taskLookup]
+    [entries, onReorder, taskLookup]
   )
 
-  const handleDragCancel = useCallback(() => {
-    setDraggingTask(null)
-    setDropPreview(null)
-  }, [])
+  const drag = useKanbanDrag({
+    columns: MY_TASK_COLUMN_IDS,
+    items: tasksIn,
+    onDrop: handleDrop,
+  })
+  const draggingTask = drag.activeId
+    ? (taskLookup.get(drag.activeId)?.task ?? null)
+    : null
 
   return (
     <div className='flex min-h-0 flex-1 flex-col'>
@@ -198,13 +156,7 @@ export function MyTasksBoard({
             className='h-full min-h-0 overflow-x-auto'
             onScroll={handleBoardScroll}
           >
-            <DndContext
-              sensors={sensors}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
+            <DndContext sensors={sensors} {...drag.dndContextProps}>
               <div
                 className='grid h-full gap-4 p-1'
                 style={{
@@ -222,20 +174,14 @@ export function MyTasksBoard({
                       key={column.id}
                       columnId={column.id}
                       label={column.label}
-                      tasks={rows.map(row => row.task)}
+                      tasks={drag.itemsFor(column.id)}
                       canManage={boardCanManage}
                       renderAssignees={renderAssignees}
                       onEditTask={task => onOpenTask(task.id)}
                       activeTaskId={activeTaskId}
                       onCreateTask={handleCreateForColumn}
                       enableCreateButton={Boolean(onCreateTask)}
-                      isDropTarget={dropPreview?.columnId === column.id}
-                      dropIndicatorIndex={
-                        dropPreview?.columnId === column.id
-                          ? dropPreview.index
-                          : null
-                      }
-                      draggingTask={draggingTask}
+                      isDropTarget={drag.activeColumnId === column.id}
                       recentlyMovedTaskId={recentlyMovedTaskId}
                       getTaskCardOptions={getTaskCardOptions}
                       columnScrollRef={getColumnRef(column.id)}
@@ -351,28 +297,6 @@ function compareRows(a: TaskRow, b: TaskRow): number {
 }
 
 const MY_TASK_COLUMN_IDS = MY_TASK_BOARD_COLUMNS.map(column => column.id)
-
-const taskIdsIn = (rowsByColumn: TaskRowsByColumn) => (status: MyTaskStatus) =>
-  (rowsByColumn.get(status) ?? []).map(row => row.task.id)
-
-function resolveCurrentLocation(
-  taskId: string,
-  rowsByColumn: TaskRowsByColumn
-) {
-  return locateKanbanItem(taskId, MY_TASK_COLUMN_IDS, taskIdsIn(rowsByColumn))
-}
-
-function resolveDropTarget(
-  event: DragOverEvent | DragEndEvent,
-  rowsByColumn: TaskRowsByColumn
-) {
-  return resolveKanbanDropTarget(
-    event,
-    MY_TASK_COLUMN_IDS,
-    taskIdsIn(rowsByColumn),
-    normalizeStatus
-  )
-}
 
 function produceReorderUpdate({
   entries,

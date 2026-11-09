@@ -23,6 +23,7 @@ import { MetaLink } from '@/components/ui/meta-link'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { TaskContextMenu } from './task-context-menu'
+import { BOARD_CARD_GHOST_CLASS } from '@/components/board/board-drag'
 import { cn } from '@/lib/utils'
 import type {
   ProjectTypeValue,
@@ -247,7 +248,7 @@ export function TaskCard({
   const isCompleted = task.status === 'DONE'
   const shouldDisableTransition = disableDropTransition && !isDragging
   const style: CSSProperties = {
-    opacity: isDragging ? 0 : isCompleted ? 0.65 : 1,
+    opacity: isCompleted && !isDragging ? 0.65 : 1,
     transform: transform ? CSS.Transform.toString(transform) : undefined,
     transition: shouldDisableTransition
       ? 'none'
@@ -289,9 +290,8 @@ export function TaskCard({
           // card's text or opening its callout menu first.
           draggable &&
             'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
-          isDragging && 'ring-primary ring-2',
-          (isActive || isDragging) &&
-            'border-primary/50 bg-primary/5 shadow-md',
+          isDragging && BOARD_CARD_GHOST_CLASS,
+          isActive && !isDragging && 'border-primary/50 bg-primary/5 shadow-md',
           !isActive && !isDragging && !isCompleted && ENTITY_ACCENTS.task.card,
           !isActive &&
             !isDragging &&
@@ -371,7 +371,7 @@ export function TaskCardPreview({
   return (
     <div
       className={cn(
-        'bg-card w-80 rounded-lg border p-4 shadow-sm',
+        'bg-card w-full rounded-lg border p-4 shadow-sm',
         isCompleted ? 'opacity-65' : ENTITY_ACCENTS.task.cardStatic
       )}
     >
