@@ -14,7 +14,7 @@ import { getRankBetween } from '@/lib/rank'
  * hidden that long, so anything that styles the card after a drop must wait
  * at least this long (see `useRecentlyMovedItem`).
  */
-export const BOARD_DROP_ANIMATION_MS = 180
+export const BOARD_DROP_ANIMATION_MS = 120
 
 /** Where a card would land: a column and an index in its rendered list. */
 export type KanbanDropTarget<C extends string> = {
