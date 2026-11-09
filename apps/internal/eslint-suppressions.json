@@ -195,11 +195,6 @@
       "count": 1
     }
   },
-  "app/(dashboard)/leads/_components/leads-board.tsx": {
-    "max-lines": {
-      "count": 1
-    }
-  },
   "app/(dashboard)/people/_components/contact-sheet/contact-access-section.tsx": {
     "max-lines": {
       "count": 1
@@ -246,11 +241,6 @@
   },
   "app/(dashboard)/projects/_components/project-time-log/project-time-log-form.tsx": {
     "@typescript-eslint/no-deprecated": {
-      "count": 1
-    }
-  },
-  "app/(dashboard)/projects/_components/projects-board/board-tab-content.tsx": {
-    "max-lines": {
       "count": 1
     }
   },

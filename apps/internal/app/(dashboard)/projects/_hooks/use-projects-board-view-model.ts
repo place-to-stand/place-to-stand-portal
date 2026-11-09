@@ -143,9 +143,7 @@ export function useProjectsBoardViewModel({
     drag: {
       sensors,
       onDragStart: boardState.handleDragStart,
-      onDragOver: boardState.handleDragOver,
-      onDragEnd: boardState.handleDragEnd,
-      draggingTask: boardState.draggingTask,
+      onTaskDrop: boardState.handleTaskDrop,
       isPending: boardState.isPending,
       boardViewportRef,
       onBoardScroll: handleBoardScroll,
@@ -166,8 +164,6 @@ export function useProjectsBoardViewModel({
       isReviewActionPending: reviewActions.isReviewActionPending,
     },
     drop: {
-      activeDropColumnId: boardState.activeDropColumnId,
-      dropPreview: boardState.dropPreview,
       recentlyMovedTaskId: boardState.recentlyMovedTaskId,
     },
     timeLogs: {

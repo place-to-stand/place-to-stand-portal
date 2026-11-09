@@ -1,16 +1,10 @@
-import {
-  Fragment,
-  type MutableRefObject,
-  type ReactNode,
-  type UIEventHandler,
-} from 'react'
+import type { MutableRefObject, ReactNode, UIEventHandler } from 'react'
 import { Plus } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import { Badge } from '@pts/ui/badge'
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { BoardDropPlaceholder } from '@/components/board/drop-placeholder'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
@@ -29,7 +23,7 @@ type TaskCardOptions = {
 type KanbanColumnProps = {
   columnId: BoardColumnId
   label: string
-  tasks: TaskWithRelations[]
+  tasks: readonly TaskWithRelations[]
   canManage: boolean
   renderAssignees: (
     task: TaskWithRelations
@@ -38,9 +32,8 @@ type KanbanColumnProps = {
   activeTaskId: string | null
   onCreateTask?: (status: BoardColumnId) => void
   enableCreateButton?: boolean
+  /** The dragged card is in this column now. */
   isDropTarget?: boolean
-  dropIndicatorIndex?: number | null
-  draggingTask?: TaskWithRelations | null
   recentlyMovedTaskId?: string | null
   getTaskCardOptions?: (task: TaskWithRelations) => TaskCardOptions | undefined
   columnScrollRef?: MutableRefObject<HTMLDivElement | null>
@@ -64,15 +57,13 @@ export function KanbanColumn({
   onCreateTask,
   enableCreateButton,
   isDropTarget = false,
-  dropIndicatorIndex = null,
-  draggingTask = null,
   recentlyMovedTaskId = null,
   getTaskCardOptions,
   columnScrollRef,
   onColumnScroll,
   footerSlot,
 }: KanbanColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: columnId,
     data: {
       type: 'column',
@@ -82,13 +73,6 @@ export function KanbanColumn({
   const statusToken = getTaskStatusToken(columnId)
   const statusLabel = getTaskStatusLabel(columnId)
   const displayLabel = label || statusLabel
-  const highlight = isOver || isDropTarget
-  const draggingTaskVisibleInColumn =
-    draggingTask !== null && tasks.some(task => task.id === draggingTask.id)
-  const showPlaceholder =
-    dropIndicatorIndex !== null &&
-    draggingTask !== null &&
-    !draggingTaskVisibleInColumn
 
   const canShowCreateButton =
     typeof enableCreateButton === 'boolean' ? enableCreateButton : canManage
@@ -99,7 +83,7 @@ export function KanbanColumn({
       className={cn(
         pagePanelClass,
         'flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden p-3 transition',
-        highlight && 'ring-primary ring-2'
+        isDropTarget && 'ring-primary ring-2'
       )}
     >
       <div className='flex items-center justify-between gap-2'>
@@ -132,33 +116,19 @@ export function KanbanColumn({
           items={tasks.map(task => task.id)}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task, index) => {
-            const shouldShowPlaceholder =
-              showPlaceholder && dropIndicatorIndex === index
-
-            const cardOptions = getTaskCardOptions?.(task) ?? {}
-
-            return (
-              <Fragment key={task.id}>
-                {shouldShowPlaceholder ? <BoardDropPlaceholder /> : null}
-                <TaskCard
-                  task={task}
-                  assignees={renderAssignees(task)}
-                  onEdit={onEditTask}
-                  draggable={canManage}
-                  canManage={canManage}
-                  isActive={task.id === activeTaskId}
-                  disableDropTransition={task.id === recentlyMovedTaskId}
-                  context={cardOptions.context}
-                />
-              </Fragment>
-            )
-          })}
-          {showPlaceholder &&
-          dropIndicatorIndex !== null &&
-          dropIndicatorIndex >= tasks.length ? (
-            <BoardDropPlaceholder key={`${columnId}-placeholder`} />
-          ) : null}
+          {tasks.map(task => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              assignees={renderAssignees(task)}
+              onEdit={onEditTask}
+              draggable={canManage}
+              canManage={canManage}
+              isActive={task.id === activeTaskId}
+              disableDropTransition={task.id === recentlyMovedTaskId}
+              context={getTaskCardOptions?.(task)?.context}
+            />
+          ))}
         </SortableContext>
         {footerSlot}
       </div>

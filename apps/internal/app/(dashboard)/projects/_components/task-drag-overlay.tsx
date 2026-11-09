@@ -1,5 +1,6 @@
 import { DragOverlay } from '@dnd-kit/core'
 
+import { BoardDragOverlay } from '@/components/board/board-drag'
 import type { TaskWithRelations } from '@/lib/types'
 
 import { TaskCardPreview, type TaskContextDetails } from '../task-card'
@@ -27,19 +28,25 @@ export function TaskDragOverlay({
   const assignees = draggingTask ? renderAssignees(draggingTask) : []
   const options = draggingTask ? (getTaskCardOptions?.(draggingTask) ?? {}) : {}
 
-  return (
-    <DragOverlay dropAnimation={null}>
-      {draggingTask ? (
-        variant === 'calendar' ? (
+  if (variant === 'calendar') {
+    return (
+      <DragOverlay dropAnimation={null}>
+        {draggingTask ? (
           <CalendarTaskCardPreview task={draggingTask} assignees={assignees} />
-        ) : (
-          <TaskCardPreview
-            task={draggingTask}
-            assignees={assignees}
-            context={options.context}
-          />
-        )
+        ) : null}
+      </DragOverlay>
+    )
+  }
+
+  return (
+    <BoardDragOverlay>
+      {draggingTask ? (
+        <TaskCardPreview
+          task={draggingTask}
+          assignees={assignees}
+          context={options.context}
+        />
       ) : null}
-    </DragOverlay>
+    </BoardDragOverlay>
   )
 }

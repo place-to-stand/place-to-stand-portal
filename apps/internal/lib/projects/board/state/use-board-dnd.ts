@@ -1,21 +1,17 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback } from 'react'
 import type { Dispatch, SetStateAction, TransitionStartFunction } from 'react'
-import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 
-import type { ProjectWithRelations, TaskWithRelations } from '@/lib/types'
+import type { ProjectWithRelations } from '@/lib/types'
 
 import { type BoardColumnId } from '../board-constants'
 import {
   deriveReorderPlan,
-  DropPreview,
   prepareReorderOutcome,
   type ColumnTaskFilter,
-  type DragComputeEvent,
   type ReorderOutcome,
-  type ReorderPlan,
 } from './dnd-helpers'
 import type { TaskLookup } from './types'
-import { extractSortableMeta } from '@/lib/dnd/kanban'
+import type { KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
 
 type UseBoardDnDArgs = {
@@ -23,7 +19,6 @@ type UseBoardDnDArgs = {
   activeProject: ProjectWithRelations | null
   tasksByProject: TaskLookup
   setTasksByProject: Dispatch<SetStateAction<TaskLookup>>
-  activeProjectTasks: TaskWithRelations[]
   startTransition: TransitionStartFunction
   setFeedback: Dispatch<SetStateAction<string | null>>
   /** Keeps rank math on the same task list the board renders per column. */
@@ -35,15 +30,10 @@ export const useBoardDnDState = ({
   activeProject,
   tasksByProject,
   setTasksByProject,
-  activeProjectTasks,
   startTransition,
   setFeedback,
   filterColumnTasks,
 }: UseBoardDnDArgs) => {
-  const [dragTaskId, setDragTaskId] = useState<string | null>(null)
-  const [activeDropColumnId, setActiveDropColumnId] =
-    useState<BoardColumnId | null>(null)
-  const [dropPreview, setDropPreview] = useState<DropPreview | null>(null)
   const {
     recentlyMovedId: recentlyMovedTaskId,
     setRecentlyMovedId: setRecentlyMovedTaskId,
@@ -51,86 +41,20 @@ export const useBoardDnDState = ({
     clearTimer: clearRecentlyMovedTimer,
   } = useRecentlyMovedItem()
 
-  const getReorderPlan = useCallback(
-    (event: DragComputeEvent): ReorderPlan | null => {
-      return deriveReorderPlan(event, tasksByProject, filterColumnTasks)
-    },
-    [filterColumnTasks, tasksByProject]
-  )
+  const handleDragStart = useCallback(() => {
+    setRecentlyMovedTaskId(null)
+    clearRecentlyMovedTimer()
+  }, [clearRecentlyMovedTimer, setRecentlyMovedTaskId])
 
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      const taskId = String(event.active.id)
-      setDragTaskId(taskId)
-      setDropPreview(null)
-      setRecentlyMovedTaskId(null)
-      clearRecentlyMovedTimer()
-
-      const activeSortable = extractSortableMeta(event.active.data.current)
-
-      if (activeSortable) {
-        setActiveDropColumnId(activeSortable.containerId as BoardColumnId)
-      }
-    },
-    [clearRecentlyMovedTimer, setRecentlyMovedTaskId]
-  )
-
-  const handleDragOver = useCallback(
-    (event: DragOverEvent) => {
-      const plan = getReorderPlan(event)
-
-      if (!plan) {
-        setActiveDropColumnId(null)
-        setDropPreview(null)
-        return
-      }
-
-      setActiveDropColumnId(plan.destinationColumnId)
-
-      const isSameColumn =
-        plan.destinationColumnId === plan.sourceColumnId &&
-        plan.targetIndex === plan.activeIndex
-
-      if (isSameColumn) {
-        setDropPreview(null)
-        return
-      }
-
-      setDropPreview({
-        columnId: plan.destinationColumnId,
-        index: plan.targetIndex,
-      })
-    },
-    [getReorderPlan]
-  )
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const finishDrag = () => {
-        setDropPreview(null)
-        setDragTaskId(null)
-        scheduleRecentlyMovedReset()
-      }
-
-      const deferFinishDrag = () => {
-        if (typeof window !== 'undefined') {
-          window.requestAnimationFrame(finishDrag)
-        } else {
-          finishDrag()
-        }
-      }
-
-      setActiveDropColumnId(null)
-
+  const handleTaskDrop = useCallback(
+    (drop: KanbanDrop<BoardColumnId>) => {
       if (!canManageTasks || !activeProject) {
-        finishDrag()
         return
       }
 
-      const plan = getReorderPlan(event)
+      const plan = deriveReorderPlan(drop, tasksByProject, filterColumnTasks)
 
       if (!plan) {
-        finishDrag()
         return
       }
 
@@ -143,22 +67,19 @@ export const useBoardDnDState = ({
       } catch (error) {
         console.error('Failed to compute rank for reordered task', error)
         setFeedback('Unable to reorder task.')
-        finishDrag()
+        scheduleRecentlyMovedReset()
         return
       }
 
       if (outcome.status === 'noop') {
-        finishDrag()
+        scheduleRecentlyMovedReset()
         return
       }
 
       const { destinationStatus, nextRank, recentlyMoved } = outcome
 
-      if (recentlyMoved) {
-        setRecentlyMovedTaskId(taskId)
-      } else {
-        setRecentlyMovedTaskId(null)
-      }
+      // The card is already in its new slot; skip the layout animation.
+      setRecentlyMovedTaskId(taskId)
 
       const rollbackTasks = projectTasks
 
@@ -187,7 +108,7 @@ export const useBoardDnDState = ({
         return next
       })
 
-      deferFinishDrag()
+      scheduleRecentlyMovedReset()
 
       const payload: { rank: string; status?: BoardColumnId } = {
         rank: nextRank,
@@ -253,28 +174,20 @@ export const useBoardDnDState = ({
     },
     [
       activeProject,
-      getReorderPlan,
       canManageTasks,
+      filterColumnTasks,
       setFeedback,
       setTasksByProject,
       scheduleRecentlyMovedReset,
       setRecentlyMovedTaskId,
       startTransition,
+      tasksByProject,
     ]
   )
 
-  const draggingTask = useMemo(() => {
-    if (!dragTaskId) return null
-    return activeProjectTasks.find(task => task.id === dragTaskId) ?? null
-  }, [activeProjectTasks, dragTaskId])
-
   return {
     handleDragStart,
-    handleDragOver,
-    handleDragEnd,
-    draggingTask,
-    activeDropColumnId,
-    dropPreview,
+    handleTaskDrop,
     recentlyMovedTaskId,
   }
 }
