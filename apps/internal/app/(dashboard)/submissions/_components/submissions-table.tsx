@@ -631,21 +631,14 @@ export function SubmissionsTable({
                                 onClick={() => handleAcknowledge(submission)}
                               />
                             ) : null}
-                            {mode === 'active' ? (
-                              <RecordRowAction
-                                kind='archive'
-                                entity='submission'
-                                disabled={pendingId === submission.id}
-                                onClick={() => setArchiveTarget(submission)}
-                              />
-                            ) : (
+                            {mode === 'archive' ? (
                               <RecordRowAction
                                 kind='restore'
                                 entity='submission'
                                 disabled={pendingId === submission.id}
                                 onClick={() => handleRestore(submission)}
                               />
-                            )}
+                            ) : null}
                           </RecordRowActions>
                         </TableCell>
                       </TableRow>

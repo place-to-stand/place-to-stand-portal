@@ -4,10 +4,6 @@ import { Button } from '@pts/ui/button'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { EmptyState } from '@pts/ui/empty-state'
 import { formatHours } from '@pts/ui/numbers'
-import {
-  RecordRowAction,
-  RecordRowActions,
-} from '@/components/table/record-row-action'
 import { RecordContextMenu } from '@/components/table/record-context-menu'
 import {
   Table,
@@ -21,6 +17,10 @@ import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cel
 import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectTimeLogHistoryState } from '@/lib/projects/time-log/use-project-time-log-history'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import {
+  CLICKABLE_ROW_CLASS,
+  getClickableRowProps,
+} from '@/lib/table/clickable-row'
 
 type ProjectTimeLogHistoryContentProps = {
   state: ProjectTimeLogHistoryState
@@ -87,7 +87,6 @@ export function ProjectTimeLogHistoryContent(
                 <TableHead className='min-w-28'>Logged on</TableHead>
                 <TableHead className='min-w-20 text-center'>Tasks</TableHead>
                 <TableHead className='min-w-36'>Person</TableHead>
-                <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -168,7 +167,10 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
       archiveDisabledReason={deleteReason}
       pending={isDeleting && pendingDeleteId === log.id}
     >
-      <TableRow>
+      <TableRow
+        {...getClickableRowProps(() => onEditRequest(log))}
+        className={CLICKABLE_ROW_CLASS}
+      >
         {/* Hours first, as on the Time logs list. */}
         <TableCell className='max-md:first-cell:basis-auto text-right font-semibold tabular-nums'>
           {formatHours(log.hours ?? 0)}
@@ -198,23 +200,6 @@ function ProjectTimeLogHistoryRow(props: ProjectTimeLogHistoryRowProps) {
         </TableCell>
         <TableCell>
           <span className='line-clamp-2 text-sm'>{authorName}</span>
-        </TableCell>
-        <TableCell className='text-right max-md:ml-auto'>
-          <RecordRowActions>
-            <RecordRowAction
-              kind='edit'
-              entity='time log'
-              onClick={() => onEditRequest(log)}
-            />
-            <RecordRowAction
-              kind='archive'
-              entity='time log'
-              onClick={() => onDeleteRequest(log)}
-              disabled={deleteDisabled}
-              disabledReason={deleteReason}
-              pending={isDeleting && pendingDeleteId === log.id}
-            />
-          </RecordRowActions>
         </TableCell>
       </TableRow>
     </RecordContextMenu>

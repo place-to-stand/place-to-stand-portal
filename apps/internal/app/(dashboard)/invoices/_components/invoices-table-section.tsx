@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { formatCalendarDate } from '@pts/ui/dates'
 import { formatCurrency } from '@pts/ui/numbers'
-import { Check, Copy, ExternalLink, Mail } from 'lucide-react'
+import { Check, Copy, ExternalLink, Loader2, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
@@ -37,6 +37,13 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+
+import {
+  INVOICE_ACTION_ICONS,
+  invoiceStatusActionLabel,
+  invoiceStatusActions,
+  useInvoiceStatusActions,
+} from '../_lib/use-invoice-status-actions'
 
 import { InvoiceEmailDialog } from './invoice-email-dialog'
 import { InvoiceHourBlocksCell } from './invoice-hour-blocks-cell'
@@ -177,6 +184,10 @@ export function InvoicesTableSection({
   })
   const rawSort = getParam('sort')
   const sort = rawSort && isInvoiceSortValue(rawSort) ? rawSort : undefined
+  // The same send, mark sent, revert and void the invoice sheet runs.
+  const statusActions = useInvoiceStatusActions({
+    linkHint: 'Copy the public link from the Share link column.',
+  })
 
   return (
     <div className='overflow-hidden rounded-lg border'>
@@ -222,12 +233,18 @@ export function InvoicesTableSection({
                 Issued
               </SortableTableHead>
               <TableHead className='w-[20%]'>Share link</TableHead>
-              {/* Sized to the row's buttons: one in active, two in archive. */}
-              {/* Archive is in the right-click menu and the bulk bar; only the
-                  Archive tab keeps a row button (Restore). */}
-              {mode === 'archive' ? (
-                <TableHead className='w-20 text-right'>Actions</TableHead>
-              ) : null}
+              {/* Sized to the row's buttons: up to three status actions
+                  (send, mark sent or revert, void), or Restore on the
+                  Archive tab. Archive itself is in the right-click menu and
+                  the bulk bar. */}
+              <TableHead
+                className={cn(
+                  'text-right',
+                  mode === 'archive' ? 'w-20' : 'w-32'
+                )}
+              >
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -360,9 +377,9 @@ export function InvoicesTableSection({
                     <TableCell label='Share link'>
                       <ShareLinkCell invoice={invoice} onRefresh={onRefresh} />
                     </TableCell>
-                    {showRestore ? (
-                      <TableCell className='text-right max-md:ml-auto'>
-                        <RecordRowActions>
+                    <TableCell className='text-right max-md:ml-auto'>
+                      <RecordRowActions>
+                        {showRestore ? (
                           <RecordRowAction
                             kind='restore'
                             entity='invoice'
@@ -370,16 +387,41 @@ export function InvoicesTableSection({
                             disabled={restoreDisabled}
                             disabledReason={restoreDisabledReason}
                           />
-                        </RecordRowActions>
-                      </TableCell>
-                    ) : null}
+                        ) : (
+                          invoiceStatusActions(invoice.status).map(action => (
+                            <RowActionButton
+                              key={action}
+                              type='button'
+                              variant='outline'
+                              label={invoiceStatusActionLabel(
+                                action,
+                                invoice.status
+                              )}
+                              icon={
+                                statusActions.pendingId === invoice.id ? (
+                                  <Loader2 className='animate-spin' />
+                                ) : (
+                                  INVOICE_ACTION_ICONS[action]
+                                )
+                              }
+                              disabled={statusActions.pendingId !== null}
+                              onClick={event => {
+                                // Rows open their invoice on click.
+                                event.stopPropagation()
+                                statusActions.request(action, invoice.id)
+                              }}
+                            />
+                          ))
+                        )}
+                      </RecordRowActions>
+                    </TableCell>
                   </TableRow>
                 </RecordContextMenu>
               )
             })}
             {invoiceList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={mode === 'archive' ? 9 : 8} className='p-4'>
+                <TableCell colSpan={9} className='p-4'>
                   <EmptyState message={emptyMessage} />
                 </TableCell>
               </TableRow>
@@ -387,6 +429,7 @@ export function InvoicesTableSection({
           </TableBody>
         </Table>
       </RowSelectionProvider>
+      {statusActions.dialogs}
     </div>
   )
 }

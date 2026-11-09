@@ -133,7 +133,7 @@
   },
   "app/(dashboard)/invoices/invoice-sheet.tsx": {
     "@typescript-eslint/no-misused-promises": {
-      "count": 2
+      "count": 1
     },
     "max-lines": {
       "count": 1

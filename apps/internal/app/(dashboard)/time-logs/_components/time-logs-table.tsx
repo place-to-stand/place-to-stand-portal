@@ -151,10 +151,14 @@ export function TimeLogsTable({
                 {sortHead('person', 'Person', 'w-[9%]', 'center')}
                 {sortHead('client', 'Client', 'w-[24%]')}
                 {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
-                slack, so the select and Actions columns keep their widths. */}
+                slack, so the fixed columns keep their widths. */}
                 {sortHead('project', 'Project', '')}
                 <TableHead className='w-[6%] text-center'>Tasks</TableHead>
-                <TableHead className='w-20 text-right'>Actions</TableHead>
+                {/* Edit is a row click and Archive is in the right-click
+                    menu and the bulk bar; the Archive tab keeps Restore. */}
+                {isArchive ? (
+                  <TableHead className='w-20 text-right'>Actions</TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -289,9 +293,9 @@ export function TimeLogsTable({
                           }))}
                         />
                       </TableCell>
-                      <TableCell className='text-right max-md:ml-auto'>
-                        <RecordRowActions>
-                          {isArchive ? (
+                      {isArchive ? (
+                        <TableCell className='text-right max-md:ml-auto'>
+                          <RecordRowActions>
                             <RecordRowAction
                               kind='restore'
                               entity='time log'
@@ -299,27 +303,9 @@ export function TimeLogsTable({
                               disabled={actions.isMutating}
                               pending={actions.busyEntryId === item.id}
                             />
-                          ) : (
-                            <>
-                              <RecordRowAction
-                                kind='edit'
-                                entity='time log'
-                                onClick={() => void editor.open(item.id)}
-                                pending={editor.openingEntryId === item.id}
-                              />
-                              <RecordRowAction
-                                kind='archive'
-                                entity='time log'
-                                onClick={() =>
-                                  actions.archiveConfirm.request(item)
-                                }
-                                disabled={actions.isMutating}
-                                pending={actions.busyEntryId === item.id}
-                              />
-                            </>
-                          )}
-                        </RecordRowActions>
-                      </TableCell>
+                          </RecordRowActions>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   </RecordContextMenu>
                 )
