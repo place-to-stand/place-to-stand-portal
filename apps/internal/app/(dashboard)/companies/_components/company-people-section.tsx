@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Star, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   ContactLinkPicker,
@@ -12,16 +11,13 @@ import {
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { EntityList } from '@/components/sheets/entity-list'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
-import {
-  RECORD_ROW_HOVER_ACTION_CLASS,
-  RecordRowField,
-} from '@/components/sheets/sheet-record-row'
+import { PrimaryContactToggle } from '@/components/sheets/primary-contact-toggle'
+import { RecordRowField } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SiteMark } from '@/components/ui/site-mark'
 import { toSafeHref } from '@/components/ui/url-input'
 import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
-import { cn } from '@/lib/utils'
 
 /** Someone picked on the People list, joining the company on Save. */
 export type StagedPerson = {
@@ -106,36 +102,13 @@ export function CompanyPeopleSection({
         reason={primaryLockedReason}
         className='w-auto'
       >
-        {isPrimary ? (
-          // Labelled on the primary, like the person sheet's company cards.
-          <Button
-            type='button'
-            variant='ghost'
-            size='xs'
-            disabled={disabled || Boolean(primaryLockedReason)}
-            aria-pressed
-            aria-label={`Remove ${contact.name} as primary contact`}
-            onClick={() => onSetPrimary(null)}
-            className='text-muted-foreground gap-1.5 text-xs font-normal'
-          >
-            <Star className='text-warning size-4 fill-current' aria-hidden />
-            Primary contact
-          </Button>
-        ) : (
-          // Everyone else: a bare star, shown on hover (or focus).
-          <RowActionButton
-            type='button'
-            disabled={disabled || Boolean(primaryLockedReason)}
-            aria-pressed={false}
-            label={`Make ${contact.name} the primary contact`}
-            onClick={() => onSetPrimary(contact.id)}
-            icon={<Star />}
-            className={cn(
-              'text-muted-foreground',
-              RECORD_ROW_HOVER_ACTION_CLASS
-            )}
-          />
-        )}
+        <PrimaryContactToggle
+          name={contact.name}
+          isPrimary={isPrimary}
+          hasPrimary={primaryContactId !== null}
+          disabled={disabled || Boolean(primaryLockedReason)}
+          onToggle={() => onSetPrimary(isPrimary ? null : contact.id)}
+        />
       </DisabledFieldTooltip>
     )
   }

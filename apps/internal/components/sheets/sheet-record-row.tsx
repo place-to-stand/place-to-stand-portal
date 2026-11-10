@@ -190,13 +190,14 @@ export function SheetRecordRow({
 
 /**
  * A row action that shows only while its card is hovered or the action has
- * keyboard focus, and always on touch screens (no hover there). For a toggle
+ * keyboard focus, and always on touch screens (no hover there); a disabled
+ * one shows at half strength only then. For a toggle
  * that marks one record of the list (the primary contact star): the record
  * it marks shows it labelled, the rest only on hover, so unused controls
  * don't crowd every card.
  */
 export const RECORD_ROW_HOVER_ACTION_CLASS =
-  'opacity-0 group-hover/record:opacity-100 group-hover/record:disabled:opacity-50 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'
+  'opacity-0 disabled:opacity-0 group-hover/record:opacity-100 group-hover/record:disabled:opacity-50 focus-visible:opacity-100 pointer-coarse:opacity-100 pointer-coarse:disabled:opacity-50'
 
 /**
  * A text field on a record row: reads as text until hovered or focused, when
