@@ -1,11 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { ExternalLink } from 'lucide-react'
-
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { SiteMark } from '@/components/ui/site-mark'
 import { cn } from '@/lib/utils'
 
 /** A safe https link from what was typed (scheme optional), or null. */
@@ -26,11 +25,6 @@ export function toSafeHref(value: string | null | undefined): string | null {
 type UrlInputProps = Omit<React.ComponentProps<typeof Input>, 'type'> & {
   /** Tooltip and label for the open button: "Open website". */
   openLabel: string
-  /**
-   * The open button's icon when the link goes to a known site (the
-   * LinkedIn mark). Defaults to the ExternalLink arrow.
-   */
-  openIcon?: React.ReactNode
   /** Wrapper classes (width, grid placement). */
   wrapperClassName?: string
 }
@@ -38,11 +32,12 @@ type UrlInputProps = Omit<React.ComponentProps<typeof Input>, 'type'> & {
 /**
  * A URL field with the same open button as the record pickers: beside the
  * field (4px gap, field height, tooltip), shown only while the value is a
- * valid link, opening it in a new tab. Use for every URL field.
+ * valid link, opening it in a new tab. Its icon is the site's mark
+ * (`SiteMark`). Use for every URL field.
  */
 export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
   function UrlInput(
-    { openLabel, openIcon, wrapperClassName, value, ...inputProps },
+    { openLabel, wrapperClassName, value, ...inputProps },
     ref
   ) {
     const href = toSafeHref(typeof value === 'string' ? value : null)
@@ -75,7 +70,7 @@ export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
                   window.open(href, '_blank', 'noopener,noreferrer')
                 }
               >
-                {openIcon ?? <ExternalLink className='size-3.5' aria-hidden />}
+                <SiteMark href={href} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{openLabel}</TooltipContent>

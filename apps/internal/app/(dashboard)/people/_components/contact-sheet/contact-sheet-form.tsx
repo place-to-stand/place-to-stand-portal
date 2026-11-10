@@ -18,7 +18,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@pts/ui/input'
-import { LinkedInMark } from '@/components/ui/linkedin-mark'
 import { UrlInput } from '@/components/ui/url-input'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { AvatarUploadField } from '@/components/forms/avatar-upload-field'
@@ -302,7 +301,6 @@ export function ContactSheetForm({
                             {...field}
                             value={field.value ?? ''}
                             openLabel='Open LinkedIn'
-                            openIcon={<LinkedInMark className='size-3.5' />}
                             placeholder='linkedin.com/in/jane-doe'
                             disabled={locked}
                           />

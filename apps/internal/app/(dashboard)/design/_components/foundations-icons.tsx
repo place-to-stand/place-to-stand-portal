@@ -39,7 +39,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-import { LinkedInMark } from '@/components/ui/linkedin-mark'
+import { LinkedInMark } from '@/components/ui/site-mark'
 import { ENTITIES, ENTITY_KEYS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
@@ -120,7 +120,7 @@ export function FoundationsIcons() {
       </Specimen>
       <Specimen
         label='Site marks'
-        note='A button that opens another site shows that site’s mark in place of ExternalLink. LinkedIn: components/ui/linkedin-mark'
+        note='A button that opens another site shows that site’s mark in place of ExternalLink. SiteMark picks it from the link (components/ui/site-mark)'
         className='grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-8'
       >
         <IconTile

@@ -42,7 +42,6 @@ import {
   SearchableCombobox,
   type SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
-import { LinkedInMark } from '@/components/ui/linkedin-mark'
 import { UrlInput } from '@/components/ui/url-input'
 import { TagField } from '@/components/tags/tag-field'
 import { TagList } from '@/components/tags/tag-list'
@@ -205,14 +204,13 @@ export function ComponentsInputs() {
           />
         </Example>
         <Example
-          caption='UrlInput · a link to a known site shows its mark (openIcon)'
+          caption='UrlInput · a LinkedIn link shows the LinkedIn mark (SiteMark)'
           className='[&>div]:w-full'
         >
           <UrlInput
             value={linkedinUrl}
             onChange={event => setLinkedinUrl(event.target.value)}
             openLabel='Open LinkedIn'
-            openIcon={<LinkedInMark className='size-3.5' />}
             aria-label='LinkedIn'
           />
         </Example>

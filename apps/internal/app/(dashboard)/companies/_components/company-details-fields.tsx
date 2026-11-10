@@ -12,7 +12,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
-import { LinkedInMark } from '@/components/ui/linkedin-mark'
 import { UrlInput } from '@/components/ui/url-input'
 import { TagField } from '@/components/tags/tag-field'
 
@@ -93,7 +92,6 @@ export function CompanyDetailsFields({
                 <UrlInput
                   {...field}
                   openLabel='Open LinkedIn'
-                  openIcon={<LinkedInMark className='size-3.5' />}
                   placeholder='linkedin.com/company/acme'
                   disabled={disabled}
                 />
