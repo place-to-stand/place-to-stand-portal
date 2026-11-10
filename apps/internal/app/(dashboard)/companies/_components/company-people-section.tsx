@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { ExternalLink, Star, X } from 'lucide-react'
+import { Star, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -14,6 +14,8 @@ import { EntityList } from '@/components/sheets/entity-list'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { RecordRowField } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { SiteMark } from '@/components/ui/site-mark'
+import { toSafeHref } from '@/components/ui/url-input'
 import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
 import { cn } from '@/lib/utils'
@@ -154,6 +156,24 @@ export function CompanyPeopleSection({
     )
   }
 
+  // Shown only for a link a LinkedIn field would open (`toSafeHref`).
+  const linkedinButton = (contact: {
+    name: string
+    linkedinUrl?: string | null
+  }) => {
+    const href = toSafeHref(contact.linkedinUrl)
+    if (!href) return null
+    return (
+      <RowActionButton
+        type='button'
+        label={`Open ${contact.name}'s LinkedIn`}
+        icon={<SiteMark href={href} />}
+        className='text-muted-foreground'
+        onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
+      />
+    )
+  }
+
   const removeButton = (contact: {
     id: string
     name: string
@@ -229,20 +249,7 @@ export function CompanyPeopleSection({
             fields={fields(contact)}
             actions={
               <>
-                {contact.linkedinUrl ? (
-                  <RowActionButton
-                    type='button'
-                    label={`${contact.name} on LinkedIn`}
-                    icon={<ExternalLink />}
-                    onClick={() =>
-                      window.open(
-                        contact.linkedinUrl ?? '',
-                        '_blank',
-                        'noopener,noreferrer'
-                      )
-                    }
-                  />
-                ) : null}
+                {linkedinButton(contact)}
                 {star(contact)}
                 {removeButton(contact)}
               </>

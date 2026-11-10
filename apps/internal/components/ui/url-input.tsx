@@ -1,11 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { ExternalLink } from 'lucide-react'
-
 import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { SiteMark } from '@/components/ui/site-mark'
 import { cn } from '@/lib/utils'
 
 /** A safe https link from what was typed (scheme optional), or null. */
@@ -33,7 +32,8 @@ type UrlInputProps = Omit<React.ComponentProps<typeof Input>, 'type'> & {
 /**
  * A URL field with the same open button as the record pickers: beside the
  * field (4px gap, field height, tooltip), shown only while the value is a
- * valid link, opening it in a new tab. Use for every URL field.
+ * valid link, opening it in a new tab. Its icon is the site's mark
+ * (`SiteMark`). Use for every URL field.
  */
 export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
   function UrlInput(
@@ -70,7 +70,7 @@ export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
                   window.open(href, '_blank', 'noopener,noreferrer')
                 }
               >
-                <ExternalLink className='size-3.5' aria-hidden />
+                <SiteMark href={href} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{openLabel}</TooltipContent>

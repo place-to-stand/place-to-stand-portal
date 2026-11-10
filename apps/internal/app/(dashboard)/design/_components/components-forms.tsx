@@ -150,6 +150,9 @@ function ValidationForm() {
 export function ComponentsInputs() {
   const [phone, setPhone] = useState('5551234567')
   const [url, setUrl] = useState('https://placetostandagency.com')
+  const [linkedinUrl, setLinkedinUrl] = useState(
+    'linkedin.com/company/place-to-stand-agency'
+  )
   const [tags, setTags] = useState(['Non-profit', 'Production studio'])
 
   return (
@@ -198,6 +201,17 @@ export function ComponentsInputs() {
             onChange={event => setUrl(event.target.value)}
             openLabel='Open website'
             aria-label='Website'
+          />
+        </Example>
+        <Example
+          caption='UrlInput · a LinkedIn link shows the LinkedIn mark (SiteMark)'
+          className='[&>div]:w-full'
+        >
+          <UrlInput
+            value={linkedinUrl}
+            onChange={event => setLinkedinUrl(event.target.value)}
+            openLabel='Open LinkedIn'
+            aria-label='LinkedIn'
           />
         </Example>
       </Specimen>

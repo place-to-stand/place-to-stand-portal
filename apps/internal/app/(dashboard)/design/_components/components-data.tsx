@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Star } from 'lucide-react'
 
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { SiteMark } from '@/components/ui/site-mark'
 import {
   Table,
   TableBody,
@@ -115,13 +116,28 @@ export function ComponentsRecordRows() {
             hasSignIn
             openable={false}
             actions={
-              <RowActionButton
-                label={
-                  starred ? 'Unset primary contact' : 'Set primary contact'
-                }
-                icon={<Star className={cn(starred && 'fill-current')} />}
-                onClick={() => setStarred(value => !value)}
-              />
+              <>
+                <RowActionButton
+                  type='button'
+                  label="Open Ada Lovelace's LinkedIn"
+                  icon={<SiteMark href='https://www.linkedin.com/' />}
+                  className='text-muted-foreground'
+                  onClick={() =>
+                    window.open(
+                      'https://www.linkedin.com/',
+                      '_blank',
+                      'noopener,noreferrer'
+                    )
+                  }
+                />
+                <RowActionButton
+                  label={
+                    starred ? 'Unset primary contact' : 'Set primary contact'
+                  }
+                  icon={<Star className={cn(starred && 'fill-current')} />}
+                  onClick={() => setStarred(value => !value)}
+                />
+              </>
             }
           />
           <ContactRecordRow

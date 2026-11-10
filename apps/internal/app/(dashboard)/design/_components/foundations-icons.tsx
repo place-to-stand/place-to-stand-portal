@@ -1,5 +1,6 @@
 'use client'
 
+import type { ComponentType } from 'react'
 import {
   Archive,
   ArrowDown,
@@ -38,6 +39,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { LinkedInMark } from '@/components/ui/site-mark'
 import { ENTITIES, ENTITY_KEYS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
@@ -89,7 +91,7 @@ export function FoundationsIcons() {
     <DesignSection
       id='icons'
       title='Icons'
-      when='lucide-react only: 2px stroke glyphs in currentColor. Buttons size them to 16px, badges to 12px, row actions to 14px, so never set a size inside those. Click an icon to copy its import name.'
+      when='lucide-react only (plus site marks): 2px stroke glyphs in currentColor. Buttons size them to 16px, badges to 12px, row actions to 14px, so never set a size inside those. Click an icon to copy its import name.'
     >
       <Specimen
         label='Entity icons'
@@ -116,6 +118,18 @@ export function FoundationsIcons() {
           <IconTile key={name} name={name} icon={icon} onCopy={copy} />
         ))}
       </Specimen>
+      <Specimen
+        label='Site marks'
+        note='A button that opens another site shows that site’s mark in place of ExternalLink. SiteMark picks it from the link (components/ui/site-mark)'
+        className='grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-8'
+      >
+        <IconTile
+          name='LinkedInMark'
+          icon={LinkedInMark}
+          iconClassName='text-muted-foreground'
+          onCopy={value => void copy(value)}
+        />
+      </Specimen>
     </DesignSection>
   )
 }
@@ -129,7 +143,7 @@ function IconTile({
 }: {
   name: string
   caption?: string
-  icon: LucideIcon
+  icon: LucideIcon | ComponentType<{ className?: string }>
   iconClassName?: string
   onCopy: (value: string) => void
 }) {
