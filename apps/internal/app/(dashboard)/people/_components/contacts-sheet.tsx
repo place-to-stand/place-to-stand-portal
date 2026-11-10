@@ -97,6 +97,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
                   hasPhoto={Boolean(avatarPath)}
                   version={avatarPath}
                   size='sm'
+                  fallback='icon'
                   signIn={Boolean(
                     canManageSignIn &&
                     signInAccount &&

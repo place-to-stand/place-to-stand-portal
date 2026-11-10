@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 
+import { Button } from '@pts/ui/button'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { Switch } from '@pts/ui/switch'
 import { RoleBadge } from '@/components/auth/role-badge'
@@ -68,7 +70,7 @@ export function ComponentsAccess() {
       </Specimen>
       <Specimen
         label='Live sign-in'
-        note='Fields, as in a company Client section: the sign-in is a state of the person, so no record card; the icon sits on the heading'
+        note='Fields two to a row, full width, as in a company Client section: the sign-in is a state of the person, so no record card. Email is read-only here (edited above) with Send reset link beside it'
         className='block max-w-2xl'
       >
         <SheetSection
@@ -77,19 +79,30 @@ export function ComponentsAccess() {
           className='gap-4'
           action={<CanSignIn id='design-sign-in-client' checked />}
         >
-          <div className='flex flex-col gap-4'>
-            <div className='min-w-0'>
-              <p className='text-sm font-medium'>Signs in as</p>
-              <p className='text-sm break-all'>ada@acme.com</p>
-              <p className='text-muted-foreground text-sm'>
+          <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+            <div className='grid gap-2'>
+              <Label htmlFor='design-sign-in-email'>Signs in as</Label>
+              <div className='flex items-center gap-2'>
+                <Input
+                  id='design-sign-in-email'
+                  value='ada@acme.com'
+                  readOnly
+                  tabIndex={-1}
+                  className='min-w-0 flex-1'
+                />
+                <Button type='button' variant='outline'>
+                  Send reset link
+                </Button>
+              </div>
+              <p className='text-muted-foreground text-xs'>
                 Last sign-in: never
               </p>
             </div>
-            <div className='flex flex-col gap-2'>
+            <div className='grid gap-2'>
               <Label>Role</Label>
-              <span>
+              <div className='border-input flex h-9 items-center rounded-md border px-3'>
                 <RoleBadge role='CLIENT' />
-              </span>
+              </div>
             </div>
           </div>
         </SheetSection>

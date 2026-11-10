@@ -216,6 +216,7 @@ export function ContactsTableSection({
                           size='xs'
                           alt=''
                           signIn={Boolean(contact.signInRole)}
+                          fallback='icon'
                         />
                         <span
                           className='truncate font-medium'

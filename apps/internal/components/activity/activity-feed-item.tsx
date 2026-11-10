@@ -82,6 +82,7 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
               name={actorName}
               hasPhoto={Boolean(log.actor?.avatar_url)}
               alt=''
+              fallback='icon'
             />
             {actorName}
           </span>

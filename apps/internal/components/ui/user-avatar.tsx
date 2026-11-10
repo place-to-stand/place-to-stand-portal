@@ -3,7 +3,11 @@ import type { ComponentProps } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { getInitials } from '@/lib/users/initials'
-import { STATE_DOT_CLASS } from '@/lib/entity-accents'
+import {
+  ENTITY_ACCENTS,
+  ENTITY_ICONS,
+  STATE_DOT_CLASS,
+} from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
 type UserAvatarProps = {
@@ -23,6 +27,13 @@ type UserAvatarProps = {
   alt?: string
   /** Can sign in: the avatar wears the sign-in dot, as the person icon does. */
   signIn?: boolean
+  /**
+   * Without a photo: `icon` shows the person icon (with the sign-in dot when
+   * `signIn`), as a company shows its icon. Use it where the name sits beside
+   * the avatar; keep `initials` where the avatar stands alone (stacks,
+   * avatar-only cells), since there the initials say who it is.
+   */
+  fallback?: 'initials' | 'icon'
 }
 
 /**
@@ -55,8 +66,28 @@ export function UserAvatar({
   className,
   alt,
   signIn = false,
+  fallback = 'initials',
 }: UserAvatarProps) {
   const src = personPhotoSrc({ contactId, userId, hasPhoto, version })
+  if (!src && fallback === 'icon') {
+    const entity = signIn ? 'user' : 'contact'
+    const Icon = ENTITY_ICONS[entity]
+    // The avatar's footprint, so names line up with the photo rows.
+    return (
+      <span
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center',
+          className
+        )}
+        style={{ width: AVATAR_PX[size], height: AVATAR_PX[size] }}
+      >
+        <Icon
+          aria-hidden
+          className={cn(ENTITY_ACCENTS[entity].icon, 'size-4 shrink-0')}
+        />
+      </span>
+    )
+  }
   const mark = signIn ? signInMark(size) : null
   const avatar = (
     <Avatar
