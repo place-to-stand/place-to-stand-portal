@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button } from '@pts/ui/button'
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { SheetViewers } from '@/components/sheets/sheet-presence'
+import type { ActivityLogWithActor } from '@/lib/activity/types'
 import type { SheetViewer } from '@/lib/sheets/presence/use-sheet-presence'
 import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
@@ -18,14 +19,36 @@ const KRIS: SheetViewer = {
   editing: false,
 }
 
+const TWO_MINUTES_AGO = new Date(Date.now() - 2 * 60_000).toISOString()
+
 const SAMPLE_CONFLICT: SaveConflict = {
-  savedAt: new Date(Date.now() - 2 * 60_000).toISOString(),
+  savedAt: TWO_MINUTES_AGO,
   changes: [
     {
-      by: 'Kris Crawford',
-      summary: 'Updated company "Acme" (website)',
-      at: new Date(Date.now() - 2 * 60_000).toISOString(),
-    },
+      id: 'design-log',
+      verb: 'COMPANY_UPDATED',
+      summary: 'Updated company "Acme" (website, notes)',
+      target_type: 'COMPANY',
+      target_id: 'design-company',
+      created_at: TWO_MINUTES_AGO,
+      source: 'ADMIN_UI',
+      actor: {
+        id: KRIS.userId,
+        full_name: KRIS.name,
+        email: 'kris@example.com',
+        avatar_url: null,
+      },
+      metadata: {
+        changedFields: ['website', 'notes'],
+        details: {
+          before: { website: 'acme.com', notes: 'Call after the launch.' },
+          after: {
+            website: 'acme.co',
+            notes: 'Call after the launch. Ask about the app.',
+          },
+        },
+      },
+    } as unknown as ActivityLogWithActor,
   ],
 }
 

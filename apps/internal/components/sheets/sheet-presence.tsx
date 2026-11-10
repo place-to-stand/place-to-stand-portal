@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
+import { InlineReveal } from '@/components/ui/inline-reveal'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
 import {
@@ -61,12 +62,42 @@ export function SheetPresence({
     onLoadTheirs()
   }, [theirSave, isDirty, clearTheirSave, onLoadTheirs])
 
-  const noticeSlot = useSheetNoticeSlot()
-  const notice =
-    others.length > 0 ? <SheetViewers noun={noun} others={others} /> : null
+  // The alert eases in when someone arrives and out when the last one
+  // leaves, so it catches the eye. It mounts closed and opens a frame later
+  // (or there is nothing to animate from), and stays mounted with the last
+  // viewers until the closing ease ends.
+  const present = others.length > 0
+  const [shown, setShown] = useState<SheetViewer[]>([])
+  const [revealed, setRevealed] = useState(false)
+  if (present && shown !== others) setShown(others)
+  useEffect(() => {
+    if (present) {
+      const frame = requestAnimationFrame(() => setRevealed(true))
+      return () => cancelAnimationFrame(frame)
+    }
+    const timer = setTimeout(() => {
+      setRevealed(false)
+      setShown([])
+    }, REVEAL_MS + 50)
+    return () => clearTimeout(timer)
+  }, [present])
 
-  return notice && noticeSlot ? createPortal(notice, noticeSlot) : null
+  const noticeSlot = useSheetNoticeSlot()
+  if (!noticeSlot || shown.length === 0) return null
+  return createPortal(
+    <InlineReveal open={present && revealed}>
+      {/* The space under the alert eases with it; the slot cancels the
+          form's own gap (see SheetNoticeSlot). */}
+      <div className='pb-6'>
+        <SheetViewers noun={noun} others={shown} />
+      </div>
+    </InlineReveal>,
+    noticeSlot
+  )
 }
+
+/** InlineReveal's ease. */
+const REVEAL_MS = 200
 
 /**
  * Who else has the record open: their avatars and one line, "Kris Crawford

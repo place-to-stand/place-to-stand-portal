@@ -37,33 +37,38 @@ test('a second save over a teammate asks first', async ({ browser, page }) => {
   await expect(page).toHaveURL(/company=/)
   const url = page.url()
   const original = await website(page.getByRole('dialog')).inputValue()
+  // Fresh values each run: a run that failed midway must not leave the
+  // record holding one of them, or the next admin save changes nothing.
+  const run = Date.now()
+  const salesSite = `sales-${run}.example`
+  const adminSite = `admin-${run}.example`
 
   const admin = await openAs(browser, 'admin', url)
   const sales = await openAs(browser, 'sales', url)
   try {
     // Each sees the other, then sees them editing.
     await expect(admin.sheet.getByText(/has this company open/)).toBeVisible()
-    await website(sales.sheet).fill('sales.example')
+    await website(sales.sheet).fill(salesSite)
     await expect(admin.sheet.getByText(/is editing this company/)).toBeVisible()
 
     // The admin saves first; the sales sheet keeps its edits.
-    await website(admin.sheet).fill('admin.example')
+    await website(admin.sheet).fill(adminSite)
     await saveAndStay(admin.sheet)
     await expect(
       admin.sheet.getByRole('button', { name: 'Save and keep open' })
     ).toHaveText('Saved')
-    await expect(website(sales.sheet)).toHaveValue('sales.example')
+    await expect(website(sales.sheet)).toHaveValue(salesSite)
 
     // Sales saves anyway: nothing is written until they choose.
     await saveAndStay(sales.sheet)
     const dialog = sales.page.getByRole('alertdialog')
     await expect(dialog).toContainText('Your changes weren’t saved')
-    await expect(dialog).toContainText('(website)')
+    await expect(dialog).toContainText('Website')
     await dialog.getByRole('button', { name: 'Overwrite with mine' }).click()
     await expect(dialog).toBeHidden()
 
     // The admin's untouched sheet follows the overwrite on its own.
-    await expect(website(admin.sheet)).toHaveValue(/sales\.example/)
+    await expect(website(admin.sheet)).toHaveValue(`https://${salesSite}`)
 
     // A save straight after, with no one else in between, just saves.
     await website(sales.sheet).fill(original)

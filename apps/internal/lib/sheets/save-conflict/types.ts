@@ -1,10 +1,4 @@
-/** One save someone else made after this sheet loaded the record. */
-export type SaveConflictChange = {
-  /** Who made it, or null when the activity log doesn't say (a script). */
-  by: string | null
-  summary: string
-  at: string
-}
+import type { ActivityLogWithActor } from '@/lib/activity/types'
 
 /**
  * A save refused because the record changed after the sheet loaded it.
@@ -13,8 +7,12 @@ export type SaveConflictChange = {
  */
 export type SaveConflict = {
   savedAt: string
-  /** Newest first. Empty when the change left no activity row we may show. */
-  changes: SaveConflictChange[]
+  /**
+   * The saves made since, as History shows them (who, when, each field's
+   * before and after). Newest first. Empty when the change left no
+   * activity row the viewer may see.
+   */
+  changes: ActivityLogWithActor[]
 }
 
 /**

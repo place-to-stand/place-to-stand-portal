@@ -112,15 +112,6 @@ export async function describeSaveConflict(
           sinceMs === null ||
           versionMs(log.created_at) > sinceMs + SAME_SAVE_WINDOW_MS
       )
-      .map(log => ({
-        // Your own save from another sheet or tab reads as yours.
-        by:
-          log.actor?.id === user.id
-            ? 'You'
-            : (log.actor?.full_name ?? log.actor?.email ?? null),
-        summary: log.summary,
-        at: log.created_at,
-      }))
   } catch {
     // No permission to read activity, or the read failed: the conflict
     // stands either way.

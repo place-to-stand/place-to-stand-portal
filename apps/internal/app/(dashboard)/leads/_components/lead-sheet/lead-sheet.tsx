@@ -115,7 +115,7 @@ export function LeadSheet(props: LeadSheetProps) {
                 )}
               >
                 <div className='flex-1 p-6 lg:overflow-y-auto'>
-                  <SheetNoticeSlot className='mb-6' />
+                  <SheetNoticeSlot className='mb-0' />
                   <LeadSheetFormFields
                     control={form.control}
                     assignees={assignees}
