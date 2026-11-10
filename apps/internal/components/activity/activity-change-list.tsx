@@ -40,14 +40,18 @@ export function ActivityChangeList({
   targetType,
   references,
 }: ActivityChangeListProps) {
-  if (!fields.length && !memberships.length && !facts.length) return null
+  // A field that also has added/removed chips (tags) shows as the chips.
+  const shown = fields.filter(
+    field => !memberships.some(membership => membership.key === field.key)
+  )
+  if (!shown.length && !memberships.length && !facts.length) return null
 
   // Indented to the actor name's text edge (20px avatar + 6px gap) so the
   // block reads as belonging to the line above it. Every row is a 20px line
   // box so labels, values, badges and the diff toggle share one baseline.
   return (
     <dl className='mt-1.5 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-3 gap-y-1 pl-6.5 text-xs leading-5'>
-      {fields.map(field => (
+      {shown.map(field => (
         <FieldRow
           key={field.key}
           field={field}
@@ -256,6 +260,13 @@ export function formatValue(
     case 'boolean':
       return value ? 'Yes' : 'No'
     default:
+      // A list of names (tags) reads as one line; an empty one as nothing.
+      if (
+        Array.isArray(value) &&
+        value.every(entry => typeof entry === 'string')
+      ) {
+        return value.length ? value.join(', ') : null
+      }
       if (typeof value === 'object') {
         try {
           return JSON.stringify(value)

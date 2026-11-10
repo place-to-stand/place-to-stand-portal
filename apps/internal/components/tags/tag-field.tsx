@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from 'lucide-react'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
@@ -11,9 +11,9 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
-import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import { fieldTriggerClasses } from '@/components/ui/field-trigger'
 import { cn } from '@/lib/utils'
+import { scoreSearchMatch } from '@/lib/utils/search-match'
 import {
   normalizeTagName,
   splitTagInput,
@@ -93,7 +93,7 @@ export function TagField({
   // A comma ends a tag: "salon, spa" adds Salon (or salon) and keeps "spa"
   // in the box.
   const handleQueryChange = (text: string) => {
-    setNavigated(false)
+    arrowed.current = false
     if (!text.includes(',')) {
       setQuery(text)
       return
@@ -112,27 +112,20 @@ export function TagField({
     ? options.find(option => tagKey(option.name) === tagKey(typed))
     : undefined
 
-  // Enter adds what was typed: the exact tag if it exists, else a new one.
-  // The list's fuzzy match would otherwise have Enter pick "Salon" while
-  // "Salons" is typed. Arrowing to a row first still picks that row.
-  const [navigated, setNavigated] = React.useState(false)
-  const [active, setActive] = React.useState('')
-  // The row Enter will pick stays highlighted, so what you see is what Enter
-  // does.
-  const preferred =
-    exactMatch?.name ?? (canCreate ? CREATE_ROW_VALUE : undefined)
-  const highlighted = !navigated && preferred ? preferred : active
+  // The list ranks the exact tag first and puts "Create …" on top when the
+  // typed name is new, so the highlighted row is always the one Enter picks.
+  // A tag picked in this sheet but not saved yet is in neither list: Enter
+  // must not fall through to a near match ("Salon" for "Salons") unless you
+  // arrowed to it.
+  const arrowed = React.useRef(false)
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      // Arrows move on from the highlighted row (or stay on it at an end).
-      setActive(highlighted)
-      setNavigated(true)
+      arrowed.current = true
       return
     }
-    if (event.key !== 'Enter' || navigated || !typed) return
-    if (exactMatch) add([exactMatch.name])
-    else if (canCreate) add([typed])
-    else return
+    if (event.key !== 'Enter' || !typed || arrowed.current) return
+    if (event.nativeEvent.isComposing) return
+    if (exactMatch || canCreate || !selectedKeys.has(tagKey(typed))) return
     event.preventDefault()
     setQuery('')
   }
@@ -205,12 +198,7 @@ export function TagField({
         sideOffset={8}
         className='w-(--anchor-width) min-w-64 p-0'
       >
-        <Command
-          id={listId}
-          onKeyDown={handleKeyDown}
-          value={highlighted}
-          onValueChange={setActive}
-        >
+        <Command id={listId} onKeyDown={handleKeyDown} filter={tagFilter}>
           <CommandInput
             placeholder='Find or create a tag…'
             className='h-9'
@@ -219,6 +207,26 @@ export function TagField({
             maxLength={TAG_NAME_MAX}
           />
           <CommandList className='max-h-[min(60vh,260px)] overflow-y-auto overscroll-contain'>
+            {canCreate ? (
+              // First, so a new name is what Enter adds; arrow down to
+              // pick a near match instead.
+              <CommandGroup forceMount>
+                <CommandItem
+                  value='__create__'
+                  forceMount
+                  onSelect={() => {
+                    add([typed])
+                    setQuery('')
+                  }}
+                >
+                  <PlusIcon className='text-muted-foreground size-4 shrink-0' />
+                  <span className='truncate'>
+                    Create{' '}
+                    <span className='font-medium'>&ldquo;{typed}&rdquo;</span>
+                  </span>
+                </CommandItem>
+              </CommandGroup>
+            ) : null}
             {options.length ? (
               <CommandGroup>
                 {options.map(option => {
@@ -248,23 +256,14 @@ export function TagField({
                 })}
               </CommandGroup>
             ) : null}
-            {canCreate ? (
-              <CommandCreateRows
-                query={typed}
-                entityLabel='tag'
-                onCreate={name => {
-                  add([name])
-                  setQuery('')
-                }}
-              />
-            ) : (
+            {!canCreate ? (
               <EmptyLine
                 show={typed.length > 0 && !exists}
                 text={
                   full ? `Up to ${TAGS_PER_RECORD_MAX} tags.` : 'Already added.'
                 }
               />
-            )}
+            ) : null}
             {!options.length && !typed ? (
               <p className='text-muted-foreground px-3 py-6 text-center text-sm'>
                 No tags yet. Type one to create it.
@@ -277,8 +276,13 @@ export function TagField({
   )
 }
 
-/** The value `CommandCreateRows` gives its row. */
-const CREATE_ROW_VALUE = '__create__'
+/** The shared ranking, except that the typed tag itself (any case or
+ * spacing) always ranks first. */
+function tagFilter(value: string, search: string, keywords?: string[]) {
+  if (value === '__create__') return 1
+  if (tagKey(value) === tagKey(normalizeTagName(search))) return 1
+  return scoreSearchMatch(value, search, keywords) * 0.99
+}
 
 function EmptyLine({ show, text }: { show: boolean; text: string }) {
   if (!show) return null

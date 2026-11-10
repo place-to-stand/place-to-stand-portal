@@ -243,7 +243,13 @@ export async function planCompanyWrite(
     existing?.id ?? null,
     values.tags
   )
-  if (existing && tagChange) changedFields.push('tags')
+  if (existing && tagChange) {
+    changedFields.push('tags')
+    // Whole lists for the save-conflict dialog; the feed shows the
+    // added/removed chips instead (see ActivityChangeList).
+    before.tags = tagChange.before
+    after.tags = tagChange.next
+  }
 
   return {
     ok: true,

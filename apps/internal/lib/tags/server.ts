@@ -107,11 +107,20 @@ export async function planTagChange(
   names: readonly string[] | undefined
 ): Promise<TagChange | null> {
   if (names === undefined) return null
+  // An existing tag keeps its stored spelling, so the activity log reads
+  // "Salon" when someone typed "SALON".
+  const stored = new Map<string, string>()
+  for (const row of await db
+    .select({ name: tags.name })
+    .from(tags)
+    .where(and(eq(tags.entity, entity), isNull(tags.deletedAt)))) {
+    stored.set(tagKey(row.name), row.name)
+  }
   // One order for every save, so two saves creating the same new tags
   // take their index locks in the same order and can't deadlock.
-  const next = uniqueTagNames(names).sort((a, b) =>
-    tagKey(a) < tagKey(b) ? -1 : tagKey(a) > tagKey(b) ? 1 : 0
-  )
+  const next = uniqueTagNames(
+    names.map(name => stored.get(tagKey(name)) ?? name)
+  ).sort((a, b) => (tagKey(a) < tagKey(b) ? -1 : tagKey(a) > tagKey(b) ? 1 : 0))
   const before = recordId
     ? ((await readRecordTags(entity, [recordId])).get(recordId) ?? [])
     : []

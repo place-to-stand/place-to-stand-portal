@@ -53,3 +53,11 @@ test('the save schema cleans the list and refuses long names', () => {
       .success
   )
 })
+
+test('blank-looking fillers and variation selectors go', () => {
+  assert.equal(normalizeTagName('Salon️'), 'Salon')
+  assert.equal(normalizeTagName('Sal͏on'), 'Salon')
+  assert.equal(normalizeTagName('⠀'), '')
+  assert.equal(normalizeTagName('ㅤ'), '')
+  assert.ok(!tagNamesSchema.safeParse(['⠀']).success)
+})

@@ -73,6 +73,7 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
   phone: { label: 'Phone', kind: 'text' },
   description: { label: 'Description', kind: 'richText' },
   notes: { label: 'Notes', kind: 'longText' },
+  tags: { label: 'Tags', kind: 'text' },
   status: { label: 'Status', kind: 'status' },
   type: { label: 'Type', kind: 'enum' },
   role: { label: 'Role', kind: 'enum' },

@@ -16,13 +16,20 @@ export const TAGS_PER_RECORD_MAX = 20
  * blank-looking tag or a second "Salon" with a hidden character can't exist.
  */
 export function normalizeTagName(name: string): string {
-  return name
-    .normalize('NFKC')
-    .replace(/\p{Cf}/gu, '')
-    .replace(/\p{Cc}/gu, ' ')
-    .replace(/,/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return (
+    name
+      .normalize('NFKC')
+      .replace(/\p{Cf}/gu, '')
+      // Variation selectors and the grapheme joiner: "Salon" plus one is
+      // still "Salon".
+      .replace(/[\u034F\uFE00-\uFE0F\u{E0100}-\u{E01EF}]/gu, '')
+      // Fillers that draw as blank space (Hangul, Braille).
+      .replace(/[\u115F\u1160\u3164\uFFA0\u2800]/g, ' ')
+      .replace(/\p{Cc}/gu, ' ')
+      .replace(/,/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
 }
 
 /** What two names compare by: "Non-profit" and " non-profit " are one tag. */
