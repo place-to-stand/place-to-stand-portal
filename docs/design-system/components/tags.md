@@ -1,6 +1,6 @@
 # Tags
 
-Free-form labels people type onto a record, Shopify-style: "Non-profit", "Production studio", "Salon". Companies have them first; any record can adopt them (`lib/tags/server.ts` explains how). Each kind of record keeps its own tags: a company's "Salon" is never offered on a lead.
+Free-form labels people type onto a record, Shopify-style: "Non-profit", "Production studio", "Salon". Companies have them first; any record can adopt them (`lib/tags/server.ts` explains how). Each kind of record keeps its own tags: a company's "Salon" is never offered on a lead. A tag on no record (archived ones count) is no longer offered anywhere; typing its name again brings it back.
 
 **Field:** `TagField` (`components/tags/tag-field.tsx`), labelled "Tags" with `FormLabel optional`. The field looks like every other trigger (`fieldTriggerClasses`) and holds the picked tags as badges, each with a × to take it off, or "Add tags…" when empty; it grows a line when they wrap. Clicking it, or Enter or Space on it, opens a searchable list of the kind's tags, each as its badge with a check on the right when picked. Typing filters it, existing tags first to encourage reuse: Enter picks the highlighted row (the exact tag, else the top match), and "Create “…”" sits last, so a new name takes an arrow down to it, or a comma. A name that exists in any case reuses that tag and its spelling. Like every sheet control it only sets the form: Save writes the tags with the rest of the record. (guard: review)
 

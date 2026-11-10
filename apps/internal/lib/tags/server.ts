@@ -48,7 +48,12 @@ const TAG_LINKS = {
 export const tagCapability = (entity: TagEntity): Capability =>
   TAG_LINKS[entity].capability
 
-/** Every live tag of a kind, A to Z, with how many live records carry it. */
+/**
+ * The tags of a kind still on some record, A to Z, with how many live
+ * records carry each. A tag taken off its last record drops out of every
+ * list; one kept only by archived records stays, so a restore brings it
+ * back. The row itself stays, so typing the name again reuses it.
+ */
 export async function listTagOptions(entity: TagEntity): Promise<TagOption[]> {
   const link = TAG_LINKS[entity]
   const rows = await db
@@ -58,7 +63,7 @@ export async function listTagOptions(entity: TagEntity): Promise<TagOption[]> {
       count: sql<number>`count(${link.recordId}) filter (where ${link.liveRecord})`,
     })
     .from(tags)
-    .leftJoin(link.tagLinkTable, eq(link.tagId, tags.id))
+    .innerJoin(link.tagLinkTable, eq(link.tagId, tags.id))
     .where(and(eq(tags.entity, entity), isNull(tags.deletedAt)))
     .groupBy(tags.id, tags.name)
     .orderBy(asc(sql`lower(${tags.name})`))
@@ -138,7 +143,8 @@ export async function planTagChange(
 /**
  * Sets a record's tags to `names` inside the caller's transaction. A name
  * that matches a live tag of this kind (any case) reuses it; a new one is
- * created. Tags taken off a record stay, so they're still offered.
+ * created. A tag taken off its last record drops out of the lists (see
+ * listTagOptions); its row stays.
  */
 export async function writeRecordTagsInTx(
   tx: DbTx,

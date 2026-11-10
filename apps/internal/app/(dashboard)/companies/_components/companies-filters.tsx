@@ -58,7 +58,7 @@ export function CompaniesFilters({
         },
   })
   // The tags live companies use (counts cover live companies only, so the
-  // archive offers every tag). A tag in the link that isn't offered still
+  // archive also offers tags only archived companies carry). A tag in the link that isn't offered still
   // shows, so it can be cleared.
   const { data: tagOptions = [] } = useTagOptions('company')
   const archive = basePath.endsWith('/archive')
