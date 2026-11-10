@@ -27,7 +27,9 @@ export function CompaniesPageBody({
   pagination: { currentPage: number; totalPages: number; pageSize: number }
   params: CompaniesListParams
 }) {
-  const filtered = Boolean(params.search || params.type || params.leads)
+  const filtered = Boolean(
+    params.search || params.type || params.leads || params.tags.length
+  )
   const basePath = mode === 'active' ? '/companies' : '/companies/archive'
 
   return (
@@ -62,6 +64,7 @@ export function CompaniesPageBody({
           search={params.search}
           type={params.type}
           leads={params.leads}
+          tags={params.tags}
           basePath={basePath}
         />
         <CompaniesTable

@@ -1499,6 +1499,13 @@
   },
   {
     "type": "route",
+    "name": "GET /api/tags/[entity]",
+    "file": "apps/internal/app/api/tags/[entity]/route.ts",
+    "kind": "capability",
+    "capability": "companies.manage"
+  },
+  {
+    "type": "route",
     "name": "PATCH /api/task-comments/[commentId]",
     "file": "apps/internal/app/api/task-comments/[commentId]/route.ts",
     "kind": "capability",

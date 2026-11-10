@@ -43,6 +43,8 @@ import {
   type SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
 import { UrlInput } from '@/components/ui/url-input'
+import { TagField } from '@/components/tags/tag-field'
+import { TagList } from '@/components/tags/tag-list'
 
 import { DesignSection, Example, Specimen } from './specimen'
 
@@ -148,6 +150,7 @@ function ValidationForm() {
 export function ComponentsInputs() {
   const [phone, setPhone] = useState('5551234567')
   const [url, setUrl] = useState('https://placetostandagency.com')
+  const [tags, setTags] = useState(['Non-profit', 'Production studio'])
 
   return (
     <DesignSection
@@ -196,6 +199,22 @@ export function ComponentsInputs() {
             openLabel='Open website'
             aria-label='Website'
           />
+        </Example>
+      </Specimen>
+
+      <Specimen
+        label='Tags'
+        note='components/tags · TagField on a sheet, TagList in a list row'
+        className='grid grid-cols-1 gap-6 md:grid-cols-2'
+      >
+        <Example
+          caption='TagField · type to find or create; Enter or a comma adds'
+          className='[&>div]:w-full'
+        >
+          <TagField entity='company' value={tags} onChange={setTags} />
+        </Example>
+        <Example caption='TagList · two badges, then +N'>
+          <TagList names={['Non-profit', 'Production studio', 'Salon']} />
         </Example>
       </Specimen>
 

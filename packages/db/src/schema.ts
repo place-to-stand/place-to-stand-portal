@@ -239,6 +239,85 @@ export const companies = pgTable(
   ]
 )
 
+// =============================================================================
+// TAGS
+// =============================================================================
+
+/**
+ * What a tag belongs to. Each kind of record has its own tags: a company's
+ * "Salon" is not a lead's "Salon". Adding a kind is a new value here plus
+ * its join table (like `company_tags`).
+ */
+export const tagEntity = pgEnum('tag_entity', ['company'])
+
+/**
+ * A free-form label people type onto records (Shopify-style): typing a name
+ * that exists (any case) reuses it, a new one is created on save. One live
+ * tag per kind and name, case-insensitive.
+ */
+export const tags = pgTable(
+  'tags',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    entity: tagEntity().notNull(),
+    name: text().notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'string' }),
+  },
+  table => [
+    uniqueIndex('idx_tags_entity_name_unique')
+      .using('btree', table.entity, sql`lower(btrim(name))`)
+      .where(sql`(deleted_at IS NULL)`),
+    check('tags_name_not_blank', sql`btrim(name) <> ''`),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'tags_created_by_fkey',
+    }),
+  ]
+)
+
+/** Which tags a company has (`tags.entity = 'company'`). */
+export const companyTags = pgTable(
+  'company_tags',
+  {
+    companyId: uuid('company_id').notNull(),
+    tagId: uuid('tag_id').notNull(),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+  },
+  table => [
+    primaryKey({
+      columns: [table.companyId, table.tagId],
+      name: 'company_tags_pkey',
+    }),
+    index('idx_company_tags_tag').on(table.tagId),
+    foreignKey({
+      columns: [table.companyId],
+      foreignColumns: [companies.id],
+      name: 'company_tags_company_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.tagId],
+      foreignColumns: [tags.id],
+      name: 'company_tags_tag_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'company_tags_created_by_fkey',
+    }),
+  ]
+)
+
 export const contacts = pgTable(
   'contacts',
   {

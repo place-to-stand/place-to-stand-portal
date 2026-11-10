@@ -52,6 +52,10 @@ const HARD_DELETE_ALLOW = [
   'userDashboardLayouts',
   'rateLimitBuckets',
   'rate_limit_buckets',
+  // Tag join rows (lib/tags/server.ts): taking a tag off a record.
+  'tagLinkTable',
+  'companyTags',
+  'company_tags',
 ]
 
 /** Files that may read process.env: the env schemas, build config, scripts. */

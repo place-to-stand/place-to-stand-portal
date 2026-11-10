@@ -2,8 +2,9 @@ import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
 
 import type { CompanyListItem } from './types'
 import { firstParam } from '@/lib/pagination/params'
+import { splitTagInput, tagKey } from '@/lib/tags/names'
 
-/** Companies list filters and sort (`?type=&leads=&sort=`). Client-safe. */
+/** Companies list filters and sort (`?type=&leads=&tags=&sort=`). Client-safe. */
 // Clients (billed now) and everyone else. Any other `?type=` (an old
 // `prospect` or `former` link) means All.
 export const COMPANY_TYPE_VALUES = ['client', 'none'] as const
@@ -46,6 +47,8 @@ export type CompaniesListParams = {
   search: string
   type?: CompanyTypeFilter
   leads?: CompanyLeadsFilter
+  /** `?tags=a,b`: companies with any of these tags (names, any case). */
+  tags: string[]
   sort: ParsedSort<CompanySortField>
   /** 1-based `?page=`. */
   page: number
@@ -68,6 +71,7 @@ export function parseCompaniesSearchParams(
     search: (firstParam(params.q) ?? '').slice(0, 160),
     type: type && isCompanyType(type) ? type : undefined,
     leads: leads && isCompanyLeads(leads) ? leads : undefined,
+    tags: splitTagInput(firstParam(params.tags) ?? '').slice(0, 20),
     sort,
     page: Math.max(1, Number.parseInt(firstParam(params.page) ?? '1', 10) || 1),
     sortParam: sort === DEFAULT_COMPANY_SORT ? undefined : sortParam,
@@ -77,13 +81,16 @@ export function parseCompaniesSearchParams(
 /** The list is unpaginated, so filters and sort run on the fetched rows. */
 export function applyCompanyListParams(
   rows: CompanyListItem[],
-  { type, leads, sort }: CompaniesListParams
+  { type, leads, tags, sort }: CompaniesListParams
 ): CompanyListItem[] {
+  const tagKeys = new Set(tags.map(tagKey))
   const filtered = rows.filter(
     row =>
       (!type ||
         (type === 'client' ? Boolean(row.companyId) : !row.companyId)) &&
-      (!leads || (leads === 'open') === row.openLeadCount > 0)
+      (!leads || (leads === 'open') === row.openLeadCount > 0) &&
+      // Any of the picked tags.
+      (!tagKeys.size || row.tags.some(tag => tagKeys.has(tagKey(tag))))
   )
   // Null: no value for this column (not a client, none set, or hidden from
   // this viewer). Those rows sort last either way.

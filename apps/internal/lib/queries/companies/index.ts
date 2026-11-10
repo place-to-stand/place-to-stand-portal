@@ -46,6 +46,7 @@ import { companies, contacts, leads, users } from '@/lib/db/schema'
 import { NotFoundError } from '@/lib/errors/http'
 import { companySearchHintsSql } from '@/lib/queries/companies/search-hints'
 import type { LeadStatusValue } from '@/lib/leads/constants'
+import { readRecordTags } from '@/lib/tags/server'
 
 const CLOSED_LEAD_STATUSES_SQL = sql`('CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED')`
 
@@ -139,6 +140,10 @@ export async function listCompanies(
   // Billing and commission are for people who manage clients.
   const seesBilling = roleCan(user.role, 'clients.manage')
   const clientIds = rows.filter(row => row.isClient).map(row => row.id)
+  const tagsByCompany = await readRecordTags(
+    'company',
+    rows.map(row => row.id)
+  )
   const [closersByClient, hoursByClient] = seesBilling
     ? await Promise.all([
         fetchLatestClosersByClient(clientIds),
@@ -155,6 +160,7 @@ export async function listCompanies(
     id: row.id,
     name: row.name,
     website: row.website,
+    tags: tagsByCompany.get(row.id) ?? [],
     slug: row.slug,
     billingType: seesBilling && row.isClient ? row.billingType : null,
     origination:
@@ -249,40 +255,46 @@ export async function getCompanyDetail(
   // can't manage clients.
   const seesSignIns = roleCan(user.role, 'clients.manage')
 
-  const [memberRows, leadRows, clientRows, formerRows] = await Promise.all([
-    listCompanyMembers(companyId),
-    db
-      .select({
-        id: leads.id,
-        contactName: contacts.name,
-        status: leads.status,
-        assigneeName: personNameSql,
-        assigneeEmail: users.email,
-        updatedAt: leads.updatedAt,
-      })
-      .from(leads)
-      .innerJoin(contacts, eq(contacts.id, leads.contactId))
-      .leftJoin(users, eq(users.id, leads.assigneeId))
-      .where(and(eq(leads.companyId, companyId), isNull(leads.deletedAt)))
-      .orderBy(desc(leads.updatedAt)),
-    // Billed now: the company is its own client.
-    db
-      .select({ id: companies.id, name: companies.name, slug: companies.slug })
-      .from(companies)
-      .where(and(eq(companies.id, companyId), isClientCompany())),
-    // Billed before (billing stopped), so it can restart.
-    db
-      .select({ id: companies.id })
-      .from(companies)
-      .where(
-        and(
-          eq(companies.id, companyId),
-          wasClientCompany(),
-          sql`not ${billingOpenSql()}`
+  const [memberRows, leadRows, clientRows, formerRows, tagRows] =
+    await Promise.all([
+      listCompanyMembers(companyId),
+      db
+        .select({
+          id: leads.id,
+          contactName: contacts.name,
+          status: leads.status,
+          assigneeName: personNameSql,
+          assigneeEmail: users.email,
+          updatedAt: leads.updatedAt,
+        })
+        .from(leads)
+        .innerJoin(contacts, eq(contacts.id, leads.contactId))
+        .leftJoin(users, eq(users.id, leads.assigneeId))
+        .where(and(eq(leads.companyId, companyId), isNull(leads.deletedAt)))
+        .orderBy(desc(leads.updatedAt)),
+      // Billed now: the company is its own client.
+      db
+        .select({
+          id: companies.id,
+          name: companies.name,
+          slug: companies.slug,
+        })
+        .from(companies)
+        .where(and(eq(companies.id, companyId), isClientCompany())),
+      // Billed before (billing stopped), so it can restart.
+      db
+        .select({ id: companies.id })
+        .from(companies)
+        .where(
+          and(
+            eq(companies.id, companyId),
+            wasClientCompany(),
+            sql`not ${billingOpenSql()}`
+          )
         )
-      )
-      .limit(1),
-  ])
+        .limit(1),
+      readRecordTags('company', [companyId]),
+    ])
 
   const signInUserIds = seesSignIns
     ? memberRows.flatMap(member => (member.userId ? [member.userId] : []))
@@ -331,6 +343,7 @@ export async function getCompanyDetail(
     ...row,
     primaryContactId: primary?.id ?? null,
     primaryContactName: primary?.name ?? null,
+    tags: tagRows.get(companyId) ?? [],
     clients: clientRows,
     formerClientId: clientRows.length ? null : (formerRows[0]?.id ?? null),
     // When billing ends is billing information: admins only.

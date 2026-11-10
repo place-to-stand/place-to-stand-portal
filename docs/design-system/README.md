@@ -27,7 +27,7 @@ This folder describes; the code decides. When they disagree, the code wins and t
 
 - `README.md`: this brand book.
 - `tokens.json`: every token with a usage note.
-- `components/`: one note per component family: accordion, alert, badge, board, brand-logo, bulk-select, button, card, context-menu, dialog, dropdown-menu, empty-state, entity-list, filter, input, row-action-button, select, sheet, stat-card, switch (with checkbox and segmented control), table, tabs, toast.
+- `components/`: one note per component family: accordion, alert, badge, board, brand-logo, bulk-select, button, card, context-menu, dialog, dropdown-menu, empty-state, entity-list, filter, input, row-action-button, select, sheet, stat-card, switch (with checkbox and segmented control), table, tabs, tags, toast.
 
 Both portals share `packages/ui` and its theme. The client portal layers a few tokens of its own on top (a grey page, `chrome` for the top bar, `surface-1/2/3`), defined in `apps/client/styles/globals.css`.
 

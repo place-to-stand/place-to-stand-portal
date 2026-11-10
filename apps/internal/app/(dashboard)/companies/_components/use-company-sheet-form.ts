@@ -17,6 +17,8 @@ export const companyFormSchema = z.object({
   website: z.string().trim().max(255),
   linkedinUrl: z.string().trim().max(255),
   notes: z.string().max(20000),
+  /** Tag names; new ones are created on Save. */
+  tags: z.array(z.string()),
   /** Set with the star on the People list; saved in the same transaction. */
   primaryContactId: z.string().nullable(),
   /** People picked on the People list; they join (or move here) on Save. */

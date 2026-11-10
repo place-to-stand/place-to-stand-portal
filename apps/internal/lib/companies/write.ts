@@ -36,6 +36,11 @@ import {
   SIGN_IN_COMPANIES_ADMIN_ONLY,
 } from '@/lib/companies/people-copy'
 import { companies, contacts } from '@/lib/db/schema'
+import {
+  planTagChange,
+  writeRecordTagsInTx,
+  type TagChange,
+} from '@/lib/tags/server'
 
 const DUPLICATE_NAME_ERROR = 'A company with this name already exists.'
 
@@ -78,6 +83,8 @@ export type CompanyWritePlan = {
   /** `null` contactId clears the primary; a `null` change leaves it. */
   primaryChange: { contactId: string | null } | null
   primaryContactName: string | null
+  /** Its tags after the save, when they change. */
+  tagChange: TagChange | null
   /** An edit that changes nothing. */
   unchanged: boolean
 }
@@ -231,6 +238,17 @@ export async function planCompanyWrite(
   if (people.moves.length) changedFields.push('people')
   if (titles.length) changedFields.push('titles')
 
+  const tagChange = await planTagChange(
+    'company',
+    existing?.id ?? null,
+    values.tags
+  )
+  if (existing && tagChange) {
+    changedFields.push('tags')
+    before.tags = tagChange.before
+    after.tags = tagChange.next
+  }
+
   return {
     ok: true,
     plan: {
@@ -243,11 +261,13 @@ export async function planCompanyWrite(
       titles,
       primaryChange,
       primaryContactName,
+      tagChange,
       unchanged:
         Boolean(existing) &&
         !changedFields.length &&
         !primaryChange &&
-        !people.moves.length,
+        !people.moves.length &&
+        !tagChange,
     },
   }
 }
@@ -296,6 +316,16 @@ export async function writeCompany(
   }
   for (const entry of plan.titles) {
     await setMembershipTitle(tx, entry.contactId, companyId, entry.title)
+  }
+
+  if (plan.tagChange) {
+    await writeRecordTagsInTx(
+      tx,
+      'company',
+      companyId,
+      plan.tagChange.next,
+      actor.id
+    )
   }
 
   // After the people moves, so someone joining here can be made primary.
