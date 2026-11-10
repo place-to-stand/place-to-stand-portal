@@ -20,6 +20,8 @@ import type { ClientPickerRow } from '@/lib/projects/sheet/project-sheet-form'
 import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import { roleCan } from '@/lib/auth/capabilities'
 
+import { ProjectTimeLogsList } from './project-time-logs-list'
+
 export const projectTabMetadata: Metadata = {
   title: 'Projects',
 }
@@ -144,6 +146,15 @@ export async function renderProjectTabRoute({
       // Server-rendered anchor for the Done column's rolling window, so SSR
       // and hydration measure the cutoff from the same instant.
       now={isBoard ? new Date().toISOString() : undefined}
+      timeLogsList={
+        tab === 'timeLogs' ? (
+          <ProjectTimeLogsList
+            projectId={project.id}
+            basePath={`/projects/${canonicalClientSlug}/${project.slug}/${TABS.timeLogs.segment}`}
+            searchParams={query}
+          />
+        ) : undefined
+      }
     />
   )
 }

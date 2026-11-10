@@ -1,1 +1,5 @@
-export { getPersonAvatarPath, getUserAvatarPath } from './avatars'
+export {
+  getPersonAvatarPath,
+  getUserAvatarPath,
+  listStaffWithPhotos,
+} from './avatars'

@@ -226,6 +226,15 @@ export async function findAssigneesWithoutAccess(
   projectId: string | null,
   assigneeIds: readonly string[]
 ): Promise<string[]> {
+  const blocked = await findBlockedAssignees(projectId, assigneeIds)
+  return blocked.map(person => person.name)
+}
+
+/** `findAssigneesWithoutAccess`, keeping each blocked person's id. */
+export async function findBlockedAssignees(
+  projectId: string | null,
+  assigneeIds: readonly string[]
+): Promise<{ id: string; name: string }[]> {
   if (!assigneeIds.length) return []
 
   if (projectId === null) {
@@ -243,11 +252,11 @@ export async function findAssigneesWithoutAccess(
 
     return assigneeIds.flatMap(id => {
       const row = rows.find(item => item.id === id)
-      if (!row) return ['Unknown user']
+      if (!row) return [{ id, name: 'Unknown user' }]
       const active = !row.deletedAt && !row.disabledAt
       return active && roleCan(row.role, 'leads.tasks')
         ? []
-        : [row.fullName?.trim() || row.email]
+        : [{ id, name: row.fullName?.trim() || row.email }]
     })
   }
 
@@ -281,12 +290,12 @@ export async function findAssigneesWithoutAccess(
     )
     .where(inArray(users.id, [...assigneeIds]))
 
-  const blocked: string[] = []
+  const blocked: { id: string; name: string }[] = []
 
   for (const id of assigneeIds) {
     const row = rows.find(item => item.id === id)
     if (!row) {
-      blocked.push('Unknown user')
+      blocked.push({ id, name: 'Unknown user' })
       continue
     }
     const active = !row.deletedAt && !row.disabledAt
@@ -298,7 +307,7 @@ export async function findAssigneesWithoutAccess(
       continue
     }
 
-    blocked.push(row.fullName?.trim() || row.email)
+    blocked.push({ id, name: row.fullName?.trim() || row.email })
   }
 
   return blocked

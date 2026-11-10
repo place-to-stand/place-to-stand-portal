@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull, ne } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
 import { contacts, users } from '@/lib/db/schema'
@@ -32,4 +32,27 @@ export async function getUserAvatarPath(userId: string): Promise<string> {
 
   if (!row?.avatarUrl) throw new NotFoundError('Avatar not found')
   return row.avatarUrl
+}
+
+/**
+ * Staff with a photo: the people whose avatars fill most screens, so the
+ * dashboard warms them into the browser cache up front.
+ */
+export async function listStaffWithPhotos(): Promise<
+  { userId: string; contactId: string }[]
+> {
+  return db
+    .select({ userId: users.id, contactId: contacts.id })
+    .from(users)
+    .innerJoin(
+      contacts,
+      and(eq(contacts.userId, users.id), isNull(contacts.deletedAt))
+    )
+    .where(
+      and(
+        isNull(users.deletedAt),
+        ne(users.role, 'CLIENT'),
+        isNotNull(contacts.avatarUrl)
+      )
+    )
 }

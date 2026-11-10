@@ -222,12 +222,18 @@ export function ComponentsButtons() {
         label='Right-click menu'
         note='RecordContextMenu, on @pts/ui/context-menu'
       >
-        <Example caption='Right-click the card: Edit, Duplicate, Archive'>
+        <Example caption='Right-click the card: Edit, Duplicate, Set assignee (hover for the people), Archive'>
           <RecordContextMenu
             entity='task'
             id='00000000-0000-4000-8000-000000000000'
             onEdit={noop}
             onDuplicate={noop}
+            assign={{
+              currentId: null,
+              optionsUrl: '/api/leads/assignee-options',
+              set: async () => ({ ok: true }),
+              name: 'Update the homepage copy',
+            }}
             onArchive={noop}
           >
             <div className='bg-card w-64 rounded-lg border p-4 text-sm font-semibold shadow-sm'>

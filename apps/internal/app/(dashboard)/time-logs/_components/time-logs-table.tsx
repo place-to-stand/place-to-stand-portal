@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@pts/ui/table'
-import { ProjectTimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
+import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import {
   RecordRowAction,
   RecordRowActions,
@@ -60,6 +60,8 @@ type TimeLogsTableProps = {
   mode?: 'active' | 'archive'
   /** Validated `?sort=`, or undefined for the default (newest first). */
   sort: string | undefined
+  /** Where sorting writes; defaults to this list's own page. */
+  basePath?: string
 }
 
 /**
@@ -74,10 +76,12 @@ export function TimeLogsTable({
   pageSize,
   mode = 'active',
   sort,
+  basePath,
 }: TimeLogsTableProps) {
   const router = useRouter()
   const { update } = useListParams({
-    basePath: mode === 'archive' ? '/time-logs/archive' : '/time-logs',
+    basePath:
+      basePath ?? (mode === 'archive' ? '/time-logs/archive' : '/time-logs'),
     resetKeys: ['page'],
   })
   // The same sortable headers as Companies and the other lists.
@@ -130,11 +134,6 @@ export function TimeLogsTable({
 
   return (
     <div className='space-y-3'>
-      {editor.error ? (
-        <p className='text-destructive text-sm' role='alert'>
-          {editor.error}
-        </p>
-      ) : null}
       <div className='overflow-hidden rounded-lg border'>
         <RowSelectionProvider selection={selection} entity='timeLog'>
           <Table
@@ -151,10 +150,14 @@ export function TimeLogsTable({
                 {sortHead('person', 'Person', 'w-[9%]', 'center')}
                 {sortHead('client', 'Client', 'w-[24%]')}
                 {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
-                slack, so the select and Actions columns keep their widths. */}
+                slack, so the fixed columns keep their widths. */}
                 {sortHead('project', 'Project', '')}
                 <TableHead className='w-[6%] text-center'>Tasks</TableHead>
-                <TableHead className='w-20 text-right'>Actions</TableHead>
+                {/* Edit is a row click and Archive is in the right-click
+                    menu and the bulk bar; the Archive tab keeps Restore. */}
+                {isArchive ? (
+                  <TableHead className='w-20 text-right'>Actions</TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -289,9 +292,9 @@ export function TimeLogsTable({
                           }))}
                         />
                       </TableCell>
-                      <TableCell className='text-right max-md:ml-auto'>
-                        <RecordRowActions>
-                          {isArchive ? (
+                      {isArchive ? (
+                        <TableCell className='text-right max-md:ml-auto'>
+                          <RecordRowActions>
                             <RecordRowAction
                               kind='restore'
                               entity='time log'
@@ -299,27 +302,9 @@ export function TimeLogsTable({
                               disabled={actions.isMutating}
                               pending={actions.busyEntryId === item.id}
                             />
-                          ) : (
-                            <>
-                              <RecordRowAction
-                                kind='edit'
-                                entity='time log'
-                                onClick={() => void editor.open(item.id)}
-                                pending={editor.openingEntryId === item.id}
-                              />
-                              <RecordRowAction
-                                kind='archive'
-                                entity='time log'
-                                onClick={() =>
-                                  actions.archiveConfirm.request(item)
-                                }
-                                disabled={actions.isMutating}
-                                pending={actions.busyEntryId === item.id}
-                              />
-                            </>
-                          )}
-                        </RecordRowActions>
-                      </TableCell>
+                          </RecordRowActions>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   </RecordContextMenu>
                 )
@@ -360,15 +345,16 @@ export function TimeLogsTable({
         onCancel={actions.archiveConfirm.cancel}
         onConfirm={actions.archiveConfirm.confirm}
       />
-      {editor.editContext ? (
-        <ProjectTimeLogDialog
-          {...editor.editContext.params}
+      {editor.entryId ? (
+        <TimeLogDialog
+          params={editor.editContext?.params ?? null}
+          loadError={editor.error}
           open
           onOpenChange={next => {
             if (!next) editor.close()
           }}
           mode='edit'
-          timeLogEntry={editor.editContext.entry}
+          timeLogEntry={editor.editContext?.entry ?? null}
           onMutationSuccess={() => {
             editor.close()
             router.refresh()

@@ -1,14 +1,6 @@
-import { useCallback, useRef, type RefObject, type UIEventHandler } from 'react'
+import { useCallback, type RefObject, type UIEventHandler } from 'react'
 import type { ProjectIntegrationLinkSummary } from '@/lib/types/integrations'
-import {
-  DndContext,
-  type CollisionDetection,
-  type DndContextProps,
-  type UniqueIdentifier,
-  closestCenter,
-  pointerWithin,
-  rectIntersection,
-} from '@dnd-kit/core'
+import { DndContext, type DndContextProps } from '@dnd-kit/core'
 
 import { TabsContent } from '@pts/ui/tabs'
 import { DoneWindowFooter } from '../done-window-footer'
@@ -16,6 +8,7 @@ import { KanbanColumn } from '../kanban-column'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { TaskDragOverlay } from '../task-drag-overlay'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
+import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 
 import {
   FEEDBACK_CLASSES,
@@ -67,15 +60,11 @@ export type BoardTabContentProps = {
   onEditTask: (task: TaskWithRelations) => void
   onCreateTask: () => void
   sensors: DndContextProps['sensors']
-  onDragStart: DndContextProps['onDragStart']
-  onDragOver: DndContextProps['onDragOver']
-  onDragEnd: DndContextProps['onDragEnd']
-  draggingTask: TaskWithRelations | null
+  onDragStart: () => void
+  onTaskDrop: (drop: KanbanDrop<BoardColumnId>) => void
   boardViewportRef: RefObject<HTMLDivElement | null>
   onBoardScroll: UIEventHandler<HTMLDivElement>
   activeSheetTaskId: string | null
-  activeDropColumnId: BoardColumnId | null
-  dropPreview: { columnId: BoardColumnId; index: number } | null
   recentlyMovedTaskId: string | null
   /** Current Done window width in weeks. */
   doneWeeks: number
@@ -97,192 +86,36 @@ export function BoardTabContent(props: BoardTabContentProps) {
     onCreateTask,
     sensors,
     onDragStart,
-    onDragOver,
-    onDragEnd,
-    draggingTask,
+    onTaskDrop,
     boardViewportRef,
     onBoardScroll,
     activeSheetTaskId,
-    activeDropColumnId,
-    dropPreview,
     recentlyMovedTaskId,
     doneWeeks,
     hiddenDoneCount,
     onWidenDoneWindow,
   } = props
 
-  const lastTaskOverId = useRef<UniqueIdentifier | null>(null)
-  const lastColumnOverId = useRef<UniqueIdentifier | null>(null)
-
   const { getColumnRef, getScrollHandler } = useColumnScrollPersistence({
     storageKey: 'projects-board',
     columnIds: BOARD_COLUMNS.map(col => col.id),
   })
 
-  type CollisionArgs = Parameters<CollisionDetection>[0]
-
-  const findDroppable = useCallback(
-    (
-      id: UniqueIdentifier,
-      droppableContainers: CollisionArgs['droppableContainers']
-    ) => droppableContainers.find(container => container.id === id),
-    []
+  const tasksIn = useCallback(
+    (columnId: BoardColumnId) => tasksByColumn.get(columnId) ?? NO_TASKS,
+    [tasksByColumn]
   )
-
-  const prioritizeCollisions = useCallback(
-    (
-      collisions: ReturnType<typeof pointerWithin>,
-      droppableContainers: CollisionArgs['droppableContainers']
-    ) => {
-      if (collisions.length < 2) {
-        return collisions
-      }
-
-      const taskCollisions = collisions.filter(collision => {
-        const container = findDroppable(collision.id, droppableContainers)
-        return container?.data?.current?.type === 'task'
-      })
-
-      if (taskCollisions.length > 0) {
-        return taskCollisions
-      }
-
-      return collisions
-    },
-    [findDroppable]
-  )
-
-  const rememberTaskCollision = useCallback(
-    (
-      collisions: ReturnType<typeof pointerWithin>,
-      droppableContainers: CollisionArgs['droppableContainers']
-    ) => {
-      const first = collisions[0]
-
-      if (!first) {
-        return
-      }
-
-      const container = findDroppable(first.id, droppableContainers)
-
-      if (container?.data?.current?.type === 'task') {
-        lastTaskOverId.current = first.id
-      }
-    },
-    [findDroppable]
-  )
-
-  const rememberColumnCollision = useCallback(
-    (
-      collisions: ReturnType<typeof pointerWithin>,
-      droppableContainers: CollisionArgs['droppableContainers']
-    ) => {
-      for (const collision of collisions) {
-        const container = findDroppable(collision.id, droppableContainers)
-
-        if (container?.data?.current?.type === 'column') {
-          lastColumnOverId.current = collision.id
-          return
-        }
-      }
-    },
-    [findDroppable]
-  )
-
-  const fallbackToLastTask = useCallback(
-    (droppableContainers: CollisionArgs['droppableContainers']) => {
-      if (!lastTaskOverId.current) {
-        return null
-      }
-
-      const container = findDroppable(
-        lastTaskOverId.current,
-        droppableContainers
-      )
-
-      if (!container) {
-        lastTaskOverId.current = null
-        return null
-      }
-
-      return [{ id: lastTaskOverId.current }]
-    },
-    [findDroppable]
-  )
-
-  const fallbackToLastColumn = useCallback(
-    (droppableContainers: CollisionArgs['droppableContainers']) => {
-      if (!lastColumnOverId.current) {
-        return null
-      }
-
-      const container = findDroppable(
-        lastColumnOverId.current,
-        droppableContainers
-      )
-
-      if (!container) {
-        lastColumnOverId.current = null
-        return null
-      }
-
-      return [{ id: lastColumnOverId.current }]
-    },
-    [findDroppable]
-  )
-
-  const collisionDetection = useCallback<CollisionDetection>(
-    args => {
-      const pointerCollisions = pointerWithin(args)
-
-      if (pointerCollisions.length > 0) {
-        const prioritized = prioritizeCollisions(
-          pointerCollisions,
-          args.droppableContainers
-        )
-
-        rememberTaskCollision(prioritized, args.droppableContainers)
-        rememberColumnCollision(pointerCollisions, args.droppableContainers)
-
-        return prioritized
-      }
-
-      const intersections = rectIntersection(args)
-
-      if (intersections.length > 0) {
-        const prioritized = prioritizeCollisions(
-          intersections,
-          args.droppableContainers
-        )
-
-        rememberTaskCollision(prioritized, args.droppableContainers)
-        rememberColumnCollision(intersections, args.droppableContainers)
-
-        return prioritized
-      }
-
-      const taskFallback = fallbackToLastTask(args.droppableContainers)
-
-      if (taskFallback) {
-        return taskFallback
-      }
-
-      const columnFallback = fallbackToLastColumn(args.droppableContainers)
-
-      if (columnFallback) {
-        return columnFallback
-      }
-
-      return closestCenter(args)
-    },
-    [
-      fallbackToLastTask,
-      fallbackToLastColumn,
-      prioritizeCollisions,
-      rememberTaskCollision,
-      rememberColumnCollision,
-    ]
-  )
+  const drag = useKanbanDrag({
+    columns: BOARD_COLUMN_IDS,
+    items: tasksIn,
+    onDragStart,
+    onDrop: onTaskDrop,
+  })
+  const draggingTask = drag.activeId
+    ? (BOARD_COLUMN_IDS.flatMap(tasksIn).find(
+        task => task.id === drag.activeId
+      ) ?? null)
+    : null
 
   if (!isActive) {
     return null
@@ -304,21 +137,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
               className='h-full min-h-0 overflow-x-auto'
               onScroll={onBoardScroll}
             >
-              <DndContext
-                sensors={sensors}
-                onDragStart={event => {
-                  lastTaskOverId.current = null
-                  lastColumnOverId.current = null
-                  onDragStart?.(event)
-                }}
-                onDragOver={onDragOver}
-                onDragEnd={event => {
-                  lastTaskOverId.current = null
-                  lastColumnOverId.current = null
-                  onDragEnd?.(event)
-                }}
-                collisionDetection={collisionDetection}
-              >
+              <DndContext sensors={sensors} {...drag.dndContextProps}>
                 <div
                   className='grid h-full gap-4 p-1'
                   style={{
@@ -326,7 +145,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                   }}
                 >
                   {BOARD_COLUMNS.map(column => {
-                    const columnTasks = tasksByColumn.get(column.id) ?? []
+                    const columnTasks = drag.itemsFor(column.id)
 
                     return (
                       <KanbanColumn
@@ -339,13 +158,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                         canManage={canManageTasks}
                         activeTaskId={activeSheetTaskId}
                         onCreateTask={onCreateTask}
-                        isDropTarget={activeDropColumnId === column.id}
-                        dropIndicatorIndex={
-                          dropPreview?.columnId === column.id
-                            ? dropPreview.index
-                            : null
-                        }
-                        draggingTask={draggingTask}
+                        isDropTarget={drag.activeColumnId === column.id}
                         recentlyMovedTaskId={recentlyMovedTaskId}
                         columnScrollRef={getColumnRef(column.id)}
                         onColumnScroll={getScrollHandler(column.id)}
@@ -379,3 +192,6 @@ export function BoardTabContent(props: BoardTabContentProps) {
     </TabsContent>
   )
 }
+
+const BOARD_COLUMN_IDS = BOARD_COLUMNS.map(column => column.id)
+const NO_TASKS: TaskWithRelations[] = []

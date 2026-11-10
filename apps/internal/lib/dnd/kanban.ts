@@ -1,113 +1,25 @@
-import type { DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 
 import { getRankBetween } from '@/lib/rank'
 
 /**
- * Drop-target and rank logic shared by the three kanban boards (project
- * tasks, leads, my tasks). Each board keeps its own state and saving; the
- * edge cases (empty column, dropping on itself, filtered-out cards) are
- * handled here once.
+ * Move and rank logic shared by the three kanban boards (project tasks,
+ * leads, my tasks). Each board keeps its own state and saving; the edge
+ * cases (empty column, dropping on itself, filtered-out cards) are handled
+ * here once. Dragging itself is `useKanbanDrag`.
  */
 
-export type KanbanDragEvent = DragOverEvent | DragEndEvent
+/**
+ * How long a dropped card's preview glides into its slot. The real card stays
+ * hidden that long, so anything that styles the card after a drop must wait
+ * at least this long (see `useRecentlyMovedItem`).
+ */
+export const BOARD_DROP_ANIMATION_MS = 120
 
 /** Where a card would land: a column and an index in its rendered list. */
 export type KanbanDropTarget<C extends string> = {
   columnId: C
   index: number
-}
-
-export type SortableMeta = {
-  containerId: string
-  index: number
-}
-
-/** What `useSortable` puts on a card's drag data, when it is there. */
-export function extractSortableMeta(payload: unknown): SortableMeta | null {
-  if (!payload || typeof payload !== 'object') return null
-
-  const sortable = (payload as { sortable?: SortableMeta | null }).sortable
-  if (!sortable || typeof sortable.index !== 'number') return null
-
-  return { containerId: String(sortable.containerId), index: sortable.index }
-}
-
-/** The drag data our cards and columns set: `{ type, columnId }`. */
-type KanbanDragData = { type?: string; columnId?: string }
-
-/**
- * Resolves the column and index under the pointer.
- *
- * In order: the sortable card under the pointer (its container and index);
- * a column (its end); a card that names its column (its index there); any
- * card found in a column by id; else the dragged card's own place, so an
- * unrecognised target reads as "no move" rather than a jump.
- *
- * `itemIds(columnId)` lists the ids the column renders, in order;
- * `toColumn` maps a raw column id (a status) onto the board's column type.
- */
-export function resolveKanbanDropTarget<C extends string>(
-  event: KanbanDragEvent,
-  columns: readonly C[],
-  itemIds: (columnId: C) => readonly string[],
-  toColumn: (id: string) => C = id => id as C
-): KanbanDropTarget<C> | null {
-  const over = event.over
-  if (!over) return null
-
-  const overSortable = extractSortableMeta(over.data?.current)
-  if (overSortable) {
-    return {
-      columnId: toColumn(overSortable.containerId),
-      index: overSortable.index,
-    }
-  }
-
-  const overData = over.data?.current as KanbanDragData | undefined
-  const overId = over.id ? over.id.toString() : null
-
-  if (overData?.type === 'column' && overData.columnId) {
-    const columnId = toColumn(overData.columnId)
-    return { columnId, index: itemIds(columnId).length }
-  }
-
-  if (overData?.columnId && overId) {
-    const columnId = toColumn(overData.columnId)
-    const ids = itemIds(columnId)
-    const index = ids.indexOf(overId)
-    return { columnId, index: index >= 0 ? index : ids.length }
-  }
-
-  if (overId) {
-    const columnId = columns.find(column => itemIds(column).includes(overId))
-    if (columnId) {
-      return { columnId, index: itemIds(columnId).indexOf(overId) }
-    }
-  }
-
-  const activeSortable = extractSortableMeta(event.active.data?.current)
-  if (activeSortable) {
-    return {
-      columnId: toColumn(activeSortable.containerId),
-      index: activeSortable.index,
-    }
-  }
-
-  return null
-}
-
-/** Where `id` sits now, as a drop target (the start of a drag). */
-export function locateKanbanItem<C extends string>(
-  id: string,
-  columns: readonly C[],
-  itemIds: (columnId: C) => readonly string[]
-): KanbanDropTarget<C> | null {
-  for (const columnId of columns) {
-    const index = itemIds(columnId).indexOf(id)
-    if (index >= 0) return { columnId, index }
-  }
-  return null
 }
 
 export function clamp(value: number, min: number, max: number) {

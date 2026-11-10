@@ -1,15 +1,8 @@
 import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
-import {
-  locateKanbanItem,
-  moveIntoColumn,
-  rankAmongHidden,
-  resolveKanbanDropTarget,
-  type KanbanDragEvent,
-  type KanbanDropTarget,
-} from '@/lib/dnd/kanban'
+import { moveIntoColumn, rankAmongHidden } from '@/lib/dnd/kanban'
 
-/** Lead board drag state: where a lead would land, and the reordered columns. */
+/** Lead board drag state: the reordered columns after a drop. */
 
 export function cloneColumns(
   columns: LeadBoardColumnData[]
@@ -32,35 +25,6 @@ export function findLeadById(
   }
 
   return null
-}
-
-export const LEAD_COLUMN_IDS = (columns: LeadBoardColumnData[]) =>
-  columns.map(column => column.id)
-
-export const leadIdsIn =
-  (columns: LeadBoardColumnData[]) => (columnId: LeadStatusValue) =>
-    columns
-      .find(column => column.id === columnId)
-      ?.leads.map(lead => lead.id) ?? []
-
-export function resolveCurrentLocation(
-  leadId: string,
-  columns: LeadBoardColumnData[]
-): DropTarget | null {
-  return locateKanbanItem(leadId, LEAD_COLUMN_IDS(columns), leadIdsIn(columns))
-}
-
-export type DropTarget = KanbanDropTarget<LeadStatusValue>
-
-export function resolveDropTarget(
-  event: KanbanDragEvent,
-  columns: LeadBoardColumnData[]
-): DropTarget | null {
-  return resolveKanbanDropTarget(
-    event,
-    LEAD_COLUMN_IDS(columns),
-    leadIdsIn(columns)
-  )
 }
 
 export function produceLeadReorder({

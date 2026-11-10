@@ -262,24 +262,16 @@ export const useProjectsBoardState = ({
     currentView,
   })
 
-  const {
-    handleDragStart,
-    handleDragOver,
-    handleDragEnd,
-    draggingTask,
-    activeDropColumnId,
-    dropPreview,
-    recentlyMovedTaskId,
-  } = useBoardDnDState({
-    canManageTasks,
-    activeProject,
-    tasksByProject,
-    setTasksByProject,
-    activeProjectTasks,
-    startTransition,
-    setFeedback,
-    filterColumnTasks: filterColumnTasksForDnD,
-  })
+  const { handleDragStart, handleTaskDrop, recentlyMovedTaskId } =
+    useBoardDnDState({
+      canManageTasks,
+      activeProject,
+      tasksByProject,
+      setTasksByProject,
+      startTransition,
+      setFeedback,
+      filterColumnTasks: filterColumnTasksForDnD,
+    })
 
   const addTaskDisabled = !activeProject
   const addTaskDisabledReason = !activeProject
@@ -305,23 +297,19 @@ export const useProjectsBoardState = ({
     doneWeeks,
     hiddenDoneCount,
     widenDoneWindow,
-    draggingTask,
     addTaskDisabled,
     addTaskDisabledReason,
     isSheetOpen,
     sheetTask,
     handleProjectSelect,
     handleDragStart,
-    handleDragEnd,
+    handleTaskDrop,
     openCreateSheet,
     handleEditTask,
     handleSheetOpenChange,
     defaultTaskStatus,
     defaultTaskDueOn,
     navigateToProject,
-    handleDragOver,
-    activeDropColumnId,
-    dropPreview,
     recentlyMovedTaskId,
     handleSelectNextProject,
     handleSelectPreviousProject,

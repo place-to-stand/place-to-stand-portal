@@ -45,6 +45,7 @@ import {
   isFormSubmissionKind,
   isFormSubmissionStatus,
   isUnacknowledgedSubmission,
+  submissionWarrantsAttention,
 } from '@/lib/form-submissions/constants'
 import {
   isContactFilterValue,
@@ -54,6 +55,7 @@ import { describeSubmissionOutcome } from '@/lib/form-submissions/outcome'
 import type { FormSubmissionRecord } from '@/lib/form-submissions/types'
 import {
   acknowledgeSubmission,
+  unacknowledgeSubmission,
   archiveSubmission,
   bulkAcknowledgeSubmissions,
   restoreSubmission,
@@ -342,6 +344,18 @@ export function SubmissionsTable({
     [runRowAction, searchParams]
   )
 
+  const handleUnacknowledge = useCallback(
+    (submission: FormSubmissionRecord) =>
+      runRowAction(
+        submission,
+        () => unacknowledgeSubmission({ id: submission.id }),
+        'Unable to unacknowledge submission',
+        // Only removes the row when the list shows acknowledged ones only.
+        searchParams.get('unacknowledged') === '0'
+      ),
+    [runRowAction, searchParams]
+  )
+
   const handleArchiveConfirm = useCallback(() => {
     if (!archiveTarget) {
       return
@@ -623,29 +637,34 @@ export function SubmissionsTable({
                         ) : null}
                         <TableCell className='text-right max-md:ml-auto'>
                           <RecordRowActions>
-                            {unacknowledged ? (
+                            {/* Rows that can flag (contact forms, captured
+                                audits) get Acknowledge, or Unacknowledge to
+                                flag again, as in the sheet; the rest none. */}
+                            {mode === 'active' &&
+                            submissionWarrantsAttention(submission) ? (
                               <RecordRowAction
-                                kind='acknowledge'
+                                kind={
+                                  unacknowledged
+                                    ? 'acknowledge'
+                                    : 'unacknowledge'
+                                }
                                 entity='submission'
                                 disabled={pendingId === submission.id}
-                                onClick={() => handleAcknowledge(submission)}
+                                onClick={() =>
+                                  unacknowledged
+                                    ? handleAcknowledge(submission)
+                                    : handleUnacknowledge(submission)
+                                }
                               />
                             ) : null}
-                            {mode === 'active' ? (
-                              <RecordRowAction
-                                kind='archive'
-                                entity='submission'
-                                disabled={pendingId === submission.id}
-                                onClick={() => setArchiveTarget(submission)}
-                              />
-                            ) : (
+                            {mode === 'archive' ? (
                               <RecordRowAction
                                 kind='restore'
                                 entity='submission'
                                 disabled={pendingId === submission.id}
                                 onClick={() => handleRestore(submission)}
                               />
-                            )}
+                            ) : null}
                           </RecordRowActions>
                         </TableCell>
                       </TableRow>

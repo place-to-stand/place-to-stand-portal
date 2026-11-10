@@ -2,7 +2,6 @@
 
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useWatch } from 'react-hook-form'
 import {
   DndContext,
@@ -46,9 +45,7 @@ import { SHEET_BLOCK_CLASS } from '@/components/sheets/sheet-section'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
 import { Textarea } from '@pts/ui/textarea'
 import { Separator } from '@pts/ui/separator'
-import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
-import { invoiceShareHref } from '@/lib/invoices/links'
 import type {
   InvoiceClient,
   InvoiceFormValues,
@@ -62,11 +59,9 @@ import {
 import { cn } from '@/lib/utils'
 
 import { InvoiceArchiveDialog } from './_components/invoice-archive-dialog'
-import { InvoiceEmailDialog } from './_components/invoice-email-dialog'
 import { SortableLineItemRow } from './_components/invoice-line-item-row'
 import { InvoiceSheetRightColumn } from './_components/invoice-sheet-right-column'
-import { InvoiceVoidDialog } from './_components/invoice-void-dialog'
-import { sendInvoiceAction, unsendInvoice, voidInvoice } from './actions'
+import { useInvoiceStatusActions } from './_lib/use-invoice-status-actions'
 import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
@@ -136,15 +131,6 @@ export function InvoiceSheet({
     taxRates,
   })
 
-  const router = useRouter()
-  const { toast } = useToast()
-  const [voidDialogOpen, setVoidDialogOpen] = useState(false)
-  // "Mark as sent" and "Revert to draft" confirm first, like Void.
-  const [statusConfirm, setStatusConfirm] = useState<'send' | 'unsend' | null>(
-    null
-  )
-  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
-  const [actionPending, setActionPending] = useState(false)
   // Status actions (send/revert/void) refresh the row and reset the form,
   // silently discarding edits — confirm first when the form is dirty.
   const [pendingDirtyAction, setPendingDirtyAction] = useState<
@@ -240,145 +226,10 @@ export function InvoiceSheet({
 
   // ── Right-column action handlers ──────────────────────────────────────
 
-  const handleSendInvoice = useCallback(async () => {
-    if (!invoice) return
-    setActionPending(true)
-    try {
-      const result = await sendInvoiceAction({ id: invoice.id })
-      if (result.error) {
-        toast({
-          title: 'Unable to mark invoice as sent',
-          description: result.error,
-          variant: 'destructive',
-          link: toastLink('invoice', invoice.id),
-        })
-      } else {
-        // One click: sent, link live, link on the clipboard to paste into
-        // whatever the admin is sending it with.
-        const copied = result.shareToken
-          ? await navigator.clipboard
-              .writeText(
-                `${window.location.origin}${invoiceShareHref(result.shareToken)}`
-              )
-              .then(
-                () => true,
-                () => false
-              )
-          : false
-        toast({
-          title: 'Invoice marked as sent',
-          description: copied
-            ? 'The public link is copied to your clipboard.'
-            : 'Copy the public link from the top of this panel.',
-          link: toastLink('invoice', invoice.id),
-        })
-        router.refresh()
-      }
-    } catch {
-      toast({
-        title: 'Unable to mark invoice as sent',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-        link: toastLink('invoice', invoice.id),
-      })
-    } finally {
-      setActionPending(false)
-    }
-  }, [invoice, toast, router])
-
-  const handleEmailSent = useCallback(
-    ({
-      invoiceNumber,
-      markedSent,
-    }: {
-      invoiceNumber: string
-      markedSent: boolean
-    }) => {
-      setEmailDialogOpen(false)
-      toast({
-        title: markedSent ? 'Invoice sent' : 'Invoice emailed',
-        description: markedSent
-          ? `Invoice ${invoiceNumber} was emailed and marked as sent.`
-          : `Invoice ${invoiceNumber} was emailed again.`,
-        link: toastLink('invoice', invoice?.id),
-      })
-      router.refresh()
-    },
-    [invoice?.id, toast, router]
-  )
-
-  const handleUnsendInvoice = useCallback(async () => {
-    if (!invoice) return
-    setActionPending(true)
-    try {
-      const result = await unsendInvoice({ id: invoice.id })
-      if (result.error) {
-        toast({
-          title: 'Unable to revert invoice to draft',
-          description: result.error,
-          variant: 'destructive',
-          link: toastLink('invoice', invoice.id),
-        })
-      } else {
-        toast({
-          title: 'Invoice reverted to draft',
-          description: 'The invoice has been reverted to draft.',
-          link: toastLink('invoice', invoice.id),
-        })
-        router.refresh()
-      }
-    } catch {
-      toast({
-        title: 'Unable to revert invoice to draft',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-        link: toastLink('invoice', invoice.id),
-      })
-    } finally {
-      setActionPending(false)
-    }
-  }, [invoice, toast, router])
-
-  const handleRequestVoid = useCallback(() => {
-    setVoidDialogOpen(true)
-  }, [])
-
-  const handleCancelVoid = useCallback(() => {
-    setVoidDialogOpen(false)
-  }, [])
-
-  const handleConfirmVoid = useCallback(async () => {
-    if (!invoice) return
-    setVoidDialogOpen(false)
-    setActionPending(true)
-    try {
-      const result = await voidInvoice({ id: invoice.id })
-      if (result.error) {
-        toast({
-          title: 'Unable to void invoice',
-          description: result.error,
-          variant: 'destructive',
-          link: toastLink('invoice', invoice.id),
-        })
-      } else {
-        toast({
-          title: 'Invoice voided',
-          description: 'The invoice has been marked as void.',
-          link: toastLink('invoice', invoice.id),
-        })
-        router.refresh()
-      }
-    } catch {
-      toast({
-        title: 'Unable to void invoice',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-        link: toastLink('invoice', invoice.id),
-      })
-    } finally {
-      setActionPending(false)
-    }
-  }, [invoice, toast, router])
+  // Shared with the invoices list's row buttons.
+  const statusActions = useInvoiceStatusActions({
+    linkHint: 'Copy the public link from the top of this panel.',
+  })
 
   // ── Titles ────────────────────────────────────────────────────────────
 
@@ -391,7 +242,7 @@ export function InvoiceSheet({
       ? 'Duplicate invoice'
       : 'Create invoice'
 
-  const combinedPending = isPending || actionPending
+  const combinedPending = isPending || statusActions.pendingId !== null
 
   return (
     <>
@@ -651,12 +502,17 @@ export function InvoiceSheet({
                     invoice={invoice}
                     isPending={combinedPending}
                     hasUnsavedChanges={form.formState.isDirty}
-                    onEmailInvoice={() => setEmailDialogOpen(true)}
-                    onSendInvoice={() => setStatusConfirm('send')}
-                    onUnsendInvoice={() =>
-                      runGuarded(() => setStatusConfirm('unsend'))
-                    }
-                    onVoidInvoice={() => runGuarded(handleRequestVoid)}
+                    onAction={action => {
+                      // Email and Mark as sent are blocked while dirty; the
+                      // others reload the invoice, so confirm discarding.
+                      const start = () =>
+                        statusActions.request(action, invoice.id)
+                      if (action === 'unsend' || action === 'void') {
+                        runGuarded(start)
+                      } else {
+                        start()
+                      }
+                    }}
                   />
                 ) : (
                   <div
@@ -686,42 +542,7 @@ export function InvoiceSheet({
         onCancel={handleCancelDelete}
         onConfirm={handleConfirmDelete}
       />
-      {invoice ? (
-        <InvoiceEmailDialog
-          invoiceId={invoice.id}
-          open={emailDialogOpen}
-          onOpenChange={setEmailDialogOpen}
-          onSent={handleEmailSent}
-        />
-      ) : null}
-      <ConfirmDialog
-        open={statusConfirm !== null}
-        title={
-          statusConfirm === 'unsend' ? 'Revert to draft?' : 'Mark as sent?'
-        }
-        description={
-          statusConfirm === 'unsend'
-            ? 'The invoice goes back to draft and its share link stops working until it is sent again.'
-            : 'The invoice is marked sent without emailing it, and its share link goes live. Use this when you delivered it another way.'
-        }
-        confirmLabel={
-          statusConfirm === 'unsend' ? 'Revert to draft' : 'Mark as sent'
-        }
-        confirmDisabled={combinedPending}
-        onCancel={() => setStatusConfirm(null)}
-        onConfirm={() => {
-          const action = statusConfirm
-          setStatusConfirm(null)
-          if (action === 'send') void handleSendInvoice()
-          if (action === 'unsend') void handleUnsendInvoice()
-        }}
-      />
-      <InvoiceVoidDialog
-        open={voidDialogOpen}
-        confirmDisabled={combinedPending}
-        onCancel={handleCancelVoid}
-        onConfirm={handleConfirmVoid}
-      />
+      {statusActions.dialogs}
       <ConfirmDialog
         open={pendingDirtyAction !== null}
         title='Discard unsaved changes?'

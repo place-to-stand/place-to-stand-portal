@@ -1,6 +1,6 @@
 'use client'
 
-import { Ban, Calendar, CheckCheck, Eye, Mail, Undo2 } from 'lucide-react'
+import { Calendar, Eye } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Separator } from '@pts/ui/separator'
@@ -13,6 +13,12 @@ import { formatCalendarDate } from '@pts/ui/dates'
 import { HourBlockRecordRow } from '@/components/sheets/entity-record-rows'
 import { SHEET_SIDE_COLUMN_CLASS } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import {
+  INVOICE_ACTION_ICONS,
+  invoiceStatusActionLabel,
+  invoiceStatusActions,
+  type InvoiceStatusAction,
+} from '../_lib/use-invoice-status-actions'
 import { InvoiceLinkField } from './invoice-link-field'
 import { InvoiceStatusBadge } from './invoice-status-badge'
 
@@ -24,12 +30,8 @@ type InvoiceSheetRightColumnProps = {
    * never receives an invoice that differs from what is on screen.
    */
   hasUnsavedChanges: boolean
-  /** Opens the send dialog: emails the invoice (and marks a draft sent). */
-  onEmailInvoice: () => void
-  /** "Mark as sent": for an invoice delivered some other way. */
-  onSendInvoice: () => void
-  onUnsendInvoice: () => void
-  onVoidInvoice: () => void
+  /** Starts a status action (`useInvoiceStatusActions`). */
+  onAction: (action: InvoiceStatusAction) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -43,9 +45,6 @@ const formatDate = (dateStr: string | null): string | null =>
 // Status-aware action buttons
 // ---------------------------------------------------------------------------
 
-const VOIDABLE_STATUSES = new Set(['DRAFT', 'SENT', 'VIEWED'])
-const RESENDABLE_STATUSES = new Set(['SENT', 'VIEWED'])
-
 const ACTION_CLASS = 'w-full justify-start'
 
 // ---------------------------------------------------------------------------
@@ -56,19 +55,14 @@ export function InvoiceSheetRightColumn({
   invoice,
   isPending,
   hasUnsavedChanges,
-  onEmailInvoice,
-  onSendInvoice,
-  onUnsendInvoice,
-  onVoidInvoice,
+  onAction,
 }: InvoiceSheetRightColumnProps) {
   const isDraft = invoice.status === 'DRAFT'
-  const canVoid = VOIDABLE_STATUSES.has(invoice.status)
-  const canEmailAgain = RESENDABLE_STATUSES.has(invoice.status)
-  const canRevert = invoice.status === 'SENT'
+  const actions = invoiceStatusActions(invoice.status)
   // Live exactly while sent; a draft has no public link to show.
   const liveToken =
     !isDraft && invoice.share_enabled ? invoice.share_token : null
-  const hasActions = isDraft || canEmailAgain || canRevert || canVoid
+  const hasActions = actions.length > 0
 
   return (
     <div
@@ -90,7 +84,7 @@ export function InvoiceSheetRightColumn({
           <>
             <div className='space-y-4'>
               <span className='mb-2 block text-sm font-medium'>Actions</span>
-              {hasUnsavedChanges && (isDraft || canEmailAgain) ? (
+              {hasUnsavedChanges && actions.includes('email') ? (
                 <p
                   className='text-muted-foreground -mt-1 mb-2 text-sm'
                   data-testid='invoice-send-blocked'
@@ -99,58 +93,26 @@ export function InvoiceSheetRightColumn({
                 </p>
               ) : null}
               <div className='flex flex-col gap-2'>
-                {isDraft || canEmailAgain ? (
+                {actions.map(action => (
                   <Button
+                    key={action}
                     type='button'
                     variant='outline'
                     size='sm'
                     className={ACTION_CLASS}
-                    onClick={onEmailInvoice}
-                    disabled={isPending || hasUnsavedChanges}
+                    onClick={() => onAction(action)}
+                    disabled={
+                      isPending ||
+                      // Sending waits for Save, so a client never receives
+                      // an invoice that differs from what is on screen.
+                      ((action === 'email' || action === 'send') &&
+                        hasUnsavedChanges)
+                    }
                   >
-                    <Mail className='text-success' />
-                    {isDraft ? 'Send to client' : 'Email again'}
+                    {INVOICE_ACTION_ICONS[action]}
+                    {invoiceStatusActionLabel(action, invoice.status)}
                   </Button>
-                ) : null}
-                {isDraft ? (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    className={ACTION_CLASS}
-                    onClick={onSendInvoice}
-                    disabled={isPending || hasUnsavedChanges}
-                  >
-                    <CheckCheck className='text-success' />
-                    Mark as sent
-                  </Button>
-                ) : null}
-                {canRevert ? (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    className={ACTION_CLASS}
-                    onClick={onUnsendInvoice}
-                    disabled={isPending}
-                  >
-                    <Undo2 className='text-warning' />
-                    Revert to draft
-                  </Button>
-                ) : null}
-                {canVoid ? (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    className={ACTION_CLASS}
-                    onClick={onVoidInvoice}
-                    disabled={isPending}
-                  >
-                    <Ban className='text-destructive' />
-                    Void invoice
-                  </Button>
-                ) : null}
+                ))}
               </div>
             </div>
             <Separator />

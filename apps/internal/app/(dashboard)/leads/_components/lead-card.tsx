@@ -30,6 +30,7 @@ import {
   type LeadSourceTypeValue,
 } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
+import { BOARD_CARD_GHOST_CLASS } from '@/components/board/board-drag'
 import { cn } from '@/lib/utils'
 import { formatPhoneUS } from '@/lib/utils/phone-format'
 
@@ -107,7 +108,6 @@ export const LeadCard = memo(function LeadCard({
 
   const shouldDisableTransition = disableDropTransition && !isDragging
   const style: CSSProperties = {
-    opacity: isDragging ? 0 : 1,
     transform: transform ? CSS.Transform.toString(transform) : undefined,
     transition: shouldDisableTransition
       ? 'none'
@@ -142,15 +142,14 @@ export const LeadCard = memo(function LeadCard({
           }
         }}
         className={cn(
-          'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition focus-visible:ring-[3px] focus-visible:outline-none',
+          'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition-[color,background-color,border-color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none',
           canManage ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
           // A touch drag starts on press-and-hold; keep iOS from selecting the
           // card's text or opening its callout menu first.
           canManage &&
             'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
-          isDragging && 'ring-primary ring-2',
-          (isActive || isDragging) &&
-            'border-primary/50 bg-primary/5 shadow-md',
+          isDragging && BOARD_CARD_GHOST_CLASS,
+          isActive && !isDragging && 'border-primary/50 bg-primary/5 shadow-md',
           !isActive && !isDragging && ENTITY_ACCENTS.lead.card
         )}
       >
@@ -319,7 +318,7 @@ export function LeadCardPreview({ lead }: { lead: LeadRecord }) {
   return (
     <div
       className={cn(
-        'bg-card w-80 rounded-lg border p-4 shadow-sm',
+        'bg-card w-full rounded-lg border p-4 shadow-sm',
         ENTITY_ACCENTS.lead.cardStatic
       )}
     >

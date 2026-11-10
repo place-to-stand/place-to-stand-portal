@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import type { ProjectTimeLogDialogParams, TimeLogEntry } from './types'
 
@@ -10,23 +10,28 @@ export type TimeLogEditContext = {
 }
 
 /**
- * Opens any time log in the edit dialog: fetches what the dialog needs for
- * that log's project on demand (`GET /api/dashboard/time-logs/[id]`). Shared
- * by the home Hours widget and the Time logs page.
+ * Opens any time log in the edit dialog: the dialog shows at once (`entryId`
+ * set) while what it needs for that log's project loads on demand
+ * (`GET /api/dashboard/time-logs/[id]`). Shared by the home Hours widget and
+ * the Time logs lists.
  */
 export function useTimeLogEditContext() {
-  const [openingEntryId, setOpeningEntryId] = useState<string | null>(null)
+  const [entryId, setEntryId] = useState<string | null>(null)
   const [editContext, setEditContext] = useState<TimeLogEditContext | null>(
     null
   )
   const [error, setError] = useState<string | null>(null)
+  // A later open (or a close) makes an earlier response stale.
+  const requestRef = useRef(0)
 
-  const open = useCallback(async (entryId: string) => {
-    setOpeningEntryId(entryId)
+  const open = useCallback(async (nextEntryId: string) => {
+    const request = ++requestRef.current
+    setEntryId(nextEntryId)
+    setEditContext(null)
     setError(null)
 
     try {
-      const response = await fetch(`/api/dashboard/time-logs/${entryId}`, {
+      const response = await fetch(`/api/dashboard/time-logs/${nextEntryId}`, {
         cache: 'no-store',
       })
       const payload = (await response.json()) as {
@@ -39,16 +44,30 @@ export function useTimeLogEditContext() {
         throw new Error(payload.error ?? 'Request failed')
       }
 
-      setEditContext(payload.data)
+      if (request === requestRef.current) setEditContext(payload.data)
     } catch (requestError) {
       console.error('Failed to open time log', requestError)
-      setError('Unable to open that log. Please try again.')
-    } finally {
-      setOpeningEntryId(null)
+      if (request === requestRef.current) {
+        setError('Unable to open that log. Please try again.')
+      }
     }
   }, [])
 
-  const close = useCallback(() => setEditContext(null), [])
+  const close = useCallback(() => {
+    requestRef.current += 1
+    setEntryId(null)
+    setEditContext(null)
+    setError(null)
+  }, [])
 
-  return { openingEntryId, editContext, error, setError, open, close }
+  return {
+    /** The log the dialog is open for (loading or loaded); null when shut. */
+    entryId,
+    /** The id still loading, for a row's spinner. */
+    openingEntryId: entryId && !editContext && !error ? entryId : null,
+    editContext,
+    error,
+    open,
+    close,
+  }
 }
