@@ -297,7 +297,7 @@ function ManagedSignIn({
                 {/* Shown so the sign-in reads whole; changed as Email above. */}
                 <DisabledFieldTooltip
                   disabled
-                  reason='Change it in Email above: they sign in with that address.'
+                  reason='Set it in Email above: they sign in with that address.'
                 >
                   <Input
                     id='contact-sign-in-email'
