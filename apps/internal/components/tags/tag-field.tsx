@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
@@ -12,6 +12,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { fieldTriggerClasses } from '@/components/ui/field-trigger'
+import { CommandCreateRows } from '@/components/ui/command-create-rows'
 import { cn } from '@/lib/utils'
 import { scoreSearchMatch } from '@/lib/utils/search-match'
 import {
@@ -112,11 +113,10 @@ export function TagField({
     ? options.find(option => tagKey(option.name) === tagKey(typed))
     : undefined
 
-  // The list ranks the exact tag first and puts "Create …" on top when the
-  // typed name is new, so the highlighted row is always the one Enter picks.
-  // A tag picked in this sheet but not saved yet is in neither list: Enter
-  // must not fall through to a near match ("Salon" for "Salons") unless you
-  // arrowed to it.
+  // Enter picks the highlighted row: the exact tag, else the top match,
+  // else "Create …". A tag picked in this sheet but not saved yet is in
+  // neither list, so Enter on its name adds nothing rather than a near
+  // match, unless you arrowed to one.
   const arrowed = React.useRef(false)
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -207,26 +207,6 @@ export function TagField({
             maxLength={TAG_NAME_MAX}
           />
           <CommandList className='max-h-[min(60vh,260px)] overflow-y-auto overscroll-contain'>
-            {canCreate ? (
-              // First, so a new name is what Enter adds; arrow down to
-              // pick a near match instead.
-              <CommandGroup forceMount>
-                <CommandItem
-                  value='__create__'
-                  forceMount
-                  onSelect={() => {
-                    add([typed])
-                    setQuery('')
-                  }}
-                >
-                  <PlusIcon className='text-muted-foreground size-4 shrink-0' />
-                  <span className='truncate'>
-                    Create{' '}
-                    <span className='font-medium'>&ldquo;{typed}&rdquo;</span>
-                  </span>
-                </CommandItem>
-              </CommandGroup>
-            ) : null}
             {options.length ? (
               <CommandGroup>
                 {options.map(option => {
@@ -256,14 +236,25 @@ export function TagField({
                 })}
               </CommandGroup>
             ) : null}
-            {!canCreate ? (
+            {canCreate ? (
+              // Last: existing tags come first, to encourage reuse. Enter
+              // picks the top match; arrow down to create a new one.
+              <CommandCreateRows
+                query={typed}
+                entityLabel='tag'
+                onCreate={name => {
+                  add([name])
+                  setQuery('')
+                }}
+              />
+            ) : (
               <EmptyLine
                 show={typed.length > 0 && !exists}
                 text={
                   full ? `Up to ${TAGS_PER_RECORD_MAX} tags.` : 'Already added.'
                 }
               />
-            ) : null}
+            )}
             {!options.length && !typed ? (
               <p className='text-muted-foreground px-3 py-6 text-center text-sm'>
                 No tags yet. Type one to create it.
