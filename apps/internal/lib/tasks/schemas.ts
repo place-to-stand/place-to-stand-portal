@@ -45,6 +45,11 @@ export const baseTaskSchema = z.object({
   dueOn: z.string().optional().nullable(),
   assigneeIds: z.array(z.string().uuid()).default([]),
   attachments: attachmentsSchema.optional(),
+  /**
+   * Edit: the task's `updated_at` when the sheet loaded it. The save is
+   * refused if someone saved the task since. Omitted = no check (CLI).
+   */
+  expectedUpdatedAt: z.string().max(64).optional(),
 })
 
 export type BaseTaskInput = z.infer<typeof baseTaskSchema>

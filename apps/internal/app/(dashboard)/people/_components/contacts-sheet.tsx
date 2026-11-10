@@ -4,9 +4,11 @@ import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
+import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
+import { SheetPresence } from '@/components/sheets/sheet-presence'
 import {
   useContactSheetState,
   type UseContactSheetStateOptions,
@@ -49,6 +51,8 @@ export function ContactsSheet(props: ContactsSheetProps) {
     isDeleteDialogOpen,
     portalUserId,
     unsavedChangesDialog,
+    saveConflict,
+    handleLoadTheirs,
     handleSheetOpenChange,
     handleFormSubmit,
     handleRequestDelete,
@@ -73,6 +77,17 @@ export function ContactsSheet(props: ContactsSheetProps) {
         >
           <SheetFormHeader
             entity='contact'
+            presence={
+              <SheetPresence
+                entity='contact'
+                noun='person'
+                recordId={contact?.id ?? null}
+                open={open}
+                isDirty={form.formState.isDirty}
+                guard={saveConflict}
+                onLoadTheirs={handleLoadTheirs}
+              />
+            }
             title={isEditing ? contactDisplayName : sheetTitle}
             leading={
               isEditing ? (
@@ -149,6 +164,15 @@ export function ContactsSheet(props: ContactsSheetProps) {
         onConfirm={handleConfirmDelete}
       />
       {unsavedChangesDialog}
+      <SaveConflictDialog
+        guard={saveConflict}
+        yours={() => form.getValues()}
+        noun='person'
+        onOverwrite={mode =>
+          void form.handleSubmit(data => handleFormSubmit(data, mode))()
+        }
+        onLoadTheirs={handleLoadTheirs}
+      />
     </>
   )
 }

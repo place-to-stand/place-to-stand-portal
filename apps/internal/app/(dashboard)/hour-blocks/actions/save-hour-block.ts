@@ -28,6 +28,12 @@ import {
 import { hourBlockSchema } from './schemas'
 import type { ActionResult, HourBlockInput } from './types'
 import { HOUR_BLOCKS_PATH } from './helpers'
+import {
+  describeSaveConflict,
+  lockForSave,
+  readSavedVersion,
+  SaveConflictError,
+} from '@/lib/sheets/save-conflict/server'
 
 export async function saveHourBlock(
   input: HourBlockInput
@@ -87,6 +93,7 @@ async function performSaveHourBlock(
   const nowIso = new Date().toISOString()
   let warning: string | undefined
   let savedId = id
+  let savedVersion: string | null = null
 
   if (!id) {
     try {
@@ -155,16 +162,32 @@ async function performSaveHourBlock(
     }
 
     try {
-      await db
-        .update(hourBlocks)
-        .set({
-          companyId: companyId,
-          hoursPurchased: hoursPurchasedValue,
-          notes,
-          updatedAt: nowIso,
-        })
-        .where(eq(hourBlocks.id, id))
+      savedVersion = await db.transaction(async tx => {
+        await lockForSave(tx, hourBlocks, id, parsed.data.expectedUpdatedAt)
+        await tx
+          .update(hourBlocks)
+          .set({
+            companyId: companyId,
+            hoursPurchased: hoursPurchasedValue,
+            notes,
+            updatedAt: nowIso,
+          })
+          .where(eq(hourBlocks.id, id))
+        return readSavedVersion(tx, hourBlocks, id)
+      })
     } catch (error) {
+      if (error instanceof SaveConflictError) {
+        return {
+          error: HOUR_BLOCK_SAVED_ELSEWHERE,
+          conflict: await describeSaveConflict(
+            user,
+            'HOUR_BLOCK',
+            id,
+            error,
+            parsed.data.expectedUpdatedAt
+          ),
+        }
+      }
       console.error('Failed to update hour block', error)
 
       return {
@@ -228,5 +251,12 @@ async function performSaveHourBlock(
 
   revalidatePath(HOUR_BLOCKS_PATH)
 
-  return warning ? { id: savedId, warning } : { id: savedId }
+  const version = savedVersion ? { updatedAt: savedVersion } : {}
+  return warning
+    ? { id: savedId, warning, ...version }
+    : { id: savedId, ...version }
 }
+
+/** Someone else saved the block after the sheet loaded it. */
+const HOUR_BLOCK_SAVED_ELSEWHERE =
+  'Someone else saved this hour block. Reload to see their changes.'

@@ -19,6 +19,8 @@ import {
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useReloadSheetRecord } from '@/lib/sheets/use-reload-sheet-record'
+import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
@@ -94,6 +96,8 @@ export type ProjectSheetLinkChanges = {
 
 export type UseProjectSheetStateReturn = {
   form: UseFormReturn<ProjectSheetFormValues>
+  /** Field edits or repo links not yet saved. */
+  hasUnsavedChanges: boolean
   isEditing: boolean
   isPending: boolean
   projectType: ProjectSheetFormValues['projectType']
@@ -103,6 +107,8 @@ export type UseProjectSheetStateReturn = {
   deleteButton: DeleteButtonState
   isDeleteDialogOpen: boolean
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
+  saveConflict: SaveConflictGuard
+  handleLoadTheirs: () => void
   handleSheetOpenChange: (open: boolean) => void
   handleSubmit: (
     values: ProjectSheetFormValues,
@@ -201,13 +207,21 @@ export function useProjectSheetState({
     startSave,
     handleSheetOpenChange,
     unsavedChangesDialog,
+    saveConflict,
   } = useSheetLifecycle({
     open,
     onOpenChange,
     isDirty: hasUnsavedChanges,
     onReset: resetFormState,
     resetKey: project?.id ?? null,
+    version: project?.updated_at ?? null,
   })
+  const reloadRecord = useReloadSheetRecord('project', project?.id ?? null)
+  // Drop the edits; the lifecycle re-seeds when the newer project lands.
+  const handleLoadTheirs = useCallback(() => {
+    resetFormState()
+    reloadRecord()
+  }, [reloadRecord, resetFormState])
 
   const { stay, isReopening } = useSaveAndStay(
     'project',
@@ -241,6 +255,7 @@ export function useProjectSheetState({
         // one transaction: nothing is written unless all of it is.
         const payload: ProjectSavePayload = {
           ...createProjectSavePayload({ values, project }),
+          expectedUpdatedAt: project ? saveConflict.expected() : undefined,
           repoLinks: {
             add: pendingRepos.map(repo => ({
               repoFullName: repo.repoFullName,
@@ -281,6 +296,13 @@ export function useProjectSheetState({
 
           applyServerFieldErrors(result.fieldErrors)
 
+          if (saveConflict.catchConflict(result, mode)) {
+            finishSettingsInteraction(interaction, {
+              status: 'error',
+              error: result.error ?? 'conflict',
+            })
+            return
+          }
           if (result.error) {
             finishSettingsInteraction(interaction, {
               status: 'error',
@@ -295,6 +317,7 @@ export function useProjectSheetState({
             return
           }
 
+          saveConflict.saved(result.updatedAt)
           const targetProjectId = result.projectId ?? payload.id
           if (targetProjectId) {
             // The sheet stays mounted between opens, so the links section's
@@ -367,6 +390,7 @@ export function useProjectSheetState({
       onComplete,
       onOpenChange,
       project,
+      saveConflict,
       startSave,
       stay,
       toast,
@@ -472,6 +496,7 @@ export function useProjectSheetState({
 
   return {
     form,
+    hasUnsavedChanges,
     isEditing,
     isPending,
     projectType,
@@ -481,6 +506,8 @@ export function useProjectSheetState({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
+    saveConflict,
+    handleLoadTheirs,
     handleSheetOpenChange,
     handleSubmit,
     handleReposDirtyChange,

@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { saveHourBlock } from '@/app/(dashboard)/hour-blocks/actions'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useReloadSheetRecord } from '@/lib/sheets/use-reload-sheet-record'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import {
@@ -83,13 +84,21 @@ export function useHourBlockSheetState({
     handleSheetOpenChange,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
   } = useSheetLifecycle({
     open,
     onOpenChange,
     isDirty: form.formState.isDirty,
     onReset: resetFormState,
     resetKey: hourBlock?.id ?? (duplicateOf && `copy-${duplicateOf.id}`),
+    version: hourBlock?.updated_at ?? null,
   })
+  const reloadRecord = useReloadSheetRecord('hour-block', hourBlock?.id ?? null)
+  // Drop the edits; the lifecycle re-seeds when the newer block lands.
+  const handleLoadTheirs = useCallback(() => {
+    resetFormState()
+    reloadRecord()
+  }, [reloadRecord, resetFormState])
 
   const { stay, isReopening } = useSaveAndStay(
     'hour-block',
@@ -115,7 +124,10 @@ export function useHourBlockSheetState({
       startSave(async () => {
         form.clearErrors()
 
-        const payload = createHourBlockSavePayload(values, hourBlock)
+        const payload = {
+          ...createHourBlockSavePayload(values, hourBlock),
+          expectedUpdatedAt: hourBlock ? saveConflict.expected() : undefined,
+        }
 
         const interaction = startSettingsInteraction({
           entity: 'hour_block',
@@ -131,6 +143,13 @@ export function useHourBlockSheetState({
 
           applyServerFieldErrors(result.fieldErrors)
 
+          if (saveConflict.catchConflict(result, mode)) {
+            finishSettingsInteraction(interaction, {
+              status: 'error',
+              error: result.error ?? 'conflict',
+            })
+            return
+          }
           if (result.error) {
             finishSettingsInteraction(interaction, {
               status: 'error',
@@ -145,6 +164,7 @@ export function useHourBlockSheetState({
             return
           }
 
+          saveConflict.saved(result.updatedAt)
           finishSettingsInteraction(interaction, {
             status: 'success',
             targetId: payload.id ?? null,
@@ -198,6 +218,7 @@ export function useHourBlockSheetState({
       onComplete,
       onOpenChange,
       resetFormState,
+      saveConflict,
       startSave,
       stay,
       toast,
@@ -275,6 +296,8 @@ export function useHourBlockSheetState({
     isDeleteDialogOpen,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    handleLoadTheirs,
     handleSheetOpenChange,
     handleSubmit,
     handleRequestDelete,

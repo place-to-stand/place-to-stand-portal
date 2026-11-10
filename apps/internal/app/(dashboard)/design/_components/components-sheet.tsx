@@ -46,6 +46,7 @@ import {
 } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
+import { SheetConflictSpecimens } from './components-sheet-conflicts'
 import { DesignSection, Specimen } from './specimen'
 
 const FORM_ID = 'design-sample-sheet-form'
@@ -117,6 +118,7 @@ export function ComponentsSheets() {
           <SizeSheet key={size} size={size} />
         ))}
       </Specimen>
+      <SheetConflictSpecimens />
     </DesignSection>
   )
 }

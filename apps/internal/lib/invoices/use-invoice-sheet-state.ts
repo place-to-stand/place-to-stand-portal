@@ -23,6 +23,7 @@ import { toastLink, useToast } from '@/components/ui/use-toast'
 import { getJson } from '@/lib/http/get-json'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
+import { useReloadSheetRecord } from '@/lib/sheets/use-reload-sheet-record'
 import {
   useSheetLifecycle,
   type SheetLifecycle,
@@ -101,6 +102,8 @@ export type UseInvoiceSheetStateReturn = {
   isDeleteDialogOpen: boolean
   unsavedChangesDialog: SheetLifecycle['unsavedChangesDialog']
   confirmDiscard: SheetLifecycle['confirmDiscard']
+  saveConflict: SheetLifecycle['saveConflict']
+  handleLoadTheirs: () => void
   totals: { subtotal: number; taxAmount: number; total: number }
   taxRateLabel: string | null
   handleSheetOpenChange: (open: boolean) => void
@@ -197,6 +200,7 @@ export function useInvoiceSheetState({
     handleSheetOpenChange,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
   } = useSheetLifecycle({
     open,
     onOpenChange,
@@ -331,17 +335,36 @@ export function useInvoiceSheetState({
       return
     }
 
+    // A refresh hands over a new `invoice` object for the same invoice:
+    // never reload over edits in progress (Save reports a conflict instead).
+    if (
+      invoiceWithLineItemsRef.current?.id === invoiceId &&
+      form.formState.isDirty
+    ) {
+      return
+    }
+
     // Edit mode — fetch full invoice with line items.
     // React 19 async transitions keep the flag true until resolved.
     startLoadTransition(async () => {
       try {
         const fullInvoice = await loadInvoice(invoiceId)
+        // Same invoice, typed into while it loaded: keep the edits (Save
+        // reports a conflict if the version moved).
+        if (
+          invoiceWithLineItemsRef.current?.id === invoiceId &&
+          form.formState.isDirty
+        ) {
+          return
+        }
         shownVersion.current = fullInvoice
           ? `${fullInvoice.id}:${fullInvoice.updated_at}`
           : null
         // Mark the loaded client so auto-fill skips hydration
         loadedClientIdRef.current = fullInvoice?.company_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
+        // The version Save sends back is the one these lines came from.
+        saveConflict.seed(fullInvoice?.updated_at)
         resetFormState(fullInvoice)
       } catch {
         toast({
@@ -360,6 +383,7 @@ export function useInvoiceSheetState({
     form,
     resetFormState,
     productCatalog,
+    saveConflict,
     startLoadTransition,
     startResetTransition,
     toast,
@@ -441,6 +465,37 @@ export function useInvoiceSheetState({
   // Submit
   // ---------------------------------------------------------------------------
 
+  const reloadRecord = useReloadSheetRecord('invoice', invoice?.id ?? null)
+  // Drop the edits and load the invoice (and its lines) as it is now.
+  const handleLoadTheirs = useCallback(() => {
+    const invoiceId = invoice?.id
+    if (!invoiceId) return
+    form.reset()
+    startLoadTransition(async () => {
+      try {
+        const fullInvoice = await loadInvoice(invoiceId)
+        // Typed again while it loaded: keep that, Save will report the
+        // conflict instead.
+        if (form.formState.isDirty) return
+        shownVersion.current = fullInvoice
+          ? `${fullInvoice.id}:${fullInvoice.updated_at}`
+          : null
+        loadedClientIdRef.current = fullInvoice?.company_id ?? null
+        invoiceWithLineItemsRef.current = fullInvoice
+        saveConflict.seed(fullInvoice?.updated_at)
+        resetFormState(fullInvoice)
+      } catch {
+        toast({
+          title: 'Unable to load invoice',
+          description: 'Close the sheet and open it again.',
+          variant: 'destructive',
+          link: toastLink('invoice', invoiceId),
+        })
+      }
+    })
+    reloadRecord()
+  }, [form, invoice?.id, reloadRecord, resetFormState, saveConflict, toast])
+
   const { stay, isReopening } = useSaveAndStay(
     'invoice',
     invoice?.id ?? null,
@@ -454,10 +509,12 @@ export function useInvoiceSheetState({
       startSave(async () => {
         form.clearErrors()
 
-        const payload = createInvoiceSavePayload(
-          values,
-          invoiceWithLineItemsRef.current
-        )
+        const payload = {
+          ...createInvoiceSavePayload(values, invoiceWithLineItemsRef.current),
+          expectedUpdatedAt: invoiceWithLineItemsRef.current
+            ? saveConflict.expected()
+            : undefined,
+        }
 
         const interaction = startSettingsInteraction({
           entity: 'invoice',
@@ -473,6 +530,13 @@ export function useInvoiceSheetState({
 
           applyServerFieldErrors(result.fieldErrors)
 
+          if (saveConflict.catchConflict(result, mode)) {
+            finishSettingsInteraction(interaction, {
+              status: 'error',
+              error: result.error ?? 'conflict',
+            })
+            return
+          }
           if (result.error) {
             finishSettingsInteraction(interaction, {
               status: 'error',
@@ -492,6 +556,7 @@ export function useInvoiceSheetState({
             targetId: payload.id ?? null,
           })
 
+          saveConflict.saved(result.updatedAt)
           // Keep open: no toast; stay() makes its Save button say "Saved".
           if (mode === 'close') {
             toast({
@@ -508,6 +573,7 @@ export function useInvoiceSheetState({
             if (fullInvoice) {
               shownVersion.current = `${fullInvoice.id}:${fullInvoice.updated_at}`
               invoiceWithLineItemsRef.current = fullInvoice
+              saveConflict.seed(fullInvoice.updated_at)
               loadedClientIdRef.current = fullInvoice.company_id ?? null
               resetFormState(fullInvoice)
               stay({ id: result.id, rebaseline: () => {} })
@@ -551,6 +617,7 @@ export function useInvoiceSheetState({
       onOpenChange,
       readOnly,
       resetFormState,
+      saveConflict,
       startSave,
       stay,
       toast,
@@ -779,6 +846,8 @@ export function useInvoiceSheetState({
     isDeleteDialogOpen,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    handleLoadTheirs,
     totals,
     taxRateLabel,
     handleSheetOpenChange,

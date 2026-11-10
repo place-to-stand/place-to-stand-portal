@@ -34,6 +34,13 @@ import {
   planPersonPortalAccess,
   writePersonPortalAccess,
 } from './portal-access'
+import {
+  describeSaveConflict,
+  lockForSave,
+  readSavedVersion,
+  SaveConflictError,
+} from '@/lib/sheets/save-conflict/server'
+import { versionMs, type SaveConflict } from '@/lib/sheets/save-conflict/types'
 import { finishSignIn, runSignInAuth, writeSignIn } from './sign-in-apply'
 import { prepareSignIn, type SignInInput } from './sign-in-plan'
 import { Undo } from './undo'
@@ -51,15 +58,16 @@ export type PersonSheetInput = ContactInput & {
   loadedUpdatedAt?: string
 }
 
-/** Someone else saved the person after the sheet loaded them. */
-class SavedElsewhereError extends Error {}
-
 export type PersonSheetResult = {
   error?: string
   /** The new person's id (create). */
   id?: string
   /** Saved, but a follow-up (an invite email) didn't happen. */
   warning?: string
+  /** The person's version after the save; the sheet's next expected one. */
+  updatedAt?: string
+  /** Set when someone else saved first and nothing was written. */
+  conflict?: SaveConflict
 }
 
 /**
@@ -101,10 +109,22 @@ async function save(
   }
   // Checked early so a stale sheet changes nothing outside the database
   // either; checked again, under a row lock, inside the transaction.
-  const isStale = (updatedAt: string) =>
-    typeof loadedUpdatedAt === 'string' && updatedAt !== loadedUpdatedAt
-  if (existing && isStale(existing.updatedAt)) {
-    return { error: PERSON_SAVED_ELSEWHERE }
+  const conflictResult = async (error: SaveConflictError) => ({
+    error: PERSON_SAVED_ELSEWHERE,
+    conflict: await describeSaveConflict(
+      user,
+      'CONTACT',
+      contactInput.id ?? '',
+      error,
+      loadedUpdatedAt
+    ),
+  })
+  if (
+    existing &&
+    typeof loadedUpdatedAt === 'string' &&
+    versionMs(existing.updatedAt) !== versionMs(loadedUpdatedAt)
+  ) {
+    return conflictResult(new SaveConflictError(existing.updatedAt))
   }
   if (signIn && !isAdmin) {
     return { error: SIGN_IN_ADMIN_ONLY }
@@ -158,17 +178,13 @@ async function save(
       return { error: authError }
     }
   }
+  let savedVersion: string | null = null
   try {
     await db.transaction(async tx => {
       if (plan.mode === 'update') {
         // One save per person at a time; and none over a newer one.
-        const [locked] = await tx
-          .select({ updatedAt: contacts.updatedAt })
-          .from(contacts)
-          .where(eq(contacts.id, contactId))
-          .for('update')
-        if (!locked || isStale(locked.updatedAt)) {
-          throw new SavedElsewhereError()
+        if (!(await lockForSave(tx, contacts, contactId, loadedUpdatedAt))) {
+          throw new Error('Person not found.')
         }
       }
       await writeContactSave(tx, user, plan)
@@ -183,14 +199,15 @@ async function save(
       }
       if (signInPlan) await writeSignIn(tx, user, signInPlan, contactId)
       await writePersonPortalAccess(tx, user, contactId, portal)
+      savedVersion = await readSavedVersion(tx, contacts, contactId)
     })
   } catch (error) {
-    if (!(error instanceof SavedElsewhereError)) {
+    if (!(error instanceof SaveConflictError)) {
       console.error('Failed to save person', error)
     }
     await undo.run()
-    if (error instanceof SavedElsewhereError) {
-      return { error: PERSON_SAVED_ELSEWHERE }
+    if (error instanceof SaveConflictError) {
+      return conflictResult(error)
     }
     if (isEmailConflict(error)) {
       return { error: 'A person with this email already exists.' }
@@ -227,5 +244,6 @@ async function save(
   return {
     ...(plan.mode === 'create' ? { id: contactId } : {}),
     ...(warning ? { warning } : {}),
+    ...(savedVersion ? { updatedAt: savedVersion } : {}),
   }
 }

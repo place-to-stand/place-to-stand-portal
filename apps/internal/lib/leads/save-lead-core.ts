@@ -33,6 +33,13 @@ import {
   fillCompanyWebsiteIfBlank,
   type DeferActivity,
 } from '@/lib/companies/find-or-create'
+import {
+  describeSaveConflict,
+  lockForSave,
+  readSavedVersion,
+  SaveConflictError,
+} from '@/lib/sheets/save-conflict/server'
+import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { ActivitySourceValue } from '@/lib/types'
 
 import {
@@ -49,6 +56,10 @@ import {
   type SaveContext,
 } from './save-lead-party'
 
+/** Someone else saved the lead after the sheet loaded it. */
+export const LEAD_SAVED_ELSEWHERE =
+  'Someone else saved this lead. Reload to see their changes.'
+
 export type SaveLeadResult = {
   success: boolean
   error?: string
@@ -59,6 +70,10 @@ export type SaveLeadResult = {
    * error, so an HTTP caller can map it to 404 rather than 400.
    */
   notFound?: boolean
+  /** The lead's version after the save; the sheet's next expected one. */
+  updatedAt?: string
+  /** Set when someone else saved first and nothing was written. */
+  conflict?: SaveConflict
 }
 
 /**
@@ -109,16 +124,40 @@ export async function saveLeadForActor(
   try {
     result = await db.transaction(async tx => {
       const ctx: SaveContext = { tx, actor, defer }
+      if (normalized.id) {
+        await lockForSave(
+          tx,
+          leads,
+          normalized.id,
+          parsed.data.expectedUpdatedAt
+        )
+      }
       const saved = normalized.id
         ? await updateLead(ctx, normalized.id, normalized, source)
         : await createLead(ctx, normalized, source)
       // A refusal after a write (a company made, then a missing person) must
       // undo that write too.
       if (!saved.success) throw new SaveRefused(saved)
-      return saved
+      const updatedAt = saved.leadId
+        ? await readSavedVersion(tx, leads, saved.leadId)
+        : null
+      return updatedAt ? { ...saved, updatedAt } : saved
     })
   } catch (error) {
     if (error instanceof SaveRefused) return error.result
+    if (error instanceof SaveConflictError && normalized.id) {
+      return {
+        success: false,
+        error: LEAD_SAVED_ELSEWHERE,
+        conflict: await describeSaveConflict(
+          actor,
+          'LEAD',
+          normalized.id,
+          error,
+          parsed.data.expectedUpdatedAt
+        ),
+      }
+    }
     console.error('Failed to save lead', error)
     return {
       success: false,

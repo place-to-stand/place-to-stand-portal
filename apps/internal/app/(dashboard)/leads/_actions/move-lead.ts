@@ -104,7 +104,10 @@ export async function moveLead(
         .set({
           status: targetStatus,
           rank: normalizedRank,
-          updatedAt: now,
+          // A reorder within a column is not an edit: it leaves updated_at
+          // alone (migration 0133 ignores rank), so an open lead sheet
+          // saves without a conflict.
+          ...(statusChanged ? { updatedAt: now } : {}),
           ...leadStageMoveFields(current.status, targetStatus, now),
         })
         .where(and(eq(leads.id, leadId), isNull(leads.deletedAt)))

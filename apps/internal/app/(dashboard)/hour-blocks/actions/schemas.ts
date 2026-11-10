@@ -23,6 +23,11 @@ export const hourBlockSchema = z.object({
     )
     .optional()
     .nullable(),
+  /**
+   * Edit: the block's `updated_at` when the sheet loaded it. The save is
+   * refused if someone saved the block since.
+   */
+  expectedUpdatedAt: z.string().max(64).optional(),
 })
 
 export const deleteSchema = z.object({ id: z.string().uuid() })

@@ -7,6 +7,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { requirePage } from '@/lib/auth/session'
 import { fetchUnacknowledgedSubmissionCount } from '@/lib/data/form-submissions'
 import { listStaffWithPhotos } from '@/lib/queries/users'
+import { presenceRoomKey } from '@/lib/sheets/presence/room-key'
 import { SheetHost } from '@/lib/sheets/sheet-host'
 
 export default async function DashboardLayout({
@@ -39,6 +40,7 @@ export default async function DashboardLayout({
       user={user}
       unacknowledgedSubmissionsCount={unacknowledgedSubmissionsCount}
       sidebarDefaultOpen={sidebarDefaultOpen}
+      presenceKey={presenceRoomKey()}
     >
       {children}
       <AvatarPreloader staff={staffWithPhotos} />

@@ -191,8 +191,9 @@ test('restarting billing on a company billed before shows its last terms', async
   const count = Math.min(await rows.count(), 12)
   let found = false
   for (let i = 0; i < count && !found; i++) {
-    // The name cell: other cells hold links and hover buttons.
-    await rows.nth(i).locator('td').first().click()
+    // The name cell, past the select box: other cells hold links and
+    // hover buttons.
+    await rows.nth(i).locator('td').nth(1).click()
     await expect(sheet).toBeVisible()
     await sheet.getByRole('switch', { name: 'Bill this company' }).click()
     found = await sheet
@@ -268,7 +269,7 @@ test('a save made since the sheet opened refuses the older sheet', async ({
 }) => {
   const name = `E2E two-tabs ${Date.now()}`
   const { sheet } = await startCompany(page, name)
-  await sheet.getByRole('button', { name: 'Create and close' }).click()
+  await sheet.getByRole('button', { name: /^Create and close/ }).click()
   await expect(sheet).toBeHidden()
 
   // The same company open in two tabs.
@@ -276,22 +277,22 @@ test('a save made since the sheet opened refuses the older sheet', async ({
   const other = await context.newPage()
   const second = await openCompany(other, name)
 
-  await first
-    .getByRole('textbox', { name: 'Website' })
-    .fill('https://first.example.com')
-  await first.getByRole('button', { name: 'Save and close' }).click()
-  await expect(first).toBeHidden()
-
+  // The second starts editing first; a clean sheet would just take the
+  // first tab's save.
   await second
     .getByRole('textbox', { name: 'Website' })
     .fill('https://second.example.com')
-  await second.getByRole('button', { name: 'Save and close' }).click()
-  // Refused with a toast (outside the sheet); the sheet stays open.
-  await expect(
-    other.getByText(
-      'Someone else saved this company. Reload to see their changes.'
-    )
-  ).toBeVisible()
+  await first
+    .getByRole('textbox', { name: 'Website' })
+    .fill('https://first.example.com')
+  await first.getByRole('button', { name: /^Save and close/ }).click()
+  await expect(first).toBeHidden()
+
+  await second.getByRole('button', { name: /^Save and close/ }).click()
+  // Nothing is written: the dialog asks, and the sheet stays open.
+  const refused = other.getByRole('alertdialog')
+  await expect(refused).toContainText('Your changes weren’t saved')
+  await refused.getByRole('button', { name: 'Keep editing' }).click()
   await expect(second).toBeVisible()
   await other.close()
 
