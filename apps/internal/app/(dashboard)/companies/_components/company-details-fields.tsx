@@ -13,10 +13,11 @@ import {
 } from '@/components/ui/form'
 import { LazyRichTextEditor as RichTextEditor } from '@/components/ui/rich-text-editor/lazy'
 import { UrlInput } from '@/components/ui/url-input'
+import { TagField } from '@/components/tags/tag-field'
 
 import type { CompanyFormValues } from './use-company-sheet-form'
 
-/** The Company column's details fields: name, website, LinkedIn and notes. */
+/** The Company column's details fields: name, website, LinkedIn, tags and notes. */
 export function CompanyDetailsFields({
   control,
   disabled,
@@ -73,6 +74,24 @@ export function CompanyDetailsFields({
                 {...field}
                 openLabel='Open LinkedIn'
                 placeholder='linkedin.com/company/acme'
+                disabled={disabled}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name='tags'
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel optional>Tags</FormLabel>
+            <FormControl>
+              <TagField
+                entity='company'
+                value={field.value}
+                onChange={next => field.onChange(next)}
                 disabled={disabled}
               />
             </FormControl>

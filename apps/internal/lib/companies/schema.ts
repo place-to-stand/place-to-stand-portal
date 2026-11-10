@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { tagNamesSchema } from '@/lib/tags/names'
+
 const optionalText = (max: number) =>
   z
     .string()
@@ -67,6 +69,11 @@ export const saveCompanySchema = z.object({
    * a member after this save's people changes.
    */
   primaryContactId: z.string().uuid().nullable().optional(),
+  /**
+   * The company's full tag list after this save (names; new ones are
+   * created). Omitted leaves its tags as they are.
+   */
+  tags: tagNamesSchema.optional(),
 })
 
 export const linkedinUrlSchema = optionalUrl(255)

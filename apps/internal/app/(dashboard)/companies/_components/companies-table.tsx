@@ -50,6 +50,7 @@ import {
   useRowSelection,
 } from '@/components/table/bulk-select'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
+import { TagList } from '@/components/tags/tag-list'
 
 const BULK_ARCHIVE_EXTRA =
   'Their people and leads stay as they are. People at former clients lose portal access.'
@@ -149,6 +150,7 @@ export function CompaniesTable({
               {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
               slack, so the select and Actions columns keep their widths. */}
               {sortHead('name', 'Company', '')}
+              <TableHead className='w-[16%]'>Tags</TableHead>
               {seesBilling
                 ? sortHead('client', 'Billing type', 'w-[9%]')
                 : null}
@@ -221,6 +223,13 @@ export function CompaniesTable({
                           <ClientBadge className='shrink-0' />
                         ) : null}
                       </div>
+                    </TableCell>
+                    <TableCell label='Tags'>
+                      {company.tags.length ? (
+                        <TagList names={company.tags} />
+                      ) : (
+                        <EmptyValue />
+                      )}
                     </TableCell>
                     {seesBilling ? (
                       <TableCell label='Billing type'>

@@ -34,6 +34,8 @@ import {
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { CompanyBillingIntent } from '@/lib/companies/sheet-save-schema'
+import { sameTagNames } from '@/lib/tags/names'
+import { tagOptionsQueryKey } from '@/components/tags/use-tag-options'
 
 import {
   fetchCompanyClientWork,
@@ -125,6 +127,7 @@ export function CompanySheet({
       website: '',
       linkedinUrl: '',
       notes: '',
+      tags: [],
       primaryContactId: null,
       addedContacts: [],
       removedContactIds: [],
@@ -153,6 +156,7 @@ export function CompanySheet({
           website: loaded?.website ?? '',
           linkedinUrl: loaded?.linkedinUrl ?? '',
           notes: loaded?.notes ?? '',
+          tags: loaded?.tags ?? [],
           primaryContactId: loaded?.primaryContactId ?? null,
           addedContacts: [],
           removedContactIds: [],
@@ -201,6 +205,9 @@ export function CompanySheet({
         }),
         queryClient.invalidateQueries({ queryKey: COMPANY_OPTIONS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: CONTACT_OPTIONS_QUERY_KEY }),
+        queryClient.invalidateQueries({
+          queryKey: tagOptionsQueryKey('company'),
+        }),
       ])
       router.refresh()
     },
@@ -255,6 +262,7 @@ export function CompanySheet({
     Record<string, string> | undefined
   const seededPrimaryContactId =
     form.formState.defaultValues?.primaryContactId ?? null
+  const seededTags = form.formState.defaultValues?.tags as string[] | undefined
   const { stay, isReopening } = useSaveAndStay('company', companyId, open)
 
   const handleSubmit = useCallback(
@@ -288,6 +296,11 @@ export function CompanySheet({
           website: values.website,
           linkedinUrl: values.linkedinUrl,
           notes: values.notes,
+          // Only when changed here: tags another sheet set since stay.
+          tags:
+            isEditing && sameTagNames(values.tags, seededTags ?? [])
+              ? undefined
+              : values.tags,
           addContactIds: values.addedContacts.map(contact => contact.id),
           removeContactIds: values.removedContactIds,
           // Only titles edited here (or that people joining here bring),
@@ -377,6 +390,7 @@ export function CompanySheet({
       saveConflict,
       seed,
       seededPrimaryContactId,
+      seededTags,
       seededTitles,
       stay,
       toast,
