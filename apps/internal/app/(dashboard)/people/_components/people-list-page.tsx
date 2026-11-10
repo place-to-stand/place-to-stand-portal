@@ -111,14 +111,14 @@ export async function PeopleListPage({
       breadcrumbs={[
         ...crumbsForNav('/people'),
         ...(showSignInFilter && signIn && signIn !== 'none'
-          ? [{ label: 'Can sign in' }]
+          ? [{ label: 'Users' }]
           : view.crumbs),
       ]}
       tabs={peopleTabs(user.role)}
       activeTab={
-        // A role picked in the filter is still "people who can sign in".
+        // A role picked in the filter still lists users.
         showSignInFilter && signIn && signIn !== 'none'
-          ? 'sign-ins'
+          ? 'users'
           : view.activeTab
       }
       count={{
