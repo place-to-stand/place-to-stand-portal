@@ -173,6 +173,7 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 - **Sizing is automatic**: `size-4` (16px) in buttons, menu items and select items, `size-3` in badges, `size-3.5` in `icon-sm` row actions and checkbox checks.
 - **Color**: icons in menus and select items are `muted-foreground`. Icons in buttons take the label color.
 - **Common glyphs**: ChevronDown for select triggers, Check for selected items, X for sheet and dialog close, ChevronRight for submenus.
+- **A button that opens another site shows that site's mark**, muted, in place of the `ExternalLink` arrow: `LinkedInMark` (`components/ui/linkedin-mark.tsx`) on a person card's LinkedIn row action and on LinkedIn fields (`UrlInput`'s `openIcon`). `ExternalLink` stays for links with no known site (a website field). Site marks are the one exception to lucide-only. (guard: review)
 - No emoji, no filled icon sets, no custom glyph font (the TipTap editor ships its own small `tiptap-icons` set, for the editor toolbar only).
 - **Logo.** The logo is the `BrandLogo` lockup, which is drawn in CSS and not an image file: a square 1px frame at 50–60% opacity holding a dot a third of its size, then "Place To Stand" in Space Grotesk. The PTS tile with lime corner brackets (Logos group) is the favicon and apple-touch icon **only**. Never use it as an in-app logo.
 

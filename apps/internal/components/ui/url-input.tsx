@@ -26,6 +26,11 @@ export function toSafeHref(value: string | null | undefined): string | null {
 type UrlInputProps = Omit<React.ComponentProps<typeof Input>, 'type'> & {
   /** Tooltip and label for the open button: "Open website". */
   openLabel: string
+  /**
+   * The open button's icon when the link goes to a known site (the
+   * LinkedIn mark). Defaults to the ExternalLink arrow.
+   */
+  openIcon?: React.ReactNode
   /** Wrapper classes (width, grid placement). */
   wrapperClassName?: string
 }
@@ -37,7 +42,7 @@ type UrlInputProps = Omit<React.ComponentProps<typeof Input>, 'type'> & {
  */
 export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
   function UrlInput(
-    { openLabel, wrapperClassName, value, ...inputProps },
+    { openLabel, openIcon, wrapperClassName, value, ...inputProps },
     ref
   ) {
     const href = toSafeHref(typeof value === 'string' ? value : null)
@@ -70,7 +75,7 @@ export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
                   window.open(href, '_blank', 'noopener,noreferrer')
                 }
               >
-                <ExternalLink className='size-3.5' aria-hidden />
+                {openIcon ?? <ExternalLink className='size-3.5' aria-hidden />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>{openLabel}</TooltipContent>

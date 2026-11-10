@@ -1,5 +1,6 @@
 'use client'
 
+import type { ComponentType } from 'react'
 import {
   Archive,
   ArrowDown,
@@ -38,6 +39,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { LinkedInMark } from '@/components/ui/linkedin-mark'
 import { ENTITIES, ENTITY_KEYS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
 
@@ -116,6 +118,18 @@ export function FoundationsIcons() {
           <IconTile key={name} name={name} icon={icon} onCopy={copy} />
         ))}
       </Specimen>
+      <Specimen
+        label='Site marks'
+        note='A button that opens another site shows that site’s mark in place of ExternalLink. LinkedIn: components/ui/linkedin-mark'
+        className='grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-8'
+      >
+        <IconTile
+          name='LinkedInMark'
+          icon={LinkedInMark}
+          iconClassName='text-muted-foreground'
+          onCopy={value => void copy(value)}
+        />
+      </Specimen>
     </DesignSection>
   )
 }
@@ -129,7 +143,7 @@ function IconTile({
 }: {
   name: string
   caption?: string
-  icon: LucideIcon
+  icon: LucideIcon | ComponentType<{ className?: string }>
   iconClassName?: string
   onCopy: (value: string) => void
 }) {

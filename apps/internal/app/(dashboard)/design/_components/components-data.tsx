@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Star } from 'lucide-react'
 
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { LinkedInMark } from '@/components/ui/linkedin-mark'
 import {
   Table,
   TableBody,
@@ -115,13 +116,19 @@ export function ComponentsRecordRows() {
             hasSignIn
             openable={false}
             actions={
-              <RowActionButton
-                label={
-                  starred ? 'Unset primary contact' : 'Set primary contact'
-                }
-                icon={<Star className={cn(starred && 'fill-current')} />}
-                onClick={() => setStarred(value => !value)}
-              />
+              <>
+                <RowActionButton
+                  label='Ada Lovelace on LinkedIn'
+                  icon={<LinkedInMark />}
+                />
+                <RowActionButton
+                  label={
+                    starred ? 'Unset primary contact' : 'Set primary contact'
+                  }
+                  icon={<Star className={cn(starred && 'fill-current')} />}
+                  onClick={() => setStarred(value => !value)}
+                />
+              </>
             }
           />
           <ContactRecordRow

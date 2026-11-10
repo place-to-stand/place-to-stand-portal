@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { ExternalLink, Star, X } from 'lucide-react'
+import { Star, X } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -14,6 +14,7 @@ import { EntityList } from '@/components/sheets/entity-list'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
 import { RecordRowField } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { LinkedInMark } from '@/components/ui/linkedin-mark'
 import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
 import { cn } from '@/lib/utils'
@@ -233,7 +234,7 @@ export function CompanyPeopleSection({
                   <RowActionButton
                     type='button'
                     label={`${contact.name} on LinkedIn`}
-                    icon={<ExternalLink />}
+                    icon={<LinkedInMark />}
                     onClick={() =>
                       window.open(
                         contact.linkedinUrl ?? '',
