@@ -5,9 +5,12 @@ import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
+import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { useLeadSheetState } from '@/lib/leads/use-lead-sheet-state'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +42,8 @@ export function LeadSheet(props: LeadSheetProps) {
     canRedo,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    handleLoadTheirs,
     handleFormSubmit,
     handleSave,
     handleArchive,
@@ -58,6 +63,17 @@ export function LeadSheet(props: LeadSheetProps) {
           {/* Header */}
           <SheetFormHeader
             entity='lead'
+            presence={
+              <SheetPresence
+                entity='lead'
+                noun='lead'
+                recordId={lead?.id ?? null}
+                open={open}
+                isDirty={form.formState.isDirty}
+                guard={saveConflict}
+                onLoadTheirs={handleLoadTheirs}
+              />
+            }
             title={
               isEditing
                 ? lead?.contactName || 'Lead'
@@ -99,6 +115,7 @@ export function LeadSheet(props: LeadSheetProps) {
                 )}
               >
                 <div className='flex-1 p-6 lg:overflow-y-auto'>
+                  <SheetNoticeSlot className='mb-0' />
                   <LeadSheetFormFields
                     control={form.control}
                     assignees={assignees}
@@ -154,6 +171,13 @@ export function LeadSheet(props: LeadSheetProps) {
         }}
         onArchiveConfirm={handleArchive}
         unsavedChangesDialog={unsavedChangesDialog}
+      />
+      <SaveConflictDialog
+        guard={saveConflict}
+        yours={() => form.getValues()}
+        noun='lead'
+        onOverwrite={handleSave}
+        onLoadTheirs={handleLoadTheirs}
       />
     </>
   )

@@ -26,6 +26,11 @@ type SheetFormHeaderProps = {
   menu?: ReactNode
   /** Rendered full-width below the title (e.g. lead action bar). */
   children?: ReactNode
+  /**
+   * Who else has the record open (`SheetPresence`). It draws nothing here:
+   * its alert lands in the form's `SheetNoticeSlot`, above the first field.
+   */
+  presence?: ReactNode
   className?: string
 }
 
@@ -36,6 +41,7 @@ export function SheetFormHeader({
   badges,
   menu,
   children,
+  presence,
   className,
 }: SheetFormHeaderProps) {
   const EntityIcon = ENTITY_ICONS[entity]
@@ -67,6 +73,7 @@ export function SheetFormHeader({
         <SheetTitle className='text-base'>{title}</SheetTitle>
       )}
       {children}
+      {presence}
       <SheetClose className='text-muted-foreground hover:text-foreground hover:bg-muted/60 focus-visible:ring-ring/50 absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-inset'>
         <XIcon className='size-4' />
         <span className='sr-only'>Close</span>

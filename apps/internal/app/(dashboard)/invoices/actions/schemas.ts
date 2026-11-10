@@ -42,6 +42,11 @@ export const invoiceSchema = z.object({
   lineItems: z
     .array(lineItemSchema)
     .min(1, 'At least one line item is required.'),
+  /**
+   * Edit: the invoice's `updated_at` when the sheet loaded it. The save is
+   * refused if anything changed it since (a person, a payment, a send).
+   */
+  expectedUpdatedAt: z.string().max(64).optional(),
 })
 
 export const deleteSchema = z.object({ id: z.string().uuid() })

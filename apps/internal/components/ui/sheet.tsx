@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Dialog as SheetPrimitive } from '@base-ui/react/dialog'
 import { XIcon } from 'lucide-react'
 
+import { SheetNoticeProvider } from '@/components/sheets/sheet-notice-slot'
 import { cn } from '@/lib/utils'
 
 // Don't close the sheet when a press lands in a toast or inside another
@@ -33,11 +34,13 @@ const Sheet = ({
   )
 
   return (
-    <SheetPrimitive.Root
-      data-slot='sheet'
-      onOpenChange={handleOpenChange}
-      {...props}
-    />
+    <SheetNoticeProvider>
+      <SheetPrimitive.Root
+        data-slot='sheet'
+        onOpenChange={handleOpenChange}
+        {...props}
+      />
+    </SheetNoticeProvider>
   )
 }
 

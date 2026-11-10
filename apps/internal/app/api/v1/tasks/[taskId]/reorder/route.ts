@@ -119,9 +119,8 @@ export async function PATCH(
   const statusChanged =
     parsedPayload.status && parsedPayload.status !== task.status
 
-  const updatedAt = new Date().toISOString()
-
   const nextStatus = statusChanged ? parsedPayload.status! : task.status
+  const updatedAt = new Date().toISOString()
 
   const updatedTaskRecords = await db
     .update(tasks)
@@ -129,7 +128,10 @@ export async function PATCH(
       rank: parsedPayload.rank,
       status: nextStatus,
       updatedBy: user.id,
-      updatedAt,
+      // A reorder within a column is not an edit: it leaves updated_at
+      // alone (migration 0133 ignores rank), so an open task sheet saves
+      // without a conflict.
+      ...(statusChanged ? { updatedAt } : {}),
       ...resolveTaskStatusStamps(nextStatus, task.completedAt),
     })
     .where(eq(tasks.id, taskId))

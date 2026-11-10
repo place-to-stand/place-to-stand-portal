@@ -174,8 +174,9 @@ export async function POST(
     const stored = await db
       .update(invoices)
       .set({
+        // No updatedAt: Stripe bookkeeping is not an edit, so an open
+        // invoice sheet doesn't take it for someone else's save.
         stripePaymentIntentId: paymentIntent.id,
-        updatedAt: new Date().toISOString(),
       })
       .where(
         and(

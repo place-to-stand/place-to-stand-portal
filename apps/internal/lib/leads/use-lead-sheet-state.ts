@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  useCallback,
-  useRef,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 
@@ -26,6 +19,8 @@ import {
 } from '@/lib/leads/won-rule'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
+import { useLeadFormSeed } from '@/lib/leads/use-lead-form-seed'
+import { useReloadSheetRecord } from '@/lib/sheets/use-reload-sheet-record'
 import {
   leadFormSchema,
   type LeadFormValues,
@@ -93,30 +88,14 @@ export function useLeadSheetState({
     defaultValues,
   })
 
-  // Reset only when a different record (or a newer save of it) arrives. A
-  // router refresh hands over a fresh but identical `lead` object, e.g. after
-  // a sheet stacked on top saves, and must not wipe unsaved edits such as a
-  // company just picked from that sheet.
-  const resetKey = lead
-    ? `${lead.id}:${lead.updatedAt}`
-    : duplicateOf
-      ? `copy:${duplicateOf.id}`
-      : `new:${initialStatus ?? ''}`
-  const lastResetKey = useRef<string | null>(null)
-  useEffect(() => {
-    // Closing forgets the key, so reopening always starts from the record.
-    if (!open) {
-      lastResetKey.current = null
-      return
-    }
-    if (lastResetKey.current === resetKey) return
-    const sameLead =
-      Boolean(lead) && lastResetKey.current?.startsWith(`${lead?.id}:`)
-    lastResetKey.current = resetKey
-    // A newer save of the same lead (e.g. the refresh after a keep-open
-    // save) takes the server's values but keeps fields edited since.
-    form.reset(defaultValues, { keepDirtyValues: Boolean(sameLead) })
-  }, [defaultValues, form, lead, open, resetKey])
+  const { saveConflict, reloadFromRecord } = useLeadFormSeed({
+    form,
+    open,
+    lead,
+    duplicateOf,
+    initialStatus,
+    defaultValues,
+  })
 
   // Shown after the reset above, which clears errors: e.g. the board refused
   // a Won drag because the lead has no company.
@@ -164,8 +143,10 @@ export function useLeadSheetState({
           contactPhone: contact?.phone ?? null,
           companyId: company?.id ?? null,
           companyName: company?.name ?? null,
+          expectedUpdatedAt: lead?.id ? saveConflict.expected() : undefined,
         })
 
+        if (saveConflict.catchConflict(result, mode)) return
         if (!result.success) {
           if (result.error === LEAD_WON_NEEDS_COMPANY_MESSAGE) {
             form.setError('company', { message: result.error })
@@ -179,6 +160,7 @@ export function useLeadSheetState({
           return
         }
 
+        saveConflict.saved(result.updatedAt)
         const rebaseline = () => form.reset(values) // saved = clean state
         if (mode === 'stay') {
           stay({ id: result.leadId ?? lead?.id, rebaseline })
@@ -219,6 +201,7 @@ export function useLeadSheetState({
       onCreated,
       openSheet,
       stay,
+      saveConflict,
       toast,
     ]
   )
@@ -263,6 +246,13 @@ export function useLeadSheetState({
     : isArchiving
       ? 'Archiving lead...'
       : null
+
+  // Drop the edits and re-seed from the lead as it is now.
+  const reloadRecord = useReloadSheetRecord('lead', lead?.id ?? null)
+  const handleLoadTheirs = useCallback(() => {
+    reloadFromRecord()
+    reloadRecord()
+  }, [reloadFromRecord, reloadRecord])
 
   const handleArchive = useCallback(() => {
     if (!lead) return
@@ -335,6 +325,8 @@ export function useLeadSheetState({
     canRedo,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    handleLoadTheirs,
     handleFormSubmit,
     handleSave,
     handleArchive,

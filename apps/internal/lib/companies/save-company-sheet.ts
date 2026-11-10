@@ -52,13 +52,18 @@ import {
   PortalAccessRefusal,
 } from '@/lib/queries/companies/billing/settings/client-contacts'
 import {
-  CompanySaveRefusal,
   companySaveErrorMessage,
   logCompanyWrite,
   planCompanyWrite,
   writeCompany,
   type CompanyWritePlan,
 } from '@/lib/companies/write'
+import {
+  describeSaveConflict,
+  lockForSave,
+  readSavedVersion,
+  SaveConflictError,
+} from '@/lib/sheets/save-conflict/server'
 import { logContactClientLinkChanges } from '@/lib/queries/contacts/settings/contact-client-link-activity'
 import {
   listCompanyMembers,
@@ -148,7 +153,7 @@ export async function saveCompanySheet(
   if ('error' in portal) return { ok: false, error: portal.error }
 
   let billingPlan = billing.plan
-  let committed: { companyId: string }
+  let committed: { companyId: string; updatedAt: string | null }
   let attempt = 0
   for (;;) {
     try {
@@ -157,17 +162,12 @@ export async function saveCompanySheet(
           // One save per company at a time: saves (and billing starts,
           // stops and restarts) for the same company queue here, and one
           // made since this sheet loaded the company refuses this one.
-          const [locked] = await tx
-            .select({ updatedAt: companies.updatedAt })
-            .from(companies)
-            .where(eq(companies.id, plan.existing.id))
-            .for('update')
-          if (
-            values.expectedUpdatedAt !== undefined &&
-            locked?.updatedAt !== values.expectedUpdatedAt
-          ) {
-            throw new CompanySaveRefusal(STALE_COMPANY_MESSAGE)
-          }
+          await lockForSave(
+            tx,
+            companies,
+            plan.existing.id,
+            values.expectedUpdatedAt
+          )
         }
         if (billingPlan.kind !== 'none') {
           // Re-checked inside the transaction: the month could be closed
@@ -241,7 +241,10 @@ export async function saveCompanySheet(
             .set({ updatedAt: new Date().toISOString() })
             .where(eq(companies.id, companyId))
         }
-        return { companyId }
+        return {
+          companyId,
+          updatedAt: await readSavedVersion(tx, companies, companyId),
+        }
       })
       break
     } catch (error) {
@@ -264,6 +267,19 @@ export async function saveCompanySheet(
           error = slugError
         }
       }
+      if (error instanceof SaveConflictError && plan.existing) {
+        return {
+          ok: false,
+          error: STALE_COMPANY_MESSAGE,
+          conflict: await describeSaveConflict(
+            actor,
+            'COMPANY',
+            plan.existing.id,
+            error,
+            values.expectedUpdatedAt
+          ),
+        }
+      }
       const message = saveErrorMessage(error)
       if (!message) console.error('Failed to save the company sheet', error)
       return { ok: false, error: message ?? 'Unable to save the company.' }
@@ -277,7 +293,11 @@ export async function saveCompanySheet(
     console.error('Failed to log a company sheet save', error)
   }
 
-  return { ok: true, id: committed.companyId }
+  return {
+    ok: true,
+    id: committed.companyId,
+    updatedAt: committed.updatedAt ?? undefined,
+  }
 }
 
 async function planBilling(

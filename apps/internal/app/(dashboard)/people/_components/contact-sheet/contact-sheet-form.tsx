@@ -34,6 +34,7 @@ import { ContactCompaniesSection } from './contact-companies-section'
 import { ContactNotesField } from './contact-notes-field'
 import { ContactSignInSection } from './contact-access-section'
 import { canHavePortalAccess } from '@/lib/people/portal-eligibility'
+import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 
 const CONTACT_FORM_ID = 'contact-form'
 
@@ -168,6 +169,7 @@ export function ContactSheetForm({
           className='flex flex-col'
         >
           <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
+            <SheetNoticeSlot />
             {readOnly ? (
               <p className='text-muted-foreground text-sm'>
                 {PERSON_WITH_SIGN_IN_ADMIN_ONLY}

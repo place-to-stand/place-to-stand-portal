@@ -13,6 +13,8 @@ import type {
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
+import { useReloadSheetRecord } from '@/lib/sheets/use-reload-sheet-record'
+import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { useSaveAndStay } from '@/lib/sheets/use-save-and-stay'
 import { useSheetLifecycle } from '@/lib/sheets/use-sheet-lifecycle'
 import { toastLink, useToast } from '@/components/ui/use-toast'
@@ -69,6 +71,8 @@ export type UseTaskSheetStateArgs = {
 
 type UseTaskSheetStateReturn = {
   form: UseFormReturn<TaskSheetFormValues>
+  /** Field edits or staged attachments not yet saved. */
+  hasUnsavedChanges: boolean
   isPending: boolean
   isDeleteDialogOpen: boolean
   assigneeItems: ReturnType<typeof buildAssigneeItems>
@@ -82,6 +86,8 @@ type UseTaskSheetStateReturn = {
   submitDisabledReason: string | null
   unsavedChangesDialog: ReturnType<typeof useUnsavedChangesWarning>['dialog']
   confirmDiscard: (next: () => void) => void
+  saveConflict: SaveConflictGuard
+  handleLoadTheirs: () => void
   handleSheetOpenChange: (next: boolean) => void
   handleFormSubmit: (values: TaskSheetFormValues, mode?: SheetSaveMode) => void
   handleRequestDelete: () => void
@@ -171,19 +177,29 @@ export const useTaskSheetState = ({
   // CHANGES while open (create→edit arrival, switching tasks) — never on a
   // same-id prop identity change (e.g. the router.refresh() a time-log save
   // triggers), which would wipe unsaved task-form edits.
+  // Field edits or staged attachments: either is work a reload would lose.
+  const hasUnsavedChanges = form.formState.isDirty || attachmentsDirty
   const {
     isSaving: isPending,
     startSave,
     handleSheetOpenChange,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
   } = useSheetLifecycle({
     open,
     onOpenChange,
-    isDirty: form.formState.isDirty || attachmentsDirty,
+    isDirty: hasUnsavedChanges,
     onReset: resetFormState,
     resetKey: task?.id ?? (duplicateOf ? `copy-${duplicateOf.id}` : null),
+    version: task?.updated_at ?? null,
   })
+  const reloadRecord = useReloadSheetRecord('task', task?.id ?? null)
+  // Drop the edits; the lifecycle re-seeds when the newer task lands.
+  const handleLoadTheirs = useCallback(() => {
+    resetFormState()
+    reloadRecord()
+  }, [reloadRecord, resetFormState])
 
   const { stay, isReopening } = useSaveAndStay('task', task?.id ?? null, open)
 
@@ -211,8 +227,10 @@ export const useTaskSheetState = ({
             dueOn: values.dueOn ? values.dueOn : null,
             assigneeIds: values.assigneeId ? [values.assigneeId] : [],
             attachments: attachmentsPayload,
+            expectedUpdatedAt: task ? saveConflict.expected() : undefined,
           })
 
+          if (saveConflict.catchConflict(result, mode)) return
           // All or nothing: an error means nothing was written, so the sheet
           // stays open with the user's edits for another try.
           if (result.error !== undefined) {
@@ -225,6 +243,7 @@ export const useTaskSheetState = ({
             return
           }
 
+          saveConflict.saved(result.updatedAt)
           // Keep open: no toast; stay() makes its Save button say "Saved".
           if (mode === 'close') {
             toast({
@@ -263,6 +282,7 @@ export const useTaskSheetState = ({
       router,
       startSave,
       resetFormState,
+      saveConflict,
       stay,
       task,
       toast,
@@ -375,6 +395,7 @@ export const useTaskSheetState = ({
 
   return {
     form,
+    hasUnsavedChanges,
     isPending,
     isDeleteDialogOpen,
     assigneeItems,
@@ -388,6 +409,8 @@ export const useTaskSheetState = ({
     submitDisabledReason,
     unsavedChangesDialog,
     confirmDiscard,
+    saveConflict,
+    handleLoadTheirs,
     handleSheetOpenChange,
     handleFormSubmit,
     handleRequestDelete,

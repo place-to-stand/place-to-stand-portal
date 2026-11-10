@@ -23,10 +23,14 @@ export async function saveLead(
   const result = await saveLeadForActor(user, input, 'ADMIN_UI')
 
   if (!result.success) {
-    return { success: false, error: result.error }
+    return { success: false, error: result.error, conflict: result.conflict }
   }
 
   revalidateLeadsPath()
 
-  return { success: true, leadId: result.leadId }
+  return {
+    success: true,
+    leadId: result.leadId,
+    updatedAt: result.updatedAt,
+  }
 }

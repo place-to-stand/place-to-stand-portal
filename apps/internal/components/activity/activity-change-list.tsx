@@ -201,7 +201,8 @@ function ValueChip({
   )
 }
 
-function emptyLabel(field: FieldChange): string {
+/** What an empty value reads as for this kind of field. */
+export function emptyLabel(field: FieldChange): string {
   switch (field.kind) {
     case 'user':
       return field.key === 'ownerId' ? 'No owner' : 'Unassigned'
@@ -216,7 +217,8 @@ function emptyLabel(field: FieldChange): string {
   }
 }
 
-function formatValue(
+/** A field value as plain text, or null when empty. */
+export function formatValue(
   value: unknown,
   field: FieldChange,
   references?: ActivityReferences

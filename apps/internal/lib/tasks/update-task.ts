@@ -35,7 +35,17 @@ import {
   type AttachmentRowChanges,
   type StagedAttachment,
 } from './save-task-children'
-import type { SaveTaskResult, TaskWriteContext } from './types'
+import {
+  TASK_SAVED_ELSEWHERE,
+  type SaveTaskResult,
+  type TaskWriteContext,
+} from './types'
+import {
+  describeSaveConflict,
+  lockForSave,
+  readSavedVersion,
+  SaveConflictError,
+} from '@/lib/sheets/save-conflict/server'
 import { notifyTaskAssigned } from '@/lib/notifications/in-app/events'
 import { roleCan } from '@/lib/auth/capabilities'
 
@@ -201,8 +211,10 @@ export async function updateTaskForActor(
   // One transaction: the task row, its assignee, its attachment rows and the
   // My Tasks pin are saved together or not at all.
   let attachmentChanges: AttachmentRowChanges
+  let savedVersion: string | null = null
   try {
     attachmentChanges = await db.transaction(async tx => {
+      await lockForSave(tx, tasks, taskId, input.expectedUpdatedAt)
       await tx
         .update(tasks)
         .set({
@@ -213,8 +225,8 @@ export async function updateTaskForActor(
           status,
           dueOn,
           updatedBy: actor.id,
-          // There is no on-update trigger for `updated_at`, so an edit that
-          // does not set it here leaves the row looking untouched.
+          // The tasks_set_updated_at trigger stamps it too; set here as well
+          // so the intent reads in the code.
           updatedAt: new Date().toISOString(),
           rank: nextRank,
           ...resolveTaskStatusStamps(status, existingTask.completedAt),
@@ -236,9 +248,23 @@ export async function updateTaskForActor(
         await pinTaskToTopOfAssigneeBoards(taskId, status, tx)
       }
 
+      savedVersion = await readSavedVersion(tx, tasks, taskId)
       return changes
     })
   } catch (error) {
+    if (error instanceof SaveConflictError) {
+      await unstageAttachments(storage, staged)
+      return {
+        error: TASK_SAVED_ELSEWHERE,
+        conflict: await describeSaveConflict(
+          actor,
+          'TASK',
+          taskId,
+          error,
+          input.expectedUpdatedAt
+        ),
+      }
+    }
     console.error('Failed to update task', error)
     const restored = await unstageAttachments(storage, staged)
     return { error: saveFailedMessage('Unable to update task.', restored) }
@@ -302,5 +328,5 @@ export async function updateTaskForActor(
     changes: attachmentChanges,
   })
 
-  return { taskId }
+  return { taskId, updatedAt: savedVersion ?? undefined }
 }

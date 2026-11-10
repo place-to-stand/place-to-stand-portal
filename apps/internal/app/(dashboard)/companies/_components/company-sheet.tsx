@@ -16,7 +16,9 @@ import { CLIENT_PRIMARY_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import { Skeleton } from '@pts/ui/skeleton'
 import { SheetFormFooter } from '@/components/sheets/sheet-form-footer'
 import { SheetFormHeader } from '@/components/sheets/sheet-form-header'
+import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
+import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { Form } from '@/components/ui/form'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { toastLink, useToast } from '@/components/ui/use-toast'
@@ -64,6 +66,8 @@ import {
 } from '@/lib/sheets/sheet-section-target'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
+import { useSaveConflict } from '@/lib/sheets/save-conflict/use-save-conflict'
+import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 
 const COMPANY_FORM_ID = 'company-form'
 const COMPANY_PEOPLE_SECTION_ID = 'company-people'
@@ -133,14 +137,16 @@ export function CompanySheet({
   // refetch while dirty waits until the form is clean again). The version it
   // was seeded from goes back with Save, so a save made since is caught.
   const seededFor = useRef<string | null>(null)
-  const seededUpdatedAt = useRef<string | null>(null)
+  const saveConflict = useSaveConflict()
+  // Bumped by Load theirs, to remount the billing state from fresh data.
+  const [reloadCount, setReloadCount] = useState(0)
   const isDirty = form.formState.isDirty || billingDirty
   // Seeds the form from a loaded company. `keepEdits` keeps fields edited
   // since (a keep-open save re-seeding from what it just wrote).
   const seed = useCallback(
     (loaded: typeof company, keepEdits: boolean) => {
       seededFor.current = loaded ? `${loaded.id}:${loaded.updatedAt}` : 'new'
-      seededUpdatedAt.current = loaded?.updatedAt ?? null
+      saveConflict.seed(loaded?.updatedAt)
       form.reset(
         {
           name: loaded?.name ?? initialName ?? '',
@@ -163,7 +169,7 @@ export function CompanySheet({
         { keepDirtyValues: keepEdits }
       )
     },
-    [form, initialName]
+    [form, initialName, saveConflict]
   )
   useEffect(() => {
     if (!data) return
@@ -309,11 +315,10 @@ export function CompanySheet({
               )
             : undefined,
           // The version this sheet loaded: a save made since refuses this one.
-          expectedUpdatedAt: isEditing
-            ? (seededUpdatedAt.current ?? undefined)
-            : undefined,
+          expectedUpdatedAt: isEditing ? saveConflict.expected() : undefined,
         })
 
+        if (saveConflict.catchConflict(result, mode)) return
         if (!result.ok) {
           toast({
             variant: 'destructive',
@@ -335,6 +340,7 @@ export function CompanySheet({
             link: toastLink('company', result.id ?? companyId),
           })
         }
+        saveConflict.saved(result.updatedAt)
         form.reset(values)
         setBillingDirty(false)
         if (mode === 'stay' && isEditing) {
@@ -368,6 +374,7 @@ export function CompanySheet({
       onCreated,
       queryClient,
       refresh,
+      saveConflict,
       seed,
       seededPrimaryContactId,
       seededTitles,
@@ -375,6 +382,17 @@ export function CompanySheet({
       toast,
     ]
   )
+
+  // Drop the edits, then re-seed from whatever the refetch brings.
+  const handleLoadTheirs = useCallback(() => {
+    // Any key but the current one: the seed effect takes the next record,
+    // but still not over edits typed while it loads.
+    seededFor.current = `${company?.id ?? 'new'}:reload`
+    form.reset()
+    setBillingDirty(false)
+    setReloadCount(count => count + 1)
+    void refresh(false)
+  }, [company?.id, form, refresh])
 
   const handleSave = useCallback(
     (mode: SheetSaveMode = 'close') => {
@@ -462,6 +480,17 @@ export function CompanySheet({
         >
           <SheetFormHeader
             entity='company'
+            presence={
+              <SheetPresence
+                entity='company'
+                noun='company'
+                recordId={companyId ?? null}
+                open={open}
+                isDirty={isDirty}
+                guard={saveConflict}
+                onLoadTheirs={handleLoadTheirs}
+              />
+            }
             title={isEditing ? (company?.name ?? 'Company') : 'Create company'}
             leading={
               <ENTITY_ICONS.company
@@ -497,7 +526,7 @@ export function CompanySheet({
           ) : (
             <Form {...form}>
               <CompanyBillingProvider
-                key={company?.id ?? 'new'}
+                key={`${company?.id ?? 'new'}:${reloadCount}`}
                 companyId={isAdmin ? (clientCompanyId ?? formerClientId) : null}
                 billed={Boolean(clientCompanyId)}
                 wasClient={Boolean(isAdmin && company?.formerClientId)}
@@ -527,6 +556,7 @@ export function CompanySheet({
                         'flex-1 px-6 pt-6 pb-8 lg:overflow-y-auto [&>*]:shrink-0'
                       )}
                     >
+                      <SheetNoticeSlot />
                       {isArchived ? (
                         <p className='text-muted-foreground text-sm'>
                           {ARCHIVED_COMPANY_NOTE}
@@ -626,6 +656,13 @@ export function CompanySheet({
         onConfirm={handleArchive}
       />
       {unsavedChangesDialog}
+      <SaveConflictDialog
+        guard={saveConflict}
+        yours={() => form.getValues()}
+        noun='company'
+        onOverwrite={handleSave}
+        onLoadTheirs={handleLoadTheirs}
+      />
     </>
   )
 }

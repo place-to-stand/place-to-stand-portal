@@ -2,6 +2,9 @@
 
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
+import { TriangleAlert } from 'lucide-react'
+
+import { Alert, AlertContent, AlertDescription } from '@pts/ui/alert'
 import { Badge } from '@pts/ui/badge'
 import { Input } from '@pts/ui/input'
 import { Separator } from '@pts/ui/separator'
@@ -16,7 +19,6 @@ import { SheetSection } from '@/components/sheets/sheet-section'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -119,6 +121,7 @@ export function ClientBillingFields({
 }: ClientBillingFieldsProps) {
   // Subscribed value (not form.watch in JSX — that read proved unreliable
   // across the form-prop boundary): drives the boundary-select visibility.
+  const savedSlug = form.formState.defaultValues?.slug ?? null
   const watchedBillingType = useWatch({
     control: form.control,
     name: 'billingType',
@@ -245,12 +248,22 @@ export function ClientBillingFields({
                   />
                 </DisabledFieldTooltip>
               </FormControl>
-              <FormDescription>
-                Starts every project link: /projects/
-                {field.value || 'slug'}/…
-                {isEditing ? ' Changing it breaks links people saved.' : ''}
-              </FormDescription>
               <FormMessage />
+              {/* Only once a saved slug is edited: its project links break. */}
+              {isEditing &&
+              savedSlug &&
+              (field.value ?? '').trim() !== savedSlug ? (
+                <Alert variant='warning'>
+                  <TriangleAlert />
+                  <AlertContent>
+                    <AlertDescription>
+                      Saving breaks project links people saved: /projects/
+                      {savedSlug}/… becomes /projects/
+                      {(field.value ?? '').trim() || 'slug'}/…
+                    </AlertDescription>
+                  </AlertContent>
+                </Alert>
+              ) : null}
             </FormItem>
           )}
         />

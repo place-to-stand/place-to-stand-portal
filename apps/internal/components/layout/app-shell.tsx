@@ -18,6 +18,8 @@ interface Props {
   unacknowledgedSubmissionsCount?: number
   /** Server-read `sidebar_state` cookie value (PRD 004 §02). */
   sidebarDefaultOpen?: boolean
+  /** Names sheet presence channels (`presenceRoomKey`). */
+  presenceKey?: string
 }
 
 /**
@@ -30,6 +32,7 @@ export function AppShell({
   children,
   unacknowledgedSubmissionsCount,
   sidebarDefaultOpen = true,
+  presenceKey,
 }: Props) {
   // Keyed by nav href so future counts (e.g. leads) reuse the same channel.
   const navBadges = useMemo(
@@ -44,7 +47,13 @@ export function AppShell({
     // Palette provider wraps the sidebar too — the search affordance lives
     // there (user-revised placement of PW1). The shortcuts provider sits
     // outside it so the palette and the user menu can both open the list.
-    <ViewerAccessProvider role={user.role} userId={user.id}>
+    <ViewerAccessProvider
+      role={user.role}
+      userId={user.id}
+      name={user.full_name ?? user.email}
+      hasPhoto={Boolean(user.avatar_url)}
+      presenceKey={presenceKey}
+    >
       <KeyboardShortcutsProvider>
         <CommandPaletteProvider>
           <SidebarProvider

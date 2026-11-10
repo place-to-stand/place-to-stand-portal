@@ -1,3 +1,4 @@
+import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 
 /** One row on the Companies page. */
@@ -125,4 +126,8 @@ export type CompanyActionResult = {
   ok: boolean
   error?: string
   id?: string
+  /** The record's version after a save; the sheet's next expected one. */
+  updatedAt?: string
+  /** Set when someone else saved first and nothing was written. */
+  conflict?: SaveConflict
 }

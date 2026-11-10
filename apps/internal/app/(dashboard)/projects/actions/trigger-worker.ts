@@ -215,9 +215,10 @@ export async function cancelDeployment(input: {
     await db
       .update(tasks)
       .set({
+        // No updatedAt: the worker's status is not an edit of the task,
+        // so an open task sheet doesn't take it for someone else's save.
         workerStatus: 'cancelled',
         updatedBy: user.id,
-        updatedAt: new Date().toISOString(),
       })
       .where(eq(tasks.id, taskId))
   }
@@ -418,7 +419,7 @@ export async function deployPlan(input: {
       githubIssueUrl: issue.html_url,
       workerStatus: 'dispatched',
       updatedBy: user.id,
-      updatedAt: new Date().toISOString(),
+      // No updatedAt: see the cancel above.
     })
     .where(eq(tasks.id, taskId))
 
