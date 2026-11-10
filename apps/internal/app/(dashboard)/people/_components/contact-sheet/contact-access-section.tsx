@@ -294,14 +294,18 @@ function ManagedSignIn({
             <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
               <div className={FIELD_STACK_CLASS}>
                 <Label htmlFor='contact-sign-in-email'>Signs in as</Label>
-                <Input
-                  id='contact-sign-in-email'
-                  value={personEmail}
-                  placeholder='Add an email above'
-                  readOnly
-                  // Edited as Email above; shown here so the sign-in reads whole.
-                  tabIndex={-1}
-                />
+                {/* Shown so the sign-in reads whole; changed as Email above. */}
+                <DisabledFieldTooltip
+                  disabled
+                  reason='Change it in Email above: they sign in with that address.'
+                >
+                  <Input
+                    id='contact-sign-in-email'
+                    value={personEmail}
+                    placeholder='Add an email above'
+                    disabled
+                  />
+                </DisabledFieldTooltip>
                 <p className='text-muted-foreground text-xs'>
                   {!hasSignIn
                     ? 'New sign-in'
