@@ -6,6 +6,7 @@ import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { Switch } from '@pts/ui/switch'
+import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
@@ -70,7 +71,7 @@ export function ComponentsAccess() {
       </Specimen>
       <Specimen
         label='Live sign-in'
-        note='Fields two to a row, full width, as in a company Client section: the sign-in is a state of the person, so no record card. Email is read-only here (edited above); Send reset link is a small button left of the switch'
+        note='Fields two to a row, full width, as in a company Client section: the sign-in is a state of the person, so no record card. Email is disabled here with a tooltip (changed as Email above); Send reset link is a small button left of the switch'
         className='block max-w-2xl'
       >
         <SheetSection
@@ -94,12 +95,16 @@ export function ComponentsAccess() {
           <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
             <div className='grid gap-2'>
               <Label htmlFor='design-sign-in-email'>Signs in as</Label>
-              <Input
-                id='design-sign-in-email'
-                value='ada@acme.com'
-                readOnly
-                tabIndex={-1}
-              />
+              <DisabledFieldTooltip
+                disabled
+                reason='Set it in Email above: they sign in with that address.'
+              >
+                <Input
+                  id='design-sign-in-email'
+                  value='ada@acme.com'
+                  disabled
+                />
+              </DisabledFieldTooltip>
               <p className='text-muted-foreground text-xs'>
                 Last sign-in: never
               </p>
