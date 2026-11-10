@@ -16,6 +16,7 @@ export function TagList({
   return (
     <span className='flex min-w-0 items-center gap-1 overflow-hidden'>
       {shown.map(name => (
+        // Badges truncate before the "+N" does.
         <TagBadge key={name} name={name} className='min-w-0 shrink' />
       ))}
       {hidden > 0 ? (

@@ -131,7 +131,7 @@ export function TagField({
         </PopoverTrigger>
         <PopoverContent
           sideOffset={8}
-          className='w-(--radix-popover-trigger-width) min-w-64 p-0'
+          className='w-(--anchor-width) min-w-64 p-0'
         >
           <Command>
             <CommandInput
@@ -200,7 +200,7 @@ export function TagField({
         </PopoverContent>
       </Popover>
       {value.length ? (
-        <ul className='flex flex-wrap gap-1.5' aria-label='Tags'>
+        <ul className='flex flex-wrap gap-1.5' aria-label='Tags picked'>
           {value.map(name => (
             <li key={tagKey(name)} className='max-w-full'>
               <TagBadge

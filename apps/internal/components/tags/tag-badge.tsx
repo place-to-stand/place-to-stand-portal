@@ -33,7 +33,7 @@ export function TagBadge({
           disabled={disabled}
           className='hover:bg-foreground/10 focus-visible:ring-ring/50 -my-0.5 cursor-pointer rounded-full p-0.5 outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50'
         >
-          <XIcon aria-hidden />
+          <XIcon aria-hidden className='size-3' />
         </button>
       ) : null}
     </Badge>

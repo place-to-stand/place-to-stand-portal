@@ -150,11 +150,14 @@ export function CompaniesTable({
               {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
               slack, so the select and Actions columns keep their widths. */}
               {sortHead('name', 'Company', '')}
-              <TableHead className='w-[16%]'>Tags</TableHead>
+              {/* Narrower beside the billing columns, so the name keeps room. */}
+              <TableHead className={seesBilling ? 'w-[12%]' : 'w-[20%]'}>
+                Tags
+              </TableHead>
               {seesBilling
                 ? sortHead('client', 'Billing type', 'w-[9%]')
                 : null}
-              {seesBilling ? sortHead('hours', 'Hours', 'w-[18%]') : null}
+              {seesBilling ? sortHead('hours', 'Hours', 'w-[14%]') : null}
               {sortHead('people', 'People', 'w-[8%]', 'center')}
               {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
               {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
@@ -226,7 +229,10 @@ export function CompaniesTable({
                     </TableCell>
                     <TableCell label='Tags'>
                       {company.tags.length ? (
-                        <TagList names={company.tags} />
+                        <TagList
+                          names={company.tags}
+                          max={seesBilling ? 1 : 2}
+                        />
                       ) : (
                         <EmptyValue />
                       )}
