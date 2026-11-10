@@ -106,6 +106,8 @@ export type UseInvoiceSheetStateReturn = {
   handleLoadTheirs: () => void
   totals: { subtotal: number; taxAmount: number; total: number }
   taxRateLabel: string | null
+  /** The Client picker's change: sets the client and its tax rate. */
+  handleClientChange: (companyId: string) => void
   handleSheetOpenChange: (open: boolean) => void
   handleSubmit: (values: InvoiceFormValues, mode?: SheetSaveMode) => void
   handleRequestDelete: () => void
@@ -148,9 +150,6 @@ export function useInvoiceSheetState({
   const [isLoading, startLoadTransition] = useTransition()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const invoiceWithLineItemsRef = useRef<InvoiceWithLineItems | null>(null)
-  // Track the client ID loaded from the database / pre-fill so we only
-  // auto-fill when the user actively picks a *different* client.
-  const loadedClientIdRef = useRef<string | null>(null)
   // Read inside the load effect without re-running it (a new callback each
   // render would reset the form mid-edit).
   const onOpenChangeRef = useRef(onOpenChange)
@@ -244,13 +243,17 @@ export function useInvoiceSheetState({
   const invoiceId = invoice?.id ?? null
   const duplicateOfId = duplicateOf?.id ?? null
   const invoiceVersion = invoice ? `${invoice.id}:${invoice.updated_at}` : null
+  // What the sheet was loaded as: the version shown, or a new or copied
+  // draft (which a refresh must not reset over edits either).
+  const loadKey =
+    invoiceVersion ?? (duplicateOfId ? `copy:${duplicateOfId}` : 'new')
   const shownVersion = useRef<string | null>(null)
   useEffect(() => {
     if (!open) {
       shownVersion.current = null
       return
     }
-    if (invoiceVersion && invoiceVersion === shownVersion.current) {
+    if (loadKey === shownVersion.current) {
       return
     }
 
@@ -258,6 +261,7 @@ export function useInvoiceSheetState({
       // Duplicate — a new draft with the source's client, notes, tax and
       // lines. Line ids are dropped so saving inserts fresh rows.
       invoiceWithLineItemsRef.current = null
+      shownVersion.current = loadKey
       startLoadTransition(async () => {
         try {
           const source = await loadInvoice(duplicateOfId)
@@ -272,7 +276,6 @@ export function useInvoiceSheetState({
             onOpenChangeRef.current(false)
             return
           }
-          loadedClientIdRef.current = source.company_id
           const defaults = buildInvoiceFormDefaults(source)
           form.reset({
             ...defaults,
@@ -314,9 +317,7 @@ export function useInvoiceSheetState({
         // Ignore malformed sessionStorage data
       }
 
-      // Mark the pre-filled client (if any) so auto-fill skips hydration
-      loadedClientIdRef.current = prefillData?.companyId ?? null
-
+      shownVersion.current = loadKey
       startResetTransition(() => {
         if (prefillData) {
           form.reset(prefillData)
@@ -360,8 +361,6 @@ export function useInvoiceSheetState({
         shownVersion.current = fullInvoice
           ? `${fullInvoice.id}:${fullInvoice.updated_at}`
           : null
-        // Mark the loaded client so auto-fill skips hydration
-        loadedClientIdRef.current = fullInvoice?.company_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
         // The version Save sends back is the one these lines came from.
         saveConflict.seed(fullInvoice?.updated_at)
@@ -378,7 +377,7 @@ export function useInvoiceSheetState({
   }, [
     open,
     invoiceId,
-    invoiceVersion,
+    loadKey,
     duplicateOfId,
     form,
     resetFormState,
@@ -404,31 +403,30 @@ export function useInvoiceSheetState({
     return map
   }, [taxRates])
 
-  useEffect(() => {
-    if (!watchedClientId) return
-
-    // Skip auto-fill when the client matches what was loaded (initial hydration)
-    if (watchedClientId === loadedClientIdRef.current) return
-
-    // Mark this client as the "current" so switching back won't re-trigger
-    loadedClientIdRef.current = watchedClientId
-
-    const selectedClient = clients.find(c => c.id === watchedClientId)
-    if (!selectedClient) return
-
-    // Auto-fill tax rate from client state
-    if (selectedClient.state) {
-      const matchingRate = taxRateMap.get(selectedClient.state)
-      if (matchingRate) {
-        const ratePercent = Number(matchingRate.rate) * 100
-        form.setValue('taxRate', ratePercent, { shouldDirty: true })
-      } else {
-        form.setValue('taxRate', 0, { shouldDirty: true })
-      }
-    } else {
-      form.setValue('taxRate', 0, { shouldDirty: true })
-    }
-  }, [watchedClientId, clients, taxRateMap, form])
+  // Picking a client fills in its state's tax rate: one edit with the
+  // client (one undo step), never an effect that undo would re-run.
+  const handleClientChange = useCallback(
+    (companyId: string) => {
+      form.setValue('companyId', companyId, {
+        shouldDirty: true,
+        // Like the field's own change: clears "Select a client" once shown.
+        shouldValidate: form.formState.isSubmitted,
+      })
+      const selectedClient = companyId
+        ? clients.find(c => c.id === companyId)
+        : undefined
+      if (!selectedClient) return
+      const matchingRate = selectedClient.state
+        ? taxRateMap.get(selectedClient.state)
+        : undefined
+      form.setValue(
+        'taxRate',
+        matchingRate ? Number(matchingRate.rate) * 100 : 0,
+        { shouldDirty: true }
+      )
+    },
+    [clients, form, taxRateMap]
+  )
 
   // Derive tax rate label for display
   const taxRateLabel = useMemo(() => {
@@ -480,7 +478,6 @@ export function useInvoiceSheetState({
         shownVersion.current = fullInvoice
           ? `${fullInvoice.id}:${fullInvoice.updated_at}`
           : null
-        loadedClientIdRef.current = fullInvoice?.company_id ?? null
         invoiceWithLineItemsRef.current = fullInvoice
         saveConflict.seed(fullInvoice?.updated_at)
         resetFormState(fullInvoice)
@@ -574,7 +571,6 @@ export function useInvoiceSheetState({
               shownVersion.current = `${fullInvoice.id}:${fullInvoice.updated_at}`
               invoiceWithLineItemsRef.current = fullInvoice
               saveConflict.seed(fullInvoice.updated_at)
-              loadedClientIdRef.current = fullInvoice.company_id ?? null
               resetFormState(fullInvoice)
               stay({ id: result.id, rebaseline: () => {} })
               return
@@ -850,6 +846,7 @@ export function useInvoiceSheetState({
     handleLoadTheirs,
     totals,
     taxRateLabel,
+    handleClientChange,
     handleSheetOpenChange,
     handleSubmit,
     handleRequestDelete,

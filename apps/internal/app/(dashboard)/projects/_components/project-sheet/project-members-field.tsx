@@ -87,7 +87,16 @@ export function ProjectMembersField({
 
   const setMembers = (next: string[]) =>
     form.setValue('memberIds', next, { shouldDirty: true })
-  const removals = usePendingRemovals<MemberCandidate>(memberKey, members)
+  // The members as loaded (the field's saved state).
+  const savedMemberKeys = useMemo(
+    () => new Set(data?.memberIds ?? []),
+    [data?.memberIds]
+  )
+  const removals = usePendingRemovals<MemberCandidate>(
+    memberKey,
+    members,
+    savedMemberKeys
+  )
 
   // The + and the empty state open the same picker.
   const [pickerOpen, setPickerOpen] = useState(false)

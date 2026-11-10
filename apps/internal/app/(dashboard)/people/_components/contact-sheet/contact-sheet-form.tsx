@@ -319,6 +319,13 @@ export function ContactSheetForm({
               render={({ field }) => (
                 <ContactCompaniesSection
                   companies={field.value}
+                  savedCompanyIds={
+                    new Set(
+                      (form.control._defaultValues.companies ?? []).map(
+                        entry => entry?.companyId ?? ''
+                      )
+                    )
+                  }
                   disabled={locked}
                   loading={!companiesLoaded && !companiesLoadFailed}
                   loadFailed={companiesLoadFailed}

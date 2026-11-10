@@ -10,4 +10,5 @@ export type {
   PartnerUserOption,
   CloserCandidate,
   CloserDraft,
+  ClientBillingHistoryState,
 } from './types'

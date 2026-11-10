@@ -28,7 +28,10 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { LEADS_FIRST_ROLES } from '@/lib/auth/roles'
 import { useLeadOptions } from '@/lib/leads/use-lead-options'
-import { useSheetFormControls } from '@/lib/hooks/use-sheet-form-controls'
+import {
+  useSheetFormControls,
+  useSheetHistoryState,
+} from '@/lib/hooks/use-sheet-form-controls'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
 import type {
@@ -124,6 +127,7 @@ export function TaskSheet(props: TaskSheetProps) {
     acceptedAttachmentTypes,
     maxAttachmentSize,
     attachmentsDisabledReason,
+    attachmentsHistory,
   } = useTaskSheetState({
     open: props.open,
     onOpenChange: props.onOpenChange,
@@ -206,13 +210,15 @@ export function TaskSheet(props: TaskSheetProps) {
     [form, handleFormSubmit]
   )
 
-  const { undo, redo, canUndo, canRedo } = useSheetFormControls({
+  const { undo, redo, canUndo, canRedo, sources } = useSheetFormControls({
     form,
     isActive: props.open,
     canSave: !submitDisabled,
     onSave: handleSave,
     historyKey,
   })
+  // Adding or removing a file is an edit too: undo takes it back.
+  useSheetHistoryState(sources, 'attachments', attachmentsHistory)
 
   const saveLabel = useMemo(
     () =>

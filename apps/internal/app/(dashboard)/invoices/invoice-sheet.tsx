@@ -109,6 +109,7 @@ export function InvoiceSheet({
     handleLoadTheirs,
     totals,
     taxRateLabel,
+    handleClientChange,
     handleSheetOpenChange,
     handleSubmit,
     handleRequestDelete,
@@ -328,7 +329,7 @@ export function InvoiceSheet({
                                     ref={firstFieldRef}
                                     name={field.name}
                                     value={field.value ?? ''}
-                                    onChange={field.onChange}
+                                    onChange={handleClientChange}
                                     onBlur={field.onBlur}
                                     items={clientOptions}
                                     searchPlaceholder='Search clients…'

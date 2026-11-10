@@ -98,6 +98,8 @@ export type UseClientBillingFormReturn = {
   handleClearOrigination: () => void
   // Closers
   closers: CloserDraft[]
+  /** Keys of the closers as saved: only those show as Pending removal. */
+  savedCloserKeys: ReadonlySet<string>
   availableCloserUsers: CloserCandidate[]
   availableCloserContacts: CloserCandidate[]
   /** Sum of the typed shares; null while one isn't a number. */
@@ -112,4 +114,14 @@ export type UseClientBillingFormReturn = {
   handleAddCloser: (candidate: CloserCandidate) => void
   handleRemoveCloser: (key: string) => void
   handleCloserShareChange: (key: string, shareText: string) => void
+  /** Everything an edit here can change, for the sheet's undo stack. */
+  historyState: ClientBillingHistoryState
+  restoreHistoryState: (state: ClientBillingHistoryState) => void
+}
+
+export type ClientBillingHistoryState = {
+  values: ClientSheetFormValues
+  originationUserId: string | null
+  originationContactId: string | null
+  closers: CloserDraft[]
 }

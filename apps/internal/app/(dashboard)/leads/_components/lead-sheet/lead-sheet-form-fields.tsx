@@ -56,6 +56,11 @@ export function LeadSheetFormFields({
   const currentAssigneeId = useWatch({ control, name: 'assigneeId' }) ?? null
   // A contact created from here starts at the lead's company.
   const { field: companyField } = useController({ control, name: 'company' })
+  // Clearing the source clears its detail, as one edit (one undo step).
+  const { field: sourceDetailField } = useController({
+    control,
+    name: 'sourceDetail',
+  })
   const leadCompanyId = companyField.value?.id ?? null
   const assigneeItems = useMemo(
     () => [
@@ -197,11 +202,12 @@ export function LeadSheetFormFields({
               <FormLabel>Source</FormLabel>
               <Select
                 value={field.value ?? 'none'}
-                onValueChange={(value: string) =>
+                onValueChange={(value: string) => {
+                  if (value === 'none') sourceDetailField.onChange('')
                   field.onChange(
                     value === 'none' ? null : (value as LeadSourceTypeValue)
                   )
-                }
+                }}
               >
                 <FormControl>
                   <SelectTrigger>

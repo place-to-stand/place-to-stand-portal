@@ -23,6 +23,8 @@ import { UiRef } from '@/components/ui/ui-ref'
 
 type ContactCompaniesSectionProps = {
   companies: ContactCompanyEntry[]
+  /** The companies as saved: only those show as Pending removal after undo. */
+  savedCompanyIds?: ReadonlySet<string>
   disabled: boolean
   /** Their companies are still loading: hold their place, not "none". */
   loading?: boolean
@@ -47,6 +49,7 @@ type ContactCompaniesSectionProps = {
  */
 export function ContactCompaniesSection({
   companies,
+  savedCompanyIds,
   disabled: disabledProp,
   loading = false,
   loadFailed = false,
@@ -69,10 +72,14 @@ export function ContactCompaniesSection({
     )
 
   // Removed companies stay as Pending removal, with Undo, until Save.
-  const removals = usePendingRemovals<ContactCompanyEntry>(companyEntryKey, [
-    ...companies.filter(entry => !entry.archived),
-    ...companies.filter(entry => entry.archived),
-  ])
+  const removals = usePendingRemovals<ContactCompanyEntry>(
+    companyEntryKey,
+    [
+      ...companies.filter(entry => !entry.archived),
+      ...companies.filter(entry => entry.archived),
+    ],
+    savedCompanyIds
+  )
 
   return (
     <EntityList

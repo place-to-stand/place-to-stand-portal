@@ -329,9 +329,14 @@ export function useContactSheetState({
         // The saved state of the Sign-in fields. A whole-form reset (keeping
         // anything already edited): the Sign-in controls mount only once the
         // account is known, and resetField skips fields not yet registered.
+        // Built from the saved values, not the current ones: else whatever
+        // was typed meanwhile would become "saved" and the sheet could close
+        // without asking.
         form.reset(
           {
-            ...form.getValues(),
+            ...(structuredClone(
+              form.control._defaultValues
+            ) as ContactFormData),
             signIn: {
               enabled: !account.disabledAt && !account.deletedAt,
               role: account.role,

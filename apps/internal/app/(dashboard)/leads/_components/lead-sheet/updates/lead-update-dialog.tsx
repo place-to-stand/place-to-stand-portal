@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/rich-text-editor/utils'
 import { toCalendarDate } from '@/lib/dates/calendar-date'
 import type { LeadUpdateRecord } from '@/lib/leads/types'
+import { OWN_UNDO_ATTRIBUTE } from '@/lib/hooks/use-sheet-form-controls/keyboard'
 import {
   LEAD_UPDATE_TYPES,
   type LeadUpdateTypeValue,
@@ -187,7 +188,9 @@ export function LeadUpdateDialog({
           heading: no dialog over the lead sheet. It eases open and closed so
           the list below doesn't jump; pb-2 is its 8px over the list. */}
       <InlineReveal open={open}>
-        <div className='pb-2'>
+        {/* An update saves on its own click, not with the lead: ⌘Z here
+            edits the update, never the lead's history. */}
+        <div className='pb-2' {...{ [OWN_UNDO_ATTRIBUTE]: '' }}>
           <div className='bg-card space-y-4 rounded-lg border p-3'>
             {/* min-w-0 lets this grid child shrink to the popup's width — without
             it the RTE toolbar's min-content width drags the whole track wider

@@ -154,7 +154,10 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
 
   // A keep-open save applied the link edits: they are saved, not pending.
   const [repoReloadKey, setRepoReloadKey] = useState(0)
+  // Set while a save clears them: not an edit, so not an undo step.
+  const linksSavedRef = useRef(false)
   const clearSavedLinks = useCallback(() => {
+    linksSavedRef.current = true
     // The repo list loads itself: read it back with the saved changes.
     setRepoReloadKey(key => key + 1)
     setPendingRepos([])
@@ -223,7 +226,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     }
   }, [])
 
-  const { undo, redo, canUndo, canRedo, notifyExternalChange } =
+  const { undo, redo, canUndo, canRedo, notifyExternalChange, rebaseline } =
     useSheetFormControls({
       form,
       isActive: isSheetOpen,
@@ -234,8 +237,14 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
       applyExternalState,
     })
 
-  // Notify undo/redo system when repos change
+  // Notify undo/redo system when repos change; a save clearing them
+  // starts the stack again instead.
   useEffect(() => {
+    if (linksSavedRef.current) {
+      linksSavedRef.current = false
+      rebaseline()
+      return
+    }
     notifyExternalChange()
   }, [
     pendingRepos,
@@ -243,6 +252,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
     pendingLinks,
     removedLinkIds,
     notifyExternalChange,
+    rebaseline,
   ])
 
   const firstFieldRef = useRef<HTMLInputElement>(null)
