@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { Star, X } from 'lucide-react'
+import { X } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   ContactLinkPicker,
@@ -12,13 +11,13 @@ import {
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { EntityList } from '@/components/sheets/entity-list'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
+import { PrimaryContactToggle } from '@/components/sheets/primary-contact-toggle'
 import { RecordRowField } from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SiteMark } from '@/components/ui/site-mark'
 import { toSafeHref } from '@/components/ui/url-input'
 import { SIGN_IN_COMPANIES_ADMIN_ONLY } from '@/lib/companies/people-copy'
 import type { CompanyContactSummary } from '@/lib/companies/types'
-import { cn } from '@/lib/utils'
 
 /** Someone picked on the People list, joining the company on Save. */
 export type StagedPerson = {
@@ -103,30 +102,13 @@ export function CompanyPeopleSection({
         reason={primaryLockedReason}
         className='w-auto'
       >
-        {/* Labelled, like the person sheet's: a toggle that reads as one. */}
-        <Button
-          type='button'
-          variant='ghost'
-          size='xs'
+        <PrimaryContactToggle
+          name={contact.name}
+          isPrimary={isPrimary}
+          hasPrimary={primaryContactId !== null}
           disabled={disabled || Boolean(primaryLockedReason)}
-          aria-pressed={isPrimary}
-          aria-label={
-            isPrimary
-              ? `Remove ${contact.name} as primary contact`
-              : `Make ${contact.name} the primary contact`
-          }
-          onClick={() => onSetPrimary(isPrimary ? null : contact.id)}
-          className='text-muted-foreground gap-1.5 text-xs font-normal'
-        >
-          <Star
-            className={cn(
-              'size-4',
-              isPrimary ? 'text-warning fill-current' : 'opacity-60'
-            )}
-            aria-hidden
-          />
-          Primary contact
-        </Button>
+          onToggle={() => onSetPrimary(isPrimary ? null : contact.id)}
+        />
       </DisabledFieldTooltip>
     )
   }
@@ -249,8 +231,10 @@ export function CompanyPeopleSection({
             fields={fields(contact)}
             actions={
               <>
-                {linkedinButton(contact)}
+                {/* Star first: hidden on most cards, its space sits at the
+                    left end instead of between LinkedIn and remove. */}
                 {star(contact)}
+                {linkedinButton(contact)}
                 {removeButton(contact)}
               </>
             }

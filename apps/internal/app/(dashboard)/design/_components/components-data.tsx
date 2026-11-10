@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Star } from 'lucide-react'
 
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { SiteMark } from '@/components/ui/site-mark'
@@ -22,6 +21,7 @@ import {
   LeadRecordRow,
   ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
+import { PrimaryContactToggle } from '@/components/sheets/primary-contact-toggle'
 import {
   RecordRowField,
   SheetRecordList,
@@ -117,6 +117,12 @@ export function ComponentsRecordRows() {
             openable={false}
             actions={
               <>
+                <PrimaryContactToggle
+                  name='Ada Lovelace'
+                  isPrimary={starred}
+                  hasPrimary={starred}
+                  onToggle={() => setStarred(value => !value)}
+                />
                 <RowActionButton
                   type='button'
                   label="Open Ada Lovelace's LinkedIn"
@@ -129,13 +135,6 @@ export function ComponentsRecordRows() {
                       'noopener,noreferrer'
                     )
                   }
-                />
-                <RowActionButton
-                  label={
-                    starred ? 'Unset primary contact' : 'Set primary contact'
-                  }
-                  icon={<Star className={cn(starred && 'fill-current')} />}
-                  onClick={() => setStarred(value => !value)}
                 />
               </>
             }

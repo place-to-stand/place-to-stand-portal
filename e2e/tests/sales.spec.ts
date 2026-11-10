@@ -134,7 +134,7 @@ test('sales can’t change a client’s primary contact', async ({ page }) => {
     sheet.getByRole('button', { name: 'Add person' }).first()
   ).toBeEnabled()
   const stars = sheet.getByRole('button', {
-    name: /^(Make .+ the primary contact|Remove .+ as primary contact)$/,
+    name: /^Primary contact: .+$/,
   })
   test.skip((await stars.count()) === 0, 'the client has no people')
   await expect(stars.first()).toBeDisabled()
