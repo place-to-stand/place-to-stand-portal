@@ -206,7 +206,8 @@ export function InvoicesTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                className='w-[11%]'
+                // Wide enough for the icon, Draft and Net 30 side by side.
+                className='w-[16%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -232,7 +233,7 @@ export function InvoicesTableSection({
               >
                 Issued
               </SortableTableHead>
-              <TableHead className='w-[20%]'>Share link</TableHead>
+              <TableHead className='w-[15%]'>Share link</TableHead>
               {/* Sized to the row's buttons: up to three status actions
                   (send, mark sent or revert, void), or Restore on the
                   Archive tab. Archive itself is in the right-click menu and
