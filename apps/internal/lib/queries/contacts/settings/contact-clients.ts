@@ -24,6 +24,8 @@ export type ClientOption = {
   id: string
   name: string
   slug: string
+  /** Billed now: filters show the Client badge. */
+  isClient?: boolean
 }
 
 export type ContactSheetInputRow = ContactProfile & {
@@ -101,6 +103,7 @@ export async function listCompanyFilterOptions(
       id: companies.id,
       name: companies.name,
       slug: companies.slug,
+      isClient: sql<boolean>`coalesce(${isClientCompany()}, false)`,
     })
     .from(companies)
     .where(isNull(companies.deletedAt))
@@ -110,6 +113,7 @@ export async function listCompanyFilterOptions(
     id: row.id,
     name: row.name,
     slug: row.slug ?? row.id,
+    isClient: row.isClient,
   }))
 }
 

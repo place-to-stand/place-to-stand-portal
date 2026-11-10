@@ -226,7 +226,12 @@ function CommandPalette() {
                 value={`${company.name} company-${company.id}`}
                 onSelect={() => navigate(companySheetHref(company.id))}
               >
-                <ENTITY_ICONS.company className='size-4' />
+                {/* A client: the company icon with the client dot. */}
+                {company.isClient ? (
+                  <ENTITY_ICONS.client className='size-4' />
+                ) : (
+                  <ENTITY_ICONS.company className='size-4' />
+                )}
                 <span className='truncate'>{company.name}</span>
                 {company.isClient ? (
                   <CompanyBillingMark
@@ -278,7 +283,12 @@ function CommandPalette() {
                   )
                 }
               >
-                <ENTITY_ICONS.contact className='size-4' />
+                {/* Can sign in: the person icon with the sign-in dot. */}
+                {contact.hasSignIn ? (
+                  <ENTITY_ICONS.user className='size-4' />
+                ) : (
+                  <ENTITY_ICONS.contact className='size-4' />
+                )}
                 <span>
                   {contact.name}{' '}
                   <span className='text-muted-foreground'>{contact.email}</span>

@@ -77,7 +77,9 @@ function sheetParamNames(dir, registry) {
 
 function entityIconNames(dir, registry) {
   return [
-    ...readFileSync(join(dir, registry), 'utf8').matchAll(/iconName: '(\w+)'/g),
+    ...readFileSync(join(dir, registry), 'utf8').matchAll(
+      /(?:iconName|retiredIcon): '(\w+)'/g
+    ),
   ].map(match => match[1])
 }
 
@@ -95,7 +97,7 @@ export function nextApp({
       name: 'lucide-react',
       importNames: entityIconNames(dir, entityRegistry),
       message:
-        'Entity icons come from the registry: ENTITIES.<entity>.icon / ENTITY_ICONS in @/lib/entity-accents. For a non-entity meaning pick another glyph (e.g. CalendarClock for a timestamp).',
+        'Entity icons come from the registry: ENTITIES.<entity>.icon / ENTITY_ICONS in @/lib/entity-accents. A client or sign-in is ENTITY_ICONS.client / .user (the company or person icon with its state dot), never Briefcase or UserRound. For a non-entity meaning pick another glyph (e.g. CalendarClock for a timestamp).',
     })
     // A sheet's related-records list (heading, +, empty state, cards) is
     // always EntityList, which imports the + by relative path.

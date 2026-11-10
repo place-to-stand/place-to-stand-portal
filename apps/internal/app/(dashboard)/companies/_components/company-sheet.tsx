@@ -66,7 +66,8 @@ import {
   clearSheetSectionTarget,
   peekSheetSectionTarget,
 } from '@/lib/sheets/sheet-section-target'
-import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { ClientBadge } from '@/components/companies/client-badge'
+import { CompanyIcon } from '@/components/companies/company-icon'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useSaveConflict } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
@@ -507,11 +508,10 @@ export function CompanySheet({
             }
             title={isEditing ? (company?.name ?? 'Company') : 'Create company'}
             leading={
-              <ENTITY_ICONS.company
-                aria-hidden
-                className={`${ENTITY_ACCENTS.company.icon} size-4 shrink-0`}
-              />
+              // Billed: the company icon with the client dot, and the badge.
+              <CompanyIcon isClient={Boolean(clientCompanyId)} />
             }
+            badges={clientCompanyId ? <ClientBadge /> : null}
             className='flex-shrink-0'
             menu={
               // An archived company is restored from the archive list.

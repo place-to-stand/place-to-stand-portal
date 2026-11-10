@@ -8,6 +8,7 @@ import {
   EntityLinkPicker,
   type EntityLinkOption,
 } from '@/components/ui/entity-link-picker'
+import { ClientBadge } from '@/components/companies/client-badge'
 import type { CompanyOption } from '@/lib/companies/types'
 import { getJson } from '@/lib/http/get-json'
 
@@ -86,6 +87,7 @@ export function CompanyLinkPicker({
         .map(company => ({
           ...toOption(company),
           matchHints: company.searchHints,
+          badge: company.isClient ? <ClientBadge /> : undefined,
         }))}
       disabled={disabled}
       placeholder={placeholder}

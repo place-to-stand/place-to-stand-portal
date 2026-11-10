@@ -4,6 +4,8 @@
  * entity in apps/internal/lib/entity-accents.ts:
  *   - lacks an icon or a colour token,
  *   - shares its icon with another entity,
+ *   - is a state of another entity (client, sign-in) but doesn't wear that
+ *     entity's icon (its own is that icon plus a dot),
  *   - has no `--entity-<token>` value in theme.css for light or dark,
  *   - or its colour is under 3:1 on a card in either theme (WCAG 1.4.11).
  * And fails when a status colour (success, warning, destructive) sits within
@@ -32,6 +34,7 @@ const entities = [
   key,
   icon: block.match(/^ {4}icon: (\w+),$/m)?.[1],
   iconName: block.match(/^ {4}iconName: '(\w+)',$/m)?.[1],
+  stateOf: block.match(/^ {4}stateOf: '(\w+)',$/m)?.[1],
   token: block.match(/^ {4}token: '([\w-]+)',$/m)?.[1],
 }))
 
@@ -97,7 +100,27 @@ for (const entity of entities) {
   if (!entity.icon || !entity.iconName) {
     errors.push(`${entity.key}: no icon`)
   } else {
-    if (entity.icon !== entity.iconName) {
+    if (entity.stateOf) {
+      // A state (client, sign-in) wears its record's icon with a dot.
+      const base = entities.find(other => other.key === entity.stateOf)
+      if (!base) {
+        errors.push(`${entity.key}: stateOf '${entity.stateOf}' is no entity`)
+      } else if (entity.iconName !== base.iconName) {
+        errors.push(
+          `${entity.key}: a state of ${base.key} must wear its icon (${base.iconName}), not ${entity.iconName}`
+        )
+      } else {
+        // The glyph actually drawn: `const X = withStateMark(Base, …)`.
+        const drawn = registry.match(
+          new RegExp(`const ${entity.icon} = withStateMark\\(\\s*(\\w+)`)
+        )?.[1]
+        if (drawn !== base.icon) {
+          errors.push(
+            `${entity.key}: ${entity.icon} must be withStateMark(${base.icon}, …), not ${drawn ?? 'something else'}`
+          )
+        }
+      }
+    } else if (entity.icon !== entity.iconName) {
       errors.push(
         `${entity.key}: iconName '${entity.iconName}' ≠ icon ${entity.icon}`
       )

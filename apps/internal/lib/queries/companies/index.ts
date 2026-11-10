@@ -370,6 +370,8 @@ export async function listCompanyOptions(
       name: companies.name,
       website: companies.website,
       searchHints: companySearchHintsSql(),
+      // Billed now: the pickers show the Client badge.
+      isClient: sql<boolean>`coalesce(${isClientCompany()}, false)`,
     })
     .from(companies)
     .where(isNull(companies.deletedAt))

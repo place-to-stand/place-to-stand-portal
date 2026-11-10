@@ -38,6 +38,7 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { CompanyIcon } from '@/components/companies/company-icon'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { TruncationTooltip } from '@/components/ui/truncation-tooltip'
 import { UserAvatar } from '@/components/ui/user-avatar'
@@ -235,10 +236,11 @@ export function ContactsTableSection({
                     <TableCell label='Companies' className='text-sm'>
                       {contact.companyId && contact.companyName ? (
                         <span className='flex min-w-0 items-center gap-2'>
-                          <ENTITY_ICONS.company
-                            className={cn(
-                              ENTITY_ACCENTS.company.icon,
-                              'h-4 w-4 shrink-0'
+                          <CompanyIcon
+                            isClient={Boolean(
+                              contact.companies.find(
+                                company => company.id === contact.companyId
+                              )?.isClient
                             )}
                           />
                           {/* The row ignores clicks on links, so this opens the

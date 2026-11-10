@@ -112,6 +112,7 @@ export function ComponentsRecordRows() {
               email: 'ada@acme.com',
               jobTitle: 'Head of product',
             }}
+            hasSignIn
             openable={false}
             actions={
               <RowActionButton
@@ -170,6 +171,7 @@ export function ComponentsRecordRows() {
           />
           <CompanyRecordRow
             company={{ id: 'design-acme', name: 'Acme Industries' }}
+            isClient
             titleAddon={<BillingTypeBadge billingType='prepaid' />}
             openable={false}
           />

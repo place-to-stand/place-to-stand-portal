@@ -163,7 +163,7 @@ function resolveProjectOwnerDisplay(project: ProjectWithClient): OwnerDisplay {
 
   if (client) {
     return {
-      Icon: ENTITY_ICONS.company,
+      Icon: ENTITY_ICONS.client,
       label: client.name,
       message: client.deleted_at ? 'Client archived' : undefined,
       messageTone: client.deleted_at ? 'destructive' : undefined,
@@ -171,7 +171,7 @@ function resolveProjectOwnerDisplay(project: ProjectWithClient): OwnerDisplay {
   }
 
   return {
-    Icon: ENTITY_ICONS.company,
+    Icon: ENTITY_ICONS.client,
     label: 'Client missing',
     message: 'Reassign this project to a client.',
     messageTone: 'destructive',

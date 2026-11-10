@@ -62,7 +62,7 @@
   --entity-time-log: oklch(50% 0.134 242.7);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
-  --entity-sign-in: oklch(45.5% 0.188 13.7);
+  --entity-sign-in: oklch(52% 0.22 305);
   --entity-client: oklch(44.8% 0.119 151.3);
   --entity-invoice: oklch(51.1% 0.096 186.4);
   --entity-hour-block: oklch(53.2% 0.157 131.6);
@@ -117,7 +117,7 @@
   --entity-time-log: oklch(82.8% 0.111 230.3);
   --entity-company: oklch(75% 0.183 55.9);
   --entity-person: oklch(71.2% 0.194 13.4);
-  --entity-sign-in: oklch(81% 0.117 11.6);
+  --entity-sign-in: oklch(76% 0.15 305);
   --entity-client: oklch(72.3% 0.219 149.6);
   --entity-invoice: oklch(85.5% 0.138 181.1);
   --entity-hour-block: oklch(84.1% 0.238 128.8);
@@ -162,7 +162,7 @@
   --entity-time-log: oklch(50% 0.134 242.7);
   --entity-company: oklch(55.3% 0.195 38.4);
   --entity-person: oklch(58.6% 0.253 17.6);
-  --entity-sign-in: oklch(45.5% 0.188 13.7);
+  --entity-sign-in: oklch(52% 0.22 305);
   --entity-client: oklch(44.8% 0.119 151.3);
   --entity-invoice: oklch(51.1% 0.096 186.4);
   --entity-hour-block: oklch(53.2% 0.157 131.6);

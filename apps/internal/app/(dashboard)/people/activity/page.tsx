@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 import { requirePage } from '@/lib/auth/session'
-import { CONTACTS_TABS } from '../_lib/tabs'
+import { peopleTabs } from '../_lib/tabs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { EntityActivityPage } from '@/components/activity/entity-activity-page'
 
@@ -10,12 +10,12 @@ export const metadata: Metadata = {
 }
 
 export default async function ContactsActivityPage() {
-  await requirePage('activity.read_crm')
+  const user = await requirePage('activity.read_crm')
 
   return (
     <EntityActivityPage
       navHref='/people'
-      tabs={CONTACTS_TABS}
+      tabs={peopleTabs(user.role)}
       primaryAction={
         <SheetCreateButton entity='contact' label='Create person' />
       }

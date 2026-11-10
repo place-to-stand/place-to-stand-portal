@@ -39,6 +39,7 @@ import { formatHours } from '@pts/ui/numbers'
 import { BALANCE_TONE_CLASS, balanceTone } from '@/lib/billing/balance-tone'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { ClientBadge } from '@/components/companies/client-badge'
+import { CompanyIcon } from '@/components/companies/company-icon'
 import { PersonAvatar } from '@/components/ui/user-avatar'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
@@ -208,12 +209,8 @@ export function CompaniesTable({
                     <SelectRowCell id={company.id} label={company.name} />
                     <TableCell>
                       <div className='flex min-w-0 items-center gap-2'>
-                        <ENTITY_ICONS.company
-                          className={cn(
-                            ENTITY_ACCENTS.company.icon,
-                            'h-4 w-4 shrink-0'
-                          )}
-                        />
+                        {/* Billed now: the company icon wears the client dot. */}
+                        <CompanyIcon isClient={Boolean(company.companyId)} />
                         <span
                           className='truncate font-medium'
                           title={company.name}

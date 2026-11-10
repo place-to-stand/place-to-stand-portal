@@ -2,7 +2,13 @@
 
 import { Button } from '@pts/ui/button'
 
-import { useEffect, useMemo, useRef, type ReactElement } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
 import { Plus } from 'lucide-react'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -27,6 +33,8 @@ export type EntityLinkOption = {
   matchHints?: string[]
   /** A person's avatar (photo, else initials); see `SearchableComboboxItem`. */
   avatar?: SearchableComboboxItem['avatar']
+  /** A state badge after the name, in the list and the field (a client's "Client"). */
+  badge?: ReactNode
 }
 
 type EntityLinkPickerProps<E extends SheetCreatedEntity> = {
@@ -132,6 +140,13 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
       matchHints: option.matchHints,
       // Options of one entity carry no icon: the field's label shows it.
       avatar: option.avatar,
+      // A state badge rides after the name; search still matches the label.
+      render: option.badge ? (
+        <span className='flex min-w-0 items-center gap-2'>
+          <span className='truncate'>{option.label}</span>
+          {option.badge}
+        </span>
+      ) : undefined,
     }))
   }, [options, value])
 

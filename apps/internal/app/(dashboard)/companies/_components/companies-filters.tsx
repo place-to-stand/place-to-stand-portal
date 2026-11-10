@@ -18,38 +18,44 @@ import {
   type CompanyTypeFilter,
 } from '@/lib/companies/filters'
 
-// Plain text: "Client" / "Not a client".
-const TYPE_OPTIONS = COMPANY_TYPE_VALUES.map(value => ({
-  value,
-  label: COMPANY_TYPE_LABELS[value],
-}))
+// Clients have their own tab, so the menu only narrows to the rest.
+const TYPE_OPTIONS = COMPANY_TYPE_VALUES.filter(
+  value => value !== 'client'
+).map(value => ({ value, label: COMPANY_TYPE_LABELS[value] }))
 const LEADS_OPTIONS = COMPANY_LEADS_VALUES.map(value => ({
   value,
   label: COMPANY_LEADS_LABELS[value],
 }))
 
 export function CompaniesFilters({
+  mode,
   search,
   type,
   leads,
   tags,
   basePath,
 }: {
+  mode: 'active' | 'archive'
   search?: string
   type?: CompanyTypeFilter
   leads?: CompanyLeadsFilter
   tags: string[]
   basePath: string
 }) {
+  // On the Clients tab, type=client is the tab, not a filter: Reset keeps it.
+  // Archive has no Clients tab, so there type=client stays a filter.
+  const onClientsTab = mode === 'active' && type === 'client'
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
-    filters: {
-      q: {},
-      type: { isValid: isCompanyType },
-      leads: { isValid: isCompanyLeads },
-      tags: {},
-    },
+    filters: onClientsTab
+      ? { q: {}, leads: { isValid: isCompanyLeads }, tags: {} }
+      : {
+          q: {},
+          type: { isValid: isCompanyType },
+          leads: { isValid: isCompanyLeads },
+          tags: {},
+        },
   })
   // Every company tag in use, as the list shows it; a tag in the link that
   // no company has any more still shows, so it can be cleared.
@@ -78,17 +84,21 @@ export function CompaniesFilters({
         />
       }
       activeFilterCount={
-        (type ? 1 : 0) + (leads ? 1 : 0) + (tags.length ? 1 : 0)
+        (type && !onClientsTab ? 1 : 0) +
+        (leads ? 1 : 0) +
+        (tags.length ? 1 : 0)
       }
       showReset={hasActiveFilters}
       onReset={reset}
     >
-      <FilterSelect
-        value={type}
-        onChange={value => update({ type: value })}
-        placeholder='All companies'
-        options={TYPE_OPTIONS}
-      />
+      {onClientsTab ? null : (
+        <FilterSelect
+          value={type}
+          onChange={value => update({ type: value })}
+          placeholder='All companies'
+          options={TYPE_OPTIONS}
+        />
+      )}
       <FilterSelect
         value={leads}
         onChange={value => update({ leads: value })}

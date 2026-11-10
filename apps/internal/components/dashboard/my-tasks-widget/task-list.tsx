@@ -239,5 +239,5 @@ function renderProjectTypeIcon(
     return <User className={className} aria-hidden />
   }
 
-  return <ENTITY_ICONS.company className={className} aria-hidden />
+  return <ENTITY_ICONS.client className={className} aria-hidden />
 }
