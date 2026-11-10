@@ -61,6 +61,8 @@ export type ClientBillingFieldsProps = {
   onClearOrigination: () => void
   // Closers
   closers: CloserDraft[]
+  /** Keys of the closers as saved: only those show as Pending removal. */
+  savedCloserKeys: ReadonlySet<string>
   availableCloserUsers: CloserCandidate[]
   availableCloserContacts: CloserCandidate[]
   closerShareTotal: number | null
@@ -101,6 +103,7 @@ export function ClientBillingFields({
   onSelectOriginationContact,
   onClearOrigination,
   closers,
+  savedCloserKeys,
   availableCloserUsers,
   availableCloserContacts,
   closerShareTotal,
@@ -305,6 +308,7 @@ export function ClientBillingFields({
         <div className='grid gap-2'>
           <ClientClosersEditor
             closers={closers}
+            savedCloserKeys={savedCloserKeys}
             availableUsers={availableCloserUsers}
             availableContacts={availableCloserContacts}
             shareTotal={closerShareTotal}

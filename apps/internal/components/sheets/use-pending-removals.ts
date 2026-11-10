@@ -14,7 +14,12 @@ export type PendingRemovalRow<T> = { item: T; pending: boolean }
  */
 export function usePendingRemovals<T>(
   keyOf: (item: T) => string,
-  current: readonly T[]
+  current: readonly T[],
+  /**
+   * Keys of the saved rows. Only a saved row shows as Pending removal: one
+   * added and removed again in this sheet (or undone away) just goes.
+   */
+  savedKeys?: ReadonlySet<string>
 ) {
   const [removed, setRemoved] = useState<T[]>([])
   // First-seen order of every key, so a row keeps its place. New keys are
@@ -29,7 +34,11 @@ export function usePendingRemovals<T>(
   if (unseen.length) setOrder(fullOrder)
 
   const currentKeys = new Set(current.map(keyOf))
-  const pending = removed.filter(item => !currentKeys.has(keyOf(item)))
+  const pending = removed.filter(
+    item =>
+      !currentKeys.has(keyOf(item)) &&
+      (!savedKeys || savedKeys.has(keyOf(item)))
+  )
   const position = (item: T) => fullOrder.indexOf(keyOf(item))
   const rows: PendingRemovalRow<T>[] = [
     ...current.map(item => ({ item, pending: false })),

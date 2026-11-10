@@ -47,6 +47,7 @@ import { Button } from '@/components/tiptap-ui-primitive/button'
 
 import { ensureEditorStyles } from './editor-styles'
 import { useRichTextEditor } from './use-rich-text-editor'
+import { OWN_UNDO_ATTRIBUTE } from '@/lib/hooks/use-sheet-form-controls/keyboard'
 
 export type RichTextEditorProps = {
   id?: string
@@ -276,6 +277,9 @@ export function RichTextEditor({
       id={id}
       data-disabled={disabled}
       data-rich-text-editor
+      // An editor with its own undo keeps ⌘Z; inside a sheet, pass
+      // undoRedo={false} and the sheet's history owns it.
+      {...(undoRedo === false ? {} : { [OWN_UNDO_ATTRIBUTE]: '' })}
       className={wrapperClasses}
       style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
     >

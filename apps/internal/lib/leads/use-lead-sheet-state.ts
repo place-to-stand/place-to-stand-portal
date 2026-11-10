@@ -77,7 +77,8 @@ export function useLeadSheetState({
         ? { id: source.companyId, name: source.companyName ?? '' }
         : null,
       sourceType: source?.sourceType ?? null,
-      sourceDetail: source?.sourceDetail ?? '',
+      // Detail goes with a source; without one it loads (and saves) blank.
+      sourceDetail: source?.sourceType ? (source.sourceDetail ?? '') : '',
       // A copy is a new opportunity: it starts at the first stage.
       status: lead?.status ?? initialStatus ?? 'NEW_OPPORTUNITIES',
       // A new lead starts assigned to you, like a new task.
@@ -129,15 +130,6 @@ export function useLeadSheetState({
     control: form.control,
     name: 'sourceType',
   })
-
-  useEffect(() => {
-    if (!selectedSourceType) {
-      const currentDetail = form.getValues('sourceDetail')
-      if (currentDetail) {
-        form.setValue('sourceDetail', '')
-      }
-    }
-  }, [form, selectedSourceType])
 
   const { stay, isReopening } = useSaveAndStay('lead', lead?.id ?? null, open)
   const submitDisabled = isSaving || isArchiving || isReopening

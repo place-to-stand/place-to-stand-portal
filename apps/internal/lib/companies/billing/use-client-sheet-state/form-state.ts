@@ -81,18 +81,38 @@ export function useClientBillingForm({
   const [allContacts, setAllContacts] = useState<ClientContactOption[]>([])
   const [allAdminUsers, setAllAdminUsers] = useState<PartnerUserOption[]>([])
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
-  const [isReady, setIsReady] = useState(false)
   const { openNew } = useSheetParams()
 
   // Origination — one picker offers admins and contacts; whichever is
   // selected determines the kind, so the two selections are mutually exclusive.
   const [isOriginationPickerOpen, setIsOriginationPickerOpen] = useState(false)
-  const [selectedOriginationUser, setSelectedOriginationUser] =
-    useState<PartnerUserOption | null>(null)
-  const [selectedOriginationContact, setSelectedOriginationContact] =
-    useState<OriginationContactOption | null>(null)
+  // Kept as ids, known from the client row before the people load: loading
+  // them only fills in names, never changes what is selected (or the undo
+  // stack).
   const initialOriginationUserId = client?.origination_user_id ?? null
   const initialOriginationContactId = client?.origination_contact_id ?? null
+  const [originationUserId, setOriginationUserId] = useState<string | null>(
+    initialOriginationUserId
+  )
+  const [originationContactId, setOriginationContactId] = useState<
+    string | null
+  >(initialOriginationContactId)
+  const selectedOriginationUser = useMemo<PartnerUserOption | null>(
+    () =>
+      originationUserId
+        ? (allAdminUsers.find(u => u.id === originationUserId) ?? null)
+        : null,
+    [allAdminUsers, originationUserId]
+  )
+  const selectedOriginationContact =
+    useMemo<OriginationContactOption | null>(() => {
+      const contact = originationContactId
+        ? allContacts.find(c => c.id === originationContactId)
+        : null
+      return contact
+        ? { id: contact.id, name: contact.name, email: contact.email }
+        : null
+    }, [allContacts, originationContactId])
 
   // Closers — seeded from the client row (no fetch needed).
   const savedClosers = client?.closers ?? EMPTY_CLOSERS
@@ -107,6 +127,10 @@ export function useClientBillingForm({
         id: c.id,
         sharePercent: c.sharePercent,
       })),
+    [savedClosers]
+  )
+  const savedCloserKeys = useMemo(
+    () => new Set(savedClosers.map(closerKey)),
     [savedClosers]
   )
   // Field-level error for the closer split, cleared as the user edits.
@@ -182,8 +206,8 @@ export function useClientBillingForm({
     : closerSharesTotal(closerShares)
 
   const originationDirty =
-    (selectedOriginationUser?.id ?? null) !== initialOriginationUserId ||
-    (selectedOriginationContact?.id ?? null) !== initialOriginationContactId
+    originationUserId !== initialOriginationUserId ||
+    originationContactId !== initialOriginationContactId
   const closerDirty = !closerSplitsEqual(closerShares, initialClosers)
   // Closer + origination are one effective-dated commission term (PRD 007).
   const commissionDirty = originationDirty || closerDirty
@@ -207,21 +231,6 @@ export function useClientBillingForm({
         if (cancelled) return
         setAllContacts(data.allContacts)
         setAllAdminUsers(data.allAdminUsers)
-        const contact = initialOriginationContactId
-          ? data.allContacts.find(c => c.id === initialOriginationContactId)
-          : null
-        setSelectedOriginationContact(
-          contact
-            ? { id: contact.id, name: contact.name, email: contact.email }
-            : null
-        )
-        setSelectedOriginationUser(
-          initialOriginationUserId
-            ? (data.allAdminUsers.find(
-                u => u.id === initialOriginationUserId
-              ) ?? null)
-            : null
-        )
       })
       .catch(err => {
         console.error('Failed to fetch billing picker data:', err)
@@ -229,12 +238,11 @@ export function useClientBillingForm({
       .finally(() => {
         if (cancelled) return
         setIsLoadingContacts(false)
-        setIsReady(true)
       })
     return () => {
       cancelled = true
     }
-  }, [open, client?.id, initialOriginationContactId, initialOriginationUserId])
+  }, [open, client?.id])
 
   // Create-from-picker: stack the person create sheet on top; the
   // subscription below hands the saved record to whichever picker asked.
@@ -263,21 +271,21 @@ export function useClientBillingForm({
     [pickerDisabled]
   )
   const handleSelectOriginationUser = useCallback((user: PartnerUserOption) => {
-    setSelectedOriginationUser(user)
-    setSelectedOriginationContact(null)
+    setOriginationUserId(user.id)
+    setOriginationContactId(null)
     setIsOriginationPickerOpen(false)
   }, [])
   const handleSelectOriginationContact = useCallback(
     (contact: OriginationContactOption) => {
-      setSelectedOriginationContact(contact)
-      setSelectedOriginationUser(null)
+      setOriginationContactId(contact.id)
+      setOriginationUserId(null)
       setIsOriginationPickerOpen(false)
     },
     []
   )
   const handleClearOrigination = useCallback(() => {
-    setSelectedOriginationUser(null)
-    setSelectedOriginationContact(null)
+    setOriginationUserId(null)
+    setOriginationContactId(null)
   }, [])
 
   const handleCloserPickerOpenChange = useCallback(
@@ -352,34 +360,28 @@ export function useClientBillingForm({
       billingEffective: values.billingEffective,
       state: values.state?.trim() ? values.state.trim() : null,
       slug: values.slug?.trim() ? values.slug.trim() : null,
-      originationUserId: selectedOriginationUser?.id ?? null,
-      originationContactId: selectedOriginationContact?.id ?? null,
+      originationUserId,
+      originationContactId,
       closers: closerShares,
       commissionEffective: values.commissionEffective,
     }
-  }, [closerShares, form, selectedOriginationContact, selectedOriginationUser])
+  }, [closerShares, form, originationContactId, originationUserId])
 
   const watchedValues = useWatch({ control: form.control })
   const historyState = useMemo<ClientBillingHistoryState>(
     () => ({
       values: { ...form.getValues(), ...watchedValues },
-      originationUser: selectedOriginationUser,
-      originationContact: selectedOriginationContact,
+      originationUserId,
+      originationContactId,
       closers,
     }),
-    [
-      closers,
-      form,
-      selectedOriginationContact,
-      selectedOriginationUser,
-      watchedValues,
-    ]
+    [closers, form, originationContactId, originationUserId, watchedValues]
   )
   const restoreHistoryState = useCallback(
     (state: ClientBillingHistoryState) => {
       form.reset(state.values, { keepDefaultValues: true })
-      setSelectedOriginationUser(state.originationUser)
-      setSelectedOriginationContact(state.originationContact)
+      setOriginationUserId(state.originationUserId)
+      setOriginationContactId(state.originationContactId)
       setClosers(state.closers)
       setCloserError(null)
     },
@@ -389,7 +391,6 @@ export function useClientBillingForm({
   return {
     form,
     hasUnsavedChanges,
-    isReady,
     historyState,
     restoreHistoryState,
     isPending,
@@ -409,6 +410,7 @@ export function useClientBillingForm({
     handleSelectOriginationContact,
     handleClearOrigination,
     closers,
+    savedCloserKeys,
     availableCloserUsers,
     availableCloserContacts,
     closerShareTotal,

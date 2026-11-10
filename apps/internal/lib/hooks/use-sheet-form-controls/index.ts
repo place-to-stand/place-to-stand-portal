@@ -28,8 +28,6 @@ export function useSheetFormControls<T extends FieldValues>(
     onSave: options.onSave,
     undo: history.undo,
     redo: history.redo,
-    canUndo: history.canUndo,
-    canRedo: history.canRedo,
     flushPendingSnapshots: history.flushPendingSnapshots,
   })
 

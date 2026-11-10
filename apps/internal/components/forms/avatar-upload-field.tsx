@@ -39,15 +39,20 @@ export function AvatarUploadField({
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { toast } = useToast()
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // Uploads staged this session, by path, with a local preview of each. All
+  // stay until the field goes away: undo and redo can bring any of them back.
+  const [stagedPreviews, setStagedPreviews] = useState<Record<string, string>>(
+    {}
+  )
+  const previewUrl = value ? (stagedPreviews[value] ?? null) : null
   const [cacheBuster, setCacheBuster] = useState<string>(() =>
     String(Date.now())
   )
   const [isUploading, setIsUploading] = useState(false)
-  // Path of an upload staged this session but not yet saved. Uploads land in
-  // the pending storage folder; the save action moves them into the user's
-  // folder, so anything still at this path when we abandon it is an orphan.
-  const pendingUploadRef = useRef<string | null>(null)
+  // Paths of uploads staged this session. Uploads land in the pending storage
+  // folder; the save action moves the saved one into the user's folder, so
+  // anything still pending when the field goes away is an orphan.
+  const stagedPathsRef = useRef(new Set<string>())
   // Set on unmount so an upload that resolves afterwards deletes its own
   // staged object instead of orphaning it (the unmount cleanup has already
   // run by then, with pendingUploadRef still null).
@@ -122,25 +127,16 @@ export function AvatarUploadField({
         }
 
         const objectUrl = URL.createObjectURL(file)
-
-        // Replacing an earlier unsaved upload — remove the superseded object.
-        if (
-          pendingUploadRef.current &&
-          pendingUploadRef.current !== payload.path
-        ) {
-          deletePendingUpload(pendingUploadRef.current)
-        }
-        pendingUploadRef.current = payload.path
+        // An earlier staged upload stays until the field goes away: undo can
+        // bring it back.
+        stagedPathsRef.current.add(payload.path)
+        setStagedPreviews(current => ({
+          ...current,
+          [payload.path]: objectUrl,
+        }))
 
         onChange(payload.path)
         onRemovalChange(false)
-        setPreviewUrl(current => {
-          if (current) {
-            URL.revokeObjectURL(current)
-          }
-
-          return objectUrl
-        })
         setCacheBuster(String(Date.now()))
       } catch (error) {
         console.error('Avatar upload failed', error)
@@ -169,23 +165,13 @@ export function AvatarUploadField({
   )
 
   const removeAvatar = useCallback(() => {
-    // An unsaved staged upload can be deleted outright; removal of the saved
-    // avatar stays deferred to the save action via onRemovalChange.
-    if (pendingUploadRef.current) {
-      deletePendingUpload(pendingUploadRef.current)
-      pendingUploadRef.current = null
-    }
+    // Removal of the saved avatar is deferred to the save action via
+    // onRemovalChange; a staged upload stays until the field goes away, so
+    // undo can bring it back.
     onChange(null)
     onRemovalChange(true)
-    setPreviewUrl(current => {
-      if (current) {
-        URL.revokeObjectURL(current)
-      }
-
-      return null
-    })
     setCacheBuster(String(Date.now()))
-  }, [deletePendingUpload, onChange, onRemovalChange])
+  }, [onChange, onRemovalChange])
 
   const remoteImage = useMemo(() => {
     if (previewUrl) {
@@ -210,13 +196,19 @@ export function AvatarUploadField({
     ? 'Please wait for the current request to finish.'
     : null
 
+  // Previews are freed when the field goes away (undo may still show one).
+  const stagedPreviewsRef = useRef(stagedPreviews)
   useEffect(() => {
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
+    stagedPreviewsRef.current = stagedPreviews
+  })
+  useEffect(
+    () => () => {
+      for (const url of Object.values(stagedPreviewsRef.current)) {
+        URL.revokeObjectURL(url)
       }
-    }
-  }, [previewUrl])
+    },
+    []
+  )
 
   // Abandoned-upload cleanup: if the field unmounts (sheet/dialog closed)
   // while a staged upload was never saved, delete the orphaned object. After
@@ -227,12 +219,11 @@ export function AvatarUploadField({
     // effect re-runs when its callback changes, so the flag must reset here
     // or every later upload looks abandoned and is deleted.
     isUnmountedRef.current = false
+    const stagedPaths = stagedPathsRef.current
     return () => {
       isUnmountedRef.current = true
-      if (pendingUploadRef.current) {
-        deletePendingUpload(pendingUploadRef.current)
-        pendingUploadRef.current = null
-      }
+      for (const path of stagedPaths) deletePendingUpload(path)
+      stagedPaths.clear()
     }
   }, [deletePendingUpload])
 

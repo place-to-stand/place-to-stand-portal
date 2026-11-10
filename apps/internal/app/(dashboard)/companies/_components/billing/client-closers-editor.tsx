@@ -26,6 +26,8 @@ import { StaffOrPersonPicker } from './staff-or-person-picker'
 
 export type ClientClosersEditorProps = {
   closers: CloserDraft[]
+  /** Keys of the closers as saved: only those show as Pending removal. */
+  savedCloserKeys: ReadonlySet<string>
   availableUsers: CloserCandidate[]
   availableContacts: CloserCandidate[]
   /** Sum of the typed shares, or null when a share isn't a number yet. */
@@ -51,6 +53,7 @@ export type ClientClosersEditorProps = {
  */
 export function ClientClosersEditor({
   closers,
+  savedCloserKeys,
   availableUsers,
   availableContacts,
   shareTotal,
@@ -70,7 +73,11 @@ export function ClientClosersEditor({
   const locked = isPending || disabled
   const lockedReason = isPending ? pendingReason : disabledReason
   // Removed closers stay as Pending removal, with Undo, until Save.
-  const removals = usePendingRemovals<CloserDraft>(closerKey, closers)
+  const removals = usePendingRemovals<CloserDraft>(
+    closerKey,
+    closers,
+    savedCloserKeys
+  )
   const pendingRemovals = removals.pending
 
   return (

@@ -6,6 +6,8 @@ import type { FieldValues } from 'react-hook-form'
 import { cloneData, cloneValues } from './clone'
 import {
   buildSnapshot,
+  stableStringify,
+  withLoadedDefaults,
   withSourceSlice,
   type HistoryExternalState,
 } from './snapshot'
@@ -31,10 +33,12 @@ const runSoon = (task: () => void) => {
  * A sheet's undo/redo stack.
  *
  * The first entry is always the record as loaded (or as last saved): never
- * the blank form the sheet opened with. Whenever the form's saved state
- * changes (`reset`, or `resetField` with a new default, as a record loads,
- * a late field loads, or a save lands) the stack starts again from what the
- * form then holds, so a load is never an undoable step.
+ * the blank form the sheet opened with. When the form's saved state changes
+ * and the form holds exactly that state (a record loads with `reset`, or a
+ * save lands) the stack starts again from it. When only part of it changes
+ * (`resetField` as a late field loads) the loaded values replace the
+ * placeholders in every entry instead, so a load is never an undoable step
+ * and edits made while it loaded stay on the stack.
  *
  * State kept outside the form joins the stack as a source (see
  * `useSheetHistoryState`); a source's own loads and saves replace its part
@@ -53,6 +57,7 @@ export function useFormHistory<T extends FieldValues>({
   const indexRef = useRef(-1)
   const isApplyingRef = useRef(false)
   const defaultsSignatureRef = useRef<string | null>(null)
+  const defaultsRef = useRef<Partial<T>>({})
   const pendingSnapshotRef = useRef<{
     values: T
     externalState: HistoryExternalState
@@ -88,8 +93,9 @@ export function useFormHistory<T extends FieldValues>({
     }
   }, [])
 
-  const readDefaultsSignature = useCallback(
-    () => JSON.stringify(form.control._defaultValues ?? null),
+  const readDefaults = useCallback(
+    (): Partial<T> =>
+      cloneData((form.control._defaultValues ?? {}) as Partial<T>),
     [form]
   )
 
@@ -147,7 +153,8 @@ export function useFormHistory<T extends FieldValues>({
   /** Starts the stack again from what the sheet holds now. */
   const resetHistory = useCallback(() => {
     dropPendingSnapshot()
-    defaultsSignatureRef.current = readDefaultsSignature()
+    defaultsRef.current = readDefaults()
+    defaultsSignatureRef.current = stableStringify(defaultsRef.current)
     historyRef.current = [
       buildSnapshot(cloneValues(form.getValues()), readExternalState()),
     ]
@@ -156,7 +163,7 @@ export function useFormHistory<T extends FieldValues>({
   }, [
     dropPendingSnapshot,
     form,
-    readDefaultsSignature,
+    readDefaults,
     readExternalState,
     refreshCapabilities,
   ])
@@ -240,11 +247,28 @@ export function useFormHistory<T extends FieldValues>({
     // default, so only afterwards can a load be told from an edit.
     const handleChange = () => {
       if (!isActiveRef.current) return
-      if (readDefaultsSignature() !== defaultsSignatureRef.current) {
-        // The saved state moved: a load or a save, not an edit.
+      const defaults = readDefaults()
+      const signature = stableStringify(defaults)
+      if (signature === defaultsSignatureRef.current) {
+        scheduleSnapshot()
+        return
+      }
+      // The saved state moved: a load or a save, not an edit.
+      if (stableStringify(form.getValues()) === signature) {
+        // The whole form is the saved state: start again from it.
         resetHistory()
         return
       }
+      // Part of it loaded late (resetField, or a reset that kept edits):
+      // the loaded values go into every entry that still held the
+      // placeholder, so edits made meanwhile stay undoable.
+      flushPendingSnapshots()
+      const previous = defaultsRef.current
+      historyRef.current = historyRef.current.map(snapshot =>
+        withLoadedDefaults(snapshot, previous, defaults)
+      )
+      defaultsRef.current = defaults
+      defaultsSignatureRef.current = signature
       scheduleSnapshot()
     }
     const subscription = form.watch(() => {
@@ -261,7 +285,7 @@ export function useFormHistory<T extends FieldValues>({
     form,
     historyKey,
     isActive,
-    readDefaultsSignature,
+    readDefaults,
     resetHistory,
     scheduleSnapshot,
   ])

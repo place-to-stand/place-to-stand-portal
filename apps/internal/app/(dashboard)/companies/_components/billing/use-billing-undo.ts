@@ -20,7 +20,9 @@ type BillingUndoState = ClientBillingHistoryState & {
 /**
  * Puts the company sheet's billing (Bill this company, when, the slug and
  * other fields, origination and closers) on the sheet's undo stack. It
- * joins once its people have loaded: until then it is loading, not edited.
+ * joins as soon as the billing form shows: origination is kept by id, so
+ * the people loading later never changes it, and an edit made while they
+ * load is a step like any other.
  */
 export function useBillingUndo(
   history: SheetHistorySources,
@@ -31,14 +33,13 @@ export function useBillingUndo(
     (effective: BillingEffectiveValue) => void,
   ]
 ) {
-  const { historyState, restoreHistoryState, isReady } = state
+  const { historyState, restoreHistoryState } = state
   const undoState = useMemo<BillingUndoState>(
     () => ({ billingOn, effective, ...historyState }),
     [billingOn, effective, historyState]
   )
   useSheetHistoryState(history, 'companyBilling', {
     state: undoState,
-    ready: isReady,
     restore: saved => {
       setBillingOn(saved.billingOn)
       setEffective(saved.effective)

@@ -347,6 +347,7 @@ export function CompanyBillingFields() {
         onSelectOriginationContact={state.handleSelectOriginationContact}
         onClearOrigination={state.handleClearOrigination}
         closers={state.closers}
+        savedCloserKeys={state.savedCloserKeys}
         availableCloserUsers={state.availableCloserUsers}
         availableCloserContacts={state.availableCloserContacts}
         closerShareTotal={state.closerShareTotal}
