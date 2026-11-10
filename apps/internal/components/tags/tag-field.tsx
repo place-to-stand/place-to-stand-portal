@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { CheckIcon } from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon } from 'lucide-react'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import {
@@ -12,7 +12,8 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { CommandCreateRows } from '@/components/ui/command-create-rows'
-import { FieldTrigger } from '@/components/ui/field-trigger'
+import { fieldTriggerClasses } from '@/components/ui/field-trigger'
+import { cn } from '@/lib/utils'
 import {
   normalizeTagName,
   splitTagInput,
@@ -56,6 +57,7 @@ export function TagField({
 }: TagFieldProps) {
   const [open, setOpen] = React.useState(false)
   const [query, setQuery] = React.useState('')
+  const listId = React.useId()
   const { data: options = [] } = useTagOptions(entity)
 
   const selectedKeys = React.useMemo(() => new Set(value.map(tagKey)), [value])
@@ -106,113 +108,127 @@ export function TagField({
     typed.length > 0 && !exists && !selectedKeys.has(tagKey(typed)) && !full
 
   return (
-    <div className='space-y-2'>
-      <Popover
-        open={open}
-        onOpenChange={next => {
-          if (disabled) return
-          setOpen(next)
-          if (!next) setQuery('')
-        }}
-        modal
-      >
-        <PopoverTrigger asChild>
-          <FieldTrigger
-            id={id}
-            role='combobox'
-            aria-expanded={open}
-            aria-haspopup='listbox'
-            aria-describedby={ariaDescribedBy}
-            aria-invalid={ariaInvalid}
-            disabled={disabled}
-            placeholder
-            label={full ? `Up to ${TAGS_PER_RECORD_MAX} tags` : 'Add tags…'}
-          />
-        </PopoverTrigger>
-        <PopoverContent
-          sideOffset={8}
-          className='w-(--anchor-width) min-w-64 p-0'
+    <Popover
+      open={open}
+      onOpenChange={next => {
+        if (disabled) return
+        setOpen(next)
+        if (!next) setQuery('')
+      }}
+      modal
+    >
+      {/* The field holds the picked tags, each with its ×. It is a div,
+            not a button, because the × buttons sit inside it. */}
+      <PopoverTrigger asChild nativeButton={false}>
+        <div
+          id={id}
+          role='combobox'
+          tabIndex={disabled ? -1 : 0}
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-haspopup='listbox'
+          aria-label='Tags'
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
+          aria-disabled={disabled || undefined}
+          data-placeholder={value.length ? undefined : true}
+          className={cn(
+            fieldTriggerClasses,
+            'min-h-9 cursor-pointer py-1.5',
+            disabled && 'pointer-events-none opacity-50'
+          )}
         >
-          <Command>
-            <CommandInput
-              placeholder='Find or create a tag…'
-              className='h-9'
-              value={query}
-              onValueChange={handleQueryChange}
-              maxLength={TAG_NAME_MAX}
-            />
-            <CommandList className='max-h-[min(60vh,260px)] overflow-y-auto overscroll-contain'>
-              {options.length ? (
-                <CommandGroup>
-                  {options.map(option => {
-                    const picked = selectedKeys.has(tagKey(option.name))
-                    return (
-                      <CommandItem
-                        key={option.id}
-                        value={option.name}
-                        disabled={full && !picked}
-                        onSelect={() => {
-                          toggle(option.name)
-                          setQuery('')
-                        }}
-                        className='pr-3'
-                      >
-                        <span className='flex min-w-0 flex-1'>
-                          <TagBadge name={option.name} />
-                        </span>
-                        <span className='text-muted-foreground ml-2 text-xs tabular-nums'>
-                          {option.count}
-                        </span>
-                        {picked ? (
-                          <CheckIcon className='ml-2 size-4 shrink-0' />
-                        ) : null}
-                      </CommandItem>
-                    )
-                  })}
-                </CommandGroup>
-              ) : null}
-              {canCreate ? (
-                <CommandCreateRows
-                  query={typed}
-                  entityLabel='tag'
-                  onCreate={name => {
-                    add([name])
-                    setQuery('')
-                  }}
-                />
-              ) : (
-                <EmptyLine
-                  show={typed.length > 0 && !exists}
-                  text={
-                    full
-                      ? `Up to ${TAGS_PER_RECORD_MAX} tags.`
-                      : 'Already added.'
-                  }
-                />
-              )}
-              {!options.length && !typed ? (
-                <p className='text-muted-foreground px-3 py-6 text-center text-sm'>
-                  No tags yet. Type one to create it.
-                </p>
-              ) : null}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      {value.length ? (
-        <ul className='flex flex-wrap gap-1.5' aria-label='Tags picked'>
-          {value.map(name => (
-            <li key={tagKey(name)} className='max-w-full'>
-              <TagBadge
-                name={name}
-                disabled={disabled}
-                onRemove={disabled ? undefined : () => remove(name)}
+          {value.length ? (
+            <ul
+              className='flex min-w-0 flex-1 flex-wrap gap-1.5'
+              aria-label='Tags picked'
+            >
+              {value.map(name => (
+                <li key={tagKey(name)} className='max-w-full'>
+                  <TagBadge
+                    name={name}
+                    disabled={disabled}
+                    onRemove={disabled ? undefined : () => remove(name)}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <span className='text-muted-foreground min-w-0 flex-1 truncate'>
+              Add tags…
+            </span>
+          )}
+          <ChevronsUpDownIcon className='size-4 shrink-0 opacity-50' />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        sideOffset={8}
+        className='w-(--anchor-width) min-w-64 p-0'
+      >
+        <Command id={listId}>
+          <CommandInput
+            placeholder='Find or create a tag…'
+            className='h-9'
+            value={query}
+            onValueChange={handleQueryChange}
+            maxLength={TAG_NAME_MAX}
+          />
+          <CommandList className='max-h-[min(60vh,260px)] overflow-y-auto overscroll-contain'>
+            {options.length ? (
+              <CommandGroup>
+                {options.map(option => {
+                  const picked = selectedKeys.has(tagKey(option.name))
+                  return (
+                    <CommandItem
+                      key={option.id}
+                      value={option.name}
+                      disabled={full && !picked}
+                      onSelect={() => {
+                        toggle(option.name)
+                        setQuery('')
+                      }}
+                      className='pr-3'
+                    >
+                      <span className='flex min-w-0 flex-1'>
+                        <TagBadge name={option.name} />
+                      </span>
+                      <span className='text-muted-foreground ml-2 text-xs tabular-nums'>
+                        {option.count}
+                      </span>
+                      {picked ? (
+                        <CheckIcon className='ml-2 size-4 shrink-0' />
+                      ) : null}
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            ) : null}
+            {canCreate ? (
+              <CommandCreateRows
+                query={typed}
+                entityLabel='tag'
+                onCreate={name => {
+                  add([name])
+                  setQuery('')
+                }}
               />
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
+            ) : (
+              <EmptyLine
+                show={typed.length > 0 && !exists}
+                text={
+                  full ? `Up to ${TAGS_PER_RECORD_MAX} tags.` : 'Already added.'
+                }
+              />
+            )}
+            {!options.length && !typed ? (
+              <p className='text-muted-foreground px-3 py-6 text-center text-sm'>
+                No tags yet. Type one to create it.
+              </p>
+            ) : null}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
 

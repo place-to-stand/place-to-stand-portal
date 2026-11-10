@@ -34,7 +34,9 @@ test('tags save with the sheet and filter the list', async ({ page }) => {
   await expect(picked.getByText(tagB)).toBeVisible()
 
   // Typing an existing name in another case reuses it, not a second tag.
-  await sheet.getByRole('combobox', { name: /^Tags/ }).click()
+  // Open from the keyboard: a click in the middle would land on a pill's ×.
+  await sheet.getByRole('combobox', { name: /^Tags/ }).focus()
+  await page.keyboard.press('Enter')
   await search.fill(tagA.toLowerCase())
   await expect(page.getByRole('option', { name: /^Create/ })).toHaveCount(0)
   await page.keyboard.press('Escape')

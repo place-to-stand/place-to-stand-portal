@@ -29,7 +29,13 @@ export function TagBadge({
         <button
           type='button'
           aria-label={`Remove tag ${name}`}
-          onClick={onRemove}
+          // Inside the tag field: take the tag off without opening the list.
+          onClick={event => {
+            event.stopPropagation()
+            onRemove()
+          }}
+          onPointerDown={event => event.stopPropagation()}
+          onKeyDown={event => event.stopPropagation()}
           disabled={disabled}
           className='hover:bg-foreground/10 focus-visible:ring-ring/50 -my-0.5 cursor-pointer rounded-full p-0.5 outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50'
         >
