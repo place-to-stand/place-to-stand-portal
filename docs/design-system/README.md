@@ -169,12 +169,12 @@ Signed-out screens (`AuthShell`) are always dark, whatever the user's theme, bec
 
 ## Iconography
 
-- **lucide-react only.** 148 source files import it. Icons are stroke glyphs at 2px stroke with `currentColor`.
+- **lucide-react only**, except site marks (below). 148 source files import it. Icons are stroke glyphs at 2px stroke with `currentColor`.
 - **Sizing is automatic**: `size-4` (16px) in buttons, menu items and select items, `size-3` in badges, `size-3.5` in `icon-sm` row actions and checkbox checks.
 - **Color**: icons in menus and select items are `muted-foreground`. Icons in buttons take the label color.
 - **Common glyphs**: ChevronDown for select triggers, Check for selected items, X for sheet and dialog close, ChevronRight for submenus.
-- **A button that opens another site shows that site's mark**, muted, in place of the `ExternalLink` arrow. `SiteMark` (`components/ui/site-mark.tsx`) picks it from the link itself: the LinkedIn mark for linkedin.com, else the arrow. `UrlInput`'s Open button and a person card's LinkedIn row action use it. Site marks are the one exception to lucide-only. (guard: review)
-- No emoji, no filled icon sets, no custom glyph font (the TipTap editor ships its own small `tiptap-icons` set, for the editor toolbar only).
+- **Site marks.** A button that opens a LinkedIn page shows the LinkedIn mark, muted, in place of the `ExternalLink` arrow. `SiteMark` (`components/ui/site-mark.tsx`) picks it from the link itself (linkedin.com or lnkd.in), so a website pasted into a LinkedIn field keeps the arrow; `UrlInput`'s Open button and a person card's LinkedIn row action use it. Other external links (GitHub, Vercel, invoices) still show the arrow; give a site a mark by adding it to `SiteMark`. (guard: review)
+- No emoji, no filled icon sets (a site mark is the one filled glyph), no custom glyph font (the TipTap editor ships its own small `tiptap-icons` set, for the editor toolbar only).
 - **Logo.** The logo is the `BrandLogo` lockup, which is drawn in CSS and not an image file: a square 1px frame at 50–60% opacity holding a dot a third of its size, then "Place To Stand" in Space Grotesk. The PTS tile with lime corner brackets (Logos group) is the favicon and apple-touch icon **only**. Never use it as an in-app logo.
 
 ## House rules (verified in code)

@@ -23,11 +23,15 @@ export function LinkedInMark({ className, ...props }: SVGProps<SVGSVGElement>) {
   )
 }
 
-/** linkedin.com or any subdomain of it (www., uk.). */
+/** linkedin.com or any subdomain of it (www., uk.), or its lnkd.in short links. */
 function isLinkedIn(href: string): boolean {
   try {
-    const host = new URL(href).hostname.toLowerCase()
-    return host === 'linkedin.com' || host.endsWith('.linkedin.com')
+    const host = new URL(href).hostname.toLowerCase().replace(/\.$/, '')
+    return (
+      host === 'linkedin.com' ||
+      host.endsWith('.linkedin.com') ||
+      host === 'lnkd.in'
+    )
   } catch {
     return false
   }
@@ -37,7 +41,7 @@ function isLinkedIn(href: string): boolean {
  * The icon for a button that opens `href` in a new tab: the site's own mark
  * when we know it (LinkedIn), else the ExternalLink arrow. Picked from the
  * link itself, so a website pasted into a LinkedIn field still shows the
- * arrow. Every open-in-new-tab button uses it.
+ * arrow. Add a site here to give it a mark.
  */
 export function SiteMark({ href }: { href: string }) {
   return isLinkedIn(href) ? <LinkedInMark /> : <ExternalLink aria-hidden />

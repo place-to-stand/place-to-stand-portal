@@ -166,7 +166,7 @@ export function CompanyPeopleSection({
     return (
       <RowActionButton
         type='button'
-        label={`${contact.name} on LinkedIn`}
+        label={`Open ${contact.name}'s LinkedIn`}
         icon={<SiteMark href={href} />}
         className='text-muted-foreground'
         onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}

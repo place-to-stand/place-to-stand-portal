@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { Star } from 'lucide-react'
 
 import { RowActionButton } from '@pts/ui/row-action-button'
-import { LinkedInMark } from '@/components/ui/site-mark'
+import { SiteMark } from '@/components/ui/site-mark'
 import {
   Table,
   TableBody,
@@ -119,8 +119,8 @@ export function ComponentsRecordRows() {
               <>
                 <RowActionButton
                   type='button'
-                  label='Ada Lovelace on LinkedIn'
-                  icon={<LinkedInMark />}
+                  label="Open Ada Lovelace's LinkedIn"
+                  icon={<SiteMark href='https://www.linkedin.com/' />}
                   className='text-muted-foreground'
                   onClick={() =>
                     window.open(

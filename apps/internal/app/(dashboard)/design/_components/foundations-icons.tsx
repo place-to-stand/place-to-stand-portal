@@ -91,7 +91,7 @@ export function FoundationsIcons() {
     <DesignSection
       id='icons'
       title='Icons'
-      when='lucide-react only: 2px stroke glyphs in currentColor. Buttons size them to 16px, badges to 12px, row actions to 14px, so never set a size inside those. Click an icon to copy its import name.'
+      when='lucide-react only (plus site marks): 2px stroke glyphs in currentColor. Buttons size them to 16px, badges to 12px, row actions to 14px, so never set a size inside those. Click an icon to copy its import name.'
     >
       <Specimen
         label='Entity icons'
