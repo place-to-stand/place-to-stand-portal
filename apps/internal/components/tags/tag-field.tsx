@@ -192,9 +192,6 @@ export function TagField({
                       <span className='flex min-w-0 flex-1'>
                         <TagBadge name={option.name} />
                       </span>
-                      <span className='text-muted-foreground ml-2 text-xs tabular-nums'>
-                        {option.count}
-                      </span>
                       {picked ? (
                         <CheckIcon className='ml-2 size-4 shrink-0' />
                       ) : null}
