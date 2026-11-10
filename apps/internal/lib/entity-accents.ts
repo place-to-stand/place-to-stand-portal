@@ -44,6 +44,12 @@ const SignInIcon = withStateMark(
   'SignInIcon'
 )
 
+/** The state dot as a plain fill, for marks drawn outside an icon (avatars). */
+export const STATE_DOT_CLASS = {
+  client: 'bg-entity-client',
+  user: 'bg-entity-sign-in',
+} as const
+
 export type AccentEntity =
   | 'lead'
   | 'company'

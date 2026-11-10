@@ -3,6 +3,8 @@ import type { ComponentProps } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@pts/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { getInitials } from '@/lib/users/initials'
+import { STATE_DOT_CLASS } from '@/lib/entity-accents'
+import { cn } from '@/lib/utils'
 
 type UserAvatarProps = {
   /** The person (contact) id: their photo. Preferred over `userId`. */
@@ -19,6 +21,8 @@ type UserAvatarProps = {
   className?: string
   /** Defaults to the name; pass '' when the name is already shown beside it. */
   alt?: string
+  /** Can sign in: the avatar wears the sign-in dot, as the person icon does. */
+  signIn?: boolean
 }
 
 /**
@@ -50,15 +54,51 @@ export function UserAvatar({
   size = 'sm',
   className,
   alt,
+  signIn = false,
 }: UserAvatarProps) {
   const src = personPhotoSrc({ contactId, userId, hasPhoto, version })
-
-  return (
-    <Avatar size={size} className={className}>
+  const mark = signIn ? signInMark(size) : null
+  const avatar = (
+    <Avatar
+      size={size}
+      className={className}
+      // The dot is cut out of the circle, as on the marked icons, so it
+      // reads on any row background.
+      style={mark?.cutout}
+    >
       {src ? <AvatarImage src={src} alt={alt ?? name ?? ''} /> : null}
       <AvatarFallback>{getInitials(name)}</AvatarFallback>
     </Avatar>
   )
+  if (!mark) return avatar
+  return (
+    <span className='relative inline-flex shrink-0'>
+      {avatar}
+      <span
+        aria-hidden
+        className={cn('absolute rounded-full', STATE_DOT_CLASS.user)}
+        style={mark.dot}
+      />
+    </span>
+  )
+}
+
+/** Avatar diameters in px, matching `AVATAR_SIZES` in @pts/ui/avatar. */
+const AVATAR_PX = { xs: 20, sm: 24, md: 32, lg: 40, xl: 64 } as const
+
+/**
+ * The sign-in dot (about a third of the avatar, nudged 1px past its edge so it
+ * covers less of the initials) and a cut-out 1.5px wider around it.
+ */
+function signInMark(size: keyof typeof AVATAR_PX) {
+  const diameter = AVATAR_PX[size]
+  const dot = Math.max(6, Math.round(diameter * 0.32))
+  const centre = diameter - dot / 2 + 1
+  const mask = `radial-gradient(circle at ${centre}px ${centre}px, transparent ${dot / 2 + 1.5}px, #000 ${dot / 2 + 2}px)`
+  return {
+    dot: { width: dot, height: dot, right: -1, bottom: -1 },
+    cutout: { mask, WebkitMask: mask },
+  }
 }
 
 type PersonAvatarProps = Omit<UserAvatarProps, 'alt' | 'name'> & {

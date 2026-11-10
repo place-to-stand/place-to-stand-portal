@@ -215,6 +215,7 @@ export function ContactsTableSection({
                           hasPhoto={Boolean(contact.userHasPhoto)}
                           size='xs'
                           alt=''
+                          signIn={Boolean(contact.signInRole)}
                         />
                         <span
                           className='truncate font-medium'

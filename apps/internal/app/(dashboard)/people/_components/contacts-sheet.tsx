@@ -97,6 +97,12 @@ export function ContactsSheet(props: ContactsSheetProps) {
                   hasPhoto={Boolean(avatarPath)}
                   version={avatarPath}
                   size='sm'
+                  signIn={Boolean(
+                    canManageSignIn &&
+                    signInAccount &&
+                    !signInAccount.deletedAt &&
+                    !signInAccount.disabledAt
+                  )}
                 />
               ) : (
                 <ENTITY_ICONS.contact

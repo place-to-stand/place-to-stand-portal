@@ -7,10 +7,6 @@ import { Switch } from '@pts/ui/switch'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import {
-  RecordRowField,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
 import { UiRef } from '@/components/ui/ui-ref'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -72,7 +68,7 @@ export function ComponentsAccess() {
       </Specimen>
       <Specimen
         label='Live sign-in'
-        note='One SheetRecordRow with the person icon uncoloured (muted); RecordRowField note keeps the label level with the control'
+        note='Fields, as in a company Client section: the sign-in is a state of the person, so no record card; the icon sits on the heading'
         className='block max-w-2xl'
       >
         <SheetSection
@@ -81,25 +77,21 @@ export function ComponentsAccess() {
           className='gap-4'
           action={<CanSignIn id='design-sign-in-client' checked />}
         >
-          <SheetRecordRow
-            leading={
-              <ENTITY_ICONS.contact
-                className='text-muted-foreground size-4'
-                aria-hidden
-              />
-            }
-            title='ada@acme.com'
-            description='Last sign-in: never'
-            fieldsClassName='gap-y-4 py-3'
-            fields={
-              <RecordRowField
-                label='Role'
-                note='Sees Acme and Beta in the client portal.'
-              >
+          <div className='flex flex-col gap-4'>
+            <div className='min-w-0'>
+              <p className='text-sm font-medium'>Signs in as</p>
+              <p className='text-sm break-all'>ada@acme.com</p>
+              <p className='text-muted-foreground text-sm'>
+                Last sign-in: never
+              </p>
+            </div>
+            <div className='flex flex-col gap-2'>
+              <Label>Role</Label>
+              <span>
                 <RoleBadge role='CLIENT' />
-              </RecordRowField>
-            }
-          />
+              </span>
+            </div>
+          </div>
         </SheetSection>
       </Specimen>
       <Specimen
