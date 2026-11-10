@@ -29,7 +29,7 @@ import type { PaletteSearchResult } from '@/lib/queries/command-palette'
 import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { cn } from '@/lib/utils'
-import { companySheetHref } from '@/lib/sheets/hrefs'
+import { companySheetHref, contactSheetHref } from '@/lib/sheets/hrefs'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { matchesShortcut } from '@/lib/keyboard/match'
@@ -284,14 +284,9 @@ function CommandPalette() {
               <CommandItem
                 key={contact.id}
                 value={`${contact.name} ${contact.email} contact-${contact.id}`}
-                onSelect={() =>
-                  // Contacts have no detail route — land on the contacts list
-                  // pre-filtered to the record. Email is unique where names
-                  // are not, so it isolates the selected contact.
-                  navigate(
-                    `/people?q=${encodeURIComponent(contact.email ?? contact.name)}`
-                  )
-                }
+                // Opens the person's sheet on People, as a company opens on
+                // Companies.
+                onSelect={() => navigate(contactSheetHref(contact.id))}
               >
                 {/* Can sign in: the person icon with the sign-in dot. */}
                 {contact.hasSignIn ? (
