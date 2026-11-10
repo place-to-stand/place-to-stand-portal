@@ -383,7 +383,11 @@ export function useInvoiceSheetState({
   // client (one undo step), never an effect that undo would re-run.
   const handleClientChange = useCallback(
     (companyId: string) => {
-      form.setValue('companyId', companyId, { shouldDirty: true })
+      form.setValue('companyId', companyId, {
+        shouldDirty: true,
+        // Like the field's own change: clears "Select a client" once shown.
+        shouldValidate: form.formState.isSubmitted,
+      })
       const selectedClient = companyId
         ? clients.find(c => c.id === companyId)
         : undefined
