@@ -38,11 +38,36 @@ function Avatar({
   )
 }
 
-function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
+// Photos already shown on this page load. They come straight from the
+// browser cache, so fading them in again would only add flicker.
+const shownSrcs = new Set<string>()
+
+/**
+ * The photo fades in over the initials the first time it loads, rather than
+ * swapping in hard; after that it shows at once.
+ */
+function AvatarImage({
+  className,
+  src,
+  onLoadingStatusChange,
+  ...props
+}: AvatarPrimitive.Image.Props) {
+  const key = typeof src === 'string' ? src : null
+  const [fadeIn] = React.useState(() => !key || !shownSrcs.has(key))
+
   return (
     <AvatarPrimitive.Image
       data-slot='avatar-image'
-      className={cn('aspect-square size-full', className)}
+      className={cn(
+        'aspect-square size-full',
+        fadeIn && 'animate-in fade-in duration-150 motion-reduce:animate-none',
+        className
+      )}
+      src={src}
+      onLoadingStatusChange={status => {
+        if (status === 'loaded' && key) shownSrcs.add(key)
+        onLoadingStatusChange?.(status)
+      }}
       {...props}
     />
   )
