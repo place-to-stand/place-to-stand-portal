@@ -70,30 +70,36 @@ export function ComponentsAccess() {
       </Specimen>
       <Specimen
         label='Live sign-in'
-        note='Fields two to a row, full width, as in a company Client section: the sign-in is a state of the person, so no record card. Email is read-only here (edited above) with Send reset link beside it'
+        note='Fields two to a row, full width, as in a company Client section: the sign-in is a state of the person, so no record card. Email is read-only here (edited above); Send reset link is a small button left of the switch'
         className='block max-w-2xl'
       >
         <SheetSection
           title='User'
           icon={ENTITY_ICONS.user}
           className='gap-4'
-          action={<CanSignIn id='design-sign-in-client' checked />}
+          action={
+            <>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='mr-2'
+              >
+                Send reset link
+              </Button>
+              <CanSignIn id='design-sign-in-client' checked />
+            </>
+          }
         >
           <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
             <div className='grid gap-2'>
               <Label htmlFor='design-sign-in-email'>Signs in as</Label>
-              <div className='flex items-center gap-2'>
-                <Input
-                  id='design-sign-in-email'
-                  value='ada@acme.com'
-                  readOnly
-                  tabIndex={-1}
-                  className='min-w-0 flex-1'
-                />
-                <Button type='button' variant='outline'>
-                  Send reset link
-                </Button>
-              </div>
+              <Input
+                id='design-sign-in-email'
+                value='ada@acme.com'
+                readOnly
+                tabIndex={-1}
+              />
               <p className='text-muted-foreground text-xs'>
                 Last sign-in: never
               </p>

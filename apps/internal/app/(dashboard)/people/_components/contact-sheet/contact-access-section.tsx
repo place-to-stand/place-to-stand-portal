@@ -231,21 +231,46 @@ function ManagedSignIn({
       // Fields, not a list: 16px under the heading (as the Client section).
       className='gap-4'
       action={
-        <DisabledFieldTooltip
-          disabled={Boolean(switchReason)}
-          reason={switchReason}
-          className='w-auto'
-        >
-          <span className='flex items-center gap-2'>
-            <Switch
-              id='contact-sign-in-switch'
-              checked={enabled}
-              disabled={Boolean(switchReason)}
-              onCheckedChange={switchOn}
-            />
-            <Label htmlFor='contact-sign-in-switch'>Can sign in</Label>
-          </span>
-        </DisabledFieldTooltip>
+        <>
+          {
+            // Only a live, saved sign-in that stays on: a reset needs one.
+            enabled && live && account ? (
+              <DisabledFieldTooltip
+                disabled={isSending || isPending || isSelf}
+                reason={
+                  isSelf ? 'Use Forgot password on the sign-in page.' : null
+                }
+                // 16px from the switch, so the two read as separate controls.
+                className='mr-2 w-auto'
+              >
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={isSending || isPending || isSelf}
+                  onClick={sendReset}
+                >
+                  {isSending ? 'Sending…' : 'Send reset link'}
+                </Button>
+              </DisabledFieldTooltip>
+            ) : null
+          }
+          <DisabledFieldTooltip
+            disabled={Boolean(switchReason)}
+            reason={switchReason}
+            className='w-auto'
+          >
+            <span className='flex items-center gap-2'>
+              <Switch
+                id='contact-sign-in-switch'
+                checked={enabled}
+                disabled={Boolean(switchReason)}
+                onCheckedChange={switchOn}
+              />
+              <Label htmlFor='contact-sign-in-switch'>Can sign in</Label>
+            </span>
+          </DisabledFieldTooltip>
+        </>
       }
     >
       {loading ? (
@@ -267,41 +292,14 @@ function ManagedSignIn({
             <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
               <div className={FIELD_STACK_CLASS}>
                 <Label htmlFor='contact-sign-in-email'>Signs in as</Label>
-                {/* Field and button 8px apart, as pickers and Open. */}
-                <div className='flex items-center gap-2'>
-                  <Input
-                    id='contact-sign-in-email'
-                    value={personEmail}
-                    placeholder='Add an email above'
-                    readOnly
-                    // Edited as Email above; shown here so the sign-in reads whole.
-                    tabIndex={-1}
-                    className='min-w-0 flex-1'
-                  />
-                  {
-                    // Only a live, saved sign-in that stays on: a reset needs one.
-                    live && account ? (
-                      <DisabledFieldTooltip
-                        disabled={isSending || isPending || isSelf}
-                        reason={
-                          isSelf
-                            ? 'Use Forgot password on the sign-in page.'
-                            : null
-                        }
-                        className='w-auto'
-                      >
-                        <Button
-                          type='button'
-                          variant='outline'
-                          disabled={isSending || isPending || isSelf}
-                          onClick={sendReset}
-                        >
-                          {isSending ? 'Sending…' : 'Send reset link'}
-                        </Button>
-                      </DisabledFieldTooltip>
-                    ) : null
-                  }
-                </div>
+                <Input
+                  id='contact-sign-in-email'
+                  value={personEmail}
+                  placeholder='Add an email above'
+                  readOnly
+                  // Edited as Email above; shown here so the sign-in reads whole.
+                  tabIndex={-1}
+                />
                 <p className='text-muted-foreground text-xs'>
                   {!hasSignIn
                     ? 'New sign-in'
