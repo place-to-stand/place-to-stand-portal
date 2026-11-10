@@ -98,7 +98,7 @@ type UseTaskSheetStateReturn = {
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
   attachmentsDisabledReason: string | null
-  attachmentRemovalsHistory: UseTaskAttachmentsReturn['removalsHistory']
+  attachmentsHistory: UseTaskAttachmentsReturn['attachmentsHistory']
 }
 
 export const useTaskSheetState = ({
@@ -151,7 +151,7 @@ export const useTaskSheetState = ({
     handleAttachmentUndoRemove,
     resetAttachmentsState,
     buildSubmissionPayload,
-    removalsHistory,
+    attachmentsHistory,
   } = useTaskAttachments({
     task,
     canManage,
@@ -404,6 +404,6 @@ export const useTaskSheetState = ({
     acceptedAttachmentTypes: ACCEPTED_TASK_ATTACHMENT_MIME_TYPES,
     maxAttachmentSize: MAX_TASK_ATTACHMENT_FILE_SIZE,
     attachmentsDisabledReason,
-    attachmentRemovalsHistory: removalsHistory,
+    attachmentsHistory,
   }
 }

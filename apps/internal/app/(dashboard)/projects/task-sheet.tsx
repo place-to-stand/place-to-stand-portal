@@ -121,7 +121,7 @@ export function TaskSheet(props: TaskSheetProps) {
     acceptedAttachmentTypes,
     maxAttachmentSize,
     attachmentsDisabledReason,
-    attachmentRemovalsHistory,
+    attachmentsHistory,
   } = useTaskSheetState({
     open: props.open,
     onOpenChange: props.onOpenChange,
@@ -211,8 +211,8 @@ export function TaskSheet(props: TaskSheetProps) {
     onSave: handleSave,
     historyKey,
   })
-  // Removing a saved file is an edit too: undo brings it back.
-  useSheetHistoryState(sources, 'attachmentRemovals', attachmentRemovalsHistory)
+  // Adding or removing a file is an edit too: undo takes it back.
+  useSheetHistoryState(sources, 'attachments', attachmentsHistory)
 
   const saveLabel = useMemo(
     () =>

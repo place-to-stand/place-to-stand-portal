@@ -73,9 +73,12 @@ export const useTaskAttachments = ({
 
   const [pendingDrafts, setPendingDrafts] = useState<AttachmentDraft[]>([])
   const [attachmentsToRemove, setAttachmentsToRemove] = useState<string[]>([])
-  // Counts resets (open, save, task switch): the removals they clear were
-  // never edits, so the undo stack takes them as its new start.
-  const [removalsResetCount, setRemovalsResetCount] = useState(0)
+  // Counts resets (open, save, task switch): the delta they clear was never
+  // an edit, so the undo stack takes it as its new start.
+  const [deltaResetCount, setDeltaResetCount] = useState(0)
+  // Every file uploaded this session, kept (with its preview) until a reset
+  // or the sheet closing: undo and redo can bring back one removed from the
+  // list. Removing a new file only takes it off the list.
   const pendingPathsRef = useRef<Set<string>>(new Set())
   const previewUrlRef = useRef<Map<string, string>>(new Map())
 
@@ -129,19 +132,31 @@ export const useTaskAttachments = ({
     previewUrlRef.current.clear()
   }, [])
 
+  // The new files on the list now, read by a reset after a save.
+  const pendingDraftsRef = useRef(pendingDrafts)
+  useEffect(() => {
+    pendingDraftsRef.current = pendingDrafts
+  })
+
   const resetAttachmentsState = useCallback(
     (options?: { preservePending?: boolean }) => {
-      const pendingPaths = Array.from(pendingPathsRef.current)
+      // After a save the files on the list were attached: keep those. Every
+      // other upload (taken off the list, or all of them on a discard) goes.
+      const attached = new Set(
+        options?.preservePending
+          ? pendingDraftsRef.current.map(draft => draft.storagePath)
+          : []
+      )
+      const unused = Array.from(pendingPathsRef.current).filter(
+        path => !attached.has(path)
+      )
       pendingPathsRef.current.clear()
-
-      if (!options?.preservePending && pendingPaths.length) {
-        cleanupPendingAttachments(pendingPaths)
-      }
+      cleanupPendingAttachments(unused)
 
       clearPreviewUrls()
       setPendingDrafts([])
       setAttachmentsToRemove([])
-      setRemovalsResetCount(count => count + 1)
+      setDeltaResetCount(count => count + 1)
       resetPendingUploads()
 
       // A save just changed what is persisted; reload so reopening the task
@@ -170,7 +185,7 @@ export const useTaskAttachments = ({
     setPrevTaskId(taskId)
     setPendingDrafts([])
     setAttachmentsToRemove([])
-    setRemovalsResetCount(count => count + 1)
+    setDeltaResetCount(count => count + 1)
     resetPendingUploads()
   }
 
@@ -239,12 +254,8 @@ export const useTaskAttachments = ({
       }
 
       if (target.isPending) {
-        pendingPathsRef.current.delete(target.storagePath)
-        cleanupPendingAttachments([target.storagePath])
-        if (target.previewUrl) {
-          URL.revokeObjectURL(target.previewUrl)
-        }
-        previewUrlRef.current.delete(target.storagePath)
+        // Off the list only: the file stays until a reset or the sheet
+        // closing, so undo can put it back.
         setPendingDrafts(prev =>
           prev.filter(attachment => makeAttachmentKey(attachment) !== key)
         )
@@ -255,7 +266,7 @@ export const useTaskAttachments = ({
         )
       }
     },
-    [attachments, cleanupPendingAttachments]
+    [attachments]
   )
 
   // Removed saved files stay in their place as Pending removal until Save.
@@ -281,6 +292,18 @@ export const useTaskAttachments = ({
   )
 
   const isUploading = pendingUploadCount > 0
+
+  const attachmentsHistoryState = useMemo(
+    () => ({ added: pendingDrafts, removedIds: attachmentsToRemove }),
+    [attachmentsToRemove, pendingDrafts]
+  )
+  const restoreAttachmentsHistory = useCallback(
+    (state: { added: AttachmentDraft[]; removedIds: string[] }) => {
+      setPendingDrafts(state.added)
+      setAttachmentsToRemove(state.removedIds)
+    },
+    []
+  )
 
   const buildSubmissionPayload = useCallback(
     () => buildAttachmentSubmission(attachments, attachmentsToRemove),
@@ -308,10 +331,10 @@ export const useTaskAttachments = ({
     handleAttachmentUndoRemove,
     resetAttachmentsState,
     buildSubmissionPayload,
-    removalsHistory: {
-      state: attachmentsToRemove,
-      restore: setAttachmentsToRemove,
-      savedKey: removalsResetCount,
+    attachmentsHistory: {
+      state: attachmentsHistoryState,
+      restore: restoreAttachmentsHistory,
+      savedKey: deltaResetCount,
     },
   }
 }
