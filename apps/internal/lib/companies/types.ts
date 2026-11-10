@@ -22,9 +22,11 @@ export type CompanyListItem = {
     /** The company's primary contact (listed first). */
     isPrimary: boolean
   }[]
-  /** Leads not yet won, lost or unqualified. */
-  openLeads: { id: string; contactName: string; status: LeadStatusValue }[]
+  /** Every live lead at the company, open ones first. */
+  leads: { id: string; contactName: string; status: LeadStatusValue }[]
   contactCount: number
+  leadCount: number
+  /** Leads not yet won, lost or unqualified. */
   openLeadCount: number
   /** Billing and commission: for people who manage clients, else empty. */
   billingType: 'prepaid' | 'net_30' | null

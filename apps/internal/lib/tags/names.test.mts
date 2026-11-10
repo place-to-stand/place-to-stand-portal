@@ -17,6 +17,14 @@ test('names trim, collapse spaces and drop commas', () => {
   assert.equal(tagKey(' Non-Profit '), 'non-profit')
 })
 
+test('hidden and look-alike characters fold away', () => {
+  assert.equal(normalizeTagName('Sal\u200bon'), 'Salon')
+  assert.equal(normalizeTagName('Salon\u202e'), 'Salon')
+  assert.equal(normalizeTagName('a\tb\u0000c'), 'a b c')
+  assert.equal(normalizeTagName('\uff33alon'), 'Salon')
+  assert.ok(!tagNamesSchema.safeParse(['\u200b\u2060']).success)
+})
+
 test('one tag per name, any case, first spelling wins', () => {
   assert.deepEqual(uniqueTagNames(['Salon', 'salon ', '', ' SALON', 'Spa']), [
     'Salon',

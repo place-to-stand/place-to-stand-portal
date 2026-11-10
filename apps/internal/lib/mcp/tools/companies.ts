@@ -36,6 +36,7 @@ function serializeCompanyRow(company: CompanyListItem) {
     hours: company.hours,
     primaryContactName: company.primaryContactName,
     people: company.people,
+    leadCount: company.leadCount,
     openLeadCount: company.openLeadCount,
     projects: company.projects,
   }
@@ -112,7 +113,7 @@ export function registerCompanyTools(server: McpServer) {
     name: 'list_companies',
     title: 'List companies',
     description:
-      'List companies (clients and prospects), A to Z, with their tags, people, open lead count and projects. For admins, clients also show billing type and prepaid hours.',
+      'List companies (clients and prospects), A to Z, with their tags, people, lead counts (all and open) and projects. For admins, clients also show billing type and prepaid hours.',
     effect: 'read',
     input: {
       search: searchText.describe('Match on company name.').optional(),

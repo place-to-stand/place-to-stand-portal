@@ -10,9 +10,19 @@ import { z } from 'zod'
 export const TAG_NAME_MAX = 40
 export const TAGS_PER_RECORD_MAX = 20
 
-/** Trimmed, with runs of spaces collapsed and commas dropped. */
+/**
+ * Trimmed, with runs of spaces collapsed and commas dropped. Look-alike
+ * forms fold to one (NFKC), and invisible and control characters go, so a
+ * blank-looking tag or a second "Salon" with a hidden character can't exist.
+ */
 export function normalizeTagName(name: string): string {
-  return name.replace(/,/g, ' ').replace(/\s+/g, ' ').trim()
+  return name
+    .normalize('NFKC')
+    .replace(/\p{Cf}/gu, '')
+    .replace(/\p{Cc}/gu, ' ')
+    .replace(/,/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /** What two names compare by: "Non-profit" and " non-profit " are one tag. */

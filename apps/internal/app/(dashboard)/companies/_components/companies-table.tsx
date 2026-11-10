@@ -154,17 +154,17 @@ export function CompaniesTable({
               <TableHead className={seesBilling ? 'w-[12%]' : 'w-[20%]'}>
                 Tags
               </TableHead>
-              {seesBilling
-                ? sortHead('client', 'Billing type', 'w-[9%]')
-                : null}
-              {seesBilling ? sortHead('hours', 'Hours', 'w-[14%]') : null}
-              {sortHead('people', 'People', 'w-[8%]', 'center')}
-              {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
-              {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
+              {seesBilling ? sortHead('client', 'Billing type', 'w-28') : null}
+              {seesBilling ? sortHead('hours', 'Hours', 'w-40') : null}
+              {/* The count and person columns hold a few characters: fixed
+                  widths, so a wide screen gives its room to the name. */}
+              {sortHead('people', 'People', 'w-20', 'center')}
+              {sortHead('leads', 'Leads', 'w-20', 'center')}
+              {sortHead('projects', 'Projects', 'w-20', 'center')}
               {seesBilling ? (
                 <>
-                  {sortHead('origination', 'Origination', 'w-[10%]', 'center')}
-                  {sortHead('closer', 'Closer', 'w-[8%]', 'center')}
+                  {sortHead('origination', 'Origination', 'w-24', 'center')}
+                  {sortHead('closer', 'Closer', 'w-20', 'center')}
                 </>
               ) : null}
               {/* Archive is in the right-click menu and the bulk bar; only the
@@ -303,17 +303,17 @@ export function CompaniesTable({
                       />
                     </TableCell>
                     <TableCell
-                      label='Open leads'
+                      label='Leads'
                       className='text-sm tabular-nums md:text-center'
                     >
                       <LinkedRecordsHoverCell
-                        count={company.openLeadCount}
+                        count={company.leadCount}
                         withIcon
                         icon={ENTITY_ICONS.lead}
                         iconClassName={ENTITY_ACCENTS.lead.icon}
-                        ariaLabel={`${company.openLeadCount} open ${company.openLeadCount === 1 ? 'lead' : 'leads'}`}
+                        ariaLabel={`${company.leadCount} ${company.leadCount === 1 ? 'lead' : 'leads'}`}
                         contentClassName='min-w-72'
-                        items={company.openLeads.map(lead => ({
+                        items={company.leads.map(lead => ({
                           id: lead.id,
                           label: lead.contactName,
                           sheet: { entity: 'lead', id: lead.id },

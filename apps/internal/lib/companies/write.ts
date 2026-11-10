@@ -243,11 +243,7 @@ export async function planCompanyWrite(
     existing?.id ?? null,
     values.tags
   )
-  if (existing && tagChange) {
-    changedFields.push('tags')
-    before.tags = tagChange.before
-    after.tags = tagChange.next
-  }
+  if (existing && tagChange) changedFields.push('tags')
 
   return {
     ok: true,
@@ -357,7 +353,12 @@ export async function logCompanyWrite(
       actorRole: actor.role,
       targetType: 'COMPANY',
       targetId: companyId,
-      ...companyCreatedEvent({ name: next.name }),
+      ...companyCreatedEvent({
+        name: next.name,
+        tags: plan.tagChange?.added.length
+          ? { added: plan.tagChange.added, removed: [] }
+          : undefined,
+      }),
     })
   } else if (plan.changedFields.length) {
     await logActivity({
@@ -382,6 +383,12 @@ export async function logCompanyWrite(
               }
             : {}),
         },
+        tags: plan.tagChange
+          ? {
+              added: plan.tagChange.added,
+              removed: plan.tagChange.removed,
+            }
+          : undefined,
       }),
     })
   }

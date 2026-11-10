@@ -51,13 +51,18 @@ export function CompaniesFilters({
       tags: {},
     },
   })
-  // Every company tag in use, as the list shows it; a tag in the link that
-  // no company has any more still shows, so it can be cleared.
+  // The tags live companies use (counts cover live companies only, so the
+  // archive offers every tag). A tag in the link that isn't offered still
+  // shows, so it can be cleared.
   const { data: tagOptions = [] } = useTagOptions('company')
+  const archive = basePath.endsWith('/archive')
+  const offered = archive
+    ? tagOptions
+    : tagOptions.filter(option => option.count > 0)
   const tagFilterOptions = [
-    ...tagOptions.filter(option => option.count > 0),
+    ...offered,
     ...tags
-      .filter(name => !tagOptions.some(o => tagKey(o.name) === tagKey(name)))
+      .filter(name => !offered.some(o => tagKey(o.name) === tagKey(name)))
       .map(name => ({ id: name, name, count: 0 })),
   ].map(option => ({
     value: option.name,
@@ -92,7 +97,7 @@ export function CompaniesFilters({
       <FilterSelect
         value={leads}
         onChange={value => update({ leads: value })}
-        placeholder='Open leads: any'
+        placeholder='Leads: any'
         options={LEADS_OPTIONS}
       />
       <FilterSelect
