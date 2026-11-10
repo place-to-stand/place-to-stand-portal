@@ -5,6 +5,13 @@ import { cn } from '@/lib/utils'
 
 const LUCIDE_ONLY_PROPS = ['absoluteStrokeWidth', 'nonScalingStroke']
 
+/**
+ * Draws the dot in the icon's own colour. For muted detail lines (task cards,
+ * Home's lists), where every icon is grey: a coloured dot there would be the
+ * one spot of colour on the line.
+ */
+export const MUTED_STATE_MARK_CLASS = '[&_[data-state-mark]]:fill-current'
+
 /** The mark's centre and radius in the icon's 24×24 box, and the gap around it. */
 const MARK = { cx: 19, cy: 19, r: 4.5, gap: 2 }
 
@@ -92,6 +99,7 @@ export function withStateMark(
           cy={MARK.cy}
           r={MARK.r}
           stroke='none'
+          data-state-mark=''
           className={markClassName}
         />
         {children}

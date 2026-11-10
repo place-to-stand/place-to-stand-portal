@@ -19,6 +19,7 @@ import {
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { AssigneeOption, SetAssigneeResult } from '@/lib/assignees/types'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import { getJson } from '@/lib/http/get-json'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
 
@@ -96,7 +97,7 @@ export function AssigneeSubmenu({
   return (
     <ContextMenuSub>
       <ContextMenuSubTrigger disabled={isPending}>
-        <Icon />
+        <Icon className={MUTED_STATE_MARK_CLASS} />
         Set assignee
       </ContextMenuSubTrigger>
       <ContextMenuSubContent className='min-w-48'>

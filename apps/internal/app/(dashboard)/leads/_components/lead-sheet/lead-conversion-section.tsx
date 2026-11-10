@@ -19,6 +19,7 @@ import { projectBoardHref } from '@/lib/sheets/hrefs'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import { cn } from '@/lib/utils'
 
 const MAX_PROJECTS = 4
@@ -66,7 +67,9 @@ export function LeadConversionSection({
           size='sm'
           onClick={onConvertToClient}
         >
-          <ENTITY_ICONS.client className='h-3 w-3' />
+          <ENTITY_ICONS.client
+            className={cn('h-3 w-3', MUTED_STATE_MARK_CLASS)}
+          />
           Bill this company
         </Button>
       </div>

@@ -28,6 +28,8 @@ import { filterNavGroupsForRole } from '@/lib/auth/roles'
 import type { PaletteSearchResult } from '@/lib/queries/command-palette'
 import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
+import { cn } from '@/lib/utils'
 import { companySheetHref } from '@/lib/sheets/hrefs'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
@@ -228,7 +230,9 @@ function CommandPalette() {
               >
                 {/* A client: the company icon with the client dot. */}
                 {company.isClient ? (
-                  <ENTITY_ICONS.client className='size-4' />
+                  <ENTITY_ICONS.client
+                    className={cn('size-4', MUTED_STATE_MARK_CLASS)}
+                  />
                 ) : (
                   <ENTITY_ICONS.company className='size-4' />
                 )}
@@ -285,7 +289,9 @@ function CommandPalette() {
               >
                 {/* Can sign in: the person icon with the sign-in dot. */}
                 {contact.hasSignIn ? (
-                  <ENTITY_ICONS.user className='size-4' />
+                  <ENTITY_ICONS.user
+                    className={cn('size-4', MUTED_STATE_MARK_CLASS)}
+                  />
                 ) : (
                   <ENTITY_ICONS.contact className='size-4' />
                 )}

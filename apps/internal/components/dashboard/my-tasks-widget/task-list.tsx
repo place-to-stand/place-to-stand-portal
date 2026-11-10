@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { MetaLink } from '@/components/ui/meta-link'
 import { SheetLink } from '@/components/ui/sheet-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TaskListProps = {
@@ -239,5 +240,10 @@ function renderProjectTypeIcon(
     return <User className={className} aria-hidden />
   }
 
-  return <ENTITY_ICONS.client className={className} aria-hidden />
+  return (
+    <ENTITY_ICONS.client
+      className={cn(className, MUTED_STATE_MARK_CLASS)}
+      aria-hidden
+    />
+  )
 }
