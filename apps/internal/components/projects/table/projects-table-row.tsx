@@ -17,6 +17,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import {
   SelectRowCell,
   useSelectedRowProps,
@@ -95,7 +96,12 @@ export function ProjectsTableRow({
         </TableCell>
         <TableCell label='Owner'>
           <div className='flex min-w-0 items-center gap-2 text-sm'>
-            <ownerDisplay.Icon className='text-muted-foreground h-4 w-4 shrink-0' />
+            <ownerDisplay.Icon
+              className={cn(
+                'text-muted-foreground h-4 w-4 shrink-0',
+                MUTED_STATE_MARK_CLASS
+              )}
+            />
             <span className='truncate'>{ownerDisplay.label}</span>
           </div>
           {ownerDisplay.message ? (
