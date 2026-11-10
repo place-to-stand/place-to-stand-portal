@@ -112,6 +112,7 @@ export function ComponentsRecordRows() {
               email: 'ada@acme.com',
               jobTitle: 'Head of product',
             }}
+            hasSignIn
             openable={false}
             actions={
               <RowActionButton

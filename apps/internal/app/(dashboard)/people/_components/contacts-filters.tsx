@@ -13,6 +13,7 @@ import {
   type SignInFilter,
 } from '@/lib/people/filters'
 import { RoleBadge } from '@/components/auth/role-badge'
+import { CompanyNameWithState } from '@/components/companies/client-badge'
 
 type ContactsFiltersProps = {
   search?: string
@@ -69,6 +70,10 @@ export function ContactsFilters({
         options={companies.map(company => ({
           value: company.id,
           label: company.name,
+          // Billed companies carry the Client badge, as in the pickers.
+          badge: company.isClient ? (
+            <CompanyNameWithState name={company.name} isClient />
+          ) : undefined,
         }))}
       />
       {showSignInFilter ? (

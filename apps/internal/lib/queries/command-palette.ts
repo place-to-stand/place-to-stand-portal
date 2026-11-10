@@ -6,6 +6,7 @@ import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertCan } from '@/lib/auth/permissions'
+import { roleCan } from '@/lib/auth/capabilities'
 import { db } from '@/lib/db'
 import { companies, contacts, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
@@ -34,6 +35,8 @@ type PaletteContactResult = {
   id: string
   name: string
   email: string | null
+  /** A live sign-in; false for viewers who don't manage sign-ins. */
+  hasSignIn: boolean
 }
 
 export type PaletteSearchResult = {
@@ -54,6 +57,7 @@ export async function searchCommandPalette(
   query: string
 ): Promise<PaletteSearchResult> {
   assertCan(user, 'portal.command_palette')
+  const seesSignIns = roleCan(user.role, 'settings.users')
 
   const pattern = createSearchPattern(query)
 
@@ -118,7 +122,16 @@ export async function searchCommandPalette(
       .orderBy(asc(companies.name), asc(projects.name))
       .limit(RESULT_LIMIT),
     db
-      .select({ id: contacts.id, name: contacts.name, email: contacts.email })
+      .select({
+        id: contacts.id,
+        name: contacts.name,
+        email: contacts.email,
+        hasSignIn: sql<boolean>`exists (
+          select 1 from users u
+          where u.id = ${sql.raw('"contacts"."user_id"')}
+            and u.deleted_at is null and u.disabled_at is null
+        )`,
+      })
       .from(contacts)
       .where(contactCondition)
       .orderBy(asc(contacts.name))
@@ -153,6 +166,9 @@ export async function searchCommandPalette(
   return {
     companies: companyRows,
     projects: projectResults,
-    contacts: contactRows,
+    contacts: contactRows.map(contact => ({
+      ...contact,
+      hasSignIn: seesSignIns && contact.hasSignIn,
+    })),
   }
 }

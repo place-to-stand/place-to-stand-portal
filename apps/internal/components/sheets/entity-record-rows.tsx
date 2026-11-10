@@ -36,6 +36,7 @@ type RowExtras = {
 
 export function ContactRecordRow({
   contact,
+  hasSignIn = false,
   titleAddon,
   note,
   actions,
@@ -46,6 +47,8 @@ export function ContactRecordRow({
 }: RowExtras & {
   /** Shown after the name, e.g. the portal-account mark. */
   titleAddon?: ReactNode
+  /** Can sign in: the person icon wears the sign-in dot. */
+  hasSignIn?: boolean
   contact: {
     id: string
     name: string | null
@@ -57,7 +60,7 @@ export function ContactRecordRow({
   const name = contact.name || contact.email || 'Unnamed person'
   return (
     <SheetRecordRow
-      icon={ENTITY_ICONS.contact}
+      icon={hasSignIn ? ENTITY_ICONS.user : ENTITY_ICONS.contact}
       title={
         titleAddon ? (
           <span className='flex items-center gap-3'>

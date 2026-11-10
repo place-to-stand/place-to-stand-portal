@@ -15,3 +15,24 @@ export function ClientBadge({ className }: { className?: string }) {
     </Badge>
   )
 }
+
+/**
+ * A company's name with the Client badge after it while it is billed: how a
+ * picker or filter option shows a company where clients and other companies
+ * mix. A plain name otherwise.
+ */
+export function CompanyNameWithState({
+  name,
+  isClient,
+}: {
+  name: string
+  isClient: boolean
+}) {
+  if (!isClient) return <span className='truncate'>{name}</span>
+  return (
+    <span className='flex min-w-0 items-center gap-2'>
+      <span className='truncate'>{name}</span>
+      <ClientBadge className='shrink-0' />
+    </span>
+  )
+}

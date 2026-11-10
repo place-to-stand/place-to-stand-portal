@@ -1,14 +1,12 @@
 import { expect, test } from '@playwright/test'
 
-// The Companies list's type filter: Client and Not a client, plain text.
-// Read-only.
-test('the company type filter offers client and not a client', async ({
-  page,
-}) => {
+// Clients are a tab on Companies, so the type filter only offers
+// "Not a client", and the Clients tab hides it. Read-only.
+test('the company type filter offers only not a client', async ({ page }) => {
   await page.goto('/companies')
   await page.getByRole('combobox', { name: 'All companies' }).click()
   const options = page.getByRole('option')
-  await expect(options).toHaveText(['Client', 'Not a client'])
+  await expect(options).toHaveText(['Not a client'])
 
   // Plain text options: no badge.
   await expect(
@@ -23,4 +21,32 @@ test('the company type filter offers client and not a client', async ({
   await expect(
     page.locator('tbody [data-slot=badge]', { hasText: /Prepaid|Net 30/ })
   ).toHaveCount(0)
+})
+
+test('the Clients tab lists clients and keeps its tab on reset', async ({
+  page,
+}) => {
+  await page.goto('/companies')
+  await page.getByRole('tab', { name: 'Clients', exact: true }).click()
+  await expect(page).toHaveURL(/type=client/)
+
+  // The tab is the filter: no type menu, and every row is a client.
+  await expect(
+    page.getByRole('combobox', { name: 'All companies' })
+  ).toHaveCount(0)
+  const rows = page.locator('tbody tr')
+  await expect(rows.first()).toBeVisible()
+  const count = await rows.count()
+  for (let i = 0; i < count; i++) {
+    await expect(
+      rows.nth(i).locator('[data-slot=badge]', { hasText: 'Client' })
+    ).toHaveCount(1)
+  }
+
+  // Narrowing then resetting stays on Clients.
+  await page.getByRole('combobox', { name: 'Open leads: any' }).click()
+  await page.getByRole('option').first().click()
+  await page.getByRole('button', { name: /reset/i }).click()
+  await expect(page).toHaveURL(/type=client/)
+  await expect(page).not.toHaveURL(/leads=/)
 })

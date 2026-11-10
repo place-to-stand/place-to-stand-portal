@@ -283,7 +283,12 @@ function CommandPalette() {
                   )
                 }
               >
-                <ENTITY_ICONS.contact className='size-4' />
+                {/* Can sign in: the person icon with the sign-in dot. */}
+                {contact.hasSignIn ? (
+                  <ENTITY_ICONS.user className='size-4' />
+                ) : (
+                  <ENTITY_ICONS.contact className='size-4' />
+                )}
                 <span>
                   {contact.name}{' '}
                   <span className='text-muted-foreground'>{contact.email}</span>

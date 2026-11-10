@@ -212,6 +212,7 @@ export function CompanyPeopleSection({
           <ContactRecordRow
             key={contact.id}
             contact={contact}
+            hasSignIn={contact.hasPortalLogin && !contact.signInDisabled}
             pendingRemoval={{
               disabled,
               note: clientName
@@ -224,6 +225,7 @@ export function CompanyPeopleSection({
           <ContactRecordRow
             key={contact.id}
             contact={contact}
+            hasSignIn={contact.hasPortalLogin && !contact.signInDisabled}
             fields={fields(contact)}
             actions={
               <>
