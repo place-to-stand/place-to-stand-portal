@@ -341,15 +341,6 @@ export function ContactsTableSection({
                             disabledReason={restoreDisabledReason}
                           />
                         ) : null}
-                        {showSoftDelete ? (
-                          <RecordRowAction
-                            kind='archive'
-                            entity='person'
-                            onClick={() => onRequestDelete(contact)}
-                            disabled={deleteDisabled}
-                            disabledReason={deleteDisabledReason}
-                          />
-                        ) : null}
                       </RecordRowActions>
                     </TableCell>
                   </TableRow>

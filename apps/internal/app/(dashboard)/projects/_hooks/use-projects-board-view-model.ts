@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 
 import type { ProjectsBoardTabsSectionProps } from '../_components/projects-board/projects-board-tabs-section'
 import type { ProjectsBoardDialogsProps } from '../_components/projects-board-dialogs'
@@ -25,6 +25,8 @@ type BaseProps = Omit<UseProjectsBoardCoreStateArgs, 'currentView'>
 
 export type ProjectsBoardProps = BaseProps & {
   initialTab?: 'board' | 'activity' | 'review' | 'timeLogs'
+  /** The Time logs tab's list, rendered on the server for its route. */
+  timeLogsList?: ReactNode
 }
 
 export type ProjectsBoardHeaderProps = {
@@ -166,10 +168,7 @@ export function useProjectsBoardViewModel({
     drop: {
       recentlyMovedTaskId: boardState.recentlyMovedTaskId,
     },
-    timeLogs: {
-      currentUserId: props.currentUserId,
-      onEditTimeLogEntry: timeLogDialogs.openEditTimeLogDialog,
-    },
+    timeLogs: { timeLogsList: props.timeLogsList },
   })
 
   const dialogs = buildProjectsBoardDialogs({

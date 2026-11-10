@@ -1,16 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
-import { ProjectTimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
+import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
-import { toast, toastLink } from '@/components/ui/use-toast'
 import type { ProjectTimeLogDialogParams } from '@/lib/projects/time-log/types'
 
 type LogTimeButtonProps = {
@@ -25,13 +24,19 @@ type LogTimeButtonProps = {
  */
 export function LogTimeButton({ projects }: LogTimeButtonProps) {
   const router = useRouter()
-  const [loadingProjectId, setLoadingProjectId] = useState<string | null>(null)
-  const [dialogParams, setDialogParams] =
-    useState<ProjectTimeLogDialogParams | null>(null)
+  // The dialog opens as soon as a project is picked; its data loads inside.
+  const [dialog, setDialog] = useState<{
+    projectId: string
+    params: ProjectTimeLogDialogParams | null
+    error: string | null
+  } | null>(null)
+  // A later pick (or a close) makes an earlier response stale.
+  const requestRef = useRef(0)
 
   const openForProject = async (projectId: string) => {
     if (!projectId) return
-    setLoadingProjectId(projectId)
+    const request = ++requestRef.current
+    setDialog({ projectId, params: null, error: null })
     try {
       const response = await fetch(
         `/api/projects/${projectId}/time-log-context`,
@@ -45,21 +50,26 @@ export function LogTimeButton({ projects }: LogTimeButtonProps) {
       if (!response.ok || !payload.ok || !payload.data) {
         throw new Error(payload.error ?? 'Request failed')
       }
-      setDialogParams(payload.data.params)
+      const params = payload.data.params
+      if (request === requestRef.current) {
+        setDialog({ projectId, params, error: null })
+      }
     } catch (error) {
       console.error('Failed to open the Log time dialog', error)
-      toast({
-        title: 'Unable to log time',
-        description: 'That project could not be opened. Please try again.',
-        variant: 'destructive',
-        link: toastLink('project', projectId),
-      })
-    } finally {
-      setLoadingProjectId(null)
+      if (request === requestRef.current) {
+        setDialog({
+          projectId,
+          params: null,
+          error: 'That project could not be opened. Please try again.',
+        })
+      }
     }
   }
 
-  const isLoading = loadingProjectId !== null
+  const close = () => {
+    requestRef.current += 1
+    setDialog(null)
+  }
 
   return (
     <>
@@ -75,29 +85,27 @@ export function LogTimeButton({ projects }: LogTimeButtonProps) {
             size='sm'
             type='button'
             className='gap-2'
-            disabled={isLoading || projects.length === 0}
+            disabled={projects.length === 0}
             aria-label='Log time: choose a project'
           >
-            {isLoading ? (
-              <Loader2 className='h-4 w-4 animate-spin' aria-hidden />
-            ) : (
-              <Plus className='h-4 w-4' aria-hidden />
-            )}
+            <Plus className='h-4 w-4' aria-hidden />
             Log time
           </Button>
         }
       />
-      {dialogParams ? (
-        <ProjectTimeLogDialog
-          {...dialogParams}
+      {dialog ? (
+        <TimeLogDialog
+          key={dialog.projectId}
+          params={dialog.params}
+          loadError={dialog.error}
           open
           onOpenChange={next => {
-            if (!next) setDialogParams(null)
+            if (!next) close()
           }}
           mode='create'
           timeLogEntry={null}
           onMutationSuccess={() => {
-            setDialogParams(null)
+            close()
             router.refresh()
           }}
         />

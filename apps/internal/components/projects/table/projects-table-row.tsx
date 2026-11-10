@@ -114,9 +114,9 @@ export function ProjectsTableRow({
         <TableCell label='Timeline' className='text-muted-foreground text-sm'>
           {formatProjectDateRange(project.starts_on, project.ends_on)}
         </TableCell>
-        <TableCell className='text-right max-md:ml-auto'>
-          <RecordRowActions>
-            {showRestore ? (
+        {showRestore ? (
+          <TableCell className='text-right max-md:ml-auto'>
+            <RecordRowActions>
               <RecordRowAction
                 kind='restore'
                 entity='project'
@@ -124,18 +124,9 @@ export function ProjectsTableRow({
                 disabled={restoreDisabled}
                 disabledReason={restoreDisabledReason}
               />
-            ) : null}
-            {showArchive ? (
-              <RecordRowAction
-                kind='archive'
-                entity='project'
-                onClick={() => onRequestDelete(project)}
-                disabled={deleteDisabled}
-                disabledReason={deleteDisabledReason}
-              />
-            ) : null}
-          </RecordRowActions>
-        </TableCell>
+            </RecordRowActions>
+          </TableCell>
+        ) : null}
       </TableRow>
     </RecordContextMenu>
   )

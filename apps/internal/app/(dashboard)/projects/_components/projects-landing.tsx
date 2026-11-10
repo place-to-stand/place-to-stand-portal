@@ -536,13 +536,6 @@ export function ProjectsLanding({
                   onClick={() => openProjectSheet(project.id)}
                   disabled={isArchivePending}
                 />
-                <RecordRowAction
-                  kind='archive'
-                  entity='project'
-                  onClick={() => handleRequestDelete(project)}
-                  disabled={isArchivePending}
-                  disabledReason={isArchivePending ? PENDING_REASON : null}
-                />
               </RecordRowActions>
             )}
           </TableCell>

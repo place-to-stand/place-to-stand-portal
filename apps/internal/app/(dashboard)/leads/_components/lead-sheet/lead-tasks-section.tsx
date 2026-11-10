@@ -111,6 +111,9 @@ export function LeadTasksSection({
     [open]
   )
 
+  // fetchTasks catches and reports its own errors.
+  const refetchTasks = useCallback(() => void fetchTasks(), [fetchTasks])
+
   const completedTasks = tasks.filter(t => t.status === 'DONE')
   const activeTasks = tasks.filter(t => t.status !== 'DONE')
 
@@ -151,6 +154,7 @@ export function LeadTasksSection({
               assignees={resolveAssignees(task)}
               onClick={() => openTask(task)}
               canManage={canManage}
+              onAssigned={refetchTasks}
             />
           ))}
         </div>
@@ -176,6 +180,7 @@ export function LeadTasksSection({
                 assignees={resolveAssignees(task)}
                 onClick={() => openTask(task)}
                 canManage={canManage}
+                onAssigned={refetchTasks}
               />
             ))}
           </CollapsibleContent>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import type { RefObject, UIEventHandler } from 'react'
+import type { ReactNode, RefObject, UIEventHandler } from 'react'
 import { Tabs } from '@pts/ui/tabs'
 import type { TaskWithRelations } from '@/lib/types'
 import type { DndContextProps } from '@dnd-kit/core'
@@ -7,7 +7,6 @@ import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-s
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import type { KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 import { completeBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
-import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 import type { ProjectStatusValue } from '@/lib/constants'
 
 import { BoardTabContent } from './board-tab-content'
@@ -70,8 +69,8 @@ export type ProjectsBoardTabsProps = {
   reviewActionType: ReviewActionKind | null
   isReviewActionPending: boolean
   recentlyMovedTaskId: string | null
-  currentUserId: string
-  onEditTimeLogEntry: (entry: TimeLogEntry) => void
+  /** The Time logs tab's list, rendered on the server for its route. */
+  timeLogsList?: ReactNode
   /** Project members see the Tasks tab only. */
   tasksOnly?: boolean
   projectActions: ProjectActionControls
@@ -122,8 +121,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     reviewActionType,
     isReviewActionPending,
     recentlyMovedTaskId,
-    currentUserId,
-    onEditTimeLogEntry,
+    timeLogsList,
     tasksOnly = false,
     projectActions,
     onProjectStatusChange,
@@ -134,7 +132,10 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
   }, [initialTab])
 
   return (
-    <Tabs value={initialTab} className='flex min-h-0 flex-1 flex-col gap-2'>
+    <Tabs
+      value={initialTab}
+      className='flex min-h-0 flex-1 flex-col gap-3 sm:gap-4'
+    >
       <ProjectsBoardTabsHeader
         initialTab={initialTab}
         boardHref={boardHref}
@@ -196,8 +197,7 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         key={activeProject?.id ?? 'no-project'}
         isActive={initialTab === 'timeLogs'}
         activeProject={activeProject}
-        currentUserId={currentUserId}
-        onEditEntry={onEditTimeLogEntry}
+        list={timeLogsList}
       />
       <ActivityTabContent
         isActive={initialTab === 'activity'}

@@ -9,6 +9,7 @@ import {
   Pencil,
   RefreshCw,
   Trash2,
+  Undo2,
   UserPlus,
 } from 'lucide-react'
 
@@ -25,7 +26,7 @@ import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 type KindConfig = {
   label: (entity: string) => string
   icon: ReactNode
-  variant: 'outline' | 'destructive'
+  variant: 'default' | 'outline' | 'destructive'
   className?: string
 }
 
@@ -46,9 +47,15 @@ const KINDS = {
     icon: <Trash2 />,
     variant: 'destructive',
   },
+  /** Solid, like a primary button: the one thing an unread row asks for. */
   acknowledge: {
     label: e => `Acknowledge ${e}`,
     icon: <Check />,
+    variant: 'default',
+  },
+  unacknowledge: {
+    label: e => `Unacknowledge ${e}`,
+    icon: <Undo2 />,
     variant: 'outline',
   },
   preview: {

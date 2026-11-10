@@ -128,7 +128,11 @@ export function HourBlocksTableSection({
               >
                 Created on
               </SortableTableHead>
-              <TableHead className='w-20 text-right'>Actions</TableHead>
+              {/* Archive is in the right-click menu and the bulk bar; only the
+                  Archive tab keeps a row button (Restore). */}
+              {mode === 'archive' ? (
+                <TableHead className='w-20 text-right'>Actions</TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -271,9 +275,9 @@ export function HourBlocksTableSection({
                     >
                       {formatTimestamp(block.created_at)}
                     </TableCell>
-                    <TableCell className='text-right max-md:ml-auto'>
-                      <RecordRowActions>
-                        {showRestore ? (
+                    {showRestore ? (
+                      <TableCell className='text-right max-md:ml-auto'>
+                        <RecordRowActions>
                           <RecordRowAction
                             kind='restore'
                             entity='hour block'
@@ -281,25 +285,16 @@ export function HourBlocksTableSection({
                             disabled={restoreDisabled}
                             disabledReason={restoreDisabledReason}
                           />
-                        ) : null}
-                        {showArchive ? (
-                          <RecordRowAction
-                            kind='archive'
-                            entity='hour block'
-                            onClick={() => onRequestDelete(block)}
-                            disabled={archiveDisabled}
-                            disabledReason={archiveDisabledReason}
-                          />
-                        ) : null}
-                      </RecordRowActions>
-                    </TableCell>
+                        </RecordRowActions>
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 </RecordContextMenu>
               )
             })}
             {hourBlocks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className='p-4'>
+                <TableCell colSpan={mode === 'archive' ? 6 : 5} className='p-4'>
                   <EmptyState message={emptyMessage} />
                 </TableCell>
               </TableRow>

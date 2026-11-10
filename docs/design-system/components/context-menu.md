@@ -8,7 +8,7 @@ The right-click menu, shadcn/ui's Context Menu (base-nova, on Base UI). From `@p
 
 `components/table/record-context-menu.tsx`: the one right-click menu on every record row and board card. It renders the row or card itself as the trigger (`render`), so no wrapper lands between a table body and its rows.
 
-**Items, in order:** Edit (opens the record, as a click on the row does) · Duplicate (only for `DUPLICABLE_SHEET_ENTITIES`: tasks, leads, invoices, hour blocks) · separator · Archive, or Restore on an archive list. When archive or restore can't run, the item is disabled and the reason shows under it. The items mount only while the menu is open, so rows and cards don't re-render on URL changes.
+**Items, in order:** Edit (opens the record, as a click on the row does) · Duplicate (only for `DUPLICABLE_SHEET_ENTITIES`: tasks, leads, invoices, hour blocks) · Set assignee › (tasks and leads, see below) · separator · Archive, or Restore on an archive list. When archive or restore can't run, the item is disabled and the reason shows under it. The items mount only while the menu is open, so rows and cards don't re-render on URL changes.
 
 **Rules**
 
@@ -19,3 +19,4 @@ The right-click menu, shadcn/ui's Context Menu (base-nova, on Base UI). From `@p
 - `copy-<uuid>` is a valid param value only for duplicable entities; anywhere else it is ignored, and `/api/sheets/init` takes record ids only. (guard: review)
 - Draggable cards pass `draggable`, so on touch a held finger drags and only a right click opens the menu (the touch timer and Android's touch `contextmenu` event are both cancelled). (guard: review)
 - Board cards with no archive flow of their own use `useRecordArchive` (`components/table/use-record-archive.tsx`): the shared `ArchiveConfirmDialog`, the action, toasts and a refresh. (guard: review)
+- **Set assignee** (`assign`, `components/table/assignee-submenu.tsx`) is on task and lead cards for people who can edit them. Hovering it opens a submenu to the side: the people who can take the record (the same rule a save checks, from `GET /api/tasks/[id]/assignee-options` or `/api/leads/assignee-options`), each with their avatar and the current one checked on the right, then a separator and **Clear assignee** (disabled when there is none). A pick saves at once (`setTaskAssignee` / `setLeadAssignee`, the same notification and activity row as a sheet save) and shows a toast, "Assigned to Kris" or "Assignee cleared", with the record's name as its link. (guard: review)

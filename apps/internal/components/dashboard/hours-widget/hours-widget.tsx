@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { ProjectTimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
+import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import { cn } from '@/lib/utils'
 import {
   HOURS_WIDGET_LOG_PAGE_SIZE,
@@ -345,12 +345,13 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
           onLoadMore={handleLoadMoreLogs}
           onOpenEntry={handleOpenEntry}
           openingEntryId={openingEntryId}
-          error={logError ?? editor.error}
+          error={logError}
         />
       </div>
-      {editContext ? (
-        <ProjectTimeLogDialog
-          {...editContext.params}
+      {editor.entryId ? (
+        <TimeLogDialog
+          params={editContext?.params ?? null}
+          loadError={editor.error}
           open
           onOpenChange={next => {
             if (!next) {
@@ -358,7 +359,7 @@ export function HoursWidget({ initialSnapshot, className }: HoursWidgetProps) {
             }
           }}
           mode='edit'
-          timeLogEntry={editContext.entry}
+          timeLogEntry={editContext?.entry ?? null}
           onMutationSuccess={() => {
             editor.close()
             void refreshCurrentMonth()
