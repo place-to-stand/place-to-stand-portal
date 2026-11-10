@@ -82,7 +82,8 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
               name={actorName}
               hasPhoto={Boolean(log.actor?.avatar_url)}
               alt=''
-              fallback='icon'
+              // A person's icon for a person; "System" keeps its initials.
+              fallback={log.actor ? 'icon' : 'initials'}
             />
             {actorName}
           </span>

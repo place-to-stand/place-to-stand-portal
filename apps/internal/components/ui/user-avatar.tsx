@@ -98,7 +98,17 @@ export function UserAvatar({
       style={mark?.cutout}
     >
       {src ? <AvatarImage src={src} alt={alt ?? name ?? ''} /> : null}
-      <AvatarFallback>{getInitials(name)}</AvatarFallback>
+      <AvatarFallback>
+        {fallback === 'icon' ? (
+          // A photo that fails to load still falls back to the icon.
+          <ENTITY_ICONS.contact
+            aria-hidden
+            className={cn(ENTITY_ACCENTS.contact.icon, 'size-3/5')}
+          />
+        ) : (
+          getInitials(name)
+        )}
+      </AvatarFallback>
     </Avatar>
   )
   if (!mark) return avatar

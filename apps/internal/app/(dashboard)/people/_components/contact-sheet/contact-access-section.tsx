@@ -20,6 +20,7 @@ import { EffectiveMonthPicker } from '@/components/billing/effective-month-selec
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
   FIELD_STACK_CLASS,
+  FormControl,
   FormDescription,
   FormField,
   FormItem,
@@ -240,13 +241,14 @@ function ManagedSignIn({
                 reason={
                   isSelf ? 'Use Forgot password on the sign-in page.' : null
                 }
-                // 16px from the switch, so the two read as separate controls.
-                className='mr-2 w-auto'
+                className='w-auto'
               >
                 <Button
                   type='button'
                   variant='outline'
                   size='sm'
+                  // 16px from the switch, so the two read as separate controls.
+                  className='mr-2'
                   disabled={isSending || isPending || isSelf}
                   onClick={sendReset}
                 >
@@ -305,7 +307,7 @@ function ManagedSignIn({
                     ? 'New sign-in'
                     : live && account
                       ? `Last sign-in: ${formatRelativeTime(account.lastSignInAt) ?? 'never'}`
-                      : 'Their sign-in is off.'}
+                      : null}
                 </p>
               </div>
               <FormField
@@ -323,14 +325,16 @@ function ManagedSignIn({
                         value={field.value}
                         disabled={Boolean(lockedReason)}
                       >
-                        <SelectTrigger aria-label='Role' className='w-full'>
-                          {/* The role reads as the badge it shows elsewhere. */}
-                          <SelectValue>
-                            {field.value ? (
-                              <RoleBadge role={field.value} />
-                            ) : null}
-                          </SelectValue>
-                        </SelectTrigger>
+                        <FormControl>
+                          <SelectTrigger aria-label='Role' className='w-full'>
+                            {/* The role reads as the badge it shows elsewhere. */}
+                            <SelectValue>
+                              {field.value ? (
+                                <RoleBadge role={field.value} />
+                              ) : null}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
                         <SelectContent>
                           {roles.map(option => (
                             <SelectItem key={option} value={option}>
@@ -349,7 +353,7 @@ function ManagedSignIn({
                   name='signIn.effectiveFrom'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role starts</FormLabel>
+                      <Label htmlFor='contact-role-starts'>Role starts</Label>
                       <EffectiveMonthPicker
                         id='contact-role-starts'
                         ariaLabel='Role starts'
