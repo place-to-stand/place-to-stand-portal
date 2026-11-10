@@ -62,9 +62,9 @@ test('a second save over a teammate asks first', async ({ browser, page }) => {
     // Sales saves anyway: nothing is written until they choose.
     await saveAndStay(sales.sheet)
     const dialog = sales.page.getByRole('alertdialog')
-    await expect(dialog).toContainText('Your changes weren’t saved')
+    await expect(dialog).toContainText('Your changes aren’t saved yet')
     await expect(dialog).toContainText('Website')
-    await dialog.getByRole('button', { name: 'Overwrite with mine' }).click()
+    await dialog.getByRole('button', { name: /^Save mine over/ }).click()
     await expect(dialog).toBeHidden()
 
     // The admin's untouched sheet follows the overwrite on its own.

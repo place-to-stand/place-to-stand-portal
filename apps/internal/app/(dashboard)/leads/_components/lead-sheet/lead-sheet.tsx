@@ -174,6 +174,7 @@ export function LeadSheet(props: LeadSheetProps) {
       />
       <SaveConflictDialog
         guard={saveConflict}
+        yours={() => form.getValues()}
         noun='lead'
         onOverwrite={handleSave}
         onLoadTheirs={handleLoadTheirs}

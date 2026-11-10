@@ -288,6 +288,7 @@ export function HourBlockSheet({
       {unsavedChangesDialog}
       <SaveConflictDialog
         guard={saveConflict}
+        yours={() => form.getValues()}
         noun='hour block'
         onOverwrite={handleSave}
         onLoadTheirs={handleLoadTheirs}

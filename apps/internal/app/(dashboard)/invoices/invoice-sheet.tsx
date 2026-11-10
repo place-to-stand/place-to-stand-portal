@@ -741,6 +741,7 @@ export function InvoiceSheet({
       {unsavedChangesDialog}
       <SaveConflictDialog
         guard={saveConflict}
+        yours={() => form.getValues()}
         noun='invoice'
         onOverwrite={handleSave}
         onLoadTheirs={handleLoadTheirs}

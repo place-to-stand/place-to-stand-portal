@@ -2,13 +2,24 @@
 
 import { formatRelativeTime } from '@pts/ui/dates'
 
-import { ActivityChangeList } from '@/components/activity/activity-change-list'
+import {
+  emptyLabel,
+  formatValue,
+} from '@/components/activity/activity-change-list'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { ChoiceDialog } from '@/components/ui/choice-dialog'
-import { UserAvatar } from '@/components/ui/user-avatar'
-import { getActivityChanges } from '@/lib/activity/changes'
+import {
+  getActivityChanges,
+  humanizeEnum,
+  type FieldChange,
+} from '@/lib/activity/changes'
 import { getActorDisplayName } from '@/lib/activity/feed-highlights'
-import type { ActivityLogWithActor } from '@/lib/activity/types'
+import { htmlToPlainText } from '@/lib/activity/text-diff'
+import type {
+  ActivityLogWithActor,
+  ActivityReferences,
+} from '@/lib/activity/types'
+import { getTaskStatusLabel } from '@/lib/projects/task-status'
 import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
@@ -24,38 +35,73 @@ type SaveConflictDialogProps = {
    * and re-seed the form from the new version.
    */
   onLoadTheirs: () => void
+  /**
+   * The values on this sheet now, keyed like the activity log's fields
+   * (`form.getValues`). Lets each changed field show what Save would write
+   * over it. Fields it doesn't name show only before and after.
+   */
+  yours?: () => Record<string, unknown>
+}
+
+/** Who saved, in the words the dialog uses. */
+type Saver = {
+  /** "Kris Crawford", "You", "Someone". */
+  full: string
+  /** "Kris's", "the saved", "their". */
+  versionOf: string
+  self: boolean
 }
 
 /**
  * Shown when a sheet's Save is refused because someone else saved the same
- * record first. Nothing was written. It says who saved and when, lists
- * their changes field by field (as History shows them), and offers three
- * choices, each with what it does.
+ * record first. Nothing was written. Written for people who don't think in
+ * diffs: who changed what, in plain sentences, each changed field as what
+ * they saved next to what this sheet holds, and three choices that say what
+ * each one keeps.
  */
 export function SaveConflictDialog({
   guard,
   noun,
   onOverwrite,
   onLoadTheirs,
+  yours,
 }: SaveConflictDialogProps) {
   const { userId } = useViewerAccess()
   const { conflict } = guard
+  const saver = describeSaver(conflict, userId)
+  const fields = conflict ? mergeFields(conflict.changes) : []
+  const mine = conflict && yours ? yours() : null
+  const references = conflict?.changes[0]?.references
+  const when = conflict
+    ? formatRelativeTime(conflict.changes[0]?.created_at ?? conflict.savedAt)
+    : ''
+
   return (
     <ChoiceDialog
       open={conflict !== null}
-      title={conflict ? headline(conflict, noun, userId) : ''}
-      description='Your changes weren’t saved. Nothing is lost yet.'
+      title={
+        saver.self
+          ? `You saved this ${noun} in another tab`
+          : `${saver.full} changed this ${noun}${when ? ` ${when}` : ''}`
+      }
+      description={
+        saver.self
+          ? 'Your changes in this tab aren’t saved yet.'
+          : `They saved while you were editing. Your changes aren’t saved yet.`
+      }
       choices={[
         {
           key: 'keep',
           label: 'Keep editing',
-          detail: 'Back to your edits. Nothing is saved.',
+          detail: 'Go back to your changes. Nothing is saved yet.',
           onSelect: guard.dismiss,
         },
         {
           key: 'theirs',
-          label: 'Load theirs',
-          detail: `Drop your edits and show the ${noun} as it is now.`,
+          label: saver.self
+            ? 'Use the saved version'
+            : `Use ${saver.versionOf} version`,
+          detail: `Throw away your changes and show the ${noun} as ${saver.self ? 'you' : 'they'} saved it.`,
           onSelect: () => {
             guard.dismiss()
             onLoadTheirs()
@@ -63,93 +109,222 @@ export function SaveConflictDialog({
         },
         {
           key: 'mine',
-          label: 'Overwrite with mine',
-          detail: 'Save everything on your sheet over their changes.',
+          label: saver.self
+            ? 'Save this tab’s version'
+            : `Save mine over ${saver.versionOf}`,
+          detail: `Replace what ${saver.self ? 'you' : 'they'} saved with everything on this sheet.`,
           tone: 'destructive',
           onSelect: () => onOverwrite(guard.overwrite()),
         },
       ]}
     >
-      {conflict && conflict.changes.length > 0 ? (
-        <ol className='bg-muted/40 flex max-h-64 flex-col gap-3 overflow-y-auto rounded-md border p-3'>
-          {conflict.changes.map(log => (
-            <ConflictChange key={log.id} log={log} userId={userId} />
-          ))}
-        </ol>
+      {conflict ? (
+        <ConflictFields
+          fields={fields}
+          mine={mine}
+          saver={saver}
+          references={references}
+          targetType={conflict.changes[0]?.target_type ?? ''}
+          summary={conflict.changes[0]?.summary}
+        />
       ) : null}
     </ChoiceDialog>
   )
 }
 
-/** "Kris Crawford saved this company 2 minutes ago". */
-function headline(
-  conflict: SaveConflict,
-  noun: string,
+function describeSaver(
+  conflict: SaveConflict | null,
   userId: string | null
-): string {
-  const latest = conflict.changes[0]
-  const when = formatRelativeTime(latest?.created_at ?? conflict.savedAt)
-  const suffix = when ? ` ${when}` : ''
-  // No activity row to name anyone (a script, or one not logged yet).
-  if (!latest) return `This ${noun} changed${suffix}`
-  return `${actorName(latest, userId)} saved this ${noun}${suffix}`
-}
-
-/** Your own save from another sheet or tab reads as yours. */
-function actorName(log: ActivityLogWithActor, userId: string | null): string {
-  return log.actor?.id && log.actor.id === userId
-    ? 'You'
-    : getActorDisplayName(log)
+): Saver {
+  const actors = new Set(
+    (conflict?.changes ?? []).map(log => log.actor?.id ?? null)
+  )
+  const latest = conflict?.changes[0]
+  if (!latest || actors.size > 1 || !latest.actor) {
+    return {
+      full: actors.size > 1 ? 'Others' : 'Someone',
+      versionOf: 'their',
+      self: false,
+    }
+  }
+  if (latest.actor.id === userId) {
+    return { full: 'You', versionOf: 'the saved', self: true }
+  }
+  const full = getActorDisplayName(latest)
+  const first = full.split(' ')[0] || full
+  return { full, versionOf: `${first}’s`, self: false }
 }
 
 /**
- * One save: who and when on one line, then each changed field as
- * "Label  before → after", the rows History uses. A save that recorded no
- * fields shows its summary instead.
+ * One row per field across every save since this sheet loaded: the oldest
+ * "before" and the newest "after", so two saves of one field read as one
+ * change.
  */
-function ConflictChange({
-  log,
-  userId,
+function mergeFields(changes: ActivityLogWithActor[]): FieldChange[] {
+  const byKey = new Map<string, FieldChange>()
+  // Newest first: the first seen is the latest after.
+  for (const log of changes) {
+    for (const field of getActivityChanges(log).fields) {
+      const seen = byKey.get(field.key)
+      byKey.set(
+        field.key,
+        seen ? { ...seen, before: field.before } : { ...field }
+      )
+    }
+  }
+  return [...byKey.values()]
+}
+
+function ConflictFields({
+  fields,
+  mine,
+  saver,
+  references,
+  targetType,
+  summary,
 }: {
-  log: ActivityLogWithActor
-  userId: string | null
+  fields: FieldChange[]
+  mine: Record<string, unknown> | null
+  saver: Saver
+  references?: ActivityReferences
+  targetType: string
+  summary?: string
 }) {
-  const changes = getActivityChanges(log)
-  const hasRows =
-    changes.fields.length > 0 ||
-    changes.memberships.length > 0 ||
-    changes.facts.length > 0
+  if (fields.length === 0) {
+    return summary ? (
+      <p className='bg-muted/40 rounded-md border p-3 text-sm'>{summary}</p>
+    ) : null
+  }
+  const theirLabel = saver.self
+    ? 'Saved'
+    : saver.versionOf === 'their'
+      ? 'They saved'
+      : `${saver.versionOf.replace(/’s$/, '')} saved`
   return (
-    <li>
-      <div className='flex items-center gap-1.5 text-sm leading-5'>
-        <UserAvatar
-          size='xs'
-          userId={log.actor?.id}
-          name={getActorDisplayName(log)}
-          hasPhoto={Boolean(log.actor?.avatar_url)}
-          alt=''
-        />
-        <span className='font-medium'>{actorName(log, userId)}</span>
-        <time
-          dateTime={log.created_at}
-          className='text-muted-foreground text-xs'
-        >
-          {formatRelativeTime(log.created_at)}
-        </time>
-      </div>
-      {hasRows ? (
-        <ActivityChangeList
-          fields={changes.fields}
-          memberships={changes.memberships}
-          facts={changes.facts}
-          targetType={log.target_type}
-          references={log.references}
-        />
-      ) : (
-        <p className='text-muted-foreground mt-0.5 pl-6.5 text-sm'>
-          {log.summary}
-        </p>
-      )}
-    </li>
+    <div className='flex max-h-72 flex-col gap-3 overflow-y-auto'>
+      <p className='text-sm font-medium'>
+        {saver.self ? 'What you changed there' : 'What they changed'}
+      </p>
+      {fields.map(field => {
+        const after = plainValue(field, field.after, targetType, references)
+        const before = plainValue(field, field.before, targetType, references)
+        const hasMine =
+          mine !== null &&
+          field.key in mine &&
+          resolvable(field, mine[field.key], references)
+        const minePlain = hasMine
+          ? plainValue(field, mine[field.key], targetType, references)
+          : null
+        const mineIsOld = hasMine && same(minePlain, before)
+        return (
+          <section
+            key={field.key}
+            className='bg-muted/40 rounded-md border p-3'
+            aria-label={field.label}
+          >
+            <h3 className='mb-2 text-sm font-medium'>{field.label}</h3>
+            <dl className='grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm'>
+              {hasMine ? null : (
+                <Line label='Before' value={before} field={field} muted />
+              )}
+              <Line label={theirLabel} value={after} field={field} />
+              {hasMine ? (
+                <Line
+                  label={saver.self ? 'This tab' : 'Your sheet'}
+                  value={minePlain}
+                  field={field}
+                  note={mineIsOld ? 'what it was before' : null}
+                />
+              ) : null}
+            </dl>
+          </section>
+        )
+      })}
+    </div>
   )
+}
+
+function Line({
+  label,
+  value,
+  field,
+  muted = false,
+  note = null,
+}: {
+  label: string
+  value: string | null
+  field: FieldChange
+  muted?: boolean
+  note?: string | null
+}) {
+  return (
+    <>
+      <dt className='text-muted-foreground'>{label}</dt>
+      <dd className='min-w-0'>
+        <span
+          className={
+            value === null
+              ? 'text-muted-foreground italic'
+              : muted
+                ? 'text-muted-foreground line-clamp-4 break-words whitespace-pre-line'
+                : 'line-clamp-4 break-words whitespace-pre-line'
+          }
+        >
+          {value ?? emptyLabel(field)}
+        </span>
+        {note ? (
+          <span className='text-muted-foreground block text-xs'>{note}</span>
+        ) : null}
+      </dd>
+    </>
+  )
+}
+
+/** A field value as a person would say it, or null when empty. */
+function plainValue(
+  field: FieldChange,
+  value: unknown,
+  targetType: string,
+  references?: ActivityReferences
+): string | null {
+  if (typeof value === 'string' && /<[a-z][^>]*>/i.test(value)) {
+    const text = htmlToPlainText(value).trim()
+    return text || null
+  }
+  if (field.kind === 'status' && typeof value === 'string') {
+    return targetType === 'TASK'
+      ? getTaskStatusLabel(value)
+      : humanizeEnum(value)
+  }
+  if (field.kind === 'access') return value === true ? 'Disabled' : 'Enabled'
+  const text = formatValue(value, field, references)
+  return text === null ? null : text.trim() || null
+}
+
+/**
+ * A person, project or client id on this sheet reads as a name only when
+ * the log's references know it; otherwise leave the row out rather than
+ * print "Unknown person".
+ */
+function resolvable(
+  field: FieldChange,
+  value: unknown,
+  references?: ActivityReferences
+): boolean {
+  if (typeof value !== 'string' || !value) return true
+  if (field.kind === 'user') return Boolean(references?.users[value])
+  if (field.kind === 'contact') return Boolean(references?.contacts[value])
+  if (field.kind === 'project') return Boolean(references?.projects[value])
+  return field.kind !== 'client'
+}
+
+/** Same value for a person: ignores case, spacing and a URL's scheme. */
+function same(a: string | null, b: string | null): boolean {
+  const norm = (v: string | null) =>
+    (v ?? '')
+      .replace(/^https?:\/\//i, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase()
+  return norm(a) === norm(b)
 }

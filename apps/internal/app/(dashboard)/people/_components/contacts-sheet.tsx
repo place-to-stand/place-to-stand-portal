@@ -166,6 +166,7 @@ export function ContactsSheet(props: ContactsSheetProps) {
       {unsavedChangesDialog}
       <SaveConflictDialog
         guard={saveConflict}
+        yours={() => form.getValues()}
         noun='person'
         onOverwrite={mode =>
           void form.handleSubmit(data => handleFormSubmit(data, mode))()

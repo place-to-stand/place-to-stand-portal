@@ -657,6 +657,7 @@ export function CompanySheet({
       {unsavedChangesDialog}
       <SaveConflictDialog
         guard={saveConflict}
+        yours={() => form.getValues()}
         noun='company'
         onOverwrite={handleSave}
         onLoadTheirs={handleLoadTheirs}

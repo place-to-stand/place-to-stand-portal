@@ -693,6 +693,7 @@ export function TaskSheet(props: TaskSheetProps) {
       {unsavedChangesDialog}
       <SaveConflictDialog
         guard={saveConflict}
+        yours={() => form.getValues()}
         noun='task'
         onOverwrite={handleSave}
         onLoadTheirs={handleLoadTheirs}

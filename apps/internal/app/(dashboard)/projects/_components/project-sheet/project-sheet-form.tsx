@@ -584,6 +584,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
             />
             <SaveConflictDialog
               guard={saveConflict}
+              yours={() => form.getValues()}
               noun='project'
               onOverwrite={handleSave}
               onLoadTheirs={() => {

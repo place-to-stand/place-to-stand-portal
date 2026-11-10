@@ -95,6 +95,10 @@ export function SheetConflictSpecimens() {
         <SaveConflictDialog
           guard={guard}
           noun='company'
+          yours={() => ({
+            website: 'acme.io',
+            notes: 'Call after the launch.',
+          })}
           onOverwrite={() => {}}
           onLoadTheirs={guard.dismiss}
         />
