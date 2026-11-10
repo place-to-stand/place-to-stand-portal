@@ -25,18 +25,21 @@ const LEADS_OPTIONS = COMPANY_LEADS_VALUES.map(value => ({
 }))
 
 export function CompaniesFilters({
+  mode,
   search,
   type,
   leads,
   basePath,
 }: {
+  mode: 'active' | 'archive'
   search?: string
   type?: CompanyTypeFilter
   leads?: CompanyLeadsFilter
   basePath: string
 }) {
   // On the Clients tab, type=client is the tab, not a filter: Reset keeps it.
-  const onClientsTab = type === 'client'
+  // Archive has no Clients tab, so there type=client stays a filter.
+  const onClientsTab = mode === 'active' && type === 'client'
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],

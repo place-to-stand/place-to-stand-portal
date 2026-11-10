@@ -154,7 +154,7 @@ function ConvertedRecords({ summary }: { summary: LeadConversionSummary }) {
       <SheetRecordList>
         <CompanyRecordRow
           company={{ id: client.companyId, name: client.name }}
-          isClient={!client.archived}
+          isClient={client.billingType !== null}
           titleAddon={
             client.archived ? null : (
               <CompanyBillingMark billingType={client.billingType} />

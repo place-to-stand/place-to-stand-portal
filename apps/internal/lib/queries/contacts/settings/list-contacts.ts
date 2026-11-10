@@ -54,12 +54,15 @@ type ContactMetricsResult = SelectContact &
     signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
   }
 
-/** People with (or without) a live sign-in, optionally of one role. */
+/**
+ * People with (or without) a live sign-in, optionally of one role. Live means
+ * not archived and not turned off, as in the Role column.
+ */
 function buildSignInCondition(signIn: SignInFilter | null | undefined) {
   if (!signIn) return null
   // The outer contact column is written table-qualified: interpolated, drizzle
   // may drop the table name and it would bind inside the subquery.
-  const live = sql`exists (select 1 from users u where u.id = ${sql.raw('"contacts"."user_id"')} and u.deleted_at is null${
+  const live = sql`exists (select 1 from users u where u.id = ${sql.raw('"contacts"."user_id"')} and u.deleted_at is null and u.disabled_at is null${
     signIn === 'any' || signIn === 'none' ? sql`` : sql` and u.role = ${signIn}`
   })`
   return signIn === 'none' ? sql`not ${live}` : live

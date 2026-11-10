@@ -3,6 +3,8 @@ import type { LucideIcon, LucideProps } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
+const LUCIDE_ONLY_PROPS = ['absoluteStrokeWidth', 'nonScalingStroke']
+
 /** The mark's centre and radius in the icon's 24×24 box, and the gap around it. */
 const MARK = { cx: 19, cy: 19, r: 4.5, gap: 2 }
 
@@ -30,10 +32,17 @@ export function withStateMark(
       strokeWidth = 2,
       color = 'currentColor',
       children,
-      ...props
+      ...lucideProps
     },
     ref
   ) {
+    // Lucide-only props stay off the DOM <svg>.
+    const props: Record<string, unknown> = { ...lucideProps }
+    for (const key of LUCIDE_ONLY_PROPS) delete props[key]
+    // As lucide does: decorative unless the caller names it.
+    const named = Object.keys(props).some(
+      key => key.startsWith('aria-') || key === 'role' || key === 'title'
+    )
     // useId returns characters a url(#…) reference can't hold.
     const maskId = `state-mark-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
     return (
@@ -45,9 +54,17 @@ export function withStateMark(
         viewBox='0 0 24 24'
         fill='none'
         className={cn('lucide', className)}
+        aria-hidden={named ? undefined : true}
         {...props}
       >
-        <mask id={maskId}>
+        <mask
+          id={maskId}
+          maskUnits='userSpaceOnUse'
+          x='0'
+          y='0'
+          width='24'
+          height='24'
+        >
           <rect width='24' height='24' fill='white' />
           <circle
             cx={MARK.cx}
@@ -57,11 +74,15 @@ export function withStateMark(
           />
         </mask>
         <g mask={`url(#${maskId})`}>
+          {/* The inline size beats host CSS that sizes every nested svg
+              (menus, buttons: `[&_svg]:size-4`), which would shrink the
+              base inside the box while the dot stays put. */}
           <Base
             width={24}
             height={24}
             x={0}
             y={0}
+            style={{ width: 24, height: 24 }}
             color={color}
             strokeWidth={strokeWidth}
           />

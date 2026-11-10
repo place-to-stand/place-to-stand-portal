@@ -109,6 +109,16 @@ for (const entity of entities) {
         errors.push(
           `${entity.key}: a state of ${base.key} must wear its icon (${base.iconName}), not ${entity.iconName}`
         )
+      } else {
+        // The glyph actually drawn: `const X = withStateMark(Base, …)`.
+        const drawn = registry.match(
+          new RegExp(`const ${entity.icon} = withStateMark\\(\\s*(\\w+)`)
+        )?.[1]
+        if (drawn !== base.icon) {
+          errors.push(
+            `${entity.key}: ${entity.icon} must be withStateMark(${base.icon}, …), not ${drawn ?? 'something else'}`
+          )
+        }
       }
     } else if (entity.icon !== entity.iconName) {
       errors.push(

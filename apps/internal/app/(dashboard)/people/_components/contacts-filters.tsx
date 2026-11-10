@@ -38,16 +38,20 @@ export function ContactsFilters({
 }: ContactsFiltersProps) {
   // Contacts tables paginate by offset, so `page` is the pagination key
   // cleared on every filter change (not cursor/dir).
+  // On the Users tab, role=any is the tab, not a filter: Reset keeps it.
+  const onUsersTab = signIn === 'any'
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
-    filters: {
-      q: {},
-      companyId: { isValid: value => UUID_PATTERN.test(value) },
-      role: { isValid: isSignInFilter },
-      // Old links; cleared by Reset.
-      signIn: { isValid: isSignInFilter },
-    },
+    filters: onUsersTab
+      ? { q: {}, companyId: { isValid: value => UUID_PATTERN.test(value) } }
+      : {
+          q: {},
+          companyId: { isValid: value => UUID_PATTERN.test(value) },
+          role: { isValid: isSignInFilter },
+          // Old links; cleared by Reset.
+          signIn: { isValid: isSignInFilter },
+        },
   })
 
   return (
@@ -59,7 +63,7 @@ export function ContactsFilters({
           placeholder='Search people…'
         />
       }
-      activeFilterCount={(companyId ? 1 : 0) + (signIn ? 1 : 0)}
+      activeFilterCount={(companyId ? 1 : 0) + (signIn && !onUsersTab ? 1 : 0)}
       showReset={hasActiveFilters}
       onReset={reset}
     >

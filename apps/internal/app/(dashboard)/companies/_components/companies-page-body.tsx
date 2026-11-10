@@ -58,6 +58,7 @@ export function CompaniesPageBody({
     >
       <PagePanel className='space-y-4'>
         <CompaniesFilters
+          mode={mode}
           search={params.search}
           type={params.type}
           leads={params.leads}
