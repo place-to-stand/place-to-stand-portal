@@ -50,6 +50,7 @@ import {
   useRowSelection,
 } from '@/components/table/bulk-select'
 import { projectBoardHref } from '@/lib/sheets/hrefs'
+import { TagList } from '@/components/tags/tag-list'
 
 const BULK_ARCHIVE_EXTRA =
   'Their people and leads stay as they are. People at former clients lose portal access.'
@@ -149,10 +150,14 @@ export function CompaniesTable({
               {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
               slack, so the select and Actions columns keep their widths. */}
               {sortHead('name', 'Company', '')}
+              {/* Narrower beside the billing columns, so the name keeps room. */}
+              <TableHead className={seesBilling ? 'w-[12%]' : 'w-[20%]'}>
+                Tags
+              </TableHead>
               {seesBilling
                 ? sortHead('client', 'Billing type', 'w-[9%]')
                 : null}
-              {seesBilling ? sortHead('hours', 'Hours', 'w-[18%]') : null}
+              {seesBilling ? sortHead('hours', 'Hours', 'w-[14%]') : null}
               {sortHead('people', 'People', 'w-[8%]', 'center')}
               {sortHead('leads', 'Open leads', 'w-[10%]', 'center')}
               {sortHead('projects', 'Projects', 'w-[9%]', 'center')}
@@ -221,6 +226,16 @@ export function CompaniesTable({
                           <ClientBadge className='shrink-0' />
                         ) : null}
                       </div>
+                    </TableCell>
+                    <TableCell label='Tags'>
+                      {company.tags.length ? (
+                        <TagList
+                          names={company.tags}
+                          max={seesBilling ? 1 : 2}
+                        />
+                      ) : (
+                        <EmptyValue />
+                      )}
                     </TableCell>
                     {seesBilling ? (
                       <TableCell label='Billing type'>

@@ -6,6 +6,8 @@ export type CompanyListItem = {
   id: string
   name: string
   website: string | null
+  /** Its tags, A to Z. */
+  tags: string[]
   /** The company's (first live) client, when it has signed. */
   companyId: string | null
   clientName: string | null
@@ -95,6 +97,8 @@ export type CompanyDetail = {
   notes: string | null
   primaryContactId: string | null
   primaryContactName: string | null
+  /** Its tags, A to Z. */
+  tags: string[]
   /** Clients that are this company (usually one). */
   clients: { id: string; name: string; slug: string | null }[]
   /** Its stopped client when it has no live one (billing can restart). */
