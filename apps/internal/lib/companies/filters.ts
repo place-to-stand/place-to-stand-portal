@@ -14,11 +14,11 @@ export const COMPANY_TYPE_LABELS: Record<CompanyTypeFilter, string> = {
   none: 'Not a client',
 }
 
-export const COMPANY_LEADS_VALUES = ['open', 'none'] as const
+export const COMPANY_LEADS_VALUES = ['with', 'none'] as const
 export type CompanyLeadsFilter = (typeof COMPANY_LEADS_VALUES)[number]
 export const COMPANY_LEADS_LABELS: Record<CompanyLeadsFilter, string> = {
-  open: 'With open leads',
-  none: 'No open leads',
+  with: 'With leads',
+  none: 'No leads',
 }
 
 // An old `?sort=updated` falls back to the default (the column is gone).
@@ -88,7 +88,7 @@ export function applyCompanyListParams(
     row =>
       (!type ||
         (type === 'client' ? Boolean(row.companyId) : !row.companyId)) &&
-      (!leads || (leads === 'open') === row.openLeadCount > 0) &&
+      (!leads || (leads === 'with') === row.leadCount > 0) &&
       // Any of the picked tags.
       (!tagKeys.size || row.tags.some(tag => tagKeys.has(tagKey(tag))))
   )
@@ -110,7 +110,7 @@ export function applyCompanyListParams(
       case 'people':
         return row.contactCount
       case 'leads':
-        return row.openLeadCount
+        return row.leadCount
       case 'projects':
         return row.projects.length
       case 'origination':

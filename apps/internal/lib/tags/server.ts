@@ -107,7 +107,20 @@ export async function planTagChange(
   names: readonly string[] | undefined
 ): Promise<TagChange | null> {
   if (names === undefined) return null
-  const next = uniqueTagNames(names)
+  // An existing tag keeps its stored spelling, so the activity log reads
+  // "Salon" when someone typed "SALON".
+  const stored = new Map<string, string>()
+  for (const row of await db
+    .select({ name: tags.name })
+    .from(tags)
+    .where(and(eq(tags.entity, entity), isNull(tags.deletedAt)))) {
+    stored.set(tagKey(row.name), row.name)
+  }
+  // One order for every save, so two saves creating the same new tags
+  // take their index locks in the same order and can't deadlock.
+  const next = uniqueTagNames(
+    names.map(name => stored.get(tagKey(name)) ?? name)
+  ).sort((a, b) => (tagKey(a) < tagKey(b) ? -1 : tagKey(a) > tagKey(b) ? 1 : 0))
   const before = recordId
     ? ((await readRecordTags(entity, [recordId])).get(recordId) ?? [])
     : []
@@ -145,7 +158,12 @@ export async function writeRecordTagsInTx(
       .insert(tags)
       .values(next.map(name => ({ entity, name, createdBy: actorId })))
       .onConflictDoNothing()
-    const keys = next.map(tagKey)
+    // Postgres computes both keys, as the unique index does: JavaScript and
+    // Postgres lowercase some letters differently (Greek final sigma, İ).
+    const keys = sql.join(
+      next.map(name => sql`lower(btrim(${name}::text))`),
+      sql`, `
+    )
     const rows = await tx
       .select({ id: tags.id })
       .from(tags)
@@ -153,7 +171,7 @@ export async function writeRecordTagsInTx(
         and(
           eq(tags.entity, entity),
           isNull(tags.deletedAt),
-          inArray(sql<string>`lower(btrim(${tags.name}))`, keys)
+          sql`lower(btrim(${tags.name})) in (${keys})`
         )
       )
     tagIds = rows.map(row => row.id)

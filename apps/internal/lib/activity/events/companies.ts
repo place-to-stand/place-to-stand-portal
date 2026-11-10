@@ -2,16 +2,23 @@ import { ActivityVerbs, type ActivityEvent } from '@/lib/activity/types'
 
 import { toMetadata } from './shared'
 
-export const companyCreatedEvent = (args: { name: string }): ActivityEvent => ({
+/** Tags put on or taken off, shown as chips in the activity feed. */
+type TagMoves = { added: string[]; removed: string[] }
+
+export const companyCreatedEvent = (args: {
+  name: string
+  tags?: TagMoves
+}): ActivityEvent => ({
   verb: ActivityVerbs.COMPANY_CREATED,
   summary: `Created company "${args.name}"`,
-  metadata: toMetadata({ company: { name: args.name } }),
+  metadata: toMetadata({ company: { name: args.name }, tags: args.tags }),
 })
 
 export const companyUpdatedEvent = (args: {
   name: string
   changedFields: string[]
   details?: Record<string, unknown>
+  tags?: TagMoves
 }): ActivityEvent => ({
   verb: ActivityVerbs.COMPANY_UPDATED,
   summary: `Updated company "${args.name}"${
@@ -20,6 +27,7 @@ export const companyUpdatedEvent = (args: {
   metadata: toMetadata({
     changedFields: args.changedFields,
     details: args.details,
+    tags: args.tags,
   }),
 })
 

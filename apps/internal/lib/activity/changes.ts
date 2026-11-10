@@ -73,6 +73,7 @@ const FIELD_SPECS: Record<string, FieldSpec> = {
   phone: { label: 'Phone', kind: 'text' },
   description: { label: 'Description', kind: 'richText' },
   notes: { label: 'Notes', kind: 'longText' },
+  tags: { label: 'Tags', kind: 'text' },
   status: { label: 'Status', kind: 'status' },
   type: { label: 'Type', kind: 'enum' },
   role: { label: 'Role', kind: 'enum' },
@@ -130,6 +131,7 @@ const MEMBERSHIP_SPECS: Record<
   attachments: { label: 'Attachments', kind: 'text' },
   recipients: { label: 'Recipients', kind: 'text' },
   taskIds: { label: 'Linked tasks', kind: 'text' },
+  tags: { label: 'Tags', kind: 'text' },
 }
 
 export function getActivityChanges(log: ActivityLogWithActor): ActivityChanges {

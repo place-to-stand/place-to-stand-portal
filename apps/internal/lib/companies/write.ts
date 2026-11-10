@@ -245,6 +245,8 @@ export async function planCompanyWrite(
   )
   if (existing && tagChange) {
     changedFields.push('tags')
+    // Whole lists for the save-conflict dialog; the feed shows the
+    // added/removed chips instead (see ActivityChangeList).
     before.tags = tagChange.before
     after.tags = tagChange.next
   }
@@ -357,7 +359,12 @@ export async function logCompanyWrite(
       actorRole: actor.role,
       targetType: 'COMPANY',
       targetId: companyId,
-      ...companyCreatedEvent({ name: next.name }),
+      ...companyCreatedEvent({
+        name: next.name,
+        tags: plan.tagChange?.added.length
+          ? { added: plan.tagChange.added, removed: [] }
+          : undefined,
+      }),
     })
   } else if (plan.changedFields.length) {
     await logActivity({
@@ -382,6 +389,12 @@ export async function logCompanyWrite(
               }
             : {}),
         },
+        tags: plan.tagChange
+          ? {
+              added: plan.tagChange.added,
+              removed: plan.tagChange.removed,
+            }
+          : undefined,
       }),
     })
   }

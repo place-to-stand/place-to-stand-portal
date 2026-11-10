@@ -48,6 +48,11 @@ import { companySearchHintsSql } from '@/lib/queries/companies/search-hints'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { readRecordTags } from '@/lib/tags/server'
 
+const CLOSED_LEAD_STATUSES: readonly LeadStatusValue[] = [
+  'CLOSED_WON',
+  'CLOSED_LOST',
+  'UNQUALIFIED',
+]
 const CLOSED_LEAD_STATUSES_SQL = sql`('CLOSED_WON', 'CLOSED_LOST', 'UNQUALIFIED')`
 
 /** Escape LIKE wildcards so a search for "50%" means the literal text. */
@@ -108,17 +113,16 @@ export async function listCompanies(
         join contacts ct on ct.id = m.contact_id and ct.deleted_at is null
         where m.company_id = companies.id and m.ended_at is null
       ), '[]'::json)`,
-      openLeads: sql<CompanyListItem['openLeads']>`coalesce((
+      leads: sql<CompanyListItem['leads']>`coalesce((
         select json_agg(
           json_build_object(
             'id', l.id, 'contactName', lc.name, 'status', l.status
-          ) order by l.updated_at desc
+          ) order by (l.status in ${CLOSED_LEAD_STATUSES_SQL}), l.updated_at desc
         )
         from leads l
         join contacts lc on lc.id = l.contact_id
         where l.company_id = companies.id
           and l.deleted_at is null
-          and l.status not in ${CLOSED_LEAD_STATUSES_SQL}
       ), '[]'::json)`,
       primaryContactName: primaryContactNameSql(companies.id),
     })
@@ -140,21 +144,23 @@ export async function listCompanies(
   // Billing and commission are for people who manage clients.
   const seesBilling = roleCan(user.role, 'clients.manage')
   const clientIds = rows.filter(row => row.isClient).map(row => row.id)
-  const tagsByCompany = await readRecordTags(
-    'company',
-    rows.map(row => row.id)
-  )
-  const [closersByClient, hoursByClient] = seesBilling
-    ? await Promise.all([
-        fetchLatestClosersByClient(clientIds),
-        getClientHoursTotals(
-          db,
-          rows
-            .filter(row => row.isClient && row.billingType === 'prepaid')
-            .map(row => row.id)
-        ),
-      ])
-    : [new Map(), new Map()]
+  const [tagsByCompany, [closersByClient, hoursByClient]] = await Promise.all([
+    readRecordTags(
+      'company',
+      rows.map(row => row.id)
+    ),
+    seesBilling
+      ? Promise.all([
+          fetchLatestClosersByClient(clientIds),
+          getClientHoursTotals(
+            db,
+            rows
+              .filter(row => row.isClient && row.billingType === 'prepaid')
+              .map(row => row.id)
+          ),
+        ])
+      : Promise.resolve([new Map(), new Map()] as const),
+  ])
 
   return rows.map(row => ({
     id: row.id,
@@ -191,9 +197,12 @@ export async function listCompanies(
     clientName: row.isClient ? row.name : null,
     formerClient: Boolean(row.formerClient),
     people: row.people ?? [],
-    openLeads: row.openLeads ?? [],
+    leads: row.leads ?? [],
     contactCount: row.people?.length ?? 0,
-    openLeadCount: row.openLeads?.length ?? 0,
+    leadCount: row.leads?.length ?? 0,
+    openLeadCount: (row.leads ?? []).filter(
+      lead => !CLOSED_LEAD_STATUSES.includes(lead.status)
+    ).length,
     primaryContactName: row.primaryContactName ?? null,
     // Same rules as setCompanyArchived: staff sign in through this company,
     // and a billed company stops billing before it is archived.
