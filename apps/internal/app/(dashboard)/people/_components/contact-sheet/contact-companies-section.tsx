@@ -136,6 +136,7 @@ export function ContactCompaniesSection({
           <CompanyRecordRow
             key={entry.companyId}
             company={{ id: entry.companyId, name: entry.companyName }}
+            isClient={Boolean(entry.clientCompanyId) && !entry.archived}
             pendingRemoval={
               pending
                 ? {

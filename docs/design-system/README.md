@@ -36,24 +36,25 @@ Both portals share `packages/ui` and its theme. The client portal layers a few t
 Each kind of record has one icon and one colour everywhere it appears: sidebar, sheet header rule, card border, list icon, badge, activity feed. Both live only in the registry, `apps/internal/lib/entity-accents.ts` (`ENTITIES`, with `ENTITY_ICONS` and `ENTITY_ACCENTS` derived from it); the colour values are the `--entity-*` tokens in `theme.css`. `/design#entities` renders the registry with live contrast numbers.
 
 - **Use** `<ENTITY_ICONS.company />` and `ENTITY_ACCENTS.company.icon | card | cardStatic | tint | band | badge | sheetHeader`. `band` is half the tint, for a group row that should read as a quiet band (the Projects list's client rows). Never import an entity's icon from `lucide-react`, and never write a `text-entity-*` / `bg-entity-*` / `border-entity-*` class outside the registry: eslint fails on both. Need the same glyph for something else (a timestamp)? Pick another one (`CalendarClock`).
+- **States wear their record's icon.** A **client** is a company you bill and a **sign-in** is a person who can sign in, so they wear the company's or the person's icon and colour with a dot in the state's colour in the lower right corner (green for client, violet for sign-in). Where there's room the dot grows into a badge with words (`ClientBadge`, `RoleBadge`). Use `ENTITY_ICONS.client` / `.user` where only that state can appear (a Client field, an Assignee field, a client project's card), and `CompanyIcon` (`components/companies/company-icon.tsx`) where a company may or may not be billed (lists, sheet headers, preview cards). Pickers that mix both show the Client badge after a billed company's name. (guard: `scripts/check-entities.mjs` (a state must wear its record's icon); eslint `no-restricted-imports` (the retired `Briefcase` and `UserRound`))
 - **Picker fields** lead their label with the entity's icon (`FormLabel entity='…'`); people in a picker show their avatar, and a picker of one entity shows no icon in its options. Details: `components/select.md` (Entity picker fields).
 - **Add an entity** by adding it to `ENTITIES` and its `--entity-<token>` to `theme.css` (`:root`, `.dark` and `.email-paper`), then `npm run design-tokens` and a usage note. `scripts/check-entities.mjs` (run by `npm run lint`) fails on a missing icon or token, a shared icon, or under 3:1 icon-on-card contrast in either theme.
 - **Palette B, grouped by job: sales warm, work blue, money green.** Each theme gets its own step: darker in light, lighter in dark.
 
-| Group | Entity                   | Icon             | Light                | Dark              |
-| ----- | ------------------------ | ---------------- | -------------------- | ----------------- |
-| Sales | Lead                     | `Handshake`      | amber (62% L), 3.8:1 | amber-300, 12.4:1 |
-|       | Company                  | `Building2`      | orange-700, 5.2:1    | orange-400, 7.5:1 |
-|       | Person                   | `ContactRound`   | rose-600, 4.5:1      | rose-400, 6.3:1   |
-|       | Sign-in                  | `UserRound`      | rose-800, 7.9:1      | rose-300, 9.3:1   |
-| Work  | Project                  | `FolderKanban`   | blue-600, 5.3:1      | blue-400, 6.8:1   |
-|       | Task                     | `ListTodo`       | indigo-500, 4.6:1    | indigo-300, 8.9:1 |
-|       | Time log                 | `Clock`          | sky-700, 5.9:1       | sky-300, 10.8:1   |
-| Money | Client (a company state) | `Briefcase`      | green-800, 7.1:1     | green-500, 8.1:1  |
-|       | Invoice                  | `Receipt`        | teal-700, 5.4:1      | teal-300, 12.2:1  |
-|       | Hour block               | `Hourglass`      | lime-700, 5.0:1      | lime-400, 11.7:1  |
-| Admin | Submission               | `Inbox`          | slate-500, 4.8:1     | slate-400, 6.8:1  |
-|       | Template                 | `LayoutTemplate` | stone-600, 7.6:1     | stone-300, 12.0:1 |
+| Group | Entity                   | Icon                 | Light                | Dark              |
+| ----- | ------------------------ | -------------------- | -------------------- | ----------------- |
+| Sales | Lead                     | `Handshake`          | amber (62% L), 3.8:1 | amber-300, 12.4:1 |
+|       | Company                  | `Building2`          | orange-700, 5.2:1    | orange-400, 7.5:1 |
+|       | Person                   | `ContactRound`       | rose-600, 4.5:1      | rose-400, 6.3:1   |
+|       | Sign-in (a person state) | `ContactRound` + dot | violet-600, 6.2:1    | violet-300, 7.9:1 |
+| Work  | Project                  | `FolderKanban`       | blue-600, 5.3:1      | blue-400, 6.8:1   |
+|       | Task                     | `ListTodo`           | indigo-500, 4.6:1    | indigo-300, 8.9:1 |
+|       | Time log                 | `Clock`              | sky-700, 5.9:1       | sky-300, 10.8:1   |
+| Money | Client (a company state) | `Building2` + dot    | green-800, 7.1:1     | green-500, 8.1:1  |
+|       | Invoice                  | `Receipt`            | teal-700, 5.4:1      | teal-300, 12.2:1  |
+|       | Hour block               | `Hourglass`          | lime-700, 5.0:1      | lime-400, 11.7:1  |
+| Admin | Submission               | `Inbox`              | slate-500, 4.8:1     | slate-400, 6.8:1  |
+|       | Template                 | `LayoutTemplate`     | stone-600, 7.6:1     | stone-300, 12.0:1 |
 
 Contrast is the icon on `card` (WCAG 1.4.11 asks 3:1). Time log and hour block are different things: a time log is hours worked (`Clock`), an hour block is prepaid hours bought (`Hourglass`). `Mail`, `Sparkles` and `CalendarClock` stay free for email, AI and timestamps.
 
@@ -64,7 +65,7 @@ Place To Stand is a small software agency. This system describes its two Next.js
 ## Content fundamentals
 
 - **Sentence case everywhere.** Buttons, titles, tabs and toasts: "Create lead", "Save changes", "Project archived". Title Case is only for the brand name.
-- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role; the person sheet's **User** section has a "Can sign in" switch (like a company's "Bill this company"), then their Role (Admin, Sales or Client). Icons and colours follow the entity (see **Entities** below): a company is `Building2`, a person (with or without a sign-in) is `ContactRound` (a contact card), a sign-in (and so an assignee) is `UserRound`, and the Client state (badge, filters, billing, Projects' client rows) is `Briefcase` in green, with money. "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
+- **Companies and People are the directory.** In UI copy the person record is always a person ("People", "Add person", "No people here yet"), never "contact" (code, routes params like `?contact=` and the CLI/API still say `contact`). A company you bill is a **client**: a state of the company, shown as a "Client" badge, not a separate directory entity. A person who can sign in has a **sign-in** with a role; the person sheet's **User** section has a "Can sign in" switch (like a company's "Bill this company"), then their Role (Admin, Sales or Client). Icons and colours follow the entity (see **Entities** below): a company is `Building2` and a person is `ContactRound` (a contact card) in every state. A client wears the company icon with a green dot (badge, filters, billing, Projects' client rows, Client fields); a sign-in (and so an assignee) wears the person icon with a violet dot. The Companies page has a **Clients** tab and the People page a **Can sign in** tab (admins), each the same list with its filter preset. "Contact" stays only as a verb or a non-entity noun ("contact support", the website's contact form, a company's primary contact).
 - **A label | value row with a line under its control** (`RecordRowField note`): the label sits level with the control, not centred on control and line together, and such rows get 16px between them.
 - **Name the control you point to.** Helper text that tells someone to use a control or section names it as on screen and marks it with `UiRef` (`components/ui/ui-ref.tsx`: medium weight, normal text colour, no quotes): "Needs a sign-in with the Client role. Turn on **Can sign in** below." A link is for going somewhere ("Open person"); `UiRef` is for something already on screen.
 - **Name the entity.** Copy names the record type it acts on, using the entity names: person, company, lead, project, task, invoice, hour block, time log, plus client for a company you bill and sign-in for a person who can sign in. "User" is the person sheet's section heading for their sign-in (Jason's call, Nov 2026); elsewhere never "account" or "login", and never a vague stand-in (record, item, entry, member) when an entity is meant: "Can sign in" and "No portal access", not "Create account" or "No portal account".

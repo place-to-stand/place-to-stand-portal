@@ -226,7 +226,12 @@ function CommandPalette() {
                 value={`${company.name} company-${company.id}`}
                 onSelect={() => navigate(companySheetHref(company.id))}
               >
-                <ENTITY_ICONS.company className='size-4' />
+                {/* A client: the company icon with the client dot. */}
+                {company.isClient ? (
+                  <ENTITY_ICONS.client className='size-4' />
+                ) : (
+                  <ENTITY_ICONS.company className='size-4' />
+                )}
                 <span className='truncate'>{company.name}</span>
                 {company.isClient ? (
                   <CompanyBillingMark

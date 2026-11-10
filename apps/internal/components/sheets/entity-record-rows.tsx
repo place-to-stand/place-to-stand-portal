@@ -83,6 +83,7 @@ export function ContactRecordRow({
 
 export function CompanyRecordRow({
   company,
+  isClient = false,
   titleAddon,
   note,
   actions,
@@ -92,13 +93,15 @@ export function CompanyRecordRow({
   pendingRemoval,
 }: RowExtras & {
   company: { id: string; name: string }
+  /** Billed now: the company icon wears the client dot. */
+  isClient?: boolean
   /** Shown after the name, e.g. the Client badge. */
   titleAddon?: ReactNode
 }) {
   const { open } = useSheetParams()
   return (
     <SheetRecordRow
-      icon={ENTITY_ICONS.company}
+      icon={isClient ? ENTITY_ICONS.client : ENTITY_ICONS.company}
       title={
         titleAddon ? (
           <span className='flex items-center gap-3'>

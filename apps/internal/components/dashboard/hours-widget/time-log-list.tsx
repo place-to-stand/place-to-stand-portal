@@ -216,7 +216,7 @@ function renderProjectTypeIcon(projectType: string) {
   }
 
   if (projectType === 'CLIENT') {
-    return <ENTITY_ICONS.company className={className} aria-hidden />
+    return <ENTITY_ICONS.client className={className} aria-hidden />
   }
 
   return <ENTITY_ICONS.project className={className} aria-hidden />

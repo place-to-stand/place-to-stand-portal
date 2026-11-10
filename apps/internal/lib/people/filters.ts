@@ -30,7 +30,8 @@ export function isContactSortValue(value: string): boolean {
 
 /**
  * People list Role filter (`?role=`), admins only: the user's role, or
- * people with no user. (`any` = has a user; kept for old links only.)
+ * people with no user. `any` = has a user: the Can sign in tab, not offered
+ * in the filter.
  */
 export const SIGN_IN_FILTER_VALUES = [
   'any',
@@ -98,11 +99,8 @@ export function parseContactsSearchParams(
       clientIdParam && UUID_PATTERN.test(clientIdParam)
         ? clientIdParam
         : undefined,
-    // 'any' (has a user) is no longer offered; an old link shows everyone.
-    signIn:
-      isSignInFilter(signInParam) && signInParam !== 'any'
-        ? signInParam
-        : undefined,
+    // 'any' (has a user) is the People page's Can sign in tab.
+    signIn: isSignInFilter(signInParam) ? signInParam : undefined,
     sort,
   }
 }

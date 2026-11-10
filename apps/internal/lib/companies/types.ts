@@ -120,6 +120,8 @@ export type CompanyOption = {
   website: string | null
   /** Its people and projects, which the pickers also search (`companySearchHintsSql`). */
   searchHints: string[]
+  /** Billed now: the picker shows the Client badge. */
+  isClient: boolean
 }
 
 export type CompanyActionResult = {

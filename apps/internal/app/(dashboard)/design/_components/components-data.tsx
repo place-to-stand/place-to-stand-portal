@@ -170,6 +170,7 @@ export function ComponentsRecordRows() {
           />
           <CompanyRecordRow
             company={{ id: 'design-acme', name: 'Acme Industries' }}
+            isClient
             titleAddon={<BillingTypeBadge billingType='prepaid' />}
             openable={false}
           />

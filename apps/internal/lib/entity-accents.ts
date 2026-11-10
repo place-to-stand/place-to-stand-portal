@@ -14,7 +14,6 @@
 
 /* eslint-disable no-restricted-imports -- the registry owns these icons */
 import {
-  Briefcase,
   Building2,
   Clock,
   ContactRound,
@@ -25,10 +24,25 @@ import {
   LayoutTemplate,
   ListTodo,
   Receipt,
-  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 /* eslint-enable no-restricted-imports -- closes the registry-owned icon import above */
+
+import { withStateMark } from './entity-state-icon'
+
+/*
+ * States, not records: a client is a company you bill and a sign-in is a
+ * person who can sign in. Each keeps its record's icon and colour and adds a
+ * dot in the state's colour, so the same company or person looks the same
+ * everywhere and the dot says the state. Where there's room the dot grows
+ * into a badge with words (ClientBadge, RoleBadge).
+ */
+const ClientIcon = withStateMark(Building2, 'fill-entity-client', 'ClientIcon')
+const SignInIcon = withStateMark(
+  ContactRound,
+  'fill-entity-sign-in',
+  'SignInIcon'
+)
 
 export type AccentEntity =
   | 'lead'
@@ -73,10 +87,21 @@ type EntityAccent = {
 export type EntityDefinition = {
   /** UI name. The person record is a "Person", a user is a "Sign-in". */
   label: string
+  /**
+   * A state of another entity (client of company, sign-in of person): its
+   * icon is that entity's icon with a dot in this entity's colour, and the
+   * icon keeps that entity's colour.
+   */
+  stateOf?: AccentEntity
   group: EntityGroup
   icon: LucideIcon
   /** The icon's lucide name, for docs and /design. */
   iconName: string
+  /**
+   * A glyph this entity used to have, still banned outside the registry so
+   * it can't come back as a second icon for the same record.
+   */
+  retiredIcon?: string
   /** Its colour token: `--entity-<token>` in theme.css. */
   token: string
   /** A sample record name for /design. */
@@ -138,16 +163,18 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
   },
   user: {
     label: 'Sign-in',
+    stateOf: 'contact',
     group: 'sales',
-    icon: UserRound,
-    iconName: 'UserRound',
+    icon: SignInIcon,
+    iconName: 'ContactRound',
+    retiredIcon: 'UserRound',
     token: 'sign-in',
     example: 'ada@acme.com',
     accent: {
       sheetHeader: 'border-b-2 border-b-entity-sign-in/60',
       card: 'border-entity-sign-in/35 hover:border-entity-sign-in/60 hover:bg-entity-sign-in/5 hover:shadow-md',
       cardStatic: 'border-entity-sign-in/35',
-      icon: 'text-entity-sign-in',
+      icon: 'text-entity-person',
       tint: 'bg-entity-sign-in/10',
       band: 'bg-entity-sign-in/5',
       badge: 'border-transparent bg-entity-sign-in/15 text-entity-sign-in',
@@ -206,16 +233,18 @@ export const ENTITIES: Record<AccentEntity, EntityDefinition> = {
   },
   client: {
     label: 'Client',
+    stateOf: 'company',
     group: 'money',
-    icon: Briefcase,
-    iconName: 'Briefcase',
+    icon: ClientIcon,
+    iconName: 'Building2',
+    retiredIcon: 'Briefcase',
     token: 'client',
     example: 'Acme Industries',
     accent: {
       sheetHeader: 'border-b-2 border-b-entity-client/60',
       card: 'border-entity-client/35 hover:border-entity-client/60 hover:bg-entity-client/5 hover:shadow-md',
       cardStatic: 'border-entity-client/35',
-      icon: 'text-entity-client',
+      icon: 'text-entity-company',
       tint: 'bg-entity-client/10',
       band: 'bg-entity-client/5',
       badge: 'border-transparent bg-entity-client/15 text-entity-client',

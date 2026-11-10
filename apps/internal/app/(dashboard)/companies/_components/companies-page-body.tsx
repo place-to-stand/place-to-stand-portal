@@ -34,11 +34,19 @@ export function CompaniesPageBody({
     <PageShell
       breadcrumbs={
         mode === 'active'
-          ? crumbsForNav('/companies')
+          ? params.type === 'client'
+            ? [...crumbsForNav('/companies'), { label: 'Clients' }]
+            : crumbsForNav('/companies')
           : [...crumbsForNav('/companies'), { label: 'Archive' }]
       }
       tabs={COMPANIES_TABS}
-      activeTab={mode === 'active' ? 'companies' : 'archive'}
+      activeTab={
+        mode === 'archive'
+          ? 'archive'
+          : params.type === 'client'
+            ? 'clients'
+            : 'companies'
+      }
       count={{
         label: mode === 'active' ? 'companies' : 'archived companies',
         total: totalCount,

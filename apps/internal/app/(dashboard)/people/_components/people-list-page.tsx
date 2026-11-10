@@ -9,7 +9,7 @@ import { parseContactsSearchParams } from '@/lib/people/filters'
 import { serverEnv } from '@/lib/env.server'
 import { readPageSize } from '@/lib/pagination/page-size.server'
 
-import { CONTACTS_TABS } from '../_lib/tabs'
+import { peopleTabs } from '../_lib/tabs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { ContactsFilters } from './contacts-filters'
 import { ContactsManagementTable } from './contacts-management-table'
@@ -108,9 +108,19 @@ export async function PeopleListPage({
 
   return (
     <PageShell
-      breadcrumbs={[...crumbsForNav('/people'), ...view.crumbs]}
-      tabs={CONTACTS_TABS}
-      activeTab={view.activeTab}
+      breadcrumbs={[
+        ...crumbsForNav('/people'),
+        ...(showSignInFilter && signIn && signIn !== 'none'
+          ? [{ label: 'Can sign in' }]
+          : view.crumbs),
+      ]}
+      tabs={peopleTabs(user.role)}
+      activeTab={
+        // A role picked in the filter is still "people who can sign in".
+        showSignInFilter && signIn && signIn !== 'none'
+          ? 'sign-ins'
+          : view.activeTab
+      }
       count={{
         label: view.countLabel,
         total: unfilteredTotalCount,
