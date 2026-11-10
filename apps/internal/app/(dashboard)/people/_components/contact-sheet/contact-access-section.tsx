@@ -12,12 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@pts/ui/select'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { Skeleton } from '@pts/ui/skeleton'
 import { Switch } from '@pts/ui/switch'
 import { EffectiveMonthPicker } from '@/components/billing/effective-month-select'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
-import { FormField } from '@/components/ui/form'
+import {
+  FIELD_STACK_CLASS,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@/components/ui/form'
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
@@ -39,10 +47,6 @@ import {
 import type { USER_ROLES } from '@/lib/users/user-validation'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { ROLE_LABELS } from '@/lib/auth/roles'
-import {
-  RecordRowField,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
 
 type Role = (typeof USER_ROLES)[number]
 
@@ -228,21 +232,47 @@ function ManagedSignIn({
       // Fields, not a list: 16px under the heading (as the Client section).
       className='gap-4'
       action={
-        <DisabledFieldTooltip
-          disabled={Boolean(switchReason)}
-          reason={switchReason}
-          className='w-auto'
-        >
-          <span className='flex items-center gap-2'>
-            <Switch
-              id='contact-sign-in-switch'
-              checked={enabled}
-              disabled={Boolean(switchReason)}
-              onCheckedChange={switchOn}
-            />
-            <Label htmlFor='contact-sign-in-switch'>Can sign in</Label>
-          </span>
-        </DisabledFieldTooltip>
+        <>
+          {
+            // Only a live, saved sign-in that stays on: a reset needs one.
+            enabled && live && account ? (
+              <DisabledFieldTooltip
+                disabled={isSending || isPending || isSelf}
+                reason={
+                  isSelf ? 'Use Forgot password on the sign-in page.' : null
+                }
+                className='w-auto'
+              >
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  // 16px from the switch, so the two read as separate controls.
+                  className='mr-2'
+                  disabled={isSending || isPending || isSelf}
+                  onClick={sendReset}
+                >
+                  {isSending ? 'Sending…' : 'Send reset link'}
+                </Button>
+              </DisabledFieldTooltip>
+            ) : null
+          }
+          <DisabledFieldTooltip
+            disabled={Boolean(switchReason)}
+            reason={switchReason}
+            className='w-auto'
+          >
+            <span className='flex items-center gap-2'>
+              <Switch
+                id='contact-sign-in-switch'
+                checked={enabled}
+                disabled={Boolean(switchReason)}
+                onCheckedChange={switchOn}
+              />
+              <Label htmlFor='contact-sign-in-switch'>Can sign in</Label>
+            </span>
+          </DisabledFieldTooltip>
+        </>
       }
     >
       {loading ? (
@@ -259,125 +289,97 @@ function ManagedSignIn({
         <>
           {saveNote ? <SaveSideEffect>{saveNote}</SaveSideEffect> : null}
           {enabled ? (
-            // One record card, like the company cards above: the email they
-            // sign in with and when they last did, the reset link, then Role.
-            <SheetRecordRow
-              // The sign-in icon, uncoloured: this card is their sign-in.
-              leading={
-                <ENTITY_ICONS.user
-                  className='text-muted-foreground size-4'
-                  aria-hidden
+            // Fields, as in a company's Client section: the sign-in is a
+            // state of this person, not a record of its own.
+            <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+              <div className={FIELD_STACK_CLASS}>
+                <Label htmlFor='contact-sign-in-email'>Signs in as</Label>
+                <Input
+                  id='contact-sign-in-email'
+                  value={personEmail}
+                  placeholder='Add an email above'
+                  readOnly
+                  // Edited as Email above; shown here so the sign-in reads whole.
+                  tabIndex={-1}
                 />
-              }
-              title={<span className='break-all'>{personEmail || '—'}</span>}
-              description={
-                !hasSignIn
-                  ? 'New sign-in'
-                  : live && account
-                    ? `Last sign-in: ${formatRelativeTime(account.lastSignInAt) ?? 'never'}`
-                    : null
-              }
-              actions={
-                // Only a live, saved sign-in that stays on: a reset needs one.
-                live && account ? (
-                  <DisabledFieldTooltip
-                    disabled={isSending || isPending || isSelf}
-                    reason={
-                      isSelf ? 'Use Forgot password on the sign-in page.' : null
-                    }
-                    className='w-auto'
-                  >
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      disabled={isSending || isPending || isSelf}
-                      onClick={sendReset}
+                <p className='text-muted-foreground text-xs'>
+                  {!hasSignIn
+                    ? 'New sign-in'
+                    : live && account
+                      ? `Last sign-in: ${formatRelativeTime(account.lastSignInAt) ?? 'never'}`
+                      : null}
+                </p>
+              </div>
+              <FormField
+                control={form.control}
+                name='signIn.role'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <DisabledFieldTooltip
+                      disabled={Boolean(lockedReason)}
+                      reason={lockedReason}
                     >
-                      {isSending ? 'Sending…' : 'Send reset link'}
-                    </Button>
-                  </DisabledFieldTooltip>
-                ) : null
-              }
-              // Rows with a line under them: 16px between rows.
-              fieldsClassName='gap-y-4 py-3'
-              fields={
-                <>
-                  <FormField
-                    control={form.control}
-                    name='signIn.role'
-                    render={({ field }) => (
-                      <RecordRowField label='Role'>
-                        <DisabledFieldTooltip
-                          disabled={Boolean(lockedReason)}
-                          reason={lockedReason}
-                          className='w-60'
-                        >
-                          <Select
-                            onValueChange={next =>
-                              setSignIn(true, next as Role)
-                            }
-                            value={field.value}
-                            disabled={Boolean(lockedReason)}
-                          >
-                            <SelectTrigger aria-label='Role' className='w-60'>
-                              {/* The role reads as the badge it shows elsewhere. */}
-                              <SelectValue>
-                                {field.value ? (
-                                  <RoleBadge role={field.value} />
-                                ) : null}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {roles.map(option => (
-                                <SelectItem key={option} value={option}>
-                                  <RoleBadge role={option} />
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </DisabledFieldTooltip>
-                      </RecordRowField>
-                    )}
-                  />
-                  {/* A role change on a saved sign-in: which month it counts
-                      from (the close pays on the role in force on the 1st). */}
-                  {roleChanged ? (
-                    <FormField
-                      control={form.control}
-                      name='signIn.effectiveFrom'
-                      render={({ field }) => (
-                        <RecordRowField
-                          label='Role starts'
-                          note={
-                            (account &&
-                              role &&
-                              rolePayrollWarning(
-                                account.role,
-                                role,
-                                field.value ?? '',
-                                currentMonthStartUtc()
-                              )) ??
-                            `Counts toward the monthly close from ${monthLabel(field.value ?? '')}.`
-                          }
-                        >
-                          <EffectiveMonthPicker
-                            id='contact-role-starts'
-                            ariaLabel='Role starts'
-                            value={field.value}
-                            onChange={field.onChange}
-                            options={roleMonths}
-                            disabled={Boolean(lockedReason)}
-                            disabledReason={lockedReason}
-                            className='w-60'
-                          />
-                        </RecordRowField>
-                      )}
-                    />
-                  ) : null}
-                </>
-              }
-            />
+                      <Select
+                        onValueChange={next => setSignIn(true, next as Role)}
+                        value={field.value}
+                        disabled={Boolean(lockedReason)}
+                      >
+                        <FormControl>
+                          <SelectTrigger aria-label='Role' className='w-full'>
+                            {/* The role reads as the badge it shows elsewhere. */}
+                            <SelectValue>
+                              {field.value ? (
+                                <RoleBadge role={field.value} />
+                              ) : null}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {roles.map(option => (
+                            <SelectItem key={option} value={option}>
+                              <RoleBadge role={option} />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </DisabledFieldTooltip>
+                  </FormItem>
+                )}
+              />
+              {roleChanged ? (
+                <FormField
+                  control={form.control}
+                  name='signIn.effectiveFrom'
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor='contact-role-starts'>Role starts</Label>
+                      <EffectiveMonthPicker
+                        id='contact-role-starts'
+                        ariaLabel='Role starts'
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={roleMonths}
+                        disabled={Boolean(lockedReason)}
+                        disabledReason={lockedReason}
+                        className='w-full'
+                      />
+                      <FormDescription>
+                        {(account &&
+                          role &&
+                          rolePayrollWarning(
+                            account.role,
+                            role,
+                            field.value ?? '',
+                            currentMonthStartUtc()
+                          )) ??
+                          `Counts toward the monthly close from ${monthLabel(field.value ?? '')}.`}
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              ) : null}
+            </div>
           ) : null}
           {enabled && account?.scheduledRole && !roleChanged ? (
             <p className='text-muted-foreground text-sm'>

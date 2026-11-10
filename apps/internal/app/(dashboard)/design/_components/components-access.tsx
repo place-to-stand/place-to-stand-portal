@@ -2,15 +2,13 @@
 
 import { useState } from 'react'
 
+import { Button } from '@pts/ui/button'
+import { Input } from '@pts/ui/input'
 import { Label } from '@pts/ui/label'
 import { Switch } from '@pts/ui/switch'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { SheetSection } from '@/components/sheets/sheet-section'
-import {
-  RecordRowField,
-  SheetRecordRow,
-} from '@/components/sheets/sheet-record-row'
 import { UiRef } from '@/components/ui/ui-ref'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -72,34 +70,47 @@ export function ComponentsAccess() {
       </Specimen>
       <Specimen
         label='Live sign-in'
-        note='One SheetRecordRow with the person icon uncoloured (muted); RecordRowField note keeps the label level with the control'
+        note='Fields two to a row, full width, as in a company Client section: the sign-in is a state of the person, so no record card. Email is read-only here (edited above); Send reset link is a small button left of the switch'
         className='block max-w-2xl'
       >
         <SheetSection
           title='User'
           icon={ENTITY_ICONS.user}
           className='gap-4'
-          action={<CanSignIn id='design-sign-in-client' checked />}
-        >
-          <SheetRecordRow
-            leading={
-              <ENTITY_ICONS.contact
-                className='text-muted-foreground size-4'
-                aria-hidden
-              />
-            }
-            title='ada@acme.com'
-            description='Last sign-in: never'
-            fieldsClassName='gap-y-4 py-3'
-            fields={
-              <RecordRowField
-                label='Role'
-                note='Sees Acme and Beta in the client portal.'
+          action={
+            <>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                className='mr-2'
               >
+                Send reset link
+              </Button>
+              <CanSignIn id='design-sign-in-client' checked />
+            </>
+          }
+        >
+          <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
+            <div className='grid gap-2'>
+              <Label htmlFor='design-sign-in-email'>Signs in as</Label>
+              <Input
+                id='design-sign-in-email'
+                value='ada@acme.com'
+                readOnly
+                tabIndex={-1}
+              />
+              <p className='text-muted-foreground text-xs'>
+                Last sign-in: never
+              </p>
+            </div>
+            <div className='grid gap-2'>
+              <Label>Role</Label>
+              <div className='border-input flex h-9 items-center rounded-md border px-3'>
                 <RoleBadge role='CLIENT' />
-              </RecordRowField>
-            }
-          />
+              </div>
+            </div>
+          </div>
         </SheetSection>
       </Specimen>
       <Specimen
