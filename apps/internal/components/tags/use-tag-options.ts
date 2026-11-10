@@ -9,7 +9,8 @@ import type { TagEntity, TagOption } from '@/lib/tags/names'
 export const tagOptionsQueryKey = (entity: TagEntity) =>
   ['tagOptions', entity] as const
 
-/** Every tag of one kind of record, A to Z, with how often each is used. */
+/** The tags of one kind still on some record, A to Z, with how often each
+ * is used. */
 export function useTagOptions(entity: TagEntity, enabled = true) {
   return useQuery({
     queryKey: tagOptionsQueryKey(entity),

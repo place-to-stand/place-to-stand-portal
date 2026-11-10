@@ -158,7 +158,7 @@ export function registerCompanyTools(server: McpServer) {
     name: 'list_company_tags',
     title: 'List company tags',
     description:
-      'Every company tag, A to Z, with how many live companies carry it. Reuse these names when tagging so the same kind of company gets the same tag.',
+      'Every company tag still on some company (archived ones count), A to Z, with how many live companies carry it. Reuse these names when tagging so the same kind of company gets the same tag.',
     effect: 'read',
     input: {},
     run: async () => ({
