@@ -10,6 +10,7 @@ import {
   type AccentEntity,
   type EntityGroup,
 } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import { cn } from '@/lib/utils'
 
 import { CONTRAST_TARGET, entityColour } from './entity-contrast'
@@ -27,7 +28,7 @@ export function FoundationsEntities() {
     <DesignSection
       id='entities'
       title='Entities'
-      when='Object identity: each kind of record keeps one icon and one colour everywhere it appears (sidebar, sheet header rule, card border, list icon, badge, activity). Both come from the entity registry, lib/entity-accents.ts; never import an entity icon from lucide-react or write its colour by hand. Colours group by job: sales warm, work blue, money green, admin neutral. Colour is a second cue: the icon and the name carry the meaning.'
+      when='Object identity: each kind of record keeps one icon and one colour everywhere it appears (sidebar, sheet header rule, card border, list icon, badge, activity). Both come from the entity registry, lib/entity-accents.ts; never import an entity icon from lucide-react or write its colour by hand. Colours group by job: sales warm, work blue, money green, admin neutral. Colour is a second cue: the icon and the name carry the meaning. A state (client, sign-in) is the record’s icon with a coloured dot; on a grey detail line the dot goes grey with the icon (MUTED_STATE_MARK_CLASS), shown under each card.'
     >
       <div className='overflow-hidden rounded-xl border'>
         <div className='bg-muted/40 text-muted-foreground hidden grid-cols-[13rem_1fr_1fr] border-b text-xs font-medium md:grid'>
@@ -143,6 +144,14 @@ function EntityPreview({ entity }: { entity: AccentEntity }) {
         <span className='text-muted-foreground truncate text-xs'>
           Updated Sep 23, 2026
         </span>
+      </div>
+      {/* A grey detail line: the icon, and any state dot, in the text's grey. */}
+      <div className='text-muted-foreground flex items-center gap-1 border-t px-3 py-1.5 text-xs'>
+        <Icon
+          className={cn('size-3 shrink-0', MUTED_STATE_MARK_CLASS)}
+          aria-hidden
+        />
+        <span className='truncate'>{example}</span>
       </div>
     </div>
   )

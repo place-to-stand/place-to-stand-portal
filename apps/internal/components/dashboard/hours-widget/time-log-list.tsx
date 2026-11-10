@@ -10,6 +10,8 @@ import type { DashboardTimeLogEntry } from '@/lib/dashboard/types'
 
 import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
+import { cn } from '@/lib/utils'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
 
 type TimeLogListProps = {
@@ -216,7 +218,12 @@ function renderProjectTypeIcon(projectType: string) {
   }
 
   if (projectType === 'CLIENT') {
-    return <ENTITY_ICONS.client className={className} aria-hidden />
+    return (
+      <ENTITY_ICONS.client
+        className={cn(className, MUTED_STATE_MARK_CLASS)}
+        aria-hidden
+      />
+    )
   }
 
   return <ENTITY_ICONS.project className={className} aria-hidden />

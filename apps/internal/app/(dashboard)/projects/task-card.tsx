@@ -22,6 +22,7 @@ import {
 import { MetaLink } from '@/components/ui/meta-link'
 import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
+import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import { TaskContextMenu } from './task-context-menu'
 import { BOARD_CARD_GHOST_CLASS } from '@/components/board/board-drag'
 import { cn } from '@/lib/utils'
@@ -411,7 +412,12 @@ function renderProjectTypeIcon(
     return <User className={className} aria-hidden />
   }
 
-  return <ENTITY_ICONS.client className={className} aria-hidden />
+  return (
+    <ENTITY_ICONS.client
+      className={cn(className, MUTED_STATE_MARK_CLASS)}
+      aria-hidden
+    />
+  )
 }
 
 const WORKER_BADGE_CONFIG: Partial<
