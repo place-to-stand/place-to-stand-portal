@@ -39,10 +39,14 @@ export function useSheetFormControls<T extends FieldValues>(
     canUndo: history.canUndo,
     canRedo: history.canRedo,
     notifyExternalChange: history.notifyExternalChange,
+    rebaseline: history.rebaseline,
+    sources: history.sources,
   }
 }
 
 export type {
+  SheetHistorySources,
   UseSheetFormControlsOptions,
   UseSheetFormControlsReturn,
 } from './types'
+export { useSheetHistoryState } from './sources'

@@ -50,5 +50,14 @@ export type UseTaskAttachmentsReturn = {
   handleAttachmentRemove: (key: string) => void
   handleAttachmentUndoRemove: (key: string) => void
   resetAttachmentsState: (options?: { preservePending?: boolean }) => void
+  /**
+   * Saved files marked for removal, for the sheet's undo stack. New uploads
+   * stay off it: removing one deletes the file at once.
+   */
+  removalsHistory: {
+    state: string[]
+    restore: (ids: string[]) => void
+    savedKey: number
+  }
   buildSubmissionPayload: () => AttachmentSubmission | undefined
 }

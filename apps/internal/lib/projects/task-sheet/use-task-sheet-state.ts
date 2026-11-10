@@ -40,6 +40,7 @@ import { useTaskSheetForm } from './hooks/use-task-sheet-form'
 import {
   useTaskAttachments,
   type AttachmentItem,
+  type UseTaskAttachmentsReturn,
 } from './hooks/use-task-attachments'
 
 export type { AttachmentItem } from './hooks/use-task-attachments'
@@ -97,6 +98,7 @@ type UseTaskSheetStateReturn = {
   acceptedAttachmentTypes: readonly string[]
   maxAttachmentSize: number
   attachmentsDisabledReason: string | null
+  attachmentRemovalsHistory: UseTaskAttachmentsReturn['removalsHistory']
 }
 
 export const useTaskSheetState = ({
@@ -149,6 +151,7 @@ export const useTaskSheetState = ({
     handleAttachmentUndoRemove,
     resetAttachmentsState,
     buildSubmissionPayload,
+    removalsHistory,
   } = useTaskAttachments({
     task,
     canManage,
@@ -401,5 +404,6 @@ export const useTaskSheetState = ({
     acceptedAttachmentTypes: ACCEPTED_TASK_ATTACHMENT_MIME_TYPES,
     maxAttachmentSize: MAX_TASK_ATTACHMENT_FILE_SIZE,
     attachmentsDisabledReason,
+    attachmentRemovalsHistory: removalsHistory,
   }
 }

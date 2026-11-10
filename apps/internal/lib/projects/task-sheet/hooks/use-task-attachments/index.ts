@@ -73,6 +73,9 @@ export const useTaskAttachments = ({
 
   const [pendingDrafts, setPendingDrafts] = useState<AttachmentDraft[]>([])
   const [attachmentsToRemove, setAttachmentsToRemove] = useState<string[]>([])
+  // Counts resets (open, save, task switch): the removals they clear were
+  // never edits, so the undo stack takes them as its new start.
+  const [removalsResetCount, setRemovalsResetCount] = useState(0)
   const pendingPathsRef = useRef<Set<string>>(new Set())
   const previewUrlRef = useRef<Map<string, string>>(new Map())
 
@@ -138,6 +141,7 @@ export const useTaskAttachments = ({
       clearPreviewUrls()
       setPendingDrafts([])
       setAttachmentsToRemove([])
+      setRemovalsResetCount(count => count + 1)
       resetPendingUploads()
 
       // A save just changed what is persisted; reload so reopening the task
@@ -166,6 +170,7 @@ export const useTaskAttachments = ({
     setPrevTaskId(taskId)
     setPendingDrafts([])
     setAttachmentsToRemove([])
+    setRemovalsResetCount(count => count + 1)
     resetPendingUploads()
   }
 
@@ -303,6 +308,11 @@ export const useTaskAttachments = ({
     handleAttachmentUndoRemove,
     resetAttachmentsState,
     buildSubmissionPayload,
+    removalsHistory: {
+      state: attachmentsToRemove,
+      restore: setAttachmentsToRemove,
+      savedKey: removalsResetCount,
+    },
   }
 }
 

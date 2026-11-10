@@ -14,6 +14,9 @@ import { useQuery } from '@tanstack/react-query'
 
 import { Skeleton } from '@pts/ui/skeleton'
 import { Form } from '@/components/ui/form'
+import type { SheetHistorySources } from '@/lib/hooks/use-sheet-form-controls'
+import { useBillingUndo } from './billing/use-billing-undo'
+import { fetchClientBilling } from './billing/fetch-client-billing'
 import { ClientBillingFields } from '@/app/(dashboard)/companies/_components/billing/client-billing-fields'
 import type { ClientWithClosers } from '@/lib/companies/billing/client-sheet-utils'
 import {
@@ -96,22 +99,9 @@ type CompanyBillingProviderProps = {
   /** Keeps the company sheet's unsaved-changes guard in step. */
   onDirtyChange: (dirty: boolean) => void
   handleRef: Ref<CompanyBillingHandle>
+  /** The sheet's undo stack, which billing edits join. */
+  history: SheetHistorySources
   children: ReactNode
-}
-
-async function fetchClientBilling(
-  companyId: string
-): Promise<ClientWithClosers> {
-  const response = await fetch(
-    `/api/sheets/init?entity=client&id=${encodeURIComponent(companyId)}`
-  )
-  const result = (await response.json()) as
-    | { ok: true; data: { client: ClientWithClosers | null } }
-    | { ok: false; error?: string }
-  if (!result.ok || !result.data.client) {
-    throw new Error(result.ok ? 'Client not found' : result.error)
-  }
-  return result.data.client
 }
 
 /** Starting and restarting default to this month; stopping, to next. */
@@ -186,6 +176,7 @@ function BillingStateProvider({
   isPending,
   onDirtyChange,
   handleRef,
+  history,
   children,
 }: CompanyBillingProviderProps & { client: ClientWithClosers | null }) {
   const mode = billingModeOf({ billed, billingEndsOn, wasClient })
@@ -212,6 +203,14 @@ function BillingStateProvider({
       setEffective(defaultEffective(billedNow && !on))
     },
     [billedNow]
+  )
+
+  // Every billing edit is a step on the sheet's undo stack.
+  useBillingUndo(
+    history,
+    state,
+    [billingOn, setBillingOnState],
+    [effective, setEffective]
   )
 
   const dirty =

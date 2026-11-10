@@ -112,4 +112,16 @@ export type UseClientBillingFormReturn = {
   handleAddCloser: (candidate: CloserCandidate) => void
   handleRemoveCloser: (key: string) => void
   handleCloserShareChange: (key: string, shareText: string) => void
+  /** The pickers' people have loaded (origination is filled in). */
+  isReady: boolean
+  /** Everything an edit here can change, for the sheet's undo stack. */
+  historyState: ClientBillingHistoryState
+  restoreHistoryState: (state: ClientBillingHistoryState) => void
+}
+
+export type ClientBillingHistoryState = {
+  values: ClientSheetFormValues
+  originationUser: PartnerUserOption | null
+  originationContact: OriginationContactOption | null
+  closers: CloserDraft[]
 }

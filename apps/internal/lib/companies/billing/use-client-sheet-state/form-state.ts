@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 
 import { getClientSheetContactData } from '@/app/(dashboard)/companies/billing-actions'
@@ -25,6 +25,7 @@ import {
 } from '../closers'
 
 import type {
+  ClientBillingHistoryState,
   ClientContactOption,
   CloserCandidate,
   CloserDraft,
@@ -80,6 +81,7 @@ export function useClientBillingForm({
   const [allContacts, setAllContacts] = useState<ClientContactOption[]>([])
   const [allAdminUsers, setAllAdminUsers] = useState<PartnerUserOption[]>([])
   const [isLoadingContacts, setIsLoadingContacts] = useState(false)
+  const [isReady, setIsReady] = useState(false)
   const { openNew } = useSheetParams()
 
   // Origination — one picker offers admins and contacts; whichever is
@@ -225,7 +227,9 @@ export function useClientBillingForm({
         console.error('Failed to fetch billing picker data:', err)
       })
       .finally(() => {
-        if (!cancelled) setIsLoadingContacts(false)
+        if (cancelled) return
+        setIsLoadingContacts(false)
+        setIsReady(true)
       })
     return () => {
       cancelled = true
@@ -355,9 +359,39 @@ export function useClientBillingForm({
     }
   }, [closerShares, form, selectedOriginationContact, selectedOriginationUser])
 
+  const watchedValues = useWatch({ control: form.control })
+  const historyState = useMemo<ClientBillingHistoryState>(
+    () => ({
+      values: { ...form.getValues(), ...watchedValues },
+      originationUser: selectedOriginationUser,
+      originationContact: selectedOriginationContact,
+      closers,
+    }),
+    [
+      closers,
+      form,
+      selectedOriginationContact,
+      selectedOriginationUser,
+      watchedValues,
+    ]
+  )
+  const restoreHistoryState = useCallback(
+    (state: ClientBillingHistoryState) => {
+      form.reset(state.values, { keepDefaultValues: true })
+      setSelectedOriginationUser(state.originationUser)
+      setSelectedOriginationContact(state.originationContact)
+      setClosers(state.closers)
+      setCloserError(null)
+    },
+    [form]
+  )
+
   return {
     form,
     hasUnsavedChanges,
+    isReady,
+    historyState,
+    restoreHistoryState,
     isPending,
     pendingReason: PENDING_REASON,
     collectFields,

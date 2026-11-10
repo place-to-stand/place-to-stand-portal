@@ -385,7 +385,7 @@ export function CompanySheet({
   )
 
   const submitDisabled = isPending || isReopening || isLoading || isArchived
-  const { undo, redo, canUndo, canRedo } = useSheetFormControls({
+  const { undo, redo, canUndo, canRedo, sources } = useSheetFormControls({
     form,
     isActive: open,
     canSave: !submitDisabled,
@@ -506,6 +506,7 @@ export function CompanySheet({
                 isPending={fieldsDisabled}
                 handleRef={billingRef}
                 onDirtyChange={setBillingDirty}
+                history={sources}
               >
                 {/* Two columns. Below lg they stack into one scroll (Company,
                     then Client) with the footer pinned to the bottom. */}
