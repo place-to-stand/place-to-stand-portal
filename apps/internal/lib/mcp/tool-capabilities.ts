@@ -21,6 +21,7 @@ export const MCP_TOOL_CAPABILITIES = {
   update_person: 'contacts.manage',
   list_companies: 'companies.manage',
   get_company: 'companies.manage',
+  list_company_tags: 'companies.manage',
   create_company: 'companies.manage',
   update_company: 'companies.manage',
   list_activity: 'activity.read_crm',
