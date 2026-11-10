@@ -1,25 +1,27 @@
 'use client'
 
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@pts/ui/alert-dialog'
+import { Button } from '@pts/ui/button'
 import { formatRelativeTime } from '@pts/ui/dates'
 
-import {
-  emptyLabel,
-  formatValue,
-} from '@/components/activity/activity-change-list'
+import { emptyLabel } from '@/components/activity/activity-change-list'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { ChoiceDialog } from '@/components/ui/choice-dialog'
-import {
-  getActivityChanges,
-  humanizeEnum,
-  type FieldChange,
-} from '@/lib/activity/changes'
+import type { FieldChange } from '@/lib/activity/changes'
 import { getActorDisplayName } from '@/lib/activity/feed-highlights'
-import { htmlToPlainText } from '@/lib/activity/text-diff'
-import type {
-  ActivityLogWithActor,
-  ActivityReferences,
-} from '@/lib/activity/types'
-import { getTaskStatusLabel } from '@/lib/projects/task-status'
+import type { ActivityReferences } from '@/lib/activity/types'
+import {
+  mergeFields,
+  plainValue,
+  resolvable,
+  same,
+} from '@/lib/sheets/save-conflict/conflict-values'
 import type { SaveConflict } from '@/lib/sheets/save-conflict/types'
 import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
@@ -76,59 +78,70 @@ export function SaveConflictDialog({
     ? formatRelativeTime(conflict.changes[0]?.created_at ?? conflict.savedAt)
     : ''
 
+  const theirsLabel = saver.self
+    ? 'Use the saved version'
+    : `Use ${saver.versionOf} version`
+  const mineLabel = saver.self
+    ? 'Save this tab’s version'
+    : `Save mine over ${saver.versionOf}`
+
   return (
-    <ChoiceDialog
+    <AlertDialog
       open={conflict !== null}
-      title={
-        saver.self
-          ? `You saved this ${noun} in another tab`
-          : `${saver.full} changed this ${noun}${when ? ` ${when}` : ''}`
-      }
-      description={
-        saver.self
-          ? 'Your changes in this tab aren’t saved yet.'
-          : `They saved while you were editing. Your changes aren’t saved yet.`
-      }
-      choices={[
-        {
-          key: 'keep',
-          label: 'Keep editing',
-          detail: 'Go back to your changes. Nothing is saved yet.',
-          onSelect: guard.dismiss,
-        },
-        {
-          key: 'theirs',
-          label: saver.self
-            ? 'Use the saved version'
-            : `Use ${saver.versionOf} version`,
-          detail: `Throw away your changes and show the ${noun} as ${saver.self ? 'you' : 'they'} saved it.`,
-          onSelect: () => {
-            guard.dismiss()
-            onLoadTheirs()
-          },
-        },
-        {
-          key: 'mine',
-          label: saver.self
-            ? 'Save this tab’s version'
-            : `Save mine over ${saver.versionOf}`,
-          detail: `Replace what ${saver.self ? 'you' : 'they'} saved with everything on this sheet.`,
-          tone: 'destructive',
-          onSelect: () => onOverwrite(guard.overwrite()),
-        },
-      ]}
+      onOpenChange={next => {
+        if (!next) guard.dismiss()
+      }}
     >
-      {conflict ? (
-        <ConflictFields
-          fields={fields}
-          mine={mine}
-          saver={saver}
-          references={references}
-          targetType={conflict.changes[0]?.target_type ?? ''}
-          summary={conflict.changes[0]?.summary}
-        />
-      ) : null}
-    </ChoiceDialog>
+      <AlertDialogContent
+        onBackdropClick={guard.dismiss}
+        className='sm:max-w-xl'
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle className='leading-snug'>
+            {saver.self
+              ? `You saved this ${noun} in another tab`
+              : `${saver.full} changed this ${noun}${when ? ` ${when}` : ''}`}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {saver.self
+              ? 'Your changes in this tab aren’t saved yet.'
+              : 'They saved while you were editing. Your changes aren’t saved yet.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {conflict ? (
+          <ConflictFields
+            fields={fields}
+            mine={mine}
+            saver={saver}
+            references={references}
+            targetType={conflict.changes[0]?.target_type ?? ''}
+            summary={conflict.changes[0]?.summary}
+          />
+        ) : null}
+        <AlertDialogFooter>
+          <Button type='button' variant='outline' onClick={guard.dismiss}>
+            Keep editing
+          </Button>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={() => {
+              guard.dismiss()
+              onLoadTheirs()
+            }}
+          >
+            {theirsLabel}
+          </Button>
+          <Button
+            type='button'
+            variant='destructive'
+            onClick={() => onOverwrite(guard.overwrite())}
+          >
+            {mineLabel}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
@@ -153,26 +166,6 @@ function describeSaver(
   const full = getActorDisplayName(latest)
   const first = full.split(' ')[0] || full
   return { full, versionOf: `${first}’s`, self: false }
-}
-
-/**
- * One row per field across every save since this sheet loaded: the oldest
- * "before" and the newest "after", so two saves of one field read as one
- * change.
- */
-function mergeFields(changes: ActivityLogWithActor[]): FieldChange[] {
-  const byKey = new Map<string, FieldChange>()
-  // Newest first: the first seen is the latest after.
-  for (const log of changes) {
-    for (const field of getActivityChanges(log).fields) {
-      const seen = byKey.get(field.key)
-      byKey.set(
-        field.key,
-        seen ? { ...seen, before: field.before } : { ...field }
-      )
-    }
-  }
-  return [...byKey.values()]
 }
 
 function ConflictFields({
@@ -233,7 +226,11 @@ function ConflictFields({
                   label={saver.self ? 'This tab' : 'Your sheet'}
                   value={minePlain}
                   field={field}
-                  note={mineIsOld ? 'what it was before' : null}
+                  note={
+                    mineIsOld
+                      ? `You didn’t change this. Saving yours puts the old ${field.label.toLowerCase()} back.`
+                      : null
+                  }
                 />
               ) : null}
             </dl>
@@ -273,58 +270,9 @@ function Line({
           {value ?? emptyLabel(field)}
         </span>
         {note ? (
-          <span className='text-muted-foreground block text-xs'>{note}</span>
+          <span className='text-warning mt-0.5 block text-xs'>{note}</span>
         ) : null}
       </dd>
     </>
   )
-}
-
-/** A field value as a person would say it, or null when empty. */
-function plainValue(
-  field: FieldChange,
-  value: unknown,
-  targetType: string,
-  references?: ActivityReferences
-): string | null {
-  if (typeof value === 'string' && /<[a-z][^>]*>/i.test(value)) {
-    const text = htmlToPlainText(value).trim()
-    return text || null
-  }
-  if (field.kind === 'status' && typeof value === 'string') {
-    return targetType === 'TASK'
-      ? getTaskStatusLabel(value)
-      : humanizeEnum(value)
-  }
-  if (field.kind === 'access') return value === true ? 'Disabled' : 'Enabled'
-  const text = formatValue(value, field, references)
-  return text === null ? null : text.trim() || null
-}
-
-/**
- * A person, project or client id on this sheet reads as a name only when
- * the log's references know it; otherwise leave the row out rather than
- * print "Unknown person".
- */
-function resolvable(
-  field: FieldChange,
-  value: unknown,
-  references?: ActivityReferences
-): boolean {
-  if (typeof value !== 'string' || !value) return true
-  if (field.kind === 'user') return Boolean(references?.users[value])
-  if (field.kind === 'contact') return Boolean(references?.contacts[value])
-  if (field.kind === 'project') return Boolean(references?.projects[value])
-  return field.kind !== 'client'
-}
-
-/** Same value for a person: ignores case, spacing and a URL's scheme. */
-function same(a: string | null, b: string | null): boolean {
-  const norm = (v: string | null) =>
-    (v ?? '')
-      .replace(/^https?:\/\//i, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .toLowerCase()
-  return norm(a) === norm(b)
 }
