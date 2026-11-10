@@ -162,7 +162,9 @@ export function SheetRecordRow({
   )
 
   const cardClassName = cn(
-    'bg-muted/40 rounded-md border transition-colors',
+    // `group/record`: lets a row action show only while the card is hovered
+    // (`RECORD_ROW_HOVER_ACTION_CLASS`).
+    'group/record bg-muted/40 rounded-md border transition-colors',
     // Rows that open their record light up on hover, like table rows.
     (onOpen || href) && 'hover:bg-muted hover:border-foreground/20',
     className
@@ -185,6 +187,16 @@ export function SheetRecordRow({
     </div>
   )
 }
+
+/**
+ * A row action that shows only while its card is hovered or the action has
+ * keyboard focus, and always on touch screens (no hover there). For a toggle
+ * that marks one record of the list (the primary contact star): the record
+ * it marks shows it labelled, the rest only on hover, so unused controls
+ * don't crowd every card.
+ */
+export const RECORD_ROW_HOVER_ACTION_CLASS =
+  'opacity-0 group-hover/record:opacity-100 group-hover/record:disabled:opacity-50 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'
 
 /**
  * A text field on a record row: reads as text until hovered or focused, when

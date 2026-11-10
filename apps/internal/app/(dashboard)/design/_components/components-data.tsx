@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Star } from 'lucide-react'
 
+import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { SiteMark } from '@/components/ui/site-mark'
 import {
@@ -23,6 +24,7 @@ import {
   ProjectRecordRow,
 } from '@/components/sheets/entity-record-rows'
 import {
+  RECORD_ROW_HOVER_ACTION_CLASS,
   RecordRowField,
   SheetRecordList,
   SheetRecordRow,
@@ -117,6 +119,35 @@ export function ComponentsRecordRows() {
             openable={false}
             actions={
               <>
+                {starred ? (
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='xs'
+                    aria-pressed
+                    aria-label='Remove Ada Lovelace as primary contact'
+                    onClick={() => setStarred(false)}
+                    className='text-muted-foreground gap-1.5 text-xs font-normal'
+                  >
+                    <Star
+                      className='text-warning size-4 fill-current'
+                      aria-hidden
+                    />
+                    Primary contact
+                  </Button>
+                ) : (
+                  <RowActionButton
+                    type='button'
+                    aria-pressed={false}
+                    label='Make Ada Lovelace the primary contact'
+                    icon={<Star />}
+                    onClick={() => setStarred(true)}
+                    className={cn(
+                      'text-muted-foreground',
+                      RECORD_ROW_HOVER_ACTION_CLASS
+                    )}
+                  />
+                )}
                 <RowActionButton
                   type='button'
                   label="Open Ada Lovelace's LinkedIn"
@@ -129,13 +160,6 @@ export function ComponentsRecordRows() {
                       'noopener,noreferrer'
                     )
                   }
-                />
-                <RowActionButton
-                  label={
-                    starred ? 'Unset primary contact' : 'Set primary contact'
-                  }
-                  icon={<Star className={cn(starred && 'fill-current')} />}
-                  onClick={() => setStarred(value => !value)}
                 />
               </>
             }

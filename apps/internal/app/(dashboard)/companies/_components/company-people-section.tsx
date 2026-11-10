@@ -12,7 +12,10 @@ import {
 import { MembershipTitleInput } from '@/components/sheets/membership-title-input'
 import { EntityList } from '@/components/sheets/entity-list'
 import { ContactRecordRow } from '@/components/sheets/entity-record-rows'
-import { RecordRowField } from '@/components/sheets/sheet-record-row'
+import {
+  RECORD_ROW_HOVER_ACTION_CLASS,
+  RecordRowField,
+} from '@/components/sheets/sheet-record-row'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import { SiteMark } from '@/components/ui/site-mark'
 import { toSafeHref } from '@/components/ui/url-input'
@@ -103,30 +106,36 @@ export function CompanyPeopleSection({
         reason={primaryLockedReason}
         className='w-auto'
       >
-        {/* Labelled, like the person sheet's: a toggle that reads as one. */}
-        <Button
-          type='button'
-          variant='ghost'
-          size='xs'
-          disabled={disabled || Boolean(primaryLockedReason)}
-          aria-pressed={isPrimary}
-          aria-label={
-            isPrimary
-              ? `Remove ${contact.name} as primary contact`
-              : `Make ${contact.name} the primary contact`
-          }
-          onClick={() => onSetPrimary(isPrimary ? null : contact.id)}
-          className='text-muted-foreground gap-1.5 text-xs font-normal'
-        >
-          <Star
+        {isPrimary ? (
+          // Labelled on the primary, like the person sheet's company cards.
+          <Button
+            type='button'
+            variant='ghost'
+            size='xs'
+            disabled={disabled || Boolean(primaryLockedReason)}
+            aria-pressed
+            aria-label={`Remove ${contact.name} as primary contact`}
+            onClick={() => onSetPrimary(null)}
+            className='text-muted-foreground gap-1.5 text-xs font-normal'
+          >
+            <Star className='text-warning size-4 fill-current' aria-hidden />
+            Primary contact
+          </Button>
+        ) : (
+          // Everyone else: a bare star, shown on hover (or focus).
+          <RowActionButton
+            type='button'
+            disabled={disabled || Boolean(primaryLockedReason)}
+            aria-pressed={false}
+            label={`Make ${contact.name} the primary contact`}
+            onClick={() => onSetPrimary(contact.id)}
+            icon={<Star />}
             className={cn(
-              'size-4',
-              isPrimary ? 'text-warning fill-current' : 'opacity-60'
+              'text-muted-foreground',
+              RECORD_ROW_HOVER_ACTION_CLASS
             )}
-            aria-hidden
           />
-          Primary contact
-        </Button>
+        )}
       </DisabledFieldTooltip>
     )
   }
@@ -249,8 +258,10 @@ export function CompanyPeopleSection({
             fields={fields(contact)}
             actions={
               <>
-                {linkedinButton(contact)}
+                {/* Star first: hidden on most cards, its space sits at the
+                    left end instead of between LinkedIn and remove. */}
                 {star(contact)}
+                {linkedinButton(contact)}
                 {removeButton(contact)}
               </>
             }
