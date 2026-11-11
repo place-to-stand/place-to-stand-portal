@@ -4,7 +4,10 @@ import { DndContext, type DndContextProps } from '@dnd-kit/core'
 import { useSearchParams } from 'next/navigation'
 
 import { TabsContent } from '@pts/ui/tabs'
-import { BOARD_PANEL_CLASS } from '@/components/board/board-column'
+import {
+  BOARD_GRID_CLASS,
+  BOARD_PANEL_CLASS,
+} from '@/components/board/board-column'
 import { PagePanel } from '@/components/layout/page-panel'
 import { DoneWindowFooter } from '../done-window-footer'
 import { KanbanColumn } from '../kanban-column'
@@ -163,7 +166,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                 >
                   <DndContext sensors={sensors} {...drag.dndContextProps}>
                     <div
-                      className='grid h-full gap-4'
+                      className={BOARD_GRID_CLASS}
                       style={{
                         gridTemplateColumns: `repeat(${BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
                       }}
