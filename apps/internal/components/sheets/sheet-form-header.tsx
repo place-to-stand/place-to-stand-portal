@@ -12,7 +12,12 @@ import {
 import { cn } from '@/lib/utils'
 
 type SheetFormHeaderProps = {
-  entity: AccentEntity
+  /**
+   * The record type, which sets the icon and the colored rule. A sheet that
+   * isn't a record (the Filters sheet) leaves it out, passes its own
+   * `leading` icon and gets a neutral rule.
+   */
+  entity?: AccentEntity
   /** The record's name when editing; "Create <entity>" when creating. */
   title: string
   /**
@@ -44,9 +49,9 @@ export function SheetFormHeader({
   presence,
   className,
 }: SheetFormHeaderProps) {
-  const EntityIcon = ENTITY_ICONS[entity]
+  const EntityIcon = entity ? ENTITY_ICONS[entity] : null
   const lead =
-    leading === undefined ? (
+    leading === undefined && EntityIcon && entity ? (
       <EntityIcon
         aria-hidden
         className={cn(ENTITY_ACCENTS[entity].icon, 'size-4 shrink-0')}
@@ -57,7 +62,7 @@ export function SheetFormHeader({
   return (
     <SheetHeader
       className={cn(
-        ENTITY_ACCENTS[entity].sheetHeader,
+        entity ? ENTITY_ACCENTS[entity].sheetHeader : 'border-b-2',
         'relative p-2.5 pr-12',
         className
       )}
