@@ -23,7 +23,7 @@ export const LEAD_UPDATE_LABELS: Record<LeadUpdateTypeValue, string> = {
 }
 
 /**
- * Per-type color tokens, in the shape of LEAD_STATUS_TOKENS.
+ * Per-type color tokens, in the shape of the lead stage badge tints (`BADGE_TINTS`).
  *
  * Color is never the sole signal (WCAG 1.4.1) — every timeline entry renders
  * the icon AND the text label alongside this token. Do not "simplify" an entry

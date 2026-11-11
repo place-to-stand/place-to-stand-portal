@@ -7,16 +7,13 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import { cn } from '@/lib/utils'
 import type { LeadRecord } from '@/lib/leads/types'
-import type { LeadStatusValue } from '@/lib/leads/constants'
+import { getLeadStatusHue, type LeadStatusValue } from '@/lib/leads/constants'
 import { RowActionButton } from '@pts/ui/row-action-button'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 
 import { LeadCard } from './lead-card'
-import {
-  BOARD_COLUMN_CLASS,
-  BOARD_COLUMN_DROP_CLASS,
-} from '@/components/board/board-column'
+import { boardColumnClass } from '@/components/board/board-column'
 
 type LeadColumnProps = {
   columnId: LeadStatusValue
@@ -61,9 +58,8 @@ export function LeadColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        BOARD_COLUMN_CLASS,
-        'flex min-h-0 w-80 shrink-0 flex-col gap-3 overflow-hidden p-3 transition',
-        isDropTarget && BOARD_COLUMN_DROP_CLASS
+        boardColumnClass(getLeadStatusHue(columnId) ?? 'neutral', isDropTarget),
+        'w-80 shrink-0'
       )}
     >
       <div className='flex items-center justify-between gap-2'>
