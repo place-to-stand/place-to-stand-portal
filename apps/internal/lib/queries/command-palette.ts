@@ -2,7 +2,7 @@ import { currentBillingTypeSql } from '@pts/db/terms'
 import { isClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { and, asc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, isNull, or, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertCan } from '@/lib/auth/permissions'
@@ -10,165 +10,190 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { db } from '@/lib/db'
 import { companies, contacts, projects } from '@/lib/db/schema'
 import { createSearchPattern } from '@/lib/pagination/cursor'
+import {
+  companySheetHref,
+  contactSheetHref,
+  projectSheetHref,
+  projectTasksHref,
+} from '@/lib/sheets/hrefs'
 
-const RESULT_LIMIT = 8
-
-type PaletteCompanyResult = {
-  id: string
-  name: string
-  /** Billed now: shown with its billing type. */
-  isClient: boolean
-  billingType: 'prepaid' | 'net_30' | null
-}
-
-type PaletteProjectResult = {
-  id: string
-  name: string
-  /** URL client segment: client slug, 'internal', or 'personal'. */
-  clientSegment: string
-  projectSlug: string
-  /** Disambiguating label prefix, e.g. the client name (R7). */
-  clientLabel: string | null
-}
-
-type PaletteContactResult = {
-  id: string
-  name: string
-  email: string | null
-  /** A live sign-in; false for viewers who don't manage sign-ins. */
-  hasSignIn: boolean
-}
-
-export type PaletteSearchResult = {
-  companies: PaletteCompanyResult[]
-  projects: PaletteProjectResult[]
-  contacts: PaletteContactResult[]
-}
+import {
+  PALETTE_RESULT_LIMIT,
+  projectClientLabel,
+  searchPaletteHourBlocks,
+  searchPaletteInvoices,
+  searchPaletteLeads,
+  searchPaletteSubmissions,
+  searchPaletteTasks,
+  visibleProjectCondition,
+} from './command-palette-records'
+import type {
+  PaletteRecord,
+  PaletteSearchResult,
+} from '@/lib/command-palette/types'
 
 /**
- * ⌘K palette record search (PRD 004 §01, D13). Fuzzy semantics inherited
- * from `createSearchPattern` by design (W3). Visibility (R3): PERSONAL
- * projects are excluded unless created by the current user — the same rule
- * the retired combobox switcher applied. Project search also matches the
- * client name (R7) so "search clients or projects" parity holds.
+ * ⌘K palette record search (PRD 004 §01, D13): every kind of record with a
+ * sheet, each result opening it. Fuzzy semantics inherited from
+ * `createSearchPattern` by design (W3). Admin-only (`portal.command_palette`),
+ * so beyond R3 there are no per-record visibility rules.
  */
 export async function searchCommandPalette(
   user: AppUser,
   query: string
 ): Promise<PaletteSearchResult> {
   assertCan(user, 'portal.command_palette')
-  const seesSignIns = roleCan(user.role, 'settings.users')
-
   const pattern = createSearchPattern(query)
 
-  // Every live company; clients carry a badge (a client is a company you bill).
-  const companyCondition = and(
-    isNull(companies.deletedAt),
-    sql`${companies.name} ILIKE ${pattern}`
-  )
-
-  // R3: PERSONAL projects visible only to their creator.
-  const visibilityCondition: SQL = or(
-    ne(projects.type, 'PERSONAL'),
-    eq(projects.createdBy, user.id)
-  )!
-
-  const projectCondition = and(
-    isNull(projects.deletedAt),
-    visibilityCondition,
-    or(
-      sql`${projects.name} ILIKE ${pattern}`,
-      sql`${projects.slug} ILIKE ${pattern}`,
-      sql`${companies.name} ILIKE ${pattern}`
-    )
-  )
-
-  // Contacts (03 extension): same per-entity predicate the contacts list
-  // uses — name/email, no additional visibility rules (admin-only surface).
-  const contactCondition = and(
-    isNull(contacts.deletedAt),
-    or(
-      sql`${contacts.name} ILIKE ${pattern}`,
-      sql`${contacts.email} ILIKE ${pattern}`
-    )
-  )
-
-  const [companyRows, projectRows, contactRows] = await Promise.all([
-    db
-      .select({
-        id: companies.id,
-        name: companies.name,
-        isClient: sql<boolean>`${isClientCompany()}`,
-        billingType: sql<
-          'prepaid' | 'net_30' | null
-        >`case when ${isClientCompany()} then ${currentBillingTypeSql()} end`,
-      })
-      .from(companies)
-      .where(companyCondition)
-      .orderBy(asc(sql`lower(${companies.name})`))
-      .limit(RESULT_LIMIT),
-    db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        slug: projects.slug,
-        type: projects.type,
-        clientName: companies.name,
-        clientSlug: companies.slug,
-      })
-      .from(projects)
-      .leftJoin(companies, eq(projects.companyId, companies.id))
-      .where(projectCondition)
-      .orderBy(asc(companies.name), asc(projects.name))
-      .limit(RESULT_LIMIT),
-    db
-      .select({
-        id: contacts.id,
-        name: contacts.name,
-        email: contacts.email,
-        hasSignIn: sql<boolean>`exists (
-          select 1 from users u
-          where u.id = ${sql.raw('"contacts"."user_id"')}
-            and u.deleted_at is null and u.disabled_at is null
-        )`,
-      })
-      .from(contacts)
-      .where(contactCondition)
-      .orderBy(asc(contacts.name))
-      .limit(RESULT_LIMIT),
+  const [
+    companyResults,
+    people,
+    projectResults,
+    leads,
+    tasks,
+    invoices,
+    hourBlocks,
+    submissions,
+  ] = await Promise.all([
+    searchCompanies(pattern),
+    searchPeople(pattern, roleCan(user.role, 'settings.users')),
+    searchProjects(pattern, user),
+    searchPaletteLeads(pattern),
+    searchPaletteTasks(pattern, user),
+    searchPaletteInvoices(pattern),
+    searchPaletteHourBlocks(pattern),
+    searchPaletteSubmissions(pattern),
   ])
 
-  const projectResults: PaletteProjectResult[] = []
-  for (const row of projectRows) {
-    const clientSegment =
-      row.type === 'INTERNAL'
-        ? 'internal'
-        : row.type === 'PERSONAL'
-          ? 'personal'
-          : (row.clientSlug ?? null)
-
-    if (!clientSegment || !row.slug) continue
-
-    projectResults.push({
-      id: row.id,
-      name: row.name,
-      clientSegment,
-      projectSlug: row.slug,
-      clientLabel:
-        row.type === 'INTERNAL'
-          ? 'Internal'
-          : row.type === 'PERSONAL'
-            ? 'Personal'
-            : row.clientName,
-    })
-  }
-
   return {
-    companies: companyRows,
+    companies: companyResults,
+    people,
+    leads,
+    submissions,
     projects: projectResults,
-    contacts: contactRows.map(contact => ({
-      ...contact,
-      hasSignIn: seesSignIns && contact.hasSignIn,
-    })),
+    tasks,
+    invoices,
+    hourBlocks,
   }
+}
+
+/** Every live company; clients carry the client dot and their billing type. */
+async function searchCompanies(pattern: string): Promise<PaletteRecord[]> {
+  const rows = await db
+    .select({
+      id: companies.id,
+      name: companies.name,
+      isClient: sql<boolean>`${isClientCompany()}`,
+      billingType: sql<
+        'prepaid' | 'net_30' | null
+      >`case when ${isClientCompany()} then ${currentBillingTypeSql()} end`,
+    })
+    .from(companies)
+    .where(
+      and(isNull(companies.deletedAt), sql`${companies.name} ILIKE ${pattern}`)
+    )
+    .orderBy(asc(sql`lower(${companies.name})`))
+    .limit(PALETTE_RESULT_LIMIT)
+
+  return rows.map(row => ({
+    id: row.id,
+    title: row.name,
+    detail: null,
+    href: companySheetHref(row.id),
+    entity: row.isClient ? 'client' : 'company',
+    billingType: row.isClient ? row.billingType : null,
+  }))
+}
+
+/**
+ * People by name or email. The sign-in dot shows only to viewers who manage
+ * sign-ins.
+ */
+async function searchPeople(
+  pattern: string,
+  seesSignIns: boolean
+): Promise<PaletteRecord[]> {
+  const rows = await db
+    .select({
+      id: contacts.id,
+      name: contacts.name,
+      email: contacts.email,
+      hasSignIn: sql<boolean>`exists (
+        select 1 from users u
+        where u.id = ${sql.raw('"contacts"."user_id"')}
+          and u.deleted_at is null and u.disabled_at is null
+      )`,
+    })
+    .from(contacts)
+    .where(
+      and(
+        isNull(contacts.deletedAt),
+        or(
+          sql`${contacts.name} ILIKE ${pattern}`,
+          sql`${contacts.email} ILIKE ${pattern}`
+        )
+      )
+    )
+    .orderBy(asc(contacts.name))
+    .limit(PALETTE_RESULT_LIMIT)
+
+  return rows.map(row => ({
+    id: row.id,
+    title: row.name,
+    detail: row.email,
+    href: contactSheetHref(row.id),
+    entity: seesSignIns && row.hasSignIn ? 'user' : 'contact',
+  }))
+}
+
+/**
+ * Projects by name, slug or client name (R7); each opens its board, or its
+ * sheet when the board can't be addressed.
+ */
+async function searchProjects(
+  pattern: string,
+  user: AppUser
+): Promise<PaletteRecord[]> {
+  const rows = await db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      slug: projects.slug,
+      type: projects.type,
+      clientName: companies.name,
+      // As for tasks: a board URL only while the company is billed.
+      clientSlug: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.slug} end`,
+    })
+    .from(projects)
+    .leftJoin(companies, eq(projects.companyId, companies.id))
+    .where(
+      and(
+        isNull(projects.deletedAt),
+        visibleProjectCondition(user),
+        or(
+          sql`${projects.name} ILIKE ${pattern}`,
+          sql`${projects.slug} ILIKE ${pattern}`,
+          sql`${companies.name} ILIKE ${pattern}`
+        )
+      )
+    )
+    .orderBy(asc(companies.name), asc(projects.name))
+    .limit(PALETTE_RESULT_LIMIT)
+
+  return rows.map(row => ({
+    id: row.id,
+    title: row.name,
+    detail: projectClientLabel(row.type, row.clientName),
+    href:
+      projectTasksHref({
+        projectSlug: row.slug,
+        projectType: row.type,
+        clientSlug: row.clientSlug,
+      }) ?? projectSheetHref(row.id),
+    entity: 'project',
+    // Found by slug alone, the row would otherwise be filtered out on screen.
+    keywords: row.slug ? [row.slug] : [],
+  }))
 }
