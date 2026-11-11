@@ -63,6 +63,7 @@ export function CompaniesTable({
   sort,
   basePath,
   mode,
+  bulkPreset,
 }: {
   companies: CompanyListItem[]
   /** Rows matching the filters across every page ("Select all N"). */
@@ -72,6 +73,8 @@ export function CompaniesTable({
   sort: string | undefined
   basePath: string
   mode: 'active' | 'archive'
+  /** The page's own set for "Select all" (Clients: `type=client`). */
+  bulkPreset?: Record<string, string>
 }) {
   const { open } = useSheetParams()
   // Billing and commission columns are for people who manage clients.
@@ -419,6 +422,7 @@ export function CompaniesTable({
         selection={selection}
         entity='company'
         mode={mode}
+        presetParams={bulkPreset}
         archiveExtra={BULK_ARCHIVE_EXTRA}
         nameOf={id => companies.find(company => company.id === id)?.name}
       />

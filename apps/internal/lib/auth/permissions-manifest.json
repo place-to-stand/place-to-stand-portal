@@ -155,6 +155,13 @@
   },
   {
     "type": "page",
+    "name": "/companies/clients",
+    "file": "apps/internal/app/(dashboard)/companies/clients/page.tsx",
+    "kind": "capability",
+    "capability": "companies.manage"
+  },
+  {
+    "type": "page",
     "name": "/companies",
     "file": "apps/internal/app/(dashboard)/companies/page.tsx",
     "kind": "capability",
@@ -467,6 +474,13 @@
     "file": "apps/internal/app/(dashboard)/people/page.tsx",
     "kind": "capability",
     "capability": "contacts.manage"
+  },
+  {
+    "type": "page",
+    "name": "/people/users",
+    "file": "apps/internal/app/(dashboard)/people/users/page.tsx",
+    "kind": "capability",
+    "capability": "settings.users"
   },
   {
     "type": "page",

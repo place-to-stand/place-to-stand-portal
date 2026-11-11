@@ -5,9 +5,12 @@ import {
   listContactsForSettings,
   listCompanyFilterOptions,
 } from '@/lib/queries/contacts'
-import { parseContactsSearchParams } from '@/lib/people/filters'
+import { isRoleFilter, parseContactsSearchParams } from '@/lib/people/filters'
 import { serverEnv } from '@/lib/env.server'
 import { readPageSize } from '@/lib/pagination/page-size.server'
+import { firstParam } from '@/lib/pagination/params'
+import { roleCan } from '@/lib/auth/capabilities'
+import { redirectLegacyPreset } from '@/lib/pagination/legacy-preset'
 
 import { peopleTabs } from '../_lib/tabs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
@@ -15,22 +18,30 @@ import { ContactsFilters } from './contacts-filters'
 import { ContactsManagementTable } from './contacts-management-table'
 import { resolveContactDeepLink } from '../_lib/contact-deep-link'
 import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
-import { roleCan } from '@/lib/auth/capabilities'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
 import { pageSheetParam } from '@/lib/sheets/stack'
 
-export type ListMode = 'active' | 'archive'
+export type ListMode = 'active' | 'users' | 'archive'
 
 const MODES = {
   active: {
     status: 'active',
     tab: 'active',
-    activeTab: 'contacts',
+    activeTab: 'people',
     basePath: '/people',
     countLabel: 'people',
     crumbs: [],
+  },
+  // People who can sign in, for those who manage sign-ins.
+  users: {
+    status: 'active',
+    tab: 'active',
+    activeTab: 'users',
+    basePath: '/people/users',
+    countLabel: 'users',
+    crumbs: [{ label: 'Users' }],
   },
   archive: {
     status: 'archived',
@@ -51,7 +62,25 @@ export async function PeopleListPage({
   mode: ListMode
 }) {
   const view = MODES[mode]
-  const user = await requirePage('contacts.manage')
+  const user = await requirePage(
+    mode === 'users' ? 'settings.users' : 'contacts.manage'
+  )
+  // A role means something on Users only. Old Users links
+  // (`/people?role=…`, `?signIn=…`) go there for those who can open it;
+  // anywhere else the param is dropped, keeping the rest (a `contact=`).
+  if (mode !== 'users' && (params.role ?? params.signIn) !== undefined) {
+    const legacyRole = firstParam(params.role) ?? firstParam(params.signIn)
+    const toUsers =
+      mode === 'active' &&
+      roleCan(user.role, 'settings.users') &&
+      (legacyRole === 'any' || (legacyRole && isRoleFilter(legacyRole)))
+    redirectLegacyPreset(
+      { ...params, signIn: undefined, role: legacyRole },
+      toUsers
+        ? { key: 'role', path: '/people/users', keep: isRoleFilter }
+        : { key: 'role', path: view.basePath, keep: () => false }
+    )
+  }
   const pageSize = await readPageSize()
   const {
     page: currentPage,
@@ -60,10 +89,10 @@ export async function PeopleListPage({
     signIn: signInParam,
     sort,
   } = parseContactsSearchParams(params)
-  // The sign-in filter is for admins, on the active tab only.
-  const signIn = mode === 'active' ? signInParam : undefined
-  const showSignInFilter =
-    mode === 'active' && roleCan(user.role, 'settings.users')
+  // Users lists every live sign-in, narrowed by its Role filter.
+  const role =
+    signInParam && isRoleFilter(signInParam) ? signInParam : undefined
+  const signIn = mode === 'users' ? (role ?? 'any') : undefined
   const offset = (currentPage - 1) * pageSize
 
   // Share links: `?contact=<id>` opens the edit sheet even when the row sits
@@ -82,11 +111,17 @@ export async function PeopleListPage({
         search,
         companyId,
         signIn,
+        listSignIn: mode === 'users' ? 'any' : undefined,
         offset,
         limit: pageSize,
         sort,
       }),
-      listCompanyFilterOptions(user),
+      listCompanyFilterOptions(user, {
+        status: view.status,
+        search,
+        signIn,
+        companyId,
+      }),
     ])
 
   const contactsForTable = items.map(mapContactToTableRow)
@@ -108,19 +143,9 @@ export async function PeopleListPage({
 
   return (
     <PageShell
-      breadcrumbs={[
-        ...crumbsForNav('/people'),
-        ...(showSignInFilter && signIn && signIn !== 'none'
-          ? [{ label: 'Users' }]
-          : view.crumbs),
-      ]}
+      breadcrumbs={[...crumbsForNav('/people'), ...view.crumbs]}
       tabs={peopleTabs(user.role)}
-      activeTab={
-        // A role picked in the filter still lists users.
-        showSignInFilter && signIn && signIn !== 'none'
-          ? 'users'
-          : view.activeTab
-      }
+      activeTab={view.activeTab}
       count={{
         label: view.countLabel,
         total: unfilteredTotalCount,
@@ -136,8 +161,8 @@ export async function PeopleListPage({
           search={search}
           companyId={companyId}
           companies={companyOptions}
-          signIn={showSignInFilter ? signIn : undefined}
-          showSignInFilter={showSignInFilter}
+          role={mode === 'users' ? role : undefined}
+          showRoleFilter={mode === 'users'}
         />
         <ContactsManagementTable
           contacts={contactsForTable}

@@ -96,7 +96,7 @@ test('sales sees no portal switches on a client company’s people', async ({
   page,
 }) => {
   // Sales see no billing marks: the Client filter finds client companies.
-  await page.goto('/companies?type=client')
+  await page.goto('/companies/clients')
   const clientRow = page.locator('tbody tr').first()
   test.skip((await clientRow.count()) === 0, 'no client company to open')
   await clientRow.locator(FIRST_CELL).first().click()
@@ -111,7 +111,7 @@ test('sales sees no portal switches on a client company’s people', async ({
 /** The first client company on the list, opened (People is on Details). */
 async function openClientPeople(page: Page) {
   // Sales see no billing marks: the Client filter finds client companies.
-  await page.goto('/companies?type=client')
+  await page.goto('/companies/clients')
   const clientRow = page.locator('tbody tr').first()
   if ((await clientRow.count()) === 0) return null
   const name = (

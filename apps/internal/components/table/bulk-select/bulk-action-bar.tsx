@@ -44,6 +44,11 @@ type BulkActionBarProps = {
   entity: BulkArchiveEntity
   /** The active list archives; its Archive tab restores. */
   mode: 'active' | 'archive'
+  /**
+   * The page's own set, as list params ("Select all" on /companies/clients
+   * means clients): the URL's filters narrow it further.
+   */
+  presetParams?: Record<string, string>
   /** Extra sentence for the archive confirmation (a list's consequences). */
   archiveExtra?: string
   /** A row's name, for naming refused rows in the result toast. */
@@ -67,6 +72,7 @@ export function BulkActionBar({
   selection,
   entity,
   mode,
+  presetParams,
   archiveExtra,
   nameOf,
   onDone,
@@ -92,9 +98,14 @@ export function BulkActionBar({
     label: string,
     action: (input: BulkSelectionInput) => Promise<BulkActionResult>
   ) => {
-    const params = Object.fromEntries(
-      [...searchParams.entries()].filter(([key]) => !NON_FILTER_PARAMS.has(key))
-    )
+    const params = {
+      ...presetParams,
+      ...Object.fromEntries(
+        [...searchParams.entries()].filter(
+          ([key]) => !NON_FILTER_PARAMS.has(key)
+        )
+      ),
+    }
     const allMatching = selection.allMatching
     const pageIds = [...selection.ids]
 

@@ -8,7 +8,7 @@ import { FIRST_CELL } from './helpers'
  * Read-only: the sheet is discarded at the end.
  */
 test('removing a closer can be undone before saving', async ({ page }) => {
-  await page.goto('/companies?type=client')
+  await page.goto('/companies/clients')
   const sheet = page.getByRole('dialog')
   // Open client companies until one has a closer.
   const rows = page.locator('tbody tr')

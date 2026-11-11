@@ -884,11 +884,6 @@
       "count": 1
     }
   },
-  "lib/queries/contacts/settings/list-contacts.ts": {
-    "max-lines": {
-      "count": 1
-    }
-  },
   "lib/queries/form-submissions.ts": {
     "max-lines": {
       "count": 1

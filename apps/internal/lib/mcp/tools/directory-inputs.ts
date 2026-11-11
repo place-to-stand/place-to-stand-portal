@@ -18,7 +18,13 @@ export const richText = z
 export const webAddress = z.string().trim().max(255)
 
 /** The routes that list companies and people, as the sheets refresh them. */
-const DIRECTORY_ROUTES = ['/companies', '/people', '/leads']
+const DIRECTORY_ROUTES = [
+  '/companies',
+  '/companies/clients',
+  '/people',
+  '/people/users',
+  '/leads',
+]
 
 export function revalidateDirectory() {
   for (const path of DIRECTORY_ROUTES) revalidatePath(path)
