@@ -193,7 +193,7 @@ export function InvoicesTableSection({
     <SortableTableHead
       field={field}
       sort={sort}
-      defaultSort='created:desc'
+      defaultSort='issued:desc'
       onSortChange={next => update({ sort: next })}
       className={className}
       align={align}
@@ -229,7 +229,7 @@ export function InvoicesTableSection({
               {/* p-0 plus the button's px-2: pl-2 lines the label up with
                   the cells' md:pl-4, clear of the right-aligned Total. */}
               {sortHead('hours', 'Hours', 'w-[9%] pl-2')}
-              {sortHead('created', 'Issued', 'w-[11%]')}
+              {sortHead('issued', 'Issued', 'w-[11%]')}
               {sortHead('share', 'Share link', 'w-[15%]')}
               {/* Sized to the row's buttons: up to three status actions
                   (send, mark sent or revert, void), or Restore on the

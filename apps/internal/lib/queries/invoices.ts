@@ -213,9 +213,10 @@ const INVOICE_SORT_ORDERINGS: Record<
   InvoiceSortField,
   { asc: SQL; desc: SQL }
 > = {
-  created: {
-    asc: sql`${invoices.createdAt} ASC`,
-    desc: sql`${invoices.createdAt} DESC`,
+  // The Issued column: the date it shows. Drafts (no issue date) sort last.
+  issued: {
+    asc: sql`${invoices.issuedDate} ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`${invoices.issuedDate} DESC NULLS LAST, ${invoices.createdAt} DESC`,
   },
   number: {
     asc: sql`${invoices.invoiceNumber} ASC NULLS LAST`,
