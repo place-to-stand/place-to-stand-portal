@@ -31,6 +31,11 @@ import {
 } from './rules/guards.mjs'
 import { shortcutRegistry } from './rules/shortcuts.mjs'
 import {
+  sheetLayerZ,
+  sheetParamThroughStack,
+  useIdNotFixedId,
+} from './rules/sheets.mjs'
+import {
   figureCellAligned,
   noDetailsSection,
   noRawTypeSize,
@@ -71,6 +76,9 @@ export const pts = {
     'underline-not-clipped': underlineNotClipped,
     'sheet-link-in-place': sheetLinkInPlace,
     'sheet-url-through-builders': sheetUrlThroughBuilders,
+    'sheet-param-through-stack': sheetParamThroughStack,
+    'sheet-layer-z': sheetLayerZ,
+    'use-id-not-fixed-id': useIdNotFixedId,
     'shortcut-registry': shortcutRegistry,
     'no-hard-delete': noHardDelete,
     'optional-label': optionalLabel,
