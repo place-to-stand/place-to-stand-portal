@@ -4,10 +4,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { Users } from 'lucide-react'
 
-import {
-  FILTER_TRIGGER_WIDTH,
-  TOOLBAR_FILTER_TRIGGER,
-} from '@/components/ui/field-trigger'
+import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
 import {
   SearchableCombobox,
   type SearchableComboboxItem,
@@ -28,6 +25,11 @@ type PersonSelectorProps = {
   disabled?: boolean
   /** The everyone option's label ("All tasks" on My tasks, "All leads" on Leads). */
   allLabel?: string
+  /**
+   * Handles a pick (a user id or `'all'`) instead of the default, which
+   * reloads the page with `?assignee=`. For boards that filter in the browser.
+   */
+  onSelect?: (userId: string) => void
 }
 
 export function PersonSelector({
@@ -36,6 +38,7 @@ export function PersonSelector({
   currentUserId,
   disabled = false,
   allLabel = 'All tasks',
+  onSelect,
 }: PersonSelectorProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -75,6 +78,10 @@ export function PersonSelector({
 
   const handleChange = useCallback(
     (userId: string) => {
+      if (onSelect) {
+        onSelect(userId)
+        return
+      }
       const params = new URLSearchParams(searchParams.toString())
 
       if (userId) {
@@ -91,10 +98,10 @@ export function PersonSelector({
 
       router.push(url, { scroll: false })
     },
-    [pathname, router, searchParams]
+    [onSelect, pathname, router, searchParams]
   )
 
-  // The shared filter trigger, at the filter width beside the client scope.
+  // The shared filter trigger, at the filter width, in the board's filter bar.
   return (
     <SearchableCombobox
       items={items}
@@ -106,7 +113,6 @@ export function PersonSelector({
       emptyMessage='No people found.'
       disabled={disabled}
       className={FILTER_TRIGGER_WIDTH}
-      triggerClassName={TOOLBAR_FILTER_TRIGGER}
       itemClassName='whitespace-nowrap'
     />
   )

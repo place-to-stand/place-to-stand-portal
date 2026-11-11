@@ -3,9 +3,9 @@ import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * The one panel surface on a page: every list, report card, board column and
+ * The one panel surface on a page: every list, board, report card and
  * home widget sits on it. Use `PagePanel`; reach for the class only where the
- * element must be something other than a `<section>` (a dnd column, a grid).
+ * element must be something other than a `<section>` (a grid).
  */
 export const pagePanelClass = 'bg-background rounded-xl border shadow-sm'
 

@@ -1,12 +1,16 @@
 import { useCallback, type RefObject, type UIEventHandler } from 'react'
 import type { ProjectIntegrationLinkSummary } from '@/lib/types/integrations'
 import { DndContext, type DndContextProps } from '@dnd-kit/core'
+import { useSearchParams } from 'next/navigation'
 
 import { TabsContent } from '@pts/ui/tabs'
+import { BOARD_PANEL_CLASS } from '@/components/board/board-column'
+import { PagePanel } from '@/components/layout/page-panel'
 import { DoneWindowFooter } from '../done-window-footer'
 import { KanbanColumn } from '../kanban-column'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { TaskDragOverlay } from '../task-drag-overlay'
+import { ProjectBoardFilters } from './project-board-filters'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
 import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 
@@ -18,7 +22,7 @@ import {
   BOARD_COLUMNS,
   type BoardColumnId,
 } from '@/lib/projects/board/board-constants'
-import type { TaskWithRelations } from '@/lib/types'
+import type { DbUser, TaskWithRelations } from '@/lib/types'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 
 export type ProjectsBoardActiveProject = {
@@ -72,6 +76,9 @@ export type BoardTabContentProps = {
   hiddenDoneCount: number
   /** Widens the window one step; instant, no fetch. */
   onWidenDoneWindow: () => void
+  /** The people the board's person filter offers. */
+  boardPeople: DbUser[]
+  currentUserId: string
 }
 
 export function BoardTabContent(props: BoardTabContentProps) {
@@ -94,8 +101,14 @@ export function BoardTabContent(props: BoardTabContentProps) {
     doneWeeks,
     hiddenDoneCount,
     onWidenDoneWindow,
+    boardPeople,
+    currentUserId,
   } = props
 
+  const searchParams = useSearchParams()
+  const hasSearch = Boolean(
+    searchParams.get('q')?.trim() || searchParams.get('assignee')
+  )
   const { getColumnRef, getScrollHandler } = useColumnScrollPersistence({
     storageKey: 'projects-board',
     columnIds: BOARD_COLUMNS.map(col => col.id),
@@ -130,64 +143,78 @@ export function BoardTabContent(props: BoardTabContentProps) {
       {!activeProject ? (
         <ProjectsBoardEmpty message={NO_SELECTION_MESSAGE} />
       ) : (
-        <div className='relative min-h-0 flex-1'>
-          <div className='absolute inset-0 overflow-hidden'>
-            <div
-              ref={boardViewportRef}
-              className='h-full min-h-0 overflow-x-auto'
-              onScroll={onBoardScroll}
-            >
-              <DndContext sensors={sensors} {...drag.dndContextProps}>
+        // The same panel as a list: filter bar on top, the board below it.
+        <PagePanel className={BOARD_PANEL_CLASS}>
+          <ProjectBoardFilters
+            people={boardPeople}
+            currentUserId={currentUserId}
+          />
+          {hasSearch &&
+          hiddenDoneCount === 0 &&
+          BOARD_COLUMN_IDS.every(id => tasksIn(id).length === 0) ? (
+            <ProjectsBoardEmpty message='No tasks match the current filters.' />
+          ) : (
+            <div className='relative min-h-0 flex-1'>
+              <div className='absolute inset-0 overflow-hidden'>
                 <div
-                  className='grid h-full gap-4 p-1'
-                  style={{
-                    gridTemplateColumns: `repeat(${BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
-                  }}
+                  ref={boardViewportRef}
+                  className='h-full min-h-0 overflow-x-auto'
+                  onScroll={onBoardScroll}
                 >
-                  {BOARD_COLUMNS.map(column => {
-                    const columnTasks = drag.itemsFor(column.id)
+                  <DndContext sensors={sensors} {...drag.dndContextProps}>
+                    <div
+                      className='grid h-full gap-4'
+                      style={{
+                        gridTemplateColumns: `repeat(${BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
+                      }}
+                    >
+                      {BOARD_COLUMNS.map(column => {
+                        const columnTasks = drag.itemsFor(column.id)
 
-                    return (
-                      <KanbanColumn
-                        key={column.id}
-                        columnId={column.id}
-                        label={column.label}
-                        tasks={columnTasks}
-                        renderAssignees={renderAssignees}
-                        onEditTask={onEditTask}
-                        canManage={canManageTasks}
-                        activeTaskId={activeSheetTaskId}
-                        onCreateTask={onCreateTask}
-                        isDropTarget={drag.activeColumnId === column.id}
-                        recentlyMovedTaskId={recentlyMovedTaskId}
-                        columnScrollRef={getColumnRef(column.id)}
-                        onColumnScroll={getScrollHandler(column.id)}
-                        footerSlot={
-                          // Same rule as the My Tasks board: an empty column
-                          // with nothing hidden has no filtering to explain.
-                          column.id === 'DONE' &&
-                          (columnTasks.length > 0 || hiddenDoneCount > 0) ? (
-                            <DoneWindowFooter
-                              doneWeeks={doneWeeks}
-                              hiddenCount={hiddenDoneCount}
-                              onWiden={onWidenDoneWindow}
-                              isLoading={false}
-                              error={null}
-                            />
-                          ) : undefined
-                        }
-                      />
-                    )
-                  })}
+                        return (
+                          <KanbanColumn
+                            key={column.id}
+                            columnId={column.id}
+                            label={column.label}
+                            tasks={columnTasks}
+                            renderAssignees={renderAssignees}
+                            onEditTask={onEditTask}
+                            canManage={canManageTasks}
+                            activeTaskId={activeSheetTaskId}
+                            onCreateTask={onCreateTask}
+                            isDropTarget={drag.activeColumnId === column.id}
+                            recentlyMovedTaskId={recentlyMovedTaskId}
+                            columnScrollRef={getColumnRef(column.id)}
+                            onColumnScroll={getScrollHandler(column.id)}
+                            footerSlot={
+                              // Same rule as the My Tasks board: an empty column
+                              // with nothing hidden has no filtering to explain.
+                              column.id === 'DONE' &&
+                              (columnTasks.length > 0 ||
+                                hiddenDoneCount > 0) ? (
+                                <DoneWindowFooter
+                                  doneWeeks={doneWeeks}
+                                  hiddenCount={hiddenDoneCount}
+                                  onWiden={onWidenDoneWindow}
+                                  isLoading={false}
+                                  error={null}
+                                />
+                              ) : undefined
+                            }
+                          />
+                        )
+                      })}
+                    </div>
+                    <TaskDragOverlay
+                      draggingTask={draggingTask}
+                      renderAssignees={renderAssignees}
+                    />
+                  </DndContext>
                 </div>
-                <TaskDragOverlay
-                  draggingTask={draggingTask}
-                  renderAssignees={renderAssignees}
-                />
-              </DndContext>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </PagePanel>
       )}
     </TabsContent>
   )

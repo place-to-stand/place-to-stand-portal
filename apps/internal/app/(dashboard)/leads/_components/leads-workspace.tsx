@@ -1,14 +1,14 @@
 'use client'
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { SheetCreateButton } from '@/components/sheets/sheet-create-button'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
-import { PersonSelector } from '@/components/my-tasks/person-selector'
-import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
+import { PagePanel } from '@/components/layout/page-panel'
+import { BOARD_PANEL_CLASS } from '@/components/board/board-column'
 import {
   useDeepLinkNotFound,
   useSheetParamSelection,
@@ -23,6 +23,8 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 
 import { LEADS_TABS } from '../_lib/tabs'
+import { isLeadSourceType, splitLeadBoard } from '../_lib/board-filters'
+import { LeadsBoardFilters } from './leads-board-filters'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
 import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
@@ -68,13 +70,20 @@ export function LeadsWorkspace({
     () => buildLeadLookup(initialColumns),
     [initialColumns]
   )
-  const { visibleColumns, hiddenLeads } = useMemo(
+  // Search and source filter the board in the browser: it already holds
+  // every lead, so typing never reloads the page.
+  const searchParams = useSearchParams()
+  const search = searchParams.get('q')?.trim() || undefined
+  const rawSource = searchParams.get('source')
+  const source = isLeadSourceType(rawSource) ? rawSource : undefined
+  const { visibleColumns, hiddenLeads, ownedCount } = useMemo(
     () =>
-      splitByAssignee(
-        initialColumns,
-        assigneeFilter === 'all' ? null : assigneeFilter
-      ),
-    [initialColumns, assigneeFilter]
+      splitLeadBoard(initialColumns, {
+        assigneeId: assigneeFilter === 'all' ? null : assigneeFilter,
+        search,
+        source,
+      }),
+    [initialColumns, assigneeFilter, search, source]
   )
   // Lead owners (Admin and Sales), in the picker's user shape.
   const pickerPeople = useMemo(
@@ -176,41 +185,24 @@ export function LeadsWorkspace({
   const sheetLead = isCreating ? null : (activeLead ?? lastOpenedLead)
   const boardActiveLeadId = isSheetOpen && sheetLead ? sheetLead.id : null
 
-  // The same person picker as My tasks; it writes `?assignee=`.
-  const assigneePicker = (
-    <PersonSelector
-      admins={pickerPeople}
-      selectedUserId={assigneeFilter}
-      currentUserId={viewerId}
-      allLabel='All leads'
-    />
-  )
-
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/leads')}
       tabs={LEADS_TABS}
       activeTab='board'
-      count={{ label: 'leads', total: totalLeads }}
+      count={{
+        label: 'leads',
+        total: ownedCount,
+        filteredTotal: totalLeads,
+      }}
       primaryAction={
-        // Same toolbar as My tasks: the filter sits beside Create, and moves
-        // into a slide-out below md.
-        <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
-          <FilterSheetButton
-            className='h-8 md:hidden'
-            activeCount={assigneeFilter === 'all' ? 0 : 1}
-          >
-            {assigneePicker}
-          </FilterSheetButton>
-          <div className='max-md:hidden md:contents'>{assigneePicker}</div>
-          <SheetCreateButton
-            entity='lead'
-            label='Create lead'
-            disabledReason={
-              canManage ? null : 'Admin access is required to create leads.'
-            }
-          />
-        </div>
+        <SheetCreateButton
+          entity='lead'
+          label='Create lead'
+          disabledReason={
+            canManage ? null : 'Admin access is required to create leads.'
+          }
+        />
       }
       // Kanban board: pin to the viewport (columns scroll internally).
       contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
@@ -237,41 +229,31 @@ export function LeadsWorkspace({
           />
         </PageSheetEntry>
       ) : null}
-      <LeadsBoard
-        initialColumns={visibleColumns}
-        hiddenLeads={hiddenLeads}
-        canManage={canManage}
-        onEditLead={handleEditLead}
-        onCreateLead={handleCreateLead}
-        onLeadClosedWon={canManageClients ? handleLeadClosedWon : undefined}
-        onWonNeedsCompany={handleWonNeedsCompany}
-        activeLeadId={boardActiveLeadId}
-      />
+      {/* The same panel as a list: filter bar on top, the board below it. */}
+      <PagePanel className={BOARD_PANEL_CLASS}>
+        <LeadsBoardFilters
+          search={search}
+          source={source}
+          assigneeFilter={assigneeFilter}
+          viewerId={viewerId}
+          people={pickerPeople}
+        />
+        <LeadsBoard
+          initialColumns={visibleColumns}
+          hiddenLeads={hiddenLeads}
+          canManage={canManage}
+          onEditLead={handleEditLead}
+          onCreateLead={handleCreateLead}
+          onLeadClosedWon={canManageClients ? handleLeadClosedWon : undefined}
+          onWonNeedsCompany={handleWonNeedsCompany}
+          activeLeadId={boardActiveLeadId}
+          emptyMessage={
+            ownedCount > 0 ? 'No leads match the current filters.' : undefined
+          }
+        />
+      </PagePanel>
     </PageShell>
   )
-}
-
-/**
- * The columns to show, and the leads a filter hides (which still count when
- * a drag works out a rank, so a reorder lands where it looks like it does).
- */
-function splitByAssignee(
-  columns: LeadBoardColumnData[],
-  assigneeId: string | null
-) {
-  if (!assigneeId) {
-    return { visibleColumns: columns, hiddenLeads: [] as LeadRecord[] }
-  }
-  const hiddenLeads: LeadRecord[] = []
-  const visibleColumns = columns.map(column => ({
-    ...column,
-    leads: column.leads.filter(lead => {
-      if (lead.assigneeId === assigneeId) return true
-      hiddenLeads.push(lead)
-      return false
-    }),
-  }))
-  return { visibleColumns, hiddenLeads }
 }
 
 function buildLeadLookup(columns: LeadBoardColumnData[]) {
