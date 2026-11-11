@@ -7,8 +7,6 @@ import {
   type ReactNode,
   type TransitionStartFunction,
 } from 'react'
-import { Loader2 } from 'lucide-react'
-
 import { cn } from '@/lib/utils'
 
 const runNow: TransitionStartFunction = callback => {
@@ -47,10 +45,15 @@ export function useStartRefresh(): TransitionStartFunction {
   return useContext(StartRefreshContext)
 }
 
+// Each bar starts a beat after the one before it. Negative delays start the
+// bars mid-cycle, so they move from the first frame instead of waiting.
+const BAR_DELAYS_MS = [-450, -300, -150, 0]
+
 /**
- * The spinner in a panel's top right while its data reloads. Nothing shows
- * otherwise, so it takes no space at rest. The provider's live region
- * speaks for it.
+ * The spinner at a panel's top right while its data reloads: four bars
+ * rising and falling in turn like a level meter, in a 36px cell the height of
+ * the filter fields beside it. Nothing shows otherwise, so it takes no space
+ * at rest. The provider's live region speaks for it.
  */
 export function RefreshSpinner({ className }: { className?: string }) {
   const isRefreshing = useContext(IsRefreshingContext)
@@ -59,9 +62,20 @@ export function RefreshSpinner({ className }: { className?: string }) {
     <span
       aria-hidden
       data-slot='refresh-spinner'
-      className={cn('text-muted-foreground shrink-0', className)}
+      className={cn(
+        'text-foreground pointer-events-none flex size-9 shrink-0 items-center justify-center',
+        className
+      )}
     >
-      <Loader2 className='size-4 animate-spin' />
+      <span className='flex h-[18px] items-center gap-[3px]'>
+        {BAR_DELAYS_MS.map(delay => (
+          <span
+            key={delay}
+            className='h-full w-[3px] animate-[refresh-bar_0.9s_ease-in-out_infinite] rounded-full bg-current motion-reduce:animate-[refresh-bar-fade_1.8s_ease-in-out_infinite]'
+            style={{ animationDelay: `${delay}ms` }}
+          />
+        ))}
+      </span>
     </span>
   )
 }

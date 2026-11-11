@@ -2,7 +2,7 @@
 
 The controls in a list's or board's `FilterBar`. One trigger look, three kinds of popover.
 
-**The trigger is `FieldTrigger`** (`apps/internal/components/ui/field-trigger.tsx`), the same field every picker uses: outline, `h-9`, `w-52` (`FILTER_TRIGGER_WIDTH`), the label, then the up-down chevron (`ChevronsUpDown` at 50%). Never a `ChevronDown`, never a hand-built button.
+**The trigger is `FieldTrigger`** (`apps/internal/components/ui/field-trigger.tsx`), the same field every picker uses: outline, `h-9`, `w-48` (`FILTER_TRIGGER_WIDTH`), the label, then the up-down chevron (`ChevronsUpDown` at 50%). Never a `ChevronDown`, never a hand-built button.
 
 - **Label:** muted while the filter is at its default ("All clients", "This month"), `font-medium` once something is picked. Long labels truncate, with the full text as a tooltip.
 - **Clear:** a `FieldClearButton` × sits inside the field, left of the chevron, whenever the filter is away from its default. It puts the filter back to the default (no "All" row needed). Reset in the bar clears every filter at once.
@@ -18,7 +18,7 @@ The controls in a list's or board's `FilterBar`. One trigger look, three kinds o
 
 **Rules**
 
-- Filters sit in one row after the search from `md` up and wrap only when the row runs out; below `md` they move into the Filters sheet, where each stretches to the sheet's width. (guard: review)
+- Filters sit in one row after the search and never wrap: when the bar is too narrow for them (always below `md`, and on any screen where they don't fit beside the search), they fold into the Filters button with a count, and open in the Filters sheet, where each stretches to the sheet's width. `useFiltersFit` decides from the bar's own width and keeps room for Reset and the spinner, so neither tips the row over. (guard: review)
 - No labels above filters: the placeholder carries the meaning ("All statuses", "Everyone"). (guard: review)
 - Never a plain `Select` in a filter bar. (guard: eslint `pts/filter-select`)
-- Filters are optimistic: a pick shows in the field at once and the list reloads behind it, with a spinner at the right end of the filter bar (a panel with no filter bar shows it in its top right). Any control that reloads a list's data goes through `useStartRefresh()` (`components/layout/list-refresh.tsx`; `useListParams`, the page and page-size controls already do) so the spinner shows. (guard: review)
+- Filters are optimistic: a pick shows in the field at once and the list reloads behind it, with a spinner at the right end of the filter bar: four bars rising and falling in turn like a level meter (only fading with reduced motion), in a 36px cell the height of the filter fields (a panel with no filter bar shows it in its top right). Any control that reloads a list's data goes through `useStartRefresh()` (`components/layout/list-refresh.tsx`; `useListParams`, the page and page-size controls already do) so the spinner shows. (guard: review)

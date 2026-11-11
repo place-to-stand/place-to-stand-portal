@@ -22,6 +22,8 @@ type FilterSheetButtonProps = {
   /** Clears every filter; the sheet offers it only while `activeCount` > 0. */
   onReset?: () => void
   className?: string
+  /** Told when the sheet opens or closes. */
+  onOpenChange?: (open: boolean) => void
 }
 
 /**
@@ -35,13 +37,21 @@ export function FilterSheetButton({
   activeCount = 0,
   onReset,
   className,
+  onOpenChange,
 }: FilterSheetButtonProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpenState] = useState(false)
+  // Opening reports at once; closing only once the sheet has finished
+  // closing and handed focus back to the button.
+  const setOpen = (next: boolean) => {
+    setOpenState(next)
+    if (next) onOpenChange?.(true)
+  }
 
   return (
     <>
       <Button
         type='button'
+        data-slot='filter-sheet-button'
         variant='outline'
         className={cn('shrink-0', className)}
         onClick={() => setOpen(true)}
@@ -57,10 +67,21 @@ export function FilterSheetButton({
           </span>
         ) : null}
       </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet
+        open={open}
+        onOpenChange={setOpen}
+        onOpenChangeComplete={stillOpen => {
+          // Two frames on, so the sheet has handed focus back first.
+          if (!stillOpen) {
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => onOpenChange?.(false))
+            )
+          }
+        }}
+      >
         <SheetContent
           hideCloseButton
-          columns={1}
+          columns='narrow'
           className='flex flex-col gap-0 overflow-hidden p-0'
         >
           <SheetHeader className='relative border-b p-2.5 pr-12'>

@@ -21,3 +21,26 @@
     scrollbar-gutter: stable;
   }
 }
+
+/* The list refresh spinner (components/layout/list-refresh.tsx): four bars
+   rising and falling in turn, like a level meter. With reduced motion they
+   only fade. */
+@keyframes refresh-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes refresh-bar-fade {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
