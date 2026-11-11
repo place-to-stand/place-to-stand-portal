@@ -36,13 +36,14 @@ export function boardColumnClass(hue: BadgeTint, isDropTarget: boolean) {
 export const BOARD_GRID_CLASS = 'grid h-full grid-rows-[minmax(0,1fr)] gap-4'
 
 /**
- * The board grid's columns: every lane at least 20rem, sharing any spare
- * width, so the task and lead boards size their lanes the same way (wide
- * screens fill, narrow ones scroll sideways).
+ * The board grid's columns: every lane 20rem to 24rem, sharing spare width
+ * up to that cap, so the task and lead boards size their lanes the same way.
+ * Narrow screens scroll sideways; on wide ones the lanes stop at 24rem and the
+ * board leaves the rest of the row empty rather than stretching cards.
  */
 export function boardGridStyle(laneCount: number) {
   return {
-    gridTemplateColumns: `repeat(${laneCount}, minmax(20rem, 1fr))`,
+    gridTemplateColumns: `repeat(${laneCount}, minmax(20rem, 24rem))`,
   }
 }
 
