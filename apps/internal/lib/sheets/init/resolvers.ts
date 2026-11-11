@@ -13,11 +13,15 @@ import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
-import { getActiveTaskHome } from '@/lib/data/tasks'
+import { getTaskHome } from '@/lib/data/tasks'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
 import { loadTaskWithRelations } from '@/lib/queries/tasks/relations'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
-import { fetchLeadAssignees, fetchLeadById } from '@/lib/data/leads'
+import {
+  fetchArchivedLeads,
+  fetchLeadAssignees,
+  fetchLeadById,
+} from '@/lib/data/leads'
 import { fetchAdminUsers, fetchCrmUsers } from '@/lib/data/users'
 import { NotFoundError } from '@/lib/errors/http'
 import { ForbiddenError } from '@/lib/errors/http'
@@ -29,7 +33,7 @@ import {
   listClientDirectory,
   toClientPickerRow,
 } from '@/lib/queries/companies/billing'
-import { getContactSheetInputById } from '@/lib/queries/contacts'
+import { getContactDeepLinkRowById } from '@/lib/queries/contacts'
 import {
   getHourBlockWithClientById,
   listHourBlockClientDirectory,
@@ -111,8 +115,12 @@ const resolveContactInit: SheetInitResolver<'contact'> = async (user, id) => {
   }
 
   // The contact sheet self-fetches its client links (`getContactSheetData`)
-  // — it only needs the minimal row.
-  const contact = await getContactSheetInputById(user, id)
+  // — it only needs the minimal row. Archived people open too (stacked over
+  // another sheet, or off the People pages), as on the Archive tab.
+  const contact = await getContactDeepLinkRowById(user, id)
+  if (!contact) {
+    throw new NotFoundError('Person not found')
+  }
   return { contact }
 }
 
@@ -220,8 +228,19 @@ const resolveLeadInit: SheetInitResolver<'lead'> = async (user, id) => {
     return { lead: null, assignees, senderName }
   }
 
-  const lead = await fetchLeadById(user, id)
-  return { lead, assignees, senderName }
+  try {
+    const lead = await fetchLeadById(user, id)
+    return { lead, assignees, senderName }
+  } catch (error) {
+    // An archived lead opens here too (stacked over another sheet, or off
+    // the Leads pages), as it does on the Archive tab.
+    if (!(error instanceof NotFoundError)) throw error
+    const archived = (await fetchArchivedLeads(user)).find(
+      lead => lead.id === id
+    )
+    if (!archived) throw error
+    return { lead: archived, assignees, senderName }
+  }
 }
 
 const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
@@ -233,7 +252,7 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   const [admins, liteProjects, home] = await Promise.all([
     fetchCrmUsers(),
     fetchProjectsLite(),
-    isNew ? Promise.resolve(null) : getActiveTaskHome(id),
+    isNew ? Promise.resolve(null) : getTaskHome(id),
   ])
   // Non-admins only see (redacted) projects they can work.
   const allProjects = await scopeProjectsForViewer(user, liteProjects)
@@ -251,7 +270,8 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   if (!home) {
     throw new NotFoundError('Task not found')
   }
-  await ensureTaskWorkAccess(user, id)
+  // Archived tasks open too: the Review tab stacks them over other sheets.
+  await ensureTaskWorkAccess(user, id, { includeArchived: true })
 
   // A lead task has no project to hydrate: load the task alone.
   if (!home.projectId) {
@@ -269,9 +289,14 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
     user,
     await fetchProjectsWithRelationsByIds([holdingProjectId], {
       taskIds: [id],
+      includeArchivedTasks: true,
     })
   )
-  const task = hydratedProject?.tasks.find(item => item.id === id) ?? null
+  const task =
+    [
+      ...(hydratedProject?.tasks ?? []),
+      ...(hydratedProject?.archivedTasks ?? []),
+    ].find(item => item.id === id) ?? null
 
   if (!task) {
     throw new NotFoundError('Task not found')

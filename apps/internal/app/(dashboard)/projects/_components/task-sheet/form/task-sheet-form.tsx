@@ -16,9 +16,12 @@ import {
   type TaskSheetFormFieldsProps,
 } from './task-sheet-form-fields'
 
-export const TASK_FORM_ID = 'task-form'
-
 type TaskSheetFormProps = {
+  /**
+   * The form's DOM id, which the sheet's footer buttons submit. One per
+   * sheet (`useId`): two task sheets can be open in the stack.
+   */
+  formId: string
   form: UseFormReturn<TaskSheetFormValues>
   onSubmit: (values: TaskSheetFormValues) => void
   isPending: boolean
@@ -87,7 +90,7 @@ export function TaskSheetForm(props: TaskSheetFormProps) {
   return (
     <Form {...form}>
       <form
-        id={TASK_FORM_ID}
+        id={props.formId}
         onSubmit={submitHandler}
         // No flex-1: the form sizes to its content so the sections that follow
         // it in the scroll column (time, comments) stack directly beneath it

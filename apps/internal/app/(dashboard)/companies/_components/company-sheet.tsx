@@ -3,7 +3,14 @@
 import { cn } from '@/lib/utils'
 import { SHEET_SECTIONS_CLASS } from '@/components/sheets/sheet-section'
 
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -50,11 +57,7 @@ import {
   type CompanyFormValues,
 } from './use-company-sheet-form'
 import { CompanyLeadsSection } from './company-sheet-sections'
-import {
-  COMPANY_BILLING_SECTION_ID,
-  COMPANY_PROJECTS_SECTION_ID,
-  CompanyClientColumn,
-} from './company-client-column'
+import { CompanyClientColumn } from './company-client-column'
 import { useScrollToSection } from './use-scroll-to-section'
 import {
   CompanyBillingProvider,
@@ -72,8 +75,6 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useSaveConflict } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 
-const COMPANY_FORM_ID = 'company-form'
-const COMPANY_PEOPLE_SECTION_ID = 'company-people'
 const ARCHIVED_COMPANY_NOTE = 'Archived. Restore it from the archive list.'
 
 type CompanySheetProps = {
@@ -100,6 +101,13 @@ export function CompanySheet({
   initialName,
   onCreated,
 }: CompanySheetProps) {
+  // One id per sheet: two sheets of a kind can be open in the stack, and
+  // a shared id would let one sheet's Save button submit the other's form.
+  const companyFormId = useId()
+  // Section scroll targets, per sheet: two company sheets can be stacked.
+  const peopleSectionId = useId()
+  const billingSectionId = useId()
+  const projectsSectionId = useId()
   const router = useRouter()
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -248,13 +256,13 @@ export function CompanySheet({
   }, [open, companyId])
   useScrollToSection(
     requestedSection === 'people'
-      ? COMPANY_PEOPLE_SECTION_ID
+      ? peopleSectionId
       : requestedSection === 'billing'
-        ? COMPANY_BILLING_SECTION_ID
+        ? billingSectionId
         : requestedSection === 'projects'
           ? showProjects
-            ? COMPANY_PROJECTS_SECTION_ID
-            : COMPANY_BILLING_SECTION_ID
+            ? projectsSectionId
+            : billingSectionId
           : null
   )
 
@@ -274,7 +282,7 @@ export function CompanySheet({
         const collected = handle.collect()
         if (!collected) {
           document
-            .getElementById(COMPANY_BILLING_SECTION_ID)
+            .getElementById(billingSectionId)
             ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
           toast({
             variant: 'destructive',
@@ -379,6 +387,7 @@ export function CompanySheet({
       })
     },
     [
+      billingSectionId,
       canManageClients,
       companyId,
       form,
@@ -554,7 +563,7 @@ export function CompanySheet({
                 {/* Two columns. Below lg they stack into one scroll (Company,
                     then Client) with the footer pinned to the bottom. */}
                 <form
-                  id={COMPANY_FORM_ID}
+                  id={companyFormId}
                   onSubmit={event => {
                     event.preventDefault()
                     // The save reports its own result as a toast.
@@ -581,7 +590,8 @@ export function CompanySheet({
                         disabled={fieldsDisabled}
                       />
                       <div
-                        id={COMPANY_PEOPLE_SECTION_ID}
+                        id={peopleSectionId}
+                        data-section='company-people'
                         className='scroll-mt-6'
                       >
                         <CompanyPeopleTab
@@ -620,7 +630,7 @@ export function CompanySheet({
                     </div>
                     <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
                       <SheetFormFooter
-                        formId={COMPANY_FORM_ID}
+                        formId={companyFormId}
                         saveLabel={getSubmitLabel({
                           isSaving: isPending,
                           isEditing,
@@ -652,6 +662,8 @@ export function CompanySheet({
                     projectsCompanyId={showProjects ? projectsCompanyId : null}
                     isEditing={isEditing}
                     disabled={fieldsDisabled}
+                    billingSectionId={billingSectionId}
+                    projectsSectionId={projectsSectionId}
                   />
                 </form>
               </CompanyBillingProvider>

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { isStackItemClaimed, parseSheetStack } from '@/lib/sheets/stack'
 import type { TaskWithRelations } from '@/lib/types'
 import {
   DONE_WINDOW_WEEKS,
@@ -8,7 +9,7 @@ import {
   isCompletedWithinDoneWindow,
   resolveDoneWindowStart,
 } from '@/lib/projects/tasks/done-window'
-import { UUID_PATTERN, isSheetEntityClaimed } from '@/lib/sheets/entities'
+import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 import { BOARD_COLUMNS, getBoardViewFromPathname } from '../board-constants'
 import {
@@ -48,12 +49,13 @@ export const useProjectsBoardState = ({
   // server, so a prop would keep the task that was open on first load. Only
   // the routes that render their own task sheet read it; elsewhere the
   // SheetHost shows the task.
-  const taskParam = searchParams.get('task')
+  // The page shows the bottom sheet only (see `isStackItemClaimed`).
+  const bottom = parseSheetStack(searchParams)[0]
   const activeTaskId =
-    taskParam &&
-    UUID_PATTERN.test(taskParam) &&
-    isSheetEntityClaimed('task', pathname, taskParam)
-      ? taskParam
+    bottom?.entity === 'task' &&
+    UUID_PATTERN.test(bottom.value) &&
+    isStackItemClaimed(bottom, pathname)
+      ? bottom.value
       : null
 
   const projectLookup = useMemo(() => createProjectLookup(projects), [projects])

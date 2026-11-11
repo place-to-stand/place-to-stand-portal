@@ -77,6 +77,7 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type SubmissionsTableMode = 'active' | 'archive'
 
@@ -387,9 +388,7 @@ export function SubmissionsTable({
       {showNotFound && submissionParam ? (
         <DeepLinkNotFoundNotice
           entity='submission'
-          onDismiss={() =>
-            updateParams({ submission: undefined }, { scroll: false })
-          }
+          onDismiss={clearSubmission}
         />
       ) : null}
       <div className='overflow-hidden rounded-lg border'>
@@ -706,12 +705,14 @@ export function SubmissionsTable({
         onConfirm={handleArchiveConfirm}
       />
 
-      <SubmissionDetailSheet
-        submission={selected}
-        mode={mode}
-        onRowRemoved={() => refreshAfterAction(true)}
-        onOpenChange={handleSheetOpenChange}
-      />
+      <PageSheetEntry entity='submission'>
+        <SubmissionDetailSheet
+          submission={selected}
+          mode={mode}
+          onRowRemoved={() => refreshAfterAction(true)}
+          onOpenChange={handleSheetOpenChange}
+        />
+      </PageSheetEntry>
     </div>
   )
 }

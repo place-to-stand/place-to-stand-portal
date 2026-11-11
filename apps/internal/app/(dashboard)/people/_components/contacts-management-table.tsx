@@ -23,6 +23,7 @@ import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
 import { usePageParam } from '@/hooks/use-page-param'
 import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
@@ -83,7 +84,7 @@ export function ContactsManagementTable({
   } = useContactsTableState({ contacts, deepLinkedContact })
   // Create-from-picker on this page opens this sheet, not the global one, so
   // it takes the picker's prefill and hands the new person back the same way.
-  const { getAux } = useSheetParams()
+  const { getAux, stack } = useSheetParams()
   const showContactNotFound = useDeepLinkNotFound('contact', contactNotFound)
 
   // An empty list under a live search or filter shows the filtered message,
@@ -152,15 +153,23 @@ export function ContactsManagementTable({
         presetParams={mode === 'users' ? { role: 'any' } : undefined}
         nameOf={id => contacts.find(contact => contact.id === id)?.name}
       />
-      <ContactsSheet
-        open={sheetOpen}
-        onOpenChange={handleSheetOpenChange}
-        onComplete={handleSheetComplete}
-        contact={selectedContact}
-        initialName={getAux('contactName') ?? undefined}
-        initialCompanyId={getAux('contactCompanyId') ?? undefined}
-        onCreated={record => emitSheetCreated('contact', record)}
-      />
+      <PageSheetEntry entity='contact'>
+        <ContactsSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          onComplete={handleSheetComplete}
+          contact={selectedContact}
+          initialName={getAux('contactName') ?? undefined}
+          initialCompanyId={getAux('contactCompanyId') ?? undefined}
+          onCreated={record =>
+            emitSheetCreated(
+              'contact',
+              record,
+              stack.find(item => item.entity === 'contact')?.id ?? null
+            )
+          }
+        />
+      </PageSheetEntry>
     </div>
   )
 }

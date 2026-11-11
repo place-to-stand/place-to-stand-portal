@@ -14,10 +14,10 @@ import { HourBlocksAddButton } from './hour-blocks-add-button'
 import { HourBlocksFilters } from './hour-blocks-filters'
 import { HourBlocksManagementTable } from './hour-blocks-management-table'
 import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
-import { firstParam } from '@/lib/pagination/params'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'archive'
 
@@ -83,7 +83,7 @@ export async function HourBlocksListPage({
   // moves to the other tab when the block was archived or restored.
   const { record: deepLinkedHourBlock, notFound: hourBlockNotFound } =
     await resolveSheetDeepLink({
-      idParam: firstParam(params['hour-block']),
+      idParam: pageSheetParam('hour-block', params),
       fetchById: id => getHourBlockWithClientById(currentUser, id),
       tab: view.tab,
       isArchived: block => block.deleted_at !== null,

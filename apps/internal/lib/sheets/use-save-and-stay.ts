@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { SheetEntityKey } from './entities'
 import { emitSheetRecordSaved } from './record-saved'
 import { announceKeptOpenSave } from './save-mode'
-import { useSheetParams } from './use-sheet-params'
+import { useOwnCreateSheetId, useSheetParams } from './use-sheet-params'
 
 /** Holds Save off when a create came back without an id. */
 const MISSING_ID = '__missing__'
@@ -42,7 +42,9 @@ export function useSaveAndStay(
   open: boolean
 ) {
   const router = useRouter()
-  const { swap } = useSheetParams()
+  const { open: openSheet, swap } = useSheetParams()
+  // The create sheet's own param (`new`, `copy-<id>`), which the swap replaces.
+  const ownId = useOwnCreateSheetId(entity)
   const [pendingId, setPendingId] = useState<string | null>(null)
 
   // The created record has arrived, or the sheet closed: done waiting.
@@ -69,10 +71,16 @@ export function useSaveAndStay(
         return
       }
       setPendingId(id)
-      swap(entity, id)
+      if (ownId) {
+        swap(ownId, id)
+      } else {
+        // A create sheet with no param of its own (page state): open the
+        // record's sheet, as the swap would have.
+        openSheet(entity, id)
+      }
       router.refresh()
     },
-    [entity, recordId, router, swap]
+    [entity, openSheet, ownId, recordId, router, swap]
   )
 
   return {

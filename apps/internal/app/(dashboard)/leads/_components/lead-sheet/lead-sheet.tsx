@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 import { setSheetSectionTarget } from '@/lib/sheets/sheet-section-target'
 
@@ -19,9 +21,10 @@ import { LeadSheetFormFields } from './lead-sheet-form-fields'
 import { LeadSheetRightColumn } from './lead-sheet-right-column'
 import type { LeadSheetProps } from './types'
 
-const LEAD_FORM_ID = 'lead-form'
-
 export function LeadSheet(props: LeadSheetProps) {
+  // One id per sheet: two sheets of a kind can be open in the stack, and
+  // a shared id would let one sheet's Save button submit the other's form.
+  const leadFormId = useId()
   const { open: openSheet, duplicate } = useSheetParams()
   const { open, lead, assignees, canManage = false, onSuccess } = props
   const {
@@ -41,7 +44,6 @@ export function LeadSheet(props: LeadSheetProps) {
     canUndo,
     canRedo,
     unsavedChangesDialog,
-    confirmDiscard,
     saveConflict,
     handleLoadTheirs,
     handleFormSubmit,
@@ -88,7 +90,7 @@ export function LeadSheet(props: LeadSheetProps) {
                   noun='Lead'
                   onDuplicate={
                     lead && canManage
-                      ? () => confirmDiscard(() => duplicate('lead', lead.id))
+                      ? () => duplicate('lead', lead.id)
                       : undefined
                   }
                   onRequestArchive={() => setArchiveDialogOpen(true)}
@@ -104,7 +106,7 @@ export function LeadSheet(props: LeadSheetProps) {
               bottom: side by side, the form column was too narrow to use. */}
           <Form {...form}>
             <form
-              id={LEAD_FORM_ID}
+              id={leadFormId}
               className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
               onSubmit={form.handleSubmit(values => handleFormSubmit(values))}
             >
@@ -126,7 +128,7 @@ export function LeadSheet(props: LeadSheetProps) {
                 {/* Footer - Attached to left column */}
                 <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
                   <SheetFormFooter
-                    formId={LEAD_FORM_ID}
+                    formId={leadFormId}
                     saveLabel={saveLabel}
                     onSave={handleSave}
                     submitDisabled={submitDisabled}

@@ -48,6 +48,7 @@ import {
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
 import { LeadSheet } from './lead-sheet'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type LeadsArchiveSectionProps = {
   leads: ArchivedLead[]
@@ -204,15 +205,17 @@ export function LeadsArchiveSection({
         <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
       {sheetLead ? (
-        <LeadSheet
-          open={sheetOpen}
-          onOpenChange={handleSheetOpenChange}
-          lead={sheetLead}
-          assignees={assignees}
-          canManage
-          senderName={senderName}
-          onSuccess={handleSheetSuccess}
-        />
+        <PageSheetEntry entity='lead'>
+          <LeadSheet
+            open={sheetOpen}
+            onOpenChange={handleSheetOpenChange}
+            lead={sheetLead}
+            assignees={assignees}
+            canManage
+            senderName={senderName}
+            onSuccess={handleSheetSuccess}
+          />
+        </PageSheetEntry>
       ) : null}
       <FilterBar
         search={

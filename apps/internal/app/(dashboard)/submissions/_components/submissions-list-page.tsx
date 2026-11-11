@@ -9,10 +9,10 @@ import { SubmissionsFilters } from './submissions-filters'
 import { SubmissionsTable } from './submissions-table'
 import { resolveSubmissionDeepLink } from '../_lib/submission-deep-link'
 import { SUBMISSIONS_TABS } from '../_lib/tabs'
-import { firstParam } from '@/lib/pagination/params'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'archive'
 
@@ -60,7 +60,7 @@ export async function SubmissionsListPage({
   // to the other tab when the row was archived or restored).
   const deepLink = await resolveSubmissionDeepLink(
     currentUser,
-    firstParam(params.submission),
+    pageSheetParam('submission', params),
     view.tab
   )
 

@@ -24,6 +24,7 @@ import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsArchiveSection } from '../_components/leads-archive-section'
 import { firstParam } from '@/lib/pagination/params'
 import { PagePanel } from '@/components/layout/page-panel'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export const metadata: Metadata = {
   title: 'Lead archive',
@@ -35,7 +36,7 @@ export default async function LeadsArchivePage({
   const user = await requirePage('leads.manage')
   assertCrmAccess(user)
   const params = await searchParams
-  const leadParam = firstParam(params.lead) ?? null
+  const leadParam = pageSheetParam('lead', params) ?? null
 
   const [archivedLeads, assignees] = await Promise.all([
     fetchArchivedLeads(user),

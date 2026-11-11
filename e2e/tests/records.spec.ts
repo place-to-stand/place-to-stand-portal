@@ -64,7 +64,9 @@ test('projects list: client rows open the company', async ({ page }) => {
   await expect(
     sheet.getByRole('heading', { name: 'Projects', exact: true })
   ).toBeVisible()
-  await expect(page.locator('#company-projects')).toBeInViewport()
+  await expect(
+    page.locator('[data-section="company-projects"]')
+  ).toBeInViewport()
 })
 
 test('lead sheet opens with the person and company pickers', async ({

@@ -29,6 +29,7 @@ import {
 } from '@/lib/projects/tasks/done-window'
 import { roleCan } from '@/lib/auth/capabilities'
 import { UUID_PATTERN } from '@pts/db/uuid'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export const metadata: Metadata = {
   title: 'My tasks',
@@ -39,7 +40,7 @@ type PageSearchParams = {
   companyId?: string
   /** Comma list of `personal,internal` — project types to withhold. */
   [HIDE_PARAM]?: string
-  task?: string
+  task?: string | string[]
 }
 
 const DEFAULT_VIEW: MyTasksView = 'board'
@@ -53,7 +54,7 @@ export default async function MyTasksViewRoute({
   const resolvedParams = await params
   const resolvedSearchParams = (await searchParams) as PageSearchParams
   const viewParam = resolvedParams.view
-  const activeTaskId = resolvedSearchParams.task ?? null
+  const activeTaskId = pageSheetParam('task', resolvedSearchParams) ?? null
 
   if (!isMyTasksView(viewParam)) {
     // Carry the whole query string across the redirect — the sheet stack and

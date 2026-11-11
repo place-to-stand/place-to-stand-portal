@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 import { getClientSheetContactData } from '@/app/(dashboard)/companies/billing-actions'
 import { subscribeSheetCreated } from '@/lib/sheets/created'
+import { useAwaitedCreate } from '@/lib/sheets/use-awaited-create'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { PENDING_REASON } from '@/lib/forms/form-controls'
@@ -247,14 +248,20 @@ export function useClientBillingForm({
   // Create-from-picker: stack the person create sheet on top; the
   // subscription below hands the saved record to whichever picker asked.
   const createContactTargetRef = useRef<ContactCreateTarget>('origination')
+  // The create sheet this form opened (its stack id): only its record is
+  // taken, not one another picker or sheet created meanwhile.
+  const awaitingContactRef = useAwaitedCreate()
   const requestContactCreate = useCallback(
     (target: ContactCreateTarget, query: string) => {
       createContactTargetRef.current = target
       setIsOriginationPickerOpen(false)
       setIsCloserPickerOpen(false)
-      openNew('contact', query ? { contactName: query } : undefined)
+      awaitingContactRef.current = openNew(
+        'contact',
+        query ? { contactName: query } : undefined
+      )
     },
-    [openNew]
+    [openNew, awaitingContactRef]
   )
   const handleCreateOriginationContact = useCallback(
     (query: string) => requestContactCreate('origination', query),
@@ -317,7 +324,14 @@ export function useClientBillingForm({
 
   useEffect(() => {
     if (!open) return
-    return subscribeSheetCreated('contact', record => {
+    return subscribeSheetCreated('contact', (record, stackId) => {
+      if (
+        !awaitingContactRef.current ||
+        stackId !== awaitingContactRef.current
+      ) {
+        return
+      }
+      awaitingContactRef.current = null
       const option: ClientContactOption = {
         id: record.id,
         name: record.name,
@@ -343,7 +357,12 @@ export function useClientBillingForm({
         })
       }
     })
-  }, [open, handleAddCloser, handleSelectOriginationContact])
+  }, [
+    open,
+    handleAddCloser,
+    handleSelectOriginationContact,
+    awaitingContactRef,
+  ])
 
   const collectFields = useCallback((): CompanyBillingFields | null => {
     // Origination and closers are both optional. With no closer the closer

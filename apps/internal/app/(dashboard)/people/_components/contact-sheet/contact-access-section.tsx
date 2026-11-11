@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useId, useTransition } from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
 import { Button } from '@pts/ui/button'
@@ -106,6 +106,10 @@ function ManagedSignIn({
   isPending,
   pendingReason,
 }: ContactSignInSectionProps) {
+  // Ids per sheet: two sheets of a kind can be open in the stack.
+  const contactSignInSwitchId = useId()
+  const contactSignInEmailId = useId()
+  const contactRoleStartsId = useId()
   const { toast } = useToast()
   const { userId: viewerId } = useViewerAccess()
   const [isSending, startSending] = useTransition()
@@ -264,12 +268,12 @@ function ManagedSignIn({
           >
             <span className='flex items-center gap-2'>
               <Switch
-                id='contact-sign-in-switch'
+                id={contactSignInSwitchId}
                 checked={enabled}
                 disabled={Boolean(switchReason)}
                 onCheckedChange={switchOn}
               />
-              <Label htmlFor='contact-sign-in-switch'>Can sign in</Label>
+              <Label htmlFor={contactSignInSwitchId}>Can sign in</Label>
             </span>
           </DisabledFieldTooltip>
         </>
@@ -293,14 +297,14 @@ function ManagedSignIn({
             // state of this person, not a record of its own.
             <div className='grid grid-cols-1 items-start gap-4 sm:grid-cols-2'>
               <div className={FIELD_STACK_CLASS}>
-                <Label htmlFor='contact-sign-in-email'>Signs in as</Label>
+                <Label htmlFor={contactSignInEmailId}>Signs in as</Label>
                 {/* Shown so the sign-in reads whole; changed as Email above. */}
                 <DisabledFieldTooltip
                   disabled
                   reason='Set it in Email above: they sign in with that address.'
                 >
                   <Input
-                    id='contact-sign-in-email'
+                    id={contactSignInEmailId}
                     value={personEmail}
                     placeholder='Add an email above'
                     disabled
@@ -357,9 +361,9 @@ function ManagedSignIn({
                   name='signIn.effectiveFrom'
                   render={({ field }) => (
                     <FormItem>
-                      <Label htmlFor='contact-role-starts'>Role starts</Label>
+                      <Label htmlFor={contactRoleStartsId}>Role starts</Label>
                       <EffectiveMonthPicker
-                        id='contact-role-starts'
+                        id={contactRoleStartsId}
                         ariaLabel='Role starts'
                         value={field.value}
                         onChange={field.onChange}

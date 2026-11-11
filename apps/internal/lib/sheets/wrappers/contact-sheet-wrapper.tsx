@@ -5,25 +5,24 @@ import { useRouter } from 'next/navigation'
 import { ContactsSheet } from '@/app/(dashboard)/people/_components/contacts-sheet'
 
 import { emitSheetCreated } from '../created'
-import { NEW_SHEET_VALUE } from '../entities'
-import { useSheetParams } from '../use-sheet-params'
+import { useCreatePrefill, useOpenedStackId } from './use-create-prefill'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
 export function ContactSheetWrapper({
   value,
   open,
+  aux,
   onRequestClose,
 }: SheetWrapperProps) {
   const router = useRouter()
-  const { getAux } = useSheetParams()
   const data = useSheetInit('contact', value)
   // Create-from-picker: the host picker passes the typed name along.
-  const isNew = value === NEW_SHEET_VALUE
-  const initialName = isNew ? (getAux('contactName') ?? undefined) : undefined
-  const initialCompanyId = isNew
-    ? (getAux('contactCompanyId') ?? undefined)
-    : undefined
+  const prefill = useCreatePrefill(value, aux, [
+    'contactName',
+    'contactCompanyId',
+  ] as const)
+  const openedId = useOpenedStackId()
 
   if (!data) {
     return null
@@ -42,9 +41,9 @@ export function ContactSheetWrapper({
         onRequestClose()
       }}
       contact={data.contact}
-      initialName={initialName}
-      initialCompanyId={initialCompanyId}
-      onCreated={record => emitSheetCreated('contact', record)}
+      initialName={prefill.contactName}
+      initialCompanyId={prefill.contactCompanyId}
+      onCreated={record => emitSheetCreated('contact', record, openedId)}
     />
   )
 }

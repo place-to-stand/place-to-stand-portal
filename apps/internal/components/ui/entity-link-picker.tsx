@@ -22,6 +22,7 @@ import {
   type SheetCreatedEntity,
   type SheetCreatedRecords,
 } from '@/lib/sheets/created'
+import { useAwaitedCreate } from '@/lib/sheets/use-awaited-create'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 export type EntityLinkOption = {
@@ -107,7 +108,7 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
 }: EntityLinkPickerProps<E>) {
   const { open: openSheet, openNew } = useSheetParams()
   // Only the picker that asked for the create sheet takes its record.
-  const awaitingCreate = useRef(false)
+  const awaitingCreateRef = useAwaitedCreate()
   const onChangeRef = useRef(onChange)
   const toOptionRef = useRef(toOption)
   useEffect(() => {
@@ -117,12 +118,17 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
 
   useEffect(
     () =>
-      subscribeSheetCreated(entity, record => {
-        if (!awaitingCreate.current) return
-        awaitingCreate.current = false
+      subscribeSheetCreated(entity, (record, stackId) => {
+        if (
+          !awaitingCreateRef.current ||
+          stackId !== awaitingCreateRef.current
+        ) {
+          return
+        }
+        awaitingCreateRef.current = null
         onChangeRef.current(toOptionRef.current(record))
       }),
-    [entity]
+    [entity, awaitingCreateRef]
   )
 
   // The selected record stays listed even before the options refetch (a
@@ -153,8 +159,7 @@ export function EntityLinkPicker<E extends SheetCreatedEntity>({
   const plural = pluralize(entityLabel)
 
   const startCreate = (typed: string) => {
-    awaitingCreate.current = true
-    openNew(entity, {
+    awaitingCreateRef.current = openNew(entity, {
       ...createParams,
       ...(typed.trim() ? { [createPrefillParam]: typed.trim() } : {}),
     })

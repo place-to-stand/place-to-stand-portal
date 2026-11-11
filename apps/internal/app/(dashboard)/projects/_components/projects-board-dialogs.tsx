@@ -11,6 +11,7 @@ import type { TimeLogEntry } from '@/lib/projects/time-log/types'
 
 import { TaskSheet } from '../task-sheet'
 import { ProjectTimeLogDialog } from './project-time-log/project-time-log-dialog'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type SheetState = {
   open: boolean
@@ -78,20 +79,22 @@ export function ProjectsBoardDialogs({
 
   return (
     <>
-      <TaskSheet
-        open={open}
-        onOpenChange={onOpenChange}
-        task={task}
-        canManage={canManage}
-        admins={admins}
-        currentUserId={currentUserId}
-        defaultStatus={defaultStatus}
-        defaultDueOn={defaultDueOn}
-        projects={projects}
-        defaultProjectId={activeProject.id}
-        // A new task starts assigned to you, like My tasks.
-        defaultAssigneeId={currentUserId}
-      />
+      <PageSheetEntry entity='task'>
+        <TaskSheet
+          open={open}
+          onOpenChange={onOpenChange}
+          task={task}
+          canManage={canManage}
+          admins={admins}
+          currentUserId={currentUserId}
+          defaultStatus={defaultStatus}
+          defaultDueOn={defaultDueOn}
+          projects={projects}
+          defaultProjectId={activeProject.id}
+          // A new task starts assigned to you, like My tasks.
+          defaultAssigneeId={currentUserId}
+        />
+      </PageSheetEntry>
 
       <ProjectTimeLogDialog
         open={timeLogDialogOpen}

@@ -21,6 +21,7 @@ import { mapContactToTableRow } from '../_lib/map-contact-to-table-row'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'users' | 'archive'
 
@@ -97,10 +98,9 @@ export async function PeopleListPage({
   // Share links: `?contact=<id>` opens the edit sheet even when the row sits
   // on another page (redirects to the other tab when it was archived or
   // restored).
-  const contactParam = params.contact
   const deepLink = await resolveContactDeepLink(
     user,
-    Array.isArray(contactParam) ? contactParam[0] : contactParam,
+    pageSheetParam('contact', params),
     view.tab
   )
 

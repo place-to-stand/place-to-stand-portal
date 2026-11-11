@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 import { useController, useWatch, type Control } from 'react-hook-form'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
@@ -51,6 +51,8 @@ export function LeadSheetFormFields({
   assignees,
   selectedSourceType,
 }: LeadSheetFormFieldsProps) {
+  // Ids per sheet: two sheets of a kind can be open in the stack.
+  const leadNotesId = useId()
   // Disabled admins are not offered, but a lead they already hold keeps
   // them as a disabled entry so the picker still names the assignee.
   const currentAssigneeId = useWatch({ control, name: 'assigneeId' }) ?? null
@@ -262,7 +264,7 @@ export function LeadSheetFormFields({
             <FormLabel>Notes</FormLabel>
             <FormControl>
               <RichTextEditor
-                id='lead-notes'
+                id={leadNotesId}
                 value={field.value ?? ''}
                 onChange={field.onChange}
                 contentMinHeightClassName='[&_.ProseMirror]:min-h-[180px]'

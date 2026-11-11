@@ -26,6 +26,7 @@ import { InvoiceSheet } from '../invoice-sheet'
 import { PENDING_REASON } from '@/lib/forms/form-controls'
 import { usePageParam } from '@/hooks/use-page-param'
 import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type InvoicesManagementTableProps = {
   invoices: InvoiceWithClient[]
@@ -300,15 +301,17 @@ export function InvoicesManagementTable({
           return row ? (row.invoice_number ?? undefined) : undefined
         }}
       />
-      <InvoiceSheet
-        open={sheetOpen}
-        onOpenChange={handleSheetOpenChange}
-        onComplete={handleComplete}
-        invoice={sheetInvoice}
-        clients={sortedClients}
-        productCatalog={productCatalog}
-        taxRates={taxRates}
-      />
+      <PageSheetEntry entity='invoice'>
+        <InvoiceSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          onComplete={handleComplete}
+          invoice={sheetInvoice}
+          clients={sortedClients}
+          productCatalog={productCatalog}
+          taxRates={taxRates}
+        />
+      </PageSheetEntry>
     </div>
   )
 }

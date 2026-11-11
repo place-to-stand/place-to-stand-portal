@@ -38,6 +38,8 @@ import {
 } from './use-optimistic-board-scope'
 import { Plus } from 'lucide-react'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
+import { setFirstSheetParam } from '@/lib/sheets/stack'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -395,13 +397,8 @@ export function MyTasksPage({
     (targetView: MyTasksView, taskId?: string | null) => {
       const params = new URLSearchParams(searchParams.toString())
       // Keeps the view's other params (assignee) beside `?task=`.
-      if (taskId) {
-        // eslint-disable-next-line pts/sheet-url-through-builders -- switching views carries the open task across
-        params.set('task', taskId)
-      } else {
-        // eslint-disable-next-line pts/sheet-url-through-builders -- as above
-        params.delete('task')
-      }
+      // The page's task is the first `task` sheet; others keep their place.
+      setFirstSheetParam(params, 'task', taskId ?? null)
       const queryString = params.toString()
       return `/my/tasks/${targetView}${queryString ? `?${queryString}` : ''}`
     },
@@ -579,24 +576,28 @@ export function MyTasksPage({
         />
       )}
       {shouldRenderTaskSheet ? (
-        <TaskSheet
-          open={isSheetOpen}
-          onOpenChange={handleSheetChange}
-          task={editingTaskMeta?.task}
-          canManage
-          admins={admins}
-          currentUserId={user.id}
-          defaultStatus={createTaskContext?.status ?? 'ON_DECK'}
-          defaultDueOn={null}
-          projects={allProjects}
-          projectSelectionProjects={projectSelectionProjects}
-          defaultProjectId={
-            createTaskContext?.projectId ?? editingTaskMeta?.project?.id ?? null
-          }
-          // A create opened from a link defaults to you, like the column's
-          // +, so the new task lands on your board.
-          defaultAssigneeId={createTaskContext?.assigneeId ?? user.id}
-        />
+        <PageSheetEntry entity='task'>
+          <TaskSheet
+            open={isSheetOpen}
+            onOpenChange={handleSheetChange}
+            task={editingTaskMeta?.task}
+            canManage
+            admins={admins}
+            currentUserId={user.id}
+            defaultStatus={createTaskContext?.status ?? 'ON_DECK'}
+            defaultDueOn={null}
+            projects={allProjects}
+            projectSelectionProjects={projectSelectionProjects}
+            defaultProjectId={
+              createTaskContext?.projectId ??
+              editingTaskMeta?.project?.id ??
+              null
+            }
+            // A create opened from a link defaults to you, like the column's
+            // +, so the new task lands on your board.
+            defaultAssigneeId={createTaskContext?.assigneeId ?? user.id}
+          />
+        </PageSheetEntry>
       ) : null}
     </PageShell>
   )

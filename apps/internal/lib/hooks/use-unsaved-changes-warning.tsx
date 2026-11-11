@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
+import { registerDiscardGuard } from '@/lib/sheets/discard-guards'
+import { useSheetStackEntry } from '@/lib/sheets/stack-entry'
+
 type UseUnsavedChangesWarningOptions = {
   isDirty: boolean
   title?: string
@@ -13,7 +16,7 @@ type UseUnsavedChangesWarningOptions = {
 }
 
 type UseUnsavedChangesWarningResult = {
-  requestConfirmation: (next: () => void) => void
+  requestConfirmation: (next: () => void, stay?: () => void) => void
   dialog: ReactNode
 }
 
@@ -26,31 +29,54 @@ export function useUnsavedChangesWarning({
 }: UseUnsavedChangesWarningOptions): UseUnsavedChangesWarningResult {
   const [dialogOpen, setDialogOpen] = useState(false)
   const pendingActionRef = useRef<(() => void) | null>(null)
+  const pendingStayRef = useRef<(() => void) | null>(null)
+
+  // Read at call time: a guard held elsewhere (going back through the
+  // stack) can run after a save cleaned the form, before this re-renders.
+  const isDirtyRef = useRef(isDirty)
+  useEffect(() => {
+    isDirtyRef.current = isDirty
+  }, [isDirty])
 
   const requestConfirmation = useCallback(
-    (next: () => void) => {
-      if (!isDirty) {
+    (next: () => void, stay?: () => void) => {
+      if (!isDirtyRef.current) {
         next()
         return
       }
 
       pendingActionRef.current = next
+      pendingStayRef.current = stay ?? null
       setDialogOpen(true)
     },
-    [isDirty]
+    []
   )
 
   const handleCancel = useCallback(() => {
+    const stay = pendingStayRef.current
     pendingActionRef.current = null
+    pendingStayRef.current = null
     setDialogOpen(false)
+    stay?.()
   }, [])
 
   const handleConfirm = useCallback(() => {
     const action = pendingActionRef.current
     pendingActionRef.current = null
+    pendingStayRef.current = null
     setDialogOpen(false)
     action?.()
   }, [])
+
+  // A sheet in the stack with unsaved changes asks here before going back
+  // to a sheet below it closes this one.
+  const stackId = useSheetStackEntry()?.id
+  useEffect(() => {
+    if (!isDirty || !stackId) {
+      return
+    }
+    return registerDiscardGuard(stackId, requestConfirmation)
+  }, [isDirty, requestConfirmation, stackId])
 
   useEffect(() => {
     if (!isDirty) {

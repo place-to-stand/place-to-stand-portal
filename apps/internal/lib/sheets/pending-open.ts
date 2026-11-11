@@ -1,8 +1,17 @@
 'use client'
 
-import type { SheetEntityKey } from './entities'
+import type { SheetStackItem } from './stack'
 
-type PendingOpen = { entity: SheetEntityKey; value: string }
+type PendingOpen =
+  /** A sheet stacked on top. */
+  | {
+      kind: 'open'
+      item: SheetStackItem
+      /** Create-sheet prefill, handed to the sheet when it mounts. */
+      aux?: Record<string, string>
+    }
+  /** Sheet `from` now shows `item` (a create sheet became its record). */
+  | { kind: 'swap'; from: string; item: SheetStackItem }
 
 type Listener = (pending: PendingOpen) => void
 
@@ -14,9 +23,9 @@ const listeners = new Set<Listener>()
  * `useSheetParams`) reaches `useSearchParams` only after the server answers,
  * so the SheetHost mounts on this signal and the URL catches up after.
  */
-export const emitSheetOpen = (entity: SheetEntityKey, value: string) => {
+export const emitSheetOpen = (pending: PendingOpen) => {
   for (const listener of listeners) {
-    listener({ entity, value })
+    listener(pending)
   }
 }
 

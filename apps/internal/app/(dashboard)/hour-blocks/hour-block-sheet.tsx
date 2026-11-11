@@ -2,7 +2,7 @@
 
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import { HOURS_STEP } from '@/lib/time-logs/quarter-hours'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef } from 'react'
 
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import {
@@ -37,8 +37,6 @@ import type {
 import { HourBlockArchiveDialog } from './_components/hour-block-archive-dialog'
 import { HourBlockInvoiceSection } from './_components/hour-block-invoice-section'
 
-const HOUR_BLOCK_FORM_ID = 'hour-block-form'
-
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -57,6 +55,9 @@ export function HourBlockSheet({
   duplicateOf = null,
   clients,
 }: Props) {
+  // One id per sheet: two sheets of a kind can be open in the stack, and
+  // a shared id would let one sheet's Save button submit the other's form.
+  const hourBlockFormId = useId()
   const { duplicate } = useSheetParams()
   const {
     form,
@@ -70,7 +71,6 @@ export function HourBlockSheet({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
-    confirmDiscard,
     saveConflict,
     handleLoadTheirs,
     handleSheetOpenChange,
@@ -153,10 +153,7 @@ export function HourBlockSheet({
                   noun='Hour block'
                   onDuplicate={
                     hourBlock
-                      ? () =>
-                          confirmDiscard(() =>
-                            duplicate('hour-block', hourBlock.id)
-                          )
+                      ? () => duplicate('hour-block', hourBlock.id)
                       : undefined
                   }
                   onRequestArchive={handleRequestDelete}
@@ -169,7 +166,7 @@ export function HourBlockSheet({
           <Form {...form}>
             <div className='flex-1 overflow-y-auto'>
               <form
-                id={HOUR_BLOCK_FORM_ID}
+                id={hourBlockFormId}
                 onSubmit={form.handleSubmit((values: HourBlockFormValues) =>
                   handleSubmit(values)
                 )}
@@ -265,7 +262,7 @@ export function HourBlockSheet({
               </form>
             </div>
             <SheetFormFooter
-              formId={HOUR_BLOCK_FORM_ID}
+              formId={hourBlockFormId}
               saveLabel={submitButton.label}
               onSave={handleSave}
               submitDisabled={submitButton.disabled}

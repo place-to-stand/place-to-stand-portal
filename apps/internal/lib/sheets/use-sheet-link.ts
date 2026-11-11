@@ -21,12 +21,13 @@ export const isModifiedClick = (event: MouseEvent) =>
 
 /**
  * A link to a record's sheet that opens it over the current page instead of
- * leaving for the record's list. The href is this page with the sheet on top
- * of the stack, so a new-tab click lands on the same view. Returns the
+ * leaving for the record's list (or goes back to it when it's already open
+ * in the stack). The href is the URL that click lands on, so a new-tab click
+ * opens the same view. Returns the
  * anchor's `href` and `onClick`; `onOpen` runs after a plain click opened it.
  */
 export function useSheetLink({ entity, id }: SheetTarget, onOpen?: () => void) {
-  const { get, hrefFor, open } = useSheetParams()
+  const { hrefFor, open } = useSheetParams()
 
   const onClick = useCallback(
     (event: MouseEvent<HTMLAnchorElement>) => {
@@ -34,12 +35,11 @@ export function useSheetLink({ entity, id }: SheetTarget, onOpen?: () => void) {
         return
       }
       event.preventDefault()
-      if (get(entity) !== id) {
-        open(entity, id)
-      }
+      // Already open lower in the stack: `open` goes back to it.
+      open(entity, id)
       onOpen?.()
     },
-    [entity, get, id, onOpen, open]
+    [entity, id, onOpen, open]
   )
 
   return { href: hrefFor(entity, id), onClick }

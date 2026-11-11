@@ -17,6 +17,7 @@ import { HourBlocksTableSection } from './hour-blocks-table-section'
 import { HourBlockSheet } from '../hour-block-sheet'
 import { usePageParam } from '@/hooks/use-page-param'
 import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type HourBlocksManagementTableProps = {
   hourBlocks: HourBlockWithClient[]
@@ -137,13 +138,15 @@ export function HourBlocksManagementTable({
           return row ? (row.client?.name ?? undefined) : undefined
         }}
       />
-      <HourBlockSheet
-        open={sheetOpen}
-        onOpenChange={handleSheetOpenChange}
-        onComplete={handleComplete}
-        hourBlock={selectedBlock}
-        clients={sortedClients}
-      />
+      <PageSheetEntry entity='hour-block'>
+        <HourBlockSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          onComplete={handleComplete}
+          hourBlock={selectedBlock}
+          clients={sortedClients}
+        />
+      </PageSheetEntry>
     </div>
   )
 }

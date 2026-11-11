@@ -86,7 +86,13 @@ export const useBoardSheetState = ({
     })
   }, [isCreatingTask, startTransition])
 
+  // Whether `?task=new` was in the URL on the last run: when it leaves for
+  // nothing (browser Back, a close elsewhere), the create sheet closes too.
+  const wasCreatingRef = useRef(isCreatingTask)
+
   useEffect(() => {
+    const wasCreating = wasCreatingRef.current
+    wasCreatingRef.current = isCreatingTask
     if (isCreatingTask) {
       return
     }
@@ -129,6 +135,14 @@ export const useBoardSheetState = ({
           setSheetTask(nextTask)
           setIsSheetOpen(true)
         }
+      })
+      return
+    }
+
+    if (wasCreating && !routeTaskId) {
+      startTransition(() => {
+        setDefaultTaskDueOn(null)
+        setIsSheetOpen(false)
       })
       return
     }
@@ -228,7 +242,8 @@ export const useBoardSheetState = ({
         setDefaultTaskStatus('ON_DECK')
         setDefaultTaskDueOn(null)
 
-        if (routeTaskId && projectIdForSheet) {
+        // A create sheet clears its `?task=new` too, or a refresh reopens it.
+        if ((routeTaskId && projectIdForSheet) || isCreatingTask) {
           startTransition(() => {
             setRouteTaskId(null)
             setPendingTaskId(null)
@@ -246,6 +261,7 @@ export const useBoardSheetState = ({
     },
     [
       closeSheetParam,
+      isCreatingTask,
       routeTaskId,
       selectedProjectId,
       sheetTask?.project_id,

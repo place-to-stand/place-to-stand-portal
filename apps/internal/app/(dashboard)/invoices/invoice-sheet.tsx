@@ -1,7 +1,7 @@
 'use client'
 
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useWatch } from 'react-hook-form'
 import {
   DndContext,
@@ -65,8 +65,6 @@ import { useInvoiceStatusActions } from './_lib/use-invoice-status-actions'
 import { RevealOnAdd, useAddedIds } from '@/components/ui/reveal-on-add'
 import type { SheetSaveMode } from '@/lib/sheets/save-mode'
 
-const INVOICE_FORM_ID = 'invoice-form'
-
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -89,6 +87,9 @@ export function InvoiceSheet({
   productCatalog,
   taxRates,
 }: Props) {
+  // One id per sheet: two sheets of a kind can be open in the stack, and
+  // a shared id would let one sheet's Save button submit the other's form.
+  const invoiceFormId = useId()
   const { duplicate } = useSheetParams()
   const {
     form,
@@ -104,7 +105,6 @@ export function InvoiceSheet({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
-    confirmDiscard,
     saveConflict,
     handleLoadTheirs,
     totals,
@@ -255,7 +255,7 @@ export function InvoiceSheet({
         >
           <Form {...form}>
             <form
-              id={INVOICE_FORM_ID}
+              id={invoiceFormId}
               className='flex min-h-0 flex-1 flex-col'
               onSubmit={form.handleSubmit((values: InvoiceFormValues) =>
                 handleSubmit(values)
@@ -285,10 +285,7 @@ export function InvoiceSheet({
                       noun='Invoice'
                       onDuplicate={
                         invoice
-                          ? () =>
-                              confirmDiscard(() =>
-                                duplicate('invoice', invoice.id)
-                              )
+                          ? () => duplicate('invoice', invoice.id)
                           : undefined
                       }
                       onRequestArchive={handleRequestDelete}
@@ -480,7 +477,7 @@ export function InvoiceSheet({
                   {!isReadOnly ? (
                     <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
                       <SheetFormFooter
-                        formId={INVOICE_FORM_ID}
+                        formId={invoiceFormId}
                         saveLabel={submitButton.label}
                         onSave={handleSave}
                         submitDisabled={submitButton.disabled}
