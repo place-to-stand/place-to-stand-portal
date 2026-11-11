@@ -12,6 +12,9 @@ import {
   type UnbookedPaymentNotice,
 } from './google-chat-messages'
 
+/** Long enough for Google Chat, short of Stripe's webhook timeout. */
+const POST_TIMEOUT_MS = 5000
+
 /**
  * Absolute deep link to the invoice sheet, or null when no base URL is
  * configured. Same base-URL resolution as `send-invoice.ts`; the link is built
@@ -35,8 +38,9 @@ function resolveInvoiceUrl(
  *
  * No-ops when `GOOGLE_CHAT_SALES_WEBHOOK_URL` is unset, and never throws —
  * notification failures must not break the Stripe webhook / payment flow.
- * Callers should still use a fire-and-forget pattern (`.catch(console.error)`)
- * as defense in depth.
+ * Callers must await it: on Vercel an unawaited fetch is frozen with the
+ * function once the response is sent and never arrives. Each post gives up
+ * after `POST_TIMEOUT_MS` so a slow Google can't hold up the webhook.
  */
 export async function notifyInvoicePaid(
   notice: InvoicePaidNotice & { invoiceId?: string | null }
@@ -55,6 +59,7 @@ export async function notifyInvoicePaid(
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(POST_TIMEOUT_MS),
       body: JSON.stringify(card),
     })
 
@@ -91,6 +96,7 @@ export async function notifyUnbookedPayment(
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(POST_TIMEOUT_MS),
       body: JSON.stringify(card),
     })
 
@@ -121,6 +127,7 @@ export async function notifyStuckSubmissionEmails(
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(POST_TIMEOUT_MS),
       body: JSON.stringify(buildStuckEmailCard(notice)),
     })
 

@@ -162,9 +162,12 @@ async function markInvoicePaid(
       metadata: paidEvent.metadata,
     })
 
-    // Notify the team in Google Chat (fire-and-forget — non-critical).
-    // Guarded by status !== 'PAID' so retried webhooks don't re-notify.
-    notifyInvoicePaid({
+    // Tell the team in Google Chat. Awaited for the same reason as the log
+    // above: Vercel freezes the function once the response goes out, so an
+    // unawaited post never reaches Google. It never throws and gives up
+    // after a few seconds. Only the delivery that flips the status gets
+    // here, so retried webhooks don't re-notify.
+    await notifyInvoicePaid({
       invoiceId: invoice.id,
       invoiceNumber: invoice.invoice_number,
       total: invoice.total,
