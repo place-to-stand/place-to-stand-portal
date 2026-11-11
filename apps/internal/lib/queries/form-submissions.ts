@@ -10,6 +10,7 @@ import {
   isNull,
   or,
   sql,
+  type SQL,
 } from 'drizzle-orm'
 
 import { db } from '@/lib/db'
@@ -18,7 +19,12 @@ import {
   DEFAULT_SUBMISSIONS_SORT,
   type SubmissionSortField,
 } from '@/lib/form-submissions/filters'
+import {
+  ATTRIBUTION_CHANNEL_LABELS,
+  describeAttribution,
+} from '@/lib/form-submissions/attribution'
 import { createSearchPattern } from '@/lib/pagination/cursor'
+import { sortRows } from '@/lib/table/sort-rows'
 import type { ParsedSort } from '@/lib/pagination/sort'
 import type { FormSubmission, NewFormSubmission } from '@pts/db/types'
 
@@ -302,10 +308,34 @@ export async function upsertFormSubmission(
 }
 
 // R5 (offset variant): each allowlisted sort field maps to its ORDER BY
-// column — offset pagination needs no cursor descriptors.
-const SORT_COLUMNS = {
-  received: formSubmissions.lastActivityAt,
-} as const satisfies Record<SubmissionSortField, unknown>
+// expressions — offset pagination needs no cursor descriptors. Empty values
+// (no name, no company, not archived) sort last either way; the newest
+// activity breaks ties. `source` is sorted in memory (see below).
+type SqlSortField = Exclude<SubmissionSortField, 'source'>
+const SORT_EXPRESSIONS: Record<SqlSortField, (dir: 'asc' | 'desc') => SQL[]> = {
+  received: dir => [sql`${formSubmissions.lastActivityAt} ${sqlDir(dir)}`],
+  form: dir => [sql`${formSubmissions.kind} ${sqlDir(dir)}`],
+  contact: dir => [
+    sql`lower(coalesce(nullif(trim(${formSubmissions.contactName}), ''), nullif(trim(${formSubmissions.contactEmail}), ''))) ${sqlDir(dir)} nulls last`,
+  ],
+  company: dir => [
+    sql`lower(nullif(trim(${formSubmissions.contactCompany}), '')) ${sqlDir(dir)} nulls last`,
+  ],
+  // The badge (status, in its workflow order), then the detail beside it:
+  // a contact form's subject, an audit's phase, then how far it got.
+  outcome: dir => [
+    sql`${formSubmissions.status} ${sqlDir(dir)}`,
+    sql`lower(coalesce(nullif(trim(${formSubmissions.subject}), ''), nullif(${formSubmissions.result}->>'phaseName', ''), nullif(${formSubmissions.phaseId}, ''))) ${sqlDir(dir)} nulls last`,
+    sql`${formSubmissions.percentComplete} ${sqlDir(dir)} nulls last`,
+  ],
+  archived: dir => [
+    sql`${formSubmissions.deletedAt} ${sqlDir(dir)} nulls last`,
+  ],
+}
+
+function sqlDir(dir: 'asc' | 'desc') {
+  return dir === 'asc' ? sql.raw('asc') : sql.raw('desc')
+}
 
 export async function listFormSubmissions({
   offset,
@@ -316,7 +346,10 @@ export async function listFormSubmissions({
   offset: number
   limit: number
   sort?: ParsedSort<SubmissionSortField>
-}) {
+}): Promise<FormSubmission[]> {
+  if (sort.field === 'source') {
+    return listBySource({ offset, limit, direction: sort.direction, filters })
+  }
   const direction = sort.direction === 'asc' ? asc : desc
 
   return (
@@ -324,14 +357,66 @@ export async function listFormSubmissions({
       .select()
       .from(formSubmissions)
       .where(buildFilters(filters))
-      // Id tie-breaker keeps offset pages stable when timestamps collide.
+      // The newest activity, then the id, break ties, so offset pages stay
+      // stable when values collide.
       .orderBy(
-        direction(SORT_COLUMNS[sort.field]),
+        ...SORT_EXPRESSIONS[sort.field](sort.direction),
+        desc(formSubmissions.lastActivityAt),
         direction(formSubmissions.id)
       )
       .limit(limit)
       .offset(offset)
   )
+}
+
+/**
+ * The Source column is worked out in code (describeAttribution, shared with
+ * the email and the sheet), so it can't be sorted in SQL. Reads the
+ * matching rows' attribution fields only, sorts them by the channel badge
+ * then its detail, and loads the one page it lands on.
+ */
+async function listBySource({
+  offset,
+  limit,
+  direction,
+  filters,
+}: {
+  offset: number
+  limit: number
+  direction: 'asc' | 'desc'
+  filters: FormSubmissionFilters
+}): Promise<FormSubmission[]> {
+  const rows = await db
+    .select({
+      id: formSubmissions.id,
+      utmSource: formSubmissions.utmSource,
+      utmMedium: formSubmissions.utmMedium,
+      utmCampaign: formSubmissions.utmCampaign,
+      utmTerm: formSubmissions.utmTerm,
+      gclid: formSubmissions.gclid,
+      referrer: formSubmissions.referrer,
+    })
+    .from(formSubmissions)
+    .where(buildFilters(filters))
+    // Arrival order breaks ties: newest activity first.
+    .orderBy(desc(formSubmissions.lastActivityAt), desc(formSubmissions.id))
+  const ids = sortRows(
+    rows,
+    row => {
+      const source = describeAttribution(row)
+      return `${ATTRIBUTION_CHANNEL_LABELS[source.channel]} ${source.detail ?? ''}`
+    },
+    direction
+  )
+    .slice(offset, offset + limit)
+    .map(row => row.id)
+  if (!ids.length) return []
+  const page = await db
+    .select()
+    .from(formSubmissions)
+    .where(inArray(formSubmissions.id, ids))
+  const byId = new Map(page.map(row => [row.id, row]))
+  return ids.flatMap(id => byId.get(id) ?? [])
 }
 
 /**

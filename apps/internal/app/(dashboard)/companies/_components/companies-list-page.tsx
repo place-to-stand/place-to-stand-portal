@@ -20,12 +20,9 @@ export async function CompaniesListPage({
 }) {
   const user = await requirePage('companies.manage')
   const parsed = parseCompaniesSearchParams(params)
-  // Old Clients links (`/companies?type=client`), and a type on Clients,
-  // which lists clients only.
-  if (
-    (mode === 'active' && parsed.type === 'client') ||
-    (mode === 'clients' && params.type !== undefined)
-  ) {
+  // A type on Clients, which lists clients only. (On Companies,
+  // `?type=client` is the type filter's Client option.)
+  if (mode === 'clients' && params.type !== undefined) {
     redirectLegacyPreset(params, {
       key: 'type',
       path: '/companies/clients',

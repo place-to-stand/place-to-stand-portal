@@ -47,6 +47,7 @@ import {
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
 import { cn } from '@/lib/utils'
+import { sortRows } from '@/lib/table/sort-rows'
 import { LeadSheet } from './lead-sheet'
 import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
@@ -60,7 +61,13 @@ type LeadsArchiveSectionProps = {
 
 // PRD 004 §03: per-view sort allowlist (D6). The table is in-memory, so the
 // parsed `?sort=` drives a client-side sort of the fetched array.
-const LEAD_ARCHIVE_SORT_FIELDS = ['name', 'archived'] as const
+const LEAD_ARCHIVE_SORT_FIELDS = [
+  'name',
+  'company',
+  'email',
+  'status',
+  'archived',
+] as const
 
 const DEFAULT_LEAD_ARCHIVE_SORT = {
   field: 'archived',
@@ -161,6 +168,19 @@ export function LeadsArchiveSection({
     DEFAULT_LEAD_ARCHIVE_SORT
   )
 
+  // The same sortable headers as Companies and the other lists.
+  const sortHead = (field: string, label: string, className: string) => (
+    <SortableTableHead
+      field={field}
+      sort={sortParam}
+      defaultSort='archived:desc'
+      onSortChange={next => update({ sort: next })}
+      className={className}
+    >
+      {label}
+    </SortableTableHead>
+  )
+
   // Only offer statuses actually present in the archive — leads keep their
   // last board status when archived, so any status can appear here.
   const statusOptions = useMemo(() => {
@@ -180,18 +200,25 @@ export function LeadsArchiveSection({
       status: statusFilter,
       q: searchQuery,
     })
-    const factor = sort.direction === 'asc' ? 1 : -1
-    return [...filtered].sort((a, b) => {
-      if (sort.field === 'name') {
-        return (
-          factor *
-          a.contactName.localeCompare(b.contactName, undefined, {
-            sensitivity: 'base',
-          })
-        )
-      }
-      return factor * a.deletedAt.localeCompare(b.deletedAt)
-    })
+    return sortRows(
+      filtered,
+      lead => {
+        switch (sort.field) {
+          case 'name':
+            return lead.contactName
+          case 'company':
+            return lead.companyName
+          case 'email':
+            return lead.contactEmail
+          case 'status':
+            // The board's column order.
+            return LEAD_STATUS_VALUES.indexOf(lead.status)
+          case 'archived':
+            return Date.parse(lead.deletedAt)
+        }
+      },
+      sort.direction
+    )
   }, [leads, searchQuery, sort.direction, sort.field, statusFilter])
 
   const emptyMessage =
@@ -245,26 +272,11 @@ export function LeadsArchiveSection({
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <SortableTableHead
-                field='name'
-                sort={sortParam}
-                defaultSort='archived:desc'
-                onSortChange={next => update({ sort: next })}
-              >
-                Person
-              </SortableTableHead>
-              <TableHead className='w-[18%]'>Company</TableHead>
-              <TableHead className='w-[20%]'>Email</TableHead>
-              <TableHead className='w-[21%]'>Last status</TableHead>
-              <SortableTableHead
-                field='archived'
-                sort={sortParam}
-                defaultSort='archived:desc'
-                onSortChange={next => update({ sort: next })}
-                className='w-[13%]'
-              >
-                Archived
-              </SortableTableHead>
+              {sortHead('name', 'Person', '')}
+              {sortHead('company', 'Company', 'w-[18%]')}
+              {sortHead('email', 'Email', 'w-[20%]')}
+              {sortHead('status', 'Last status', 'w-[21%]')}
+              {sortHead('archived', 'Archived', 'w-[13%]')}
               <TableHead className='w-16 text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>

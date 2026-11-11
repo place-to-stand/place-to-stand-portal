@@ -52,6 +52,12 @@ type ProjectSortDescriptor = {
   orderDesc: SQL
 }
 
+const PROJECT_OWNER_LABEL_SQL = sql`(case ${projects.type}
+  when 'CLIENT' then lower(${companies.name})
+  when 'INTERNAL' then 'internal project'
+  else lower(coalesce(${personNameSql}, split_part(${users.email}, '@', 1)))
+end)`
+
 const PROJECT_SORT_DESCRIPTORS: Record<
   ProjectSortField,
   ProjectSortDescriptor
@@ -59,6 +65,12 @@ const PROJECT_SORT_DESCRIPTORS: Record<
   name: {
     orderAsc: sql`${projects.name} ASC`,
     orderDesc: sql`${projects.name} DESC`,
+  },
+  // The Owner column's label: the client, "Internal project", or the
+  // person whose personal project it is. No name sorts last.
+  owner: {
+    orderAsc: sql`${PROJECT_OWNER_LABEL_SQL} ASC NULLS LAST`,
+    orderDesc: sql`${PROJECT_OWNER_LABEL_SQL} DESC NULLS LAST`,
   },
   created: {
     orderAsc: sql`${projects.createdAt} ASC`,

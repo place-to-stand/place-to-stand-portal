@@ -531,5 +531,19 @@ function timeLogSortOrder(sort: ParsedSort<TimeLogSortField> | undefined) {
       ]
     case 'project':
       return [dir(sql`lower(${projects.name})`)]
+    case 'tasks':
+      // The Tasks column's count: live, titled tasks linked to the log
+      // (what fetchLinkedTasks lists). None shows a dash and sorts last.
+      return [
+        sql`${dir(
+          sql`nullif((
+            select count(*) from time_log_tasks tlt
+            join tasks t on t.id = tlt.task_id
+            where tlt.time_log_id = ${sql.raw('"time_logs"."id"')}
+              and tlt.deleted_at is null and t.deleted_at is null
+              and coalesce(t.title, '') <> ''
+          ), 0)`
+        )} nulls last`,
+      ]
   }
 }

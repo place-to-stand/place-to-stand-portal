@@ -7,9 +7,13 @@ import { useListParams } from '@/hooks/use-list-params'
 import type { ClientOption } from '@/lib/queries/contacts'
 import { UUID_PATTERN } from '@/lib/sheets/entities'
 import {
+  PERSON_TYPE_LABELS,
+  PERSON_TYPE_VALUES,
   ROLE_FILTER_LABELS,
   ROLE_FILTER_VALUES,
+  isPersonType,
   isRoleFilter,
+  type PersonTypeFilter,
 } from '@/lib/people/filters'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { CompanyNameWithState } from '@/components/companies/client-badge'
@@ -25,7 +29,15 @@ type ContactsFiltersProps = {
   /** The Users page's Role filter (`?role=`). */
   role?: (typeof ROLE_FILTER_VALUES)[number]
   showRoleFilter?: boolean
+  /** People's User / Not a user filter (`?type=`). */
+  type?: PersonTypeFilter
+  showTypeFilter?: boolean
 }
+
+const TYPE_OPTIONS = PERSON_TYPE_VALUES.map(value => ({
+  value,
+  label: PERSON_TYPE_LABELS[value],
+}))
 
 export function ContactsFilters({
   search,
@@ -34,6 +46,8 @@ export function ContactsFilters({
   basePath,
   role,
   showRoleFilter = false,
+  type,
+  showTypeFilter = false,
 }: ContactsFiltersProps) {
   // Contacts tables paginate by offset, so `page` is the pagination key
   // cleared on every filter change (not cursor/dir).
@@ -44,6 +58,7 @@ export function ContactsFilters({
       q: {},
       companyId: { isValid: value => UUID_PATTERN.test(value) },
       ...(showRoleFilter ? { role: { isValid: isRoleFilter } } : {}),
+      ...(showTypeFilter ? { type: { isValid: isPersonType } } : {}),
     },
   })
 
@@ -56,10 +71,18 @@ export function ContactsFilters({
           placeholder='Search people…'
         />
       }
-      activeFilterCount={(companyId ? 1 : 0) + (role ? 1 : 0)}
+      activeFilterCount={(companyId ? 1 : 0) + (role ? 1 : 0) + (type ? 1 : 0)}
       showReset={hasActiveFilters}
       onReset={reset}
     >
+      {showTypeFilter ? (
+        <FilterSelect
+          value={type}
+          onChange={value => update({ type: value })}
+          placeholder='All people'
+          options={TYPE_OPTIONS}
+        />
+      ) : null}
       <FilterSelect
         value={companyId}
         onChange={value => update({ companyId: value })}

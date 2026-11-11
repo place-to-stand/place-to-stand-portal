@@ -189,6 +189,21 @@ export type ListInvoicesResult = {
   unfilteredTotalCount: number
 }
 
+// The outer column is written table-qualified: interpolated, drizzle may drop
+// the table name and it would bind to the subquery's own `id`.
+const INVOICE_HOURS_SQL = sql`(
+  select sum(hb.hours_purchased)
+  from hour_blocks hb
+  join invoice_line_items li on li.id = hb.invoice_line_item_id
+  where li.invoice_id = ${sql.raw('"invoices"."id"')}
+    and hb.deleted_at is null
+)`
+
+const INVOICE_SHARE_RANK_SQL = sql`(case
+  when ${invoices.status} = 'DRAFT' then 0
+  when ${invoices.shareEnabled} and ${invoices.shareToken} is not null then 1
+end)`
+
 /**
  * Per-sort ORDER BY expressions (PRD 004 §03, offset pagination — no cursor
  * descriptors needed). `number` is nullable (drafts), so it declares NULLS
@@ -198,9 +213,10 @@ const INVOICE_SORT_ORDERINGS: Record<
   InvoiceSortField,
   { asc: SQL; desc: SQL }
 > = {
-  created: {
-    asc: sql`${invoices.createdAt} ASC`,
-    desc: sql`${invoices.createdAt} DESC`,
+  // The Issued column: the date it shows. Drafts (no issue date) sort last.
+  issued: {
+    asc: sql`${invoices.issuedDate} ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`${invoices.issuedDate} DESC NULLS LAST, ${invoices.createdAt} DESC`,
   },
   number: {
     asc: sql`${invoices.invoiceNumber} ASC NULLS LAST`,
@@ -212,6 +228,28 @@ const INVOICE_SORT_ORDERINGS: Record<
   client: {
     asc: sql`LOWER(${companies.name}) ASC NULLS LAST, ${invoices.createdAt} DESC`,
     desc: sql`LOWER(${companies.name}) DESC NULLS LAST, ${invoices.createdAt} DESC`,
+  },
+  // The workflow order (Draft, Sent, Viewed, Paid, Void), newest first
+  // within a status.
+  status: {
+    asc: sql`${invoices.status} ASC, ${invoices.createdAt} DESC`,
+    desc: sql`${invoices.status} DESC, ${invoices.createdAt} DESC`,
+  },
+  total: {
+    asc: sql`${invoices.total} ASC, ${invoices.createdAt} DESC`,
+    desc: sql`${invoices.total} DESC, ${invoices.createdAt} DESC`,
+  },
+  // The Hours column: hours of the live blocks the invoice's lines created.
+  // No block sorts last.
+  hours: {
+    asc: sql`${INVOICE_HOURS_SQL} ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`${INVOICE_HOURS_SQL} DESC NULLS LAST, ${invoices.createdAt} DESC`,
+  },
+  // The Share link column: drafts (a Send button), then live links; no link
+  // sorts last.
+  share: {
+    asc: sql`${INVOICE_SHARE_RANK_SQL} ASC NULLS LAST, ${invoices.createdAt} DESC`,
+    desc: sql`${INVOICE_SHARE_RANK_SQL} DESC NULLS LAST, ${invoices.createdAt} DESC`,
   },
 }
 

@@ -152,7 +152,7 @@ export function TimeLogsTable({
                 {/* Unsized on purpose: in a fixed layout the one auto column absorbs the
                 slack, so the fixed columns keep their widths. */}
                 {sortHead('project', 'Project', '')}
-                <TableHead className='w-[6%] text-center'>Tasks</TableHead>
+                {sortHead('tasks', 'Tasks', 'w-[6%]', 'center')}
                 {/* Edit is a row click and Archive is in the right-click
                     menu and the bulk bar; the Archive tab keeps Restore. */}
                 {isArchive ? (

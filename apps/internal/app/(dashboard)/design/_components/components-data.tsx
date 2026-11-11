@@ -42,6 +42,7 @@ import type { CalendarDateRange } from '@/lib/dates/calendar-date'
 import { currentMonthRange } from '@/lib/time-logs/filters'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
+import { sortRows } from '@/lib/table/sort-rows'
 import { LinkedRecordsHoverCell } from '@/components/ui/linked-records-hover-cell'
 import { PaginationControls } from '@/components/ui/pagination-controls'
 import { RecordRowButton } from '@/components/ui/record-row-button'
@@ -349,12 +350,21 @@ export function SampleProjectList({
         (!statuses.length || statuses.includes(row.status)) &&
         (!company || row.company === company)
     )
+    // Every column sorts; empty values go last either way.
     const [field, direction] = (sort ?? 'name:asc').split(':')
-    const sign = direction === 'desc' ? -1 : 1
-    return [...filtered].sort((a, b) =>
-      field === 'hours'
-        ? (a.hours - b.hours) * sign
-        : a.name.localeCompare(b.name) * sign
+    return sortRows(
+      filtered,
+      row =>
+        field === 'hours'
+          ? row.hours
+          : field === 'company'
+            ? row.company
+            : field === 'status'
+              ? row.status
+              : field === 'people'
+                ? row.people.length || null
+                : row.name,
+      direction === 'desc' ? 'desc' : 'asc'
     )
   }, [search, statuses, company, sort])
 
@@ -416,26 +426,26 @@ export function SampleProjectList({
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <SortableTableHead
-                field='name'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={setSort}
-              >
-                Project
-              </SortableTableHead>
-              <TableHead className='w-[22%]'>Company</TableHead>
-              <TableHead className='w-[17%]'>Status</TableHead>
-              <TableHead className='w-[15%]'>People</TableHead>
-              <SortableTableHead
-                field='hours'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={setSort}
-                className='w-[15%]'
-              >
-                Hours
-              </SortableTableHead>
+              {(
+                [
+                  ['name', 'Project', ''],
+                  ['company', 'Company', 'w-[22%]'],
+                  ['status', 'Status', 'w-[17%]'],
+                  ['people', 'People', 'w-[15%]'],
+                  ['hours', 'Hours', 'w-[15%]'],
+                ] as const
+              ).map(([field, label, width]) => (
+                <SortableTableHead
+                  key={field}
+                  field={field}
+                  sort={sort}
+                  defaultSort='name:asc'
+                  onSortChange={setSort}
+                  className={width}
+                >
+                  {label}
+                </SortableTableHead>
+              ))}
               <TableHead className='w-16 text-right'>
                 <span className='sr-only'>Actions</span>
               </TableHead>

@@ -19,8 +19,8 @@ type SortableTableHeadProps = {
   onSortChange: (next: SortValue | undefined) => void
   children: ReactNode
   className?: string
-  /** Header alignment — set 'center' to match a column whose cells are centered. */
-  align?: 'left' | 'center'
+  /** Header alignment, to match the column's cells. */
+  align?: 'left' | 'center' | 'right'
 }
 
 function parseSort(value: string | undefined, fallback: SortValue) {
@@ -100,12 +100,18 @@ export function SortableTableHead({
         onClick={handleClick}
         className={cn(
           'hover:text-foreground flex h-full w-full cursor-pointer items-center gap-1 px-2 py-2 font-medium',
-          align === 'center' ? 'justify-center text-center' : 'text-left'
+          align === 'center'
+            ? 'justify-center text-center'
+            : align === 'right'
+              ? 'flex-row-reverse text-right'
+              : 'text-left'
         )}
       >
         {/* Centered heads get a mirror-width spacer so the label sits at
             true center — the sort icon on the right otherwise pushes it
-            ~9px off-axis relative to the centered cell content below. */}
+            ~9px off-axis relative to the centered cell content below.
+            Right-aligned heads reverse the row, so the label ends at the
+            edge the cells end at and the icon sits on its left. */}
         {align === 'center' ? (
           <span aria-hidden className='size-3.5 shrink-0' />
         ) : null}

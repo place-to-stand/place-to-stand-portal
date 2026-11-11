@@ -42,6 +42,8 @@ import {
 import { RecordRowAction } from '@/components/table/record-row-action'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { TaxRateRow } from '@/lib/queries/tax-rates'
+import { parseSortParam } from '@/lib/pagination/sort'
+import { sortRows } from '@/lib/table/sort-rows'
 import { US_STATES } from '@/lib/companies/billing/us-states'
 
 import { saveTaxRate, toggleTaxRateActiveAction } from '../actions'
@@ -49,6 +51,10 @@ import { saveTaxRate, toggleTaxRateActiveAction } from '../actions'
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+
+// Every column sorts; the default is Label A-Z.
+const TAX_RATE_SORT_FIELDS = ['state', 'rate', 'label', 'active'] as const
+const DEFAULT_TAX_RATE_SORT = { field: 'label', direction: 'asc' } as const
 
 const DISCARD_TITLE = 'Discard changes?'
 const DISCARD_DESCRIPTION =
@@ -85,13 +91,47 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
   const [sort, setSort] = useState<SortValue | undefined>(undefined)
 
   const sortedRates = useMemo(() => {
-    const factor = sort === 'label:desc' ? -1 : 1
-    return [...rates].sort(
-      (a, b) =>
-        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }) *
-        factor
+    const { field, direction } = parseSortParam(
+      sort,
+      TAX_RATE_SORT_FIELDS,
+      DEFAULT_TAX_RATE_SORT
+    )
+    // Label A-Z first, so it breaks ties in every column.
+    const byLabel = sortRows(rates, rate => rate.label, 'asc')
+    return sortRows(
+      byLabel,
+      rate => {
+        switch (field) {
+          case 'state':
+            return rate.state
+          case 'rate':
+            return Number(rate.rate)
+          case 'active':
+            return rate.is_active
+          case 'label':
+            return rate.label
+        }
+      },
+      direction
     )
   }, [rates, sort])
+  const sortHead = (
+    field: (typeof TAX_RATE_SORT_FIELDS)[number],
+    label: string,
+    className: string,
+    align?: 'right'
+  ) => (
+    <SortableTableHead
+      field={field}
+      sort={sort}
+      defaultSort='label:asc'
+      onSortChange={setSort}
+      className={className}
+      align={align}
+    >
+      {label}
+    </SortableTableHead>
+  )
 
   const form = useForm<TaxRateFormValues>({
     resolver: zodResolver(taxRateFormSchema),
@@ -226,20 +266,12 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
         <Table density='compact' layout='fixed' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead className='w-[21%]'>State</TableHead>
-              <TableHead className='w-[11%] text-right'>Rate (%)</TableHead>
-              <SortableTableHead
-                field='label'
-                sort={sort}
-                defaultSort='label:asc'
-                onSortChange={setSort}
-                // p-0 plus the button's px-2: pl-2 lines the label up with
-                // the cells' md:pl-4, clear of the right-aligned Rate.
-                className='pl-2'
-              >
-                Label
-              </SortableTableHead>
-              <TableHead className='w-[9%]'>Active</TableHead>
+              {sortHead('state', 'State', 'w-[21%]')}
+              {sortHead('rate', 'Rate (%)', 'w-[11%]', 'right')}
+              {/* p-0 plus the button's px-2: pl-2 lines the label up with
+                  the cells' md:pl-4, clear of the right-aligned Rate. */}
+              {sortHead('label', 'Label', 'pl-2')}
+              {sortHead('active', 'Active', 'w-[9%]')}
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>

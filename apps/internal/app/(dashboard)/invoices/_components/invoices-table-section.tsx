@@ -183,6 +183,24 @@ export function InvoicesTableSection({
   })
   const rawSort = getParam('sort')
   const sort = rawSort && isInvoiceSortValue(rawSort) ? rawSort : undefined
+  // The same sortable headers as Companies and the other lists.
+  const sortHead = (
+    field: string,
+    label: string,
+    className: string,
+    align?: 'right'
+  ) => (
+    <SortableTableHead
+      field={field}
+      sort={sort}
+      defaultSort='issued:desc'
+      onSortChange={next => update({ sort: next })}
+      className={className}
+      align={align}
+    >
+      {label}
+    </SortableTableHead>
+  )
   // The same send, mark sent, revert and void the invoice sheet runs.
   const statusActions = useInvoiceStatusActions({
     linkHint: 'Copy the public link from the Share link column.',
@@ -200,40 +218,19 @@ export function InvoicesTableSection({
           <TableHeader>
             <TableRow className='bg-muted/40'>
               <SelectAllHead />
-              <SortableTableHead
-                field='number'
-                sort={sort}
-                defaultSort='created:desc'
-                onSortChange={next => update({ sort: next })}
-                // Wide enough for the icon and INV-0000 (or Draft) at the
-                // 60rem floor, with room for a fifth digit.
-                className='w-[12%]'
-              >
-                Invoice #
-              </SortableTableHead>
+              {/* Wide enough for the icon and INV-0000 (or Draft) at the
+                  60rem floor, with room for a fifth digit. */}
+              {sortHead('number', 'Invoice #', 'w-[12%]')}
               {/* Unsized on purpose: in a fixed layout the one auto column
                 absorbs the slack, so Actions stays at its own width. */}
-              <SortableTableHead
-                field='client'
-                sort={sort}
-                defaultSort='created:desc'
-                onSortChange={next => update({ sort: next })}
-              >
-                Client
-              </SortableTableHead>
-              <TableHead className='w-[8%]'>Status</TableHead>
-              <TableHead className='w-[10%] text-right'>Total</TableHead>
-              <TableHead className='w-[9%] pl-4'>Hours</TableHead>
-              <SortableTableHead
-                field='created'
-                sort={sort}
-                defaultSort='created:desc'
-                onSortChange={next => update({ sort: next })}
-                className='w-[11%]'
-              >
-                Issued
-              </SortableTableHead>
-              <TableHead className='w-[15%]'>Share link</TableHead>
+              {sortHead('client', 'Client', '')}
+              {sortHead('status', 'Status', 'w-[8%]')}
+              {sortHead('total', 'Total', 'w-[10%]', 'right')}
+              {/* p-0 plus the button's px-2: pl-2 lines the label up with
+                  the cells' md:pl-4, clear of the right-aligned Total. */}
+              {sortHead('hours', 'Hours', 'w-[9%] pl-2')}
+              {sortHead('issued', 'Issued', 'w-[11%]')}
+              {sortHead('share', 'Share link', 'w-[15%]')}
               {/* Sized to the row's buttons: up to three status actions
                   (send, mark sent or revert, void), or Restore on the
                   Archive tab. Archive itself is in the right-click menu and
