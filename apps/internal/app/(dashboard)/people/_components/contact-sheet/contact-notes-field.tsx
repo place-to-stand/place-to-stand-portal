@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 import type { Control } from 'react-hook-form'
 
 import {
@@ -20,6 +22,8 @@ export function ContactNotesField({
   control: Control<ContactFormData>
   disabled: boolean
 }) {
+  // Ids per sheet: two sheets of a kind can be open in the stack.
+  const contactNotesId = useId()
   return (
     <FormField
       control={control}
@@ -29,7 +33,7 @@ export function ContactNotesField({
           <FormLabel optional>Notes</FormLabel>
           <FormControl>
             <RichTextEditor
-              id='contact-notes'
+              id={contactNotesId}
               value={field.value ?? ''}
               onChange={field.onChange}
               disabled={disabled}

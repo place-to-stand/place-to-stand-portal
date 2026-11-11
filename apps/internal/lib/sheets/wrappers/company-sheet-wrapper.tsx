@@ -4,17 +4,19 @@ import { CompanySheet } from '@/app/(dashboard)/companies/_components/company-sh
 
 import { emitSheetCreated } from '../created'
 import { NEW_SHEET_VALUE } from '../entities'
-import { useSheetParams } from '../use-sheet-params'
+import { useCreatePrefill, useOpenedStackId } from './use-create-prefill'
 import type { SheetWrapperProps } from './types'
 
 /** The company sheet loads its own record, so no init payload is needed. */
 export function CompanySheetWrapper({
   value,
   open,
+  aux,
   onRequestClose,
 }: SheetWrapperProps) {
-  const { getAux } = useSheetParams()
   const isNew = value === NEW_SHEET_VALUE
+  const prefill = useCreatePrefill(value, aux, ['companyName'] as const)
+  const openedId = useOpenedStackId()
 
   return (
     <CompanySheet
@@ -24,8 +26,8 @@ export function CompanySheetWrapper({
       onClose={onRequestClose}
       // Create-from-picker: the host picker passes the typed name along and
       // selects the saved company.
-      initialName={isNew ? (getAux('companyName') ?? undefined) : undefined}
-      onCreated={record => emitSheetCreated('company', record)}
+      initialName={prefill.companyName}
+      onCreated={record => emitSheetCreated('company', record, openedId)}
     />
   )
 }

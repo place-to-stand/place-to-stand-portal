@@ -5,6 +5,7 @@ import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { EntityList } from '@/components/sheets/entity-list'
 import {
   useCallback,
+  useId,
   useEffect,
   useMemo,
   useRef,
@@ -56,7 +57,6 @@ import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 import { SheetRecordMenu } from '@/components/sheets/sheet-record-menu'
 import { SheetPresence } from '@/components/sheets/sheet-presence'
 import { TaskSheetForm } from './_components/task-sheet/task-sheet-form'
-import { TASK_FORM_ID } from './_components/task-sheet/form/task-sheet-form'
 import { PlanningPanel } from './_components/task-sheet/planning-panel'
 import { TaskCommentsPanel } from './_components/task-sheet/task-comments-panel'
 import { SheetActivitySection } from '@/components/sheets/sheet-activity-section'
@@ -89,6 +89,9 @@ type TaskSheetProps = {
 }
 
 export function TaskSheet(props: TaskSheetProps) {
+  // One id per sheet: two task sheets can be open in the stack, and a shared
+  // id would let one sheet's Save button submit the other's form.
+  const taskFormId = useId()
   const { isAdmin, role } = useViewerAccess()
   // The "Project or lead" field lists leads for anyone who works lead tasks,
   // first for roles that mostly work leads (`LEADS_FIRST_ROLES`).
@@ -479,6 +482,7 @@ export function TaskSheet(props: TaskSheetProps) {
               >
                 <SheetNoticeSlot className='px-6' />
                 <TaskSheetForm
+                  formId={taskFormId}
                   form={form}
                   onSubmit={handleFormSubmit}
                   isPending={isPending}
@@ -565,7 +569,7 @@ export function TaskSheet(props: TaskSheetProps) {
 
               {/* Footer — always at bottom, outside scroll area */}
               <SheetFormFooter
-                formId={TASK_FORM_ID}
+                formId={taskFormId}
                 saveLabel={saveLabel}
                 onSave={handleSave}
                 submitDisabled={submitDisabled}

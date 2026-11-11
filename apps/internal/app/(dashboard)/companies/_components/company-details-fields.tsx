@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 import type { Control } from 'react-hook-form'
 
 import { Input } from '@pts/ui/input'
@@ -25,6 +27,8 @@ export function CompanyDetailsFields({
   control: Control<CompanyFormValues>
   disabled: boolean
 }) {
+  // Ids per sheet: two sheets of a kind can be open in the stack.
+  const companyNotesId = useId()
   return (
     <SheetSection>
       <FormField
@@ -109,7 +113,7 @@ export function CompanyDetailsFields({
             <FormLabel optional>Notes</FormLabel>
             <FormControl>
               <RichTextEditor
-                id='company-notes'
+                id={companyNotesId}
                 value={field.value ?? ''}
                 onChange={field.onChange}
                 disabled={disabled}

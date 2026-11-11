@@ -2,7 +2,7 @@
 
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 import type { SaveConflictGuard } from '@/lib/sheets/save-conflict/use-save-conflict'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
@@ -56,8 +56,6 @@ import {
 import type { ProjectSheetLinkChanges } from '@/lib/projects/sheet/use-project-sheet-state'
 import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
 
-const PROJECT_FORM_ID = 'project-form'
-
 export type ProjectSheetFormProps = {
   form: UseFormReturn<ProjectSheetFormValues>
   fieldState: ProjectSheetFieldState
@@ -83,6 +81,9 @@ export type ProjectSheetFormProps = {
 }
 
 export function ProjectSheetForm(props: ProjectSheetFormProps) {
+  // One id per sheet: two sheets of a kind can be open in the stack, and
+  // a shared id would let one sheet's Save button submit the other's form.
+  const projectFormId = useId()
   // Non-admins get a personal-board sheet: no client, owner, members or
   // integrations (`saveProject` enforces the same rule).
   const { isAdmin, role } = useViewerAccess()
@@ -288,7 +289,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           (GitHub, Vercel, Supabase) on the right. Below lg they stack into
           one scroll with the footer pinned to the bottom. */}
       <form
-        id={PROJECT_FORM_ID}
+        id={projectFormId}
         onSubmit={handleFormSubmit}
         className='flex min-h-0 flex-1 max-lg:flex-col max-lg:overflow-y-auto'
       >
@@ -581,7 +582,7 @@ export function ProjectSheetForm(props: ProjectSheetFormProps) {
           </div>
           <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
             <SheetFormFooter
-              formId={PROJECT_FORM_ID}
+              formId={projectFormId}
               saveLabel={submitButton.label}
               onSave={handleSave}
               submitDisabled={submitButton.disabled}

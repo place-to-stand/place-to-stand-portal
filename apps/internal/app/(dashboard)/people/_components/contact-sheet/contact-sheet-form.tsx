@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useId, useRef } from 'react'
 import type React from 'react'
 import { useWatch, type UseFormReturn } from 'react-hook-form'
 
@@ -35,8 +35,6 @@ import { ContactNotesField } from './contact-notes-field'
 import { ContactSignInSection } from './contact-access-section'
 import { canHavePortalAccess } from '@/lib/people/portal-eligibility'
 import { SheetNoticeSlot } from '@/components/sheets/sheet-notice-slot'
-
-const CONTACT_FORM_ID = 'contact-form'
 
 type ContactFormValues = ContactFormData
 
@@ -96,6 +94,9 @@ export function ContactSheetForm({
   readOnly,
   onAvatarUploadingChange,
 }: ContactSheetFormProps) {
+  // One id per sheet: two sheets of a kind can be open in the stack, and
+  // a shared id would let one sheet's Save button submit the other's form.
+  const contactFormId = useId()
   const personName =
     (form.formState.defaultValues?.name as string | undefined)?.trim() ?? ''
   // The sign-in uses the email as typed: it changes with the same Save.
@@ -164,7 +165,7 @@ export function ContactSheetForm({
     <Form {...form}>
       <div className='flex-1 overflow-y-auto'>
         <form
-          id={CONTACT_FORM_ID}
+          id={contactFormId}
           onSubmit={form.handleSubmit(values => onSubmit(values))}
           className='flex flex-col'
         >
@@ -352,7 +353,7 @@ export function ContactSheetForm({
         </form>
       </div>
       <SheetFormFooter
-        formId={CONTACT_FORM_ID}
+        formId={contactFormId}
         saveLabel={saveLabel}
         onSave={handleSave}
         submitDisabled={submitDisabled}

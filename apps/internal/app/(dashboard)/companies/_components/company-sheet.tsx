@@ -3,7 +3,14 @@
 import { cn } from '@/lib/utils'
 import { SHEET_SECTIONS_CLASS } from '@/components/sheets/sheet-section'
 
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -72,7 +79,6 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useSaveConflict } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 
-const COMPANY_FORM_ID = 'company-form'
 const COMPANY_PEOPLE_SECTION_ID = 'company-people'
 const ARCHIVED_COMPANY_NOTE = 'Archived. Restore it from the archive list.'
 
@@ -100,6 +106,9 @@ export function CompanySheet({
   initialName,
   onCreated,
 }: CompanySheetProps) {
+  // One id per sheet: two sheets of a kind can be open in the stack, and
+  // a shared id would let one sheet's Save button submit the other's form.
+  const companyFormId = useId()
   const router = useRouter()
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -554,7 +563,7 @@ export function CompanySheet({
                 {/* Two columns. Below lg they stack into one scroll (Company,
                     then Client) with the footer pinned to the bottom. */}
                 <form
-                  id={COMPANY_FORM_ID}
+                  id={companyFormId}
                   onSubmit={event => {
                     event.preventDefault()
                     // The save reports its own result as a toast.
@@ -620,7 +629,7 @@ export function CompanySheet({
                     </div>
                     <div className='max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:order-last'>
                       <SheetFormFooter
-                        formId={COMPANY_FORM_ID}
+                        formId={companyFormId}
                         saveLabel={getSubmitLabel({
                           isSaving: isPending,
                           isEditing,

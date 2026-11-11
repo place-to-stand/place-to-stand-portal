@@ -5,25 +5,23 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import { ProjectSheet } from '@/app/(dashboard)/projects/project-sheet'
 
-import { NEW_SHEET_VALUE } from '../entities'
-import { useSheetParams } from '../use-sheet-params'
+import { useCreatePrefill } from './use-create-prefill'
 import { useSheetInit } from './use-sheet-init'
 import type { SheetWrapperProps } from './types'
 
 export function ProjectSheetWrapper({
   value,
   open,
+  aux,
   onRequestClose,
 }: SheetWrapperProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { getAux } = useSheetParams()
   const data = useSheetInit('project', value)
   // A company's Projects (its sheet's Client column) passes its id along.
-  const initialCompanyId =
-    value === NEW_SHEET_VALUE
-      ? (getAux('projectCompanyId') ?? undefined)
-      : undefined
+  const initialCompanyId = useCreatePrefill(value, aux, [
+    'projectCompanyId',
+  ] as const).projectCompanyId
 
   if (!data) {
     return null

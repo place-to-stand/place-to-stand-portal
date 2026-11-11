@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 import { useQuery } from '@tanstack/react-query'
 
 import { EmptyState } from '@pts/ui/empty-state'
@@ -66,6 +68,9 @@ export function CompanyBillingSection({
   companyId: string | null
   disabled: boolean
 }) {
+  // Ids per sheet: two sheets of a kind can be open in the stack.
+  const companyBillSwitchId = useId()
+  const companyBillingEffectiveId = useId()
   const billing = useCompanyBilling()
   const { data: work } = useQuery({
     queryKey: ['companyClientWork', companyId],
@@ -154,12 +159,12 @@ export function CompanyBillingSection({
         action={
           <>
             <Switch
-              id='company-bill-switch'
+              id={companyBillSwitchId}
               checked={billingOn}
               disabled={disabled || billing.status !== 'ready'}
               onCheckedChange={billing.setBillingOn}
             />
-            <Label htmlFor='company-bill-switch'>Bill this company</Label>
+            <Label htmlFor={companyBillSwitchId}>Bill this company</Label>
           </>
         }
       >
@@ -170,7 +175,7 @@ export function CompanyBillingSection({
         ) : null}
         {choice ? (
           <EffectiveMonthSelect
-            id='company-billing-effective'
+            id={companyBillingEffectiveId}
             title={choice.title}
             value={effective}
             onChange={setEffective}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { Check, Copy, ExternalLink, SquareArrowOutUpRight } from 'lucide-react'
 
 import { Input } from '@pts/ui/input'
@@ -22,6 +22,8 @@ export function InvoiceLinkField({
   invoiceId: string
   shareToken: string | null
 }) {
+  // Ids per sheet: two sheets of a kind can be open in the stack.
+  const invoiceClientLinkId = useId()
   const [copied, setCopied] = useState(false)
   const url = shareToken
     ? `${typeof window !== 'undefined' ? window.location.origin : ''}${invoiceShareHref(shareToken)}`
@@ -41,20 +43,20 @@ export function InvoiceLinkField({
 
   return (
     <div className='space-y-2'>
-      <Label htmlFor='invoice-client-link' className='font-medium'>
+      <Label htmlFor={invoiceClientLinkId} className='font-medium'>
         Public link
       </Label>
       <div className='flex items-center gap-1'>
         {url ? (
           <Input
-            id='invoice-client-link'
+            id={invoiceClientLinkId}
             value={url}
             readOnly
             className='text-xs'
           />
         ) : (
           <p
-            id='invoice-client-link'
+            id={invoiceClientLinkId}
             className='text-muted-foreground flex h-9 w-full min-w-0 items-center rounded-md border border-dashed px-3 text-xs'
           >
             Created when you send the invoice.

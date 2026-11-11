@@ -118,9 +118,16 @@ export function removeSheetParams(params: URLSearchParams, ids: string[]) {
     return
   }
   const dropped = new Set(removing.map(item => item.paramIndex))
+  // A record's repeats (a hand-made URL) go with it, or closing it would
+  // bring it back.
+  const isRepeat = (key: string, value: string) =>
+    isRecordValue(value) &&
+    removing.some(item => item.entity === key && item.value === value)
   rewrite(
     params,
-    [...params.entries()].filter((_, index) => !dropped.has(index))
+    [...params.entries()].filter(
+      ([key, value], index) => !dropped.has(index) && !isRepeat(key, value)
+    )
   )
   for (const entity of new Set(removing.map(item => item.entity))) {
     if (!params.getAll(entity).includes(NEW_SHEET_VALUE)) {
@@ -143,7 +150,16 @@ export function swapSheetParam(
   }
   const entries = [...params.entries()]
   entries[item.paramIndex] = [item.entity, value]
-  rewrite(params, entries)
+  // The record may already be open elsewhere in the stack: it keeps this
+  // place only, never two.
+  rewrite(
+    params,
+    entries.filter(
+      ([key, entryValue], index) =>
+        index === item.paramIndex ||
+        !(isRecordValue(value) && key === item.entity && entryValue === value)
+    )
+  )
   return item
 }
 

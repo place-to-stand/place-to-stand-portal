@@ -4,7 +4,12 @@ import type { SheetStackItem } from './stack'
 
 type PendingOpen =
   /** A sheet stacked on top. */
-  | { kind: 'open'; item: SheetStackItem }
+  | {
+      kind: 'open'
+      item: SheetStackItem
+      /** Create-sheet prefill, handed to the sheet when it mounts. */
+      aux?: Record<string, string>
+    }
   /** Sheet `from` now shows `item` (a create sheet became its record). */
   | { kind: 'swap'; from: string; item: SheetStackItem }
 

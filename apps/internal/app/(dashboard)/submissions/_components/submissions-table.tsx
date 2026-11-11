@@ -388,9 +388,7 @@ export function SubmissionsTable({
       {showNotFound && submissionParam ? (
         <DeepLinkNotFoundNotice
           entity='submission'
-          onDismiss={() =>
-            updateParams({ submission: undefined }, { scroll: false })
-          }
+          onDismiss={clearSubmission}
         />
       ) : null}
       <div className='overflow-hidden rounded-lg border'>

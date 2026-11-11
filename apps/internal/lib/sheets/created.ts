@@ -21,7 +21,12 @@ export type SheetCreatedRecords = {
 export type SheetCreatedEntity = keyof SheetCreatedRecords
 
 type Listener<E extends SheetCreatedEntity> = (
-  record: SheetCreatedRecords[E]
+  record: SheetCreatedRecords[E],
+  /**
+   * The stack id of the create sheet that saved it, as `openNew` returned
+   * it: a listener takes only the record of the sheet it opened.
+   */
+  stackId: string | null
 ) => void
 
 const listeners: { [E in SheetCreatedEntity]: Set<Listener<E>> } = {
@@ -31,10 +36,11 @@ const listeners: { [E in SheetCreatedEntity]: Set<Listener<E>> } = {
 
 export function emitSheetCreated<E extends SheetCreatedEntity>(
   entity: E,
-  record: SheetCreatedRecords[E]
+  record: SheetCreatedRecords[E],
+  stackId: string | null
 ) {
   for (const listener of listeners[entity]) {
-    listener(record)
+    listener(record, stackId)
   }
 }
 

@@ -104,3 +104,12 @@ test('servers read the first valid param', () => {
   assert.equal(firstSheetParam('invoice', ['bogus', A]), A)
   assert.equal(firstSheetParam('invoice', undefined), undefined)
 })
+
+test('a record never ends up open twice', () => {
+  const query = params(`task=${A}&lead=${B}&task=${B}`)
+  setFirstSheetParam(query, 'task', B)
+  assert.equal(query.toString(), `task=${B}&lead=${B}`)
+  const repeated = params(`task=${A}&lead=${H}&task=${A}`)
+  removeSheetParams(repeated, [`task:${A}:0`])
+  assert.equal(repeated.toString(), `lead=${H}`)
+})

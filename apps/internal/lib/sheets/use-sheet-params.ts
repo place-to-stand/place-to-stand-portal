@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import {
   NEW_SHEET_VALUE,
+  SHEET_ENTITIES,
   duplicateSheetValue,
   parseDuplicateSourceId,
   type DuplicableSheetEntity,
@@ -103,7 +104,26 @@ export function useSheetParams() {
         )
         return target
       }
+      // Aux params prefill an entity's create sheet. A second draft of the
+      // entity gets its prefill in memory (the host hands it over), so the
+      // URL's stays with the first draft, which may be reading it.
+      const draftBelow =
+        value === NEW_SHEET_VALUE &&
+        parseSheetStack(params).some(
+          item => item.entity === entity && item.value === NEW_SHEET_VALUE
+        )
       params.append(entity, value)
+      if (draftBelow) {
+        return target
+      }
+      if (value === NEW_SHEET_VALUE) {
+        // A fresh draft never inherits another's prefill.
+        for (const key of SHEET_ENTITIES[entity].auxParams) {
+          if (!(key in (aux ?? {}))) {
+            params.delete(key)
+          }
+        }
+      }
       for (const [key, auxValue] of Object.entries(aux ?? {})) {
         if (auxValue) {
           params.set(key, auxValue)
@@ -152,6 +172,10 @@ export function useSheetParams() {
     [urlFor]
   )
 
+  /**
+   * Opens a sheet, or goes back to it. Returns the sheet's stack id, so a
+   * picker that opened a create sheet takes only that sheet's new record.
+   */
   const open = useCallback(
     (
       entity: SheetEntityKey,
@@ -159,22 +183,22 @@ export function useSheetParams() {
       /** Aux params written in the same push (e.g. a create-sheet prefill). */
       aux?: Record<string, string>,
       options?: SheetOpenOptions
-    ) => {
+    ): string | null => {
       const live = liveParams()
       const target = openTarget(parseSheetStack(live), entity, value)
       if (target.kind === 'back') {
         goBack(target.above)
-        return
+        return target.item.id
       }
       applyOpen(live, entity, value, aux)
       const item = parseSheetStack(live).findLast(
         entry => entry.entity === entity && entry.value === value
       )
       if (!item) {
-        return
+        return null
       }
       // Let the host mount now, before the URL write lands.
-      emitSheetOpen({ kind: 'open', item })
+      emitSheetOpen({ kind: 'open', item, aux })
       const shallow =
         options?.shallow ??
         (value === NEW_SHEET_VALUE ||
@@ -185,6 +209,7 @@ export function useSheetParams() {
       } else {
         router.push(urlFor(live), { scroll: false })
       }
+      return item.id
     },
     [applyOpen, goBack, pathname, router, urlFor]
   )

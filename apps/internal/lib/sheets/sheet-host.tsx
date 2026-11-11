@@ -24,10 +24,25 @@ type RenderedSheet = {
   key: string
   item: SheetStackItem
   open: boolean
+  /** Create-sheet prefill from the open that stacked it. */
+  aux?: Record<string, string>
 }
 
 let nextKey = 0
 const newKey = () => `sheet-${(nextKey += 1)}`
+
+/**
+ * React keys by stack id, assigned outside state updaters (React may run an
+ * updater again) and kept while the sheet is open.
+ */
+const keysById = new Map<string, string>()
+const keyFor = (id: string) => {
+  const existing = keysById.get(id)
+  if (existing) return existing
+  const key = newKey()
+  keysById.set(id, key)
+  return key
+}
 
 const signatureOf = (items: SheetStackItem[]) =>
   items.map(item => item.id).join('|')
@@ -53,7 +68,7 @@ export function SheetHost() {
   const foreign = stack.filter(item => !isStackItemClaimed(item, pathname))
 
   const [rendered, setRendered] = useState<RenderedSheet[]>(() =>
-    foreign.map(item => ({ key: newKey(), item, open: true }))
+    foreign.map(item => ({ key: keyFor(item.id), item, open: true }))
   )
 
   // Adopt URL changes (own state only — safe during render).
@@ -61,12 +76,18 @@ export function SheetHost() {
   const [lastSignature, setLastSignature] = useState(signature)
   if (signature !== lastSignature) {
     setLastSignature(signature)
+    const keys = foreign.map(item => keyFor(item.id))
     setRendered(previous => {
       const unmatched = [...previous]
-      const next: RenderedSheet[] = foreign.map(item => {
-        const index = unmatched.findIndex(entry => entry.item.id === item.id)
-        const match = index === -1 ? null : unmatched.splice(index, 1)[0]
-        return { key: match?.key ?? newKey(), item, open: true }
+      const next: RenderedSheet[] = foreign.map((item, index) => {
+        const at = unmatched.findIndex(entry => entry.item.id === item.id)
+        const match = at === -1 ? null : unmatched.splice(at, 1)[0]
+        return {
+          key: match?.key ?? keys[index]!,
+          item,
+          open: true,
+          aux: match?.aux,
+        }
       })
       // Keep entries the URL dropped mounted (closed) so they animate out.
       for (const entry of unmatched) {
@@ -87,7 +108,14 @@ export function SheetHost() {
     }
 
     const timeout = setTimeout(() => {
-      setRendered(previous => previous.filter(entry => entry.open))
+      setRendered(previous => {
+        for (const entry of previous) {
+          if (!entry.open && keysById.get(entry.item.id) === entry.key) {
+            keysById.delete(entry.item.id)
+          }
+        }
+        return previous.filter(entry => entry.open)
+      })
     }, SHEET_CLOSE_MS)
 
     return () => {
@@ -103,6 +131,10 @@ export function SheetHost() {
         return
       }
       const findId = pending.kind === 'swap' ? pending.from : pending.item.id
+      // A swap keeps the sheet's key under its new id.
+      const key = keysById.get(findId) ?? keyFor(pending.item.id)
+      keysById.set(pending.item.id, key)
+      const aux = pending.kind === 'open' ? pending.aux : undefined
       setRendered(previous =>
         previous.some(entry => entry.item.id === findId)
           ? previous.map(entry =>
@@ -110,7 +142,7 @@ export function SheetHost() {
                 ? { ...entry, item: pending.item, open: true }
                 : entry
             )
-          : [...previous, { key: newKey(), item: pending.item, open: true }]
+          : [...previous, { key, item: pending.item, open: true, aux }]
       )
     })
   }, [pathname])
@@ -151,6 +183,7 @@ export function SheetHost() {
               open={entry.open}
               stack={stack}
               stackId={entry.item.id}
+              aux={entry.aux}
               onRequestClose={() => requestClose(entry)}
             />
           </SheetStackEntry>

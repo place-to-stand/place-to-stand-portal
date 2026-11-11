@@ -83,7 +83,7 @@ export function ContactsManagementTable({
   } = useContactsTableState({ contacts, deepLinkedContact })
   // Create-from-picker on this page opens this sheet, not the global one, so
   // it takes the picker's prefill and hands the new person back the same way.
-  const { getAux } = useSheetParams()
+  const { getAux, stack } = useSheetParams()
   const showContactNotFound = useDeepLinkNotFound('contact', contactNotFound)
 
   // Guard-validated active search (R4): an empty list under a live `?q=`
@@ -156,7 +156,13 @@ export function ContactsManagementTable({
           contact={selectedContact}
           initialName={getAux('contactName') ?? undefined}
           initialCompanyId={getAux('contactCompanyId') ?? undefined}
-          onCreated={record => emitSheetCreated('contact', record)}
+          onCreated={record =>
+            emitSheetCreated(
+              'contact',
+              record,
+              stack.find(item => item.entity === 'contact')?.id ?? null
+            )
+          }
         />
       </PageSheetEntry>
     </div>
