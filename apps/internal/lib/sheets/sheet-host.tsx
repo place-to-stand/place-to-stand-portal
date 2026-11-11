@@ -209,6 +209,7 @@ export function SheetHost() {
             entity={entry.item.entity}
             value={entry.open ? entry.item.value : null}
             id={entry.open ? entry.item.id : null}
+            position={entry.item.position}
           >
             <Wrapper
               value={entry.item.value}

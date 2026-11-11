@@ -10,6 +10,8 @@ export type SheetStackEntryValue = {
   value: string | null
   /** Its stack id (`SheetStackItem.id`); null while closed. */
   id: string | null
+  /** Its place in the stack, 0 for the bottom: sets how it layers. */
+  position?: number
 }
 
 const SheetStackEntryContext = createContext<SheetStackEntryValue | null>(null)
@@ -25,10 +27,11 @@ export function SheetStackEntry({
   entity,
   value,
   id,
+  position,
   children,
 }: SheetStackEntryValue & { children: ReactNode }) {
   return (
-    <SheetStackEntryContext value={{ entity, value, id }}>
+    <SheetStackEntryContext value={{ entity, value, id, position }}>
       {children}
     </SheetStackEntryContext>
   )
@@ -36,3 +39,11 @@ export function SheetStackEntry({
 
 /** The stack entry of the sheet this component sits in, if any. */
 export const useSheetStackEntry = () => useContext(SheetStackEntryContext)
+
+/**
+ * A sheet's z-index from its stack position, so a sheet above another always
+ * covers it, whichever finished loading first (portals stack in mount
+ * order). 40 up, under the z-50 popovers, menus and dialogs a sheet opens.
+ */
+export const sheetLayerZ = (position: number | undefined) =>
+  40 + Math.min(Math.max(position ?? 0, 0), 9)

@@ -242,7 +242,8 @@ export const useBoardSheetState = ({
         setDefaultTaskStatus('ON_DECK')
         setDefaultTaskDueOn(null)
 
-        if (routeTaskId && projectIdForSheet) {
+        // A create sheet clears its `?task=new` too, or a refresh reopens it.
+        if ((routeTaskId && projectIdForSheet) || isCreatingTask) {
           startTransition(() => {
             setRouteTaskId(null)
             setPendingTaskId(null)
@@ -260,6 +261,7 @@ export const useBoardSheetState = ({
     },
     [
       closeSheetParam,
+      isCreatingTask,
       routeTaskId,
       selectedProjectId,
       sheetTask?.project_id,

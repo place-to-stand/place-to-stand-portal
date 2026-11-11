@@ -32,6 +32,7 @@ export function PageSheetEntry({
       entity={entity}
       value={item?.value ?? null}
       id={item?.id ?? null}
+      position={0}
     >
       {children}
     </SheetStackEntry>

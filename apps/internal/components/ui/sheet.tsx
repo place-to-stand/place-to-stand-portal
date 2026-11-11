@@ -5,6 +5,7 @@ import { Dialog as SheetPrimitive } from '@base-ui/react/dialog'
 import { XIcon } from 'lucide-react'
 
 import { SheetNoticeProvider } from '@/components/sheets/sheet-notice-slot'
+import { sheetLayerZ, useSheetStackEntry } from '@/lib/sheets/stack-entry'
 import { cn } from '@/lib/utils'
 
 // Don't close the sheet when a press lands in a toast or inside another
@@ -94,13 +95,19 @@ const SheetPortal = ({ ...props }: SheetPrimitive.Portal.Props) => {
 
 const SheetOverlay = ({
   className,
+  style,
   ...props
 }: SheetPrimitive.Backdrop.Props) => {
+  const zIndex = sheetLayerZ(useSheetStackEntry()?.position)
   return (
     <SheetPrimitive.Backdrop
       data-slot='sheet-overlay'
+      style={{
+        zIndex,
+        ...(typeof style === 'object' ? style : undefined),
+      }}
       className={cn(
-        'data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards data-closed:fade-out-0 data-open:fade-in-0 pointer-events-auto fixed inset-0 z-50 bg-black/50',
+        'data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards data-closed:fade-out-0 data-open:fade-in-0 pointer-events-auto fixed inset-0 bg-black/50',
         className
       )}
       {...props}
@@ -205,10 +212,13 @@ const SheetContent = React.forwardRef<
       showOverlay = true,
       hideCloseButton = false,
       skipMountAnimation = false,
+      style,
       ...props
     },
     ref
   ) => {
+    // Stack position, not mount order, decides which sheet is on top.
+    const layerZ = sheetLayerZ(useSheetStackEntry()?.position)
     const isHorizontal = side === 'left' || side === 'right'
     const popupRef = React.useRef<HTMLDivElement | null>(null)
     const [popupNode, setPopupNode] = React.useState<HTMLDivElement | null>(
@@ -288,10 +298,14 @@ const SheetContent = React.forwardRef<
             return target
           }}
           data-slot='sheet-content'
+          style={{
+            zIndex: layerZ,
+            ...(typeof style === 'object' ? style : undefined),
+          }}
           className={cn(
             // Open and close both 300ms: the open used to run at 500ms, which
             // read as slower than the close it was paired with.
-            'bg-background data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards pointer-events-auto fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-closed:duration-300 data-open:duration-300',
+            'bg-background data-open:animate-in data-closed:animate-out data-closed:fill-mode-forwards pointer-events-auto fixed flex flex-col gap-4 shadow-lg transition ease-in-out data-closed:duration-300 data-open:duration-300',
             skipMountAnimation && 'data-open:animate-none',
             // Entity sheets take the whole phone screen: at 3/4 of a 375px
             // viewport their forms and editors were too cramped to use.
