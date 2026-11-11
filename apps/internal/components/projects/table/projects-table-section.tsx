@@ -1,5 +1,6 @@
 import { SortableTableHead } from '@/components/table-toolbar/sortable-table-head'
 import { useListParams } from '@/hooks/use-list-params'
+import { PROJECT_SORT_FIELDS } from '@/lib/queries/projects/sort'
 import {
   Table,
   TableBody,
@@ -35,7 +36,7 @@ type ProjectsTableSectionProps = {
 function isProjectSortValue(value: string): boolean {
   const [field, direction] = value.split(':')
   return (
-    (field === 'name' || field === 'created') &&
+    (PROJECT_SORT_FIELDS as readonly string[]).includes(field) &&
     (direction === 'asc' || direction === 'desc')
   )
 }
@@ -80,7 +81,15 @@ export function ProjectsTableSection({
               >
                 Name
               </SortableTableHead>
-              <TableHead className='w-[25%]'>Owner</TableHead>
+              <SortableTableHead
+                field='owner'
+                sort={sort}
+                defaultSort='name:asc'
+                onSortChange={next => update({ sort: next })}
+                className='w-[25%]'
+              >
+                Owner
+              </SortableTableHead>
               <SortableTableHead
                 field='created'
                 sort={sort}

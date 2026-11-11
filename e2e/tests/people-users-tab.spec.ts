@@ -30,3 +30,28 @@ test('the Users page lists sign-ins and keeps its page on reset', async ({
   await page.getByRole('button', { name: /reset/i }).click()
   await expect(page).toHaveURL(/\/people\/users$/)
 })
+
+// People and Archive narrow to people who can (or can't) sign in, as
+// Companies narrows to clients. Users takes no type. Read-only.
+test('the People type filter offers user and not a user', async ({ page }) => {
+  await page.goto('/people')
+  await page.getByRole('combobox', { name: 'All people' }).click()
+  await expect(page.getByRole('option')).toHaveText(['User', 'Not a user'])
+
+  // User, then Not a user: each lands in the link.
+  await page.getByRole('option', { name: 'User', exact: true }).click()
+  await expect(page).toHaveURL(/\/people\?type=user$/)
+  await expect(page.locator('tbody tr').first()).toBeVisible()
+
+  await page.getByRole('combobox', { name: /User/ }).click()
+  await page.getByRole('option', { name: 'Not a user' }).click()
+  await expect(page).toHaveURL(/type=none/)
+
+  // The Users page lists sign-ins only, so it has no type filter and drops
+  // a type from its link.
+  await page.goto('/people/users?type=none')
+  await expect(page).toHaveURL(/\/people\/users$/)
+  await expect(page.getByRole('combobox', { name: 'All people' })).toHaveCount(
+    0
+  )
+})

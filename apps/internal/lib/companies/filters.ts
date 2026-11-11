@@ -24,6 +24,7 @@ export const COMPANY_LEADS_LABELS: Record<CompanyLeadsFilter, string> = {
 // An old `?sort=updated` falls back to the default (the column is gone).
 const COMPANY_SORT_FIELDS = [
   'name',
+  'tags',
   'client',
   'hours',
   'people',
@@ -105,6 +106,9 @@ export function applyCompanyListParams(
             : row.billingType === 'net_30'
               ? 1
               : 2
+      case 'tags':
+        // Tags arrive A to Z, so the list reads by its first tag.
+        return row.tags.length ? row.tags.join(', ').toLowerCase() : null
       case 'hours':
         return row.hours ? row.hours.remaining : null
       case 'people':

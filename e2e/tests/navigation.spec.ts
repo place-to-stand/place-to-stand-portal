@@ -43,9 +43,9 @@ test('old bookmarks still land on the right page', async ({ page }) => {
   await expect(page).toHaveURL(/\/people\/users/)
   await page.goto('/clients')
   await expect(page).toHaveURL(/\/companies\/clients/)
-  // Clients and Users were once list presets.
+  // Users was once a list preset; Companies filters to clients in place.
   await page.goto('/companies?type=client')
-  await expect(page).toHaveURL(/\/companies\/clients$/)
+  await expect(page).toHaveURL(/\/companies\?type=client$/)
   await page.goto('/people?role=ADMIN')
   await expect(page).toHaveURL(/\/people\/users\?role=ADMIN$/)
   await page.goto('/clients/archive')

@@ -18,6 +18,7 @@ export const TIME_LOG_SORT_FIELDS = [
   'person',
   'client',
   'project',
+  'tasks',
 ] as const
 export type TimeLogSortField = (typeof TIME_LOG_SORT_FIELDS)[number]
 /** Newest first. */

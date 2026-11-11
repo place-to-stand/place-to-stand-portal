@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import type { RenderAssigneeFn } from '../../../../../../lib/projects/board/board-selectors'
 import type { ReviewActionKind } from './review-tab.types'
 import { ReviewTaskDataCells } from './review-task-data-cells'
+import { useReviewTaskSort } from './review-task-sort'
 import { PagePanel } from '@/components/layout/page-panel'
 
 type ReviewArchivedSectionProps = {
@@ -49,6 +50,7 @@ export function ReviewArchivedSection({
   reviewActionType,
   isReviewActionPending,
 }: ReviewArchivedSectionProps) {
+  const { sorted, heads } = useReviewTaskSort(tasks, 'deleted_at')
   return (
     <PagePanel flush>
       <div className='border-b px-4 py-3'>
@@ -73,11 +75,7 @@ export function ReviewArchivedSection({
         <Table density='compact' stack>
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <TableHead>Task</TableHead>
-              <TableHead className='text-center'>Comments</TableHead>
-              <TableHead className='text-center'>Files</TableHead>
-              <TableHead>Due</TableHead>
-              <TableHead>Updated</TableHead>
+              {heads}
               <TableHead className='text-right'>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -92,7 +90,7 @@ export function ReviewArchivedSection({
                 </TableCell>
               </TableRow>
             ) : (
-              tasks.map(task => {
+              sorted.map(task => {
                 const isRestoreAction =
                   isReviewActionPending &&
                   reviewActionTaskId === task.id &&

@@ -37,12 +37,25 @@ import { OptionalMarker } from '@/components/ui/form'
 import { RecordRowAction } from '@/components/table/record-row-action'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { ProductCatalogItemRow } from '@/lib/queries/product-catalog'
+import { parseSortParam } from '@/lib/pagination/sort'
+import { sortRows } from '@/lib/table/sort-rows'
 
 import { saveProductCatalogItem } from '../actions'
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
+
+// Every column sorts; the default is Name A-Z.
+const PRODUCT_SORT_FIELDS = [
+  'name',
+  'price',
+  'unit',
+  'minQty',
+  'hourBlock',
+  'active',
+] as const
+const DEFAULT_PRODUCT_SORT = { field: 'name', direction: 'asc' } as const
 
 const DISCARD_TITLE = 'Discard changes?'
 const DISCARD_DESCRIPTION =
@@ -135,13 +148,51 @@ export function ProductCatalogSection({
   const [sort, setSort] = useState<SortValue | undefined>(undefined)
 
   const sortedItems = useMemo(() => {
-    const factor = sort === 'name:desc' ? -1 : 1
-    return [...items].sort(
-      (a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) *
-        factor
+    const { field, direction } = parseSortParam(
+      sort,
+      PRODUCT_SORT_FIELDS,
+      DEFAULT_PRODUCT_SORT
+    )
+    // Name A-Z first, so it breaks ties in every column.
+    const byName = sortRows(items, item => item.name, 'asc')
+    return sortRows(
+      byName,
+      item => {
+        switch (field) {
+          case 'price':
+            return Number(item.unit_price)
+          case 'unit':
+            return item.unit_label
+          case 'minQty':
+            return item.min_quantity
+          case 'hourBlock':
+            return item.creates_hour_block_default
+          case 'active':
+            return item.is_active
+          case 'name':
+            return item.name
+        }
+      },
+      direction
     )
   }, [items, sort])
+  const sortHead = (
+    field: (typeof PRODUCT_SORT_FIELDS)[number],
+    label: string,
+    className: string,
+    align?: 'right'
+  ) => (
+    <SortableTableHead
+      field={field}
+      sort={sort}
+      defaultSort='name:asc'
+      onSortChange={setSort}
+      className={className}
+      align={align}
+    >
+      {label}
+    </SortableTableHead>
+  )
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -319,19 +370,14 @@ export function ProductCatalogSection({
         >
           <TableHeader>
             <TableRow className='bg-muted/40'>
-              <SortableTableHead
-                field='name'
-                sort={sort}
-                defaultSort='name:asc'
-                onSortChange={setSort}
-              >
-                Name
-              </SortableTableHead>
-              <TableHead className='w-[12%] text-right'>Unit price</TableHead>
-              <TableHead className='w-[11%] pl-4'>Unit label</TableHead>
-              <TableHead className='w-[8%]'>Min qty</TableHead>
-              <TableHead className='w-[11%]'>Hour block</TableHead>
-              <TableHead className='w-[7%]'>Active</TableHead>
+              {sortHead('name', 'Name', '')}
+              {sortHead('price', 'Unit price', 'w-[12%]', 'right')}
+              {/* p-0 plus the button's px-2: pl-2 lines the label up with
+                  the cells' md:pl-4, clear of the right-aligned price. */}
+              {sortHead('unit', 'Unit label', 'w-[11%] pl-2')}
+              {sortHead('minQty', 'Min qty', 'w-[8%]')}
+              {sortHead('hourBlock', 'Hour block', 'w-[11%]')}
+              {sortHead('active', 'Active', 'w-[7%]')}
               <TableHead className='w-10' />
             </TableRow>
           </TableHeader>

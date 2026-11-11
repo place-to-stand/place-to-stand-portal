@@ -215,6 +215,18 @@ export function SubmissionsTable({
   })
   const rawSort = getParam('sort')
   const sort = rawSort && isSubmissionSortValue(rawSort) ? rawSort : undefined
+  // The same sortable headers as Companies and the other lists.
+  const sortHead = (field: string, label: string, className: string) => (
+    <SortableTableHead
+      field={field}
+      sort={sort}
+      defaultSort='received:desc'
+      onSortChange={next => updateListParams({ sort: next })}
+      className={className}
+    >
+      {label}
+    </SortableTableHead>
+  )
 
   // Run raw params through the type guards (R4): ?kind=bogus is ignored by
   // the server, so it must not count as an active filter — an unfiltered
@@ -414,24 +426,16 @@ export function SubmissionsTable({
             <TableHeader>
               <TableRow className='bg-muted/40'>
                 <SelectAllHead />
-                <SortableTableHead
-                  field='received'
-                  sort={sort}
-                  defaultSort='received:desc'
-                  onSortChange={next => updateListParams({ sort: next })}
-                  className='w-[13%]'
-                >
-                  Received
-                </SortableTableHead>
-                <TableHead className='w-[12%]'>Form</TableHead>
+                {sortHead('received', 'Received', 'w-[13%]')}
+                {sortHead('form', 'Form', 'w-[12%]')}
                 {/* copy-check: allow — the visitor's contact details, not a person record */}
-                <TableHead>Contact</TableHead>
-                <TableHead className={columnClasses.company}>Company</TableHead>
-                <TableHead className={columnClasses.outcome}>Outcome</TableHead>
-                <TableHead className={columnClasses.source}>Source</TableHead>
-                {mode === 'archive' ? (
-                  <TableHead className='w-[13%]'>Archived</TableHead>
-                ) : null}
+                {sortHead('contact', 'Contact', '')}
+                {sortHead('company', 'Company', columnClasses.company)}
+                {sortHead('outcome', 'Outcome', columnClasses.outcome)}
+                {sortHead('source', 'Source', columnClasses.source)}
+                {mode === 'archive'
+                  ? sortHead('archived', 'Archived', 'w-[13%]')
+                  : null}
                 <TableHead className='w-20 text-right'>Actions</TableHead>
               </TableRow>
             </TableHeader>

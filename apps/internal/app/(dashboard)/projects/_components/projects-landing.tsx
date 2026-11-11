@@ -34,7 +34,12 @@ import { SortableTableHead } from '@/components/table-toolbar/sortable-table-hea
 import { useListParams } from '@/hooks/use-list-params'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import { ProjectOwnerCell } from '@/components/projects/project-owner-cell'
-import type { ProjectStatusValue } from '@/lib/constants'
+import {
+  PROJECT_STATUS_ENUM_VALUES,
+  type ProjectStatusValue,
+} from '@/lib/constants'
+import { parseSortParam } from '@/lib/pagination/sort'
+import { sortRows, type SortKey } from '@/lib/table/sort-rows'
 import type { AdminUserForOwner } from '@/lib/projects/sheet/project-sheet-ui-state'
 import { buildBoardPath } from '@/lib/projects/board/board-utils'
 import {
@@ -63,10 +68,41 @@ import {
 } from '@/components/table/bulk-select'
 import { SheetLink } from '@/components/ui/sheet-link'
 
-// PRD 004 §03: per-view sort allowlist. One shared `?sort` drives the Name
+// PRD 004 §03: per-view sort allowlist. One shared `?sort` drives every
 // column in all three section tables; grouping semantics stay unchanged —
-// only the project ordering within each section/client group flips.
-const PROJECT_SORT_FIELDS = ['name'] as const
+// only the project ordering within each section/client group changes.
+const PROJECT_SORT_FIELDS = [
+  'name',
+  'status',
+  'progress',
+  'owner',
+  'links',
+] as const
+const DEFAULT_PROJECT_SORT = { field: 'name', direction: 'asc' } as const
+
+/** A project's value in the sorted column; null (no value) sorts last. */
+function projectSortKey(
+  project: LandingProject,
+  field: (typeof PROJECT_SORT_FIELDS)[number]
+): SortKey {
+  switch (field) {
+    case 'status':
+      // The workflow order: Onboarding, Active, On hold, Completed.
+      return PROJECT_STATUS_ENUM_VALUES.indexOf(project.status)
+    case 'progress': {
+      const { done, total } = project.taskProgress
+      return total > 0 ? done / total : null
+    }
+    case 'owner':
+      return project.owner?.full_name ?? null
+    case 'links': {
+      const count = project.githubRepos.length + project.integrationLinks.length
+      return count > 0 ? count : null
+    }
+    case 'name':
+      return project.name
+  }
+}
 
 function isProjectSortValue(value: string): boolean {
   const [field, direction] = value.split(':')
@@ -246,7 +282,11 @@ export function ProjectsLanding({
   })
   const rawSort = getParam('sort')
   const sort = rawSort && isProjectSortValue(rawSort) ? rawSort : undefined
-  const sortFactor = sort === 'name:desc' ? -1 : 1
+  const { field: sortField, direction: sortDirection } = parseSortParam(
+    sort,
+    PROJECT_SORT_FIELDS,
+    DEFAULT_PROJECT_SORT
+  )
 
   // Handle status change for a project
   const handleProjectStatusChange = useCallback(
@@ -327,14 +367,17 @@ export function ProjectsLanding({
       }
     })
 
-    // Sort flips asc/desc per `?sort`; client groups stay alphabetical (asc)
-    // so only project ordering within each section/group changes.
+    // `?sort` orders projects within each section/group (name A-Z breaks
+    // ties); client groups stay alphabetical.
+    const order = (list: LandingProject[]) =>
+      sortRows(
+        sortRows(list, project => project.name, 'asc'),
+        project => projectSortKey(project, sortField),
+        sortDirection
+      )
     clientMap.forEach(entry => {
-      entry.projects.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
+      entry.projects = order(entry.projects)
     })
-
-    internal.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
-    personal.sort((a, b) => a.name.localeCompare(b.name) * sortFactor)
 
     const sortedClientSections = Array.from(clientMap.values()).sort((a, b) =>
       a.client.name.localeCompare(b.client.name)
@@ -342,10 +385,10 @@ export function ProjectsLanding({
 
     return {
       clientSections: sortedClientSections,
-      internalProjects: internal,
-      personalProjects: personal,
+      internalProjects: order(internal),
+      personalProjects: order(personal),
     }
-  }, [projects, currentUserId, sortFactor])
+  }, [projects, currentUserId, sortField, sortDirection])
 
   const projectLookup = useMemo(() => createProjectLookup(projects), [projects])
   const projectsByClientId = useMemo(
@@ -555,6 +598,18 @@ export function ProjectsLanding({
     actions: 'w-20',
   }
 
+  const sortHead = (field: string, label: string, className: string) => (
+    <SortableTableHead
+      field={field}
+      sort={sort}
+      defaultSort='name:asc'
+      onSortChange={next => update({ sort: next })}
+      className={className}
+    >
+      {label}
+    </SortableTableHead>
+  )
+
   /**
    * One header for every section table; `rows` is the table body and `ids`
    * its projects, for the header's select box.
@@ -570,21 +625,11 @@ export function ProjectsLanding({
         <TableHeader>
           <TableRow className='bg-muted/40'>
             {selectable ? <SelectAllHead ids={ids} /> : null}
-            <SortableTableHead
-              field='name'
-              sort={sort}
-              defaultSort='name:asc'
-              onSortChange={next => update({ sort: next })}
-              className={tableColumnWidths.project}
-            >
-              Project
-            </SortableTableHead>
-            <TableHead className={tableColumnWidths.status}>Status</TableHead>
-            <TableHead className={tableColumnWidths.progress}>
-              Progress
-            </TableHead>
-            <TableHead className={tableColumnWidths.owner}>Owner</TableHead>
-            <TableHead className={tableColumnWidths.links}>Links</TableHead>
+            {sortHead('name', 'Project', tableColumnWidths.project)}
+            {sortHead('status', 'Status', tableColumnWidths.status)}
+            {sortHead('progress', 'Progress', tableColumnWidths.progress)}
+            {sortHead('owner', 'Owner', tableColumnWidths.owner)}
+            {sortHead('links', 'Links', tableColumnWidths.links)}
             <TableHead className={`${tableColumnWidths.actions} text-right`}>
               Actions
             </TableHead>

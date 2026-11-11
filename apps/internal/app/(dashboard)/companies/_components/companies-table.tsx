@@ -155,9 +155,7 @@ export function CompaniesTable({
               slack, so the select and Actions columns keep their widths. */}
               {sortHead('name', 'Company', '')}
               {/* Narrower beside the billing columns, so the name keeps room. */}
-              <TableHead className={seesBilling ? 'w-[12%]' : 'w-[20%]'}>
-                Tags
-              </TableHead>
+              {sortHead('tags', 'Tags', seesBilling ? 'w-[12%]' : 'w-[20%]')}
               {seesBilling ? sortHead('client', 'Billing type', 'w-28') : null}
               {seesBilling ? sortHead('hours', 'Hours', 'w-40') : null}
               {/* The count and person columns hold a few characters: fixed
