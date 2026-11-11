@@ -79,13 +79,17 @@ export async function listLeadTasksWithRelations(
 }
 
 /**
- * One task with its relations, wherever it lives: the task sheet's load for
- * a lead task, which has no project to hydrate. The caller checks access.
+ * One task with its relations, archived or not, wherever it lives: the task
+ * sheet's load for a lead task, which has no project to hydrate. The caller
+ * checks access.
  */
 export async function loadTaskWithRelations(
   taskId: string
 ): Promise<RawTaskWithRelations | null> {
-  const [row] = await loadTasksWithRelationsByIds([taskId])
+  const [row] = await queryTasksWithRelations(
+    eq(tasks.id, taskId),
+    asc(tasks.createdAt)
+  )
   return row ?? null
 }
 

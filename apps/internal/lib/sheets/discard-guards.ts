@@ -4,7 +4,7 @@
  * each one with unsaved changes asks first, as its own Close would.
  */
 
-type Confirm = (next: () => void) => void
+type Confirm = (next: () => void, stay?: () => void) => void
 
 // A set per sheet: a dialog inside a sheet (emailing an invoice) guards its
 // own unsaved work under the same id.
@@ -25,14 +25,19 @@ export function registerDiscardGuard(id: string, confirm: Confirm) {
 
 /**
  * Runs `next` once every listed sheet's unsaved changes are dealt with, top
- * sheet first. "Stay" on any of them stops there and nothing closes.
+ * sheet first. "Stay" on any of them stops there, nothing closes and `stay`
+ * runs.
  */
-export function confirmDiscardAll(ids: string[], next: () => void) {
+export function confirmDiscardAll(
+  ids: string[],
+  next: () => void,
+  stay?: () => void
+) {
   const confirms = ids.flatMap(id => [...(guards.get(id) ?? [])])
   const run = (index: number) => {
     const confirm = confirms[index]
     if (confirm) {
-      confirm(() => run(index + 1))
+      confirm(() => run(index + 1), stay)
     } else {
       next()
     }

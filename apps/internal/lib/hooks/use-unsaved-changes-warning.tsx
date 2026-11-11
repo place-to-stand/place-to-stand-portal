@@ -16,7 +16,7 @@ type UseUnsavedChangesWarningOptions = {
 }
 
 type UseUnsavedChangesWarningResult = {
-  requestConfirmation: (next: () => void) => void
+  requestConfirmation: (next: () => void, stay?: () => void) => void
   dialog: ReactNode
 }
 
@@ -29,6 +29,7 @@ export function useUnsavedChangesWarning({
 }: UseUnsavedChangesWarningOptions): UseUnsavedChangesWarningResult {
   const [dialogOpen, setDialogOpen] = useState(false)
   const pendingActionRef = useRef<(() => void) | null>(null)
+  const pendingStayRef = useRef<(() => void) | null>(null)
 
   // Read at call time: a guard held elsewhere (going back through the
   // stack) can run after a save cleaned the form, before this re-renders.
@@ -37,24 +38,32 @@ export function useUnsavedChangesWarning({
     isDirtyRef.current = isDirty
   }, [isDirty])
 
-  const requestConfirmation = useCallback((next: () => void) => {
-    if (!isDirtyRef.current) {
-      next()
-      return
-    }
+  const requestConfirmation = useCallback(
+    (next: () => void, stay?: () => void) => {
+      if (!isDirtyRef.current) {
+        next()
+        return
+      }
 
-    pendingActionRef.current = next
-    setDialogOpen(true)
-  }, [])
+      pendingActionRef.current = next
+      pendingStayRef.current = stay ?? null
+      setDialogOpen(true)
+    },
+    []
+  )
 
   const handleCancel = useCallback(() => {
+    const stay = pendingStayRef.current
     pendingActionRef.current = null
+    pendingStayRef.current = null
     setDialogOpen(false)
+    stay?.()
   }, [])
 
   const handleConfirm = useCallback(() => {
     const action = pendingActionRef.current
     pendingActionRef.current = null
+    pendingStayRef.current = null
     setDialogOpen(false)
     action?.()
   }, [])

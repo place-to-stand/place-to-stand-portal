@@ -13,7 +13,7 @@ import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
 } from '@/lib/data/projects'
-import { getActiveTaskHome } from '@/lib/data/tasks'
+import { getTaskHome } from '@/lib/data/tasks'
 import { normalizeRawTask } from '@/lib/data/projects/normalize-task'
 import { loadTaskWithRelations } from '@/lib/queries/tasks/relations'
 import { fetchFormSubmissionById } from '@/lib/data/form-submissions'
@@ -252,7 +252,7 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   const [admins, liteProjects, home] = await Promise.all([
     fetchCrmUsers(),
     fetchProjectsLite(),
-    isNew ? Promise.resolve(null) : getActiveTaskHome(id),
+    isNew ? Promise.resolve(null) : getTaskHome(id),
   ])
   // Non-admins only see (redacted) projects they can work.
   const allProjects = await scopeProjectsForViewer(user, liteProjects)
@@ -270,7 +270,8 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
   if (!home) {
     throw new NotFoundError('Task not found')
   }
-  await ensureTaskWorkAccess(user, id)
+  // Archived tasks open too: the Review tab stacks them over other sheets.
+  await ensureTaskWorkAccess(user, id, { includeArchived: true })
 
   // A lead task has no project to hydrate: load the task alone.
   if (!home.projectId) {
@@ -288,9 +289,14 @@ const resolveTaskInit: SheetInitResolver<'task'> = async (user, id) => {
     user,
     await fetchProjectsWithRelationsByIds([holdingProjectId], {
       taskIds: [id],
+      includeArchivedTasks: true,
     })
   )
-  const task = hydratedProject?.tasks.find(item => item.id === id) ?? null
+  const task =
+    [
+      ...(hydratedProject?.tasks ?? []),
+      ...(hydratedProject?.archivedTasks ?? []),
+    ].find(item => item.id === id) ?? null
 
   if (!task) {
     throw new NotFoundError('Task not found')

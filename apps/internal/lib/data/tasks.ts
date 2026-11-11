@@ -557,3 +557,19 @@ export async function getActiveTaskHome(
 
   return rows[0] ?? null
 }
+
+/**
+ * Where a task lives, archived or not: the task sheet in a stack opens
+ * archived tasks too (the Review tab links them).
+ */
+export async function getTaskHome(
+  taskId: string
+): Promise<{ projectId: string | null; leadId: string | null } | null> {
+  const rows = await db
+    .select({ projectId: tasksTable.projectId, leadId: tasksTable.leadId })
+    .from(tasksTable)
+    .where(eq(tasksTable.id, taskId))
+    .limit(1)
+
+  return rows[0] ?? null
+}

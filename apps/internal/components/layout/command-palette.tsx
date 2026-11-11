@@ -156,13 +156,20 @@ function CommandPalette() {
   const navigate = useCallback(
     (href: string) => {
       setOpen(false)
-      setQuery('')
       // Leaving drops the open sheets: each with unsaved changes asks first,
-      // top sheet first, as going back in the stack does.
+      // top sheet first, as going back in the stack does. "Stay" brings the
+      // palette back as it was.
       const ids = parseSheetStack(new URLSearchParams(window.location.search))
         .map(item => item.id)
         .reverse()
-      confirmDiscardAll(ids, () => router.push(href))
+      confirmDiscardAll(
+        ids,
+        () => {
+          setQuery('')
+          router.push(href)
+        },
+        () => setOpen(true)
+      )
     },
     [router, setOpen]
   )
