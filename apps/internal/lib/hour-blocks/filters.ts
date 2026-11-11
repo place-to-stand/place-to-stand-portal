@@ -82,7 +82,7 @@ export function parseHourBlocksSearchParams(
   )
 
   const companyId = firstParam(params.companyId)
-  // eslint-disable-next-line pts/sheet-param-through-stack -- the invoice-status filter (none, draft…), not an invoice sheet
+  // eslint-disable-next-line pts/sheets -- the invoice-status filter (none, draft…), not an invoice sheet
   const invoice = firstParam(params.invoice)
   const date = (key: string) => {
     const value = firstParam(params[key])

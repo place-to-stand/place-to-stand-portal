@@ -5,6 +5,7 @@ import { Menu as MenuPrimitive } from '@base-ui/react/menu'
 import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react'
 
 import { cn } from './cn'
+import type { PopupAlign } from './popup-align'
 
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot='dropdown-menu' {...props} />
@@ -40,7 +41,7 @@ function DropdownMenuContent({
   className,
   // House rule: dropdown popups left-align with their trigger; deviations
   // (e.g. row-action menus hanging left) opt in with an explicit `align`.
-  align = 'start',
+  align,
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 4,
@@ -50,15 +51,15 @@ function DropdownMenuContent({
 }: MenuPrimitive.Popup.Props &
   Pick<
     MenuPrimitive.Positioner.Props,
-    'align' | 'alignOffset' | 'side' | 'sideOffset'
-  > & {
+    'alignOffset' | 'side' | 'sideOffset'
+  > & { align?: PopupAlign } & {
     /** Radix compatibility: keeps the menu mounted while closed. */
     forceMount?: boolean
   }) {
   return (
     <MenuPrimitive.Portal keepMounted={forceMount}>
       <MenuPrimitive.Positioner
-        align={align}
+        align={align ?? 'start'}
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
@@ -303,7 +304,7 @@ function DropdownMenuSubTrigger({
 
 function DropdownMenuSubContent({
   className,
-  align = 'start',
+  align,
   alignOffset = -3,
   side = 'right',
   sideOffset = 0,
@@ -312,12 +313,12 @@ function DropdownMenuSubContent({
 }: MenuPrimitive.Popup.Props &
   Pick<
     MenuPrimitive.Positioner.Props,
-    'align' | 'alignOffset' | 'side' | 'sideOffset'
-  >) {
+    'alignOffset' | 'side' | 'sideOffset'
+  > & { align?: PopupAlign }) {
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
-        align={align}
+        align={align ?? 'start'}
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}

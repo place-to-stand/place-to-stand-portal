@@ -388,7 +388,7 @@ export const SearchableCombobox = React.forwardRef<
               // A custom trigger is an "Add …" button at the right of a section
               // heading: the list hangs from its right edge, just below it,
               // inside the content column. A field opens under its left edge.
-              align={trigger ? 'end' : 'start'}
+              align={trigger ? 'end' : undefined}
               sideOffset={trigger ? 4 : 8}
               style={contentStyle}
             >

@@ -31,7 +31,7 @@ export function parseSubmissionsListParams(
     unacknowledgedOnly: ackParam === '1',
     acknowledgedOnly: ackParam === '0',
     search: firstParam(params.q)?.trim() || undefined,
-    // eslint-disable-next-line pts/sheet-param-through-stack -- the has-contact filter (yes/no), not a person sheet
+    // eslint-disable-next-line pts/sheets -- the has-contact filter (yes/no), not a person sheet
     hasContact: parseContactFilter(firstParam(params.contact)),
     sort: parseSubmissionsSort(firstParam(params.sort)),
   }

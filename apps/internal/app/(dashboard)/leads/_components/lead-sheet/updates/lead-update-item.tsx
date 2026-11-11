@@ -3,7 +3,6 @@
 import { useMemo, useState, useTransition } from 'react'
 import { Archive, MoreHorizontal, Pencil } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import {
@@ -121,18 +120,16 @@ export function LeadUpdateItem({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button
+                <RowActionButton
                   type='button'
-                  variant='ghost'
-                  size='icon-sm'
+                  tooltip={false}
+                  label={actionsLabel}
+                  icon={<MoreHorizontal className='h-4 w-4' />}
                   className='text-muted-foreground hover:text-foreground shrink-0'
                   disabled={isPending}
-                  aria-label={actionsLabel}
                 />
               }
-            >
-              <MoreHorizontal className='h-4 w-4' />
-            </DropdownMenuTrigger>
+            />
             <DropdownMenuContent align='end' className='w-36'>
               <DropdownMenuItem onClick={() => onEdit(update)}>
                 <Pencil className='h-3.5 w-3.5' /> Edit

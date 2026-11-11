@@ -14,7 +14,7 @@
  * objects (`widths.status`, `COLUMN_CLASSES[mode].company`).
  */
 
-import { attrValue, findAttr, jsxName } from './utils.mjs'
+import { attrValue, findAttr, jsxName, rawStrings } from './utils.mjs'
 
 const TABLE_MD = 'docs/design-system/components/table.md'
 
@@ -266,6 +266,67 @@ export const fixedTableColumns = {
           })
         }
       }
+    }
+  },
+}
+
+// ── figure cells (table.md) ─────────────────────────────────────────────
+
+const FIGURE_CALLS = new Set(['formatCurrency', 'formatHours', 'formatPercent'])
+
+/** A figure printed straight into the cell: `{formatCurrency(n)}`. */
+function callsFigure(node) {
+  return node.children.some(
+    child =>
+      child.type === 'JSXExpressionContainer' &&
+      child.expression.type === 'CallExpression' &&
+      child.expression.callee.type === 'Identifier' &&
+      FIGURE_CALLS.has(child.expression.callee.name)
+  )
+}
+
+/** Only literal classes can be read; a shared constant is trusted. */
+function literalOnly(attr) {
+  if (!attr?.value) return true
+  if (attr.value.type === 'Literal') return true
+  const expression = attr.value.expression
+  return (
+    expression?.type === 'Literal' ||
+    (expression?.type === 'TemplateLiteral' &&
+      expression.expressions.length === 0)
+  )
+}
+
+/** table.md: figures in a table are right-aligned with tabular-nums. */
+export const figureCellAligned = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Table figures are right-aligned with tabular-nums' },
+    schema: [],
+    messages: {
+      align:
+        'components/table.md: "Numbers (money, hours, counts) are right-aligned with tabular-nums." Add text-right tabular-nums to this TableCell.',
+    },
+  },
+  create(context) {
+    return {
+      JSXElement(node) {
+        if (jsxName(node.openingElement.name) !== 'TableCell') return
+        if (!callsFigure(node)) return
+        const classAttr = findAttr(node.openingElement, 'className')
+        if (!literalOnly(classAttr)) return
+        const classes = classAttr
+          ? rawStrings(attrValue(classAttr))
+              .map(s => s.value)
+              .join(' ')
+          : ''
+        if (
+          !/\btext-right\b/.test(classes) ||
+          !/\btabular-nums\b/.test(classes)
+        ) {
+          context.report({ node: node.openingElement, messageId: 'align' })
+        }
+      },
     }
   },
 }

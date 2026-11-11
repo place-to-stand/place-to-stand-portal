@@ -2,7 +2,7 @@
 
 import { Star } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
+import { buttonVariants } from '@pts/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { RECORD_ROW_HOVER_ACTION_CLASS } from '@/components/sheets/sheet-record-row'
 import { cn } from '@/lib/utils'
@@ -36,15 +36,20 @@ export function PrimaryContactToggle({
     // No tooltip on the primary: its label is visible.
     <Tooltip disabled={isPrimary}>
       <TooltipTrigger asChild>
-        <Button
+        {/* One button that changes size (focus stays on toggle), so it
+            takes the size classes directly; the Tooltip above labels it. */}
+        <button
           type='button'
-          variant='ghost'
-          size={isPrimary ? 'xs' : 'icon-sm'}
+          data-slot='button'
           disabled={disabled}
           aria-pressed={isPrimary}
           aria-label={`Primary contact: ${name}`}
           onClick={onToggle}
           className={cn(
+            buttonVariants({
+              variant: 'ghost',
+              size: isPrimary ? 'xs' : 'icon-sm',
+            }),
             'text-muted-foreground',
             isPrimary
               ? 'gap-1.5 text-xs font-normal'
@@ -57,7 +62,7 @@ export function PrimaryContactToggle({
             aria-hidden
           />
           {isPrimary ? 'Primary contact' : null}
-        </Button>
+        </button>
       </TooltipTrigger>
       <TooltipContent>Make {name} the primary contact</TooltipContent>
     </Tooltip>

@@ -42,16 +42,28 @@ const buttonVariants = cva(
   }
 )
 
+/** Icon-only sizes belong to RowActionButton, which carries the label. */
+type IconSize = 'icon' | 'icon-sm' | 'icon-lg'
+type ButtonSize = Exclude<VariantProps<typeof buttonVariants>['size'], IconSize>
+
+/**
+ * House rules 11 and 12: a Button with text. An icon-only button is a
+ * RowActionButton (label = tooltip + accessible name), so the icon sizes
+ * aren't on offer here, and neither is `title=` (a slow native tooltip).
+ */
+type ButtonProps = Omit<React.ComponentProps<'button'>, 'title'> &
+  Omit<VariantProps<typeof buttonVariants>, 'size'> & {
+    size?: ButtonSize
+    asChild?: boolean
+  }
+
 function Button({
   className,
   variant,
   size,
   asChild = false,
   ...props
-}: React.ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
+}: ButtonProps) {
   const Comp = asChild ? SlotPrimitive : 'button'
 
   return (
@@ -63,4 +75,4 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants, type IconSize }

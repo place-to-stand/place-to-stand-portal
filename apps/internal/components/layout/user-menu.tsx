@@ -26,6 +26,7 @@ import { EditProfileDialog } from './edit-profile-dialog'
 
 type Props = {
   user: AppUser
+  /** 'start' is the menu's own default; 'end' (the default here) hangs it left. */
   align?: 'start' | 'center' | 'end'
   /** Sidebar-footer mode: collapses to a square avatar trigger in icon mode (PRD 004 §02). */
   inSidebar?: boolean
@@ -87,7 +88,11 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
             </span>
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className='w-56' align={align} forceMount>
+        <DropdownMenuContent
+          className='w-56'
+          align={align === 'start' ? undefined : align}
+          forceMount
+        >
           <DropdownMenuLabel>
             <div className='flex flex-col'>
               <span className='text-sm font-semibold'>
