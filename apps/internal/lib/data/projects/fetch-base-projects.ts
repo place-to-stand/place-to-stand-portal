@@ -25,10 +25,23 @@ export type FetchBaseProjectsOptions = {
   search?: string
 }
 
+const EMPTY_RESULT: BaseProjectFetchResult = {
+  projects: [],
+  projectIds: [],
+  companyIds: [],
+  ownerIds: [],
+  projectClientLookup: new Map(),
+}
+
 export async function fetchBaseProjects(
   options: FetchBaseProjectsOptions = {}
 ): Promise<BaseProjectFetchResult> {
   const { projectIds: filterProjectIds, statuses, search } = options
+
+  // Explicitly cleared status selection matches nothing.
+  if (statuses && statuses.length === 0) {
+    return EMPTY_RESULT
+  }
 
   const conditions = [isNull(projects.deletedAt)]
 

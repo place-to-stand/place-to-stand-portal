@@ -33,7 +33,7 @@ type ProjectsLandingFiltersProps = {
 /**
  * Landing toolbar (PRD 004 §03, D6/R2): governs all three project sections.
  * URL semantics: no param = DEFAULT_STATUS_FILTER, `?status=none` =
- * cleared (every status, shown as "All statuses"), otherwise comma-joined; the implicit default never
+ * explicitly cleared, otherwise comma-joined; the implicit default never
  * counts as an active filter.
  */
 export function ProjectsLandingFilters({
@@ -59,7 +59,7 @@ export function ProjectsLandingFilters({
       const nextStatuses = values.filter(isProjectStatusValue)
 
       if (nextStatuses.length === 0) {
-        // Nothing picked means every status, as the placeholder says.
+        // 'none' sentinel represents an explicitly cleared selection.
         update({ status: STATUS_FILTER_NONE })
         return
       }
@@ -101,6 +101,8 @@ export function ProjectsLandingFilters({
         // Back to the clean landing URL, not an explicit copy of it.
         onClear={() => update({ status: undefined })}
         placeholder='All statuses'
+        allLabel='All statuses'
+        emptyLabel='No statuses'
         options={STATUS_OPTIONS}
       />
     </FilterBar>

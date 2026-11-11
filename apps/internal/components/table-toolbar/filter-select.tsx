@@ -49,6 +49,17 @@ type MultiProps = {
   defaultValues?: readonly string[]
   /** What the × does; defaults to `onChange(defaultValues)`. */
   onClear?: () => void
+  /**
+   * What the field says with every option picked ("All statuses"); default
+   * "<placeholder>: All".
+   */
+  allLabel?: string
+  /**
+   * What the field says with nothing picked, when nothing picked filters out
+   * everything ("No statuses"). Without it, nothing picked means no filter
+   * and the field shows the placeholder.
+   */
+  emptyLabel?: string
   className?: string
 }
 
@@ -136,6 +147,8 @@ function MultiFilterSelect({
   options,
   defaultValues = [],
   onClear,
+  allLabel,
+  emptyLabel,
   className,
 }: MultiProps) {
   const [values, setValues] = useOptimisticValue(propValues)
@@ -154,14 +167,16 @@ function MultiFilterSelect({
     }
   }
 
-  const showsPlaceholder = selected.length === 0 || allSelected
+  const showsPlaceholder = (selected.length === 0 && !emptyLabel) || allSelected
   const [first, ...rest] = selected
   const label = showsPlaceholder ? (
     allSelected && selected.length > 0 ? (
-      `${placeholder}: All`
+      (allLabel ?? `${placeholder}: All`)
     ) : (
       placeholder
     )
+  ) : selected.length === 0 ? (
+    emptyLabel
   ) : (
     // The first pick as the list shows it, then how many more.
     <span className='flex min-w-0 items-center gap-1'>

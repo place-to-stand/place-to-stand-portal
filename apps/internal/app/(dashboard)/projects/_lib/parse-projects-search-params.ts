@@ -30,7 +30,7 @@ export const DEFAULT_STATUS_FILTER: ProjectStatusValue[] = [
 /** Serialized default — the `defaultValue` comparison target for useListParams. */
 export const DEFAULT_STATUS_FILTER_PARAM = DEFAULT_STATUS_FILTER.join(',')
 
-/** Sentinel for a cleared status selection (`?status=none`): every status. */
+/** Sentinel for an explicitly cleared status selection (`?status=none`). */
 export const STATUS_FILTER_NONE = 'none'
 
 export function isProjectStatusValue(
@@ -40,7 +40,7 @@ export function isProjectStatusValue(
 }
 
 export type ParsedProjectsLandingSearchParams = {
-  /** Selected statuses; empty array = cleared (`?status=none`), every status. */
+  /** Selected statuses; empty array = explicitly cleared (`?status=none`). */
   statuses: ProjectStatusValue[]
   search: string | null
   /**
@@ -52,7 +52,7 @@ export type ParsedProjectsLandingSearchParams = {
 
 /**
  * URL semantics (preserved from the original client-side filter):
- * no param = DEFAULT_STATUS_FILTER; `?status=none` = cleared, which lists every status (as a cleared tags filter does);
+ * no param = DEFAULT_STATUS_FILTER; `?status=none` = explicitly cleared;
  * otherwise comma-joined list (invalid entries dropped, all-invalid falls
  * back to the default).
  */
