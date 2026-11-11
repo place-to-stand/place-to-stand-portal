@@ -32,3 +32,67 @@ export const BADGE_TINTS = {
 } as const
 
 export type BadgeTint = keyof typeof BADGE_TINTS
+
+/**
+ * A board lane's colour, from its status badge's hue: the 2px line across the
+ * lane's top, and the faint fill while a card is dragged over it.
+ * Light uses the 500 hue, dark the badge's 200 ink. Written out in full for
+ * Tailwind's scanner, like `BADGE_TINTS`.
+ */
+export const BOARD_LANE_TINTS: Record<
+  BadgeTint,
+  { line: string; drop: string }
+> = {
+  neutral: {
+    line: 'border-t-muted-foreground/50',
+    drop: 'bg-muted-foreground/[0.06]',
+  },
+  sky: {
+    line: 'border-t-sky-500 dark:border-t-sky-200',
+    drop: 'bg-sky-500/[0.06] dark:bg-sky-200/[0.06]',
+  },
+  blue: {
+    line: 'border-t-blue-500 dark:border-t-blue-200',
+    drop: 'bg-blue-500/[0.06] dark:bg-blue-200/[0.06]',
+  },
+  indigo: {
+    line: 'border-t-indigo-500 dark:border-t-indigo-200',
+    drop: 'bg-indigo-500/[0.06] dark:bg-indigo-200/[0.06]',
+  },
+  violet: {
+    line: 'border-t-violet-500 dark:border-t-violet-200',
+    drop: 'bg-violet-500/[0.06] dark:bg-violet-200/[0.06]',
+  },
+  fuchsia: {
+    line: 'border-t-fuchsia-500 dark:border-t-fuchsia-200',
+    drop: 'bg-fuchsia-500/[0.06] dark:bg-fuchsia-200/[0.06]',
+  },
+  pink: {
+    line: 'border-t-pink-500 dark:border-t-pink-200',
+    drop: 'bg-pink-500/[0.06] dark:bg-pink-200/[0.06]',
+  },
+  rose: {
+    line: 'border-t-rose-500 dark:border-t-rose-200',
+    drop: 'bg-rose-500/[0.06] dark:bg-rose-200/[0.06]',
+  },
+  orange: {
+    line: 'border-t-orange-500 dark:border-t-orange-200',
+    drop: 'bg-orange-500/[0.06] dark:bg-orange-200/[0.06]',
+  },
+  amber: {
+    line: 'border-t-amber-500 dark:border-t-amber-200',
+    drop: 'bg-amber-500/[0.06] dark:bg-amber-200/[0.06]',
+  },
+  emerald: {
+    line: 'border-t-emerald-500 dark:border-t-emerald-200',
+    drop: 'bg-emerald-500/[0.06] dark:bg-emerald-200/[0.06]',
+  },
+  teal: {
+    line: 'border-t-teal-500 dark:border-t-teal-200',
+    drop: 'bg-teal-500/[0.06] dark:bg-teal-200/[0.06]',
+  },
+  cyan: {
+    line: 'border-t-cyan-500 dark:border-t-cyan-200',
+    drop: 'bg-cyan-500/[0.06] dark:bg-cyan-200/[0.06]',
+  },
+}

@@ -9,15 +9,13 @@ import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 import {
+  getTaskStatusHue,
   getTaskStatusLabel,
   getTaskStatusToken,
 } from '@/lib/projects/task-status'
 
 import { TaskCard, type TaskContextDetails } from '../task-card'
-import {
-  BOARD_COLUMN_CLASS,
-  BOARD_COLUMN_DROP_CLASS,
-} from '@/components/board/board-column'
+import { boardColumnClass } from '@/components/board/board-column'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -83,11 +81,7 @@ export function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={cn(
-        BOARD_COLUMN_CLASS,
-        'flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden p-3 transition',
-        isDropTarget && BOARD_COLUMN_DROP_CLASS
-      )}
+      className={boardColumnClass(getTaskStatusHue(columnId), isDropTarget)}
     >
       <div className='flex items-center justify-between gap-2'>
         <div className='flex items-center gap-3'>

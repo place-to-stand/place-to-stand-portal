@@ -1,6 +1,6 @@
 import { leadSourceType, leadStatus } from '@/lib/db/schema'
-import { BADGE_TINTS } from '@pts/ui/badge-tints'
-import { TASK_STATUS_TOKENS } from '@/lib/projects/task-status'
+import { BADGE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
+import { TASK_STATUS_HUES } from '@pts/ui/status-tints'
 
 export const LEAD_STATUS_VALUES = leadStatus.enumValues
 
@@ -16,14 +16,15 @@ export const LEAD_STATUS_LABELS: Record<LeadStatusValue, string> = {
   UNQUALIFIED: 'Unqualified',
 }
 
-const LEAD_STATUS_TOKENS: Record<LeadStatusValue, string> = {
-  NEW_OPPORTUNITIES: BADGE_TINTS.sky,
-  ACTIVE_OPPORTUNITIES: BADGE_TINTS.violet,
-  PROPOSAL_SENT: BADGE_TINTS.amber,
-  ON_ICE: BADGE_TINTS.neutral,
-  CLOSED_WON: BADGE_TINTS.emerald,
-  CLOSED_LOST: BADGE_TINTS.rose,
-  UNQUALIFIED: TASK_STATUS_TOKENS.ACCEPTED,
+/** Each lead stage's hue: its badge and its board lane share it. */
+const LEAD_STATUS_HUES: Record<LeadStatusValue, BadgeTint> = {
+  NEW_OPPORTUNITIES: 'sky',
+  ACTIVE_OPPORTUNITIES: 'violet',
+  PROPOSAL_SENT: 'amber',
+  ON_ICE: 'neutral',
+  CLOSED_WON: 'emerald',
+  CLOSED_LOST: 'rose',
+  UNQUALIFIED: TASK_STATUS_HUES.ACCEPTED,
 }
 
 export const LEAD_BOARD_COLUMNS = [
@@ -71,7 +72,14 @@ export const LEAD_BOARD_COLUMNS = [
 export const LEAD_STATUS_ORDER = LEAD_BOARD_COLUMNS.map(column => column.id)
 
 export function getLeadStatusToken(status: LeadStatusValue): string {
-  return LEAD_STATUS_TOKENS[status] ?? ''
+  const hue = getLeadStatusHue(status)
+  return hue ? BADGE_TINTS[hue] : ''
+}
+
+export function getLeadStatusHue(
+  status: LeadStatusValue
+): BadgeTint | undefined {
+  return LEAD_STATUS_HUES[status]
 }
 
 export const LEAD_SOURCE_TYPES = leadSourceType.enumValues

@@ -1,17 +1,27 @@
-import { BADGE_TINTS } from './badge-tints'
+import { BADGE_TINTS, type BadgeTint } from './badge-tints'
 
 /**
  * The one map of status colours, shared by the internal and client portals so
  * a record reads the same in both. Labels stay with each app, because the
  * client portal words some states its own way ("Due").
  */
+/** Each task status's hue: its badge and its board lane share it. */
+export const TASK_STATUS_HUES = {
+  ON_DECK: 'sky',
+  IN_PROGRESS: 'emerald',
+  BLOCKED: 'amber',
+  DONE: 'neutral',
+  ACCEPTED: 'neutral',
+  ARCHIVED: 'neutral',
+} as const satisfies Record<string, BadgeTint>
+
 export const TASK_STATUS_TINTS = {
-  ON_DECK: BADGE_TINTS.sky,
-  IN_PROGRESS: BADGE_TINTS.emerald,
-  BLOCKED: BADGE_TINTS.amber,
-  DONE: BADGE_TINTS.neutral,
-  ACCEPTED: BADGE_TINTS.neutral,
-  ARCHIVED: BADGE_TINTS.neutral,
+  ON_DECK: BADGE_TINTS[TASK_STATUS_HUES.ON_DECK],
+  IN_PROGRESS: BADGE_TINTS[TASK_STATUS_HUES.IN_PROGRESS],
+  BLOCKED: BADGE_TINTS[TASK_STATUS_HUES.BLOCKED],
+  DONE: BADGE_TINTS[TASK_STATUS_HUES.DONE],
+  ACCEPTED: BADGE_TINTS[TASK_STATUS_HUES.ACCEPTED],
+  ARCHIVED: BADGE_TINTS[TASK_STATUS_HUES.ARCHIVED],
 } as const
 
 export const TASK_STATUS_LABELS = {
