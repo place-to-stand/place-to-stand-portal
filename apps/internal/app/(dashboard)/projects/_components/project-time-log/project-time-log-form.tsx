@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Archive, Loader2, PlusCircle, Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
@@ -56,6 +57,7 @@ export type ProjectTimeLogFormProps = {
 }
 
 export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
+  const fieldId = useId()
   const {
     isMutating,
     disableSubmit,
@@ -103,11 +105,11 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
       className='grid grid-cols-1 gap-4 sm:grid-cols-2'
     >
       <div className={cn(FIELD_STACK_CLASS)}>
-        <EntityFieldLabel entity='timeLog' htmlFor='time-log-hours'>
+        <EntityFieldLabel entity='timeLog' htmlFor={`${fieldId}-hours`}>
           Hours
         </EntityFieldLabel>
         <Input
-          id='time-log-hours'
+          id={`${fieldId}-hours`}
           type='number'
           step='0.25'
           min='0'
@@ -131,9 +133,9 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         ) : null}
       </div>
       <div className={cn(FIELD_STACK_CLASS)}>
-        <Label htmlFor='time-log-date'>Date</Label>
+        <Label htmlFor={`${fieldId}-date`}>Date</Label>
         <DatePicker
-          id='time-log-date'
+          id={`${fieldId}-date`}
           value={loggedOnInput}
           max={getToday()}
           onChange={onLoggedOnChange}
@@ -201,9 +203,9 @@ export function ProjectTimeLogForm(props: ProjectTimeLogFormProps) {
         />
       </EntityList>
       <div className={cn(FIELD_STACK_CLASS, 'sm:col-span-2')}>
-        <Label htmlFor='time-log-note'>Notes</Label>
+        <Label htmlFor={`${fieldId}-note`}>Notes</Label>
         <Textarea
-          id='time-log-note'
+          id={`${fieldId}-note`}
           value={noteInput}
           onChange={event => onNoteChange(event.target.value)}
           rows={3}

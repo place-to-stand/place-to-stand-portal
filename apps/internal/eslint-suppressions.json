@@ -145,6 +145,9 @@
     },
     "max-lines": {
       "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 14
     }
   },
   "app/(dashboard)/invoices/settings/_components/tax-rates-section.tsx": {
@@ -153,6 +156,9 @@
     },
     "max-lines": {
       "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 8
     }
   },
   "app/(dashboard)/invoices/settings/actions.ts": {
@@ -320,18 +326,54 @@
       "count": 1
     }
   },
+  "app/(dashboard)/reports/monthly-close/_components/billing-in-card.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 2
+    }
+  },
   "app/(dashboard)/reports/monthly-close/_components/drift-notice.tsx": {
     "@typescript-eslint/switch-exhaustiveness-check": {
       "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/reports/monthly-close/_components/partner-payouts-table.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 2
     }
   },
   "app/(dashboard)/reports/monthly-close/_components/profit-share-card.tsx": {
     "max-lines": {
       "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/reports/monthly-close/_components/rate-split-card.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/reports/monthly-close/_components/sales-tax-card.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 2
+    }
+  },
+  "app/(dashboard)/reports/monthly-close/_components/stripe-fees-card.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 2
     }
   },
   "app/(dashboard)/settings/integrations/integrations-panel.tsx": {
     "max-lines": {
+      "count": 1
+    }
+  },
+  "app/(dashboard)/settings/templates/_components/pdfs-gallery.tsx": {
+    "pts/use-id-not-fixed-id": {
       "count": 1
     }
   },
@@ -519,16 +561,47 @@
     },
     "max-lines": {
       "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 2
     }
   },
   "components/dashboard/my-tasks-widget/my-tasks-widget.tsx": {
     "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
+      "count": 2
+    }
+  },
+  "components/dashboard/notifications-widget.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 1
+    }
+  },
+  "components/dashboard/recent-activity-overview-widget.tsx": {
+    "pts/use-id-not-fixed-id": {
       "count": 1
     }
   },
   "components/dashboard/recent-activity-overview/use-recent-activity-summary.ts": {
     "@typescript-eslint/switch-exhaustiveness-check": {
       "count": 1
+    }
+  },
+  "components/dashboard/recent-activity-overview/widget-controls.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 1
+    }
+  },
+  "components/dashboard/sales-widgets.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 2
+    }
+  },
+  "components/dashboard/widget-layout/dashboard-widget-grid.tsx": {
+    "pts/use-id-not-fixed-id": {
+      "count": 2
     }
   },
   "components/forms/avatar-upload-field.tsx": {
@@ -936,6 +1009,9 @@
   },
   "scripts/smoke-render-ui.tsx": {
     "max-lines": {
+      "count": 1
+    },
+    "pts/use-id-not-fixed-id": {
       "count": 1
     }
   },

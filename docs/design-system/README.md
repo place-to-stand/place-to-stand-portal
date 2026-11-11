@@ -232,6 +232,9 @@ All of these run in `npm run lint` (and so in CI). The `pts/*` rules live in `pa
 | eslint `pts/underline-not-clipped`                     | Text links: link text truncates with `truncate-link`, so the hover underline shows                                                              |
 | eslint `pts/sheet-link-in-place`                       | Table: a linked record opens its sheet over the page, never its own list                                                                        |
 | eslint `pts/sheet-url-through-builders`                | CLAUDE.md sheet deep links: no hand-built `?task=` / `?invoice=` URLs outside `lib/sheets/hrefs.ts`                                             |
+| eslint `pts/use-id-not-fixed-id`                       | sheet.md: element ids and `form=` come from `useId`, never a fixed string (old hits grandfathered)                                              |
+| eslint `pts/sheet-param-through-stack`                 | sheet.md: sheet params are read with `useSheetParams` / `pageSheetParam`, never by hand                                                         |
+| eslint `pts/sheet-layer-z`                             | sheet.md: no z-index on a sheet; the stack sets it (`sheetLayerZ`)                                                                              |
 | eslint `pts/no-hard-delete`                            | CLAUDE.md soft deletes: no `db.delete(table)` or `DELETE FROM` on a record table (allow list in `next.mjs`)                                     |
 | eslint `pts/env-through-schema`                        | Server env vars read through `serverEnv` (`lib/env.server.ts`), not `process.env`                                                               |
 | `scripts/check-badges.mjs`                             | `components/badge.md`: a badge's size, weight and case come from the component                                                                  |
