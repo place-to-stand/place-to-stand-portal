@@ -27,10 +27,12 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 
 const CONTACT_ROUTES_TO_REVALIDATE = [
   '/people',
+  '/people/users',
   '/people/archive',
   '/people/activity',
   // Companies list their people (and contact saves can join or leave one).
   '/companies',
+  '/companies/clients',
   // A person's name and sign-in show on sign-ins, project owners and members,
   // and lead contacts.
   '/settings/users',

@@ -79,10 +79,10 @@ const nextConfig: NextConfig = {
       {
         source: '/clients',
         has: [{ type: 'query' as const, key: 'search', value: '(?<q>.*)' }],
-        destination: '/companies?type=client&q=:q',
+        destination: '/companies/clients?q=:q',
         permanent: false,
       },
-      to('/clients', '/companies?type=client'),
+      to('/clients', '/companies/clients'),
       to('/clients/archive', '/companies?type=former'),
       to('/clients/activity', '/companies/activity'),
       // A sign-in is managed on its person.

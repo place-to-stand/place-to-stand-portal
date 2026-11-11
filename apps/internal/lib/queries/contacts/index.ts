@@ -1,9 +1,9 @@
 export * from './selectors'
 export { findContactIdForUser } from './by-user'
 export { listContactsForSettings } from './settings/list-contacts'
+export { listCompanyFilterOptions } from './settings/company-filter-options'
 export {
   listAllActiveClients,
-  listCompanyFilterOptions,
   getContactSheetData,
   getContactSheetInputById,
   getContactDeepLinkRowById,

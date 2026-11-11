@@ -30,7 +30,7 @@ type ContactsManagementTableProps = {
   currentPage: number
   totalPages: number
   pageSize: number
-  mode: 'active' | 'archive'
+  mode: 'active' | 'users' | 'archive'
   /** Route the sort/filter params live on (PRD 004 §03). */
   basePath: string
   /**
@@ -46,6 +46,7 @@ type ContactsManagementTableProps = {
 
 const EMPTY_MESSAGES = {
   active: 'No people yet.',
+  users: 'No users yet.',
   archive: 'No archived people.',
 } as const
 
@@ -85,9 +86,11 @@ export function ContactsManagementTable({
   const { getAux } = useSheetParams()
   const showContactNotFound = useDeepLinkNotFound('contact', contactNotFound)
 
-  // Guard-validated active search (R4): an empty list under a live `?q=`
-  // shows the filtered message, not the tab's default empty state.
-  const hasActiveFilter = Boolean(searchParams.get('q')?.trim())
+  // An empty list under a live search or filter shows the filtered message,
+  // not the tab's default empty state.
+  const hasActiveFilter = ['q', 'companyId', 'role'].some(key =>
+    Boolean(searchParams.get(key)?.trim())
+  )
   const emptyMessage = hasActiveFilter
     ? 'No people match the current filters.'
     : EMPTY_MESSAGES[mode]
@@ -144,7 +147,9 @@ export function ContactsManagementTable({
       <BulkActionBar
         selection={selection}
         entity='contact'
-        mode={mode}
+        mode={mode === 'archive' ? 'archive' : 'active'}
+        // Users is people who can sign in; a picked role narrows it.
+        presetParams={mode === 'users' ? { role: 'any' } : undefined}
         nameOf={id => contacts.find(contact => contact.id === id)?.name}
       />
       <ContactsSheet

@@ -71,7 +71,7 @@ test('changing a role asks which month it starts', async ({ page }) => {
 test('a client sign-in sees the companies whose Portal is on', async ({
   page,
 }) => {
-  await page.goto('/people?role=CLIENT')
+  await page.goto('/people/users?role=CLIENT')
   await expectHealthy(page)
   const rows = page
     .locator('tbody tr')
@@ -104,7 +104,7 @@ test('stopping being Admin starts next month, and warns about this month', async
 }) => {
   // Another admin: you can't change your own sign-in.
   const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'jason@local.test'
-  await page.goto('/people?role=ADMIN')
+  await page.goto('/people/users?role=ADMIN')
   await expectHealthy(page)
   // A live Admin sign-in (a switched-off one is No access).
   const rows = page

@@ -87,7 +87,8 @@ export function buildSearchCondition(
  * `linkedClientsCountSql` below.
  */
 export function buildClientCondition(
-  companyId: string | null | undefined,
+  /** A company id, or a company column (the People company filter's options). */
+  companyId: string | SQL | null | undefined,
   /** portal: can see the client in the portal; member: works there. */
   match: 'portal' | 'member' = 'portal'
 ): SQL | null {

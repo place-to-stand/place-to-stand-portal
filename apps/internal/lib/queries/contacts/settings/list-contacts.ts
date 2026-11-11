@@ -14,7 +14,7 @@ import {
   type SortCursorPayload,
   type SortDirection,
 } from '@/lib/pagination/sort'
-import { DEFAULT_CONTACTS_SORT, type SignInFilter } from '@/lib/people/filters'
+import { DEFAULT_CONTACTS_SORT } from '@/lib/people/filters'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 import {
   listContactMemberships,
@@ -27,17 +27,14 @@ import {
   type ContactProfile,
   type SelectContact,
 } from '../selectors'
+import { buildBaseConditions } from './conditions'
 import {
-  buildClientCondition,
-  buildSearchCondition,
-  buildStatusCondition,
   CONTACT_SORT_DESCRIPTORS,
   linkedClientsCountSql,
   normalizeStatus,
   resolveContactDirection,
   resolvePaginationLimit,
   type ContactSortDescriptor,
-  type StatusFilter,
 } from './pagination'
 import type {
   ContactsSettingsListItem,
@@ -53,47 +50,6 @@ type ContactMetricsResult = SelectContact &
     userHasPhoto: boolean | null
     signInRole: 'ADMIN' | 'SALES' | 'CLIENT' | null
   }
-
-/**
- * People with (or without) a live sign-in, optionally of one role. Live means
- * not archived and not turned off, as in the Role column.
- */
-function buildSignInCondition(signIn: SignInFilter | null | undefined) {
-  if (!signIn) return null
-  // The outer contact column is written table-qualified: interpolated, drizzle
-  // may drop the table name and it would bind inside the subquery.
-  const live = sql`exists (select 1 from users u where u.id = ${sql.raw('"contacts"."user_id"')} and u.deleted_at is null and u.disabled_at is null${
-    signIn === 'any' || signIn === 'none' ? sql`` : sql` and u.role = ${signIn}`
-  })`
-  return signIn === 'none' ? sql`not ${live}` : live
-}
-
-function buildBaseConditions(
-  status: StatusFilter,
-  searchQuery: string,
-  clientCompanyId: string | null | undefined,
-  signIn?: SignInFilter | null,
-  clientMatch: 'portal' | 'member' = 'portal'
-): SQL[] {
-  const conditions: SQL[] = [buildStatusCondition(status)]
-
-  const searchCondition = buildSearchCondition(searchQuery)
-  if (searchCondition) {
-    conditions.push(searchCondition)
-  }
-
-  const clientCondition = buildClientCondition(clientCompanyId, clientMatch)
-  if (clientCondition) {
-    conditions.push(clientCondition)
-  }
-
-  const signInCondition = buildSignInCondition(signIn)
-  if (signInCondition) {
-    conditions.push(signInCondition)
-  }
-
-  return conditions
-}
 
 async function queryContactRows(
   whereClause: SQL | undefined,
@@ -269,7 +225,6 @@ export async function listContactsForSettings(
       : DEFAULT_CONTACTS_SORT
   const descriptor = CONTACT_SORT_DESCRIPTORS[sort.field]
 
-  const statusCondition = buildStatusCondition(normalizedStatus)
   const baseConditions = buildBaseConditions(
     normalizedStatus,
     searchQuery,
@@ -334,7 +289,14 @@ export async function listContactsForSettings(
       fetchClientDetails(contactIds),
       listContactMemberships(contactIds),
       resolveCount(baseConditions),
-      resolveCount([statusCondition]),
+      resolveCount(
+        buildBaseConditions(
+          normalizedStatus,
+          '',
+          null,
+          seesAccess ? input.listSignIn : null
+        )
+      ),
     ])
 
   // Sign-ins and portal access are for people who manage clients only.

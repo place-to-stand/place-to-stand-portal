@@ -29,9 +29,9 @@ export function isContactSortValue(value: string): boolean {
 }
 
 /**
- * People list Role filter (`?role=`), admins only: the user's role, or
- * people with no user. `any` = has a user: the Can sign in tab, not offered
- * in the filter.
+ * Who can sign in, for the people queries: a role, any live sign-in, or
+ * none. The Users page (/people/users) lists `any`, narrowed by its Role
+ * filter (`?role=`).
  */
 export const SIGN_IN_FILTER_VALUES = [
   'any',
@@ -41,9 +41,8 @@ export const SIGN_IN_FILTER_VALUES = [
   'none',
 ] as const
 export type SignInFilter = (typeof SIGN_IN_FILTER_VALUES)[number]
-/** What the Role filter offers. */
-// A–Z, then "No sign-in" last.
-export const ROLE_FILTER_VALUES = ['ADMIN', 'CLIENT', 'SALES', 'none'] as const
+/** What the Users page's Role filter offers, A–Z. */
+export const ROLE_FILTER_VALUES = ['ADMIN', 'CLIENT', 'SALES'] as const
 export const ROLE_FILTER_LABELS: Record<
   (typeof ROLE_FILTER_VALUES)[number],
   string
@@ -51,8 +50,11 @@ export const ROLE_FILTER_LABELS: Record<
   ADMIN: 'Admin',
   SALES: 'Sales',
   CLIENT: 'Client',
-  none: 'No sign-in',
 }
+export const isRoleFilter = (
+  value: string
+): value is (typeof ROLE_FILTER_VALUES)[number] =>
+  (ROLE_FILTER_VALUES as readonly string[]).includes(value)
 export const isSignInFilter = (value: string): value is SignInFilter =>
   (SIGN_IN_FILTER_VALUES as readonly string[]).includes(value)
 
@@ -99,7 +101,6 @@ export function parseContactsSearchParams(
       clientIdParam && UUID_PATTERN.test(clientIdParam)
         ? clientIdParam
         : undefined,
-    // 'any' (has a user) is the People page's Can sign in tab.
     signIn: isSignInFilter(signInParam) ? signInParam : undefined,
     sort,
   }

@@ -9,8 +9,7 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 import {
   ROLE_FILTER_LABELS,
   ROLE_FILTER_VALUES,
-  isSignInFilter,
-  type SignInFilter,
+  isRoleFilter,
 } from '@/lib/people/filters'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { CompanyNameWithState } from '@/components/companies/client-badge'
@@ -19,13 +18,13 @@ type ContactsFiltersProps = {
   search?: string
   /** Validated company filter value (`?companyId=<uuid>`). */
   companyId?: string
-  /** Every live company, clients first, for the company filter. */
+  /** The companies of the people this page lists, clients first. */
   companies: ClientOption[]
-  /** Base path to push filter changes to — '/people' or '/people/archive'. */
+  /** The page filter changes stay on: /people, /people/users or /people/archive. */
   basePath: string
-  /** The Role filter (`?role=`); admins only. */
-  signIn?: SignInFilter
-  showSignInFilter?: boolean
+  /** The Users page's Role filter (`?role=`). */
+  role?: (typeof ROLE_FILTER_VALUES)[number]
+  showRoleFilter?: boolean
 }
 
 export function ContactsFilters({
@@ -33,25 +32,19 @@ export function ContactsFilters({
   companyId,
   companies,
   basePath,
-  signIn,
-  showSignInFilter = false,
+  role,
+  showRoleFilter = false,
 }: ContactsFiltersProps) {
   // Contacts tables paginate by offset, so `page` is the pagination key
   // cleared on every filter change (not cursor/dir).
-  // On the Users tab, role=any is the tab, not a filter: Reset keeps it.
-  const onUsersTab = signIn === 'any'
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
-    filters: onUsersTab
-      ? { q: {}, companyId: { isValid: value => UUID_PATTERN.test(value) } }
-      : {
-          q: {},
-          companyId: { isValid: value => UUID_PATTERN.test(value) },
-          role: { isValid: isSignInFilter },
-          // Old links; cleared by Reset.
-          signIn: { isValid: isSignInFilter },
-        },
+    filters: {
+      q: {},
+      companyId: { isValid: value => UUID_PATTERN.test(value) },
+      ...(showRoleFilter ? { role: { isValid: isRoleFilter } } : {}),
+    },
   })
 
   return (
@@ -63,7 +56,7 @@ export function ContactsFilters({
           placeholder='Search people…'
         />
       }
-      activeFilterCount={(companyId ? 1 : 0) + (signIn && !onUsersTab ? 1 : 0)}
+      activeFilterCount={(companyId ? 1 : 0) + (role ? 1 : 0)}
       showReset={hasActiveFilters}
       onReset={reset}
     >
@@ -80,16 +73,16 @@ export function ContactsFilters({
           ) : undefined,
         }))}
       />
-      {showSignInFilter ? (
+      {showRoleFilter ? (
         <FilterSelect
-          value={signIn === 'any' ? undefined : signIn}
-          onChange={value => update({ role: value, signIn: undefined })}
+          value={role}
+          onChange={value => update({ role: value })}
           placeholder='All roles'
           options={ROLE_FILTER_VALUES.map(value => ({
             value,
             label: ROLE_FILTER_LABELS[value],
-            // A role shows as the Role column's badge; "No sign-in" is text.
-            badge: value === 'none' ? undefined : <RoleBadge role={value} />,
+            // A role shows as the Role column's badge.
+            badge: <RoleBadge role={value} />,
           }))}
         />
       ) : null}
