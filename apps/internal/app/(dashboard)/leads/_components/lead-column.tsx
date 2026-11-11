@@ -5,7 +5,6 @@ import { Plus } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
-import { cn } from '@/lib/utils'
 import type { LeadRecord } from '@/lib/leads/types'
 import { getLeadStatusHue, type LeadStatusValue } from '@/lib/leads/constants'
 import { RowActionButton } from '@pts/ui/row-action-button'
@@ -57,9 +56,9 @@ export function LeadColumn({
   return (
     <div
       ref={setNodeRef}
-      className={cn(
-        boardColumnClass(getLeadStatusHue(columnId) ?? 'neutral', isDropTarget),
-        'w-80 shrink-0'
+      className={boardColumnClass(
+        getLeadStatusHue(columnId) ?? 'neutral',
+        isDropTarget
       )}
     >
       <div className='flex items-center justify-between gap-2'>

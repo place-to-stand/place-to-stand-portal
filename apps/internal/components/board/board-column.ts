@@ -29,11 +29,22 @@ export function boardColumnClass(hue: BadgeTint, isDropTarget: boolean) {
 }
 
 /**
- * The grid holding a task board's lanes. One row, capped at the board's height
+ * The grid holding a board's lanes. One row, capped at the board's height
  * (`minmax(0,1fr)`), so the longest lane can't stretch the board and push the
  * lanes' tops out of view.
  */
 export const BOARD_GRID_CLASS = 'grid h-full grid-rows-[minmax(0,1fr)] gap-4'
+
+/**
+ * The board grid's columns: every lane at least 20rem, sharing any spare
+ * width, so the task and lead boards size their lanes the same way (wide
+ * screens fill, narrow ones scroll sideways).
+ */
+export function boardGridStyle(laneCount: number) {
+  return {
+    gridTemplateColumns: `repeat(${laneCount}, minmax(20rem, 1fr))`,
+  }
+}
 
 /**
  * The board's `PagePanel`: filter bar on top, the board filling the rest of

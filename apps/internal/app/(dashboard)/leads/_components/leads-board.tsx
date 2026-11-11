@@ -12,6 +12,10 @@ import {
 
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { BoardDragOverlay } from '@/components/board/board-drag'
+import {
+  BOARD_GRID_CLASS,
+  boardGridStyle,
+} from '@/components/board/board-column'
 import { useScrollPersistence } from '@/hooks/use-scroll-persistence'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
 import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
@@ -220,7 +224,10 @@ export function LeadsBoard({
               onScroll={handleBoardScroll}
             >
               <DndContext sensors={sensors} {...drag.dndContextProps}>
-                <div className='flex h-full w-max gap-4'>
+                <div
+                  className={BOARD_GRID_CLASS}
+                  style={boardGridStyle(columns.length)}
+                >
                   {columns.map(column => {
                     const handleCreateForColumn =
                       canManage && onCreateLead
