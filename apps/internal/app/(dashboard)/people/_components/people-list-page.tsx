@@ -8,6 +8,8 @@ import {
 import { isRoleFilter, parseContactsSearchParams } from '@/lib/people/filters'
 import { serverEnv } from '@/lib/env.server'
 import { readPageSize } from '@/lib/pagination/page-size.server'
+import { firstParam } from '@/lib/pagination/params'
+import { roleCan } from '@/lib/auth/capabilities'
 import { redirectLegacyPreset } from '@/lib/pagination/legacy-preset'
 
 import { peopleTabs } from '../_lib/tabs'
@@ -59,21 +61,25 @@ export async function PeopleListPage({
   mode: ListMode
 }) {
   const view = MODES[mode]
-  // Old Users links: `/people?role=` (or `?signIn=`) with a sign-in.
-  const legacyRole = params.role ?? params.signIn
-  if (
-    mode === 'active' &&
-    typeof legacyRole === 'string' &&
-    (legacyRole === 'any' || isRoleFilter(legacyRole))
-  ) {
-    redirectLegacyPreset(
-      { ...params, signIn: undefined, role: legacyRole },
-      { key: 'role', path: '/people/users', keep: isRoleFilter }
-    )
-  }
   const user = await requirePage(
     mode === 'users' ? 'settings.users' : 'contacts.manage'
   )
+  // A role means something on Users only. Old Users links
+  // (`/people?role=…`, `?signIn=…`) go there for those who can open it;
+  // anywhere else the param is dropped, keeping the rest (a `contact=`).
+  if (mode !== 'users' && (params.role ?? params.signIn) !== undefined) {
+    const legacyRole = firstParam(params.role) ?? firstParam(params.signIn)
+    const toUsers =
+      mode === 'active' &&
+      roleCan(user.role, 'settings.users') &&
+      (legacyRole === 'any' || (legacyRole && isRoleFilter(legacyRole)))
+    redirectLegacyPreset(
+      { ...params, signIn: undefined, role: legacyRole },
+      toUsers
+        ? { key: 'role', path: '/people/users', keep: isRoleFilter }
+        : { key: 'role', path: view.basePath, keep: () => false }
+    )
+  }
   const pageSize = await readPageSize()
   const {
     page: currentPage,

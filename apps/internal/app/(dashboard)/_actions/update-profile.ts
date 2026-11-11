@@ -149,6 +149,7 @@ export async function updateProfile(
   }
 
   revalidatePath('/people')
+  revalidatePath('/people/users')
 
   return { emailConfirmationSent: Boolean(isEmailChange) }
 }

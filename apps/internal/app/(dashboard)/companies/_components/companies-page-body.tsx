@@ -88,6 +88,7 @@ export function CompaniesPageBody({
           sort={params.sortParam}
           basePath={basePath}
           mode={mode === 'archive' ? 'archive' : 'active'}
+          bulkPreset={mode === 'clients' ? { type: 'client' } : undefined}
           emptyMessage={
             filtered ? 'No companies match the current filters.' : view.empty
           }

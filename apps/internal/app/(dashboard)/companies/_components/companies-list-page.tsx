@@ -51,16 +51,19 @@ export async function CompaniesListPage({
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   )
+  // Clients counts every client, so a search needs the unsearched list.
+  const clientsTotal =
+    mode === 'clients'
+      ? (listParams.search
+          ? await listCompanies(user, { status: 'active', search: '' })
+          : companies
+        ).filter(row => Boolean(row.companyId)).length
+      : 0
   const totalCount =
     mode === 'archive'
       ? counts.archived
       : mode === 'clients'
-        ? applyCompanyListParams(companies, {
-            ...listParams,
-            search: '',
-            leads: undefined,
-            tags: [],
-          }).length
+        ? clientsTotal
         : counts.active
 
   return (

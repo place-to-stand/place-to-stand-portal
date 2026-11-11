@@ -19,6 +19,7 @@ const COMPANY_ROUTES = [
   '/companies/archive',
   '/companies/activity',
   '/people',
+  '/people/users',
   '/leads',
   '/projects',
   '/hour-blocks',

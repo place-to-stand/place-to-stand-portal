@@ -1,11 +1,11 @@
 import { isClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { and, asc, desc, eq, exists, isNull, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, or, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
-import { companies, contacts } from '@/lib/db/schema'
+import { companies } from '@/lib/db/schema'
 import type { SignInFilter } from '@/lib/people/filters'
 import { canSeePortalAccess } from '@/lib/people/portal-visibility'
 
@@ -30,25 +30,33 @@ export async function listCompanyFilterOptions(
   } = {}
 ): Promise<ClientOption[]> {
   const seesAccess = canSeePortalAccess(user.role)
-  // The same conditions as listContactsForSettings, with each company in turn
-  // as the company filter. Raw and table-qualified so it binds to the outer
-  // companies row inside the subquery.
-  const listsSomeone = exists(
-    db
-      .select({ one: sql`1` })
-      .from(contacts)
-      .where(
-        and(
-          ...buildBaseConditions(
-            normalizeStatus(input.status),
-            input.search?.trim() ?? '',
-            sql.raw('"companies"."id"'),
-            seesAccess ? input.signIn : null,
-            seesAccess ? 'portal' : 'member'
-          )
-        )
-      )
+  // Someone this page lists works at the company, and (admins, for a
+  // client) can see it in the portal: what the list's company filter
+  // matches (buildClientCondition). Driven from the company's memberships,
+  // with the client check outside the per-person test, so it stays linear.
+  const company = sql.raw('"companies"."id"')
+  const listed = buildBaseConditions(
+    normalizeStatus(input.status),
+    input.search?.trim() ?? '',
+    null,
+    seesAccess ? input.signIn : null
   )
+  const listsSomeone = sql`exists (
+    select 1
+    from memberships m
+    join contacts on contacts.id = m.contact_id
+    where m.company_id = ${company}
+      and m.ended_at is null
+      and ${and(...listed)}
+      ${
+        seesAccess
+          ? sql`and (not company_is_client(${company}) or exists (
+              select 1 from client_portal_access cpa
+              where cpa.contact_id = contacts.id and cpa.company_id = ${company}
+            ))`
+          : sql``
+      }
+  )`
 
   const rows = await db
     .select({

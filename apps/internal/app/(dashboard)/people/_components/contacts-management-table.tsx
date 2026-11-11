@@ -148,6 +148,8 @@ export function ContactsManagementTable({
         selection={selection}
         entity='contact'
         mode={mode === 'archive' ? 'archive' : 'active'}
+        // Users is people who can sign in; a picked role narrows it.
+        presetParams={mode === 'users' ? { role: 'any' } : undefined}
         nameOf={id => contacts.find(contact => contact.id === id)?.name}
       />
       <ContactsSheet
