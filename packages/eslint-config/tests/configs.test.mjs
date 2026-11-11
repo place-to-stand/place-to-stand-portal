@@ -12,8 +12,10 @@ import tseslint from 'typescript-eslint'
 import { RESTRICTED_IMPORTS, common } from '../base.mjs'
 import {
   API_ROUTE_GUARD,
+  NO_ALIGN_START,
   NO_TITLE_TOOLTIP,
   QUERY_LAYER_PATTERNS,
+  TOOLTIP_OFF,
 } from '../next.mjs'
 
 const languageOptions = {
@@ -48,6 +50,8 @@ test('dates and numbers go through @pts/ui', () => {
     "import { format } from 'date-fns'",
     "import format from 'date-fns/format'",
     "import { formatInTimeZone } from 'date-fns-tz'",
+    "import { format } from 'date-fns-tz'",
+    "import { formatInTimeZone } from 'date-fns'",
   ]) {
     assert.deepEqual(fired(base, code), ['no-restricted-imports'], code)
   }
@@ -62,14 +66,43 @@ test('no Radix', () => {
   assert.deepEqual(fired(base, "import { Dialog } from '@base-ui/react'"), [])
 })
 
-test('no title= tooltip on a native button', () => {
+test('no title= tooltip on any button', () => {
   const config = [
     { rules: { 'no-restricted-syntax': ['error', NO_TITLE_TOOLTIP] } },
   ]
-  assert.deepEqual(fired(config, "<button title='Toggle' />"), [
+  for (const code of [
+    "<button title='Toggle' />",
+    "<Button title='Bold' />",
+    "<ToolbarIconButton title='Bold' />",
+  ]) {
+    assert.deepEqual(fired(config, code), ['no-restricted-syntax'], code)
+  }
+  assert.deepEqual(fired(config, "<div title='x' />"), [])
+  assert.deepEqual(fired(config, "<RecordRowButton title='Row' />"), [])
+})
+
+test("RowActionButton's tooltip is off only under a Tooltip or trigger", () => {
+  const config = [{ rules: { 'no-restricted-syntax': ['error', TOOLTIP_OFF] } }]
+  const button = "<RowActionButton tooltip={false} label='More' />"
+  assert.deepEqual(fired(config, button), ['no-restricted-syntax'])
+  for (const code of [
+    `<Tooltip><TooltipTrigger>${button}</TooltipTrigger></Tooltip>`,
+    `<DropdownMenuTrigger render={${button}} />`,
+    `<DropdownMenuTrigger asChild>${button}</DropdownMenuTrigger>`,
+    "<RowActionButton label='More' />",
+  ]) {
+    assert.deepEqual(fired(config, code), [], code)
+  }
+})
+
+test("no align='start' on a popup", () => {
+  const config = [
+    { rules: { 'no-restricted-syntax': ['error', NO_ALIGN_START] } },
+  ]
+  assert.deepEqual(fired(config, "<DropdownMenuContent align='start' />"), [
     'no-restricted-syntax',
   ])
-  assert.deepEqual(fired(config, "<div title='x' />"), [])
+  assert.deepEqual(fired(config, "<DropdownMenuContent align='end' />"), [])
 })
 
 test('API routes never call a redirecting guard', () => {

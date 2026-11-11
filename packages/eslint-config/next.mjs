@@ -80,13 +80,38 @@ const COPY_EXCEPTIONS = {
   ],
 }
 
-/** House rule 11: a native button takes a Tooltip, never title=. */
+/**
+ * House rule 11: a button takes a Tooltip, never title=. (RecordRowButton's
+ * `title` is its row text, so only these names.)
+ */
 export const NO_TITLE_TOOLTIP = {
   selector:
-    "JSXOpeningElement[name.name='button'] > JSXAttribute[name.name='title']",
+    "JSXOpeningElement[name.name=/^(?:button|Button|\\w*IconButton|\\w*ActionButton)$/] > JSXAttribute[name.name='title']",
   message:
     'House rule 11 (docs/design-system/README.md): "Never title= as a tooltip." Use RowActionButton (label = tooltip + accessible name) or wrap the button in a Tooltip; use aria-label for the name.',
 }
+
+/**
+ * House rule 11: RowActionButton's tooltip is off only where something else
+ * explains the button: a menu or popover trigger, or its own Tooltip.
+ */
+export const TOOLTIP_OFF = {
+  selector:
+    "JSXOpeningElement[name.name='RowActionButton']:not(JSXElement[openingElement.name.name=/^(?:Tooltip|\\w*Trigger)$/] JSXOpeningElement) > JSXAttribute[name.name='tooltip'][value.expression.value=false]",
+  message:
+    'House rule 11 (docs/design-system/README.md): an icon-only button shows its label as a tooltip. tooltip={false} only on a menu or popover trigger, or inside its own Tooltip.',
+}
+
+/** House rule 4: popups are left-aligned by default, so align='start' is noise. */
+export const NO_ALIGN_START = {
+  selector:
+    "JSXOpeningElement[name.name=/(?:Content|Positioner)$/] > JSXAttribute[name.name='align'][value.value='start']",
+  message:
+    "House rule 4 (docs/design-system/README.md): popups open left-aligned by default. Drop align='start'.",
+}
+
+/** What every app file is checked for with no-restricted-syntax. */
+const RESTRICTED_SYNTAX = [NO_TITLE_TOOLTIP, TOOLTIP_OFF, NO_ALIGN_START]
 
 /** API routes answer fetch callers, so they never call a redirecting guard. */
 export const API_ROUTE_GUARD = {
@@ -201,7 +226,7 @@ export function nextApp({
       settings: { next: { rootDir: dir } },
       rules: {
         'no-restricted-imports': restrictedImports(restrictedPaths),
-        'no-restricted-syntax': ['error', NO_TITLE_TOOLTIP],
+        'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX],
         // CLAUDE.md "Soft deletes": archive, never hard delete a record.
         'pts/no-hard-delete': ['error', { allow: HARD_DELETE_ALLOW }],
         // Env vars go through the zod schema (lib/env.server.ts), so an empty
@@ -215,15 +240,20 @@ export function nextApp({
             entities: entityRegistry ? 'registry' : 'none',
             pagePanel: Boolean(pagePanel),
             exceptions: classNameExceptions,
+            root: dir,
           },
         ],
-        'pts/copy': ['error', { portal, exceptions: COPY_EXCEPTIONS }],
+        'pts/copy': [
+          'error',
+          { portal, exceptions: COPY_EXCEPTIONS, root: dir },
+        ],
         'pts/sheets': [
           'error',
           {
             ...(sheetRegistry && {
               entities: sheetParamNames(dir, sheetRegistry),
             }),
+            root: dir,
             exceptions: {
               // The sheet links' own home, and the proxy's mapping of
               // retired params.
@@ -302,7 +332,7 @@ export function nextApp({
             rules: {
               'no-restricted-syntax': [
                 'error',
-                NO_TITLE_TOOLTIP,
+                ...RESTRICTED_SYNTAX,
                 API_ROUTE_GUARD,
               ],
             },

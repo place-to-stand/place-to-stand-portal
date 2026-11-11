@@ -102,12 +102,13 @@ export function rawStrings(node, out = []) {
 
 /**
  * A rule made of several checks takes `{ exceptions: { <check>: [globs] } }`:
- * the files (relative to where eslint runs, like a flat config's `files`)
- * where that one check is off. Returns a test for a check name.
+ * the files where that one check is off, relative to the `root` option (the
+ * app's directory, like a flat config's `files`; where eslint runs when it
+ * is unset). Returns a test for a check name.
  */
 export function checkIsOn(context) {
-  const exceptions = context.options[0]?.exceptions ?? {}
-  const file = relative(context.cwd, context.filename).split(sep).join('/')
+  const { exceptions = {}, root = context.cwd } = context.options[0] ?? {}
+  const file = relative(root, context.filename).split(sep).join('/')
   const off = new Set(
     Object.entries(exceptions)
       .filter(([, globs]) => globs.some(glob => matchesGlob(file, glob)))

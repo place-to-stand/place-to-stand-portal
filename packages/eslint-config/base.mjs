@@ -53,8 +53,13 @@ export const RESTRICTED_IMPORTS = {
       message: DATES_MESSAGE,
     },
     {
-      name: 'date-fns-tz',
+      name: 'date-fns',
       importNames: ['formatInTimeZone'],
+      message: DATES_MESSAGE,
+    },
+    {
+      name: 'date-fns-tz',
+      importNames: ['format', 'formatInTimeZone', 'lightFormat'],
       message: DATES_MESSAGE,
     },
   ],
@@ -69,7 +74,7 @@ export const RESTRICTED_IMPORTS = {
 }
 
 /** Date and number formatters only @pts/ui/dates and numbers may build. */
-const RESTRICTED_PROPERTIES = [
+export const RESTRICTED_PROPERTIES = [
   { property: 'toLocaleDateString', message: DATES_MESSAGE },
   { property: 'toLocaleTimeString', message: DATES_MESSAGE },
   { object: 'Intl', property: 'DateTimeFormat', message: DATES_MESSAGE },

@@ -1,7 +1,7 @@
 /**
  * Hours, money and percentages, formatted the same way everywhere: pages, exports, emails,
  * PDFs, notifications. This file is the only place either is built
- * (`scripts/check-formatters.mjs` fails the lint on a hand-rolled copy).
+ * (`pts/copy` fails the lint on a hand-rolled copy).
  *
  * Both formatters pin the `en-US` locale so the server and every browser
  * render identical strings (no hydration mismatches). It has no imports, so

@@ -80,6 +80,7 @@ export const classNames = {
           entities: { enum: ['registry', 'none'] },
           pagePanel: { type: 'boolean' },
           exceptions: EXCEPTIONS_SCHEMA,
+          root: { type: 'string' },
         },
         additionalProperties: false,
       },

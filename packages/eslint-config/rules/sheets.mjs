@@ -27,6 +27,7 @@ export const sheets = {
         properties: {
           entities: { type: 'array', items: { type: 'string' } },
           exceptions: EXCEPTIONS_SCHEMA,
+          root: { type: 'string' },
         },
         additionalProperties: false,
       },

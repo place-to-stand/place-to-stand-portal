@@ -13,8 +13,10 @@
  *   figures    Content fundamentals: hours, money and percentages only
  *              through @pts/ui/numbers, never glued on by hand
  *
- * Options: `portal` ('internal' or 'client': which word list applies) and
- * `exceptions`, the files where one check is off. A deliberate use (the
+ * Options: `portal` ('internal' or 'client': which word list applies),
+ * `exceptions` (the files where one check is off) and `root`, the directory
+ * the exception globs are relative to (the app's, so eslint can run from
+ * the repo root). A deliberate use (the
  * website's contact form, a CSS width) takes an eslint-disable comment that
  * says why.
  */
@@ -32,10 +34,24 @@ import {
 
 const LOCAL_FORMATTER =
   /^(?:formatHours|formatCurrency|formatMoney|formatUsd|formatDollars|formatPercent|formatRate|formatTaxRate)$/
-const isToFixed = node =>
-  node?.type === 'CallExpression' &&
-  node.callee.type === 'MemberExpression' &&
-  node.callee.property.name === 'toFixed'
+/** The expression under `x?.y`, `x as T` and `x!`. */
+const unwrap = node =>
+  node &&
+  /^(?:ChainExpression|TSAsExpression|TSSatisfiesExpression|TSNonNullExpression)$/.test(
+    node.type
+  )
+    ? unwrap(node.expression)
+    : node
+const keyName = key =>
+  key?.name ?? (typeof key?.value === 'string' ? key.value : '')
+const isToFixed = raw => {
+  const node = unwrap(raw)
+  return (
+    node?.type === 'CallExpression' &&
+    node.callee.type === 'MemberExpression' &&
+    node.callee.property.name === 'toFixed'
+  )
+}
 
 /** What a template's text right after an expression glues onto it, or null. */
 function gluedAfter(expression, text, previousText) {
@@ -44,6 +60,7 @@ function gluedAfter(expression, text, previousText) {
     return 'an hours suffix'
   // `%${q}%` is a SQL LIKE pattern, not a percent.
   if (/^%/.test(text) && !/%$/.test(previousText)) return 'a percent sign'
+  if (isToFixed(expression) && /^\s%/.test(text)) return 'a percent sign'
   return null
 }
 
@@ -66,6 +83,7 @@ export const copy = {
         properties: {
           portal: { enum: ['internal', 'client'] },
           exceptions: EXCEPTIONS_SCHEMA,
+          root: { type: 'string' },
         },
         additionalProperties: false,
       },
@@ -192,13 +210,13 @@ export const copy = {
           context.report({ node, messageId: 'details' })
       },
       Property(node) {
-        const key = node.key.type === 'Identifier' ? node.key.name : null
+        const key = node.computed ? null : keyName(node.key)
         if (on('ellipsis') && key === 'placeholder') checkEllipsis(node.value)
         if (
           figures &&
           key === 'currency' &&
-          node.value.type === 'Literal' &&
-          node.value.value === 'USD'
+          unwrap(node.value)?.type === 'Literal' &&
+          unwrap(node.value).value === 'USD'
         ) {
           figure(node, "sets currency: 'USD' by hand")
         }
@@ -227,7 +245,7 @@ export const copy = {
             arg =>
               arg.type === 'ObjectExpression' &&
               arg.properties.some(p =>
-                /^(?:currency|\w*FractionDigits)$/.test(p.key?.name ?? '')
+                /^(?:currency|\w*FractionDigits)$/.test(keyName(p.key))
               )
           )
         ) {

@@ -55,6 +55,17 @@ tester.run('copy', pts.rules.copy, {
       filename: 'components/tiptap-ui/x.tsx',
       options: [{ exceptions: { figures: ['**/tiptap*/**'] } }],
     },
+    // Exception globs are relative to `root` when it is set.
+    {
+      code: 'const c = `${rate}%`',
+      filename: '/repo/apps/internal/components/tiptap-ui/x.tsx',
+      options: [
+        {
+          root: '/repo/apps/internal',
+          exceptions: { figures: ['components/tiptap-ui/**'] },
+        },
+      ],
+    },
   ],
   invalid: [
     {
@@ -129,5 +140,16 @@ tester.run('copy', pts.rules.copy, {
     { code: '<span>{n}%</span>', errors: errors('figures') },
     { code: '<span>{hours}h</span>', errors: errors('figures') },
     { code: '<span>${amount}</span>', errors: errors('figures') },
+    { code: 'const p = `${n.toFixed(1)} %`', errors: errors('figures') },
+    { code: '<span>{n.toFixed(1)} %</span>', errors: errors('figures') },
+    { code: 'const h = `${m?.toFixed(1)} hours`', errors: errors('figures') },
+    {
+      code: "const o = { currency: 'USD' as const }",
+      errors: errors('figures'),
+    },
+    {
+      code: "n.toLocaleString(undefined, { 'minimumFractionDigits': 2 })",
+      errors: errors('figures'),
+    },
   ],
 })
