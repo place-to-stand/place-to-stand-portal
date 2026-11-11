@@ -235,8 +235,8 @@ const INVOICE_SORT_ORDERINGS: Record<
     desc: sql`${invoices.status} DESC, ${invoices.createdAt} DESC`,
   },
   total: {
-    asc: sql`${invoices.total} ASC`,
-    desc: sql`${invoices.total} DESC`,
+    asc: sql`${invoices.total} ASC, ${invoices.createdAt} DESC`,
+    desc: sql`${invoices.total} DESC, ${invoices.createdAt} DESC`,
   },
   // The Hours column: hours of the live blocks the invoice's lines created.
   // No block sorts last.

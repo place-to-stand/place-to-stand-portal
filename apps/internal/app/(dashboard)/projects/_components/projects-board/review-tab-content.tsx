@@ -1,7 +1,5 @@
 'use client'
 
-import { useMemo } from 'react'
-
 import { TabsContent } from '@pts/ui/tabs'
 import { ProjectsBoardEmpty } from '../projects-board-empty'
 import {
@@ -63,14 +61,6 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
     isReviewActionPending,
   } = props
 
-  const sortedDone = useMemo(() => {
-    return doneTasks.slice().sort((a, b) => {
-      const aTime = a.updated_at ? Date.parse(a.updated_at) : 0
-      const bTime = b.updated_at ? Date.parse(b.updated_at) : 0
-      return bTime - aTime
-    })
-  }, [doneTasks])
-
   if (!isActive) {
     return null
   }
@@ -86,7 +76,7 @@ export function ReviewTabContent(props: ReviewTabContentProps) {
       ) : (
         <div className='flex min-h-0 flex-1 flex-col gap-4 sm:gap-6'>
           <ReviewDoneSection
-            tasks={sortedDone}
+            tasks={doneTasks}
             renderAssignees={renderAssignees}
             onEditTask={onEditTask}
             onAcceptTask={onAcceptTask}

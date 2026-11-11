@@ -18,7 +18,10 @@ import { timeLogs } from '@/lib/db/schema'
 import { parseSubmissionsListParams } from '@/lib/form-submissions/list-params'
 import { parseHourBlocksSearchParams } from '@/lib/hour-blocks/filters'
 import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
-import { parseContactsSearchParams } from '@/lib/people/filters'
+import {
+  PERSON_TYPE_SIGN_IN,
+  parseContactsSearchParams,
+} from '@/lib/people/filters'
 import { scopeProjectsForViewer } from '@/lib/projects/viewer-scope'
 import { listCompanies } from '@/lib/queries/companies'
 import { listContactsForSettings } from '@/lib/queries/contacts'
@@ -130,16 +133,20 @@ export const BULK_ARCHIVE_REGISTRY: Record<
   contact: {
     capability: 'contacts.manage',
     matchingIds: (user, params, archived, limit) => {
-      const { search, companyId, signIn, sort } =
+      const { search, companyId, signIn, type, sort } =
         parseContactsSearchParams(params)
       return collectPages(limit, async (offset, pageSize) => {
         const result = await listContactsForSettings(user, {
           status: archived ? 'archived' : 'active',
           search,
           companyId,
-          // The sign-in filter exists on the active tab, for admins.
+          // The sign-in filters exist on the active tabs, for admins: the
+          // Users page's role, or People's User / Not a user, as the page
+          // reads them.
           signIn:
-            !archived && canSeePortalAccess(user.role) ? signIn : undefined,
+            !archived && canSeePortalAccess(user.role)
+              ? (signIn ?? (type ? PERSON_TYPE_SIGN_IN[type] : undefined))
+              : undefined,
           offset,
           limit: pageSize,
           sort,

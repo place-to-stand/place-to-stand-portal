@@ -1,4 +1,5 @@
 import { parseSortParam, type ParsedSort } from '@/lib/pagination/sort'
+import { sortRows } from '@/lib/table/sort-rows'
 
 import type { CompanyListItem } from './types'
 import { firstParam } from '@/lib/pagination/params'
@@ -111,12 +112,13 @@ export function applyCompanyListParams(
         return row.tags.length ? row.tags.join(', ').toLowerCase() : null
       case 'hours':
         return row.hours ? row.hours.remaining : null
+      // A count of 0 shows a dash: no value.
       case 'people':
-        return row.contactCount
+        return row.contactCount || null
       case 'leads':
-        return row.leadCount
+        return row.leadCount || null
       case 'projects':
-        return row.projects.length
+        return row.projects.length || null
       case 'origination':
         return row.origination ? row.origination.name.toLowerCase() : null
       case 'closer':
@@ -125,14 +127,10 @@ export function applyCompanyListParams(
         return row.name.toLowerCase()
     }
   }
-  const direction = sort.direction === 'asc' ? 1 : -1
-  return [...filtered].sort((a, b) => {
-    const left = value(a)
-    const right = value(b)
-    if (left === null && right === null) return a.name.localeCompare(b.name)
-    if (left === null) return 1
-    if (right === null) return -1
-    if (left === right) return a.name.localeCompare(b.name)
-    return left < right ? -direction : direction
-  })
+  // Name A-Z breaks ties in every column.
+  return sortRows(
+    sortRows(filtered, row => row.name, 'asc'),
+    value,
+    sort.direction
+  )
 }

@@ -31,6 +31,7 @@ for (const path of LISTS) {
     await page.waitForLoadState('networkidle')
     const tables = page.locator('table:has(thead)')
     const tableCount = await tables.count()
+    expect(tableCount, `${path} shows a table`).toBeGreaterThan(0)
     for (let t = 0; t < tableCount; t++) {
       const heads = tables.nth(t).locator('thead th')
       const headCount = await heads.count()
@@ -39,26 +40,33 @@ for (const path of LISTS) {
         const text = (await head.innerText()).trim()
         // The select box (no text) and Actions don't sort.
         if (!text || text === 'Actions') continue
+        // Counted in the DOM: a column can be hidden at this width.
         await expect(
-          head.getByRole('button'),
+          head.locator('button'),
           `${path}: "${text}" sorts`
         ).toHaveCount(1)
       }
     }
-    // Click through the first table's columns: asc, then desc.
-    const heads = tables.first().locator('thead th:has(button)')
-    const count = await heads.count()
+    // Click through the first table's visible columns, asc then desc, and
+    // wait for the server each time: a bad ORDER BY shows the error page.
+    const firstTable = tables.first()
+    const visibleHeads = firstTable.locator('thead th:visible:has(button)')
+    const count = await visibleHeads.count()
+    expect(count, `${path} has sortable columns`).toBeGreaterThan(0)
     for (let i = 0; i < count; i++) {
-      const head = tables.first().locator('thead th:has(button)').nth(i)
+      const head = visibleHeads.nth(i)
       const sorted = await head.getAttribute('aria-sort')
-      await head.getByRole('button').click()
-      await expect(head).toHaveAttribute(
-        'aria-sort',
-        sorted === 'ascending' ? 'descending' : 'ascending'
-      )
-      await expectHealthy(page)
-      await head.getByRole('button').click()
-      await expectHealthy(page)
+      for (const expected of [
+        sorted === 'ascending' ? 'descending' : 'ascending',
+        null,
+      ]) {
+        await head.getByRole('button').click()
+        await page.waitForLoadState('networkidle')
+        if (expected) await expect(head).toHaveAttribute('aria-sort', expected)
+        await expect(firstTable).toBeVisible()
+        await expect(page.getByText('This page hit an error.')).toHaveCount(0)
+        await expectHealthy(page)
+      }
     }
   })
 }

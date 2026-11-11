@@ -55,7 +55,7 @@ type ProjectSortDescriptor = {
 const PROJECT_OWNER_LABEL_SQL = sql`(case ${projects.type}
   when 'CLIENT' then lower(${companies.name})
   when 'INTERNAL' then 'internal project'
-  else lower(${personNameSql})
+  else lower(coalesce(${personNameSql}, split_part(${users.email}, '@', 1)))
 end)`
 
 const PROJECT_SORT_DESCRIPTORS: Record<

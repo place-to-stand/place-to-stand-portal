@@ -29,7 +29,7 @@ type ContactsFiltersProps = {
   /** The Users page's Role filter (`?role=`). */
   role?: (typeof ROLE_FILTER_VALUES)[number]
   showRoleFilter?: boolean
-  /** People and Archive's User / Not a user filter (`?type=`). */
+  /** People's User / Not a user filter (`?type=`). */
   type?: PersonTypeFilter
   showTypeFilter?: boolean
 }

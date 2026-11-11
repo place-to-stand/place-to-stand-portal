@@ -35,3 +35,16 @@ test('numbers compare as numbers', () => {
     ['a', 'd', 'c', 'b']
   )
 })
+
+test('blank strings and NaN count as no value', () => {
+  const blanks = [
+    { id: 'a', v: '  ' },
+    { id: 'b', v: 'x' },
+    { id: 'c', v: Number.NaN },
+    { id: 'd', v: 'a' },
+  ]
+  assert.deepEqual(
+    sortRows(blanks, row => row.v, 'asc').map(row => row.id),
+    ['d', 'b', 'a', 'c']
+  )
+})

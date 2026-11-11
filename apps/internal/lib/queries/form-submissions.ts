@@ -316,7 +316,7 @@ const SORT_EXPRESSIONS: Record<SqlSortField, (dir: 'asc' | 'desc') => SQL[]> = {
   received: dir => [sql`${formSubmissions.lastActivityAt} ${sqlDir(dir)}`],
   form: dir => [sql`${formSubmissions.kind} ${sqlDir(dir)}`],
   contact: dir => [
-    sql`lower(coalesce(${formSubmissions.contactName}, ${formSubmissions.contactEmail})) ${sqlDir(dir)} nulls last`,
+    sql`lower(coalesce(nullif(trim(${formSubmissions.contactName}), ''), nullif(trim(${formSubmissions.contactEmail}), ''))) ${sqlDir(dir)} nulls last`,
   ],
   company: dir => [
     sql`lower(nullif(trim(${formSubmissions.contactCompany}), '')) ${sqlDir(dir)} nulls last`,
@@ -325,7 +325,7 @@ const SORT_EXPRESSIONS: Record<SqlSortField, (dir: 'asc' | 'desc') => SQL[]> = {
   // a contact form's subject, an audit's phase, then how far it got.
   outcome: dir => [
     sql`${formSubmissions.status} ${sqlDir(dir)}`,
-    sql`lower(coalesce(nullif(trim(${formSubmissions.subject}), ''), ${formSubmissions.result}->>'phaseName', ${formSubmissions.phaseId})) ${sqlDir(dir)} nulls last`,
+    sql`lower(coalesce(nullif(trim(${formSubmissions.subject}), ''), nullif(${formSubmissions.result}->>'phaseName', ''), nullif(${formSubmissions.phaseId}, ''))) ${sqlDir(dir)} nulls last`,
     sql`${formSubmissions.percentComplete} ${sqlDir(dir)} nulls last`,
   ],
   archived: dir => [

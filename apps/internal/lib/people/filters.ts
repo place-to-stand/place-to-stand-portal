@@ -52,9 +52,9 @@ export const ROLE_FILTER_LABELS: Record<
   CLIENT: 'Client',
 }
 /**
- * The People and Archive pages' sign-in filter (`?type=`): people who can
- * sign in, or people who can't. Mirrors the Companies type filter
- * (Client / Not a client). Shown only to viewers who see sign-ins.
+ * The People page's sign-in filter (`?type=`): people who can sign in, or
+ * people who can't. Mirrors the Companies type filter (Client / Not a
+ * client). Shown only to viewers who see sign-ins.
  */
 export const PERSON_TYPE_VALUES = ['user', 'none'] as const
 export type PersonTypeFilter = (typeof PERSON_TYPE_VALUES)[number]
@@ -90,7 +90,7 @@ export type ContactsSearchParams = {
   companyId: string | undefined
   /** Who can sign in (admins only; ignored for others). */
   signIn: SignInFilter | undefined
-  /** `?type=`: User or Not a user (People and Archive). */
+  /** `?type=`: User or Not a user (the People page). */
   type: PersonTypeFilter | undefined
   sort: ParsedSort<ContactSortField>
 }

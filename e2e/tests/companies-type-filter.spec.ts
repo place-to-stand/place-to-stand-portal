@@ -16,19 +16,19 @@ test('the company type filter offers client and not a client', async ({
   ).toHaveCount(1)
 
   // Client: every row carries the Client badge, and the page stays put.
-  await page.getByRole('option', { name: 'Client' }).click()
+  await page.getByRole('option', { name: 'Client', exact: true }).click()
   await expect(page).toHaveURL(/\/companies\?type=client$/)
   const rows = page.locator('tbody tr')
   await expect(rows.first()).toBeVisible()
   const count = await rows.count()
   for (let i = 0; i < count; i++) {
     await expect(
-      rows.nth(i).locator('[data-slot=badge]', { hasText: 'Client' })
+      rows.nth(i).locator('[data-slot=badge]', { hasText: /^Client$/ })
     ).toHaveCount(1)
   }
 
   // Not a client: no row carries a billing badge (Prepaid / Net 30).
-  await page.getByRole('combobox', { name: /Client/ }).click()
+  await page.getByRole('combobox', { name: 'All companies' }).click()
   await page.getByRole('option', { name: 'Not a client' }).click()
   await expect(page).toHaveURL(/type=none/)
   await expect(rows.first()).toBeVisible()

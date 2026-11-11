@@ -86,8 +86,9 @@ export async function PeopleListPage({
         : { key: 'role', path: view.basePath, keep: () => false }
     )
   }
-  // Users lists people who can sign in, so its link takes no type.
-  if (mode === 'users' && params.type !== undefined) {
+  // Users lists people who can sign in, and Archive no one who can, so
+  // their links take no type.
+  if (mode !== 'active' && params.type !== undefined) {
     redirectLegacyPreset(params, {
       key: 'type',
       path: view.basePath,
@@ -103,13 +104,14 @@ export async function PeopleListPage({
     type: typeParam,
     sort,
   } = parseContactsSearchParams(params)
-  // Users lists every live sign-in, narrowed by its Role filter. People and
-  // Archive narrow by their User / Not a user filter, for viewers who see
-  // sign-ins (the query ignores it for anyone else).
+  // Users lists every live sign-in, narrowed by its Role filter. People
+  // narrows by its User / Not a user filter, for viewers who see sign-ins
+  // (the query ignores it for anyone else). Archive has none: archiving a
+  // person turns their sign-in off, so no one there is a user.
   const seesAccess = canSeePortalAccess(user.role)
   const role =
     signInParam && isRoleFilter(signInParam) ? signInParam : undefined
-  const type = mode !== 'users' && seesAccess ? typeParam : undefined
+  const type = mode === 'active' && seesAccess ? typeParam : undefined
   const signIn =
     mode === 'users'
       ? (role ?? 'any')
@@ -187,7 +189,7 @@ export async function PeopleListPage({
           role={mode === 'users' ? role : undefined}
           showRoleFilter={mode === 'users'}
           type={type}
-          showTypeFilter={mode !== 'users' && seesAccess}
+          showTypeFilter={mode === 'active' && seesAccess}
         />
         <ContactsManagementTable
           contacts={contactsForTable}
