@@ -87,7 +87,7 @@ function ProductRow({
       <TableCell label='Price' className='text-right tabular-nums'>
         {formatCurrency(item.unit_price)}
       </TableCell>
-      <TableCell label='Unit' className='truncate'>
+      <TableCell label='Unit' className='truncate md:pl-4'>
         {item.unit_label}
       </TableCell>
       <TableCell label='Min qty'>{item.min_quantity ?? '\u2014'}</TableCell>
@@ -328,7 +328,7 @@ export function ProductCatalogSection({
                 Name
               </SortableTableHead>
               <TableHead className='w-[12%] text-right'>Unit price</TableHead>
-              <TableHead className='w-[10%]'>Unit label</TableHead>
+              <TableHead className='w-[10%] pl-4'>Unit label</TableHead>
               <TableHead className='w-[8%]'>Min qty</TableHead>
               <TableHead className='w-[11%]'>Hour block</TableHead>
               <TableHead className='w-[7%]'>Active</TableHead>
