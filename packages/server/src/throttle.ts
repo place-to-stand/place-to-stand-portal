@@ -39,7 +39,7 @@ const PASSWORD_SIGN_IN: AttemptPolicy = {
   kind: 'sign-in',
   perSubjectLimit: 10,
   perIpLimit: 30,
-  label: 'Password sign-in throttled', // copy-check: allow — a server log label, not UI
+  label: 'Password sign-in throttled',
 }
 
 /**

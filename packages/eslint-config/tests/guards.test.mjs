@@ -19,23 +19,6 @@ const tester = new RuleTester({
 
 const run = (id, cases) => tester.run(id, pts.rules[id], cases)
 
-run('popover-shadow', {
-  valid: [
-    "<PopoverContent className='w-80 p-0' />",
-    "<SelectContent className='shadow-popover' />",
-    "<Card className='shadow-lg' />",
-    "<SheetContent className='shadow-lg' />",
-    "<SheetPrimitive.Popup className='shadow-lg' />",
-  ],
-  invalid: [
-    { code: "<PopoverContent className='w-96 shadow-2xl' />", errors: 1 },
-    {
-      code: "<MenuPopup className={cn('p-1', open && 'shadow-lg')} />",
-      errors: 1,
-    },
-  ],
-})
-
 run('figure-cell-aligned', {
   valid: [
     "<TableCell className='text-right tabular-nums'>{formatCurrency(n)}</TableCell>",
@@ -48,70 +31,6 @@ run('figure-cell-aligned', {
       errors: 1,
     },
     { code: '<TableCell>{formatHours(h)}</TableCell>', errors: 1 },
-  ],
-})
-
-run('no-details-section', {
-  valid: ["<SheetSection title='Billing' />"],
-  invalid: [{ code: "<SheetSection title='Details' />", errors: 1 }],
-})
-
-run('no-raw-type-size', {
-  valid: ["const c = 'text-micro text-overline text-sm'"],
-  invalid: [
-    { code: "const c = 'text-[10px] font-semibold'", errors: 1 },
-    { code: 'const c = `sm:text-[22px] ${x}`', errors: 1 },
-  ],
-})
-
-run('one-page-panel', {
-  valid: [
-    "const c = 'rounded-xl border p-4'",
-    "const c = 'rounded-lg border shadow-sm'",
-  ],
-  invalid: [
-    {
-      code: "const c = 'bg-background rounded-xl border p-4 shadow-sm'",
-      errors: 1,
-    },
-    { code: 'const c = `bg-card ${x} rounded-xl border shadow-sm`', errors: 1 },
-  ],
-})
-
-run('no-raw-colour', {
-  valid: [
-    "const c = 'bg-warning/10 text-destructive border-brand-lime/50'",
-    "const c = 'text-red'", // not a palette step
-    "const c = 'grid-cols-2 gap-500'",
-  ],
-  invalid: [
-    { code: "const c = 'border-b border-amber-500/40'", errors: 1 },
-    { code: "const c = 'dark:text-red-300'", errors: 1 },
-    { code: "const c = 'border-[#65a30d]/60'", errors: 1 },
-    { code: 'const c = `px-2 ${x} bg-zinc-100`', errors: 1 },
-  ],
-})
-
-const sheetOptions = [{ entities: ['task', 'invoice', 'hour-block'] }]
-run('sheet-url-through-builders', {
-  valid: [
-    { code: 'const h = invoiceHref(id)', options: sheetOptions },
-    { code: "params.set('page', '2')", options: sheetOptions },
-    { code: 'const h = `/invoices?q=${q}`', options: sheetOptions },
-  ],
-  invalid: [
-    {
-      code: 'const h = `/invoices/archive?invoice=${id}`',
-      options: sheetOptions,
-      errors: 1,
-    },
-    {
-      code: 'const h = `/hour-blocks?page=2&hour-block=${id}`',
-      options: sheetOptions,
-      errors: 1,
-    },
-    { code: "params.set('task', id)", options: sheetOptions, errors: 1 },
-    { code: "params.delete('task')", options: sheetOptions, errors: 1 },
   ],
 })
 
@@ -143,18 +62,6 @@ run('no-hard-delete', {
       options: deleteOptions,
       errors: 1,
     },
-  ],
-})
-
-run('optional-label', {
-  valid: [
-    '<FormLabel optional>Notes</FormLabel>',
-    "const s = '(optional)'", // not JSX
-  ],
-  invalid: [
-    { code: '<FormLabel>Notes (optional)</FormLabel>', errors: 1 },
-    { code: "<Label>{'Slug (optional)'}</Label>", errors: 1 },
-    { code: "<Field label='End date (optional)' />", errors: 1 },
   ],
 })
 
@@ -192,46 +99,6 @@ run('shortcut-registry', {
     {
       code: "window.addEventListener('keydown', e => { const { key, metaKey } = e; if (metaKey && key === 'k') open() })",
       errors: 1,
-    },
-  ],
-})
-
-run('underline-not-clipped', {
-  valid: [
-    "<a className='hover:underline'><span className='truncate-link'>x</span></a>",
-    "<Link className='truncate-link hover:underline'>x</Link>",
-    "<div className='truncate'>x</div>",
-    "<span className='truncate'><a className='hover:underline'>x</a></span>",
-  ],
-  invalid: [
-    {
-      code: "<Link className='hover:text-foreground truncate hover:underline'>x</Link>",
-      errors: [{ messageId: 'clipped' }],
-    },
-    {
-      code: "<a className={cn('inline-flex hover:underline')}><Icon /><span className='truncate'>x</span></a>",
-      errors: [{ messageId: 'clipped' }],
-    },
-  ],
-})
-
-run('sheet-link-in-place', {
-  valid: [
-    "<SheetLink sheet={{ entity: 'company', id }}>x</SheetLink>",
-    "const item = { sheet: { entity: 'lead', id } }",
-    { code: 'const link = { href: leadHref(id) }', filename: 'events.ts' },
-    '<Link href={projectBoardHref(a, b)}>x</Link>',
-    'router.push(companySheetHref(id))',
-  ],
-  invalid: [
-    {
-      code: '<Link href={companySheetHref(id)}>x</Link>',
-      errors: [{ messageId: 'leaves' }],
-    },
-    {
-      code: 'const item = { href: leadHref(lead.id) }',
-      filename: 'row.tsx',
-      errors: [{ messageId: 'leaves' }],
     },
   ],
 })

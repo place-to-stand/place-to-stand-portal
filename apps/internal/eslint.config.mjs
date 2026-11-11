@@ -36,21 +36,16 @@ const QUERY_LAYER_ALLOWLIST = [
 const config = [
   ...nextApp({
     dir: import.meta.dirname,
+    portal: 'internal',
     entityRegistry: 'lib/entity-accents.ts',
     sheetRegistry: 'lib/sheets/entities.ts',
     pagePanel: 'components/layout/page-panel.tsx',
+    queryLayerAllowlist: QUERY_LAYER_ALLOWLIST,
+    apiRouteGuard: true,
   }),
   {
-    files: ['lib/queries/**'],
-    ignores: QUERY_LAYER_ALLOWLIST,
-    rules: { 'pts/query-layer-purity': 'error' },
-  },
-  {
-    // One way to check roles: capabilities, and JSON 401/403 from API routes.
-    rules: {
-      'pts/api-route-guard': 'error',
-      'pts/no-role-literal': 'error',
-    },
+    // One way to check roles: capabilities.
+    rules: { 'pts/no-role-literal': 'error' },
   },
 ]
 

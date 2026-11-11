@@ -31,6 +31,76 @@ export const NO_RLS_IMPORT = {
     'CLAUDE.md: this project never uses Row Level Security. Access control lives in the application layer.',
 }
 
+const DATES_MESSAGE =
+  'House rule 10 (docs/design-system/README.md): "Dates go through @pts/ui/dates … Never toLocaleDateString, a bare Intl.DateTimeFormat, or date-fns format() in the UI." It formats in the ambient timezone (hydration errors, off-by-one dates). Use formatCalendarDate / formatRelativeTime, or add a helper to packages/ui/src/dates.ts.'
+
+const NUMBERS_MESSAGE =
+  'Content fundamentals (docs/design-system/README.md): hours, money and percentages are formatted only by @pts/ui/numbers (formatHours, formatCurrency, formatPercent). Need a variant? Add an option to packages/ui/src/numbers.ts.'
+
+/**
+ * Imports banned everywhere. The apps add their own (next.mjs); a config
+ * that sets no-restricted-imports again must start from this list, since a
+ * later setting replaces an earlier one.
+ */
+export const RESTRICTED_IMPORTS = {
+  paths: [
+    NO_RLS_IMPORT,
+    // House rule 10: dates go through @pts/ui/dates.
+    { name: 'date-fns/format', message: DATES_MESSAGE },
+    {
+      name: 'date-fns',
+      importNames: ['format', 'lightFormat'],
+      message: DATES_MESSAGE,
+    },
+    {
+      name: 'date-fns',
+      importNames: ['formatInTimeZone'],
+      message: DATES_MESSAGE,
+    },
+    {
+      name: 'date-fns-tz',
+      importNames: ['format', 'formatInTimeZone', 'lightFormat'],
+      message: DATES_MESSAGE,
+    },
+  ],
+  patterns: [
+    {
+      // House rule 1: every primitive is @base-ui/react.
+      regex: '^(@radix-ui/|radix-ui$)',
+      message:
+        'House rule 1 (docs/design-system/README.md): "Every primitive is @base-ui/react. Radix is gone." Import the @pts/ui wrapper instead.',
+    },
+  ],
+}
+
+/** Date and number formatters only @pts/ui/dates and numbers may build. */
+export const RESTRICTED_PROPERTIES = [
+  { property: 'toLocaleDateString', message: DATES_MESSAGE },
+  { property: 'toLocaleTimeString', message: DATES_MESSAGE },
+  { object: 'Intl', property: 'DateTimeFormat', message: DATES_MESSAGE },
+  { object: 'Intl', property: 'NumberFormat', message: NUMBERS_MESSAGE },
+]
+
+/**
+ * README → Color's listed exceptions to raw colours: the badge tint source,
+ * the Switch's on state, and the auth ground (always dark, so its error red
+ * is raw on purpose; auth-shell.tsx explains). The apps add theirs.
+ */
+export const RAW_COLOUR_EXCEPTIONS = [
+  '**/badge-tints.ts',
+  '**/switch.tsx',
+  '**/auth-shell.tsx',
+]
+
+/**
+ * Rule tests quote banned classes and copy as fixtures. Goes last in a
+ * config, after anything that sets these rules again.
+ */
+export const FIXTURES = {
+  files: ['**/tests/**'],
+  rules: { 'pts/class-names': 'off', 'pts/copy': 'off' },
+}
+
 /**
  * Rules for every workspace, apps and packages alike. `allowConsole` for
  * command-line code (the pts CLI); scripts/ and e2e/ are never linted as app
@@ -63,30 +133,18 @@ export function common({ allowConsole = false } = {}) {
         // Money: an outer column in a correlated subquery binds to the inner
         // table (three past bugs). See rules/drizzle-qualified-subquery.mjs.
         'pts/drizzle-qualified-subquery': 'error',
-        // House rule 10: every date a person reads (pages, emails, PDFs) is
-        // formatted by @pts/ui/dates.
-        'pts/dates-through-ui': 'error',
-        // README → Color: tokens only. Listed exceptions are turned off by
-        // file below and in the app configs.
-        'pts/no-raw-colour': 'error',
-        // The apps add their own paths to this list (next.mjs).
-        'no-restricted-imports': ['error', { paths: [NO_RLS_IMPORT] }],
+        // Tailwind classes and copy follow the design system: see the list of
+        // checks at the top of each rule. The apps pass more options.
+        'pts/class-names': [
+          'error',
+          { exceptions: { 'raw-colour': RAW_COLOUR_EXCEPTIONS } },
+        ],
+        'pts/copy': 'error',
+        'no-restricted-imports': ['error', RESTRICTED_IMPORTS],
+        'no-restricted-properties': ['error', ...RESTRICTED_PROPERTIES],
       },
     },
-    {
-      // README → Color's listed exceptions: the badge tint source and the
-      // Switch's on state.
-      // The auth ground is always dark, so its error red is raw on purpose
-      // (auth-shell.tsx explains).
-      // Rule tests quote raw colours as fixtures.
-      files: [
-        '**/badge-tints.ts',
-        '**/switch.tsx',
-        '**/auth-shell.tsx',
-        '**/tests/**',
-      ],
-      rules: { 'pts/no-raw-colour': 'off' },
-    },
+    FIXTURES,
     {
       // AGENTS.md: "Files approaching 300 lines should be split by
       // responsibility." Files already over the limit are listed in each

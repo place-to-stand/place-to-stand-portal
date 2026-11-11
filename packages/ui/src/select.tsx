@@ -5,6 +5,7 @@ import { Select as SelectPrimitive } from '@base-ui/react/select'
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 
 import { cn } from './cn'
+import type { PopupAlign } from './popup-align'
 
 type SelectItemEntry = { value: string; label: React.ReactNode }
 
@@ -166,7 +167,7 @@ function SelectContent({
   position = 'popper',
   // House rule: dropdown popups left-align with their trigger (or match its
   // width); deviations opt in with an explicit `align` at the call site.
-  align = 'start',
+  align,
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 0,
@@ -175,15 +176,15 @@ function SelectContent({
 }: SelectPrimitive.Popup.Props &
   Pick<
     SelectPrimitive.Positioner.Props,
-    'align' | 'alignOffset' | 'side' | 'sideOffset'
-  > & {
+    'alignOffset' | 'side' | 'sideOffset'
+  > & { align?: PopupAlign } & {
     /** Radix compatibility: `popper` maps to `alignItemWithTrigger={false}`. */
     position?: 'popper' | 'item-aligned'
   }) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
-        align={align}
+        align={align ?? 'start'}
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}

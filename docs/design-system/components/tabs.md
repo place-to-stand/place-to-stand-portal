@@ -10,4 +10,4 @@ Segmented tabs on Base UI Tabs, kept on the Radix names `TabsList`/`TabsTrigger`
 
 **In a sheet:** no tabs. Use `SheetSection`s instead (comments last).
 
-**Rules:** style against `data-active`, never `data-[state=active]`; use `asChild` for navigable tabs; labels are one or two words, sentence case. (guard: eslint `pts/no-radix`; review)
+**Rules:** style against `data-active`, never `data-[state=active]`; use `asChild` for navigable tabs; labels are one or two words, sentence case. (guard: eslint `no-restricted-imports`; eslint `pts/class-names`; review)

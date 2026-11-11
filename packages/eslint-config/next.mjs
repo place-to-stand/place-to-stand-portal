@@ -5,9 +5,15 @@
  *   import { nextApp } from '@pts/eslint-config/next'
  *   export default nextApp({ dir: import.meta.dirname, entityRegistry: 'lib/entity-accents.ts' })
  *
- * `entityRegistry`: the app's entity registry (internal only). With it, entity
- * icons from lucide-react are banned outside the registry; the `*-entity-*`
- * colour classes are banned in every app either way.
+ * Options:
+ * - `portal`: 'internal' or 'client', the word list pts/copy checks.
+ * - `entityRegistry`: the app's entity registry (internal only). With it,
+ *   entity icons from lucide-react are banned outside the registry; the
+ *   `*-entity-*` colour classes are banned in every app either way.
+ * - `sheetRegistry`: lib/sheets/entities.ts, whose params pts/sheets guards.
+ * - `pagePanel`: the PagePanel component, the one place its classes live.
+ * - `queryLayerAllowlist`: lib/queries files from before the layering rule.
+ * - `apiRouteGuard`: API routes never call a redirecting guard.
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -17,29 +23,119 @@ import nextTypescript from 'eslint-config-next/typescript'
 
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 
-import { IGNORES, NO_RLS_IMPORT, common, typed } from './base.mjs'
+import {
+  FIXTURES,
+  IGNORES,
+  RAW_COLOUR_EXCEPTIONS,
+  RESTRICTED_IMPORTS,
+  common,
+  typed,
+} from './base.mjs'
 
 export const HOUSE_RULES = {
-  'pts/no-radix': 'error', // rule 1
-  'pts/no-align-start': 'error', // rule 4
   'pts/save-not-gated-on-dirty': 'error', // rule 6
-  'pts/no-title-tooltip': 'error', // rule 11
-  'pts/icon-button-tooltip': 'error', // rule 11
   'pts/archive-confirm': 'error', // one archive confirmation
-  'pts/no-size-override': 'error', // rule 12
-  'pts/toast-copy': 'error', // rule 14
-  'pts/grid-phone-column': 'error', // rule 15
-  'pts/ellipsis-character': 'error', // copy: "…"
   'pts/filter-select': 'error', // list filters are FilterSelect
-  'pts/optional-label': 'error', // input.md: <FormLabel optional>
-  'pts/popover-shadow': 'error', // select.md: one elevation
   'pts/figure-cell-aligned': 'error', // table.md: figures right, tabular
   'pts/fixed-table-columns': 'error', // table.md: short columns fixed, text grows
-  'pts/no-details-section': 'error', // sheet.md: no "Details" heading
-  'pts/no-raw-type-size': 'error', // README → Type: role utilities
-  'pts/underline-not-clipped': 'error', // README → Text links: truncate-link
-  'pts/sheet-link-in-place': 'error', // table.md: linked records open in place
 }
+
+/**
+ * Where one check of a multi-check rule is off, by file (paths relative to
+ * the app). Everything else gets every check.
+ */
+const CLASS_NAME_EXCEPTIONS = {
+  // README → Color exceptions: the sidebar's dev band, previews that mimic
+  // Gmail and Google Chat, and the generated share image.
+  'raw-colour': [
+    ...RAW_COLOUR_EXCEPTIONS,
+    'components/layout/sidebar.tsx',
+    'app/(dashboard)/settings/templates/_components/**',
+    '**/opengraph-image.tsx',
+  ],
+  // README → Type: the shared invoice is a brand-ground page with its own
+  // display sizes.
+  'raw-type-size': ['app/*/share/**'],
+}
+const COPY_EXCEPTIONS = {
+  // Machine-facing text (agents read `contact`) and the query layer.
+  words: [
+    'lib/queries/**',
+    'lib/db/**',
+    'lib/mcp/**',
+    'lib/cli/**',
+    'app/api/cli/**',
+    'scripts/**',
+    '**/*.test.*',
+    '**/*.d.ts',
+  ],
+  // The vendored Tiptap editor keeps its own formatting; test fixtures
+  // build raw payloads.
+  figures: [
+    '**/*.test.*',
+    '**/tiptap*/**',
+    '**/tiptap*.ts',
+    'components/ui/rich-text-editor*',
+    'components/ui/rich-text-editor/**',
+  ],
+}
+
+/**
+ * House rule 11: a button takes a Tooltip, never title=. (RecordRowButton's
+ * `title` is its row text, so only these names.)
+ */
+export const NO_TITLE_TOOLTIP = {
+  selector:
+    "JSXOpeningElement[name.name=/^(?:button|Button|\\w*IconButton|\\w*ActionButton)$/] > JSXAttribute[name.name='title']",
+  message:
+    'House rule 11 (docs/design-system/README.md): "Never title= as a tooltip." Use RowActionButton (label = tooltip + accessible name) or wrap the button in a Tooltip; use aria-label for the name.',
+}
+
+/**
+ * House rule 11: RowActionButton's tooltip is off only where something else
+ * explains the button: a menu or popover trigger, or its own Tooltip.
+ */
+export const TOOLTIP_OFF = {
+  selector:
+    "JSXOpeningElement[name.name='RowActionButton']:not(JSXElement[openingElement.name.name=/^(?:Tooltip|\\w*Trigger)$/] JSXOpeningElement) > JSXAttribute[name.name='tooltip'][value.expression.value=false]",
+  message:
+    'House rule 11 (docs/design-system/README.md): an icon-only button shows its label as a tooltip. tooltip={false} only on a menu or popover trigger, or inside its own Tooltip.',
+}
+
+/** House rule 4: popups are left-aligned by default, so align='start' is noise. */
+export const NO_ALIGN_START = {
+  selector:
+    "JSXOpeningElement[name.name=/(?:Content|Positioner)$/] > JSXAttribute[name.name='align'][value.value='start']",
+  message:
+    "House rule 4 (docs/design-system/README.md): popups open left-aligned by default. Drop align='start'.",
+}
+
+/** What every app file is checked for with no-restricted-syntax. */
+const RESTRICTED_SYNTAX = [NO_TITLE_TOOLTIP, TOOLTIP_OFF, NO_ALIGN_START]
+
+/** API routes answer fetch callers, so they never call a redirecting guard. */
+export const API_ROUTE_GUARD = {
+  selector:
+    'CallExpression[callee.name=/^(requirePage|requireUser|requireCrmUser)$/]',
+  message:
+    "This guard redirects, and an API route answers fetch calls: use `const { user, denied } = await authorizeRoute('<capability>'); if (denied) return denied` from @/lib/auth/guard. (OAuth navigations under app/api/auth may redirect.)",
+}
+
+/** lib/queries is "direct Drizzle queries, minimal business logic". */
+export const QUERY_LAYER_PATTERNS = [
+  {
+    regex: '^@/lib/activity/(logger|events)(/|$)',
+    allowTypeImports: true,
+    message:
+      'Layering (CLAUDE.md, "Data Layer Architecture"): lib/queries does no activity logging. Log in the server action or lib/<domain> service after the write.',
+  },
+  {
+    regex: '^@/lib/auth/(permissions|capabilities|roles|session)$',
+    allowTypeImports: true,
+    message:
+      'Layering (CLAUDE.md, "Data Layer Architecture"): lib/queries does no permission checks. Check permissions in the data layer (lib/data) or the server action that calls the query.',
+  },
+]
 
 /**
  * Tables whose rows are not records, so a hard delete is right: join rows,
@@ -85,15 +181,18 @@ function entityIconNames(dir, registry) {
 
 export function nextApp({
   dir,
+  portal,
   entityRegistry,
   sheetRegistry,
   pagePanel,
+  queryLayerAllowlist,
+  apiRouteGuard = false,
 } = {}) {
-  const restrictedImports = [NO_RLS_IMPORT]
+  const restrictedPaths = [...RESTRICTED_IMPORTS.paths]
   if (entityRegistry) {
     // Entity icons belong to the registry: read the list from it so a new
     // entity's icon is guarded the moment it is added.
-    restrictedImports.push({
+    restrictedPaths.push({
       name: 'lucide-react',
       importNames: entityIconNames(dir, entityRegistry),
       message:
@@ -101,16 +200,22 @@ export function nextApp({
     })
     // A sheet's related-records list (heading, +, empty state, cards) is
     // always EntityList, which imports the + by relative path.
-    restrictedImports.push({
+    restrictedPaths.push({
       name: '@/components/sheets/section-add-button',
       message:
         'A section +, its list and its clickable empty state come together: use EntityList (@/components/sheets/entity-list). See docs/design-system/components/entity-list.md.',
     })
   }
+  const restrictedImports = (paths, patterns = []) => [
+    'error',
+    { paths, patterns: [...RESTRICTED_IMPORTS.patterns, ...patterns] },
+  ]
 
-  const entityColourMessage = entityRegistry
-    ? 'Entity colours come from the registry: ENTITY_ACCENTS.<entity> (icon, card, cardStatic, tint, badge, sheetHeader) in @/lib/entity-accents.'
-    : "Entity colours belong to the internal portal's entity registry (apps/internal/lib/entity-accents.ts); this app has none. Use the semantic tokens."
+  const classNameExceptions = {
+    ...CLASS_NAME_EXCEPTIONS,
+    ...(entityRegistry && { 'entity-colour': [entityRegistry] }),
+    ...(pagePanel && { 'page-panel': [pagePanel] }),
+  }
 
   return [
     ...nextCoreWebVitals,
@@ -120,7 +225,8 @@ export function nextApp({
       // Lets eslint run from the repo root (pre-commit) as well as the app.
       settings: { next: { rootDir: dir } },
       rules: {
-        'no-restricted-imports': ['error', { paths: restrictedImports }],
+        'no-restricted-imports': restrictedImports(restrictedPaths),
+        'no-restricted-syntax': ['error', ...RESTRICTED_SYNTAX],
         // CLAUDE.md "Soft deletes": archive, never hard delete a record.
         'pts/no-hard-delete': ['error', { allow: HARD_DELETE_ALLOW }],
         // Env vars go through the zod schema (lib/env.server.ts), so an empty
@@ -128,38 +234,50 @@ export function nextApp({
         'pts/env-through-schema': 'error',
         // README rule 16: keyboard shortcuts come from lib/keyboard/shortcuts.
         'pts/shortcut-registry': 'error',
-        ...(sheetRegistry && {
-          'pts/sheet-url-through-builders': [
-            'error',
-            { entities: sheetParamNames(dir, sheetRegistry) },
-          ],
-          // PR #365: the URL holds a stack of sheets; read it through the
-          // stack helpers, give every element id a useId, and let the stack
-          // set each sheet's layer.
-          'pts/sheet-param-through-stack': [
-            'error',
-            { entities: sheetParamNames(dir, sheetRegistry) },
-          ],
-          'pts/use-id-not-fixed-id': 'error',
-          'pts/sheet-layer-z': 'error',
-        }),
-        'no-restricted-syntax': [
+        // PR #365: element ids come from useId, so two sheets of one kind
+        // never share one (internal app; older hits grandfathered).
+        ...(sheetRegistry && { 'pts/use-id-not-fixed-id': 'error' }),
+        'pts/class-names': [
           'error',
           {
-            selector: 'Literal[value=/(^|[\\s:])[a-z-]*-entity-[a-z]/]',
-            message: entityColourMessage,
-          },
-          {
-            selector:
-              'TemplateElement[value.raw=/(^|[\\s:])[a-z-]*-entity-[a-z]/]',
-            message: entityColourMessage,
+            entities: entityRegistry ? 'registry' : 'none',
+            pagePanel: Boolean(pagePanel),
+            exceptions: classNameExceptions,
+            root: dir,
           },
         ],
+        'pts/copy': [
+          'error',
+          { portal, exceptions: COPY_EXCEPTIONS, root: dir },
+        ],
+        'pts/sheets': [
+          'error',
+          {
+            ...(sheetRegistry && {
+              entities: sheetParamNames(dir, sheetRegistry),
+            }),
+            root: dir,
+            exceptions: {
+              // The sheet links' own home, and the proxy's mapping of
+              // retired params.
+              'url-builders': [
+                'lib/sheets/**',
+                'lib/projects/board/board-utils.ts',
+                'proxy.ts',
+              ],
+              // The stack's own readers, the proxy, and API routes, whose
+              // query params are not sheets.
+              'param-in-stack': ['lib/sheets/**', 'proxy.ts', 'app/api/**'],
+              // Where sheetLayerZ is applied.
+              'layer-z': ['components/ui/sheet.tsx'],
+            },
+          },
+        ],
+        // The design system's house rules (docs/design-system/README.md,
+        // "House rules (verified in code)"); each message quotes its rule.
+        ...HOUSE_RULES,
       },
     },
-    ...(entityRegistry
-      ? [{ files: [entityRegistry], rules: { 'no-restricted-syntax': 'off' } }]
-      : []),
     { files: ENV_READERS, rules: { 'pts/env-through-schema': 'off' } },
     {
       // The registry's own matcher is the one place that reads the modifiers.
@@ -167,51 +285,10 @@ export function nextApp({
       rules: { 'pts/shortcut-registry': 'off' },
     },
     {
-      // The sheet links' own home, and the proxy's mapping of retired params.
-      files: ['lib/sheets/**', 'lib/projects/board/board-utils.ts', 'proxy.ts'],
-      rules: { 'pts/sheet-url-through-builders': 'off' },
-    },
-    ...(sheetRegistry
-      ? [
-          {
-            // The stack's own readers, the proxy's retired-param mapping,
-            // and API routes, whose query params are not sheets.
-            files: ['lib/sheets/**', 'proxy.ts', 'app/api/**'],
-            rules: { 'pts/sheet-param-through-stack': 'off' },
-          },
-          {
-            // Where sheetLayerZ is applied.
-            files: ['components/ui/sheet.tsx'],
-            rules: { 'pts/sheet-layer-z': 'off' },
-          },
-          {
-            // One-of-a-kind pages: the sign-in forms and /design's section
-            // anchors (its page nav links to them).
-            files: ['app/(auth)/**', 'app/(dashboard)/design/**'],
-            rules: { 'pts/use-id-not-fixed-id': 'off' },
-          },
-        ]
-      : []),
-    {
-      // README → Color exceptions: the sidebar's dev band, previews that
-      // mimic Gmail and Google Chat, and the generated share image.
-      files: [
-        'components/layout/sidebar.tsx',
-        'app/(dashboard)/settings/templates/_components/**',
-        '**/opengraph-image.tsx',
-      ],
-      rules: { 'pts/no-raw-colour': 'off' },
-    },
-    {
-      // The design system's house rules (docs/design-system/README.md,
-      // "House rules (verified in code)"); each message quotes its rule.
-      rules: HOUSE_RULES,
-    },
-    {
-      // README → Type: the shared invoice is a brand-ground page with its own
-      // display sizes.
-      files: ['app/*/share/**'],
-      rules: { 'pts/no-raw-type-size': 'off' },
+      // One-of-a-kind pages: the sign-in forms and /design's section anchors
+      // (its page nav links to them).
+      files: ['app/(auth)/**', 'app/(dashboard)/design/**'],
+      rules: { 'pts/use-id-not-fixed-id': 'off' },
     },
     {
       // WCAG checks: eslint-config-next loads jsx-a11y but sets six of its
@@ -228,33 +305,52 @@ export function nextApp({
       // lib/queries function), never the database client or schema directly.
       files: ['app/**/page.tsx', 'app/**/layout.tsx', 'components/**'],
       rules: {
-        'no-restricted-imports': [
-          'error',
-          {
-            paths: [
-              ...restrictedImports,
-              ...[
-                '@/lib/db',
-                '@/lib/db/schema',
-                '@pts/db/schema',
-                'drizzle-orm',
-              ].map(name => ({
-                name,
-                message:
-                  'Pages and components read data through lib/data or a lib/queries function, never the database directly.',
-              })),
-            ],
-          },
-        ],
+        'no-restricted-imports': restrictedImports([
+          ...restrictedPaths,
+          ...[
+            '@/lib/db',
+            '@/lib/db/schema',
+            '@pts/db/schema',
+            'drizzle-orm',
+          ].map(name => ({
+            name,
+            message:
+              'Pages and components read data through lib/data or a lib/queries function, never the database directly.',
+          })),
+        ]),
       },
     },
-    ...(pagePanel
+    ...(queryLayerAllowlist
       ? [
           {
-            // README → Borders: page panels are <PagePanel> (this path).
-            rules: { 'pts/one-page-panel': 'error' },
+            // lib/queries does no logging and no permission checks. Files
+            // from before the rule are listed in the app's config.
+            files: ['lib/queries/**'],
+            ignores: queryLayerAllowlist,
+            rules: {
+              'no-restricted-imports': restrictedImports(
+                restrictedPaths,
+                QUERY_LAYER_PATTERNS
+              ),
+            },
           },
-          { files: [pagePanel], rules: { 'pts/one-page-panel': 'off' } },
+        ]
+      : []),
+    ...(apiRouteGuard
+      ? [
+          {
+            // API routes answer with 401/403 JSON (authorizeRoute), never a
+            // redirect; OAuth navigations under app/api/auth may redirect.
+            files: ['app/api/**/route.ts', 'app/api/**/route.tsx'],
+            ignores: ['app/api/auth/**'],
+            rules: {
+              'no-restricted-syntax': [
+                'error',
+                ...RESTRICTED_SYNTAX,
+                API_ROUTE_GUARD,
+              ],
+            },
+          },
         ]
       : []),
     ...typed({ dir }),
@@ -267,6 +363,7 @@ export function nextApp({
       // Layering: no server code in a 'use client' file.
       rules: { 'pts/client-boundary': ['error', { appDir: dir }] },
     },
+    FIXTURES,
     IGNORES,
   ]
 }

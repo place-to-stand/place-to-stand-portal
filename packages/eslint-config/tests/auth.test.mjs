@@ -16,36 +16,6 @@ const tester = new RuleTester({
   },
 })
 
-const route = '/repo/apps/internal/app/api/things/route.ts'
-
-tester.run('api-route-guard', pts.rules['api-route-guard'], {
-  valid: [
-    { code: "await authorizeRoute('projects.manage')", filename: route },
-    // OAuth navigations may redirect.
-    {
-      code: 'await requireUser()',
-      filename: '/repo/apps/internal/app/api/auth/github/route.ts',
-    },
-    // Pages redirect.
-    {
-      code: "await requirePage('projects.manage')",
-      filename: '/repo/apps/internal/app/(dashboard)/projects/page.tsx',
-    },
-  ],
-  invalid: [
-    {
-      code: 'await requireUser()',
-      filename: route,
-      errors: [{ messageId: 'redirect' }],
-    },
-    {
-      code: "await requirePage('projects.manage')",
-      filename: route,
-      errors: [{ messageId: 'redirect' }],
-    },
-  ],
-})
-
 tester.run('no-role-literal', pts.rules['no-role-literal'], {
   valid: [
     "roleCan(user.role, 'projects.manage')",

@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 
 import { cn } from './cn'
+import type { PopupAlign } from './popup-align'
 
 function Popover({ ...props }: PopoverPrimitive.Root.Props) {
   return <PopoverPrimitive.Root data-slot='popover' {...props} />
@@ -35,7 +36,7 @@ function PopoverContent({
   className,
   // House rule: dropdown popups left-align with their trigger; deviations
   // opt in with an explicit `align` at the call site.
-  align = 'start',
+  align,
   alignOffset = 0,
   side = 'bottom',
   sideOffset = 4,
@@ -43,12 +44,12 @@ function PopoverContent({
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
-    'align' | 'alignOffset' | 'side' | 'sideOffset'
-  >) {
+    'alignOffset' | 'side' | 'sideOffset'
+  > & { align?: PopupAlign }) {
   return (
     <PopoverPrimitive.Portal>
       <StickySidePositioner
-        align={align}
+        align={align ?? 'start'}
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
