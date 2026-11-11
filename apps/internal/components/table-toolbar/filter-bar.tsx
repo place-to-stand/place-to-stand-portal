@@ -1,11 +1,13 @@
 'use client'
 
-import { Children, type ReactNode } from 'react'
+import { Children, useRef, useState, type ReactNode } from 'react'
 
+import { RefreshSpinner } from '@/components/layout/list-refresh'
 import { cn } from '@/lib/utils'
 
 import { FilterSheetButton } from './filter-sheet'
 import { ResetFiltersButton } from './reset-filters-button'
+import { useFiltersFit } from './use-filters-fit'
 
 type FilterBarProps = {
   /** The bar's SearchInput. */
@@ -29,11 +31,12 @@ type FilterBarProps = {
  * Toolbar row above a table: search + filters, unlabeled (PRD 004 §03, D5).
  * Sorting lives in the column headers, never here (D6).
  *
- * From md up the filters and Reset sit inline after the search. Below md the
- * search keeps the row to itself beside a Filters button, and the filters
- * open in a sheet (`FilterSheetButton`) instead of stacking under it. The
- * inline copies sit in `md:contents` wrappers, so the md+ layout is the same
- * single flex row it always was.
+ * The filters and Reset sit inline after the search while they fit on one
+ * line. When they don't (below md always, and on wider screens whenever the
+ * bar is too narrow for them, `useFiltersFit`), the search keeps the row
+ * beside a Filters button and the filters open in a sheet
+ * (`FilterSheetButton`) instead of wrapping onto a second line. The inline
+ * copies sit in `md:contents` wrappers, so the inline layout is one flex row.
  */
 export function FilterBar({
   search,
@@ -44,23 +47,58 @@ export function FilterBar({
   aside,
   className,
 }: FilterBarProps) {
-  const hasFilters = Children.toArray(children).length > 0
+  const filterCount = Children.toArray(children).length
+  const hasFilters = filterCount > 0
+  const barRef = useRef<HTMLDivElement>(null)
+  const inlineRef = useRef<HTMLDivElement>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const { folded, measured } = useFiltersFit(
+    barRef,
+    inlineRef,
+    hasFilters,
+    filterCount,
+    sheetOpen
+  )
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-2', className)}>
-      <div className='flex min-w-0 flex-1 md:contents max-md:[&>*]:w-full'>
+    <div
+      ref={barRef}
+      data-slot='filter-bar'
+      className={cn(
+        'flex flex-wrap items-center gap-2',
+        // Controls keep their own widths, so the measurement is true; and
+        // until it has run the row stays on one line instead of showing
+        // wrapped for a moment before it folds.
+        'md:[&>*]:shrink-0 md:[&>*>*]:shrink-0',
+        !measured && 'md:flex-nowrap md:overflow-hidden',
+        className
+      )}
+    >
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 max-md:[&>*]:w-full',
+          folded ? 'md:flex-none' : 'md:contents'
+        )}
+      >
         {search}
       </div>
       {hasFilters ? (
         <FilterSheetButton
-          className='md:hidden'
+          className={folded ? undefined : 'md:hidden'}
           activeCount={activeFilterCount}
           onReset={onReset}
+          onOpenChange={setSheetOpen}
         >
           {children}
         </FilterSheetButton>
       ) : null}
-      <div className={cn('md:contents', hasFilters && 'max-md:hidden')}>
+      <div
+        ref={inlineRef}
+        className={cn(
+          hasFilters && 'max-md:hidden',
+          folded ? 'hidden' : 'md:contents'
+        )}
+      >
         {children}
         {onReset ? (
           <ResetFiltersButton show={showReset} onReset={onReset} />
@@ -69,6 +107,8 @@ export function FilterBar({
       {aside ? (
         <div className='ml-auto shrink-0 text-sm max-md:w-full'>{aside}</div>
       ) : null}
+      {/* The panel's top right, while the list reloads. */}
+      <RefreshSpinner className={cn(!aside && 'ml-auto')} />
     </div>
   )
 }

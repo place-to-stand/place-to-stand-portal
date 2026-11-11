@@ -75,4 +75,4 @@ export function FieldTrigger({
 }
 
 /** Width of every filter trigger in a FilterBar (stretched in the phone sheet). */
-export const FILTER_TRIGGER_WIDTH = 'w-52 shrink-0'
+export const FILTER_TRIGGER_WIDTH = 'w-48 shrink-0'

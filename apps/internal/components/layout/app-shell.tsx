@@ -11,6 +11,7 @@ import { KeyboardShortcutsProvider } from '@/components/keyboard/keyboard-shortc
 
 import { Sidebar } from './sidebar'
 import { CommandPaletteProvider } from './command-palette'
+import { ListRefreshProvider } from './list-refresh'
 
 interface Props {
   user: AppUser
@@ -63,7 +64,7 @@ export function AppShell({
           >
             <Sidebar user={user} badges={navBadges} />
             <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
-              {children}
+              <ListRefreshProvider>{children}</ListRefreshProvider>
             </div>
           </SidebarProvider>
         </CommandPaletteProvider>

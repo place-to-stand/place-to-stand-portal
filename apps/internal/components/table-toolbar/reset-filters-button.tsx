@@ -21,6 +21,7 @@ export function ResetFiltersButton({ show, onReset }: ResetFiltersButtonProps) {
   return (
     <Button
       type='button'
+      data-slot='reset-filters'
       variant='ghost'
       onClick={onReset}
       className='text-muted-foreground hover:text-foreground'

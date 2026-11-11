@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+import { useStartRefresh } from '@/components/layout/list-refresh'
 import { writeShallowUrl } from '@/lib/sheets/shallow-url'
 
 /**
@@ -44,6 +45,7 @@ export function useListParams({
 }: UseListParamsOptions) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const startRefresh = useStartRefresh()
   // The query of a push that hasn't landed yet. Filters show a pick at once
   // (optimistic), so a second pick can come before the first one's page
   // loads; building on the pending query keeps both instead of the second
@@ -90,9 +92,9 @@ export function useListParams({
         return
       }
       pending.current = { base: committed, query: queryString }
-      router.push(url)
+      startRefresh(() => router.push(url))
     },
-    [basePath, resetKeys, router, committed, shallowKeys]
+    [basePath, resetKeys, router, committed, shallowKeys, startRefresh]
   )
 
   const getParam = useCallback(

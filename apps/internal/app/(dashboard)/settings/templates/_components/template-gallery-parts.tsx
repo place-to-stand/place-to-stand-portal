@@ -52,6 +52,7 @@ export function TemplateFilters({
           onChange({ ...value, audiences: audiences as TemplateAudience[] })
         }
         placeholder='Recipients'
+        allLabel='All recipients'
         options={AUDIENCE_OPTIONS}
       />
     </FilterBar>

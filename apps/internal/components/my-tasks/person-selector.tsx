@@ -4,6 +4,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 import { Users } from 'lucide-react'
 
+import { useStartRefresh } from '@/components/layout/list-refresh'
 import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
 import {
   SearchableCombobox,
@@ -41,6 +42,7 @@ export function PersonSelector({
   onSelect,
 }: PersonSelectorProps) {
   const router = useRouter()
+  const startRefresh = useStartRefresh()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -96,9 +98,9 @@ export function PersonSelector({
       const search = params.toString()
       const url = search ? `${pathname}?${search}` : pathname
 
-      router.push(url, { scroll: false })
+      startRefresh(() => router.push(url, { scroll: false }))
     },
-    [onSelect, pathname, router, searchParams]
+    [onSelect, pathname, router, searchParams, startRefresh]
   )
 
   // The shared filter trigger, at the filter width, in the board's filter bar.

@@ -205,6 +205,21 @@ export function nextApp({
       message:
         'A section +, its list and its clickable empty state come together: use EntityList (@/components/sheets/entity-list). See docs/design-system/components/entity-list.md.',
     })
+    // Every sheet shares one header and one footer, so none drifts from the
+    // rest (the Filters sheet once did). The shared parts import these by
+    // relative path.
+    restrictedPaths.push({
+      name: '@/components/ui/sheet',
+      importNames: [
+        'SheetHeader',
+        'SheetTitle',
+        'SheetDescription',
+        'SheetClose',
+        'SheetFooter',
+      ],
+      message:
+        'Sheets share their chrome: use SheetFormHeader (@/components/sheets/sheet-form-header; leave out `entity` for a sheet that is not a record) and SheetFormFooter or SheetFooterBar (@/components/sheets/sheet-form-footer). See docs/design-system/components/sheet.md.',
+    })
   }
   const restrictedImports = (paths, patterns = []) => [
     'error',

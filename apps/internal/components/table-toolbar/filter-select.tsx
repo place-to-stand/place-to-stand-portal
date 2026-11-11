@@ -50,8 +50,9 @@ type MultiProps = {
   /** What the × does; defaults to `onChange(defaultValues)`. */
   onClear?: () => void
   /**
-   * What the field says with every option picked ("All statuses"); default
-   * "<placeholder>: All".
+   * What the field says with every option picked, when that means no filter
+   * ("All statuses"). Without it the field lists the picks, as with any
+   * other selection: picking every tag still leaves out untagged records.
    */
   allLabel?: string
   /**
@@ -153,7 +154,8 @@ function MultiFilterSelect({
 }: MultiProps) {
   const [values, setValues] = useOptimisticValue(propValues)
   const onChange = (next: string[]) => setValues(next, () => commit(next))
-  const allSelected = values.length === options.length
+  const allSelected =
+    Boolean(allLabel) && options.length > 0 && values.length === options.length
   const isDefault =
     values.length === defaultValues.length &&
     defaultValues.every(value => values.includes(value))
@@ -171,7 +173,7 @@ function MultiFilterSelect({
   const [first, ...rest] = selected
   const label = showsPlaceholder ? (
     allSelected && selected.length > 0 ? (
-      (allLabel ?? `${placeholder}: All`)
+      allLabel
     ) : (
       placeholder
     )

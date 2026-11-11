@@ -17,7 +17,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet'
+} from './sheet'
 import { Skeleton } from '@pts/ui/skeleton'
 import {
   Tooltip,
