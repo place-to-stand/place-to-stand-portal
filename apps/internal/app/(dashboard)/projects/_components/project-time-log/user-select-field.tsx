@@ -1,3 +1,5 @@
+import { useId } from 'react'
+
 import { EntityFieldLabel } from '@/components/ui/entity-label-icon'
 import {
   SearchableCombobox,
@@ -14,6 +16,7 @@ export type UserSelectFieldProps = {
 }
 
 export function UserSelectField(props: UserSelectFieldProps) {
+  const fieldId = useId()
   const {
     selectedUserId,
     onSelectUser,
@@ -25,11 +28,11 @@ export function UserSelectField(props: UserSelectFieldProps) {
 
   return (
     <div className='space-y-2 sm:col-span-2'>
-      <EntityFieldLabel entity='user' htmlFor='time-log-user'>
+      <EntityFieldLabel entity='user' htmlFor={`${fieldId}-user`}>
         Log hours for
       </EntityFieldLabel>
       <SearchableCombobox
-        id='time-log-user'
+        id={`${fieldId}-user`}
         value={selectedUserId}
         onChange={onSelectUser}
         items={items}

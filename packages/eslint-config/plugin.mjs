@@ -19,6 +19,7 @@ import { clientBoundary } from './rules/layering.mjs'
 import { sheets } from './rules/sheets.mjs'
 import { shortcutRegistry } from './rules/shortcuts.mjs'
 import { figureCellAligned, fixedTableColumns } from './rules/table-columns.mjs'
+import { useIdNotFixedId } from './rules/use-id.mjs'
 
 export const pts = {
   meta: { name: 'pts' },
@@ -37,5 +38,6 @@ export const pts = {
     'filter-select': filterSelect,
     'figure-cell-aligned': figureCellAligned,
     'fixed-table-columns': fixedTableColumns,
+    'use-id-not-fixed-id': useIdNotFixedId,
   },
 }

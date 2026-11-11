@@ -306,7 +306,7 @@ test('sales can’t edit or archive someone else’s lead update', async ({
       .filter({ has: admin.getByText('Log update', { exact: true }) })
       // It opens over the lead sheet: the top one.
       .last()
-    await admin.locator('#lead-update-body .ProseMirror').click()
+    await logDialog.locator('.ProseMirror').click()
     await admin.keyboard.type(marker)
     await logDialog
       .getByRole('button', { name: 'Log update', exact: true })

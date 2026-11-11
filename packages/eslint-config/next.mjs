@@ -234,6 +234,9 @@ export function nextApp({
         'pts/env-through-schema': 'error',
         // README rule 16: keyboard shortcuts come from lib/keyboard/shortcuts.
         'pts/shortcut-registry': 'error',
+        // PR #365: element ids come from useId, so two sheets of one kind
+        // never share one (internal app; older hits grandfathered).
+        ...(sheetRegistry && { 'pts/use-id-not-fixed-id': 'error' }),
         'pts/class-names': [
           'error',
           {
@@ -262,6 +265,11 @@ export function nextApp({
                 'lib/projects/board/board-utils.ts',
                 'proxy.ts',
               ],
+              // The stack's own readers, the proxy, and API routes, whose
+              // query params are not sheets.
+              'param-in-stack': ['lib/sheets/**', 'proxy.ts', 'app/api/**'],
+              // Where sheetLayerZ is applied.
+              'layer-z': ['components/ui/sheet.tsx'],
             },
           },
         ],
@@ -275,6 +283,12 @@ export function nextApp({
       // The registry's own matcher is the one place that reads the modifiers.
       files: ['lib/keyboard/**'],
       rules: { 'pts/shortcut-registry': 'off' },
+    },
+    {
+      // One-of-a-kind pages: the sign-in forms and /design's section anchors
+      // (its page nav links to them).
+      files: ['app/(auth)/**', 'app/(dashboard)/design/**'],
+      rules: { 'pts/use-id-not-fixed-id': 'off' },
     },
     {
       // WCAG checks: eslint-config-next loads jsx-a11y but sets six of its
