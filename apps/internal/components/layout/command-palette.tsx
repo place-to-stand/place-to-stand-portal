@@ -25,11 +25,8 @@ import { NAV_GROUPS } from '@/components/layout/navigation-config'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { roleCan } from '@/lib/auth/capabilities'
 import { filterNavGroupsForRole } from '@/lib/auth/roles'
-import type { PaletteSearchResult } from '@/lib/queries/command-palette'
-import { CompanyBillingMark } from '@/components/billing/company-billing-mark'
-import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
-import { cn } from '@/lib/utils'
-import { companySheetHref, contactSheetHref } from '@/lib/sheets/hrefs'
+import type { PaletteSearchResult } from '@/lib/command-palette/types'
+import { CommandPaletteRecords } from '@/components/layout/command-palette-records'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { matchesShortcut } from '@/lib/keyboard/match'
@@ -130,8 +127,8 @@ function CommandPalette() {
   const debouncedQuery = useDebouncedValue(query.trim(), DEBOUNCE_MS)
 
   const trimmedQuery = query.trim()
-  // Record search spans companies and projects, so it is admin-only; SALES
-  // staff get page navigation only.
+  // Record search spans every record, so it is admin-only; SALES staff get
+  // page navigation only.
   const recordSearchEnabled =
     canSearch && open && debouncedQuery.length >= MIN_QUERY_LENGTH
 
@@ -173,21 +170,17 @@ function CommandPalette() {
     [setOpen]
   )
 
-  const companies = recordSearchEnabled ? (records?.companies ?? []) : []
-  const projects = recordSearchEnabled ? (records?.projects ?? []) : []
-  const contactResults = recordSearchEnabled ? (records?.contacts ?? []) : []
-
   return (
     <CommandDialog
       open={open}
       onOpenChange={handleOpenChange}
       title='Command palette'
-      description='Search pages, companies, projects and people'
+      description='Search pages and every record'
     >
       <CommandInput
         value={query}
         onValueChange={setQuery}
-        placeholder='Search pages, companies, projects, people…'
+        placeholder='Search pages and records…'
       />
       <CommandList>
         <CommandEmpty>
@@ -215,99 +208,10 @@ function CommandPalette() {
             })}
           </CommandGroup>
         ))}
-        {companies.length > 0 ? (
-          <CommandGroup heading='Companies'>
-            {companies.map(company => (
-              <CommandItem
-                key={company.id}
-                // cmdk filters items by `value` even for server-fetched
-                // results — the visible label must be part of it or typing
-                // the name hides the match. The id suffix keeps values
-                // unique across same-named records.
-                value={`${company.name} company-${company.id}`}
-                onSelect={() => navigate(companySheetHref(company.id))}
-              >
-                {/* A client: the company icon with the client dot. */}
-                {company.isClient ? (
-                  <ENTITY_ICONS.client
-                    data-accent=''
-                    className={cn('size-4', ENTITY_ACCENTS.client.icon)}
-                  />
-                ) : (
-                  <ENTITY_ICONS.company
-                    data-accent=''
-                    className={cn('size-4', ENTITY_ACCENTS.company.icon)}
-                  />
-                )}
-                <span className='truncate'>{company.name}</span>
-                {company.isClient ? (
-                  <CompanyBillingMark
-                    billingType={company.billingType}
-                    className='ml-auto'
-                  />
-                ) : null}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ) : null}
-        {projects.length > 0 ? (
-          <CommandGroup heading='Projects'>
-            {projects.map(project => (
-              <CommandItem
-                key={project.id}
-                value={`${project.clientLabel ?? ''} ${project.name} project-${project.id}`}
-                onSelect={() =>
-                  navigate(
-                    `/projects/${project.clientSegment}/${project.projectSlug}/tasks`
-                  )
-                }
-              >
-                <ENTITY_ICONS.project
-                  data-accent=''
-                  className={cn('size-4', ENTITY_ACCENTS.project.icon)}
-                />
-                <span>
-                  {project.clientLabel ? (
-                    <span className='text-muted-foreground'>
-                      {project.clientLabel} ·{' '}
-                    </span>
-                  ) : null}
-                  {project.name}
-                </span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ) : null}
-        {contactResults.length > 0 ? (
-          <CommandGroup heading='People'>
-            {contactResults.map(contact => (
-              <CommandItem
-                key={contact.id}
-                value={`${contact.name} ${contact.email} contact-${contact.id}`}
-                // Opens the person's sheet on People, as a company opens on
-                // Companies.
-                onSelect={() => navigate(contactSheetHref(contact.id))}
-              >
-                {/* Can sign in: the person icon with the sign-in dot. */}
-                {contact.hasSignIn ? (
-                  <ENTITY_ICONS.user
-                    data-accent=''
-                    className={cn('size-4', ENTITY_ACCENTS.user.icon)}
-                  />
-                ) : (
-                  <ENTITY_ICONS.contact
-                    data-accent=''
-                    className={cn('size-4', ENTITY_ACCENTS.contact.icon)}
-                  />
-                )}
-                <span>
-                  {contact.name}{' '}
-                  <span className='text-muted-foreground'>{contact.email}</span>
-                </span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ) : null}
+        <CommandPaletteRecords
+          records={recordSearchEnabled ? (records ?? null) : null}
+          onSelect={navigate}
+        />
         <CommandGroup heading='Help'>
           <CommandItem
             value='Help keyboard shortcuts keys'

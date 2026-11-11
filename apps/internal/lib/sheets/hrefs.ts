@@ -99,3 +99,12 @@ export const projectTasksHref = (project: {
   if (!project.clientSlug) return null
   return `/projects/${project.clientSlug}/${project.projectSlug}/tasks`
 }
+
+/** A task's sheet over its project's board; null as for `projectTasksHref`. */
+export const projectTaskHref = (
+  project: Parameters<typeof projectTasksHref>[0],
+  taskId: string
+) => {
+  const board = projectTasksHref(project)
+  return board ? `${board}?task=${taskId}` : null
+}
