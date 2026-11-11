@@ -8,24 +8,27 @@ export type SheetStackEntryValue = {
   entity: SheetEntityKey
   /** The sheet's param value (`<uuid>`, `new`, `copy-<uuid>`); null while closed. */
   value: string | null
+  /** Its stack id (`SheetStackItem.id`); null while closed. */
+  id: string | null
 }
 
 const SheetStackEntryContext = createContext<SheetStackEntryValue | null>(null)
 
 /**
  * Tells a sheet which stack entry it is, so code deep inside it (the unsaved
- * changes guard, a keep-open save) acts on its own param when the stack
- * holds several sheets of one entity. The SheetHost wraps every sheet it
- * renders; a page that renders its own sheet wraps it with the first param
- * of its entity (`usePageSheetEntry`).
+ * changes guard, a keep-open save, a failed load) acts on its own param when
+ * the stack holds several sheets of one entity. The SheetHost wraps every
+ * sheet it renders; a page that renders its own sheet wraps it in
+ * `PageSheetEntry`.
  */
 export function SheetStackEntry({
   entity,
   value,
+  id,
   children,
 }: SheetStackEntryValue & { children: ReactNode }) {
   return (
-    <SheetStackEntryContext value={{ entity, value }}>
+    <SheetStackEntryContext value={{ entity, value, id }}>
       {children}
     </SheetStackEntryContext>
   )

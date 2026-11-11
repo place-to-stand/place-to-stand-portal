@@ -19,6 +19,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
+import { firstSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'archive'
 
@@ -71,7 +72,7 @@ export async function PeopleListPage({
   const contactParam = params.contact
   const deepLink = await resolveContactDeepLink(
     user,
-    Array.isArray(contactParam) ? contactParam[0] : contactParam,
+    firstSheetParam('contact', contactParam),
     view.tab
   )
 

@@ -4,17 +4,19 @@
  *
  * Every open sheet is one `entity=value` query param, and param order is
  * stack order. The stack may hold several sheets of one entity (company A,
- * a person, then company B); what it never holds twice is the same record:
- * opening a record that is already in the stack goes back to it, closing
- * the sheets above (`openTarget`).
+ * a person, then company B) and several create sheets of one entity (a new
+ * person, a new company from its picker, a new person from that). What it
+ * never holds twice is the same record: opening a record that is already in
+ * the stack goes back to it, closing the sheets above (`openTarget`).
  */
 
 import {
-  NEW_SHEET_VALUE,
-  SHEET_ENTITIES,
+  UUID_PATTERN,
   isSheetEntityClaimed,
   isSheetEntityKey,
   isValidSheetParamValue,
+  NEW_SHEET_VALUE,
+  SHEET_ENTITIES,
   type SheetEntityKey,
 } from './entities'
 
@@ -28,63 +30,99 @@ export type SheetStackItem = {
    */
   ordinal: number
   /**
-   * Stays the same while the sheet is open, even when a create sheet swaps
-   * `new` for the saved record's id, so the sheet isn't remounted.
+   * Names this sheet among the open ones: `entity:value:n`, where n counts
+   * the same entity and value below it (only create sheets repeat).
    */
-  key: string
+  id: string
+  /** Its param's position among the URL's params. */
+  paramIndex: number
 }
 
-export const sheetItemKey = (entity: SheetEntityKey, ordinal: number) =>
-  `${entity}#${ordinal}`
+const itemId = (entity: SheetEntityKey, value: string, n: number) =>
+  `${entity}:${value}:${n}`
+
+/** A record id, as opposed to a create sheet (`new`, `copy-<id>`). */
+export const isRecordValue = (value: string) => UUID_PATTERN.test(value)
+
+/**
+ * The first param of an entity that names a sheet, or undefined: what a
+ * page that renders its own sheet shows. Server pages read their deep link
+ * with it so they agree with the client's stack.
+ */
+export function firstSheetParam(
+  entity: SheetEntityKey,
+  raw: string | string[] | undefined
+) {
+  const values = Array.isArray(raw) ? raw : raw ? [raw] : []
+  return values.find(value => isValidSheetParamValue(value, entity))
+}
 
 /** Entity params in the URL, in stack order, each record once. */
-export function parseSheetStack(params: URLSearchParams): SheetStackItem[] {
+export function parseSheetStack(
+  params: Pick<URLSearchParams, 'entries'>
+): SheetStackItem[] {
   const items: SheetStackItem[] = []
+  let paramIndex = -1
   for (const [entity, value] of params.entries()) {
+    paramIndex += 1
     if (
       !isSheetEntityKey(entity) ||
       !value ||
-      !isValidSheetParamValue(value, entity) ||
-      items.some(item => item.entity === entity && item.value === value)
+      !isValidSheetParamValue(value, entity)
     ) {
       continue
     }
-    const ordinal = items.filter(item => item.entity === entity).length
-    items.push({ entity, value, ordinal, key: sheetItemKey(entity, ordinal) })
+    const same = items.filter(
+      item => item.entity === entity && item.value === value
+    ).length
+    if (same > 0 && isRecordValue(value)) {
+      continue
+    }
+    items.push({
+      entity,
+      value,
+      ordinal: items.filter(item => item.entity === entity).length,
+      id: itemId(entity, value, same),
+      paramIndex,
+    })
   }
   return items
 }
 
-export const findSheetIndex = (
-  stack: SheetStackItem[],
-  entity: SheetEntityKey,
-  value: string
-) => stack.findIndex(item => item.entity === entity && item.value === value)
-
 /** True when the page renders this sheet itself (see `claimsPathname`). */
-export const isStackItemClaimed = (item: SheetStackItem, pathname: string) =>
+export const isStackItemClaimed = (
+  item: Pick<SheetStackItem, 'entity' | 'value' | 'ordinal'>,
+  pathname: string
+) =>
   item.ordinal === 0 && isSheetEntityClaimed(item.entity, pathname, item.value)
 
-/**
- * Drops these sheets' params. An entity's aux params (create-sheet
- * prefills) go once no create sheet of that entity is left to read them.
- */
-export function removeSheetParams(
+const rewrite = (
   params: URLSearchParams,
-  items: Pick<SheetStackItem, 'entity' | 'value'>[]
-) {
-  const isRemoved = (key: string, value: string) =>
-    items.some(item => item.entity === key && item.value === value)
-  const kept = [...params.entries()].filter(
-    ([key, value]) => !isRemoved(key, value)
-  )
+  entries: (readonly [string, string])[]
+) => {
   for (const key of [...new Set(params.keys())]) {
     params.delete(key)
   }
-  for (const [key, value] of kept) {
+  for (const [key, value] of entries) {
     params.append(key, value)
   }
-  for (const entity of new Set(items.map(item => item.entity))) {
+}
+
+/**
+ * Drops these sheets' params (by id). An entity's aux params (create-sheet
+ * prefills) go once no create sheet of that entity is left to read them.
+ */
+export function removeSheetParams(params: URLSearchParams, ids: string[]) {
+  const removing = parseSheetStack(params).filter(item => ids.includes(item.id))
+  if (removing.length === 0) {
+    return
+  }
+  const dropped = new Set(removing.map(item => item.paramIndex))
+  rewrite(
+    params,
+    [...params.entries()].filter((_, index) => !dropped.has(index))
+  )
+  for (const entity of new Set(removing.map(item => item.entity))) {
     if (!params.getAll(entity).includes(NEW_SHEET_VALUE)) {
       for (const aux of SHEET_ENTITIES[entity].auxParams) {
         params.delete(aux)
@@ -93,49 +131,71 @@ export function removeSheetParams(
   }
 }
 
-/** Points one sheet's param at another record, keeping its position. */
+/** Points one sheet (by id) at another record, keeping its position. */
 export function swapSheetParam(
   params: URLSearchParams,
-  entity: SheetEntityKey,
-  from: string,
-  to: string
+  id: string,
+  value: string
 ) {
+  const item = parseSheetStack(params).find(entry => entry.id === id)
+  if (!item) {
+    return null
+  }
   const entries = [...params.entries()]
-  const index = entries.findIndex(
-    ([key, value]) => key === entity && value === from
-  )
-  if (index === -1) {
-    return false
+  entries[item.paramIndex] = [item.entity, value]
+  rewrite(params, entries)
+  return item
+}
+
+/**
+ * Sets the entity's first sheet (the one a page renders itself) to `value`
+ * in place, appends it when there is none, or removes it for null. Other
+ * sheets of the entity stay where they are.
+ */
+export function setFirstSheetParam(
+  params: URLSearchParams,
+  entity: SheetEntityKey,
+  value: string | null
+) {
+  const first = parseSheetStack(params).find(item => item.entity === entity)
+  if (!first) {
+    if (value) {
+      params.append(entity, value)
+    }
+    return
   }
-  entries[index] = [entity, to]
-  for (const key of [...new Set(params.keys())]) {
-    params.delete(key)
+  if (value) {
+    swapSheetParam(params, first.id, value)
+  } else {
+    removeSheetParams(params, [first.id])
   }
-  for (const [key, value] of entries) {
-    params.append(key, value)
-  }
-  return true
 }
 
 export type SheetOpenTarget =
   /** Already open: close these sheets (top first) to get back to it. */
-  | { kind: 'back'; index: number; above: SheetStackItem[] }
-  /** Not open: stack it on top as this item. */
-  | { kind: 'stack'; item: SheetStackItem }
+  | { kind: 'back'; item: SheetStackItem; above: SheetStackItem[] }
+  /** Not open: stack it on top. */
+  | { kind: 'stack' }
 
-/** What opening `entity=value` does to this stack. */
+/**
+ * What opening `entity=value` does to this stack. A record already open is
+ * gone back to; a create sheet always stacks, since two drafts are never
+ * the same record.
+ */
 export function openTarget(
   stack: SheetStackItem[],
   entity: SheetEntityKey,
   value: string
 ): SheetOpenTarget {
-  const index = findSheetIndex(stack, entity, value)
-  if (index !== -1) {
-    return { kind: 'back', index, above: stack.slice(index + 1).reverse() }
+  const index = isRecordValue(value)
+    ? stack.findIndex(item => item.entity === entity && item.value === value)
+    : -1
+  if (index === -1) {
+    return { kind: 'stack' }
   }
-  const ordinal = stack.filter(item => item.entity === entity).length
   return {
-    kind: 'stack',
-    item: { entity, value, ordinal, key: sheetItemKey(entity, ordinal) },
+    kind: 'back',
+    item: stack[index]!,
+    above: stack.slice(index + 1).reverse(),
   }
 }

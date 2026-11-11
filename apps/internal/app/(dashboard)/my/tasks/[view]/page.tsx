@@ -8,7 +8,6 @@ import {
 } from '@/components/my-tasks/my-tasks-page'
 import { requirePage } from '@/lib/auth/session'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
-import { firstParam } from '@/lib/pagination/params'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -30,6 +29,7 @@ import {
 } from '@/lib/projects/tasks/done-window'
 import { roleCan } from '@/lib/auth/capabilities'
 import { UUID_PATTERN } from '@pts/db/uuid'
+import { firstSheetParam } from '@/lib/sheets/stack'
 
 export const metadata: Metadata = {
   title: 'My tasks',
@@ -54,7 +54,8 @@ export default async function MyTasksViewRoute({
   const resolvedParams = await params
   const resolvedSearchParams = (await searchParams) as PageSearchParams
   const viewParam = resolvedParams.view
-  const activeTaskId = firstParam(resolvedSearchParams.task) ?? null
+  const activeTaskId =
+    firstSheetParam('task', resolvedSearchParams.task) ?? null
 
   if (!isMyTasksView(viewParam)) {
     // Carry the whole query string across the redirect — the sheet stack and

@@ -2,7 +2,11 @@
 
 import type { SheetStackItem } from './stack'
 
-type PendingOpen = SheetStackItem
+type PendingOpen =
+  /** A sheet stacked on top. */
+  | { kind: 'open'; item: SheetStackItem }
+  /** Sheet `from` now shows `item` (a create sheet became its record). */
+  | { kind: 'swap'; from: string; item: SheetStackItem }
 
 type Listener = (pending: PendingOpen) => void
 

@@ -15,10 +15,22 @@ import { useSheetParams } from './use-sheet-params'
  */
 const SHEET_CLOSE_MS = 350
 
-type RenderedSheet = SheetStackItem & { open: boolean }
+type RenderedSheet = {
+  /**
+   * React key. Assigned when the sheet opens and kept until it's gone, so
+   * the sheet never remounts while its stack around it changes (a sheet
+   * below it closing, its own create sheet becoming the saved record).
+   */
+  key: string
+  item: SheetStackItem
+  open: boolean
+}
+
+let nextKey = 0
+const newKey = () => `sheet-${(nextKey += 1)}`
 
 const signatureOf = (items: SheetStackItem[]) =>
-  items.map(item => `${item.key}:${item.value}`).join('|')
+  items.map(item => item.id).join('|')
 
 /**
  * Global sheet host, mounted once in the dashboard layout. Renders an entity
@@ -28,7 +40,7 @@ const signatureOf = (items: SheetStackItem[]) =>
  *
  * Sheets render in URL param order, so a later param's portal mounts after
  * (visually above) an earlier one — param order is stack order. The stack
- * may hold several sheets of one entity; each keeps its own entry (`key`).
+ * may hold several sheets of one entity; each is its own entry.
  *
  * Closing flips `open` to false at once so the sheet animates out, and the
  * entry stays mounted until the transition finishes. Unmounting on the param
@@ -41,7 +53,7 @@ export function SheetHost() {
   const foreign = stack.filter(item => !isStackItemClaimed(item, pathname))
 
   const [rendered, setRendered] = useState<RenderedSheet[]>(() =>
-    foreign.map(item => ({ ...item, open: true }))
+    foreign.map(item => ({ key: newKey(), item, open: true }))
   )
 
   // Adopt URL changes (own state only — safe during render).
@@ -50,16 +62,15 @@ export function SheetHost() {
   if (signature !== lastSignature) {
     setLastSignature(signature)
     setRendered(previous => {
-      const next: RenderedSheet[] = foreign.map(item => ({
-        ...item,
-        open: true,
-      }))
+      const unmatched = [...previous]
+      const next: RenderedSheet[] = foreign.map(item => {
+        const index = unmatched.findIndex(entry => entry.item.id === item.id)
+        const match = index === -1 ? null : unmatched.splice(index, 1)[0]
+        return { key: match?.key ?? newKey(), item, open: true }
+      })
       // Keep entries the URL dropped mounted (closed) so they animate out.
-      for (const entry of previous) {
-        const stillOpen = foreign.some(item => item.key === entry.key)
-        if (!stillOpen) {
-          next.push({ ...entry, open: false })
-        }
+      for (const entry of unmatched) {
+        next.push({ ...entry, open: false })
       }
       return next
     })
@@ -88,17 +99,18 @@ export function SheetHost() {
   // server lands in `useSearchParams` late, which would lag the sheet.
   useEffect(() => {
     return subscribeSheetOpen(pending => {
-      if (isStackItemClaimed(pending, pathname)) {
+      if (isStackItemClaimed(pending.item, pathname)) {
         return
       }
+      const findId = pending.kind === 'swap' ? pending.from : pending.item.id
       setRendered(previous =>
-        previous.some(entry => entry.key === pending.key)
+        previous.some(entry => entry.item.id === findId)
           ? previous.map(entry =>
-              entry.key === pending.key
-                ? { ...entry, value: pending.value, open: true }
+              entry.item.id === findId
+                ? { ...entry, item: pending.item, open: true }
                 : entry
             )
-          : [...previous, { ...pending, open: true }]
+          : [...previous, { key: newKey(), item: pending.item, open: true }]
       )
     })
   }, [pathname])
@@ -111,7 +123,7 @@ export function SheetHost() {
           entry.key === closing.key ? { ...entry, open: false } : entry
         )
       )
-      close(closing.entity, closing.value)
+      close(closing.item.entity, closing.item.id)
     },
     [close]
   )
@@ -123,21 +135,22 @@ export function SheetHost() {
   return (
     <>
       {rendered.map(entry => {
-        const Wrapper = getSheetWrapper(entry.entity)
+        const Wrapper = getSheetWrapper(entry.item.entity)
         if (!Wrapper) {
           return null
         }
         return (
           <SheetStackEntry
             key={entry.key}
-            entity={entry.entity}
-            value={entry.open ? entry.value : null}
+            entity={entry.item.entity}
+            value={entry.open ? entry.item.value : null}
+            id={entry.open ? entry.item.id : null}
           >
             <Wrapper
-              value={entry.value}
+              value={entry.item.value}
               open={entry.open}
               stack={stack}
-              stackKey={entry.key}
+              stackId={entry.item.id}
               onRequestClose={() => requestClose(entry)}
             />
           </SheetStackEntry>

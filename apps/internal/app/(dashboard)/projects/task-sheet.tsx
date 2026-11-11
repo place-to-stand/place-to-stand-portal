@@ -107,7 +107,6 @@ export function TaskSheet(props: TaskSheetProps) {
     submitDisabled,
     submitDisabledReason,
     unsavedChangesDialog,
-    confirmDiscard,
     saveConflict,
     hasUnsavedChanges,
     handleLoadTheirs,
@@ -434,10 +433,7 @@ export function TaskSheet(props: TaskSheetProps) {
                   noun='Task'
                   onDuplicate={
                     props.task && props.canManage
-                      ? () =>
-                          confirmDiscard(() =>
-                            duplicate('task', props.task!.id)
-                          )
+                      ? () => duplicate('task', props.task!.id)
                       : undefined
                   }
                   onRequestArchive={handleRequestDelete}

@@ -1,3 +1,4 @@
+import { setFirstSheetParam } from '@/lib/sheets/stack'
 import type { ProjectWithRelations, TaskWithRelations } from '@/lib/types'
 
 import {
@@ -214,17 +215,11 @@ export const buildBoardPath = (
   // Task selection travels as `?task=` (sheet deep-link convention): a query
   // change on the same route keeps the page mounted, unlike the old
   // trailing-segment URLs which remounted the whole board.
+  // The board's task is the first `task` sheet; any task stacked above
+  // another sheet keeps its place. A task opened over another sheet lands
+  // on top of the stack.
   const params = new URLSearchParams(search)
-  if (taskId) {
-    if (params.has('task')) {
-      params.set('task', taskId)
-    } else {
-      // Append so a task opened over another sheet lands on top of the stack.
-      params.append('task', taskId)
-    }
-  } else {
-    params.delete('task')
-  }
+  setFirstSheetParam(params, 'task', taskId ?? null)
   const query = params.toString()
   const withQuery = (path: string) => (query ? `${path}?${query}` : path)
 

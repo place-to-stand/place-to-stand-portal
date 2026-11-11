@@ -1,33 +1,24 @@
 /**
- * Open sheets with unsaved changes, by stack entry. Going back to a sheet
- * lower in the stack closes the sheets above it, and each one with unsaved
- * changes asks first, exactly as its own Close would.
+ * Open sheets with unsaved changes, by stack id (`SheetStackItem.id`).
+ * Going back to a sheet lower in the stack closes the sheets above it, and
+ * each one with unsaved changes asks first, as its own Close would.
  */
-
-import type { SheetEntityKey } from './entities'
 
 type Confirm = (next: () => void) => void
 
-// A set per entry: a dialog inside a sheet (emailing an invoice) guards
-// its own unsaved work under the same entry.
+// A set per sheet: a dialog inside a sheet (emailing an invoice) guards its
+// own unsaved work under the same id.
 const guards = new Map<string, Set<Confirm>>()
 
-const guardKey = (entity: SheetEntityKey, value: string) => `${entity}:${value}`
-
 /** Called by a sheet while it has unsaved changes. Returns the unregister. */
-export function registerDiscardGuard(
-  entity: SheetEntityKey,
-  value: string,
-  confirm: Confirm
-) {
-  const key = guardKey(entity, value)
-  const set = guards.get(key) ?? new Set<Confirm>()
+export function registerDiscardGuard(id: string, confirm: Confirm) {
+  const set = guards.get(id) ?? new Set<Confirm>()
   set.add(confirm)
-  guards.set(key, set)
+  guards.set(id, set)
   return () => {
     set.delete(confirm)
-    if (set.size === 0 && guards.get(key) === set) {
-      guards.delete(key)
+    if (set.size === 0 && guards.get(id) === set) {
+      guards.delete(id)
     }
   }
 }
@@ -36,13 +27,8 @@ export function registerDiscardGuard(
  * Runs `next` once every listed sheet's unsaved changes are dealt with, top
  * sheet first. "Stay" on any of them stops there and nothing closes.
  */
-export function confirmDiscardAll(
-  sheets: { entity: SheetEntityKey; value: string }[],
-  next: () => void
-) {
-  const confirms = sheets.flatMap(sheet => [
-    ...(guards.get(guardKey(sheet.entity, sheet.value)) ?? []),
-  ])
+export function confirmDiscardAll(ids: string[], next: () => void) {
+  const confirms = ids.flatMap(id => [...(guards.get(id) ?? [])])
   const run = (index: number) => {
     const confirm = confirms[index]
     if (confirm) {

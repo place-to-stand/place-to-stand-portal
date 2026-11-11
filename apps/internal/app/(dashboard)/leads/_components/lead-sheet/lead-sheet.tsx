@@ -41,7 +41,6 @@ export function LeadSheet(props: LeadSheetProps) {
     canUndo,
     canRedo,
     unsavedChangesDialog,
-    confirmDiscard,
     saveConflict,
     handleLoadTheirs,
     handleFormSubmit,
@@ -88,7 +87,7 @@ export function LeadSheet(props: LeadSheetProps) {
                   noun='Lead'
                   onDuplicate={
                     lead && canManage
-                      ? () => confirmDiscard(() => duplicate('lead', lead.id))
+                      ? () => duplicate('lead', lead.id)
                       : undefined
                   }
                   onRequestArchive={() => setArchiveDialogOpen(true)}

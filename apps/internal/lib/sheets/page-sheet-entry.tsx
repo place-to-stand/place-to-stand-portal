@@ -21,10 +21,14 @@ export function PageSheetEntry({
 }) {
   const pathname = usePathname()
   const { stack } = useSheetParams()
-  const item = stack.find(entry => entry.entity === entity)
-  const value = item && isStackItemClaimed(item, pathname) ? item.value : null
+  const first = stack.find(item => item.entity === entity)
+  const item = first && isStackItemClaimed(first, pathname) ? first : null
   return (
-    <SheetStackEntry entity={entity} value={value}>
+    <SheetStackEntry
+      entity={entity}
+      value={item?.value ?? null}
+      id={item?.id ?? null}
+    >
       {children}
     </SheetStackEntry>
   )

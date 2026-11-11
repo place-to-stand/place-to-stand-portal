@@ -182,12 +182,12 @@ export function useLeadSheetState({
 
         // Just won: billing the company is the next step, so open its
         // billing where we are, in place of the lead sheet that just
-        // closed (an empty aux value drops `lead` in the same write).
+        // closed (`open` reads the URL after that close).
         const justWon =
           values.status === 'CLOSED_WON' && lead?.status !== 'CLOSED_WON'
         if (justWon && company && canManageClients) {
           setSheetSectionTarget('company', company.id, 'billing')
-          openSheet('company', company.id, { lead: '' })
+          openSheet('company', company.id)
         }
       })
     },

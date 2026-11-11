@@ -14,8 +14,8 @@ export type SheetWrapperProps = {
    * context from the sheets below it (e.g. task-on-lead inherits the lead id).
    */
   stack: SheetStackItem[]
-  /** This sheet's entry in `stack` (`SheetStackItem.key`). */
-  stackKey: string
+  /** This sheet's entry in `stack` (`SheetStackItem.id`). */
+  stackId: string
   /** Close this sheet: animates immediately, then clears its param. */
   onRequestClose: () => void
 }

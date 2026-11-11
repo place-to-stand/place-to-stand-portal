@@ -12,7 +12,7 @@ export function TaskSheetWrapper({
   value,
   open,
   stack,
-  stackKey,
+  stackId,
   onRequestClose,
 }: SheetWrapperProps) {
   const router = useRouter()
@@ -27,7 +27,7 @@ export function TaskSheetWrapper({
   const isCreating = value === NEW_SHEET_VALUE
   // Creating a task while a lead sheet is open below in the stack puts the
   // task on the nearest one.
-  const ownIndex = stack.findIndex(item => item.key === stackKey)
+  const ownIndex = stack.findIndex(item => item.id === stackId)
   const leadBelow = (ownIndex === -1 ? stack : stack.slice(0, ownIndex))
     .toReversed()
     .find(item => item.entity === 'lead')

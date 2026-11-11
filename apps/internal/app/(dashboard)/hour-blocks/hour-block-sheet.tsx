@@ -70,7 +70,6 @@ export function HourBlockSheet({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
-    confirmDiscard,
     saveConflict,
     handleLoadTheirs,
     handleSheetOpenChange,
@@ -153,10 +152,7 @@ export function HourBlockSheet({
                   noun='Hour block'
                   onDuplicate={
                     hourBlock
-                      ? () =>
-                          confirmDiscard(() =>
-                            duplicate('hour-block', hourBlock.id)
-                          )
+                      ? () => duplicate('hour-block', hourBlock.id)
                       : undefined
                   }
                   onRequestArchive={handleRequestDelete}

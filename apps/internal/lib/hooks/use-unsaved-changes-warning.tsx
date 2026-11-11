@@ -30,18 +30,22 @@ export function useUnsavedChangesWarning({
   const [dialogOpen, setDialogOpen] = useState(false)
   const pendingActionRef = useRef<(() => void) | null>(null)
 
-  const requestConfirmation = useCallback(
-    (next: () => void) => {
-      if (!isDirty) {
-        next()
-        return
-      }
+  // Read at call time: a guard held elsewhere (going back through the
+  // stack) can run after a save cleaned the form, before this re-renders.
+  const isDirtyRef = useRef(isDirty)
+  useEffect(() => {
+    isDirtyRef.current = isDirty
+  }, [isDirty])
 
-      pendingActionRef.current = next
-      setDialogOpen(true)
-    },
-    [isDirty]
-  )
+  const requestConfirmation = useCallback((next: () => void) => {
+    if (!isDirtyRef.current) {
+      next()
+      return
+    }
+
+    pendingActionRef.current = next
+    setDialogOpen(true)
+  }, [])
 
   const handleCancel = useCallback(() => {
     pendingActionRef.current = null
@@ -57,15 +61,13 @@ export function useUnsavedChangesWarning({
 
   // A sheet in the stack with unsaved changes asks here before going back
   // to a sheet below it closes this one.
-  const entry = useSheetStackEntry()
-  const entryEntity = entry?.entity
-  const entryValue = entry?.value
+  const stackId = useSheetStackEntry()?.id
   useEffect(() => {
-    if (!isDirty || !entryEntity || !entryValue) {
+    if (!isDirty || !stackId) {
       return
     }
-    return registerDiscardGuard(entryEntity, entryValue, requestConfirmation)
-  }, [entryEntity, entryValue, isDirty, requestConfirmation])
+    return registerDiscardGuard(stackId, requestConfirmation)
+  }, [isDirty, requestConfirmation, stackId])
 
   useEffect(() => {
     if (!isDirty) {

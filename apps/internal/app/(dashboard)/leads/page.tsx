@@ -17,6 +17,7 @@ import { leadHref } from '@/lib/sheets/hrefs'
 
 import { LeadsWorkspace } from './_components/leads-workspace'
 import { firstParam } from '@/lib/pagination/params'
+import { firstSheetParam } from '@/lib/sheets/stack'
 
 export const metadata: Metadata = {
   title: 'Leads',
@@ -28,7 +29,7 @@ export default async function LeadsBoardPage({
   // permission: leads.manage
   const user = await requirePage('leads.manage')
   const params = await searchParams
-  const leadParam = firstParam(params.lead) ?? null
+  const leadParam = firstSheetParam('lead', params.lead) ?? null
   // `?assignee=`: a user id, `me` (the My aging leads "See all"), or `all`
   // for everyone's leads. Absent shows the viewer's own leads, as My tasks
   // does.

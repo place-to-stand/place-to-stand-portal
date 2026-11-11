@@ -104,7 +104,6 @@ export function InvoiceSheet({
     deleteButton,
     isDeleteDialogOpen,
     unsavedChangesDialog,
-    confirmDiscard,
     saveConflict,
     handleLoadTheirs,
     totals,
@@ -285,10 +284,7 @@ export function InvoiceSheet({
                       noun='Invoice'
                       onDuplicate={
                         invoice
-                          ? () =>
-                              confirmDiscard(() =>
-                                duplicate('invoice', invoice.id)
-                              )
+                          ? () => duplicate('invoice', invoice.id)
                           : undefined
                       }
                       onRequestArchive={handleRequestDelete}

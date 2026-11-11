@@ -39,6 +39,7 @@ import {
 import { Plus } from 'lucide-react'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
 import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
+import { setFirstSheetParam } from '@/lib/sheets/stack'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -396,13 +397,8 @@ export function MyTasksPage({
     (targetView: MyTasksView, taskId?: string | null) => {
       const params = new URLSearchParams(searchParams.toString())
       // Keeps the view's other params (assignee) beside `?task=`.
-      if (taskId) {
-        // eslint-disable-next-line pts/sheet-url-through-builders -- switching views carries the open task across
-        params.set('task', taskId)
-      } else {
-        // eslint-disable-next-line pts/sheet-url-through-builders -- as above
-        params.delete('task')
-      }
+      // The page's task is the first `task` sheet; others keep their place.
+      setFirstSheetParam(params, 'task', taskId ?? null)
       const queryString = params.toString()
       return `/my/tasks/${targetView}${queryString ? `?${queryString}` : ''}`
     },

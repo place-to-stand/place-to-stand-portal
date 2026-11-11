@@ -59,9 +59,9 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
   value: string
 ) {
   const { close } = useSheetParams()
-  // The sheet's own param: a duplicate loads its source (`value`) but its
-  // param is `copy-<id>`.
-  const ownValue = useSheetStackEntry()?.value ?? value
+  // The sheet's own param, by stack id: a duplicate loads its source
+  // (`value`), but its param is `copy-<id>`. Null once it's closing.
+  const ownId = useSheetStackEntry()?.id ?? null
   const { toast } = useToast()
   // Seed from the cache so a warmed sheet renders on its first frame.
   const [data, setData] = useState<SheetInitPayloads[E] | null>(
@@ -75,11 +75,11 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
   // `close` and `toast` change identity on every URL change, which would
   // otherwise refetch (and blank out) an already-open sheet whenever another
   // sheet opens above it.
-  const handlersRef = useRef({ close, toast, ownValue })
+  const handlersRef = useRef({ close, toast, ownId })
 
   useEffect(() => {
-    handlersRef.current = { close, toast, ownValue }
-  }, [close, toast, ownValue])
+    handlersRef.current = { close, toast, ownId }
+  }, [close, toast, ownId])
 
   // Retire the cached payload once this sheet leaves the DOM (or swaps
   // value, e.g. create→edit). The sheet is where the record gets EDITED, so
@@ -130,7 +130,10 @@ export function useSheetInit<E extends SheetInitEntity & SheetEntityKey>(
           description:
             'It may have been deleted, or something went wrong loading it.',
         })
-        handlersRef.current.close(entity, handlersRef.current.ownValue)
+        // A sheet already closing has no param left to drop.
+        if (handlersRef.current.ownId) {
+          handlersRef.current.close(entity, handlersRef.current.ownId)
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { parseSheetStack } from '@/lib/sheets/stack'
 import type { TaskWithRelations } from '@/lib/types'
 import {
   DONE_WINDOW_WEEKS,
@@ -48,7 +49,9 @@ export const useProjectsBoardState = ({
   // server, so a prop would keep the task that was open on first load. Only
   // the routes that render their own task sheet read it; elsewhere the
   // SheetHost shows the task.
-  const taskParam = searchParams.get('task')
+  const taskParam =
+    parseSheetStack(searchParams).find(item => item.entity === 'task')?.value ??
+    null
   const activeTaskId =
     taskParam &&
     UUID_PATTERN.test(taskParam) &&
