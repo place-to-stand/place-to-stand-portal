@@ -77,6 +77,7 @@ import {
   CLICKABLE_ROW_CLASS,
   getClickableRowProps,
 } from '@/lib/table/clickable-row'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type SubmissionsTableMode = 'active' | 'archive'
 
@@ -706,12 +707,14 @@ export function SubmissionsTable({
         onConfirm={handleArchiveConfirm}
       />
 
-      <SubmissionDetailSheet
-        submission={selected}
-        mode={mode}
-        onRowRemoved={() => refreshAfterAction(true)}
-        onOpenChange={handleSheetOpenChange}
-      />
+      <PageSheetEntry entity='submission'>
+        <SubmissionDetailSheet
+          submission={selected}
+          mode={mode}
+          onRowRemoved={() => refreshAfterAction(true)}
+          onOpenChange={handleSheetOpenChange}
+        />
+      </PageSheetEntry>
     </div>
   )
 }

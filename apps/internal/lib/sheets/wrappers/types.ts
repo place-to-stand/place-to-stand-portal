@@ -11,9 +11,11 @@ export type SheetWrapperProps = {
   open: boolean
   /**
    * The full sheet stack in URL (mount) order — lets a `new` wrapper read
-   * context from the sheet below it (e.g. task-on-lead inherits the lead id).
+   * context from the sheets below it (e.g. task-on-lead inherits the lead id).
    */
   stack: SheetStackItem[]
+  /** This sheet's entry in `stack` (`SheetStackItem.key`). */
+  stackKey: string
   /** Close this sheet: animates immediately, then clears its param. */
   onRequestClose: () => void
 }

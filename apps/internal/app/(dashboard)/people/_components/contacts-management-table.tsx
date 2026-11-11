@@ -23,6 +23,7 @@ import { ContactsTableSection } from './contacts-table-section'
 import { ContactsSheet } from './contacts-sheet'
 import { usePageParam } from '@/hooks/use-page-param'
 import { BulkActionBar, useRowSelection } from '@/components/table/bulk-select'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type ContactsManagementTableProps = {
   contacts: ContactsTableContact[]
@@ -147,15 +148,17 @@ export function ContactsManagementTable({
         mode={mode}
         nameOf={id => contacts.find(contact => contact.id === id)?.name}
       />
-      <ContactsSheet
-        open={sheetOpen}
-        onOpenChange={handleSheetOpenChange}
-        onComplete={handleSheetComplete}
-        contact={selectedContact}
-        initialName={getAux('contactName') ?? undefined}
-        initialCompanyId={getAux('contactCompanyId') ?? undefined}
-        onCreated={record => emitSheetCreated('contact', record)}
-      />
+      <PageSheetEntry entity='contact'>
+        <ContactsSheet
+          open={sheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          onComplete={handleSheetComplete}
+          contact={selectedContact}
+          initialName={getAux('contactName') ?? undefined}
+          initialCompanyId={getAux('contactCompanyId') ?? undefined}
+          onCreated={record => emitSheetCreated('contact', record)}
+        />
+      </PageSheetEntry>
     </div>
   )
 }

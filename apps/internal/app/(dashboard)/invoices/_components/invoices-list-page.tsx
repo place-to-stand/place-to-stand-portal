@@ -1,5 +1,6 @@
 import { PageShell } from '@/components/layout/page-shell'
 import { requirePage } from '@/lib/auth/session'
+import { firstParam } from '@/lib/pagination/params'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { getInvoiceById, listInvoices } from '@/lib/queries/invoices'
 import { parseInvoicesSearchParams } from '@/lib/invoices/filters'
@@ -79,7 +80,7 @@ export async function InvoicesListPage({
   // have moved to the other tab (archived or restored).
   const { record: deepLinkedInvoice, notFound: invoiceNotFound } =
     await resolveSheetDeepLink({
-      idParam: typeof params.invoice === 'string' ? params.invoice : undefined,
+      idParam: firstParam(params.invoice),
       fetchById: id => getInvoiceById(currentUser, id),
       tab: view.tab,
       isArchived: invoice => Boolean(invoice.deleted_at),

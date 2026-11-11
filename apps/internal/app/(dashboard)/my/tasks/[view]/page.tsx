@@ -8,6 +8,7 @@ import {
 } from '@/components/my-tasks/my-tasks-page'
 import { requirePage } from '@/lib/auth/session'
 import { buildQuerySuffix } from '@/lib/sheets/hrefs'
+import { firstParam } from '@/lib/pagination/params'
 import {
   fetchProjectsLite,
   fetchProjectsWithRelationsByIds,
@@ -39,7 +40,7 @@ type PageSearchParams = {
   companyId?: string
   /** Comma list of `personal,internal` — project types to withhold. */
   [HIDE_PARAM]?: string
-  task?: string
+  task?: string | string[]
 }
 
 const DEFAULT_VIEW: MyTasksView = 'board'
@@ -53,7 +54,7 @@ export default async function MyTasksViewRoute({
   const resolvedParams = await params
   const resolvedSearchParams = (await searchParams) as PageSearchParams
   const viewParam = resolvedParams.view
-  const activeTaskId = resolvedSearchParams.task ?? null
+  const activeTaskId = firstParam(resolvedSearchParams.task) ?? null
 
   if (!isMyTasksView(viewParam)) {
     // Carry the whole query string across the redirect — the sheet stack and

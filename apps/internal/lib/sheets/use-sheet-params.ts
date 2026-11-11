@@ -5,22 +5,25 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 import {
   NEW_SHEET_VALUE,
-  SHEET_ENTITIES,
   duplicateSheetValue,
   parseDuplicateSourceId,
   type DuplicableSheetEntity,
   isSheetEntityClaimed,
-  isSheetEntityKey,
-  isValidSheetParamValue,
   type SheetEntityKey,
 } from './entities'
+import { confirmDiscardAll } from './discard-guards'
 import { emitSheetOpen } from './pending-open'
 import { writeShallowUrl } from './shallow-url'
+import {
+  openTarget,
+  parseSheetStack,
+  removeSheetParams,
+  swapSheetParam,
+  type SheetStackItem,
+} from './stack'
+import { useSheetStackEntry } from './stack-entry'
 
-export type SheetStackItem = {
-  entity: SheetEntityKey
-  value: string
-}
+export type { SheetStackItem } from './stack'
 
 export type SheetOpenOptions = {
   /**
@@ -34,39 +37,33 @@ export type SheetOpenOptions = {
 
 /**
  * The one hook implementing the sheet deep-link conventions:
- * - open = push (Back closes the sheet), close = replace (Back after close
- *   doesn't reopen it), never scrolling
+ * - param order in the URL is the sheet stack order, and the stack may hold
+ *   several sheets of one entity (company A, a person, company B)
+ * - opening a record stacks its sheet on top (a push: Back closes it),
+ *   unless that record is already in the stack: then the sheets above it
+ *   close, each asking first if it has unsaved changes, and you're back on
+ *   it (a replace, like any close). One rule for every way to open a sheet.
+ * - close = replace, never scrolling; all other params are preserved
  * - writes skip the server (`writeShallowUrl`) unless the page must resolve
  *   the record itself: only `open` of a sheet the page renders, without
  *   `shallow`, goes through `router.push`
- * - all other params are preserved on every write
- * - param order in the URL is the sheet stack order — `open` appends,
- *   `close` removes only its own param (plus its aux params)
  */
 export function useSheetParams() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  /** Entity params present in the URL, in stack (mount) order. */
-  const stack = useMemo(() => {
-    const items: SheetStackItem[] = []
-    for (const [key, value] of searchParams.entries()) {
-      if (
-        isSheetEntityKey(key) &&
-        value &&
-        isValidSheetParamValue(value, key) &&
-        !items.some(item => item.entity === key)
-      ) {
-        items.push({ entity: key, value })
-      }
-    }
-    return items
-  }, [searchParams])
+  /** The open sheets, bottom first. */
+  const stack = useMemo(() => parseSheetStack(searchParams), [searchParams])
 
+  /**
+   * The entity's first param: the sheet a page that renders its own sheet
+   * for this entity shows.
+   */
   const get = useCallback(
-    (entity: SheetEntityKey) => searchParams.get(entity),
-    [searchParams]
+    (entity: SheetEntityKey) =>
+      stack.find(item => item.entity === entity)?.value ?? null,
+    [stack]
   )
 
   const getAux = useCallback(
@@ -84,17 +81,19 @@ export function useSheetParams() {
     [pathname, searchParams]
   )
 
-  /** The URL `open` writes: this page with the sheet on top of the stack. */
+  /**
+   * The URL `open` lands on: this page with the sheet on top, or, when the
+   * record is already open, with the sheets above it gone.
+   */
   const hrefFor = useCallback(
-    (entity: SheetEntityKey, value: string, aux?: Record<string, string>) =>
-      buildUrl(params => {
-        // `set` keeps an existing param's stack position; `append` puts a
-        // newly opened sheet on top.
-        if (params.has(entity)) {
-          params.set(entity, value)
-        } else {
-          params.append(entity, value)
+    (entity: SheetEntityKey, value: string, aux?: Record<string, string>) => {
+      const target = openTarget(stack, entity, value)
+      return buildUrl(params => {
+        if (target.kind === 'back') {
+          removeSheetParams(params, target.above)
+          return
         }
+        params.append(entity, value)
         for (const [key, auxValue] of Object.entries(aux ?? {})) {
           if (auxValue) {
             params.set(key, auxValue)
@@ -102,8 +101,29 @@ export function useSheetParams() {
             params.delete(key)
           }
         }
-      }),
-    [buildUrl]
+      })
+    },
+    [buildUrl, stack]
+  )
+
+  /** Close these sheets (top first), after any unsaved-changes checks. */
+  const goBackTo = useCallback(
+    (above: SheetStackItem[]) => {
+      if (above.length === 0) {
+        return
+      }
+      confirmDiscardAll(above, () => {
+        // Read the URL now: a check may have waited on a dialog.
+        const params = new URLSearchParams(window.location.search)
+        removeSheetParams(params, above)
+        const queryString = params.toString()
+        writeShallowUrl(
+          queryString ? `${pathname}?${queryString}` : pathname,
+          'replace'
+        )
+      })
+    },
+    [pathname]
   )
 
   const open = useCallback(
@@ -114,12 +134,19 @@ export function useSheetParams() {
       aux?: Record<string, string>,
       options?: SheetOpenOptions
     ) => {
+      const target = openTarget(stack, entity, value)
+      if (target.kind === 'back') {
+        goBackTo(target.above)
+        return
+      }
+      const { item } = target
       // Let the host mount now, before the URL write lands.
-      emitSheetOpen(entity, value)
+      emitSheetOpen(item)
       const url = hrefFor(entity, value, aux)
       const shallow =
         options?.shallow ??
         (value === NEW_SHEET_VALUE ||
+          item.ordinal > 0 ||
           !isSheetEntityClaimed(entity, pathname, value))
       if (shallow) {
         writeShallowUrl(url, 'push')
@@ -127,7 +154,7 @@ export function useSheetParams() {
         router.push(url, { scroll: false })
       }
     },
-    [hrefFor, pathname, router]
+    [goBackTo, hrefFor, pathname, router, stack]
   )
 
   const openNew = useCallback(
@@ -146,36 +173,49 @@ export function useSheetParams() {
   /**
    * Point an open sheet at another record in place (history replace): a
    * create sheet saved with "keep open" becomes the new record's sheet. The
-   * param keeps its stack position. A page that renders this sheet itself
-   * resolves the record on the server, so that write goes through
-   * `router.replace`.
+   * param keeps its stack position. `from` is the sheet's current value. A
+   * page that renders this sheet itself resolves the record on the server,
+   * so that write goes through `router.replace`.
    */
   const swap = useCallback(
-    (entity: SheetEntityKey, value: string) => {
-      emitSheetOpen(entity, value)
-      const url = hrefFor(entity, value)
-      if (isSheetEntityClaimed(entity, pathname, value)) {
+    (entity: SheetEntityKey, from: string, value: string) => {
+      const item = stack.find(
+        entry => entry.entity === entity && entry.value === from
+      )
+      if (!item) {
+        return
+      }
+      emitSheetOpen({ ...item, value })
+      const url = buildUrl(params => {
+        swapSheetParam(params, entity, from, value)
+      })
+      if (item.ordinal === 0 && isSheetEntityClaimed(entity, pathname, value)) {
         router.replace(url, { scroll: false })
       } else {
         writeShallowUrl(url, 'replace')
       }
     },
-    [hrefFor, pathname, router]
+    [buildUrl, pathname, router, stack]
   )
 
+  /**
+   * Close one sheet: `value` names it; without one, the entity's first
+   * (the sheet a page renders itself).
+   */
   const close = useCallback(
-    (entity: SheetEntityKey) => {
+    (entity: SheetEntityKey, value?: string | null) => {
+      const target = value ?? get(entity)
+      if (!target) {
+        return
+      }
       writeShallowUrl(
         buildUrl(params => {
-          params.delete(entity)
-          for (const aux of SHEET_ENTITIES[entity].auxParams) {
-            params.delete(aux)
-          }
+          removeSheetParams(params, [{ entity, value: target }])
         }),
         'replace'
       )
     },
-    [buildUrl]
+    [buildUrl, get]
   )
 
   return {
@@ -189,6 +229,26 @@ export function useSheetParams() {
     swap,
     close,
   }
+}
+
+/**
+ * The param value of the sheet this component sits in: its stack entry's,
+ * else (a sheet rendered outside an entry) the entity's top create sheet.
+ */
+export function useOwnSheetValue(entity: SheetEntityKey) {
+  const entry = useSheetStackEntry()
+  const { stack } = useSheetParams()
+  if (entry?.entity === entity) {
+    return entry.value
+  }
+  return (
+    stack.findLast(
+      item =>
+        item.entity === entity &&
+        (item.value === NEW_SHEET_VALUE ||
+          parseDuplicateSourceId(item.value) !== null)
+    )?.value ?? null
+  )
 }
 
 /**

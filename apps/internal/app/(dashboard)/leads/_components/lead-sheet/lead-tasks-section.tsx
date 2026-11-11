@@ -37,7 +37,7 @@ export function LeadTasksSection({
   canManage,
   onSuccess,
 }: LeadTasksSectionProps) {
-  const { open, openNew, get } = useSheetParams()
+  const { open, openNew, stack } = useSheetParams()
   const [tasks, setTasks] = useState<TaskWithRelations[]>([])
   const [assigneesById, setAssigneesById] = useState<
     Record<string, AssigneeInfo>
@@ -46,7 +46,9 @@ export function LeadTasksSection({
   // Closed by default: completed tasks only grow over the life of a lead, and
   // left open they push the Updates timeline below the fold.
   const [showCompleted, setShowCompleted] = useState(false)
-  const taskParam = get('task')
+  // Task sheets open in the stack. The stack can hold another task under
+  // this lead, so count them rather than read one param.
+  const openTaskCount = stack.filter(item => item.entity === 'task').length
 
   const fetchTasks = useCallback(() => {
     // Promise-chained (not awaited inline) so every setState runs
@@ -81,20 +83,20 @@ export function LeadTasksSection({
   }, [canManage])
 
   // The task sheet stacks on top of this one via `?task=` (rendered by the
-  // global SheetHost). Refetch the linked tasks once that param clears, so a
-  // task created or edited there shows up here. This runs in an effect, not
-  // the adjust-during-render pattern: `onSuccess` sets state in the parent,
-  // and updating another component during render is illegal.
-  const previousTaskParamRef = useRef(taskParam)
+  // global SheetHost). Refetch the linked tasks once a task sheet closes, so
+  // a task created or edited there shows up here. This runs in an effect,
+  // not the adjust-during-render pattern: `onSuccess` sets state in the
+  // parent, and updating another component during render is illegal.
+  const previousTaskCountRef = useRef(openTaskCount)
   useEffect(() => {
-    const previous = previousTaskParamRef.current
-    previousTaskParamRef.current = taskParam
+    const previous = previousTaskCountRef.current
+    previousTaskCountRef.current = openTaskCount
 
-    if (previous !== null && taskParam === null) {
+    if (openTaskCount < previous) {
       void fetchTasks()
       onSuccess?.()
     }
-  }, [fetchTasks, onSuccess, taskParam])
+  }, [fetchTasks, onSuccess, openTaskCount])
 
   const resolveAssignees = useCallback(
     (task: TaskWithRelations): AssigneeInfo[] =>

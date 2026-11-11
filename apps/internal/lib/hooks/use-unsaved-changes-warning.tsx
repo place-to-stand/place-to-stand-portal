@@ -4,6 +4,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 
+import { registerDiscardGuard } from '@/lib/sheets/discard-guards'
+import { useSheetStackEntry } from '@/lib/sheets/stack-entry'
+
 type UseUnsavedChangesWarningOptions = {
   isDirty: boolean
   title?: string
@@ -51,6 +54,18 @@ export function useUnsavedChangesWarning({
     setDialogOpen(false)
     action?.()
   }, [])
+
+  // A sheet in the stack with unsaved changes asks here before going back
+  // to a sheet below it closes this one.
+  const entry = useSheetStackEntry()
+  const entryEntity = entry?.entity
+  const entryValue = entry?.value
+  useEffect(() => {
+    if (!isDirty || !entryEntity || !entryValue) {
+      return
+    }
+    return registerDiscardGuard(entryEntity, entryValue, requestConfirmation)
+  }, [entryEntity, entryValue, isDirty, requestConfirmation])
 
   useEffect(() => {
     if (!isDirty) {

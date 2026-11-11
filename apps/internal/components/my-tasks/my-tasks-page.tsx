@@ -38,6 +38,7 @@ import {
 } from './use-optimistic-board-scope'
 import { Plus } from 'lucide-react'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -579,24 +580,28 @@ export function MyTasksPage({
         />
       )}
       {shouldRenderTaskSheet ? (
-        <TaskSheet
-          open={isSheetOpen}
-          onOpenChange={handleSheetChange}
-          task={editingTaskMeta?.task}
-          canManage
-          admins={admins}
-          currentUserId={user.id}
-          defaultStatus={createTaskContext?.status ?? 'ON_DECK'}
-          defaultDueOn={null}
-          projects={allProjects}
-          projectSelectionProjects={projectSelectionProjects}
-          defaultProjectId={
-            createTaskContext?.projectId ?? editingTaskMeta?.project?.id ?? null
-          }
-          // A create opened from a link defaults to you, like the column's
-          // +, so the new task lands on your board.
-          defaultAssigneeId={createTaskContext?.assigneeId ?? user.id}
-        />
+        <PageSheetEntry entity='task'>
+          <TaskSheet
+            open={isSheetOpen}
+            onOpenChange={handleSheetChange}
+            task={editingTaskMeta?.task}
+            canManage
+            admins={admins}
+            currentUserId={user.id}
+            defaultStatus={createTaskContext?.status ?? 'ON_DECK'}
+            defaultDueOn={null}
+            projects={allProjects}
+            projectSelectionProjects={projectSelectionProjects}
+            defaultProjectId={
+              createTaskContext?.projectId ??
+              editingTaskMeta?.project?.id ??
+              null
+            }
+            // A create opened from a link defaults to you, like the column's
+            // +, so the new task lands on your board.
+            defaultAssigneeId={createTaskContext?.assigneeId ?? user.id}
+          />
+        </PageSheetEntry>
       ) : null}
     </PageShell>
   )

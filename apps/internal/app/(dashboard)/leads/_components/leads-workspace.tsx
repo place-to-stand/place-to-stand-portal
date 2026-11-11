@@ -25,6 +25,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { LEADS_TABS } from '../_lib/tabs'
 import { LeadsBoard } from './leads-board'
 import { LeadSheet } from './lead-sheet'
+import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 
 type LeadsWorkspaceProps = {
   initialColumns: LeadBoardColumnData[]
@@ -218,21 +219,23 @@ export function LeadsWorkspace({
         <DeepLinkNotFoundNotice entity='lead' onDismiss={clear} />
       ) : null}
       {canManage ? (
-        <LeadSheet
-          open={isSheetOpen}
-          onOpenChange={handleSheetOpenChange}
-          lead={sheetLead}
-          initialStatus={initialStatus}
-          initialCompanyError={
-            sheetLead && sheetLead.id === companyErrorLeadId
-              ? LEAD_WON_NEEDS_COMPANY_MESSAGE
-              : null
-          }
-          assignees={assignees}
-          canManage={canManage}
-          senderName={senderName}
-          onSuccess={handleSheetSuccess}
-        />
+        <PageSheetEntry entity='lead'>
+          <LeadSheet
+            open={isSheetOpen}
+            onOpenChange={handleSheetOpenChange}
+            lead={sheetLead}
+            initialStatus={initialStatus}
+            initialCompanyError={
+              sheetLead && sheetLead.id === companyErrorLeadId
+                ? LEAD_WON_NEEDS_COMPANY_MESSAGE
+                : null
+            }
+            assignees={assignees}
+            canManage={canManage}
+            senderName={senderName}
+            onSuccess={handleSheetSuccess}
+          />
+        </PageSheetEntry>
       ) : null}
       <LeadsBoard
         initialColumns={visibleColumns}

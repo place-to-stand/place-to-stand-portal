@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
-import { isSheetEntityClaimed, type SheetEntityKey } from './entities'
 import { subscribeSheetOpen } from './pending-open'
 import { getSheetWrapper } from './registry'
-import { useSheetParams, type SheetStackItem } from './use-sheet-params'
+import { isStackItemClaimed, type SheetStackItem } from './stack'
+import { SheetStackEntry } from './stack-entry'
+import { useSheetParams } from './use-sheet-params'
 
 /**
  * How long a closing sheet stays mounted so its exit transition can finish.
@@ -17,7 +18,7 @@ const SHEET_CLOSE_MS = 350
 type RenderedSheet = SheetStackItem & { open: boolean }
 
 const signatureOf = (items: SheetStackItem[]) =>
-  items.map(item => `${item.entity}:${item.value}`).join('|')
+  items.map(item => `${item.key}:${item.value}`).join('|')
 
 /**
  * Global sheet host, mounted once in the dashboard layout. Renders an entity
@@ -26,7 +27,8 @@ const signatureOf = (items: SheetStackItem[]) =>
  * instant warm-path opens — see `claimsPathname` in entities.ts).
  *
  * Sheets render in URL param order, so a later param's portal mounts after
- * (visually above) an earlier one — param order is stack order.
+ * (visually above) an earlier one — param order is stack order. The stack
+ * may hold several sheets of one entity; each keeps its own entry (`key`).
  *
  * Closing flips `open` to false at once so the sheet animates out, and the
  * entry stays mounted until the transition finishes. Unmounting on the param
@@ -36,9 +38,7 @@ export function SheetHost() {
   const pathname = usePathname()
   const { stack, close } = useSheetParams()
 
-  const foreign = stack.filter(
-    item => !isSheetEntityClaimed(item.entity, pathname, item.value)
-  )
+  const foreign = stack.filter(item => !isStackItemClaimed(item, pathname))
 
   const [rendered, setRendered] = useState<RenderedSheet[]>(() =>
     foreign.map(item => ({ ...item, open: true }))
@@ -56,7 +56,7 @@ export function SheetHost() {
       }))
       // Keep entries the URL dropped mounted (closed) so they animate out.
       for (const entry of previous) {
-        const stillOpen = foreign.some(item => item.entity === entry.entity)
+        const stillOpen = foreign.some(item => item.key === entry.key)
         if (!stillOpen) {
           next.push({ ...entry, open: false })
         }
@@ -68,7 +68,7 @@ export function SheetHost() {
   // Drop closed entries once their transition has finished.
   const closedKeys = rendered
     .filter(entry => !entry.open)
-    .map(entry => entry.entity)
+    .map(entry => entry.key)
     .join('|')
   useEffect(() => {
     if (!closedKeys) {
@@ -88,13 +88,13 @@ export function SheetHost() {
   // server lands in `useSearchParams` late, which would lag the sheet.
   useEffect(() => {
     return subscribeSheetOpen(pending => {
-      if (isSheetEntityClaimed(pending.entity, pathname, pending.value)) {
+      if (isStackItemClaimed(pending, pathname)) {
         return
       }
       setRendered(previous =>
-        previous.some(entry => entry.entity === pending.entity)
+        previous.some(entry => entry.key === pending.key)
           ? previous.map(entry =>
-              entry.entity === pending.entity
+              entry.key === pending.key
                 ? { ...entry, value: pending.value, open: true }
                 : entry
             )
@@ -104,14 +104,14 @@ export function SheetHost() {
   }, [pathname])
 
   const requestClose = useCallback(
-    (entity: SheetEntityKey) => {
+    (closing: RenderedSheet) => {
       // Animate now, then update the URL.
       setRendered(previous =>
         previous.map(entry =>
-          entry.entity === entity ? { ...entry, open: false } : entry
+          entry.key === closing.key ? { ...entry, open: false } : entry
         )
       )
-      close(entity)
+      close(closing.entity, closing.value)
     },
     [close]
   )
@@ -128,13 +128,19 @@ export function SheetHost() {
           return null
         }
         return (
-          <Wrapper
-            key={entry.entity}
-            value={entry.value}
-            open={entry.open}
-            stack={stack}
-            onRequestClose={() => requestClose(entry.entity)}
-          />
+          <SheetStackEntry
+            key={entry.key}
+            entity={entry.entity}
+            value={entry.open ? entry.value : null}
+          >
+            <Wrapper
+              value={entry.value}
+              open={entry.open}
+              stack={stack}
+              stackKey={entry.key}
+              onRequestClose={() => requestClose(entry)}
+            />
+          </SheetStackEntry>
         )
       })}
     </>
