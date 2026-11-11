@@ -1,6 +1,6 @@
 import type { TaskWithRelations } from '@/lib/types'
 
-import { moveIntoColumn, rankAtIndex } from '@/lib/dnd/kanban'
+import { moveIntoColumn, rankAmongHidden } from '@/lib/dnd/kanban'
 import type { KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 import type { BoardColumnId } from '../board-constants'
 import { compareTasksByRank } from '../board-utils'
@@ -21,6 +21,12 @@ export type ReorderPlan = {
   sourceColumnId: BoardColumnId
   destinationColumnId: BoardColumnId
   destinationTasks: TaskWithRelations[]
+  /**
+   * The destination column's tasks the board doesn't render (a search, the
+   * Done window). The new rank lands among them too, so no two tasks share
+   * one and the order holds once the filter is cleared.
+   */
+  hiddenDestinationTasks: TaskWithRelations[]
   activeIndex: number
   targetIndex: number
 }
@@ -76,6 +82,11 @@ export const deriveReorderPlan = (
     ? filterColumnTasks(to.columnId, rawDestinationTasks)
     : rawDestinationTasks
 
+  const shownIds = new Set(destinationTasks.map(task => task.id))
+  const hiddenDestinationTasks = rawDestinationTasks.filter(
+    task => task.id !== taskId && !shownIds.has(task.id)
+  )
+
   return {
     projectId,
     taskId,
@@ -84,6 +95,7 @@ export const deriveReorderPlan = (
     sourceColumnId: from.columnId,
     destinationColumnId: to.columnId,
     destinationTasks,
+    hiddenDestinationTasks,
     activeIndex: from.index,
     targetIndex: to.index,
   }
@@ -92,6 +104,7 @@ export const deriveReorderPlan = (
 export const prepareReorderOutcome = (plan: ReorderPlan): ReorderOutcome => {
   const {
     destinationTasks,
+    hiddenDestinationTasks,
     sourceColumnId,
     destinationColumnId,
     activeIndex,
@@ -117,7 +130,11 @@ export const prepareReorderOutcome = (plan: ReorderPlan): ReorderOutcome => {
     return { status: 'noop' }
   }
 
-  const nextRank = rankAtIndex(orderedTasks, nextIndex)
+  const nextRank = rankAmongHidden(
+    orderedTasks,
+    nextIndex,
+    hiddenDestinationTasks
+  )
 
   const destinationStatus = destinationColumnId
 

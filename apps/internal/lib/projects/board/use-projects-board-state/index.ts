@@ -214,7 +214,8 @@ export const useProjectsBoardState = ({
   // The board's search (`?q=`) narrows the cards in the browser.
   const search = searchParams.get('q')?.trim() || undefined
   const matchesBoardSearch = useCallback(
-    (task: TaskWithRelations) => matchesSearch([task.title], search),
+    (task: TaskWithRelations) =>
+      matchesSearch([task.title, task.lead?.name], search),
     [search]
   )
 

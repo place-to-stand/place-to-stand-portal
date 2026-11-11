@@ -594,6 +594,12 @@ export function MyTasksPage({
           olderDoneCount === 0 &&
           !isScopePending ? (
             <ProjectsBoardEmpty message='No tasks assigned to you yet.' />
+          ) : search &&
+            olderDoneCount === 0 &&
+            visibleBoardEntries.every(entry =>
+              hiddenTaskIds.has(entry.taskId)
+            ) ? (
+            <ProjectsBoardEmpty message='No tasks match the current filters.' />
           ) : (
             <MyTasksBoard
               canReorder={selectedAssigneeId !== 'all'}
