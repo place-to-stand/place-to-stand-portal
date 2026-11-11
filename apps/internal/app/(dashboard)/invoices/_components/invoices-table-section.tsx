@@ -223,7 +223,7 @@ export function InvoicesTableSection({
               </SortableTableHead>
               <TableHead className='w-[8%]'>Status</TableHead>
               <TableHead className='w-[10%] text-right'>Total</TableHead>
-              <TableHead className='w-[7%]'>Hours</TableHead>
+              <TableHead className='w-[7%] pl-4'>Hours</TableHead>
               <SortableTableHead
                 field='created'
                 sort={sort}
@@ -364,7 +364,7 @@ export function InvoicesTableSection({
                     <TableCell className='text-right text-sm tabular-nums'>
                       {formatCurrency(invoice.total)}
                     </TableCell>
-                    <TableCell label='Hours'>
+                    <TableCell label='Hours' className='pl-4'>
                       <InvoiceHourBlocksCell
                         hourBlocks={invoice.hour_blocks ?? []}
                       />
