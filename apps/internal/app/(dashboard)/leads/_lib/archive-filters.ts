@@ -1,5 +1,7 @@
 import type { ArchivedLead } from '@/lib/data/leads'
+import { matchesSearch } from '@/lib/search/text-match'
 import { LEAD_STATUS_VALUES, type LeadStatusValue } from '@/lib/leads/constants'
+import { leadSearchFields } from './board-filters'
 
 export function isLeadStatus(
   value: string | null | undefined
@@ -19,18 +21,12 @@ export function filterArchivedLeads(
   { status, q }: { status?: string | null; q?: string | null }
 ): ArchivedLead[] {
   const statusFilter = isLeadStatus(status) ? status : undefined
-  const needle = q?.trim().toLowerCase()
-
   let filtered = statusFilter
     ? leads.filter(lead => lead.status === statusFilter)
     : leads
-  // Search over the fields the table shows.
-  if (needle) {
-    filtered = filtered.filter(lead =>
-      [lead.contactName, lead.companyName, lead.contactEmail].some(field =>
-        field?.toLowerCase().includes(needle)
-      )
-    )
+  // The same search as the board.
+  if (q?.trim()) {
+    filtered = filtered.filter(lead => matchesSearch(leadSearchFields(lead), q))
   }
   return filtered
 }

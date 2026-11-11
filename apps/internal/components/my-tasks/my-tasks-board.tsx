@@ -18,7 +18,7 @@ import type { MyTasksReorderPayload } from '@/lib/projects/tasks/use-my-tasks-da
 import type { MyTasksInitialEntry } from './my-tasks-page'
 import { DoneWindowFooter } from '@/app/(dashboard)/projects/_components/done-window-footer'
 import type { TaskContextDetails } from '@/app/(dashboard)/projects/task-card'
-import { clamp } from '@/lib/dnd/kanban'
+import { shownIndexToBucketIndex } from '@/lib/dnd/shown-index'
 import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 
 type TaskCardOptions = {
@@ -40,6 +40,11 @@ type MyTasksBoardProps = {
    */
   canReorder?: boolean
   entries: MyTasksInitialEntry[]
+  /**
+   * Entries the search hides. They stay in `entries` so a drag keeps their
+   * place: a card dropped between two shown cards lands between them.
+   */
+  hiddenTaskIds?: ReadonlySet<string>
   taskLookup: TaskLookup
   renderAssignees: RenderAssigneeFn
   getTaskCardOptions?: (task: TaskWithRelations) => TaskCardOptions | undefined
@@ -74,6 +79,7 @@ export type MyTasksBoardReorderUpdate = {
 export function MyTasksBoard({
   canReorder = true,
   entries,
+  hiddenTaskIds = NO_HIDDEN,
   taskLookup,
   renderAssignees,
   getTaskCardOptions,
@@ -104,8 +110,14 @@ export function MyTasksBoard({
   const boardCanManage = canReorder
 
   const rowsByColumn = useMemo(
-    () => buildRowsByColumn(entries, taskLookup),
-    [entries, taskLookup]
+    () =>
+      buildRowsByColumn(
+        hiddenTaskIds.size
+          ? entries.filter(entry => !hiddenTaskIds.has(entry.taskId))
+          : entries,
+        taskLookup
+      ),
+    [entries, hiddenTaskIds, taskLookup]
   )
   const tasksIn = useCallback(
     (status: MyTaskStatus) =>
@@ -117,6 +129,7 @@ export function MyTasksBoard({
     ({ id: taskId, to }: KanbanDrop<MyTaskStatus>) => {
       const change = produceReorderUpdate({
         entries,
+        hiddenTaskIds,
         taskLookup,
         taskId,
         targetStatus: to.columnId,
@@ -135,7 +148,7 @@ export function MyTasksBoard({
       })
       setTimeout(() => setRecentlyMovedTaskId(null), 300)
     },
-    [entries, onReorder, taskLookup]
+    [entries, hiddenTaskIds, onReorder, taskLookup]
   )
 
   const drag = useKanbanDrag({
@@ -296,16 +309,19 @@ function compareRows(a: TaskRow, b: TaskRow): number {
   return a.task.title.localeCompare(b.task.title)
 }
 
+const NO_HIDDEN: ReadonlySet<string> = new Set()
 const MY_TASK_COLUMN_IDS = MY_TASK_BOARD_COLUMNS.map(column => column.id)
 
 function produceReorderUpdate({
   entries,
+  hiddenTaskIds,
   taskLookup,
   taskId,
   targetStatus,
   targetIndex,
 }: {
   entries: MyTasksInitialEntry[]
+  hiddenTaskIds: ReadonlySet<string>
   taskLookup: TaskLookup
   taskId: string
   targetStatus: MyTaskStatus
@@ -352,8 +368,11 @@ function produceReorderUpdate({
   }
 
   const [movedEntry] = sourceBucket.splice(sourceIndex, 1)
-  const boundedIndex = clamp(targetIndex, 0, targetBucket.length)
-  targetBucket.splice(boundedIndex, 0, movedEntry)
+  targetBucket.splice(
+    shownIndexToBucketIndex(targetBucket, hiddenTaskIds, targetIndex),
+    0,
+    movedEntry
+  )
 
   if (sourceStatus !== targetStatus) {
     meta.task.status = targetStatus

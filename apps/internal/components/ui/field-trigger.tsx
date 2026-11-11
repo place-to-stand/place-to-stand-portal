@@ -76,9 +76,3 @@ export function FieldTrigger({
 
 /** Width of every filter trigger in a FilterBar (stretched in the phone sheet). */
 export const FILTER_TRIGGER_WIDTH = 'w-52 shrink-0'
-
-/**
- * A filter in the page toolbar (PageShell `primaryAction`): 32px, the height
- * of the toolbar's tabs and buttons, so it doesn't make the row taller.
- */
-export const TOOLBAR_FILTER_TRIGGER = 'h-8 py-0'

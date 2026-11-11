@@ -5,7 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation'
 
 import { PageShell } from '@/components/layout/page-shell'
 import { useViewerAccess } from '@/components/providers/viewer-access-provider'
-import { FilterSheetButton } from '@/components/table-toolbar/filter-sheet'
+import { PagePanel } from '@/components/layout/page-panel'
+import { BOARD_PANEL_CLASS } from '@/components/board/board-column'
+import { FilterBar } from '@/components/table-toolbar/filter-bar'
+import { SearchInput } from '@/components/table-toolbar/search-input'
+import { useListParams } from '@/hooks/use-list-params'
+import { matchesSearch } from '@/lib/search/text-match'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 import { Button } from '@pts/ui/button'
 import type { AppUser } from '@/lib/auth/session'
@@ -36,6 +41,7 @@ import {
   filterEntriesToScope,
   useOptimisticBoardScope,
 } from './use-optimistic-board-scope'
+import { HIDE_PARAM } from '@/lib/my-tasks/project-scope'
 import { Plus } from 'lucide-react'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
 import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
@@ -303,6 +309,32 @@ export function MyTasksPage({
     [entries, taskLookup, boardScope]
   )
 
+  // Search narrows what's loaded, in the browser, so typing never reloads
+  // the page. Hidden board cards stay in the drag's working set.
+  const searchParams = useSearchParams()
+  const search = searchParams.get('q')?.trim() || undefined
+  const hiddenTaskIds = useMemo(() => {
+    const hidden = new Set<string>()
+    if (!search) return hidden
+    taskLookup.forEach(({ task, project }, taskId) => {
+      const fields = [
+        task.title,
+        task.lead?.name,
+        project?.name,
+        project ? resolveClientLabel(project) : null,
+      ]
+      if (!matchesSearch(fields, search)) hidden.add(taskId)
+    })
+    return hidden
+  }, [search, taskLookup])
+  const searchedEntries = useMemo(
+    () =>
+      hiddenTaskIds.size
+        ? visibleEntries.filter(entry => !hiddenTaskIds.has(entry.taskId))
+        : visibleEntries,
+    [hiddenTaskIds, visibleEntries]
+  )
+
   // Drop the create seed defaults once the create sheet's param is gone.
   const [prevTaskParam, setPrevTaskParam] = useState(taskParam)
   if (prevTaskParam !== taskParam) {
@@ -388,8 +420,6 @@ export function MyTasksPage({
       clearTimeout(timeout)
     }
   }, [shouldKeepTaskSheetMounted])
-
-  const searchParams = useSearchParams()
 
   // Task selection travels as `?task=` (sheet deep-link convention),
   // alongside the assignee filter this view already carries.
@@ -500,81 +530,103 @@ export function MyTasksPage({
     (boardScope.companyId !== 'all' ? 1 : 0) +
     (boardScope.hiddenProjectTypes.length > 0 ? 1 : 0) +
     (selectedAssigneeId !== user.id ? 1 : 0)
+  const { update, hasActiveFilters, reset } = useListParams({
+    basePath: `/my/tasks/${view}`,
+    resetKeys: [],
+    shallowKeys: ['q'],
+    filters: {
+      q: {},
+      companyId: {},
+      [HIDE_PARAM]: {},
+      // Only admins can look at someone else's board.
+      ...(isAdmin ? { assignee: { defaultValue: user.id } } : {}),
+    },
+  })
 
   return (
     <PageShell
       breadcrumbs={crumbsForNav('/my/tasks/board')}
       tabs={viewTabs}
       activeTab={view}
-      count={{ label: 'tasks', total: totalTaskCount }}
+      count={{
+        label: 'tasks',
+        total: totalTaskCount,
+        filteredTotal: searchedEntries.length,
+      }}
       primaryAction={
-        <div className='flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap'>
-          {/* Below md the pickers move into a slide-out so Create task keeps
-              the row; from md up they sit inline as before. */}
-          <FilterSheetButton className='h-8 md:hidden' activeCount={scopeCount}>
-            {scopePickers}
-          </FilterSheetButton>
-          <div className='max-md:hidden md:contents'>{scopePickers}</div>
-          <Button
-            type='button'
-            size='sm'
-            onClick={() => handleStartCreateTask('ON_DECK')}
-          >
-            <Plus className='h-4 w-4' />
-            Create task
-          </Button>
-        </div>
+        <Button
+          type='button'
+          size='sm'
+          onClick={() => handleStartCreateTask('ON_DECK')}
+        >
+          <Plus className='h-4 w-4' />
+          Create task
+        </Button>
       }
       // The board pins to the viewport (columns scroll internally) and needs
-      // the min-h-0 clamp back; other views flow with the document.
-      contentClassName={
-        view === 'board'
-          ? 'flex h-full min-h-0 flex-col gap-4 sm:gap-6'
-          : 'flex flex-col gap-4 sm:gap-6'
-      }
+      // the min-h-0 clamp back; the calendar does the same.
+      contentClassName='flex h-full min-h-0 flex-col gap-4 sm:gap-6'
     >
-      {view === 'board' ? (
-        // Only truly empty when nothing is hidden either. With older DONE
-        // tasks outside the window the board must still render, or its
-        // "load previous two weeks" control never mounts and those tasks are
-        // unreachable at any window size. A scope change in flight can empty
-        // the board before the new client's tasks arrive, so the empty state
-        // waits for the server there.
-        visibleBoardEntries.length === 0 &&
-        olderDoneCount === 0 &&
-        !isScopePending ? (
-          <ProjectsBoardEmpty message='No tasks assigned to you yet.' />
+      {/* The same panel as a list: filter bar on top, the view below it. */}
+      <PagePanel className={BOARD_PANEL_CLASS}>
+        <FilterBar
+          search={
+            <SearchInput
+              value={search}
+              onCommit={value => update({ q: value })}
+              placeholder='Search tasks…'
+            />
+          }
+          activeFilterCount={scopeCount}
+          showReset={hasActiveFilters}
+          onReset={reset}
+        >
+          {scopePickers}
+        </FilterBar>
+        {view === 'board' ? (
+          // Only truly empty when nothing is hidden either. With older DONE
+          // tasks outside the window the board must still render, or its
+          // "load previous two weeks" control never mounts and those tasks are
+          // unreachable at any window size. A scope change in flight can empty
+          // the board before the new client's tasks arrive, so the empty state
+          // waits for the server there.
+          visibleBoardEntries.length === 0 &&
+          olderDoneCount === 0 &&
+          !isScopePending ? (
+            <ProjectsBoardEmpty message='No tasks assigned to you yet.' />
+          ) : (
+            <MyTasksBoard
+              canReorder={selectedAssigneeId !== 'all'}
+              entries={visibleBoardEntries}
+              hiddenTaskIds={hiddenTaskIds}
+              taskLookup={taskLookup}
+              renderAssignees={renderAssignees}
+              getTaskCardOptions={getTaskCardOptions}
+              onOpenTask={handleOpenTask}
+              onReorder={handleReorder}
+              activeTaskId={resolvedTaskId}
+              scrollStorageKey={boardScrollStorageKey}
+              onCreateTask={handleStartCreateTask}
+              doneWeeks={doneWeeks}
+              olderDoneCount={olderDoneCount}
+              onLoadOlderDone={handleLoadOlderDone}
+              isLoadingOlderDone={isLoadingOlderDone}
+              doneWindowError={doneWindowError}
+            />
+          )
         ) : (
-          <MyTasksBoard
-            canReorder={selectedAssigneeId !== 'all'}
-            entries={visibleBoardEntries}
+          <MyTasksCalendar
+            entries={searchedEntries}
             taskLookup={taskLookup}
             renderAssignees={renderAssignees}
-            getTaskCardOptions={getTaskCardOptions}
             onOpenTask={handleOpenTask}
-            onReorder={handleReorder}
             activeTaskId={resolvedTaskId}
-            scrollStorageKey={boardScrollStorageKey}
-            onCreateTask={handleStartCreateTask}
-            doneWeeks={doneWeeks}
-            olderDoneCount={olderDoneCount}
-            onLoadOlderDone={handleLoadOlderDone}
-            isLoadingOlderDone={isLoadingOlderDone}
-            doneWindowError={doneWindowError}
+            onDueDateChange={handleDueDateChange}
+            onRefresh={handleCalendarRefresh}
+            scrollStorageKey={calendarScrollStorageKey}
           />
-        )
-      ) : (
-        <MyTasksCalendar
-          entries={visibleEntries}
-          taskLookup={taskLookup}
-          renderAssignees={renderAssignees}
-          onOpenTask={handleOpenTask}
-          activeTaskId={resolvedTaskId}
-          onDueDateChange={handleDueDateChange}
-          onRefresh={handleCalendarRefresh}
-          scrollStorageKey={calendarScrollStorageKey}
-        />
-      )}
+        )}
+      </PagePanel>
       {shouldRenderTaskSheet ? (
         <PageSheetEntry entity='task'>
           <TaskSheet

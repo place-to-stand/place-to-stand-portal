@@ -45,6 +45,8 @@ type LeadsBoardProps = {
   /** A Won drag refused for want of a company: open the lead to add one. */
   onWonNeedsCompany?: (lead: LeadRecord) => void
   activeLeadId: string | null
+  /** Shown when no lead is on the board; defaults to "No leads yet." */
+  emptyMessage?: string
 }
 
 export function LeadsBoard({
@@ -56,6 +58,7 @@ export function LeadsBoard({
   onLeadClosedWon,
   onWonNeedsCompany,
   activeLeadId,
+  emptyMessage = 'No leads yet.',
 }: LeadsBoardProps) {
   const { sensors } = useProjectsBoardSensors()
   const { viewportRef: boardViewportRef, handleScroll: handleBoardScroll } =
@@ -207,7 +210,7 @@ export function LeadsBoard({
   return (
     <div className='flex min-h-0 flex-1 flex-col'>
       {totalLeads === 0 ? (
-        <EmptyState message='No leads yet.' />
+        <EmptyState message={emptyMessage} />
       ) : (
         <div className='relative min-h-0 flex-1'>
           <div className='absolute inset-0 overflow-hidden'>
