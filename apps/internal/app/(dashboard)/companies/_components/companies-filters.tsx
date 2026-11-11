@@ -5,7 +5,6 @@ import { FilterSelect } from '@/components/table-toolbar/filter-select'
 import { SearchInput } from '@/components/table-toolbar/search-input'
 import { useListParams } from '@/hooks/use-list-params'
 import { TagBadge } from '@/components/tags/tag-badge'
-import { ClientBadge } from '@/components/companies/client-badge'
 import { useTagOptions } from '@/components/tags/use-tag-options'
 import { tagKey } from '@/lib/tags/names'
 import {
@@ -20,11 +19,9 @@ import {
 } from '@/lib/companies/filters'
 
 // Clients also have their own tab; the filter offers both sides anyway.
-// Client shows as the list's Client badge.
 const TYPE_OPTIONS = COMPANY_TYPE_VALUES.map(value => ({
   value,
   label: COMPANY_TYPE_LABELS[value],
-  badge: value === 'client' ? <ClientBadge /> : undefined,
 }))
 const LEADS_OPTIONS = COMPANY_LEADS_VALUES.map(value => ({
   value,

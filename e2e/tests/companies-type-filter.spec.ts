@@ -10,10 +10,10 @@ test('the company type filter offers client and not a client', async ({
   const options = page.getByRole('option')
   await expect(options).toHaveText(['Client', 'Not a client'])
 
-  // Client shows as the list's Client badge; Not a client is plain text.
+  // Both options are plain text, with no badge.
   await expect(
     page.getByRole('option').locator('[data-slot=badge]')
-  ).toHaveCount(1)
+  ).toHaveCount(0)
 
   // Client: every row carries the Client badge, and the page stays put.
   await page.getByRole('option', { name: 'Client', exact: true }).click()
