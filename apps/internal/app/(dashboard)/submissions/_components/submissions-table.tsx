@@ -428,7 +428,7 @@ export function SubmissionsTable({
                 <SelectAllHead />
                 {sortHead('received', 'Received', 'w-[13%]')}
                 {sortHead('form', 'Form', 'w-[12%]')}
-                {/* copy-check: allow — the visitor's contact details, not a person record */}
+                {/* eslint-disable-next-line pts/copy -- the visitor's contact details, not a person record */}
                 {sortHead('contact', 'Contact', '')}
                 {sortHead('company', 'Company', columnClasses.company)}
                 {sortHead('outcome', 'Outcome', columnClasses.outcome)}

@@ -6,7 +6,7 @@ The action menu behind "…" row buttons and toolbar triggers, on Base UI Menu. 
 
 **Rules**
 
-- Content is left-aligned (`align='start'` default). Never pass `align='start'`; pass an explicit `align` only for a real exception (e.g. `end` at the right edge). (guard: eslint `pts/no-align-start`)
+- Content is left-aligned (`align='start'` default). The `align` prop has no `'start'`; pass an explicit `align` only for a real exception (e.g. `end` at the right edge). (guard: types)
 - Every item carries paired `hover:` and `data-highlighted:` accent classes. (guard: review)
 - Icons in items are 16px `muted-foreground`; destructive items tint their icon too. (guard: review)
 - Put destructive items last, after a separator, and name the object ("Archive"). (guard: review)

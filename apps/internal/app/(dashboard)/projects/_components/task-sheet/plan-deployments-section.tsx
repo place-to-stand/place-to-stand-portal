@@ -106,16 +106,14 @@ function CopyButton({
   return (
     <Tooltip open={copied || hovered} onOpenChange={setHovered}>
       <TooltipTrigger asChild>
-        <Button
+        <RowActionButton
           type='button'
-          variant='ghost'
-          size='icon-sm'
+          tooltip={false}
           onClick={handleCopy}
-          aria-label={label}
+          label={label}
+          icon={copied ? <Check className='text-success' /> : <Icon />}
           className='text-muted-foreground'
-        >
-          {copied ? <Check className='text-success' /> : <Icon />}
-        </Button>
+        />
       </TooltipTrigger>
       <TooltipContent>{copied ? value : label}</TooltipContent>
     </Tooltip>

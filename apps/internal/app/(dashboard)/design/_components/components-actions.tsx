@@ -102,14 +102,13 @@ export function ComponentsButtons() {
                   <td className='px-3 py-3'>
                     <span className='flex items-center gap-2'>
                       {ICON_SIZES.map(size => (
-                        <Button
+                        <RowActionButton
                           key={size}
                           variant={variant}
                           size={size}
-                          aria-label={`Add (${size})`}
-                        >
-                          <Plus />
-                        </Button>
+                          label={`Add (${size})`}
+                          icon={<Plus />}
+                        />
                       ))}
                     </span>
                   </td>

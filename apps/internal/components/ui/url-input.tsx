@@ -1,11 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { SiteMark } from '@/components/ui/site-mark'
 import { cn } from '@/lib/utils'
+import { RowActionButton } from '@pts/ui/row-action-button'
 
 /** A safe https link from what was typed (scheme optional), or null. */
 export function toSafeHref(value: string | null | undefined): string | null {
@@ -58,23 +57,15 @@ export const UrlInput = React.forwardRef<HTMLInputElement, UrlInputProps>(
           {...inputProps}
         />
         {href ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type='button'
-                variant='outline'
-                size='icon'
-                className='text-muted-foreground shrink-0'
-                aria-label={openLabel}
-                onClick={() =>
-                  window.open(href, '_blank', 'noopener,noreferrer')
-                }
-              >
-                <SiteMark href={href} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{openLabel}</TooltipContent>
-          </Tooltip>
+          <RowActionButton
+            type='button'
+            variant='outline'
+            size='icon'
+            className='text-muted-foreground shrink-0'
+            label={openLabel}
+            icon={<SiteMark href={href} />}
+            onClick={() => window.open(href, '_blank', 'noopener,noreferrer')}
+          />
         ) : null}
       </div>
     )

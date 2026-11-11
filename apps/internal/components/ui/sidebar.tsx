@@ -9,7 +9,6 @@ import { useIsMobile } from '@pts/ui/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 import { isEditableTarget, matchesShortcut } from '@/lib/keyboard/match'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
-import { Button } from '@pts/ui/button'
 import { Input } from '@pts/ui/input'
 import { Separator } from '@pts/ui/separator'
 import {
@@ -26,6 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@pts/ui/tooltip'
+import { RowActionButton } from '@pts/ui/row-action-button'
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -270,26 +270,27 @@ function SidebarTrigger({
   className,
   onClick,
   ...props
-}: React.ComponentProps<typeof Button>) {
+}: Omit<
+  React.ComponentProps<typeof RowActionButton>,
+  'label' | 'icon' | 'size'
+>) {
   const { toggleSidebar } = useSidebar()
 
   return (
-    // eslint-disable-next-line pts/icon-button-tooltip -- shadcn sidebar primitive; named by its sr-only text
-    <Button
+    <RowActionButton
       data-sidebar='trigger'
       data-slot='sidebar-trigger'
       variant='ghost'
       size='icon'
+      label='Toggle sidebar'
+      icon={<PanelLeftIcon />}
       className={cn('size-7', className)}
       onClick={event => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
-    >
-      <PanelLeftIcon />
-      <span className='sr-only'>Toggle sidebar</span>
-    </Button>
+    />
   )
 }
 
@@ -622,7 +623,7 @@ function SidebarMenuSkeleton({
   // Random width between 50 to 90% (state initializer keeps the impure call
   // out of render for the React Compiler).
   const [width] = React.useState(
-    () => `${Math.floor(Math.random() * 40) + 50}%` // format-check: allow (CSS width)
+    () => `${Math.floor(Math.random() * 40) + 50}%` // eslint-disable-line pts/copy -- a CSS width, not a figure
   )
 
   return (

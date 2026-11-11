@@ -35,20 +35,3 @@ tester.run('client-boundary', pts.rules['client-boundary'], {
     },
   ],
 })
-
-tester.run('query-layer-purity', pts.rules['query-layer-purity'], {
-  valid: [
-    "import type { AppUser } from '@/lib/auth/session'",
-    "import { htmlToPlainText } from '@/lib/activity/text-diff'",
-  ],
-  invalid: [
-    {
-      code: "import { assertAdmin } from '@/lib/auth/permissions'",
-      errors: 1,
-    },
-    {
-      code: "import { logActivity } from '@/lib/activity/logger'",
-      errors: 1,
-    },
-  ],
-})

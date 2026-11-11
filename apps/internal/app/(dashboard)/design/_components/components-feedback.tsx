@@ -71,13 +71,13 @@ import { Input } from '@pts/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@pts/ui/popover'
 import { Progress } from '@pts/ui/progress'
 import { Skeleton } from '@pts/ui/skeleton'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import { SaveSideEffect } from '@/components/sheets/save-side-effect'
 import { DeepLinkNotFoundNotice } from '@/components/table/deep-link-not-found'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
+import { RowActionButton } from '@pts/ui/row-action-button'
 import {
   HoverCard,
   HoverCardContent,
@@ -332,14 +332,12 @@ export function ComponentsOverlays() {
         className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'
       >
         <Example caption='Tooltip'>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant='outline' size='icon' aria-label='Copy link'>
-                <Copy />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Copy link</TooltipContent>
-          </Tooltip>
+          <RowActionButton
+            variant='outline'
+            size='icon'
+            label='Copy link'
+            icon={<Copy />}
+          />
         </Example>
         <Example caption='DisabledFieldTooltip: hover the field'>
           <DisabledFieldTooltip
@@ -371,13 +369,13 @@ export function ComponentsOverlays() {
         <Example caption='DropdownMenu: record actions'>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
+              <RowActionButton
                 variant='outline'
                 size='icon'
-                aria-label='Company actions'
-              >
-                <MoreHorizontal />
-              </Button>
+                tooltip={false}
+                label='Company actions'
+                icon={<MoreHorizontal />}
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent className='w-52'>
               <DropdownMenuLabel>Acme Industries</DropdownMenuLabel>

@@ -3,43 +3,6 @@
  * says what to write instead. See CLAUDE.md, "Authentication & Permissions".
  */
 
-const REDIRECTING_GUARDS = new Set([
-  'requirePage',
-  'requireUser',
-  'requireCrmUser',
-])
-
-/**
- * API routes answer fetch callers, so they guard with authorizeRoute and
- * get a 401/403 JSON body. The page guards redirect, which a fetch follows
- * to an HTML page. `app/api/auth/**` is exempt: those are browser
- * navigations (OAuth starts and callbacks) where a redirect is right.
- */
-export const apiRouteGuard = {
-  meta: {
-    type: 'problem',
-    docs: { description: 'API routes guard with authorizeRoute' },
-    schema: [],
-    messages: {
-      redirect:
-        "{{name}}() redirects, and an API route answers fetch calls: use `const { user, denied } = await authorizeRoute('<capability>'); if (denied) return denied` from @/lib/auth/guard. (OAuth navigations under app/api/auth may redirect.)",
-    },
-  },
-  create(context) {
-    const file = context.filename.split('\\').join('/')
-    if (!/\/app\/api\/.*\/route\.tsx?$/.test(file)) return {}
-    if (/\/app\/api\/auth\//.test(file)) return {}
-    return {
-      CallExpression(node) {
-        const name = node.callee.type === 'Identifier' && node.callee.name
-        if (name && REDIRECTING_GUARDS.has(name)) {
-          context.report({ node, messageId: 'redirect', data: { name } })
-        }
-      },
-    }
-  },
-}
-
 const SIGNED_IN = new Set(['user', 'actor', 'viewer', 'currentUser', 'me'])
 const SIGNED_IN_ROLE = new Set(['actorRole', 'viewerRole', 'userRole'])
 const ROLES = new Set(['ADMIN', 'SALES', 'CLIENT'])

@@ -7,9 +7,10 @@
  * **Rules** paragraph or bullet list in docs/design-system/components/*.md,
  * and fails on a rule that doesn't end with a guard:
  *
- *   (guard: eslint `pts/no-align-start`)
- *   (guard: scripts/check-badges.mjs)
- *   (guard: eslint `pts/toast-copy`; review)
+ *   (guard: eslint `pts/class-names`)
+ *   (guard: scripts/check-entities.mjs)
+ *   (guard: eslint `pts/copy`; review)
+ *   (guard: types)             ← a component's props make it impossible
  *   (guard: review)            ← can't be automated: allowed, but explicit
  *
  * A `pts/*` rule must exist in packages/eslint-config/plugin.mjs, and a
@@ -77,7 +78,7 @@ for (const { where, text } of rules) {
   const match = text.trim().match(GUARD)
   if (!match) {
     errors.push(
-      `${where}: no guard. End it with (guard: eslint \`rule-id\`), (guard: scripts/<check>.mjs) or (guard: review).`
+      `${where}: no guard. End it with (guard: eslint \`rule-id\`), (guard: types), (guard: scripts/<check>.mjs) or (guard: review).`
     )
     continue
   }
@@ -93,9 +94,9 @@ for (const { where, text } of rules) {
     } else if (/^scripts\/[\w-]+\.mjs$/.test(part)) {
       if (!existsSync(join(root, part)))
         errors.push(`${where}: ${part} doesn't exist`)
-    } else if (part !== 'review') {
+    } else if (part !== 'review' && part !== 'types') {
       errors.push(
-        `${where}: unknown guard "${part}" (use eslint \`id\`, scripts/<check>.mjs or review)`
+        `${where}: unknown guard "${part}" (use eslint \`id\`, types, scripts/<check>.mjs or review)`
       )
     }
   }

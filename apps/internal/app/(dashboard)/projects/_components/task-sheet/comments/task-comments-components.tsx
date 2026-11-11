@@ -24,6 +24,7 @@ import {
 import type { TaskCommentWithAuthor } from '@/lib/types'
 import { getInitials } from '@/lib/users/initials'
 import { cn } from '@/lib/utils'
+import { RowActionButton } from '@pts/ui/row-action-button'
 
 export type TaskCommentComposerProps = {
   value: string
@@ -191,18 +192,16 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button
+                <RowActionButton
                   type='button'
-                  variant='ghost'
-                  size='icon-sm'
+                  tooltip={false}
+                  label='Comment actions'
+                  icon={<MoreHorizontal />}
                   className='text-muted-foreground hover:text-foreground'
                   disabled={disableActions}
-                  aria-label='Comment actions'
                 />
               }
-            >
-              <MoreHorizontal />
-            </DropdownMenuTrigger>
+            />
             <DropdownMenuContent align='end' className='w-36'>
               <DropdownMenuItem onClick={() => onStartEdit(comment)}>
                 <Pencil className='h-3.5 w-3.5' /> Edit

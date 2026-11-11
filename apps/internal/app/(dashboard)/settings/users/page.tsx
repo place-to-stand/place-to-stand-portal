@@ -23,7 +23,7 @@ export default async function UsersSettingsPage({
   }
   if (userParam && UUID_PATTERN.test(userParam)) {
     const personId = await findContactIdForUser(userParam)
-    // eslint-disable-next-line pts/sheet-url-through-builders -- the Users list with the person's sheet open
+    // eslint-disable-next-line pts/sheets -- the Users list with the person's sheet open
     if (personId) next.set('contact', personId)
   }
 

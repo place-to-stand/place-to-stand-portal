@@ -2,8 +2,8 @@
 
 import { ExternalLink } from 'lucide-react'
 
-import { Button } from '@pts/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
+import { RowActionButton } from '@pts/ui/row-action-button'
 
 /**
  * The button on the right of a link field that opens the linked record
@@ -24,16 +24,16 @@ export function OpenRecordButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
+        <RowActionButton
           type='button'
           variant='outline'
           size='icon'
+          tooltip={false}
           className='text-muted-foreground shrink-0'
-          aria-label={`Open ${name}`}
+          label={`Open ${name}`}
+          icon={<ExternalLink className='size-3.5' aria-hidden />}
           onClick={onOpen}
-        >
-          <ExternalLink className='size-3.5' aria-hidden />
-        </Button>
+        />
       </TooltipTrigger>
       <TooltipContent>Open {entityLabel}</TooltipContent>
     </Tooltip>

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   const authFailure = verifyIntakeToken(
     request,
     serverEnv.CONTACT_INTAKE_TOKEN,
-    // copy-check: allow — the website's contact form
+    // eslint-disable-next-line pts/copy -- the website's contact form
     'Contact'
   )
 

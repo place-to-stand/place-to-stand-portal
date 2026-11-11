@@ -101,7 +101,7 @@ const STUCK_KIND_LABELS: Record<
   string
 > = {
   audit: 'Audit',
-  contact: 'Contact', // copy-check: allow — the website's contact form
+  contact: 'Contact', // eslint-disable-line pts/copy -- the website's contact form
   subscribe: 'Subscribe',
 }
 

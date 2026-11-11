@@ -6,7 +6,7 @@ Free-form labels people type onto a record, Shopify-style: "Non-profit", "Produc
 
 **In a list:** `TagList` (`components/tags/tag-list.tsx`) shows the first two tags and "+N" for the rest, so rows keep one height. The list's tag filter is a multi-choice `FilterSelect` ("All tags") whose options are the same badges; it matches records with any of the picked tags. (guard: review)
 
-**Look:** every tag is `TagBadge`: the `secondary` badge, so it reads as a label, not a status, and stays clear of the status and entity colours. Names are stored as typed and shown in the badge's caps. (guard: scripts/check-badges.mjs)
+**Look:** every tag is `TagBadge`: the `secondary` badge, so it reads as a label, not a status, and stays clear of the status and entity colours. Names are stored as typed and shown in the badge's caps. (guard: eslint `pts/class-names`)
 
 **Limits:** 40 characters a tag, 20 tags a record; spaces collapse and commas split. (guard: review)
 
