@@ -1,8 +1,9 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { startTransition, useCallback, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
+import { useStartRefresh } from '@/components/layout/list-refresh'
 import { CommandGroup, CommandSeparator } from '@/components/ui/command'
 import { FILTER_TRIGGER_WIDTH } from '@/components/ui/field-trigger'
 import { SearchableCombobox } from '@/components/ui/searchable-combobox'
@@ -71,6 +72,7 @@ export function ClientSelector({
   disabled = false,
 }: ClientSelectorProps) {
   const router = useRouter()
+  const startRefresh = useStartRefresh()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
@@ -94,7 +96,7 @@ export function ClientSelector({
       patch: MyTasksBoardScopePatch,
       mutate: (params: URLSearchParams) => void
     ) => {
-      startTransition(() => {
+      startRefresh(() => {
         onScopeChange(patch)
         // Unrelated params (sheet stack, assignee) ride along untouched.
         const params = new URLSearchParams(searchParams.toString())
@@ -105,7 +107,7 @@ export function ClientSelector({
         })
       })
     },
-    [onScopeChange, pathname, router, searchParams]
+    [onScopeChange, pathname, router, searchParams, startRefresh]
   )
 
   const handleSelectClient = useCallback(

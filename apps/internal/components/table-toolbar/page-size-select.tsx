@@ -16,6 +16,7 @@ import {
   PAGE_SIZE_OPTIONS,
   parsePageSize,
 } from '@/lib/pagination/page-size'
+import { useStartRefresh } from '@/components/layout/list-refresh'
 import { cn } from '@/lib/utils'
 
 /** URL keys that stop meaning anything once the page length changes. */
@@ -37,6 +38,7 @@ export function PageSizeSelect({ value, className }: PageSizeSelectProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const startRefresh = useStartRefresh()
 
   const handleChange = useCallback(
     (next: string) => {
@@ -54,13 +56,15 @@ export function PageSizeSelect({ value, className }: PageSizeSelectProps) {
         : pathname
 
       // Same URL = no navigation event, so force the server re-render.
-      if (href === current) {
-        router.refresh()
-      } else {
-        router.push(href, { scroll: false })
-      }
+      startRefresh(() => {
+        if (href === current) {
+          router.refresh()
+        } else {
+          router.push(href, { scroll: false })
+        }
+      })
     },
-    [pathname, router, searchParams, value]
+    [pathname, router, searchParams, startRefresh, value]
   )
 
   return (

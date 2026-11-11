@@ -2,6 +2,7 @@
 
 import { Children, type ReactNode } from 'react'
 
+import { RefreshSpinner } from '@/components/layout/list-refresh'
 import { cn } from '@/lib/utils'
 
 import { FilterSheetButton } from './filter-sheet'
@@ -47,7 +48,10 @@ export function FilterBar({
   const hasFilters = Children.toArray(children).length > 0
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-2', className)}>
+    <div
+      data-slot='filter-bar'
+      className={cn('flex flex-wrap items-center gap-2', className)}
+    >
       <div className='flex min-w-0 flex-1 md:contents max-md:[&>*]:w-full'>
         {search}
       </div>
@@ -69,6 +73,10 @@ export function FilterBar({
       {aside ? (
         <div className='ml-auto shrink-0 text-sm max-md:w-full'>{aside}</div>
       ) : null}
+      {/* The panel's top right, while the list reloads. */}
+      <RefreshSpinner
+        className={cn('flex h-9 items-center', !aside && 'ml-auto')}
+      />
     </div>
   )
 }

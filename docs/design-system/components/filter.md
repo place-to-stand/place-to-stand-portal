@@ -10,7 +10,7 @@ The controls in a list's or board's `FilterBar`. One trigger look, three kinds o
 
 **Single choice** is `FilterSelect` (`components/table-toolbar/filter-select.tsx`): the clearable `SearchableCombobox`, however short its list. "All …" is the placeholder; it opens on the picked option, typing narrows the list, and the picked option has a check on the **right** (no row reserves a left gutter for it).
 
-**Multi choice** is `FilterSelect mode='multi'`: the same trigger (the first pick as it shows in the list, then "+N"), over a checkbox popover with Clear / Select all. `defaultValues` is the selection the list starts from (Projects: Onboarding + Active); the × shows away from it.
+**Multi choice** is `FilterSelect mode='multi'`: the same trigger (the first pick as it shows in the list, then "+N"), over a checkbox popover with Clear / Select all. `defaultValues` is the selection the list starts from (Projects: Onboarding + Active); the × shows away from it. Where every option picked means no filter, `allLabel` names it ("All statuses"); where nothing picked lists nothing, `emptyLabel` says so ("No statuses"). Without them, nothing picked is the placeholder and any picks show as picks (every tag picked still leaves out untagged companies).
 
 **Date range** is `DateRangePicker` (`components/ui/date-range-picker.tsx`) at the filter width: the same trigger naming the preset ("This month") or the dates, over presets beside a calendar (Today … Year to date, then All time, which has no date bounds and is `?from=all` on time logs, then Custom, which the calendar selects itself). Pass `isDefault` and `onClear` so it reads muted at its default and clears back to it.
 
@@ -21,3 +21,4 @@ The controls in a list's or board's `FilterBar`. One trigger look, three kinds o
 - Filters sit in one row after the search from `md` up and wrap only when the row runs out; below `md` they move into the Filters sheet, where each stretches to the sheet's width. (guard: review)
 - No labels above filters: the placeholder carries the meaning ("All statuses", "Everyone"). (guard: review)
 - Never a plain `Select` in a filter bar. (guard: eslint `pts/filter-select`)
+- Filters are optimistic: a pick shows in the field at once and the list reloads behind it, with a spinner at the right end of the filter bar (a panel with no filter bar shows it in its top right). Any control that reloads a list's data goes through `useStartRefresh()` (`components/layout/list-refresh.tsx`; `useListParams`, the page and page-size controls already do) so the spinner shows. (guard: review)

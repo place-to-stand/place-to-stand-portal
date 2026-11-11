@@ -25,6 +25,7 @@ import {
   TableRow,
 } from '@pts/ui/table'
 import { toastLink, useToast } from '@/components/ui/use-toast'
+import { useStartRefresh } from '@/components/layout/list-refresh'
 import { useListParams } from '@/hooks/use-list-params'
 import {
   useDeepLinkNotFound,
@@ -244,6 +245,7 @@ export function SubmissionsTable({
     ? 'No submissions match the current filters.'
     : EMPTY_STATE_COPY[mode]
 
+  const startRefresh = useStartRefresh()
   const updateParams = useCallback(
     (
       updates: Record<string, string | undefined>,
@@ -260,11 +262,13 @@ export function SubmissionsTable({
       }
 
       const navigate = options?.replace ? router.replace : router.push
-      navigate(`${basePath}?${next.toString()}`, {
-        scroll: options?.scroll ?? true,
-      })
+      startRefresh(() =>
+        navigate(`${basePath}?${next.toString()}`, {
+          scroll: options?.scroll ?? true,
+        })
+      )
     },
-    [basePath, router, searchParams]
+    [basePath, router, searchParams, startRefresh]
   )
 
   const handleSelect = useCallback(

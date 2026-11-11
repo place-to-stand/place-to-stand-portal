@@ -81,7 +81,11 @@ test('a filter pick shows before the list reloads', async ({ page }) => {
     page.getByRole('combobox', { name: 'All companies' })
   ).toHaveText(/Client/, { timeout: 500 })
   await expect(page).not.toHaveURL(/type=client/)
+  // The panel's spinner shows while the list reloads, then goes.
+  const spinner = page.locator('[data-slot=refresh-spinner]:visible')
+  await expect(spinner).toBeVisible()
   await expect(page).toHaveURL(/type=client/)
+  await expect(spinner).toHaveCount(0)
 })
 
 // A second pick before the first one's page loads keeps both filters.
