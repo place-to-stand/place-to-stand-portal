@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { startTransition, useOptimistic, type ReactNode } from 'react'
 
 import { Button } from '@pts/ui/button'
 import { Badge } from '@pts/ui/badge'
@@ -69,6 +69,22 @@ export function FilterSelect(props: FilterSelectProps) {
   return <SingleFilterSelect {...props} />
 }
 
+/**
+ * Filters are optimistic: a pick shows at once, and the list catches up
+ * behind it. The pick holds while its navigation is pending, then the
+ * control shows what the page actually applied (the prop), so it can never
+ * show a filter the list doesn't use.
+ */
+function useOptimisticValue<T>(value: T) {
+  const [shown, setShown] = useOptimistic(value)
+  const set = (next: T, commit: () => void) =>
+    startTransition(() => {
+      setShown(next)
+      commit()
+    })
+  return [shown, set] as const
+}
+
 /** The option as the list shows it: its badge, or nothing (plain label). */
 function optionBadge(option: FilterOption): ReactNode | undefined {
   if (option.badge) return option.badge
@@ -81,12 +97,15 @@ function optionBadge(option: FilterOption): ReactNode | undefined {
 }
 
 function SingleFilterSelect({
-  value,
-  onChange,
+  value: propValue,
+  onChange: commit,
   placeholder,
   options,
   className,
 }: SingleProps) {
+  const [value, setValue] = useOptimisticValue(propValue)
+  const onChange = (next: string | undefined) =>
+    setValue(next, () => commit(next))
   // Every list filter is a clearable searchable combobox: the placeholder
   // ("All …") when nothing is picked, the choice and an X to clear it back.
   return (
@@ -111,14 +130,16 @@ function SingleFilterSelect({
 }
 
 function MultiFilterSelect({
-  values,
-  onChange,
+  values: propValues,
+  onChange: commit,
   placeholder,
   options,
   defaultValues = [],
   onClear,
   className,
 }: MultiProps) {
+  const [values, setValues] = useOptimisticValue(propValues)
+  const onChange = (next: string[]) => setValues(next, () => commit(next))
   const allSelected = values.length === options.length
   const isDefault =
     values.length === defaultValues.length &&
@@ -207,7 +228,11 @@ function MultiFilterSelect({
       {isDefault ? null : (
         <FieldClearButton
           label={placeholder.toLowerCase()}
-          onClear={() => (onClear ? onClear() : onChange([...defaultValues]))}
+          onClear={() =>
+            // A custom clear says nothing about what it shows, so it waits
+            // for the page; the default clear shows the defaults at once.
+            onClear ? onClear() : onChange([...defaultValues])
+          }
         />
       )}
     </div>

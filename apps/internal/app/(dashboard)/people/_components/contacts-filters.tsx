@@ -83,19 +83,6 @@ export function ContactsFilters({
           options={TYPE_OPTIONS}
         />
       ) : null}
-      <FilterSelect
-        value={companyId}
-        onChange={value => update({ companyId: value })}
-        placeholder='All companies'
-        options={companies.map(company => ({
-          value: company.id,
-          label: company.name,
-          // Billed companies carry the Client badge, as in the pickers.
-          badge: company.isClient ? (
-            <CompanyNameWithState name={company.name} isClient />
-          ) : undefined,
-        }))}
-      />
       {showRoleFilter ? (
         <FilterSelect
           value={role}
@@ -109,6 +96,19 @@ export function ContactsFilters({
           }))}
         />
       ) : null}
+      <FilterSelect
+        value={companyId}
+        onChange={value => update({ companyId: value })}
+        placeholder='All companies'
+        options={companies.map(company => ({
+          value: company.id,
+          label: company.name,
+          // Billed companies carry the Client badge, as in the pickers.
+          badge: company.isClient ? (
+            <CompanyNameWithState name={company.name} isClient />
+          ) : undefined,
+        }))}
+      />
     </FilterBar>
   )
 }
