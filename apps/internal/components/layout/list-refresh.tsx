@@ -9,6 +9,8 @@ import {
 } from 'react'
 import { cn } from '@/lib/utils'
 
+import { FADE_MS, useDelayedPresence } from './use-delayed-presence'
+
 const runNow: TransitionStartFunction = callback => {
   void callback()
 }
@@ -24,13 +26,15 @@ const IsRefreshingContext = createContext(false)
  */
 export function ListRefreshProvider({ children }: { children: ReactNode }) {
   const [isRefreshing, startRefresh] = useTransition()
+  // Spoken on the same timing as the spinner, so quick loads stay quiet.
+  const announced = useDelayedPresence(isRefreshing) === 'in'
   return (
     <StartRefreshContext.Provider value={startRefresh}>
       <IsRefreshingContext.Provider value={isRefreshing}>
         {children}
         {/* One always-there live region, so screen readers hear it. */}
         <span role='status' className='sr-only'>
-          {isRefreshing ? 'Loading…' : ''}
+          {announced ? 'Loading…' : ''}
         </span>
       </IsRefreshingContext.Provider>
     </StartRefreshContext.Provider>
@@ -52,18 +56,27 @@ const BAR_DELAYS_MS = [-450, -300, -150, 0]
 /**
  * The spinner at a panel's top right while its data reloads: four bars
  * rising and falling in turn like a level meter, in a 36px cell the height of
- * the filter fields beside it. Nothing shows otherwise, so it takes no space
- * at rest. The provider's live region speaks for it.
+ * the filter fields beside it. It waits before showing and stays a moment
+ * once shown (`useDelayedPresence`), fading in and out, so quick loads show
+ * nothing and slow ones never blink. Nothing renders otherwise, so it takes
+ * no space at rest. The provider's live region speaks for it.
  */
 export function RefreshSpinner({ className }: { className?: string }) {
   const isRefreshing = useContext(IsRefreshingContext)
-  if (!isRefreshing) return null
+  const phase = useDelayedPresence(isRefreshing)
+  if (phase === 'hidden') return null
   return (
     <span
       aria-hidden
       data-slot='refresh-spinner'
+      // A transition, not an animation, so a load that restarts mid-fade
+      // turns the fade around instead of dropping to nothing first.
+      data-open={phase === 'in' ? '' : undefined}
+      data-closed={phase === 'out' ? '' : undefined}
+      style={{ transitionDuration: `${FADE_MS}ms` }}
       className={cn(
         'text-foreground pointer-events-none flex size-9 shrink-0 items-center justify-center',
+        'opacity-100 transition-opacity ease-out data-closed:opacity-0 starting:opacity-0',
         className
       )}
     >
