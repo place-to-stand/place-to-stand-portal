@@ -32,9 +32,6 @@ import { SheetSection } from '@/components/sheets/sheet-section'
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
   SHEET_SIDE_COLUMN_CLASSES,
 } from '@/components/ui/sheet'
 import { UserAvatar } from '@/components/ui/user-avatar'
@@ -79,7 +76,19 @@ const VARIANTS: Variant[] = [
   },
 ]
 
-const SIZES = [1, 2] as const
+const SIZES = ['narrow', 1, 2] as const
+
+const SIZE_NAMES = {
+  narrow: 'Narrow',
+  1: 'One column',
+  2: 'Two columns',
+} as const
+
+const SIZE_USES = {
+  narrow: 'A short stack of controls: the Filters sheet.',
+  1: 'Person, task, project, hour block, submission, template.',
+  2: 'A form beside a side column: company (Client), lead, invoice.',
+} as const
 
 export function ComponentsSheets() {
   const [variant, setVariant] = useState<Variant | null>(null)
@@ -112,7 +121,7 @@ export function ComponentsSheets() {
 
       <Specimen
         label='Widths'
-        note='SheetContent columns={1} (720px: fits the full rich text toolbar) or columns={2} (1184px from lg), whose side column splits `default` (384px, invoice) or `even` (480px, lead, company, project and submission): named splits only'
+        note='SheetContent columns=narrow (384px: the Filters sheet), columns={1} (720px: fits the full rich text toolbar) or columns={2} (1184px from lg), whose side column splits `default` (384px, invoice) or `even` (480px, lead, company, project and submission): named splits only'
       >
         {SIZES.map(size => (
           <SizeSheet key={size} size={size} />
@@ -128,18 +137,12 @@ function SizeSheet({ size }: { size: (typeof SIZES)[number] }) {
   return (
     <>
       <Button variant='outline' size='sm' onClick={() => setOpen(true)}>
-        {size === 1 ? 'One column' : 'Two columns'}
+        {SIZE_NAMES[size]}
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent columns={size}>
-          <SheetHeader>
-            <SheetTitle>{size === 1 ? 'One column' : 'Two columns'}</SheetTitle>
-            <SheetDescription>
-              {size === 1
-                ? 'Person, task, project, hour block, submission, template.'
-                : 'A form beside a side column: company (Client), lead, invoice.'}
-            </SheetDescription>
-          </SheetHeader>
+        <SheetContent columns={size} hideCloseButton className='gap-0 p-0'>
+          <SheetFormHeader title={SIZE_NAMES[size]} />
+          <p className='text-muted-foreground p-4 text-sm'>{SIZE_USES[size]}</p>
         </SheetContent>
       </Sheet>
     </>

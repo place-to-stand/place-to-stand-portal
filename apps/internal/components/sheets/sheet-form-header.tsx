@@ -3,7 +3,8 @@
 import { type ReactNode } from 'react'
 import { XIcon } from 'lucide-react'
 
-import { SheetClose, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+// Relative: the sheet chrome parts are off limits everywhere else (eslint).
+import { SheetClose, SheetHeader, SheetTitle } from '../ui/sheet'
 import {
   ENTITY_ACCENTS,
   ENTITY_ICONS,
