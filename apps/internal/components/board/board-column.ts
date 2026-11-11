@@ -11,3 +11,9 @@ export const BOARD_COLUMN_CLASS = 'bg-muted/40 rounded-lg border'
  * the viewport (its columns scroll on their own).
  */
 export const BOARD_PANEL_CLASS = 'flex min-h-0 flex-1 flex-col gap-4'
+
+/**
+ * The column a dragged card is in. Drawn inside the column's edge, so the
+ * board needs no padding to keep it from being cut off by its scroller.
+ */
+export const BOARD_COLUMN_DROP_CLASS = 'ring-primary ring-2 ring-inset'

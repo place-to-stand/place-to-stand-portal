@@ -13,7 +13,10 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 
 import { LeadCard } from './lead-card'
-import { BOARD_COLUMN_CLASS } from '@/components/board/board-column'
+import {
+  BOARD_COLUMN_CLASS,
+  BOARD_COLUMN_DROP_CLASS,
+} from '@/components/board/board-column'
 
 type LeadColumnProps = {
   columnId: LeadStatusValue
@@ -60,7 +63,7 @@ export function LeadColumn({
       className={cn(
         BOARD_COLUMN_CLASS,
         'flex min-h-0 w-80 shrink-0 flex-col gap-3 overflow-hidden p-3 transition',
-        isDropTarget && 'ring-primary ring-2'
+        isDropTarget && BOARD_COLUMN_DROP_CLASS
       )}
     >
       <div className='flex items-center justify-between gap-2'>

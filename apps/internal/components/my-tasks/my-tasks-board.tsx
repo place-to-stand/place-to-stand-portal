@@ -171,7 +171,7 @@ export function MyTasksBoard({
           >
             <DndContext sensors={sensors} {...drag.dndContextProps}>
               <div
-                className='grid h-full gap-4 p-1'
+                className='grid h-full gap-4'
                 style={{
                   gridTemplateColumns: `repeat(${MY_TASK_BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
                 }}

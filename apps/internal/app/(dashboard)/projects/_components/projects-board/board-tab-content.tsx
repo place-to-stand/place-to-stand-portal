@@ -22,7 +22,7 @@ import {
   BOARD_COLUMNS,
   type BoardColumnId,
 } from '@/lib/projects/board/board-constants'
-import type { TaskWithRelations } from '@/lib/types'
+import type { DbUser, TaskWithRelations } from '@/lib/types'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 
 export type ProjectsBoardActiveProject = {
@@ -76,6 +76,9 @@ export type BoardTabContentProps = {
   hiddenDoneCount: number
   /** Widens the window one step; instant, no fetch. */
   onWidenDoneWindow: () => void
+  /** The people the board's person filter offers. */
+  boardPeople: DbUser[]
+  currentUserId: string
 }
 
 export function BoardTabContent(props: BoardTabContentProps) {
@@ -98,9 +101,14 @@ export function BoardTabContent(props: BoardTabContentProps) {
     doneWeeks,
     hiddenDoneCount,
     onWidenDoneWindow,
+    boardPeople,
+    currentUserId,
   } = props
 
-  const hasSearch = Boolean(useSearchParams().get('q')?.trim())
+  const searchParams = useSearchParams()
+  const hasSearch = Boolean(
+    searchParams.get('q')?.trim() || searchParams.get('assignee')
+  )
   const { getColumnRef, getScrollHandler } = useColumnScrollPersistence({
     storageKey: 'projects-board',
     columnIds: BOARD_COLUMNS.map(col => col.id),
@@ -137,7 +145,10 @@ export function BoardTabContent(props: BoardTabContentProps) {
       ) : (
         // The same panel as a list: filter bar on top, the board below it.
         <PagePanel className={BOARD_PANEL_CLASS}>
-          <ProjectBoardFilters />
+          <ProjectBoardFilters
+            people={boardPeople}
+            currentUserId={currentUserId}
+          />
           {hasSearch &&
           hiddenDoneCount === 0 &&
           BOARD_COLUMN_IDS.every(id => tasksIn(id).length === 0) ? (
@@ -152,7 +163,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                 >
                   <DndContext sensors={sensors} {...drag.dndContextProps}>
                     <div
-                      className='grid h-full gap-4 p-1'
+                      className='grid h-full gap-4'
                       style={{
                         gridTemplateColumns: `repeat(${BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
                       }}

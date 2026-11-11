@@ -14,7 +14,10 @@ import {
 } from '@/lib/projects/task-status'
 
 import { TaskCard, type TaskContextDetails } from '../task-card'
-import { BOARD_COLUMN_CLASS } from '@/components/board/board-column'
+import {
+  BOARD_COLUMN_CLASS,
+  BOARD_COLUMN_DROP_CLASS,
+} from '@/components/board/board-column'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -83,7 +86,7 @@ export function KanbanColumn({
       className={cn(
         BOARD_COLUMN_CLASS,
         'flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden p-3 transition',
-        isDropTarget && 'ring-primary ring-2'
+        isDropTarget && BOARD_COLUMN_DROP_CLASS
       )}
     >
       <div className='flex items-center justify-between gap-2'>

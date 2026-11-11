@@ -211,12 +211,19 @@ export const useProjectsBoardState = ({
     [fullTasksByColumn]
   )
 
-  // The board's search (`?q=`) narrows the cards in the browser.
-  const search = searchParams.get('q')?.trim() || undefined
+  // The board's search (`?q=`) and person (`?assignee=`) narrow the cards
+  // in the browser.
+  const searchText = searchParams.get('q')?.trim() || undefined
+  const assigneeFilter = searchParams.get('assignee')
+  const filterAssignee =
+    assigneeFilter && assigneeFilter !== 'all' ? assigneeFilter : null
+  const isFiltered = Boolean(searchText || filterAssignee)
   const matchesBoardSearch = useCallback(
     (task: TaskWithRelations) =>
-      matchesSearch([task.title, task.lead?.name], search),
-    [search]
+      (!filterAssignee ||
+        task.assignees.some(item => item.user_id === filterAssignee)) &&
+      matchesSearch([task.title, task.lead?.name], searchText),
+    [filterAssignee, searchText]
   )
 
   const { tasksByColumn, hiddenDoneCount } = useMemo(() => {
@@ -225,7 +232,7 @@ export const useProjectsBoardState = ({
     )
     const hiddenDoneCount = allDoneTasks.length - visibleDone.length
 
-    if (!search && !hiddenDoneCount) {
+    if (!isFiltered && !hiddenDoneCount) {
       return { tasksByColumn: fullTasksByColumn, hiddenDoneCount }
     }
 
@@ -234,7 +241,7 @@ export const useProjectsBoardState = ({
       const inWindow = columnId === 'DONE' ? visibleDone : tasks
       shown.set(
         columnId,
-        search ? inWindow.filter(matchesBoardSearch) : inWindow
+        isFiltered ? inWindow.filter(matchesBoardSearch) : inWindow
       )
     })
 
@@ -244,17 +251,17 @@ export const useProjectsBoardState = ({
     doneWindowStart,
     fullTasksByColumn,
     matchesBoardSearch,
-    search,
+    isFiltered,
   ])
 
   // Drag indexes come from the rendered (windowed) column, so rank math must
   // run against that same list — this also excludes accepted DONE tasks,
   // which the column never renders.
-  // The search narrows it the same way, so a card dropped between two shown
+  // The filters narrow it the same way, so a card dropped between two shown
   // cards ranks between them.
   const filterColumnTasksForDnD = useCallback(
     (columnId: string, tasks: TaskWithRelations[]) => {
-      const searched = search ? tasks.filter(matchesBoardSearch) : tasks
+      const searched = isFiltered ? tasks.filter(matchesBoardSearch) : tasks
       if (columnId !== 'DONE') {
         return searched
       }
@@ -265,7 +272,7 @@ export const useProjectsBoardState = ({
           isCompletedWithinDoneWindow(task.completed_at, doneWindowStart)
       )
     },
-    [doneWindowStart, matchesBoardSearch, search]
+    [doneWindowStart, isFiltered, matchesBoardSearch]
   )
 
   const {

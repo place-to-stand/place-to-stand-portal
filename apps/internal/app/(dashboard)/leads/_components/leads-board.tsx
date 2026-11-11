@@ -220,7 +220,7 @@ export function LeadsBoard({
               onScroll={handleBoardScroll}
             >
               <DndContext sensors={sensors} {...drag.dndContextProps}>
-                <div className='flex h-full w-max gap-4 p-1'>
+                <div className='flex h-full w-max gap-4'>
                   {columns.map(column => {
                     const handleCreateForColumn =
                       canManage && onCreateLead
