@@ -10,6 +10,29 @@ import { CompaniesPagination } from './companies-pagination'
 import { CompaniesTable } from './companies-table'
 import { PagePanel } from '@/components/layout/page-panel'
 
+export type CompaniesMode = 'active' | 'clients' | 'archive'
+
+const MODES = {
+  active: {
+    basePath: '/companies',
+    crumbs: [],
+    countLabel: 'companies',
+    empty: 'No companies yet.',
+  },
+  clients: {
+    basePath: '/companies/clients',
+    crumbs: [{ label: 'Clients' }],
+    countLabel: 'clients',
+    empty: 'No clients yet.',
+  },
+  archive: {
+    basePath: '/companies/archive',
+    crumbs: [{ label: 'Archive' }],
+    countLabel: 'archived companies',
+    empty: 'No archived companies.',
+  },
+} as const
+
 export function CompaniesPageBody({
   mode,
   companies,
@@ -18,7 +41,7 @@ export function CompaniesPageBody({
   pagination,
   params,
 }: {
-  mode: 'active' | 'archive'
+  mode: CompaniesMode
   /** This page's rows, already filtered and sorted. */
   companies: CompanyListItem[]
   totalCount: number
@@ -27,30 +50,22 @@ export function CompaniesPageBody({
   pagination: { currentPage: number; totalPages: number; pageSize: number }
   params: CompaniesListParams
 }) {
+  const view = MODES[mode]
   const filtered = Boolean(
-    params.search || params.type || params.leads || params.tags.length
+    params.search ||
+    (params.type && mode !== 'clients') ||
+    params.leads ||
+    params.tags.length
   )
-  const basePath = mode === 'active' ? '/companies' : '/companies/archive'
+  const basePath = view.basePath
 
   return (
     <PageShell
-      breadcrumbs={
-        mode === 'active'
-          ? params.type === 'client'
-            ? [...crumbsForNav('/companies'), { label: 'Clients' }]
-            : crumbsForNav('/companies')
-          : [...crumbsForNav('/companies'), { label: 'Archive' }]
-      }
+      breadcrumbs={[...crumbsForNav('/companies'), ...view.crumbs]}
       tabs={COMPANIES_TABS}
-      activeTab={
-        mode === 'archive'
-          ? 'archive'
-          : params.type === 'client'
-            ? 'clients'
-            : 'companies'
-      }
+      activeTab={mode === 'active' ? 'companies' : mode}
       count={{
-        label: mode === 'active' ? 'companies' : 'archived companies',
+        label: view.countLabel,
         total: totalCount,
         filteredTotal: filteredCount,
       }}
@@ -72,13 +87,9 @@ export function CompaniesPageBody({
           matchingCount={filteredCount}
           sort={params.sortParam}
           basePath={basePath}
-          mode={mode}
+          mode={mode === 'archive' ? 'archive' : 'active'}
           emptyMessage={
-            filtered
-              ? 'No companies match the current filters.'
-              : mode === 'active'
-                ? 'No companies yet.'
-                : 'No archived companies.'
+            filtered ? 'No companies match the current filters.' : view.empty
           }
         />
         <CompaniesPagination

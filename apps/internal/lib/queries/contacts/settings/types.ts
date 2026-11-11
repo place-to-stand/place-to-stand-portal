@@ -53,6 +53,11 @@ export type ListContactsForSettingsInput = {
   companyId?: string | null
   /** Who can sign in; only honoured for admins. */
   signIn?: SignInFilter | null
+  /**
+   * The page's own set, counted as the unfiltered total: `any` on the Users
+   * page. Only honoured for admins.
+   */
+  listSignIn?: SignInFilter | null
   cursor?: string | null
   direction?: CursorDirection | null
   limit?: number | null

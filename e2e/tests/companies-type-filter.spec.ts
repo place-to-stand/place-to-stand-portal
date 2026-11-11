@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
-// Clients are a tab on Companies, so the type filter only offers
-// "Not a client", and the Clients tab hides it. Read-only.
+// Clients are their own page under Companies, so the type filter only
+// offers "Not a client", and the Clients page hides it. Read-only.
 test('the company type filter offers only not a client', async ({ page }) => {
   await page.goto('/companies')
   await page.getByRole('combobox', { name: 'All companies' }).click()
@@ -23,12 +23,12 @@ test('the company type filter offers only not a client', async ({ page }) => {
   ).toHaveCount(0)
 })
 
-test('the Clients tab lists clients and keeps its tab on reset', async ({
+test('the Clients page lists clients and keeps its page on reset', async ({
   page,
 }) => {
   await page.goto('/companies')
   await page.getByRole('tab', { name: 'Clients', exact: true }).click()
-  await expect(page).toHaveURL(/type=client/)
+  await expect(page).toHaveURL(/\/companies\/clients$/)
 
   // The tab is the filter: no type menu, and every row is a client.
   await expect(
@@ -44,9 +44,9 @@ test('the Clients tab lists clients and keeps its tab on reset', async ({
   }
 
   // Narrowing then resetting stays on Clients.
-  await page.getByRole('combobox', { name: 'Open leads: any' }).click()
+  await page.getByRole('combobox', { name: 'Leads: any' }).click()
   await page.getByRole('option').first().click()
   await page.getByRole('button', { name: /reset/i }).click()
-  await expect(page).toHaveURL(/type=client/)
+  await expect(page).toHaveURL(/\/companies\/clients$/)
   await expect(page).not.toHaveURL(/leads=/)
 })

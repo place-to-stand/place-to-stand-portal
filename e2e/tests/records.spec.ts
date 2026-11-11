@@ -5,7 +5,7 @@ import { FIRST_CELL, expectHealthy } from './helpers'
 test('company sheet: two columns, no tabs, Billing reachable by deep link', async ({
   page,
 }) => {
-  await page.goto('/companies?type=client')
+  await page.goto('/companies/clients')
   await page.locator('tbody tr').first().locator(FIRST_CELL).first().click()
   const sheet = page.getByRole('dialog')
   // Company on the left, Client on the right: no tabs.
@@ -27,7 +27,7 @@ test('company sheet: two columns, no tabs, Billing reachable by deep link', asyn
 test('a client company shows the Client badge and its projects', async ({
   page,
 }) => {
-  await page.goto('/companies?type=client')
+  await page.goto('/companies/clients')
   await expectHealthy(page)
   const row = page.locator('tbody tr').first()
   await expect(

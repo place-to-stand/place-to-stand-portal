@@ -14,6 +14,7 @@ import { UUID_PATTERN } from '@/lib/sheets/entities'
 // blocks and monthly close that change with billing.
 const COMPANY_ROUTES = [
   '/companies',
+  '/companies/clients',
   '/invoices',
   '/companies/archive',
   '/companies/activity',

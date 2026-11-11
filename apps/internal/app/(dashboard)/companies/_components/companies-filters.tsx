@@ -35,16 +35,15 @@ export function CompaniesFilters({
   tags,
   basePath,
 }: {
-  mode: 'active' | 'archive'
+  mode: 'active' | 'clients' | 'archive'
   search?: string
   type?: CompanyTypeFilter
   leads?: CompanyLeadsFilter
   tags: string[]
   basePath: string
 }) {
-  // On the Clients tab, type=client is the tab, not a filter: Reset keeps it.
-  // Archive has no Clients tab, so there type=client stays a filter.
-  const onClientsTab = mode === 'active' && type === 'client'
+  // The Clients page lists clients only, so it has no Client filter.
+  const onClientsTab = mode === 'clients'
   const { update, hasActiveFilters, reset } = useListParams({
     basePath,
     resetKeys: ['page'],
@@ -61,7 +60,7 @@ export function CompaniesFilters({
   // archive also offers tags only archived companies carry). A tag in the link that isn't offered still
   // shows, so it can be cleared.
   const { data: tagOptions = [] } = useTagOptions('company')
-  const archive = basePath.endsWith('/archive')
+  const archive = mode === 'archive'
   const offered = archive
     ? tagOptions
     : tagOptions.filter(option => option.count > 0)

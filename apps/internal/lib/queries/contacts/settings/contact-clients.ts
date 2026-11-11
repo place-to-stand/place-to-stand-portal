@@ -1,7 +1,7 @@
 import { isClientCompany } from '@pts/db/client-state'
 import 'server-only'
 
-import { asc, desc, eq, and, isNull, sql } from 'drizzle-orm'
+import { asc, eq, and, sql } from 'drizzle-orm'
 
 import type { AppUser } from '@/lib/auth/session'
 import { assertCan } from '@/lib/auth/permissions'
@@ -86,34 +86,6 @@ export async function listAllActiveClients(
     id: row.id,
     name: row.name,
     slug: row.slug ?? row.id,
-  }))
-}
-
-/**
- * Every live company for the People company filter: clients first, then the
- * rest, each by name.
- */
-export async function listCompanyFilterOptions(
-  user: AppUser
-): Promise<ClientOption[]> {
-  assertCan(user, 'contacts.manage')
-
-  const rows = await db
-    .select({
-      id: companies.id,
-      name: companies.name,
-      slug: companies.slug,
-      isClient: sql<boolean>`coalesce(${isClientCompany()}, false)`,
-    })
-    .from(companies)
-    .where(isNull(companies.deletedAt))
-    .orderBy(desc(isClientCompany()), asc(companies.name))
-
-  return rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    slug: row.slug ?? row.id,
-    isClient: row.isClient,
   }))
 }
 
