@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 
 import { buildAssigneeItems } from '@/lib/projects/task-sheet/task-sheet-utils'
 import { UNASSIGNED_ASSIGNEE_VALUE } from '@/lib/projects/task-sheet/task-sheet-constants'
@@ -12,13 +12,15 @@ import type {
   TimeLogFormField,
 } from './types'
 
-const FORM_ERROR_IDS = {
-  hours: 'time-log-hours-error',
-  loggedOn: 'time-log-date-error',
-  user: 'time-log-user-error',
-  note: 'time-log-note-error',
-  general: 'time-log-general-error',
-} as const
+// Error ids hang off the form's useId: two time-log forms can be open at
+// once (sheet.md, "Ids come from useId").
+const FORM_ERROR_FIELDS = [
+  'hours',
+  'loggedOn',
+  'user',
+  'note',
+  'general',
+] as const
 
 export type UseTimeLogFormStateOptions = {
   currentUserId: string
@@ -173,15 +175,16 @@ export function useTimeLogFormState(
     }).filter(item => item.value !== UNASSIGNED_ASSIGNEE_VALUE)
   }, [admins, projectMembers, selectedUserId])
 
+  const errorIdBase = useId()
   const fieldErrorIds = useMemo(() => {
-    return {
-      hours: formErrors.hours ? FORM_ERROR_IDS.hours : undefined,
-      loggedOn: formErrors.loggedOn ? FORM_ERROR_IDS.loggedOn : undefined,
-      user: formErrors.user ? FORM_ERROR_IDS.user : undefined,
-      note: formErrors.note ? FORM_ERROR_IDS.note : undefined,
-      general: formErrors.general ? FORM_ERROR_IDS.general : undefined,
-    }
-  }, [formErrors])
+    const ids = Object.fromEntries(
+      FORM_ERROR_FIELDS.map(field => [
+        field,
+        formErrors[field] ? `${errorIdBase}-${field}-error` : undefined,
+      ])
+    )
+    return ids as Record<(typeof FORM_ERROR_FIELDS)[number], string | undefined>
+  }, [formErrors, errorIdBase])
 
   return {
     hoursInput,

@@ -107,7 +107,7 @@ export function CompaniesFilters({
       <FilterSelect
         value={leads}
         onChange={value => update({ leads: value })}
-        placeholder='Leads: any'
+        placeholder='Any leads'
         options={LEADS_OPTIONS}
       />
       <FilterSelect

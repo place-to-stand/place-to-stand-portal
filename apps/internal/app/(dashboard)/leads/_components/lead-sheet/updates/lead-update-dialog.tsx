@@ -1,6 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 
 import { ConfirmDialog } from '@pts/ui/confirm-dialog'
 import { Label } from '@pts/ui/label'
@@ -67,6 +74,7 @@ export function LeadUpdateDialog({
   onSaved,
   closeRequest = 0,
 }: LeadUpdateDialogProps) {
+  const fieldId = useId()
   const isEditing = update !== null
   const [type, setType] = useState<LeadUpdateTypeValue>('PHONE_CALL')
   const [body, setBody] = useState('')
@@ -198,7 +206,7 @@ export function LeadUpdateDialog({
             <div className='min-w-0 space-y-4'>
               <div className='flex gap-3'>
                 <div className='flex-1 space-y-1'>
-                  <Label htmlFor='lead-update-type' className='text-xs'>
+                  <Label htmlFor={`${fieldId}-type`} className='text-xs'>
                     Type
                   </Label>
                   <Select
@@ -208,7 +216,7 @@ export function LeadUpdateDialog({
                       setIsDirty(true)
                     }}
                   >
-                    <SelectTrigger id='lead-update-type'>
+                    <SelectTrigger id={`${fieldId}-type`}>
                       <SelectValue>
                         <LeadUpdateTypeBadge type={type} />
                       </SelectValue>
@@ -223,11 +231,11 @@ export function LeadUpdateDialog({
                   </Select>
                 </div>
                 <div className='flex-1 space-y-1'>
-                  <Label htmlFor='lead-update-date' className='text-xs'>
+                  <Label htmlFor={`${fieldId}-date`} className='text-xs'>
                     Date
                   </Label>
                   <DatePicker
-                    id='lead-update-date'
+                    id={`${fieldId}-date`}
                     max={toCalendarDate(new Date())}
                     value={occurredOn}
                     clearable={false}
@@ -240,11 +248,11 @@ export function LeadUpdateDialog({
               </div>
 
               <div className='space-y-1'>
-                <Label htmlFor='lead-update-body' className='text-xs'>
+                <Label htmlFor={`${fieldId}-body`} className='text-xs'>
                   What happened
                 </Label>
                 <RichTextEditor
-                  id='lead-update-body'
+                  id={`${fieldId}-body`}
                   value={body}
                   onChange={value => {
                     setBody(value)

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { ReactNode, RefObject, UIEventHandler } from 'react'
 import { Tabs } from '@pts/ui/tabs'
-import type { TaskWithRelations } from '@/lib/types'
+import type { DbUser, TaskWithRelations } from '@/lib/types'
 import type { DndContextProps } from '@dnd-kit/core'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
@@ -55,6 +55,9 @@ export type ProjectsBoardTabsProps = {
   doneWeeks: number
   hiddenDoneCount: number
   onWidenDoneWindow: () => void
+  /** The people the board's person filter offers. */
+  boardPeople: DbUser[]
+  currentUserId: string
   doneTasks: TaskWithRelations[]
   acceptedTasks: TaskWithRelations[]
   archivedTasks: TaskWithRelations[]
@@ -107,6 +110,8 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
     doneWeeks,
     hiddenDoneCount,
     onWidenDoneWindow,
+    boardPeople,
+    currentUserId,
     doneTasks,
     acceptedTasks,
     archivedTasks,
@@ -170,6 +175,8 @@ export function ProjectsBoardTabs(props: ProjectsBoardTabsProps) {
         doneWeeks={doneWeeks}
         hiddenDoneCount={hiddenDoneCount}
         onWidenDoneWindow={onWidenDoneWindow}
+        boardPeople={boardPeople}
+        currentUserId={currentUserId}
       />
       <ReviewTabContent
         isActive={initialTab === 'review'}

@@ -133,6 +133,15 @@ export function nextApp({
             'error',
             { entities: sheetParamNames(dir, sheetRegistry) },
           ],
+          // PR #365: the URL holds a stack of sheets; read it through the
+          // stack helpers, give every element id a useId, and let the stack
+          // set each sheet's layer.
+          'pts/sheet-param-through-stack': [
+            'error',
+            { entities: sheetParamNames(dir, sheetRegistry) },
+          ],
+          'pts/use-id-not-fixed-id': 'error',
+          'pts/sheet-layer-z': 'error',
         }),
         'no-restricted-syntax': [
           'error',
@@ -162,6 +171,27 @@ export function nextApp({
       files: ['lib/sheets/**', 'lib/projects/board/board-utils.ts', 'proxy.ts'],
       rules: { 'pts/sheet-url-through-builders': 'off' },
     },
+    ...(sheetRegistry
+      ? [
+          {
+            // The stack's own readers, the proxy's retired-param mapping,
+            // and API routes, whose query params are not sheets.
+            files: ['lib/sheets/**', 'proxy.ts', 'app/api/**'],
+            rules: { 'pts/sheet-param-through-stack': 'off' },
+          },
+          {
+            // Where sheetLayerZ is applied.
+            files: ['components/ui/sheet.tsx'],
+            rules: { 'pts/sheet-layer-z': 'off' },
+          },
+          {
+            // One-of-a-kind pages: the sign-in forms and /design's section
+            // anchors (its page nav links to them).
+            files: ['app/(auth)/**', 'app/(dashboard)/design/**'],
+            rules: { 'pts/use-id-not-fixed-id': 'off' },
+          },
+        ]
+      : []),
     {
       // README → Color exceptions: the sidebar's dev band, previews that
       // mimic Gmail and Google Chat, and the generated share image.

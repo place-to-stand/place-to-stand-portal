@@ -236,6 +236,7 @@ export function SubmissionsTable({
     (searchParams.get('q') ?? '').trim().length > 0 ||
     isFormSubmissionKind(searchParams.get('kind') ?? undefined) ||
     isFormSubmissionStatus(searchParams.get('status') ?? undefined) ||
+    // eslint-disable-next-line pts/sheet-param-through-stack -- the has-contact filter (yes/no), not a person sheet
     isContactFilterValue(searchParams.get('contact') ?? '') ||
     (mode === 'active' && searchParams.get('unacknowledged') === '1')
 

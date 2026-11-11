@@ -58,7 +58,7 @@ test('the Clients page lists clients and keeps its page on reset', async ({
   }
 
   // Narrowing then resetting stays on Clients.
-  await page.getByRole('combobox', { name: 'Leads: any' }).click()
+  await page.getByRole('combobox', { name: 'Any leads' }).click()
   await page.getByRole('option').first().click()
   await page.getByRole('button', { name: /reset/i }).click()
   await expect(page).toHaveURL(/\/companies\/clients$/)
@@ -95,7 +95,7 @@ test('two quick filter picks both apply', async ({ page }) => {
   })
   await page.getByRole('combobox', { name: 'All companies' }).click()
   await page.getByRole('option', { name: 'Client', exact: true }).click()
-  await page.getByRole('combobox', { name: 'Leads: any' }).click()
+  await page.getByRole('combobox', { name: 'Any leads' }).click()
   await page.getByRole('option').first().click()
   await expect(page).toHaveURL(/type=client/)
   await expect(page).toHaveURL(/leads=/)

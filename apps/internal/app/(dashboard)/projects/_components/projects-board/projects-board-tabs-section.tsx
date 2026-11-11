@@ -28,6 +28,8 @@ type BoardProps = Pick<
   | 'doneWeeks'
   | 'hiddenDoneCount'
   | 'onWidenDoneWindow'
+  | 'boardPeople'
+  | 'currentUserId'
 >
 
 type DragProps = Pick<

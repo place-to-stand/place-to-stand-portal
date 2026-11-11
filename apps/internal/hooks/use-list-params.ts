@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+import { writeShallowUrl } from '@/lib/sheets/shallow-url'
+
 /**
  * Filter/search key declaration (PRD 004 §03, R2). Filters are declared
  * SEPARATELY from sort — `sort` must never be listed here, so sort-only
@@ -26,12 +28,19 @@ type UseListParamsOptions = {
   resetKeys: readonly string[]
   /** Filter/search keys only — never sort (R2). */
   filters?: Record<string, ListFilterConfig>
+  /**
+   * Keys the page filters in the browser from data it already holds (a
+   * board's search). A change to these alone writes the URL without asking
+   * the server for the page again.
+   */
+  shallowKeys?: readonly string[]
 }
 
 export function useListParams({
   basePath,
   resetKeys,
   filters,
+  shallowKeys,
 }: UseListParamsOptions) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -65,10 +74,25 @@ export function useListParams({
       }
 
       const queryString = next.toString()
+      const url = queryString ? `${basePath}?${queryString}` : basePath
+      const current = new URLSearchParams(base)
+      const changed = Object.keys(updates).filter(
+        key => (current.get(key) ?? undefined) !== (updates[key] || undefined)
+      )
+      if (
+        shallowKeys &&
+        changed.every(key => shallowKeys.includes(key)) &&
+        window.location.pathname === basePath
+      ) {
+        // A shallow write changes the URL at once: nothing is pending.
+        pending.current = null
+        writeShallowUrl(url, 'push')
+        return
+      }
       pending.current = { base: committed, query: queryString }
-      router.push(queryString ? `${basePath}?${queryString}` : basePath)
+      router.push(url)
     },
-    [basePath, resetKeys, router, committed]
+    [basePath, resetKeys, router, committed, shallowKeys]
   )
 
   const getParam = useCallback(

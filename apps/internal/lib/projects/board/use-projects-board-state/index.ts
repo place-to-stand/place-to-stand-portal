@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
+import { matchesSearch } from '@/lib/search/text-match'
+
 import { isStackItemClaimed, parseSheetStack } from '@/lib/sheets/stack'
 import type { TaskWithRelations } from '@/lib/types'
 import {
@@ -209,40 +211,68 @@ export const useProjectsBoardState = ({
     [fullTasksByColumn]
   )
 
+  // The board's search (`?q=`) and person (`?assignee=`) narrow the cards
+  // in the browser.
+  const searchText = searchParams.get('q')?.trim() || undefined
+  const assigneeFilter = searchParams.get('assignee')
+  const filterAssignee =
+    assigneeFilter && assigneeFilter !== 'all' ? assigneeFilter : null
+  const isFiltered = Boolean(searchText || filterAssignee)
+  const matchesBoardSearch = useCallback(
+    (task: TaskWithRelations) =>
+      (!filterAssignee ||
+        task.assignees.some(item => item.user_id === filterAssignee)) &&
+      matchesSearch([task.title, task.lead?.name], searchText),
+    [filterAssignee, searchText]
+  )
+
   const { tasksByColumn, hiddenDoneCount } = useMemo(() => {
     const visibleDone = allDoneTasks.filter(task =>
       isCompletedWithinDoneWindow(task.completed_at, doneWindowStart)
     )
+    const hiddenDoneCount = allDoneTasks.length - visibleDone.length
 
-    if (visibleDone.length === allDoneTasks.length) {
-      return { tasksByColumn: fullTasksByColumn, hiddenDoneCount: 0 }
+    if (!isFiltered && !hiddenDoneCount) {
+      return { tasksByColumn: fullTasksByColumn, hiddenDoneCount }
     }
 
-    const windowed = new Map(fullTasksByColumn)
-    windowed.set('DONE', visibleDone)
+    const shown = new Map<string, TaskWithRelations[]>()
+    fullTasksByColumn.forEach((tasks, columnId) => {
+      const inWindow = columnId === 'DONE' ? visibleDone : tasks
+      shown.set(
+        columnId,
+        isFiltered ? inWindow.filter(matchesBoardSearch) : inWindow
+      )
+    })
 
-    return {
-      tasksByColumn: windowed,
-      hiddenDoneCount: allDoneTasks.length - visibleDone.length,
-    }
-  }, [allDoneTasks, doneWindowStart, fullTasksByColumn])
+    return { tasksByColumn: shown, hiddenDoneCount }
+  }, [
+    allDoneTasks,
+    doneWindowStart,
+    fullTasksByColumn,
+    matchesBoardSearch,
+    isFiltered,
+  ])
 
   // Drag indexes come from the rendered (windowed) column, so rank math must
   // run against that same list — this also excludes accepted DONE tasks,
   // which the column never renders.
+  // The filters narrow it the same way, so a card dropped between two shown
+  // cards ranks between them.
   const filterColumnTasksForDnD = useCallback(
     (columnId: string, tasks: TaskWithRelations[]) => {
+      const searched = isFiltered ? tasks.filter(matchesBoardSearch) : tasks
       if (columnId !== 'DONE') {
-        return tasks
+        return searched
       }
 
-      return tasks.filter(
+      return searched.filter(
         task =>
           !task.accepted_at &&
           isCompletedWithinDoneWindow(task.completed_at, doneWindowStart)
       )
     },
-    [doneWindowStart]
+    [doneWindowStart, isFiltered, matchesBoardSearch]
   )
 
   const {
