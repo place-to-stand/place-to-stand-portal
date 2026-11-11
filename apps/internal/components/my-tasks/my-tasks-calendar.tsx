@@ -167,7 +167,7 @@ export function MyTasksCalendar({
       <div className='relative min-h-0 flex-1'>
         <div
           ref={containerRef}
-          className='bg-card absolute inset-0 overflow-y-auto rounded-xl border'
+          className='absolute inset-0 overflow-y-auto rounded-lg border'
           onScroll={handleContainerScroll}
         >
           <div className='flex min-h-0 flex-1 flex-col'>

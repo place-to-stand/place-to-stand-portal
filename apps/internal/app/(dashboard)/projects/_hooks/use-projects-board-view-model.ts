@@ -141,6 +141,8 @@ export function useProjectsBoardViewModel({
       doneWeeks: boardState.doneWeeks,
       hiddenDoneCount: boardState.hiddenDoneCount,
       onWidenDoneWindow: boardState.widenDoneWindow,
+      boardPeople: props.admins,
+      currentUserId: props.currentUserId,
     },
     drag: {
       sensors,

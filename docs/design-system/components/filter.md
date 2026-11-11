@@ -1,6 +1,6 @@
 # Filter
 
-The controls in a list's `FilterBar` (and My tasks' and Leads' toolbar pickers). One trigger look, three kinds of popover.
+The controls in a list's or board's `FilterBar`. One trigger look, three kinds of popover.
 
 **The trigger is `FieldTrigger`** (`apps/internal/components/ui/field-trigger.tsx`), the same field every picker uses: outline, `h-9`, `w-52` (`FILTER_TRIGGER_WIDTH`), the label, then the up-down chevron (`ChevronsUpDown` at 50%). Never a `ChevronDown`, never a hand-built button.
 
