@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Search } from 'lucide-react'
 
 import { Input } from '@pts/ui/input'
@@ -30,37 +30,61 @@ export function SearchInput({
 }: SearchInputProps) {
   const committed = value ?? ''
   const [draft, setDraft] = useState(committed)
+  // Values this box sent whose navigation hasn't finished, oldest first.
+  // Each one lands after the user may have typed more, so a `value` change
+  // that matches one is our own echo and must not reset the draft.
+  const [inFlight, setInFlight] = useState<string[]>([])
+  // Pending while any navigation this box started is still loading.
+  const [isPending, startTransition] = useTransition()
+  // What the URL will hold once every commit lands.
+  const target = inFlight.at(-1) ?? committed
 
-  // Adopt external changes (back/forward navigation, clears) using the
-  // adjust-state-during-render pattern.
+  // Adopt external changes (back/forward navigation, Reset) using the
+  // adjust-state-during-render pattern. An echo of our own send only drops
+  // that entry (and older ones) from the queue and keeps the draft.
   const [prevCommitted, setPrevCommitted] = useState(committed)
   if (prevCommitted !== committed) {
     setPrevCommitted(committed)
-    setDraft(committed)
+    const echo = inFlight.lastIndexOf(committed)
+    if (echo === -1) {
+      setInFlight([])
+      setDraft(committed)
+    } else {
+      setInFlight(inFlight.slice(echo + 1))
+    }
+  } else if (!isPending && inFlight.length > 0) {
+    // Every navigation settled without bringing the value back (another
+    // filter change replaced it, or it failed): forget it, so `target`
+    // falls back to the URL and the draft gets sent again.
+    setInFlight([])
+  }
+
+  const send = useCallback(
+    (next: string) => {
+      setInFlight(queue => [...queue, next])
+      startTransition(() => onCommit(next || undefined))
+    },
+    [onCommit]
+  )
+
+  const commit = (next: string) => {
+    if (next !== target) send(next)
   }
 
   useEffect(() => {
     const trimmed = draft.trim()
-    if (trimmed === committed) return
+    if (trimmed === target) return
 
-    const timeout = setTimeout(() => {
-      onCommit(trimmed || undefined)
-    }, DEBOUNCE_MS)
+    const timeout = setTimeout(() => send(trimmed), DEBOUNCE_MS)
 
     return () => clearTimeout(timeout)
-  }, [draft, committed, onCommit])
+  }, [draft, target, send])
 
-  const flush = () => {
-    const trimmed = draft.trim()
-    if (trimmed === committed) return
-    onCommit(trimmed || undefined)
-  }
+  const flush = () => commit(draft.trim())
 
   const clear = () => {
     setDraft('')
-    if (committed) {
-      onCommit(undefined)
-    }
+    commit('')
   }
 
   return (
