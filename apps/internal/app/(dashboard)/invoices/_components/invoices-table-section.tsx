@@ -7,7 +7,6 @@ import { Check, Copy, ExternalLink, Loader2, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
-import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
@@ -206,8 +205,9 @@ export function InvoicesTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                // Wide enough for the icon, Draft and Net 30 side by side.
-                className='w-[16%]'
+                // Wide enough for the icon and INV-0000 (or Draft) at the
+                // 60rem floor, with room for a fifth digit.
+                className='w-[12%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -321,9 +321,6 @@ export function InvoicesTableSection({
                         ) : (
                           <Badge variant='secondary'>Draft</Badge>
                         )}
-                        {invoice.billing_type === 'net_30' ? (
-                          <BillingTypeBadge billingType='net_30' />
-                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell>
