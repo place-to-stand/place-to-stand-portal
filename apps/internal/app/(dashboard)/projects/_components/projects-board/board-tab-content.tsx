@@ -7,6 +7,7 @@ import { TabsContent } from '@pts/ui/tabs'
 import {
   BOARD_GRID_CLASS,
   BOARD_PANEL_CLASS,
+  boardGridStyle,
 } from '@/components/board/board-column'
 import { PagePanel } from '@/components/layout/page-panel'
 import { DoneWindowFooter } from '../done-window-footer'
@@ -167,9 +168,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                   <DndContext sensors={sensors} {...drag.dndContextProps}>
                     <div
                       className={BOARD_GRID_CLASS}
-                      style={{
-                        gridTemplateColumns: `repeat(${BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
-                      }}
+                      style={boardGridStyle(BOARD_COLUMNS.length)}
                     >
                       {BOARD_COLUMNS.map(column => {
                         const columnTasks = drag.itemsFor(column.id)

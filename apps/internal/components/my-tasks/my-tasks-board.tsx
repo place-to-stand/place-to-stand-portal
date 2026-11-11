@@ -19,7 +19,10 @@ import type { MyTasksInitialEntry } from './my-tasks-page'
 import { DoneWindowFooter } from '@/app/(dashboard)/projects/_components/done-window-footer'
 import type { TaskContextDetails } from '@/app/(dashboard)/projects/task-card'
 import { shownIndexToBucketIndex } from '@/lib/dnd/shown-index'
-import { BOARD_GRID_CLASS } from '@/components/board/board-column'
+import {
+  BOARD_GRID_CLASS,
+  boardGridStyle,
+} from '@/components/board/board-column'
 import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 
 type TaskCardOptions = {
@@ -173,9 +176,7 @@ export function MyTasksBoard({
             <DndContext sensors={sensors} {...drag.dndContextProps}>
               <div
                 className={BOARD_GRID_CLASS}
-                style={{
-                  gridTemplateColumns: `repeat(${MY_TASK_BOARD_COLUMNS.length}, minmax(20rem, 1fr))`,
-                }}
+                style={boardGridStyle(MY_TASK_BOARD_COLUMNS.length)}
               >
                 {MY_TASK_BOARD_COLUMNS.map(column => {
                   const rows = rowsByColumn.get(column.id) ?? []
