@@ -4,8 +4,10 @@ import { BADGE_TINTS, type BadgeTint } from './badge-tints'
  * The one map of status colours, shared by the internal and client portals so
  * a record reads the same in both. Labels stay with each app, because the
  * client portal words some states its own way ("Due").
+ *
+ * Each task status names its hue once (`TASK_STATUS_HUES`); its badge tint
+ * and its board lane (`BOARD_LANE_TINTS`) both come from that hue.
  */
-/** Each task status's hue: its badge and its board lane share it. */
 export const TASK_STATUS_HUES = {
   ON_DECK: 'sky',
   IN_PROGRESS: 'emerald',
