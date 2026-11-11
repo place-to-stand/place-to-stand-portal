@@ -7,7 +7,6 @@ import { Check, Copy, ExternalLink, Loader2, Mail } from 'lucide-react'
 
 import { Badge } from '@pts/ui/badge'
 import { Button } from '@pts/ui/button'
-import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { EmptyState } from '@pts/ui/empty-state'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import {
@@ -206,8 +205,9 @@ export function InvoicesTableSection({
                 sort={sort}
                 defaultSort='created:desc'
                 onSortChange={next => update({ sort: next })}
-                // Wide enough for the icon, Draft and Net 30 side by side.
-                className='w-[16%]'
+                // Wide enough for the icon and INV-0000 (or Draft) at the
+                // 60rem floor, with room for a fifth digit.
+                className='w-[12%]'
               >
                 Invoice #
               </SortableTableHead>
@@ -223,7 +223,7 @@ export function InvoicesTableSection({
               </SortableTableHead>
               <TableHead className='w-[8%]'>Status</TableHead>
               <TableHead className='w-[10%] text-right'>Total</TableHead>
-              <TableHead className='w-[7%]'>Hours</TableHead>
+              <TableHead className='w-[9%] pl-4'>Hours</TableHead>
               <SortableTableHead
                 field='created'
                 sort={sort}
@@ -321,9 +321,6 @@ export function InvoicesTableSection({
                         ) : (
                           <Badge variant='secondary'>Draft</Badge>
                         )}
-                        {invoice.billing_type === 'net_30' ? (
-                          <BillingTypeBadge billingType='net_30' />
-                        ) : null}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -364,7 +361,7 @@ export function InvoicesTableSection({
                     <TableCell className='text-right text-sm tabular-nums'>
                       {formatCurrency(invoice.total)}
                     </TableCell>
-                    <TableCell label='Hours'>
+                    <TableCell label='Hours' className='md:pl-4'>
                       <InvoiceHourBlocksCell
                         hourBlocks={invoice.hour_blocks ?? []}
                       />

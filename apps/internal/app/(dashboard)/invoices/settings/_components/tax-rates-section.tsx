@@ -233,6 +233,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                 sort={sort}
                 defaultSort='label:asc'
                 onSortChange={setSort}
+                // p-0 plus the button's px-2: pl-2 lines the label up with
+                // the cells' md:pl-4, clear of the right-aligned Rate.
+                className='pl-2'
               >
                 Label
               </SortableTableHead>
@@ -256,7 +259,9 @@ export function TaxRatesSection({ initialRates }: TaxRatesSectionProps) {
                   <TableCell label='Rate' className='text-right tabular-nums'>
                     {formatPercent(rate.rate)}
                   </TableCell>
-                  <TableCell className='truncate'>{rate.label}</TableCell>
+                  <TableCell className='truncate md:pl-4'>
+                    {rate.label}
+                  </TableCell>
                   <TableCell label='Active'>
                     <Switch
                       size='sm'
