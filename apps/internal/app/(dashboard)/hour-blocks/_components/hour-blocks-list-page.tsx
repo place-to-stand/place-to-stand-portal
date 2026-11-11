@@ -17,7 +17,7 @@ import { HOUR_BLOCKS_TABS } from '../_lib/tabs'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
-import { firstSheetParam } from '@/lib/sheets/stack'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'archive'
 
@@ -83,7 +83,7 @@ export async function HourBlocksListPage({
   // moves to the other tab when the block was archived or restored.
   const { record: deepLinkedHourBlock, notFound: hourBlockNotFound } =
     await resolveSheetDeepLink({
-      idParam: firstSheetParam('hour-block', params['hour-block']),
+      idParam: pageSheetParam('hour-block', params),
       fetchById: id => getHourBlockWithClientById(currentUser, id),
       tab: view.tab,
       isArchived: block => block.deleted_at !== null,

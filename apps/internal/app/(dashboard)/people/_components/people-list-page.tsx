@@ -19,7 +19,7 @@ import { roleCan } from '@/lib/auth/capabilities'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
-import { firstSheetParam } from '@/lib/sheets/stack'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'archive'
 
@@ -69,10 +69,9 @@ export async function PeopleListPage({
   // Share links: `?contact=<id>` opens the edit sheet even when the row sits
   // on another page (redirects to the other tab when it was archived or
   // restored).
-  const contactParam = params.contact
   const deepLink = await resolveContactDeepLink(
     user,
-    firstSheetParam('contact', contactParam),
+    pageSheetParam('contact', params),
     view.tab
   )
 

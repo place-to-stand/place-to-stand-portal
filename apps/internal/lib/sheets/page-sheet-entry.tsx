@@ -10,7 +10,8 @@ import { useSheetParams } from './use-sheet-params'
 
 /**
  * Wraps a sheet a page renders itself (an entity's list page) as its stack
- * entry: the entity's first param, when this page claims it.
+ * entry: the bottom of the stack, when it is the entity's and this page
+ * claims it.
  */
 export function PageSheetEntry({
   entity,
@@ -21,8 +22,11 @@ export function PageSheetEntry({
 }) {
   const pathname = usePathname()
   const { stack } = useSheetParams()
-  const first = stack.find(item => item.entity === entity)
-  const item = first && isStackItemClaimed(first, pathname) ? first : null
+  const bottom = stack[0]
+  const item =
+    bottom?.entity === entity && isStackItemClaimed(bottom, pathname)
+      ? bottom
+      : null
   return (
     <SheetStackEntry
       entity={entity}

@@ -12,7 +12,7 @@ import { SUBMISSIONS_TABS } from '../_lib/tabs'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
-import { firstSheetParam } from '@/lib/sheets/stack'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'archive'
 
@@ -60,7 +60,7 @@ export async function SubmissionsListPage({
   // to the other tab when the row was archived or restored).
   const deepLink = await resolveSubmissionDeepLink(
     currentUser,
-    firstSheetParam('submission', params.submission),
+    pageSheetParam('submission', params),
     view.tab
   )
 

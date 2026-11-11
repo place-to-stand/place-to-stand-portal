@@ -42,7 +42,7 @@ export function useSaveAndStay(
   open: boolean
 ) {
   const router = useRouter()
-  const { swap } = useSheetParams()
+  const { open: openSheet, swap } = useSheetParams()
   // The create sheet's own param (`new`, `copy-<id>`), which the swap replaces.
   const ownId = useOwnCreateSheetId(entity)
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -73,10 +73,14 @@ export function useSaveAndStay(
       setPendingId(id)
       if (ownId) {
         swap(ownId, id)
+      } else {
+        // A create sheet with no param of its own (page state): open the
+        // record's sheet, as the swap would have.
+        openSheet(entity, id)
       }
       router.refresh()
     },
-    [entity, ownId, recordId, router, swap]
+    [entity, openSheet, ownId, recordId, router, swap]
   )
 
   return {

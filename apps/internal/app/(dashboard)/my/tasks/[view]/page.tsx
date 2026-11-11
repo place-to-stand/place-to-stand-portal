@@ -29,7 +29,7 @@ import {
 } from '@/lib/projects/tasks/done-window'
 import { roleCan } from '@/lib/auth/capabilities'
 import { UUID_PATTERN } from '@pts/db/uuid'
-import { firstSheetParam } from '@/lib/sheets/stack'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export const metadata: Metadata = {
   title: 'My tasks',
@@ -54,8 +54,7 @@ export default async function MyTasksViewRoute({
   const resolvedParams = await params
   const resolvedSearchParams = (await searchParams) as PageSearchParams
   const viewParam = resolvedParams.view
-  const activeTaskId =
-    firstSheetParam('task', resolvedSearchParams.task) ?? null
+  const activeTaskId = pageSheetParam('task', resolvedSearchParams) ?? null
 
   if (!isMyTasksView(viewParam)) {
     // Carry the whole query string across the redirect — the sheet stack and

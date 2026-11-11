@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
-  firstSheetParam,
+  isStackItemClaimed,
+  pageSheetParam,
   openTarget,
   parseSheetStack,
   removeSheetParams,
@@ -100,9 +101,22 @@ test('the first sheet of an entity is set in place', () => {
   assert.equal(query.toString(), `company=${H}&task=${B}`)
 })
 
-test('servers read the first valid param', () => {
-  assert.equal(firstSheetParam('invoice', ['bogus', A]), A)
-  assert.equal(firstSheetParam('invoice', undefined), undefined)
+test('servers read the bottom sheet, when it is the page entity', () => {
+  assert.equal(pageSheetParam('invoice', { invoice: ['bogus', A] }), A)
+  assert.equal(pageSheetParam('invoice', {}), undefined)
+  assert.equal(
+    pageSheetParam('invoice', { page: '2', invoice: A, 'hour-block': B }),
+    A
+  )
+  // Above another sheet, the SheetHost shows it, not the page.
+  assert.equal(pageSheetParam('lead', { company: A, lead: B }), undefined)
+})
+
+test('a page renders only the bottom sheet', () => {
+  const stack = parseSheetStack(params(`invoice=${A}&hour-block=${B}`))
+  assert.equal(isStackItemClaimed(stack[0]!, '/invoices'), true)
+  const above = parseSheetStack(params(`company=${H}&invoice=${A}`))
+  assert.equal(isStackItemClaimed(above[1]!, '/invoices'), false)
 })
 
 test('a record never ends up open twice', () => {

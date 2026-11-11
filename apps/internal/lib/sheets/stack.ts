@@ -23,11 +23,7 @@ import {
 export type SheetStackItem = {
   entity: SheetEntityKey
   value: string
-  /**
-   * How many sheets of this entity sit below it (0 for the first). A page
-   * that renders its own sheet for an entity shows the first one only; the
-   * global SheetHost shows the rest.
-   */
+  /** How many sheets of this entity sit below it (0 for the first). */
   ordinal: number
   /**
    * Names this sheet among the open ones: `entity:value:n`, where n counts
@@ -36,6 +32,8 @@ export type SheetStackItem = {
   id: string
   /** Its param's position among the URL's params. */
   paramIndex: number
+  /** Its place in the stack, 0 for the bottom sheet. */
+  position: number
 }
 
 const itemId = (entity: SheetEntityKey, value: string, n: number) =>
@@ -45,16 +43,24 @@ const itemId = (entity: SheetEntityKey, value: string, n: number) =>
 export const isRecordValue = (value: string) => UUID_PATTERN.test(value)
 
 /**
- * The first param of an entity that names a sheet, or undefined: what a
- * page that renders its own sheet shows. Server pages read their deep link
- * with it so they agree with the client's stack.
+ * The sheet a page that renders its own sheet for `entity` shows: the bottom
+ * of the stack, when it is that entity's, else undefined. Server pages read
+ * their deep link with it so they agree with the client (`get`). Keys keep
+ * the URL's order of first appearance, which is enough to find the bottom.
  */
-export function firstSheetParam(
+export function pageSheetParam(
   entity: SheetEntityKey,
-  raw: string | string[] | undefined
+  searchParams: Record<string, string | string[] | undefined>
 ) {
-  const values = Array.isArray(raw) ? raw : raw ? [raw] : []
-  return values.find(value => isValidSheetParamValue(value, entity))
+  for (const [key, raw] of Object.entries(searchParams)) {
+    if (!isSheetEntityKey(key)) continue
+    const values = Array.isArray(raw) ? raw : raw ? [raw] : []
+    const value = values.find(entry => isValidSheetParamValue(entry, key))
+    if (value) {
+      return key === entity ? value : undefined
+    }
+  }
+  return undefined
 }
 
 /** Entity params in the URL, in stack order, each record once. */
@@ -84,17 +90,23 @@ export function parseSheetStack(
       ordinal: items.filter(item => item.entity === entity).length,
       id: itemId(entity, value, same),
       paramIndex,
+      position: items.length,
     })
   }
   return items
 }
 
-/** True when the page renders this sheet itself (see `claimsPathname`). */
+/**
+ * True when the page renders this sheet itself (see `claimsPathname`): only
+ * the bottom sheet. Above another sheet the SheetHost shows it, so opening
+ * one never sends the page to the server (which may redirect to another
+ * tab and drop the stack), and a task added from a lead stays the lead's.
+ */
 export const isStackItemClaimed = (
-  item: Pick<SheetStackItem, 'entity' | 'value' | 'ordinal'>,
+  item: Pick<SheetStackItem, 'entity' | 'value' | 'position'>,
   pathname: string
 ) =>
-  item.ordinal === 0 && isSheetEntityClaimed(item.entity, pathname, item.value)
+  item.position === 0 && isSheetEntityClaimed(item.entity, pathname, item.value)
 
 const rewrite = (
   params: URLSearchParams,
@@ -164,7 +176,7 @@ export function swapSheetParam(
 }
 
 /**
- * Sets the entity's first sheet (the one a page renders itself) to `value`
+ * Sets the entity's first sheet (a page's own, when it is the bottom) to `value`
  * in place, appends it when there is none, or removes it for null. Other
  * sheets of the entity stay where they are.
  */

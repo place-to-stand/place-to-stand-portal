@@ -30,6 +30,8 @@ import { CommandPaletteRecords } from '@/components/layout/command-palette-recor
 import { useKeyboardShortcuts } from '@/components/keyboard/keyboard-shortcuts-dialog'
 import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { matchesShortcut } from '@/lib/keyboard/match'
+import { confirmDiscardAll } from '@/lib/sheets/discard-guards'
+import { parseSheetStack } from '@/lib/sheets/stack'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 const MIN_QUERY_LENGTH = 2
@@ -155,7 +157,12 @@ function CommandPalette() {
     (href: string) => {
       setOpen(false)
       setQuery('')
-      router.push(href)
+      // Leaving drops the open sheets: each with unsaved changes asks first,
+      // top sheet first, as going back in the stack does.
+      const ids = parseSheetStack(new URLSearchParams(window.location.search))
+        .map(item => item.id)
+        .reverse()
+      confirmDiscardAll(ids, () => router.push(href))
     },
     [router, setOpen]
   )

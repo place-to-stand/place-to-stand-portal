@@ -9,13 +9,13 @@ import {
   duplicateSheetValue,
   parseDuplicateSourceId,
   type DuplicableSheetEntity,
-  isSheetEntityClaimed,
   type SheetEntityKey,
 } from './entities'
 import { confirmDiscardAll } from './discard-guards'
 import { emitSheetOpen } from './pending-open'
 import { writeShallowUrl } from './shallow-url'
 import {
+  isStackItemClaimed,
   openTarget,
   parseSheetStack,
   removeSheetParams,
@@ -66,12 +66,12 @@ export function useSheetParams() {
   const stack = useMemo(() => parseSheetStack(searchParams), [searchParams])
 
   /**
-   * The entity's first sheet: the one a page that renders its own sheet for
-   * this entity shows.
+   * The sheet a page that renders its own sheet for this entity shows: the
+   * bottom of the stack, when it is this entity's (see `isStackItemClaimed`).
    */
   const get = useCallback(
     (entity: SheetEntityKey) =>
-      stack.find(item => item.entity === entity)?.value ?? null,
+      stack[0]?.entity === entity ? stack[0].value : null,
     [stack]
   )
 
@@ -203,9 +203,7 @@ export function useSheetParams() {
       emitSheetOpen({ kind: 'open', item, aux: aux ?? {} })
       const shallow =
         options?.shallow ??
-        (value === NEW_SHEET_VALUE ||
-          item.ordinal > 0 ||
-          !isSheetEntityClaimed(entity, pathname, value))
+        (value === NEW_SHEET_VALUE || !isStackItemClaimed(item, pathname))
       if (shallow) {
         writeShallowUrl(urlFor(live), 'push')
       } else {
@@ -249,10 +247,7 @@ export function useSheetParams() {
       if (swapped) {
         emitSheetOpen({ kind: 'swap', from: id, item: swapped })
       }
-      if (
-        item.ordinal === 0 &&
-        isSheetEntityClaimed(item.entity, pathname, value)
-      ) {
+      if (swapped && isStackItemClaimed(swapped, pathname)) {
         router.replace(urlFor(params), { scroll: false })
       } else {
         writeShallowUrl(urlFor(params), 'replace')

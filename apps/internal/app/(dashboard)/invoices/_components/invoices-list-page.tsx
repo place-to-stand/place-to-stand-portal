@@ -14,7 +14,7 @@ import { INVOICES_TABS } from '../_lib/tabs'
 import { PagePanel } from '@/components/layout/page-panel'
 
 import type { RawSearchParams } from '@/lib/pagination/params'
-import { firstSheetParam } from '@/lib/sheets/stack'
+import { pageSheetParam } from '@/lib/sheets/stack'
 
 export type ListMode = 'active' | 'archive'
 
@@ -80,7 +80,7 @@ export async function InvoicesListPage({
   // have moved to the other tab (archived or restored).
   const { record: deepLinkedInvoice, notFound: invoiceNotFound } =
     await resolveSheetDeepLink({
-      idParam: firstSheetParam('invoice', params.invoice),
+      idParam: pageSheetParam('invoice', params),
       fetchById: id => getInvoiceById(currentUser, id),
       tab: view.tab,
       isArchived: invoice => Boolean(invoice.deleted_at),
