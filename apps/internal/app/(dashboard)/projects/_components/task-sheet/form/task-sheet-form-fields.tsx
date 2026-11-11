@@ -269,7 +269,6 @@ export function TaskSheetFormFields(props: TaskSheetFormFieldsProps) {
                 <DisabledFieldTooltip disabled={disabled} reason={reason}>
                   <RichTextEditor
                     key={editorKey}
-                    id='task-description'
                     value={editorValue}
                     onChange={(content: string) =>
                       field.onChange(normalizeRichTextContent(content) ?? null)

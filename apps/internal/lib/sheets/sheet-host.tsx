@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
 import { subscribeSheetOpen } from './pending-open'
@@ -80,7 +80,14 @@ export function SheetHost() {
     setRendered(previous => {
       const unmatched = [...previous]
       const next: RenderedSheet[] = foreign.map((item, index) => {
-        const at = unmatched.findIndex(entry => entry.item.id === item.id)
+        // An open entry first: one with this id may still be animating out.
+        const openAt = unmatched.findIndex(
+          entry => entry.item.id === item.id && entry.open
+        )
+        const at =
+          openAt === -1
+            ? unmatched.findIndex(entry => entry.item.id === item.id)
+            : openAt
         const match = at === -1 ? null : unmatched.splice(at, 1)[0]
         return {
           key: match?.key ?? keys[index]!,
@@ -96,6 +103,11 @@ export function SheetHost() {
       return next
     })
   }
+
+  const renderedRef = useRef(rendered)
+  useEffect(() => {
+    renderedRef.current = rendered
+  })
 
   // Drop closed entries once their transition has finished.
   const closedKeys = rendered
@@ -130,19 +142,39 @@ export function SheetHost() {
       if (isStackItemClaimed(pending.item, pathname)) {
         return
       }
-      const findId = pending.kind === 'swap' ? pending.from : pending.item.id
-      // A swap keeps the sheet's key under its new id.
-      const key = keysById.get(findId) ?? keyFor(pending.item.id)
-      keysById.set(pending.item.id, key)
-      const aux = pending.kind === 'open' ? pending.aux : undefined
+      if (pending.kind === 'swap') {
+        // A swap keeps the sheet's key under its new id. The old id lets go
+        // of it: a later draft can get that id and must not share the key.
+        const key = keysById.get(pending.from) ?? keyFor(pending.item.id)
+        keysById.delete(pending.from)
+        keysById.set(pending.item.id, key)
+        setRendered(previous =>
+          previous.map(entry =>
+            entry.item.id === pending.from
+              ? { ...entry, key, item: pending.item, open: true }
+              : entry
+          )
+        )
+        return
+      }
+      // An open is always a fresh sheet, even when one with this id is
+      // still animating out: that one keeps its key and goes.
+      if (
+        renderedRef.current.some(
+          entry => entry.item.id === pending.item.id && entry.open
+        )
+      ) {
+        return
+      }
+      keysById.delete(pending.item.id)
+      const key = keyFor(pending.item.id)
       setRendered(previous =>
-        previous.some(entry => entry.item.id === findId)
-          ? previous.map(entry =>
-              entry.item.id === findId
-                ? { ...entry, item: pending.item, open: true }
-                : entry
-            )
-          : [...previous, { key, item: pending.item, open: true, aux }]
+        previous.some(entry => entry.item.id === pending.item.id && entry.open)
+          ? previous
+          : [
+              ...previous,
+              { key, item: pending.item, open: true, aux: pending.aux },
+            ]
       )
     })
   }, [pathname])

@@ -198,7 +198,9 @@ export function useSheetParams() {
         return null
       }
       // Let the host mount now, before the URL write lands.
-      emitSheetOpen({ kind: 'open', item, aux })
+      // No aux means no prefill: never the URL's, which may be another
+      // draft's.
+      emitSheetOpen({ kind: 'open', item, aux: aux ?? {} })
       const shallow =
         options?.shallow ??
         (value === NEW_SHEET_VALUE ||

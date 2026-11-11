@@ -12,10 +12,6 @@ import {
   CompanyProjectsSection,
 } from './company-sheet-sections'
 
-/** Scroll targets in the Client column (billing, projects). */
-export const COMPANY_BILLING_SECTION_ID = 'company-billing'
-export const COMPANY_PROJECTS_SECTION_ID = 'company-projects'
-
 type CompanyClientColumnProps = {
   /** Admins: the Bill this company switch, billing and projects. Others see where it stands. */
   canManage: boolean
@@ -27,6 +23,9 @@ type CompanyClientColumnProps = {
   projectsCompanyId: string | null
   isEditing: boolean
   disabled: boolean
+  /** Scroll targets, unique per sheet: two company sheets can be stacked. */
+  billingSectionId: string
+  projectsSectionId: string
 }
 
 /**
@@ -41,6 +40,8 @@ export function CompanyClientColumn({
   projectsCompanyId,
   isEditing,
   disabled,
+  billingSectionId,
+  projectsSectionId,
 }: CompanyClientColumnProps) {
   const billing = useCompanyBilling()
 
@@ -54,7 +55,8 @@ export function CompanyClientColumn({
     >
       <div className='flex flex-col gap-6 px-6 pt-6 pb-8'>
         <div
-          id={COMPANY_BILLING_SECTION_ID}
+          id={billingSectionId}
+          data-section='company-billing'
           className='flex scroll-mt-6 flex-col gap-6'
         >
           {canManage ? (
@@ -72,7 +74,11 @@ export function CompanyClientColumn({
         {canManage && isEditing && projectsCompanyId ? (
           <>
             <Separator />
-            <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
+            <div
+              id={projectsSectionId}
+              data-section='company-projects'
+              className='scroll-mt-6'
+            >
               <CompanyProjectsSection
                 companyId={projectsCompanyId}
                 canCreate={Boolean(clientCompanyId)}
@@ -83,7 +89,11 @@ export function CompanyClientColumn({
           // Becoming a client in this Save: projects start once it is one.
           <>
             <Separator />
-            <div id={COMPANY_PROJECTS_SECTION_ID} className='scroll-mt-6'>
+            <div
+              id={projectsSectionId}
+              data-section='company-projects'
+              className='scroll-mt-6'
+            >
               <EntityList
                 title='Projects'
                 isEmpty

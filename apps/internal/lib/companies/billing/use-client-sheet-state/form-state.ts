@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 import { getClientSheetContactData } from '@/app/(dashboard)/companies/billing-actions'
 import { subscribeSheetCreated } from '@/lib/sheets/created'
+import { useAwaitedCreate } from '@/lib/sheets/use-awaited-create'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { PENDING_REASON } from '@/lib/forms/form-controls'
@@ -249,7 +250,7 @@ export function useClientBillingForm({
   const createContactTargetRef = useRef<ContactCreateTarget>('origination')
   // The create sheet this form opened (its stack id): only its record is
   // taken, not one another picker or sheet created meanwhile.
-  const awaitingContactRef = useRef<string | null>(null)
+  const awaitingContactRef = useAwaitedCreate()
   const requestContactCreate = useCallback(
     (target: ContactCreateTarget, query: string) => {
       createContactTargetRef.current = target
@@ -260,7 +261,7 @@ export function useClientBillingForm({
         query ? { contactName: query } : undefined
       )
     },
-    [openNew]
+    [openNew, awaitingContactRef]
   )
   const handleCreateOriginationContact = useCallback(
     (query: string) => requestContactCreate('origination', query),
@@ -356,7 +357,12 @@ export function useClientBillingForm({
         })
       }
     })
-  }, [open, handleAddCloser, handleSelectOriginationContact])
+  }, [
+    open,
+    handleAddCloser,
+    handleSelectOriginationContact,
+    awaitingContactRef,
+  ])
 
   const collectFields = useCallback((): CompanyBillingFields | null => {
     // Origination and closers are both optional. With no closer the closer

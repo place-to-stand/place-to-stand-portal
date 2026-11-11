@@ -57,11 +57,7 @@ import {
   type CompanyFormValues,
 } from './use-company-sheet-form'
 import { CompanyLeadsSection } from './company-sheet-sections'
-import {
-  COMPANY_BILLING_SECTION_ID,
-  COMPANY_PROJECTS_SECTION_ID,
-  CompanyClientColumn,
-} from './company-client-column'
+import { CompanyClientColumn } from './company-client-column'
 import { useScrollToSection } from './use-scroll-to-section'
 import {
   CompanyBillingProvider,
@@ -79,7 +75,6 @@ import { useViewerAccess } from '@/components/providers/viewer-access-provider'
 import { useSaveConflict } from '@/lib/sheets/save-conflict/use-save-conflict'
 import { SaveConflictDialog } from '@/components/sheets/save-conflict-dialog'
 
-const COMPANY_PEOPLE_SECTION_ID = 'company-people'
 const ARCHIVED_COMPANY_NOTE = 'Archived. Restore it from the archive list.'
 
 type CompanySheetProps = {
@@ -109,6 +104,10 @@ export function CompanySheet({
   // One id per sheet: two sheets of a kind can be open in the stack, and
   // a shared id would let one sheet's Save button submit the other's form.
   const companyFormId = useId()
+  // Section scroll targets, per sheet: two company sheets can be stacked.
+  const peopleSectionId = useId()
+  const billingSectionId = useId()
+  const projectsSectionId = useId()
   const router = useRouter()
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -257,13 +256,13 @@ export function CompanySheet({
   }, [open, companyId])
   useScrollToSection(
     requestedSection === 'people'
-      ? COMPANY_PEOPLE_SECTION_ID
+      ? peopleSectionId
       : requestedSection === 'billing'
-        ? COMPANY_BILLING_SECTION_ID
+        ? billingSectionId
         : requestedSection === 'projects'
           ? showProjects
-            ? COMPANY_PROJECTS_SECTION_ID
-            : COMPANY_BILLING_SECTION_ID
+            ? projectsSectionId
+            : billingSectionId
           : null
   )
 
@@ -283,7 +282,7 @@ export function CompanySheet({
         const collected = handle.collect()
         if (!collected) {
           document
-            .getElementById(COMPANY_BILLING_SECTION_ID)
+            .getElementById(billingSectionId)
             ?.scrollIntoView({ block: 'start', behavior: 'smooth' })
           toast({
             variant: 'destructive',
@@ -388,6 +387,7 @@ export function CompanySheet({
       })
     },
     [
+      billingSectionId,
       canManageClients,
       companyId,
       form,
@@ -590,7 +590,8 @@ export function CompanySheet({
                         disabled={fieldsDisabled}
                       />
                       <div
-                        id={COMPANY_PEOPLE_SECTION_ID}
+                        id={peopleSectionId}
+                        data-section='company-people'
                         className='scroll-mt-6'
                       >
                         <CompanyPeopleTab
@@ -661,6 +662,8 @@ export function CompanySheet({
                     projectsCompanyId={showProjects ? projectsCompanyId : null}
                     isEditing={isEditing}
                     disabled={fieldsDisabled}
+                    billingSectionId={billingSectionId}
+                    projectsSectionId={projectsSectionId}
                   />
                 </form>
               </CompanyBillingProvider>

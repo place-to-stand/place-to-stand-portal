@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useId, useMemo } from 'react'
 import type { FormEvent } from 'react'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 
@@ -47,19 +47,20 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
     pending,
     canComment,
   } = props
+  // Per sheet: two task sheets can be stacked.
+  const composerId = useId()
 
   // The editor takes the cursor as the form opens.
   useEffect(() => {
     if (!open) return
     const timer = window.setTimeout(() => {
       document
-        .querySelector<HTMLElement>(
-          '#task-comment-composer [contenteditable="true"]'
-        )
+        .getElementById(composerId)
+        ?.querySelector<HTMLElement>('[contenteditable="true"]')
         ?.focus()
     }, 50)
     return () => window.clearTimeout(timer)
-  }, [open])
+  }, [open, composerId])
 
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -83,7 +84,7 @@ export function TaskCommentComposer(props: TaskCommentComposerProps) {
           className='bg-card space-y-3 rounded-lg border p-3'
         >
           <RichTextEditor
-            id='task-comment-composer'
+            id={composerId}
             value={value}
             onChange={onChange}
             placeholder={
