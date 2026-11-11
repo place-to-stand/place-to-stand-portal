@@ -1,6 +1,8 @@
 import 'server-only'
 
+import { isClientCompany } from '@pts/db/client-state'
 import { formatCalendarDate } from '@pts/ui/dates'
+import { formatHours } from '@pts/ui/numbers'
 
 import { and, desc, eq, isNull, ne, or, sql, type SQL } from 'drizzle-orm'
 
@@ -29,6 +31,7 @@ import {
   leadTaskHref,
   projectTaskHref,
   submissionHref,
+  taskSheetHref,
 } from '@/lib/sheets/hrefs'
 
 import type { PaletteRecord } from '@/lib/command-palette/types'
@@ -112,7 +115,11 @@ export async function searchPaletteTasks(
       projectName: projects.name,
       projectSlug: projects.slug,
       projectType: projects.type,
-      clientSlug: companies.slug,
+      // The board's URL takes the client slug only while the company is
+      // billed; otherwise the task opens over the Projects list.
+      clientSlug: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.slug} end`,
       leadId: leads.id,
       leadName: leadContact.name,
     })
@@ -150,13 +157,13 @@ export async function searchPaletteTasks(
       : row.leadId
         ? leadTaskHref(row.leadId, row.id)
         : null
-    if (!href) return []
+    if (!href && !row.projectType) return []
     return [
       {
         id: row.id,
         title: row.title,
         detail: row.projectType ? row.projectName : row.leadName,
-        href,
+        href: href ?? taskSheetHref(row.id),
         entity: 'task' as const,
       },
     ]
@@ -196,12 +203,6 @@ export async function searchPaletteInvoices(
   }))
 }
 
-/** "40 hours" / "1.5 hours" */
-const formatHours = (value: string) => {
-  const hours = Number(value)
-  return `${Number.isFinite(hours) ? hours : value} ${hours === 1 ? 'hour' : 'hours'}`
-}
-
 /** Hour blocks by company name, newest billing month first. */
 export async function searchPaletteHourBlocks(
   pattern: string
@@ -228,7 +229,7 @@ export async function searchPaletteHourBlocks(
   }))
 }
 
-/** Website form submissions by name, email or company, newest first. */
+/** Website form submissions by name, email, company or subject, newest first. */
 export async function searchPaletteSubmissions(
   pattern: string
 ): Promise<PaletteRecord[]> {
@@ -239,15 +240,19 @@ export async function searchPaletteSubmissions(
       name: formSubmissions.contactName,
       email: formSubmissions.contactEmail,
       company: formSubmissions.contactCompany,
+      subject: formSubmissions.subject,
     })
     .from(formSubmissions)
     .where(
       and(
         isNull(formSubmissions.deletedAt),
+        // Tombstones (personal data stripped) are in no list.
+        isNull(formSubmissions.destroyedAt),
         or(
           ilike(formSubmissions.contactName, pattern),
           ilike(formSubmissions.contactEmail, pattern),
-          ilike(formSubmissions.contactCompany, pattern)
+          ilike(formSubmissions.contactCompany, pattern),
+          ilike(formSubmissions.subject, pattern)
         )
       )
     )
@@ -264,7 +269,7 @@ export async function searchPaletteSubmissions(
       ),
       href: submissionHref(row.id),
       entity: 'submission' as const,
-      keywords: present(row.email, row.company),
+      keywords: present(row.email, row.company, row.subject),
     }
   })
 }

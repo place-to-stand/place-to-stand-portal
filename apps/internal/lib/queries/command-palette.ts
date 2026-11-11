@@ -13,6 +13,7 @@ import { createSearchPattern } from '@/lib/pagination/cursor'
 import {
   companySheetHref,
   contactSheetHref,
+  projectSheetHref,
   projectTasksHref,
 } from '@/lib/sheets/hrefs'
 
@@ -145,7 +146,10 @@ async function searchPeople(
   }))
 }
 
-/** Projects by name, slug or client name (R7); each opens its board. */
+/**
+ * Projects by name, slug or client name (R7); each opens its board, or its
+ * sheet when the board can't be addressed.
+ */
 async function searchProjects(
   pattern: string,
   user: AppUser
@@ -157,7 +161,10 @@ async function searchProjects(
       slug: projects.slug,
       type: projects.type,
       clientName: companies.name,
-      clientSlug: companies.slug,
+      // As for tasks: a board URL only while the company is billed.
+      clientSlug: sql<
+        string | null
+      >`case when ${isClientCompany()} then ${companies.slug} end`,
     })
     .from(projects)
     .leftJoin(companies, eq(projects.companyId, companies.id))
@@ -175,21 +182,18 @@ async function searchProjects(
     .orderBy(asc(companies.name), asc(projects.name))
     .limit(PALETTE_RESULT_LIMIT)
 
-  return rows.flatMap(row => {
-    const href = projectTasksHref({
-      projectSlug: row.slug,
-      projectType: row.type,
-      clientSlug: row.clientSlug,
-    })
-    if (!href) return []
-    return [
-      {
-        id: row.id,
-        title: row.name,
-        detail: projectClientLabel(row.type, row.clientName),
-        href,
-        entity: 'project' as const,
-      },
-    ]
-  })
+  return rows.map(row => ({
+    id: row.id,
+    title: row.name,
+    detail: projectClientLabel(row.type, row.clientName),
+    href:
+      projectTasksHref({
+        projectSlug: row.slug,
+        projectType: row.type,
+        clientSlug: row.clientSlug,
+      }) ?? projectSheetHref(row.id),
+    entity: 'project',
+    // Found by slug alone, the row would otherwise be filtered out on screen.
+    keywords: row.slug ? [row.slug] : [],
+  }))
 }

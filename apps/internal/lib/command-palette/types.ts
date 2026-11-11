@@ -20,11 +20,14 @@ export type PaletteRecord = {
    * hide the row.
    */
   keywords?: string[]
-  /** A client's billing type, shown at the end of its row. */
+  /** Clients only: the billing type, shown at the end of the row. */
   billingType?: 'prepaid' | 'net_30' | null
 }
 
-/** Result groups, in the order the palette shows them. */
+/**
+ * Result groups. With text in the search box cmdk sorts groups and rows by
+ * match, so this order (and each query's) only breaks ties.
+ */
 export const PALETTE_GROUPS = [
   { key: 'companies', heading: 'Companies' },
   { key: 'people', heading: 'People' },

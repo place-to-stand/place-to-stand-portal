@@ -100,6 +100,15 @@ export const projectTasksHref = (project: {
   return `/projects/${project.clientSlug}/${project.projectSlug}/tasks`
 }
 
+/**
+ * A project's sheet over the Projects list: for a project whose board can't
+ * be addressed (its company isn't billed now, so it has no client slug).
+ */
+export const projectSheetHref = (id: string) => `/projects?project=${id}`
+
+/** A task's sheet over the Projects list, when its board can't be addressed. */
+export const taskSheetHref = (id: string) => `/projects?task=${id}`
+
 /** A task's sheet over its project's board; null as for `projectTasksHref`. */
 export const projectTaskHref = (
   project: Parameters<typeof projectTasksHref>[0],
