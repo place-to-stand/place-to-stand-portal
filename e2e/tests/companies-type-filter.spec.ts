@@ -58,9 +58,48 @@ test('the Clients page lists clients and keeps its page on reset', async ({
   }
 
   // Narrowing then resetting stays on Clients.
-  await page.getByRole('combobox', { name: 'Leads: any' }).click()
+  await page.getByRole('combobox', { name: 'Any leads' }).click()
   await page.getByRole('option').first().click()
   await page.getByRole('button', { name: /reset/i }).click()
   await expect(page).toHaveURL(/\/companies\/clients$/)
   await expect(page).not.toHaveURL(/leads=/)
+})
+
+// Filters are optimistic: the pick shows at once, before the list reloads.
+test('a filter pick shows before the list reloads', async ({ page }) => {
+  await page.goto('/companies')
+  // Hold the page's data request so the gap is wide enough to see.
+  await page.route('**/companies?type=client*', async route => {
+    if (route.request().headers()['rsc']) {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+    }
+    await route.continue()
+  })
+  await page.getByRole('combobox', { name: 'All companies' }).click()
+  await page.getByRole('option', { name: 'Client', exact: true }).click()
+  await expect(
+    page.getByRole('combobox', { name: 'All companies' })
+  ).toHaveText(/Client/, { timeout: 500 })
+  await expect(page).not.toHaveURL(/type=client/)
+  await expect(page).toHaveURL(/type=client/)
+})
+
+// A second pick before the first one's page loads keeps both filters.
+test('two quick filter picks both apply', async ({ page }) => {
+  await page.goto('/companies')
+  await page.route('**/companies?*', async route => {
+    if (route.request().headers()['rsc']) {
+      await new Promise(resolve => setTimeout(resolve, 1500))
+    }
+    await route.continue()
+  })
+  await page.getByRole('combobox', { name: 'All companies' }).click()
+  await page.getByRole('option', { name: 'Client', exact: true }).click()
+  await page.getByRole('combobox', { name: 'Any leads' }).click()
+  await page.getByRole('option').first().click()
+  await expect(page).toHaveURL(/type=client/)
+  await expect(page).toHaveURL(/leads=/)
+  await expect(
+    page.getByRole('combobox', { name: 'All companies' })
+  ).toHaveText(/Client/)
 })

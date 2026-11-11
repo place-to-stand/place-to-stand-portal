@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 import { writeShallowUrl } from '@/lib/sheets/shallow-url'
@@ -44,10 +44,20 @@ export function useListParams({
 }: UseListParamsOptions) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  // The query of a push that hasn't landed yet. Filters show a pick at once
+  // (optimistic), so a second pick can come before the first one's page
+  // loads; building on the pending query keeps both instead of the second
+  // dropping the first. Cleared once the URL catches up.
+  const committed = searchParams.toString()
+  const pending = useRef<{ base: string; query: string } | null>(null)
 
   const update = useCallback(
     (updates: Record<string, string | undefined>) => {
-      const next = new URLSearchParams(searchParams.toString())
+      const base =
+        pending.current && pending.current.base === committed
+          ? pending.current.query
+          : committed
+      const next = new URLSearchParams(base)
 
       for (const [key, value] of Object.entries(updates)) {
         if (value) {
@@ -65,21 +75,24 @@ export function useListParams({
 
       const queryString = next.toString()
       const url = queryString ? `${basePath}?${queryString}` : basePath
+      const current = new URLSearchParams(base)
       const changed = Object.keys(updates).filter(
-        key =>
-          (searchParams.get(key) ?? undefined) !== (updates[key] || undefined)
+        key => (current.get(key) ?? undefined) !== (updates[key] || undefined)
       )
       if (
         shallowKeys &&
         changed.every(key => shallowKeys.includes(key)) &&
         window.location.pathname === basePath
       ) {
+        // A shallow write changes the URL at once: nothing is pending.
+        pending.current = null
         writeShallowUrl(url, 'push')
         return
       }
+      pending.current = { base: committed, query: queryString }
       router.push(url)
     },
-    [basePath, resetKeys, router, searchParams, shallowKeys]
+    [basePath, resetKeys, router, committed, shallowKeys]
   )
 
   const getParam = useCallback(

@@ -101,6 +101,8 @@ export function ProjectsLandingFilters({
         // Back to the clean landing URL, not an explicit copy of it.
         onClear={() => update({ status: undefined })}
         placeholder='All statuses'
+        allLabel='All statuses'
+        emptyLabel='No statuses'
         options={STATUS_OPTIONS}
       />
     </FilterBar>
