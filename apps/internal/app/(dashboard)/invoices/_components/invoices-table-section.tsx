@@ -223,7 +223,7 @@ export function InvoicesTableSection({
               </SortableTableHead>
               <TableHead className='w-[8%]'>Status</TableHead>
               <TableHead className='w-[10%] text-right'>Total</TableHead>
-              <TableHead className='w-[8%] pl-4'>Hours</TableHead>
+              <TableHead className='w-[9%] pl-4'>Hours</TableHead>
               <SortableTableHead
                 field='created'
                 sort={sort}

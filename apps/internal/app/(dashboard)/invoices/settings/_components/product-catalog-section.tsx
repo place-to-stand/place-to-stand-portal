@@ -328,7 +328,7 @@ export function ProductCatalogSection({
                 Name
               </SortableTableHead>
               <TableHead className='w-[12%] text-right'>Unit price</TableHead>
-              <TableHead className='w-[10%] pl-4'>Unit label</TableHead>
+              <TableHead className='w-[11%] pl-4'>Unit label</TableHead>
               <TableHead className='w-[8%]'>Min qty</TableHead>
               <TableHead className='w-[11%]'>Hour block</TableHead>
               <TableHead className='w-[7%]'>Active</TableHead>
