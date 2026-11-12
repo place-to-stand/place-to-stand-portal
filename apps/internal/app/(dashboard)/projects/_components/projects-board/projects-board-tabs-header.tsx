@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Pencil, Plus } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -212,18 +212,6 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
           ) : null}
           {/* Toolbar actions are size sm (32px), level with the tabs and
               pickers on the row, as on every page. */}
-          {projectActions.onLogTime ? (
-            <Button
-              type='button'
-              size='sm'
-              variant='outline'
-              onClick={projectActions.onLogTime}
-              aria-label='Log time'
-            >
-              <Plus />
-              <ToolbarActionLabel label='Log time' />
-            </Button>
-          ) : null}
           <DisabledFieldTooltip
             disabled={!projectActions.canEdit}
             reason={projectActions.editDisabledReason}
