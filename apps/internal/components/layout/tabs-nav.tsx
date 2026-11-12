@@ -1,27 +1,21 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Tabs, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { cn } from '@/lib/utils'
+
+import { TOOLBAR_TAB_CLASS, TOOLBAR_TABS_LIST_CLASS } from './tabs-nav-classes'
+import { ToolbarTabsMenu } from './toolbar-tabs-menu'
+
+export { TOOLBAR_TAB_CLASS, TOOLBAR_TABS_LIST_CLASS }
 
 export type TabsNavTab = {
   value: string
   label: string
   href: string
 }
-
-/**
- * The page toolbar's tab strip. 32px, the height of the page's buttons, so
- * the toolbar is no taller than its tallest control, with a 4px inset that
- * PageShell matches after the action button. Tabs hug the left edge at every
- * width and scroll sideways once they outgrow the screen, instead of
- * stretching or clipping. Shared with the project board's own tab strip.
- */
-export const TOOLBAR_TABS_LIST_CLASS =
-  'bg-muted/40 h-8 w-fit max-w-full [scrollbar-width:none] justify-start gap-2 overflow-x-auto rounded-lg px-1 py-0.5'
-export const TOOLBAR_TAB_CLASS = 'h-full flex-none px-3 py-0 text-sm'
 
 type TabsNavProps = {
   tabs: readonly TabsNavTab[]
@@ -30,40 +24,65 @@ type TabsNavProps = {
 }
 
 /**
+ * Picks up a tab the moment it is clicked, before the route catches up, so
+ * the strip never lags the click. A new `activeTab` from the server clears it.
+ */
+export function useOptimisticTab(activeTab: string) {
+  const [pending, setPending] = useState<string | null>(null)
+  const [settledTab, setSettledTab] = useState(activeTab)
+  if (settledTab !== activeTab) {
+    setSettledTab(activeTab)
+    setPending(null)
+  }
+  return [pending ?? activeTab, setPending] as const
+}
+
+/**
  * Config-driven tab strip for section navigation (PRD 004 §01, D11).
  * Replaces the nine per-feature `*TabsNav` copies; tab arrays live in
- * colocated `_lib/tabs.ts` files per feature.
+ * colocated `_lib/tabs.ts` files per feature. Below `sm` the strip folds
+ * into `ToolbarTabsMenu`, so the toolbar row stays one line on phones.
  */
 export function TabsNav({ tabs, activeTab, className }: TabsNavProps) {
   const router = useRouter()
+  const [shownTab, setShownTab] = useOptimisticTab(activeTab)
 
   const handleValueChange = useCallback(
     (nextValue: string) => {
       const target = tabs.find(tab => tab.value === nextValue)
       if (target) {
+        setShownTab(nextValue)
         router.push(target.href)
       }
     },
-    [router, tabs]
+    [router, tabs, setShownTab]
   )
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={handleValueChange}
-      className={cn('w-full sm:w-auto', className)}
-    >
-      <TabsList className={TOOLBAR_TABS_LIST_CLASS}>
-        {tabs.map(tab => (
-          <TabsTrigger
-            key={tab.value}
-            value={tab.value}
-            className={TOOLBAR_TAB_CLASS}
-          >
-            {tab.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <>
+      <ToolbarTabsMenu
+        tabs={tabs}
+        activeTab={shownTab}
+        onSelect={setShownTab}
+        className={cn('sm:hidden', className)}
+      />
+      <Tabs
+        value={shownTab}
+        onValueChange={handleValueChange}
+        className={cn('hidden sm:flex', className)}
+      >
+        <TabsList className={TOOLBAR_TABS_LIST_CLASS}>
+          {tabs.map(tab => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className={TOOLBAR_TAB_CLASS}
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+    </>
   )
 }

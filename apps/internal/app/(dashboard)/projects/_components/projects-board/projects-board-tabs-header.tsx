@@ -7,10 +7,13 @@ import { TabsList, TabsTrigger } from '@pts/ui/tabs'
 import {
   TOOLBAR_TAB_CLASS,
   TOOLBAR_TABS_LIST_CLASS,
+  useOptimisticTab,
 } from '@/components/layout/tabs-nav'
+import { ToolbarTabsMenu } from '@/components/layout/toolbar-tabs-menu'
 import { startBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 import type { ProjectActionControls } from './projects-board-tabs'
 
@@ -51,9 +54,49 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     onProjectStatusChange,
   } = props
 
+  const [shownTab, setShownTab] = useOptimisticTab(initialTab)
+  const menuTabs = [
+    { value: 'board', label: 'Tasks', href: boardHref },
+    ...(tasksOnly
+      ? []
+      : [
+          {
+            value: 'review',
+            label: 'Review',
+            href: reviewHref,
+            disabled: reviewDisabled,
+          },
+          {
+            value: 'timeLogs',
+            label: 'Time logs',
+            href: timeLogsHref,
+            disabled: timeLogsDisabled,
+          },
+          {
+            value: 'activity',
+            label: 'Activity',
+            href: activityHref,
+            disabled: activityDisabled,
+          },
+        ]),
+  ]
+
   return (
-    <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-      <TabsList className={TOOLBAR_TABS_LIST_CLASS}>
+    // One row, as in PageShell: on phones the tabs fold into a menu. The
+    // actions wrap under it on phones only when they still don't fit.
+    <div className='flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap'>
+      <ToolbarTabsMenu
+        className='sm:hidden'
+        tabs={menuTabs}
+        activeTab={shownTab}
+        onSelect={value => {
+          setShownTab(value)
+          startBoardTabInteraction(initialTab, value)
+        }}
+      />
+      <TabsList
+        className={cn(TOOLBAR_TABS_LIST_CLASS, 'hidden min-w-0 sm:flex')}
+      >
         <TabsTrigger value='board' className={TOOLBAR_TAB_CLASS} asChild>
           <Link
             href={boardHref}
@@ -148,7 +191,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         )}
       </TabsList>
       {projectActions ? (
-        <div className='flex w-full items-center justify-end gap-2 pr-1 sm:w-auto'>
+        <div className='ml-auto flex items-center justify-end gap-2 pr-1'>
           {activeProjectId && activeProjectStatus ? (
             <ProjectStatusCell
               projectId={activeProjectId}

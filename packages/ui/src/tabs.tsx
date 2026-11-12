@@ -74,6 +74,20 @@ function TabsList({ className, variant = 'default', ...props }: TabsListProps) {
   )
 }
 
+/**
+ * The trigger's classes, exported so a control that only *looks* like a tab
+ * (the toolbar's phone tab menu) wears exactly the same pill. Styled against
+ * `data-active`: set that attribute to get the selected look.
+ */
+export const TABS_TRIGGER_CLASS = cn(
+  // Current shadcn v4 trigger, keeping the pre-existing hover
+  // affordance + cursor customizations (PRD 004 §04, D10), retargeted
+  // from data-[state=active] onto Base UI's data-active.
+  // Line variant: no pill; a 2px rule marks the active tab.
+  'group-data-[variant=line]/tabs-list:data-[active]:border-foreground dark:group-data-[variant=line]/tabs-list:data-[active]:border-foreground group-data-[variant=line]/tabs-list:h-full group-data-[variant=line]/tabs-list:flex-none group-data-[variant=line]/tabs-list:rounded-none group-data-[variant=line]/tabs-list:border-0 group-data-[variant=line]/tabs-list:border-b-2 group-data-[variant=line]/tabs-list:border-transparent group-data-[variant=line]/tabs-list:px-0.5 group-data-[variant=line]/tabs-list:not-data-[active]:hover:bg-transparent group-data-[variant=line]/tabs-list:data-[active]:bg-transparent group-data-[variant=line]/tabs-list:data-[active]:shadow-none dark:group-data-[variant=line]/tabs-list:data-[active]:border-x-0 dark:group-data-[variant=line]/tabs-list:data-[active]:border-t-0 dark:group-data-[variant=line]/tabs-list:data-[active]:bg-transparent',
+  "data-[active]:bg-background focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring not-data-[active]:hover:bg-muted/60 not-data-[active]:hover:text-foreground text-foreground dark:text-muted-foreground dark:data-[active]:text-foreground dark:data-[active]:border-input dark:data-[active]:bg-input/30 inline-flex h-[calc(100%-1px)] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+)
+
 type TabsTriggerProps = React.ComponentProps<typeof TabsPrimitive.Tab> & {
   asChild?: boolean
 }
@@ -100,15 +114,7 @@ function TabsTrigger({
     <TabsPrimitive.Tab
       data-slot='tabs-trigger'
       {...renderProps}
-      className={cn(
-        // Current shadcn v4 trigger, keeping the pre-existing hover
-        // affordance + cursor customizations (PRD 004 §04, D10), retargeted
-        // from data-[state=active] onto Base UI's data-active.
-        // Line variant: no pill; a 2px rule marks the active tab.
-        'group-data-[variant=line]/tabs-list:data-[active]:border-foreground dark:group-data-[variant=line]/tabs-list:data-[active]:border-foreground group-data-[variant=line]/tabs-list:h-full group-data-[variant=line]/tabs-list:flex-none group-data-[variant=line]/tabs-list:rounded-none group-data-[variant=line]/tabs-list:border-0 group-data-[variant=line]/tabs-list:border-b-2 group-data-[variant=line]/tabs-list:border-transparent group-data-[variant=line]/tabs-list:px-0.5 group-data-[variant=line]/tabs-list:not-data-[active]:hover:bg-transparent group-data-[variant=line]/tabs-list:data-[active]:bg-transparent group-data-[variant=line]/tabs-list:data-[active]:shadow-none dark:group-data-[variant=line]/tabs-list:data-[active]:border-x-0 dark:group-data-[variant=line]/tabs-list:data-[active]:border-t-0 dark:group-data-[variant=line]/tabs-list:data-[active]:bg-transparent',
-        "data-[active]:bg-background focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring not-data-[active]:hover:bg-muted/60 not-data-[active]:hover:text-foreground text-foreground dark:text-muted-foreground dark:data-[active]:text-foreground dark:data-[active]:border-input dark:data-[active]:bg-input/30 inline-flex h-[calc(100%-1px)] flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 data-[active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        className
-      )}
+      className={cn(TABS_TRIGGER_CLASS, className)}
       {...props}
     />
   )

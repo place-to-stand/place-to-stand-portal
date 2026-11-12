@@ -114,21 +114,18 @@ export function PageShell({
       <main className='flex min-h-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4'>
         {hasToolbar ? (
           // The same space below the toolbar as the page padding above it
-          // (12px on phones, 16px from sm).
-          <div className='mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-center sm:justify-between'>
+          // (12px on phones, 16px from sm). One row at every width: on phones
+          // the tabs fold into a menu so tabs, count and action fit.
+          <div className='mb-3 flex items-center justify-between gap-3 sm:mb-4'>
             {tabs?.length && activeTab ? (
-              <TabsNav
-                tabs={tabs}
-                activeTab={activeTab}
-                className='flex-1 sm:flex-none'
-              />
+              <TabsNav tabs={tabs} activeTab={activeTab} />
             ) : (
               // Holds the tabs' height so content starts at the same spot.
               <div className='min-h-8' />
             )}
-            <div className='flex items-center justify-end gap-3 pr-1 sm:gap-6'>
+            <div className='flex min-w-0 items-center justify-end gap-3 pr-1 sm:gap-6'>
               {count ? (
-                <span className='text-muted-foreground text-sm whitespace-nowrap'>
+                <span className='text-muted-foreground truncate text-sm'>
                   {count.filteredTotal !== undefined &&
                   count.filteredTotal !== count.total
                     ? `Showing ${count.filteredTotal} of ${count.total}`
