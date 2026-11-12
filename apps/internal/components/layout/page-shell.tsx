@@ -74,10 +74,9 @@ export function PageShell({
   return (
     <div className='flex min-h-0 flex-1 flex-col'>
       <header className='bg-background flex items-center gap-3 border-b px-3 py-2 sm:px-4'>
-        {/* Phones: an outlined 36px box like the bell, sitting 12px from
-            the edge and 12px from the separator. From md: the bare panel
-            icon, nudged left as before. */}
-        <SidebarTrigger className='max-md:bg-background max-md:text-foreground dark:max-md:bg-input/30 dark:max-md:border-input md:text-muted-foreground shrink-0 max-md:h-7 max-md:w-9 max-md:border max-md:shadow-xs md:-ml-1' />
+        {/* Phones: a 36px-wide hamburger, 12px from the edge and 12px from
+            the separator. From md: the bare panel icon, nudged left. */}
+        <SidebarTrigger className='max-md:text-foreground md:text-muted-foreground shrink-0 max-md:h-7 max-md:w-9 md:-ml-1' />
         <Separator orientation='vertical' className='h-4 shrink-0' />
         <Breadcrumb className='min-w-0 flex-1'>
           <BreadcrumbList className='flex-nowrap overflow-hidden text-sm'>
