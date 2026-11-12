@@ -17,6 +17,7 @@ import { Separator } from '@pts/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 
 import { TabsNav, type TabsNavTab } from './tabs-nav'
+import { TOOLBAR_ACTIONS_CLASS } from './toolbar-action'
 
 /**
  * Count labels are declared as plural nouns ('users', 'archived leads');
@@ -123,7 +124,12 @@ export function PageShell({
               // Holds the tabs' height so content starts at the same spot.
               <div className='min-h-8' />
             )}
-            <div className='flex min-w-0 items-center justify-end gap-3 pr-1 sm:gap-6'>
+            <div
+              className={cn(
+                'flex min-w-0 items-center justify-end gap-3 pr-1 sm:gap-6',
+                TOOLBAR_ACTIONS_CLASS
+              )}
+            >
               {count ? (
                 <span className='text-muted-foreground truncate text-sm'>
                   {count.filteredTotal !== undefined &&

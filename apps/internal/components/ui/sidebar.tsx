@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { PanelLeftIcon } from 'lucide-react'
+import { MenuIcon, PanelLeftIcon } from 'lucide-react'
 import { SlotNamespace as Slot } from '@pts/ui/slot'
 
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
@@ -283,7 +283,14 @@ function SidebarTrigger({
       variant='ghost'
       size='icon'
       label='Toggle sidebar'
-      icon={<PanelLeftIcon />}
+      // Phones get the drawer, so a hamburger; from md up it collapses a
+      // panel. CSS swaps them at md (useIsMobile's 768px) so SSR never flips.
+      icon={
+        <>
+          <MenuIcon className='md:hidden' />
+          <PanelLeftIcon className='hidden md:block' />
+        </>
+      }
       className={cn('size-7', className)}
       onClick={event => {
         onClick?.(event)

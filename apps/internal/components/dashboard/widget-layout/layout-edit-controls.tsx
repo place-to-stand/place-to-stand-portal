@@ -3,6 +3,7 @@
 import { Check, Pencil, RotateCcw } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
 
 type LayoutEditControlsProps = {
   isEditing: boolean
@@ -30,9 +31,14 @@ export function LayoutEditControls({
   // Same size and place as My Tasks' "Create task".
   if (!isEditing) {
     return (
-      <Button type='button' size='sm' onClick={onStartEditing}>
+      <Button
+        type='button'
+        size='sm'
+        onClick={onStartEditing}
+        aria-label='Edit widgets'
+      >
         <Pencil className='h-4 w-4' aria-hidden />
-        Edit widgets
+        <ToolbarActionLabel label='Edit widgets' />
       </Button>
     )
   }

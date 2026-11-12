@@ -10,6 +10,10 @@ import {
   useOptimisticTab,
 } from '@/components/layout/tabs-nav'
 import { ToolbarTabsMenu } from '@/components/layout/toolbar-tabs-menu'
+import {
+  TOOLBAR_ACTIONS_CLASS,
+  ToolbarActionLabel,
+} from '@/components/layout/toolbar-action'
 import { startBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
@@ -84,7 +88,7 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
   return (
     // One row, as in PageShell: on phones the tabs fold into a menu. The
     // actions wrap under it on phones only when they still don't fit.
-    <div className='flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap'>
+    <div className='flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap sm:gap-3'>
       <ToolbarTabsMenu
         className='sm:hidden'
         tabs={menuTabs}
@@ -191,7 +195,12 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         )}
       </TabsList>
       {projectActions ? (
-        <div className='ml-auto flex items-center justify-end gap-2 pr-1'>
+        <div
+          className={cn(
+            'ml-auto flex items-center justify-end gap-1.5 pr-1 sm:gap-2',
+            TOOLBAR_ACTIONS_CLASS
+          )}
+        >
           {activeProjectId && activeProjectStatus ? (
             <ProjectStatusCell
               projectId={activeProjectId}
@@ -209,9 +218,10 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
               size='sm'
               variant='outline'
               onClick={projectActions.onLogTime}
+              aria-label='Log time'
             >
               <Plus />
-              Log time
+              <ToolbarActionLabel label='Log time' />
             </Button>
           ) : null}
           <DisabledFieldTooltip
@@ -223,9 +233,10 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
               size='sm'
               onClick={projectActions.onEdit}
               disabled={!projectActions.canEdit}
+              aria-label='Edit project'
             >
               <Pencil />
-              Edit project
+              <ToolbarActionLabel label='Edit project' />
             </Button>
           </DisabledFieldTooltip>
         </div>
