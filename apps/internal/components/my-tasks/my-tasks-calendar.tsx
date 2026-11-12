@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { startOfDay, startOfMonth } from 'date-fns'
+import { parseISO, startOfMonth } from 'date-fns'
+
+import { companyCalendarDate } from '@pts/ui/dates'
 import {
   DndContext,
   type DragEndEvent,
@@ -48,7 +50,9 @@ export function MyTasksCalendar({
   onRefresh,
   scrollStorageKey,
 }: MyTasksCalendarProps) {
-  const today = useMemo(() => startOfDay(new Date()), [])
+  // The company's today, so the server render and hydration agree (see
+  // getTaskDueMeta).
+  const today = useMemo(() => parseISO(companyCalendarDate()), [])
   const baseMonth = useMemo(() => startOfMonth(today), [today])
   const { sensors } = useProjectsBoardSensors()
   const { toast } = useToast()

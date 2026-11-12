@@ -1,11 +1,6 @@
-import {
-  differenceInCalendarDays,
-  isToday,
-  isTomorrow,
-  parseISO,
-} from 'date-fns'
+import { differenceInCalendarDays, parseISO } from 'date-fns'
 
-import { formatCalendarDate } from '@pts/ui/dates'
+import { companyCalendarDate, formatCalendarDate } from '@pts/ui/dates'
 
 const SHORT_DAY = { month: 'short', day: 'numeric' } as const
 
@@ -24,6 +19,8 @@ export type TaskDueMeta = {
 
 type TaskDueMetaOptions = {
   status?: string | null
+  /** For tests; defaults to the current time. */
+  now?: Date
 }
 
 export function getTaskDueMeta(
@@ -50,15 +47,20 @@ export function getTaskDueMeta(
     }
   }
 
-  if (isToday(parsed)) {
+  // Today in the company's time zone, not the machine's: the server (UTC)
+  // and the browser must agree, or the label differs between the server
+  // render and hydration. In the evening UTC is already tomorrow, and that
+  // mismatch made React render the whole page again, wiping dark mode.
+  const today = parseISO(companyCalendarDate(options.now))
+  const daysUntilDue = differenceInCalendarDays(parsed, today)
+
+  if (daysUntilDue === 0) {
     return { label: 'Due today', tone: 'caution' }
   }
 
-  if (isTomorrow(parsed)) {
+  if (daysUntilDue === 1) {
     return { label: 'Due tomorrow', tone: 'caution' }
   }
-
-  const daysUntilDue = differenceInCalendarDays(parsed, new Date())
 
   if (daysUntilDue < 0) {
     return {
