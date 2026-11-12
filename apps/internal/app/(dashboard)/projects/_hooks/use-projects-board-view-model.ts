@@ -8,7 +8,6 @@ import type {
   SearchableComboboxGroup,
   SearchableComboboxItem,
 } from '@/components/ui/searchable-combobox'
-import { buildProjectsBoardBurndown } from './builders/build-projects-board-burndown'
 import { buildProjectsBoardDialogs } from './builders/build-projects-board-dialogs'
 import { buildProjectsBoardHeader } from './builders/build-projects-board-header'
 import { buildProjectsBoardTabs } from './builders/build-projects-board-tabs'
@@ -40,22 +39,10 @@ export type ProjectsBoardHeaderProps = {
   canSelectPrevious: boolean
 }
 
-export type ProjectsBoardBurndownProps = {
-  visible: boolean
-  totalClientRemainingHours: number
-  totalProjectLoggedHours: number
-  projectMonthToDateLoggedHours: number
-  onAddTimeLog: () => void
-  viewTimeLogsHref: string | null
-  showProjectMonthToDate: boolean
-  showClientRemainingCard: boolean
-}
-
 export type ProjectsBoardViewModel = {
   header: ProjectsBoardHeaderProps
   tabs: ProjectsBoardTabsSectionProps
   dialogs: ProjectsBoardDialogsProps
-  burndown: ProjectsBoardBurndownProps
   emptyState: { message: string }
   isEmpty: boolean
 }
@@ -73,7 +60,6 @@ export function useProjectsBoardViewModel({
     renderAssignees,
     boardViewportRef,
     handleBoardScroll,
-    timeLogDialogs,
   } = useProjectsBoardCoreState({ ...props, currentView: currentBoardView })
 
   const navigation = useProjectsBoardNavigation({
@@ -185,34 +171,13 @@ export function useProjectsBoardViewModel({
       defaultStatus: boardState.defaultTaskStatus,
       defaultDueOn: boardState.defaultTaskDueOn,
     },
-    timeLogState: {
-      isOpen: timeLogDialogs.isTimeLogDialogOpen,
-      onOpenChange: timeLogDialogs.handleTimeLogDialogOpenChange,
-      timeLogProjectId: timeLogDialogs.timeLogProjectId,
-      tasks: boardState.activeProjectTasks,
-      currentUserId: props.currentUserId,
-      // `admins` carries every assignable staff user; time is logged by
-      // admins only.
-      admins: props.admins.filter(person => person.role === 'ADMIN'),
-      mode: timeLogDialogs.mode,
-      editingEntry: timeLogDialogs.editingEntry,
-    },
     projects: props.projects,
-  })
-
-  const burndown = buildProjectsBoardBurndown({
-    activeProject: boardState.activeProject,
-    onAddTimeLog: () => timeLogDialogs.openCreateTimeLogDialog(),
-    viewTimeLogsHref: navigation.timeLogsDisabled
-      ? null
-      : navigation.timeLogsHref,
   })
 
   return {
     header,
     tabs,
     dialogs,
-    burndown,
     emptyState: { message: NO_PROJECTS_MESSAGE },
     isEmpty: props.projects.length === 0,
   }

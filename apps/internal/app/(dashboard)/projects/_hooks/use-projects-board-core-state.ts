@@ -4,7 +4,6 @@ import { useMemo } from 'react'
 
 import { useProjectsBoardState } from '@/lib/projects/board/use-projects-board-state'
 import { useBoardScrollPersistence } from '@/lib/projects/board/state/use-board-scroll-persistence'
-import { useBoardTimeLogDialogs } from '@/lib/projects/board/state/use-board-time-log-dialogs'
 import { useProjectsBoardDerivedState } from '@/lib/projects/board/state/use-projects-board-derived-state'
 import { createRenderAssignees } from '@/lib/projects/board/board-selectors'
 import { useToast } from '@/components/ui/use-toast'
@@ -26,10 +25,6 @@ export function useProjectsBoardCoreState({
   const activeProjectId = boardState.activeProject?.id ?? null
   const { boardViewportRef, handleBoardScroll } = useBoardScrollPersistence({
     activeProjectId,
-  })
-
-  const timeLogDialogs = useBoardTimeLogDialogs({
-    activeProject: boardState.activeProject,
   })
 
   const derivedState = useProjectsBoardDerivedState({
@@ -57,6 +52,5 @@ export function useProjectsBoardCoreState({
     renderAssignees,
     boardViewportRef,
     handleBoardScroll,
-    timeLogDialogs,
   }
 }

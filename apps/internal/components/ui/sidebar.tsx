@@ -288,7 +288,7 @@ function SidebarTrigger({
       icon={
         <>
           {/* Longer lines than lucide's Menu (20px, not 16px) in the same
-              2px stroke; the button stays 36px wide. */}
+              2px stroke. */}
           <svg
             viewBox='0 0 20 14'
             fill='none'
