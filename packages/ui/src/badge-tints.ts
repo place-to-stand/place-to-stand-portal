@@ -37,7 +37,7 @@ export type BadgeTint = keyof typeof BADGE_TINTS
  * A board lane's colour, from its status badge's hue: the 2px line across the
  * lane's top, and the faint fill while a card is dragged over it.
  * Lines are muted so the badge (the real data) leads: light uses the 500
- * hue at 50%, dark the badge's 200 ink at 40%. Written out in full for
+ * hue at 50%, dark the badge's 200 ink at 70%. Written out in full for
  * Tailwind's scanner, like `BADGE_TINTS`.
  */
 export const BOARD_LANE_TINTS: Record<
@@ -45,55 +45,55 @@ export const BOARD_LANE_TINTS: Record<
   { line: string; drop: string }
 > = {
   neutral: {
-    line: 'border-t-muted-foreground/30',
+    line: 'border-t-muted-foreground/30 dark:border-t-muted-foreground/70',
     drop: 'bg-muted-foreground/[0.06]',
   },
   sky: {
-    line: 'border-t-sky-500/50 dark:border-t-sky-200/40',
+    line: 'border-t-sky-500/50 dark:border-t-sky-200/70',
     drop: 'bg-sky-500/[0.06] dark:bg-sky-200/[0.06]',
   },
   blue: {
-    line: 'border-t-blue-500/50 dark:border-t-blue-200/40',
+    line: 'border-t-blue-500/50 dark:border-t-blue-200/70',
     drop: 'bg-blue-500/[0.06] dark:bg-blue-200/[0.06]',
   },
   indigo: {
-    line: 'border-t-indigo-500/50 dark:border-t-indigo-200/40',
+    line: 'border-t-indigo-500/50 dark:border-t-indigo-200/70',
     drop: 'bg-indigo-500/[0.06] dark:bg-indigo-200/[0.06]',
   },
   violet: {
-    line: 'border-t-violet-500/50 dark:border-t-violet-200/40',
+    line: 'border-t-violet-500/50 dark:border-t-violet-200/70',
     drop: 'bg-violet-500/[0.06] dark:bg-violet-200/[0.06]',
   },
   fuchsia: {
-    line: 'border-t-fuchsia-500/50 dark:border-t-fuchsia-200/40',
+    line: 'border-t-fuchsia-500/50 dark:border-t-fuchsia-200/70',
     drop: 'bg-fuchsia-500/[0.06] dark:bg-fuchsia-200/[0.06]',
   },
   pink: {
-    line: 'border-t-pink-500/50 dark:border-t-pink-200/40',
+    line: 'border-t-pink-500/50 dark:border-t-pink-200/70',
     drop: 'bg-pink-500/[0.06] dark:bg-pink-200/[0.06]',
   },
   rose: {
-    line: 'border-t-rose-500/50 dark:border-t-rose-200/40',
+    line: 'border-t-rose-500/50 dark:border-t-rose-200/70',
     drop: 'bg-rose-500/[0.06] dark:bg-rose-200/[0.06]',
   },
   orange: {
-    line: 'border-t-orange-500/50 dark:border-t-orange-200/40',
+    line: 'border-t-orange-500/50 dark:border-t-orange-200/70',
     drop: 'bg-orange-500/[0.06] dark:bg-orange-200/[0.06]',
   },
   amber: {
-    line: 'border-t-amber-500/50 dark:border-t-amber-200/40',
+    line: 'border-t-amber-500/50 dark:border-t-amber-200/70',
     drop: 'bg-amber-500/[0.06] dark:bg-amber-200/[0.06]',
   },
   emerald: {
-    line: 'border-t-emerald-500/50 dark:border-t-emerald-200/40',
+    line: 'border-t-emerald-500/50 dark:border-t-emerald-200/70',
     drop: 'bg-emerald-500/[0.06] dark:bg-emerald-200/[0.06]',
   },
   teal: {
-    line: 'border-t-teal-500/50 dark:border-t-teal-200/40',
+    line: 'border-t-teal-500/50 dark:border-t-teal-200/70',
     drop: 'bg-teal-500/[0.06] dark:bg-teal-200/[0.06]',
   },
   cyan: {
-    line: 'border-t-cyan-500/50 dark:border-t-cyan-200/40',
+    line: 'border-t-cyan-500/50 dark:border-t-cyan-200/70',
     drop: 'bg-cyan-500/[0.06] dark:bg-cyan-200/[0.06]',
   },
 }
