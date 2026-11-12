@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { MenuIcon, PanelLeftIcon } from 'lucide-react'
+import { PanelLeftIcon } from 'lucide-react'
 import { SlotNamespace as Slot } from '@pts/ui/slot'
 
 import { useIsMobile } from '@pts/ui/hooks/use-mobile'
@@ -287,7 +287,19 @@ function SidebarTrigger({
       // panel. CSS swaps them at md (useIsMobile's 768px) so SSR never flips.
       icon={
         <>
-          <MenuIcon className='md:hidden' />
+          {/* Longer lines than lucide's Menu (20px, not 16px) in the same
+              2px stroke; the button stays 36px wide. */}
+          <svg
+            viewBox='0 0 20 14'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth={2}
+            strokeLinecap='round'
+            aria-hidden
+            className='h-3.5! w-5! md:hidden'
+          >
+            <path d='M1 1h18M1 7h18M1 13h18' />
+          </svg>
           <PanelLeftIcon className='hidden md:block' />
         </>
       }
