@@ -283,7 +283,26 @@ function SidebarTrigger({
       variant='ghost'
       size='icon'
       label='Toggle sidebar'
-      icon={<PanelLeftIcon />}
+      // Phones get the drawer, so a hamburger; from md up it collapses a
+      // panel. CSS swaps them at md (useIsMobile's 768px) so SSR never flips.
+      icon={
+        <>
+          {/* Longer lines than lucide's Menu (20px, not 16px) in the same
+              2px stroke. */}
+          <svg
+            viewBox='0 0 20 14'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth={2}
+            strokeLinecap='round'
+            aria-hidden
+            className='h-3.5! w-5! md:hidden'
+          >
+            <path d='M1 1h18M1 7h18M1 13h18' />
+          </svg>
+          <PanelLeftIcon className='hidden md:block' />
+        </>
+      }
       className={cn('size-7', className)}
       onClick={event => {
         onClick?.(event)

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
 import { useSheetParamSelection } from '@/lib/sheets/use-sheet-params'
@@ -45,10 +46,11 @@ export function SheetCreateButton({
           type='button'
           onClick={openCreate}
           disabled={disabled}
+          aria-label={label}
           className='gap-2'
         >
           {icon}
-          {label}
+          <ToolbarActionLabel label={label} />
         </Button>
       </DisabledFieldTooltip>
     </div>

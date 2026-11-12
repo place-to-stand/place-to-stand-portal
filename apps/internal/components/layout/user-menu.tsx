@@ -76,7 +76,7 @@ export function UserMenu({ user, align = 'end', inSidebar = false }: Props) {
           </Avatar>
           <div
             className={cn(
-              'hidden min-w-0 flex-1 flex-col text-left leading-tight sm:flex',
+              'flex min-w-0 flex-1 flex-col text-left leading-tight',
               inSidebar && 'group-data-[collapsible=icon]:hidden'
             )}
           >

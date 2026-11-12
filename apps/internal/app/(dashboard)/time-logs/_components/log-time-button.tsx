@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
+import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
 import { TimeLogDialog } from '@/app/(dashboard)/projects/_components/project-time-log/project-time-log-dialog'
 import {
   SearchableCombobox,
@@ -89,7 +90,7 @@ export function LogTimeButton({ projects }: LogTimeButtonProps) {
             aria-label='Log time: choose a project'
           >
             <Plus className='h-4 w-4' aria-hidden />
-            Log time
+            <ToolbarActionLabel label='Log time' />
           </Button>
         }
       />

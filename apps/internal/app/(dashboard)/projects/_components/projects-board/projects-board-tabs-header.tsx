@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Pencil, Plus } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { DisabledFieldTooltip } from '@/components/ui/disabled-field-tooltip'
@@ -7,10 +7,17 @@ import { TabsList, TabsTrigger } from '@pts/ui/tabs'
 import {
   TOOLBAR_TAB_CLASS,
   TOOLBAR_TABS_LIST_CLASS,
+  useOptimisticTab,
 } from '@/components/layout/tabs-nav'
+import { ToolbarTabsMenu } from '@/components/layout/toolbar-tabs-menu'
+import {
+  TOOLBAR_ACTIONS_CLASS,
+  ToolbarActionLabel,
+} from '@/components/layout/toolbar-action'
 import { startBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import { ProjectStatusCell } from '@/components/projects/project-status-cell'
 import type { ProjectStatusValue } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 import type { ProjectActionControls } from './projects-board-tabs'
 
@@ -51,9 +58,49 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
     onProjectStatusChange,
   } = props
 
+  const [shownTab, setShownTab] = useOptimisticTab(initialTab)
+  const menuTabs = [
+    { value: 'board', label: 'Tasks', href: boardHref },
+    ...(tasksOnly
+      ? []
+      : [
+          {
+            value: 'review',
+            label: 'Review',
+            href: reviewHref,
+            disabled: reviewDisabled,
+          },
+          {
+            value: 'timeLogs',
+            label: 'Time logs',
+            href: timeLogsHref,
+            disabled: timeLogsDisabled,
+          },
+          {
+            value: 'activity',
+            label: 'Activity',
+            href: activityHref,
+            disabled: activityDisabled,
+          },
+        ]),
+  ]
+
   return (
-    <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-      <TabsList className={TOOLBAR_TABS_LIST_CLASS}>
+    // One row, as in PageShell: on phones the tabs fold into a menu. The
+    // actions wrap under it on phones only when they still don't fit.
+    <div className='flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap sm:gap-3'>
+      <ToolbarTabsMenu
+        className='sm:hidden'
+        tabs={menuTabs}
+        activeTab={shownTab}
+        onSelect={value => {
+          setShownTab(value)
+          startBoardTabInteraction(initialTab, value)
+        }}
+      />
+      <TabsList
+        className={cn(TOOLBAR_TABS_LIST_CLASS, 'hidden min-w-0 sm:flex')}
+      >
         <TabsTrigger value='board' className={TOOLBAR_TAB_CLASS} asChild>
           <Link
             href={boardHref}
@@ -148,7 +195,12 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
         )}
       </TabsList>
       {projectActions ? (
-        <div className='flex w-full items-center justify-end gap-2 pr-1 sm:w-auto'>
+        <div
+          className={cn(
+            'ml-auto flex items-center justify-end gap-1.5 pr-1 sm:gap-2',
+            TOOLBAR_ACTIONS_CLASS
+          )}
+        >
           {activeProjectId && activeProjectStatus ? (
             <ProjectStatusCell
               projectId={activeProjectId}
@@ -160,17 +212,6 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
           ) : null}
           {/* Toolbar actions are size sm (32px), level with the tabs and
               pickers on the row, as on every page. */}
-          {projectActions.onLogTime ? (
-            <Button
-              type='button'
-              size='sm'
-              variant='outline'
-              onClick={projectActions.onLogTime}
-            >
-              <Plus />
-              Log time
-            </Button>
-          ) : null}
           <DisabledFieldTooltip
             disabled={!projectActions.canEdit}
             reason={projectActions.editDisabledReason}
@@ -180,9 +221,10 @@ export function ProjectsBoardTabsHeader(props: ProjectsBoardTabsHeaderProps) {
               size='sm'
               onClick={projectActions.onEdit}
               disabled={!projectActions.canEdit}
+              aria-label='Edit project'
             >
               <Pencil />
-              Edit project
+              <ToolbarActionLabel label='Edit project' />
             </Button>
           </DisabledFieldTooltip>
         </div>

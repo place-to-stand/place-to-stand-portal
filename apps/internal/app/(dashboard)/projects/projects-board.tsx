@@ -124,9 +124,6 @@ export function ProjectsBoard(props: ProjectsBoardComponentProps) {
           archiveDisabledReason: projectMutationPending ? pendingReason : null,
           onEdit: handleEditProject,
           onArchive: handleArchiveProject,
-          onLogTime: viewModel.burndown.visible
-            ? viewModel.burndown.onAddTimeLog
-            : undefined,
         }
       : null
 

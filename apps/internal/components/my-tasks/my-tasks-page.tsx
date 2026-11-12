@@ -46,6 +46,7 @@ import { Plus } from 'lucide-react'
 import { projectTasksHref } from '@/lib/sheets/hrefs'
 import { PageSheetEntry } from '@/lib/sheets/page-sheet-entry'
 import { setFirstSheetParam } from '@/lib/sheets/stack'
+import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
 
 export type MyTasksInitialEntry = {
   taskId: string
@@ -558,9 +559,10 @@ export function MyTasksPage({
           type='button'
           size='sm'
           onClick={() => handleStartCreateTask('ON_DECK')}
+          aria-label='Create task'
         >
           <Plus className='h-4 w-4' />
-          Create task
+          <ToolbarActionLabel label='Create task' />
         </Button>
       }
       // The board pins to the viewport (columns scroll internally) and needs

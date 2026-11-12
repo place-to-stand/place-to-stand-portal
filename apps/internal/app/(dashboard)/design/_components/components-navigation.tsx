@@ -14,6 +14,8 @@ import { Button } from '@pts/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pts/ui/tabs'
 import { PageShell } from '@/components/layout/page-shell'
 import { TabsNav, type TabsNavTab } from '@/components/layout/tabs-nav'
+import { ToolbarActionLabel } from '@/components/layout/toolbar-action'
+import { ToolbarTabsMenu } from '@/components/layout/toolbar-tabs-menu'
 import { MetaLink } from '@/components/ui/meta-link'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
@@ -84,6 +86,9 @@ export function ComponentsTabs() {
         </Example>
         <Example caption='TabsNav: route tabs in the page toolbar'>
           <TabsNav tabs={ROUTE_TABS} activeTab='projects' />
+        </Example>
+        <Example caption='ToolbarTabsMenu: TabsNav on phones, one pill that opens a menu of the tabs'>
+          <ToolbarTabsMenu tabs={ROUTE_TABS} activeTab='projects' />
         </Example>
         <Example caption='Breadcrumb: pages title themselves here'>
           <Breadcrumb>
@@ -174,9 +179,9 @@ export function ComponentsPageShell() {
             activeTab='projects'
             count={{ label: 'projects', total: 118, filteredTotal: 24 }}
             primaryAction={
-              <Button size='sm'>
+              <Button size='sm' aria-label='Create project'>
                 <Plus />
-                Create project
+                <ToolbarActionLabel label='Create project' />
               </Button>
             }
           >
