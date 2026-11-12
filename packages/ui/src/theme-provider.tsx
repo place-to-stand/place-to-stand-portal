@@ -4,7 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -14,7 +14,7 @@ import {
  * Light/dark preference, shared by both portals: the `theme` key in
  * localStorage and the `.dark` class on <html>. The blocking script in each
  * root layout sets the class before first paint (stored choice, else the
- * system's); this provider takes over after hydration. Until the user picks
+ * system's); this provider sets it again on mount and takes over from there. Until the user picks
  * one, nothing is stored, so the portal keeps following the system.
  */
 export type Theme = 'light' | 'dark'
@@ -31,6 +31,19 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
+/** The stored choice, else the system's: what the blocking script picks. */
+function preferredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    if (stored === 'light' || stored === 'dark') return stored
+  } catch {
+    // Storage blocked: fall back to the system.
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+}
+
 function apply(theme: Theme) {
   document.documentElement.classList.toggle('dark', theme === 'dark')
   try {
@@ -41,18 +54,23 @@ function apply(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Starts light on the server; the effect below reads what the blocking
-  // script already put on the DOM.
+  // Starts light on the server; the layout effect below sets the real one.
   const [theme, setThemeState] = useState<Theme>('light')
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Re-apply the class rather than read it back from <html>: when hydration
+    // fails anywhere outside a Suspense boundary, React renders the root
+    // again on the client and strips every attribute from <html>, the
+    // blocking script's `dark` class included, and that script does not run
+    // again. This provider mounts again in that render, so putting the class
+    // back here (before paint) keeps the page in the chosen theme.
+    const next = preferredTheme()
+    document.documentElement.classList.toggle('dark', next === 'dark')
     // Deferred: setting state synchronously inside an effect triggers
     // cascading renders (and the lint rule that guards against it).
     queueMicrotask(() => {
-      setThemeState(
-        document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-      )
+      setThemeState(next)
       setMounted(true)
     })
   }, [])

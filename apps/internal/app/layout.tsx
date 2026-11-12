@@ -45,13 +45,15 @@ export default async function RootLayout({
     <html lang='en' suppressHydrationWarning>
       <head>
         {/* Synchronous theme init — must run before first paint to avoid a
-            light-mode flash. Safe to render raw: hydration only re-renders
-            this tree if something else mismatches (see use-mobile). */}
+            light-mode flash. If hydration fails elsewhere (see use-mobile),
+            React renders this tree again, strips <html>'s class and never
+            re-runs the script; ThemeProvider puts the class back. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const theme = localStorage.getItem('theme');
+                let theme = null;
+                try { theme = localStorage.getItem('theme'); } catch (e) {}
                 const isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 if (isDark) {
                   document.documentElement.classList.add('dark');
