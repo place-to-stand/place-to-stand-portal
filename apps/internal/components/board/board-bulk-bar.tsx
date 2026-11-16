@@ -166,7 +166,9 @@ function AssigneeMenu({
         ? { verb: 'assign', past: `assigned to ${person.name}` }
         : { verb: 'clear the assignee of', past: 'unassigned' },
       'assignee',
-      selection => save({ selection, assigneeId: person?.id ?? null })
+      selection => save({ selection, assigneeId: person?.id ?? null }),
+      undefined,
+      KEEP_SELECTION
     )
 
   return (
@@ -234,7 +236,8 @@ function DueDateMenu({
             settleOptimisticDueOn(id, tokens[index], !putBack.has(id))
           )
         }
-      }
+      },
+      KEEP_SELECTION
     )
   }
 
@@ -275,3 +278,6 @@ function DueDateMenu({
     </DropdownMenu>
   )
 }
+
+/** Cards keep their selection after an edit; only Archive clears it. */
+const KEEP_SELECTION = { keepSelection: true }

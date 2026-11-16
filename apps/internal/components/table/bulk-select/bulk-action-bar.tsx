@@ -57,7 +57,12 @@ export type RunBulkAction = (
   verb: BulkVerb,
   label: string,
   action: (input: BulkSelectionInput) => Promise<BulkActionResult>,
-  optimistic?: BulkOptimistic
+  optimistic?: BulkOptimistic,
+  /**
+   * Keeps the rows ticked after the change lands, for an edit that leaves
+   * them on screen (a board's Set assignee and Set due date).
+   */
+  options?: { keepSelection?: boolean }
 ) => void
 
 /** What the bar reads of a selection: a list's ticks or a board's cards. */
@@ -136,7 +141,7 @@ export function BulkActionBar({
 
   const selected = countLabel(entity, selection.count)
 
-  const runWith: RunBulkAction = (verb, label, action, optimistic) => {
+  const runWith: RunBulkAction = (verb, label, action, optimistic, options) => {
     const params = {
       ...presetParams,
       ...Object.fromEntries(
@@ -180,7 +185,7 @@ export function BulkActionBar({
       }
       // Rows done before a failure changed too, so the list refreshes.
       if (result.done > 0 || result.error === CHUNK_FAILED) {
-        selection.clear()
+        if (!options?.keepSelection) selection.clear()
         if (onDone) onDone()
         else router.refresh()
       }
