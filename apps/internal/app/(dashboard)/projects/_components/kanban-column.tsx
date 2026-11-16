@@ -6,6 +6,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Badge } from '@pts/ui/badge'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
+import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/lib/projects/task-status'
 
 import { TaskCard, type TaskContextDetails } from '../task-card'
+import type { TaskEdgeMoves } from '@/components/table/record-context-menu'
 import { boardColumnClass } from '@/components/board/board-column'
 
 type TaskCardOptions = {
@@ -26,6 +28,11 @@ type KanbanColumnProps = {
   label: string
   tasks: readonly TaskWithRelations[]
   canManage: boolean
+  /**
+   * Saves a move the way the board saves a drop. Adds Send to top and Send
+   * to bottom to each card's right-click menu (with `canManage`).
+   */
+  onMoveTask?: (move: KanbanMove<BoardColumnId>) => void
   renderAssignees: (
     task: TaskWithRelations
   ) => Array<{ id: string; name: string; avatarUrl: string | null }>
@@ -52,6 +59,7 @@ export function KanbanColumn({
   label,
   tasks,
   canManage,
+  onMoveTask,
   renderAssignees,
   onEditTask,
   activeTaskId,
@@ -113,7 +121,7 @@ export function KanbanColumn({
           items={tasks.map(task => task.id)}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map(task => (
+          {tasks.map((task, index) => (
             <TaskCard
               key={task.id}
               task={task}
@@ -124,6 +132,11 @@ export function KanbanColumn({
               isActive={task.id === activeTaskId}
               disableDropTransition={task.id === recentlyMovedTaskId}
               context={getTaskCardOptions?.(task)?.context}
+              move={
+                canManage && onMoveTask
+                  ? columnEdgeMoves(columnId, tasks, index, task.id, onMoveTask)
+                  : undefined
+              }
             />
           ))}
         </SortableContext>
@@ -131,4 +144,28 @@ export function KanbanColumn({
       </div>
     </div>
   )
+}
+
+/**
+ * Send to top / bottom for the card at `index`: the same move as dragging it
+ * to that end of its column. Null where the card already sits there.
+ */
+function columnEdgeMoves(
+  columnId: BoardColumnId,
+  tasks: readonly TaskWithRelations[],
+  index: number,
+  id: string,
+  onMoveTask: (move: KanbanMove<BoardColumnId>) => void
+): TaskEdgeMoves {
+  const last = tasks.length - 1
+  const moveTo = (to: number) => () =>
+    onMoveTask({
+      id,
+      from: { columnId, index },
+      to: { columnId, index: to },
+    })
+  return {
+    toTop: index > 0 ? moveTo(0) : null,
+    toBottom: index < last ? moveTo(last) : null,
+  }
 }

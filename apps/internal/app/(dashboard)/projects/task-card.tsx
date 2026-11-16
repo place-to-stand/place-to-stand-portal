@@ -24,6 +24,8 @@ import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import { TaskContextMenu } from './task-context-menu'
+import type { TaskEdgeMoves } from '@/components/table/record-context-menu'
+import { useOptimisticDueOn } from '@/lib/tasks/optimistic-due-on'
 import { BOARD_CARD_GHOST_CLASS } from '@/components/board/board-drag'
 import { cn } from '@/lib/utils'
 import type {
@@ -59,6 +61,8 @@ type TaskCardProps = {
   isActive?: boolean
   disableDropTransition?: boolean
   context?: TaskContextDetails
+  /** Send to top / bottom in the right-click menu (boards only). */
+  move?: TaskEdgeMoves
 }
 
 function CardContent({
@@ -72,9 +76,8 @@ function CardContent({
 }) {
   const attachmentCount = task.attachmentCount ?? task.attachments?.length ?? 0
   const loggedHours = task.loggedHours ?? 0
-  const dueMeta = task.due_on
-    ? getTaskDueMeta(task.due_on, { status: task.status })
-    : null
+  const dueOn = useOptimisticDueOn(task)
+  const dueMeta = dueOn ? getTaskDueMeta(dueOn, { status: task.status }) : null
   const isCompleted = task.status === 'DONE'
   const lead = task.lead
 
@@ -206,6 +209,7 @@ export function TaskCard({
   isActive = false,
   disableDropTransition = false,
   context,
+  move,
 }: TaskCardProps) {
   const {
     attributes,
@@ -264,6 +268,7 @@ export function TaskCard({
       onEdit={() => onEdit(task)}
       canManage={canManage}
       draggable={draggable}
+      move={move}
     >
       <div
         ref={setNodeRef}
@@ -318,7 +323,7 @@ export function TaskCardStatic({
   canManage,
   className,
   context,
-  onAssigned,
+  onChanged,
 }: {
   task: TaskWithRelations
   assignees: AssigneeInfo[]
@@ -326,8 +331,8 @@ export function TaskCardStatic({
   canManage: boolean
   className?: string
   context?: TaskContextDetails
-  /** The list holds its own copy of the task: refetch after Set assignee. */
-  onAssigned?: () => void
+  /** The list holds its own copy of the task: refetch after a menu change. */
+  onChanged?: () => void
 }) {
   const isCompleted = task.status === 'DONE'
 
@@ -337,7 +342,7 @@ export function TaskCardStatic({
       onEdit={onClick}
       canManage={canManage}
       archivable={false}
-      onAssigned={onAssigned}
+      onChanged={onChanged}
     >
       <div
         role='button'

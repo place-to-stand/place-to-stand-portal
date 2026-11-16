@@ -1,7 +1,14 @@
 'use client'
 
-import type { ReactElement } from 'react'
-import { Archive, Copy, Pencil, RefreshCw } from 'lucide-react'
+import { useRef, type ReactElement } from 'react'
+import {
+  Archive,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  Copy,
+  Pencil,
+  RefreshCw,
+} from 'lucide-react'
 
 import {
   ContextMenu,
@@ -19,6 +26,19 @@ import {
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
 
 import { AssigneeSubmenu, type AssigneeMenuConfig } from './assignee-submenu'
+import { DueDateSubmenu, type DueDateMenuConfig } from './due-date-submenu'
+
+/**
+ * Send to top / Send to bottom on a board card: the same move as dragging it
+ * to that end of its column. Null disables the item (the card is already
+ * there).
+ */
+export type TaskEdgeMoves = {
+  toTop: (() => void) | null
+  toBottom: (() => void) | null
+}
+
+type MenuActions = { close: () => void; unmount: () => void }
 
 type RecordContextMenuProps = {
   /**
@@ -48,6 +68,13 @@ type RecordContextMenuProps = {
    * take the record, then "Clear assignee". Omit for viewers who can't edit.
    */
   assign?: AssigneeMenuConfig
+  /**
+   * Adds "Set due date ›" (tasks): quick days, a calendar and "Clear due
+   * date". Omit for viewers who can't edit.
+   */
+  dueDate?: DueDateMenuConfig
+  /** Adds Send to top and Send to bottom (cards on a board). */
+  move?: TaskEdgeMoves
   /** The list's archive handler (its confirm dialog). Omit when archived. */
   onArchive?: () => void
   /** The archive list's restore handler. */
@@ -68,7 +95,8 @@ type RecordContextMenuProps = {
 /**
  * The right-click menu on every record row and card: Edit, Duplicate (for
  * records that can be copied, see `DUPLICABLE_SHEET_ENTITIES`), Set assignee
- * (tasks and leads), then Archive or Restore. Each action is the same one the row's buttons and the sheet
+ * (tasks and leads), Set due date (tasks), Send to top / bottom (board
+ * cards), then Archive or Restore. Each action is the same one the row's buttons and the sheet
  * already run, so the menu adds a way in, never a second behaviour.
  */
 export function RecordContextMenu({
@@ -77,8 +105,10 @@ export function RecordContextMenu({
   disabled = false,
   ...itemProps
 }: RecordContextMenuProps) {
+  const actionsRef = useRef<MenuActions | null>(null)
   return (
     <ContextMenu
+      actionsRef={actionsRef}
       disabled={disabled}
       onOpenChange={(next, details) => {
         if (next && draggable && isTouchOpen(details.event)) {
@@ -90,7 +120,10 @@ export function RecordContextMenu({
       {/* The menu is portaled, but React still bubbles its clicks to the
           row, whose own click would open the record too. */}
       <ContextMenuContent onClick={event => event.stopPropagation()}>
-        <RecordContextMenuItems {...itemProps} />
+        <RecordContextMenuItems
+          {...itemProps}
+          closeMenu={() => actionsRef.current?.close()}
+        />
       </ContextMenuContent>
     </ContextMenu>
   )
@@ -122,11 +155,17 @@ function RecordContextMenuItems({
   duplicable = true,
   onDuplicate,
   assign,
+  dueDate,
+  move,
   onArchive,
   onRestore,
   archiveDisabledReason = null,
   pending = false,
-}: Omit<RecordContextMenuProps, 'children' | 'draggable' | 'disabled'>) {
+  closeMenu,
+}: Omit<RecordContextMenuProps, 'children' | 'draggable' | 'disabled'> & {
+  /** Closes the menu from controls that aren't menu items (the calendar). */
+  closeMenu: () => void
+}) {
   const { open, duplicate } = useSheetParams()
   const canDuplicate = duplicable && isDuplicableSheetEntity(entity)
   const lifecycleDisabled = pending || Boolean(archiveDisabledReason)
@@ -155,7 +194,37 @@ function RecordContextMenuItems({
       {assign && isSheetEntityKey(entity) ? (
         <AssigneeSubmenu entity={entity} id={id} {...assign} />
       ) : null}
-      {(editable || canDuplicate || assign) && (onArchive || onRestore) ? (
+      {dueDate && isSheetEntityKey(entity) ? (
+        <DueDateSubmenu
+          entity={entity}
+          id={id}
+          {...dueDate}
+          onPicked={closeMenu}
+        />
+      ) : null}
+      {move ? (
+        <>
+          {editable || canDuplicate || assign || dueDate ? (
+            <ContextMenuSeparator />
+          ) : null}
+          <ContextMenuItem
+            disabled={!move.toTop}
+            onClick={() => move.toTop?.()}
+          >
+            <ArrowUpToLine />
+            Send to top
+          </ContextMenuItem>
+          <ContextMenuItem
+            disabled={!move.toBottom}
+            onClick={() => move.toBottom?.()}
+          >
+            <ArrowDownToLine />
+            Send to bottom
+          </ContextMenuItem>
+        </>
+      ) : null}
+      {(editable || canDuplicate || assign || dueDate || move) &&
+      (onArchive || onRestore) ? (
         <ContextMenuSeparator />
       ) : null}
       {onArchive ? (

@@ -23,7 +23,7 @@ import {
   BOARD_GRID_CLASS,
   boardGridStyle,
 } from '@/components/board/board-column'
-import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
+import { useKanbanDrag, type KanbanMove } from '@/lib/dnd/use-kanban-drag'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -130,7 +130,7 @@ export function MyTasksBoard({
   )
 
   const handleDrop = useCallback(
-    ({ id: taskId, to }: KanbanDrop<MyTaskStatus>) => {
+    ({ id: taskId, to }: KanbanMove<MyTaskStatus>) => {
       const change = produceReorderUpdate({
         entries,
         hiddenTaskIds,
@@ -191,6 +191,7 @@ export function MyTasksBoard({
                       label={column.label}
                       tasks={drag.itemsFor(column.id)}
                       canManage={boardCanManage}
+                      onMoveTask={handleDrop}
                       renderAssignees={renderAssignees}
                       onEditTask={task => onOpenTask(task.id)}
                       activeTaskId={activeTaskId}

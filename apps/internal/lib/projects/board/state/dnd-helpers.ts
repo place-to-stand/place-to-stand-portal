@@ -1,17 +1,10 @@
 import type { TaskWithRelations } from '@/lib/types'
 
 import { moveIntoColumn, rankAmongHidden } from '@/lib/dnd/kanban'
-import type { KanbanDrop } from '@/lib/dnd/use-kanban-drag'
+import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import type { BoardColumnId } from '../board-constants'
 import { compareTasksByRank } from '../board-utils'
 import type { TaskLookup } from './types'
-
-type TaskDragData = {
-  type: 'task'
-  taskId: string
-  projectId: string
-  columnId?: BoardColumnId
-}
 
 export type ReorderPlan = {
   projectId: string
@@ -57,25 +50,22 @@ export type ColumnTaskFilter = (
   tasks: TaskWithRelations[]
 ) => TaskWithRelations[]
 
-/** The move a drop asks for, against the project's current tasks. */
+/**
+ * The move a drop (or Send to top / bottom) asks for, against the project's
+ * current tasks.
+ */
 export const deriveReorderPlan = (
-  { id: taskId, from, to, event }: KanbanDrop<BoardColumnId>,
+  { id: taskId, from, to }: KanbanMove<BoardColumnId>,
   tasksByProject: TaskLookup,
   filterColumnTasks?: ColumnTaskFilter
 ): ReorderPlan | null => {
-  const activeData = event.active.data.current as TaskDragData | undefined
+  const found = findTaskProject(tasksByProject, taskId)
 
-  if (!activeData || activeData.type !== 'task') {
+  if (!found) {
     return null
   }
 
-  const projectId = activeData.projectId
-  const projectTasks = tasksByProject.get(projectId)
-  const currentTask = projectTasks?.find(task => task.id === taskId)
-
-  if (!projectTasks || !currentTask) {
-    return null
-  }
+  const { projectId, projectTasks, currentTask } = found
 
   const rawDestinationTasks = getColumnTasks(projectTasks, to.columnId)
   const destinationTasks = filterColumnTasks
@@ -151,4 +141,12 @@ export const prepareReorderOutcome = (plan: ReorderPlan): ReorderOutcome => {
     destinationStatus,
     recentlyMoved: destinationStatus !== currentTask.status,
   }
+}
+
+const findTaskProject = (tasksByProject: TaskLookup, taskId: string) => {
+  for (const [projectId, projectTasks] of tasksByProject) {
+    const currentTask = projectTasks.find(task => task.id === taskId)
+    if (currentTask) return { projectId, projectTasks, currentTask }
+  }
+  return null
 }

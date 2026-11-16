@@ -5,7 +5,7 @@ import type { DbUser, TaskWithRelations } from '@/lib/types'
 import type { DndContextProps } from '@dnd-kit/core'
 import type { RenderAssigneeFn } from '../../../../../lib/projects/board/board-selectors'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
-import type { KanbanDrop } from '@/lib/dnd/use-kanban-drag'
+import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { completeBoardTabInteraction } from '@/lib/projects/board/board-tab-interaction'
 import type { ProjectStatusValue } from '@/lib/constants'
 
@@ -44,7 +44,8 @@ export type ProjectsBoardTabsProps = {
   onCreateTask: () => void
   sensors: DndContextProps['sensors']
   onDragStart: () => void
-  onTaskDrop: (drop: KanbanDrop<BoardColumnId>) => void
+  /** Saves a drop, and the card menu's Send to top / bottom. */
+  onTaskDrop: (move: KanbanMove<BoardColumnId>) => void
   isPending: boolean
   boardViewportRef: RefObject<HTMLDivElement | null>
   onBoardScroll: UIEventHandler<HTMLDivElement>

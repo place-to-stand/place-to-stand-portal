@@ -156,7 +156,7 @@ export function LeadTasksSection({
               assignees={resolveAssignees(task)}
               onClick={() => openTask(task)}
               canManage={canManage}
-              onAssigned={refetchTasks}
+              onChanged={refetchTasks}
             />
           ))}
         </div>
@@ -182,7 +182,7 @@ export function LeadTasksSection({
                 assignees={resolveAssignees(task)}
                 onClick={() => openTask(task)}
                 canManage={canManage}
-                onAssigned={refetchTasks}
+                onChanged={refetchTasks}
               />
             ))}
           </CollapsibleContent>

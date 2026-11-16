@@ -22,10 +22,17 @@ import {
   type KanbanDraft,
 } from './kanban-draft'
 
-export type KanbanDrop<C extends string> = {
+/**
+ * A card moving from one place to another. A drop is one; so is the card
+ * menu's "Send to top" / "Send to bottom", which boards save the same way.
+ */
+export type KanbanMove<C extends string> = {
   id: string
   from: KanbanDropTarget<C>
   to: KanbanDropTarget<C>
+}
+
+export type KanbanDrop<C extends string> = KanbanMove<C> & {
   event: DragEndEvent
 }
 
