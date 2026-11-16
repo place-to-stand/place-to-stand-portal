@@ -219,9 +219,15 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       const from = originRef.current
       const id = String(event.active.id)
       const moving = group
+      // A drop before the group left the draft (a flick within one frame)
+      // still counts the column without it, and never lands on its own card.
+      const along = new Set(moving?.filter(other => other !== id))
+      const draft =
+        current && along.size ? removeFromDraft(current, along) : current
+      const overId = event.over ? String(event.over.id) : null
       const to =
-        current && event.over
-          ? settleDraft(current, id, String(event.over.id))
+        draft && overId
+          ? settleDraft(draft, id, along.has(overId) ? id : overId)
           : null
       reset()
 

@@ -39,6 +39,7 @@ export function BoardDragOverlay({
           {count > 2 ? (
             <div
               aria-hidden
+              data-stack-layer=''
               className='bg-card absolute inset-0 translate-x-4 translate-y-4 rounded-lg border shadow-sm'
             />
           ) : null}
