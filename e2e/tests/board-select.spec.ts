@@ -218,6 +218,20 @@ for (const board of [
       await expect(selected(page)).toHaveCount(0)
     })
 
+    test('opening a card outside the selection clears it', async ({ page }) => {
+      await board.open(page)
+      const cards = await columnWith(page, 3)
+      test.skip(!cards, 'no column with three cards')
+
+      await cards!.nth(0).click({ modifiers: ['Shift'], position: CORNER })
+      await cards!.nth(1).click({ modifiers: ['Shift'], position: CORNER })
+      await expect(selected(page)).toHaveCount(2)
+
+      await cards!.nth(2).click({ position: CORNER })
+      await expect(page.getByRole('dialog')).toBeVisible()
+      await expect(selected(page)).toHaveCount(0)
+    })
+
     test('the right-click menu has no Select item', async ({ page }) => {
       await board.open(page)
       const cards = await columnWith(page, 1)

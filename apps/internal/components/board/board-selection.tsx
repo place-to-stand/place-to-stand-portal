@@ -180,10 +180,15 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
       isSelected: (id: string) => ids.has(id),
       /**
        * A card click with Shift, ⌘ or Ctrl selects instead of opening.
-       * Returns true when it did.
+       * Returns true when it did. A plain click on a card outside the
+       * selection lets go of it, as the card opens.
        */
       click: (id: string, event: MouseEvent) => {
-        if (!enabled || !hasSelectModifier(event, isMac())) return false
+        if (!enabled) return false
+        if (!hasSelectModifier(event, isMac())) {
+          if (ids.size && !ids.has(id)) clear()
+          return false
+        }
         if (event.shiftKey) range(id)
         else toggle(id)
         return true
