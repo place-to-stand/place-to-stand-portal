@@ -5,7 +5,7 @@ import { expectHealthy } from './helpers'
 /**
  * Selecting cards on the task and lead boards: Shift picks a range down one
  * column, ⌘ (Ctrl off a Mac) adds or drops one card, a plain click still
- * opens the card, and Escape clears. Read-only: nothing is saved.
+ * opens the card, and Escape or a click away clears. Read-only: nothing is saved.
  *
  *   E2E_BOARD_PATH  a project board with three or more cards in one column,
  *                   e.g. /projects/acme/site/tasks (found on /projects
@@ -173,6 +173,34 @@ for (const board of [
       await expect(selected(page)).toHaveCount(2)
 
       await page.keyboard.press('Escape')
+      await expect(selected(page)).toHaveCount(0)
+      await expect(bar(page)).toHaveCount(0)
+    })
+
+    test('a click away clears, but not on the bar or its menu', async ({
+      page,
+    }) => {
+      await board.open(page)
+      const cards = await columnWith(page, 2)
+      test.skip(!cards, 'no column with two cards')
+
+      await cards!.nth(0).click({ modifiers: ['Shift'], position: CORNER })
+      await cards!.nth(1).click({ modifiers: ['Shift'], position: CORNER })
+      await expect(selected(page)).toHaveCount(2)
+
+      // The bar and a menu it opens keep the selection.
+      await bar(page).click({ position: { x: 4, y: 4 } })
+      await expect(selected(page)).toHaveCount(2)
+      await bar(page)
+        .getByRole('button', { name: /Set assignee/ })
+        .click()
+      await expect(page.getByRole('menu')).toBeVisible()
+      // A click away first closes the menu only.
+      await page.mouse.click(4, 4)
+      await expect(page.getByRole('menu')).toHaveCount(0)
+      await expect(selected(page)).toHaveCount(2)
+
+      await page.mouse.click(4, 4)
       await expect(selected(page)).toHaveCount(0)
       await expect(bar(page)).toHaveCount(0)
     })

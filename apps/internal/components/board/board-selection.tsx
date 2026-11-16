@@ -39,8 +39,9 @@ type State = {
 /**
  * Which cards of a board are selected, for the bulk bar. Shift-click picks
  * a range down one column, and ⌘-click (Ctrl on Windows) adds or drops one
- * card. A plain click still opens the card. Escape clears the selection, and a card that leaves the
- * board (a filter, a refresh) leaves it too.
+ * card. A plain click still opens the card. Escape or a click away from
+ * the cards and the bulk bar clears the selection, and a card that leaves
+ * the board (a filter, a refresh) leaves it too.
  *
  * `columns` lists each column's card ids in board order.
  */
@@ -149,8 +150,20 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
       if (isOverlayOpen()) return
       clear()
     }
+    // A click anywhere but a card, the bulk bar or something open over the
+    // board (its menus, pickers and dialogs) lets go of the selection. A
+    // click that closes an open menu or dialog only closes it.
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || !(event.target instanceof Element)) return
+      if (event.target.closest(KEEPS_SELECTION) || isOverlayOpen()) return
+      clear()
+    }
     document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown, true)
+    }
   }, [active, clear])
 
   return useMemo(
@@ -205,6 +218,18 @@ export type BoardSelection = ReturnType<typeof useBoardSelection>
 function isMac() {
   return /Mac|iPhone|iPad/.test(navigator.platform)
 }
+
+/** What a click can land on without clearing the board's selection. */
+const KEEPS_SELECTION = [
+  '[data-board-card]',
+  '[role="toolbar"]',
+  '[data-radix-popper-content-wrapper]',
+  '[role="dialog"]',
+  '[role="alertdialog"]',
+  '[role="menu"]',
+  '[role="listbox"]',
+  '[aria-live]',
+].join(', ')
 
 function isOverlayOpen() {
   return [
