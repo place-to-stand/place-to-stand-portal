@@ -7,6 +7,7 @@ import {
   type TaskEdgeMoves,
 } from '@/components/table/record-context-menu'
 import { useRecordArchive } from '@/components/table/use-record-archive'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { TaskWithRelations } from '@/lib/types'
 
 import { changeTaskDueDate, removeTask, setTaskAssignee } from './actions'
@@ -39,6 +40,20 @@ export function TaskContextMenu({
   move?: TaskEdgeMoves
   children: ReactElement<Record<string, unknown>>
 }) {
+  const { toast } = useToast()
+  // Send to top / bottom leaves the column where it is (no scrolling after
+  // the card), so a toast says where the card went.
+  const withToast = (run: (() => void) | null, title: string) =>
+    run
+      ? () => {
+          run()
+          toast({
+            title,
+            description: task.title,
+            link: toastLink('task', task.id),
+          })
+        }
+      : null
   const { requestArchive, isPending, dialog } = useRecordArchive({
     entity: 'task',
     noun: 'task',
@@ -74,7 +89,14 @@ export function TaskContextMenu({
               }
             : undefined
         }
-        move={canManage ? move : undefined}
+        move={
+          canManage && move
+            ? {
+                toTop: withToast(move.toTop, 'Moved to top'),
+                toBottom: withToast(move.toBottom, 'Moved to bottom'),
+              }
+            : undefined
+        }
         onArchive={
           canManage && archivable
             ? () => requestArchive({ id: task.id, name: task.title })
