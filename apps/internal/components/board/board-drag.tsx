@@ -44,7 +44,7 @@ export function BoardDragOverlay({
           <span
             data-drag-count={count}
             data-stack-layer=''
-            className='bg-primary text-primary-foreground absolute -top-2 -right-2 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums shadow-sm'
+            className='bg-primary text-primary-foreground absolute -top-2.5 -right-2.5 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-semibold tabular-nums shadow-sm'
           >
             {count}
           </span>
