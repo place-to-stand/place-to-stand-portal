@@ -10,6 +10,8 @@ export type CliComment = {
   authorName: string | null
   authorEmail: string | null
   body: string
+  /** The AI app that wrote it for the author, e.g. "Claude"; null for a person. */
+  agentName: string | null
   createdAt: string
   updatedAt: string | null
 }
@@ -22,6 +24,7 @@ export function serializeComment(comment: TaskCommentWithAuthor): CliComment {
     authorName: comment.author?.full_name ?? null,
     authorEmail: comment.author?.email ?? null,
     body: comment.body ?? '',
+    agentName: comment.agent_name ?? null,
     createdAt: isoTimestamp(comment.created_at),
     updatedAt: isoTimestamp(comment.updated_at),
   }

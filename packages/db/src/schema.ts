@@ -720,6 +720,11 @@ export const taskComments = pgTable(
     taskId: uuid('task_id').notNull(),
     authorId: uuid('author_id').notNull(),
     body: text().notNull(),
+    /**
+     * The AI app (MCP OAuth client name, e.g. "Claude") that wrote this row for
+     * its author, shown as "via {name}". Null when the person wrote it.
+     */
+    agentName: text('agent_name'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`now()`)
       .notNull(),
@@ -1376,6 +1381,11 @@ export const leadUpdates = pgTable(
       .default(sql`now()`)
       .notNull(),
     authorId: uuid('author_id').notNull(),
+    /**
+     * The AI app (MCP OAuth client name, e.g. "Claude") that wrote this row for
+     * its author, shown as "via {name}". Null when the person wrote it.
+     */
+    agentName: text('agent_name'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .default(sql`now()`)
       .notNull(),

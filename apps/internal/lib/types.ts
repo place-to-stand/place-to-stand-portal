@@ -106,6 +106,8 @@ type DbTaskComment = {
   task_id: string
   author_id: string
   body: string
+  /** The AI app that wrote it for its author ("via Claude"); null for a person. */
+  agent_name: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null

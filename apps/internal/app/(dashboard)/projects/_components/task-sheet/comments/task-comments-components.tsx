@@ -21,6 +21,7 @@ import {
   isContentEmpty,
   sanitizeEditorHtml,
 } from '@/components/ui/rich-text-editor/utils'
+import { AgentBadge } from '@/components/activity/agent-badge'
 import type { TaskCommentWithAuthor } from '@/lib/types'
 import { getInitials } from '@/lib/users/initials'
 import { cn } from '@/lib/utils'
@@ -238,6 +239,7 @@ export function TaskCommentItem(props: TaskCommentItemProps) {
             </AvatarFallback>
           </Avatar>
           <span className='text-foreground font-medium'>{authorName}</span>
+          {comment.agent_name ? <AgentBadge name={comment.agent_name} /> : null}
           <span>{createdAgo}</span>
           {edited ? <span>Edited</span> : null}
         </div>

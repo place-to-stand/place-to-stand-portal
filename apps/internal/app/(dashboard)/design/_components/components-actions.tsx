@@ -7,6 +7,7 @@ import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS, type BadgeTint } from '@pts/ui/badge-tints'
 import { Button } from '@pts/ui/button'
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { AgentBadge } from '@/components/activity/agent-badge'
 import { RoleBadge } from '@/components/auth/role-badge'
 import { BillingTypeBadge } from '@/components/billing/billing-type-badge'
 import { ClientBadge } from '@/components/companies/client-badge'
@@ -322,6 +323,10 @@ export function ComponentsBadges() {
               {getTaskStatusLabel(status)}
             </Badge>
           ))}
+        </Example>
+        <Example caption='Label: AgentBadge, an AI app that acted for the person (activity feed, task comments, lead updates)'>
+          <AgentBadge name='Claude' />
+          <AgentBadge name='ChatGPT' />
         </Example>
         <Example caption='Status: InvoiceStatusBadge'>
           {INVOICE_STATUSES.map(status => (

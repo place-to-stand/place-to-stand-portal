@@ -9,6 +9,8 @@ A small pill of status or label text. From `@pts/ui/badge`: one size for every b
 
 **A company we bill:** on the People and Companies lists (everyone, Sales included), beside the company's name, the **Client** badge (`ClientBadge`, `components/companies/client-badge.tsx`: the client accent's green tint with the briefcase); the Companies list's **Billing type** column shows `BillingTypeBadge`. Elsewhere (sheet cards, ⌘K) `CompanyBillingMark` (`components/billing/company-billing-mark.tsx`) shows its billing type (`BillingTypeBadge`, Prepaid green / Net 30 amber). Billing is admin-only: Sales see nothing there, and the Companies list hides its Client column for them.
 
+**Work an AI app did for a person:** `AgentBadge` (`components/activity/agent-badge.tsx`), violet, "via Claude" / "via ChatGPT", named from the app's own OAuth client name. It sits beside the person's name on activity feed rows, task comments and lead updates written through the MCP server.
+
 `secondary` is a quiet neutral chip (a count, "Default"); `destructive` is for a failure state.
 
 **Rules (checked by eslint `pts/class-names` in `npm run lint`):** never change a badge's case, letter spacing, weight, text size, height, vertical padding or radius at a call site; the component sets them. Colour and layout (`gap`, margins, `shrink-0`) are fine. Write the label in sentence case ("New opportunities", "Closed won"); the component shows it in caps. (guard: eslint `pts/class-names`)
