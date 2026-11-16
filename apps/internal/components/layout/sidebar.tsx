@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, type MouseEvent } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Search } from 'lucide-react'
@@ -9,7 +9,6 @@ import { BrandLogo, BrandLogoMark } from '@pts/ui/brand'
 
 import { cn } from '@/lib/utils'
 import type { AppUser } from '@/lib/auth/session'
-import { isNavItemActive } from '@/lib/navigation/active-route'
 import {
   Sidebar as SidebarRoot,
   SidebarContent,
@@ -30,8 +29,9 @@ import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 import { UserMenu } from './user-menu'
+import { useOptimisticNavItem } from './use-optimistic-nav-item'
 import { useCommandPalette } from './command-palette'
-import { NAV_GROUPS } from './navigation-config'
+import { NAV_GROUPS, type NavItem } from './navigation-config'
 import { filterNavGroupsForRole, homePathForRole } from '@/lib/auth/roles'
 
 const isDev = process.env.NODE_ENV === 'development'
@@ -46,6 +46,8 @@ export function Sidebar({ user, badges }: Props) {
   const pathname = usePathname()
   const { state: sidebarState, setOpenMobile } = useSidebar()
   const { setOpen: setPaletteOpen } = useCommandPalette()
+  const { isActive: isNavActive, select: selectNavItem } =
+    useOptimisticNavItem<NavItem>(pathname)
   const navGroups = useMemo(
     () => filterNavGroupsForRole(NAV_GROUPS, user.role),
     [user.role]
@@ -136,7 +138,7 @@ export function Sidebar({ user, badges }: Props) {
               <SidebarMenu className='gap-0.5'>
                 {group.items.map(item => {
                   const Icon = item.icon
-                  const isActive = isNavItemActive(pathname, item)
+                  const isActive = isNavActive(item)
                   const badgeCount = badges?.[item.href]
 
                   return (
@@ -162,6 +164,10 @@ export function Sidebar({ user, badges }: Props) {
                         <Link
                           href={item.href}
                           aria-current={isActive ? 'page' : undefined}
+                          onClick={event => {
+                            // Modified clicks open a new tab; this page stays.
+                            if (isPlainClick(event)) selectNavItem(item)
+                          }}
                         >
                           <Icon className='size-3.5 shrink-0' />
                           <span className='transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0'>
@@ -209,5 +215,17 @@ export function Sidebar({ user, badges }: Props) {
         <UserMenu user={user} align='start' inSidebar />
       </SidebarFooter>
     </SidebarRoot>
+  )
+}
+
+/** A left click with no modifier keys: one that navigates this tab. */
+function isPlainClick(event: MouseEvent<HTMLAnchorElement>) {
+  return (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey
   )
 }
