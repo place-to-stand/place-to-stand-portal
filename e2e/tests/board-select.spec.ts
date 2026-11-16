@@ -301,3 +301,35 @@ test('My Tasks for everyone: cards select and keep their full menu', async ({
   await expect(menu.getByRole('menuitem', { name: /Archive/ })).toBeVisible()
   await page.keyboard.press('Escape')
 })
+
+test('a card focused by closing its sheet still shows it is selected', async ({
+  page,
+}) => {
+  await openBoard(page)
+  const cards = await columnWith(page, 1)
+  test.skip(!cards, 'no cards')
+  const card = cards!.first()
+
+  await card.click({ position: CORNER })
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  await card.click({ modifiers: ['Shift'], position: CORNER })
+  await expect(card).toHaveAttribute('data-selected', 'true')
+  // The selected border, not the focus ring's grey, and no browser outline.
+  const style = await card.evaluate(node => {
+    const css = getComputedStyle(node)
+    return { border: css.borderTopColor, outline: css.outlineStyle }
+  })
+  const primary = await page.evaluate(() => {
+    const probe = document.createElement('div')
+    probe.className = 'border border-primary'
+    document.body.append(probe)
+    const color = getComputedStyle(probe).borderTopColor
+    probe.remove()
+    return color
+  })
+  expect(style.border).toBe(primary)
+  expect(style.outline).toBe('none')
+})

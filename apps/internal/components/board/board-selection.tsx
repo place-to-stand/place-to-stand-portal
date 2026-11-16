@@ -19,10 +19,11 @@ import {
 
 /**
  * A selected card: the primary border and a ring around it, over whatever
- * the card shows otherwise (open, done), so it reads at a glance.
+ * the card shows otherwise (open, done, focused: closing a sheet hands focus
+ * back to its card), so it reads at a glance. Focused, the ring is wider.
  */
 export const BOARD_CARD_SELECTED_CLASS =
-  'border-primary hover:border-primary ring-primary bg-primary/5 ring-1'
+  'border-primary hover:border-primary ring-primary bg-primary/5 ring-1 focus-visible:border-primary focus-visible:ring-primary'
 
 const EMPTY: ReadonlySet<string> = new Set()
 
