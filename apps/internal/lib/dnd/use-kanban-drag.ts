@@ -1,13 +1,6 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   closestCenter,
   pointerWithin,
@@ -22,9 +15,7 @@ import {
 
 import type { KanbanDropTarget } from './kanban'
 import {
-  findBoardCard,
   gatherGroup,
-  groupSlotHeight,
   measureBoardCards,
   settleGroupDrop,
 } from './settle-group-drop'
@@ -101,19 +92,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const [activeId, setActiveId] = useState<string | null>(null)
   const [group, setGroup] = useState<readonly string[] | null>(null)
   const groupFrame = useRef<number | null>(null)
-  const grownCard = useRef<HTMLElement | null>(null)
   const gathering = useRef<(() => void) | null>(null)
-  const slotHeight = useRef(0)
-
-  // The grabbed card's slot holds the whole group. A move to another column
-  // mounts a new element for the card, so this runs again after each move.
-  const growSlot = useCallback((id: string | null) => {
-    const card = id && slotHeight.current ? findBoardCard(id) : null
-    if (card === grownCard.current) return
-    if (grownCard.current) grownCard.current.style.minHeight = ''
-    if (card) card.style.minHeight = `${slotHeight.current}px`
-    grownCard.current = card
-  }, [])
 
   const setDraft = useCallback((next: KanbanDraft<C> | null) => {
     draftRef.current = next
@@ -151,10 +130,6 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
     [byId, draft, items]
   )
 
-  useLayoutEffect(() => {
-    growSlot(activeId)
-  }, [activeId, draft, growSlot])
-
   const reset = useCallback(() => {
     if (groupFrame.current !== null) {
       cancelAnimationFrame(groupFrame.current)
@@ -162,15 +137,13 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
     }
     gathering.current?.()
     gathering.current = null
-    slotHeight.current = 0
-    growSlot(null)
     setDraft(null)
     setActiveId(null)
     setGroup(null)
     originRef.current = null
     lastOverId.current = null
     movedColumn.current = false
-  }, [growSlot, setDraft])
+  }, [setDraft])
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -194,9 +167,8 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
 
       // The rest of the group leaves the board only once dnd-kit has
       // measured the grabbed card, so the stack starts under the pointer
-      // rather than where the card slides to. The grabbed card's slot then
-      // grows to the whole group's height, so the drop makes no jump.
-      const slot = groupSlotHeight(moving!)
+      // rather than where the card slides to. The drop slot stays one card
+      // tall, so the cards around it stay put.
       groupFrame.current = requestAnimationFrame(() => {
         groupFrame.current = requestAnimationFrame(() => {
           groupFrame.current = null
@@ -204,12 +176,10 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
           if (!current || !locateInDraft(current, id)) return
           gathering.current = gatherGroup({ along: [...along] })
           setDraft(withoutAlong(current))
-          slotHeight.current = slot
-          growSlot(id)
         })
       })
     },
-    [columns, growSlot, groupOf, items, onDragStart, setDraft]
+    [columns, groupOf, items, onDragStart, setDraft]
   )
 
   const handleDragOver = useCallback(

@@ -9,29 +9,11 @@ const STACK_OFFSET_PX = 8
 
 type Rect = { top: number; left: number }
 
-export function findBoardCard(id: string): HTMLElement | null {
+function findBoardCard(id: string): HTMLElement | null {
   if (typeof document === 'undefined') return null
   return document.querySelector<HTMLElement>(
     `[data-board-card="${CSS.escape(id)}"]`
   )
-}
-
-/**
- * The height the group takes once dropped: its cards and the gaps between
- * them, as the board lays out one column.
- */
-export function groupSlotHeight(group: readonly string[]): number {
-  let height = 0
-  let gap = 0
-  for (const id of group) {
-    const card = findBoardCard(id)
-    if (!card) continue
-    height += card.getBoundingClientRect().height
-    if (!gap && card.parentElement) {
-      gap = parseFloat(getComputedStyle(card.parentElement).rowGap) || 0
-    }
-  }
-  return height + gap * Math.max(group.length - 1, 0)
 }
 
 /** Where every board card is on screen now. */
@@ -48,7 +30,8 @@ export function measureBoardCards(): Map<string, Rect> {
 }
 
 /**
- * A group drop has no overlay glide: the stack vanishes and the board
+ * The drop slot is one card tall, so the cards below make room only as the
+ * group lands, and glide there. A group drop has no overlay glide: the stack vanishes and the board
  * re-renders with every card of the group in its slot. On the next frame
  * (laid out, not yet painted) each one glides there from the stack, the
  * grabbed card from the top of it and the others fading in from behind, a
