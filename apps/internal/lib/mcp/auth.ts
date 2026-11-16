@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { AuthInfo } from '@modelcontextprotocol/server'
 
+import { UNKNOWN_AGENT_NAME } from '@/lib/activity/agent-context'
 import { rolesWith } from '@/lib/auth/capabilities'
 import type { AppUser } from '@/lib/auth/session'
 import {
@@ -59,7 +60,7 @@ async function resolveAgentName(clientId: string): Promise<string> {
 
   // Attribution should degrade, not fail the call: the human is still known.
   if (error || !data?.client_name) {
-    return 'Unknown app'
+    return UNKNOWN_AGENT_NAME
   }
 
   agentNames.set(clientId, data.client_name)

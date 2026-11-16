@@ -3,7 +3,7 @@ import 'server-only'
 import { z } from 'zod'
 
 import { leadUpdateLoggedEvent } from '@/lib/activity/events'
-import { currentActivityAgent } from '@/lib/activity/agent-context'
+import { currentAgentName } from '@/lib/activity/agent-context'
 import { logActivity } from '@/lib/activity/logger'
 import { assertCrmAccess } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
@@ -79,7 +79,7 @@ export async function createLeadUpdateForActor(
         occurredAt: occurred,
         authorId: actor.id,
         // Set while an MCP agent acts, so the timeline can say "via Claude".
-        agentName: currentActivityAgent()?.name ?? null,
+        agentName: currentAgentName(),
         createdAt: timestamp,
         updatedAt: timestamp,
       })

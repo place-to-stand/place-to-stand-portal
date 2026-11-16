@@ -8,7 +8,7 @@ import {
   taskCommentDeletedEvent,
   taskCommentUpdatedEvent,
 } from '@/lib/activity/events'
-import { currentActivityAgent } from '@/lib/activity/agent-context'
+import { currentAgentName } from '@/lib/activity/agent-context'
 import { logActivity } from '@/lib/activity/logger'
 import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { AppUser } from '@/lib/auth/session'
@@ -294,7 +294,7 @@ export async function createTaskComment(
       authorId: user.id,
       body,
       // Set while an MCP agent acts, so the thread can say "via Claude".
-      agentName: currentActivityAgent()?.name ?? null,
+      agentName: currentAgentName(),
     })
     .returning({ id: taskComments.id })
 
@@ -353,15 +353,10 @@ export async function updateTaskComment(
     return
   }
 
-  // An agent's edit marks the comment as its own; a person's edit keeps the
-  // existing mark, since fixing a typo doesn't make an AI's comment human.
-  const agent = currentActivityAgent()
-
   await db
     .update(taskComments)
     .set({
       body,
-      ...(agent ? { agentName: agent.name } : {}),
       updatedAt: new Date().toISOString(),
     })
     .where(eq(taskComments.id, input.commentId))

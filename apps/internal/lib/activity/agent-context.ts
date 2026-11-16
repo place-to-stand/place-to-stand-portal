@@ -8,6 +8,9 @@ export type ActivityAgent = {
   name: string
 }
 
+/** Shown when the OAuth client's name can't be read; never stored on a row. */
+export const UNKNOWN_AGENT_NAME = 'Unknown app'
+
 const agentStorage = new AsyncLocalStorage<ActivityAgent>()
 
 /**
@@ -25,4 +28,16 @@ export function runAsAgent<T>(agent: ActivityAgent, fn: () => T): T {
 
 export function currentActivityAgent(): ActivityAgent | undefined {
   return agentStorage.getStore()
+}
+
+/**
+ * The acting app's name for rows that keep it ("via Claude" on a comment), or
+ * null when a person acts or the name couldn't be resolved, so a lookup
+ * failure never labels a row "via Unknown app" for good. Set on create only:
+ * it records who first wrote the text, and a later edit doesn't change that.
+ */
+export function currentAgentName(): string | null {
+  const name = agentStorage.getStore()?.name
+
+  return name && name !== UNKNOWN_AGENT_NAME ? name : null
 }

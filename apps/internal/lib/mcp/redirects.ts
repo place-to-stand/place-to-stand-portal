@@ -21,6 +21,7 @@ const HTTPS_HOSTS = new Set(['claude.ai', 'claude.com'])
  * that any GPT author controls, so only the connector platform's own paths
  * may receive a code. ChatGPT uses `/connector/oauth/<callback id>`, or the
  * fixed `/connector_platform_oauth_redirect` for servers that send `iss`.
+ * Neither carries a query, fragment or userinfo, so those are refused too.
  */
 const CHATGPT_HOST = 'chatgpt.com'
 const CHATGPT_CALLBACK_PATHS = [
@@ -48,6 +49,10 @@ export function isAllowedRedirect(uri: string): boolean {
     url.protocol === 'https:' &&
     url.hostname === CHATGPT_HOST &&
     !url.port &&
+    !url.username &&
+    !url.password &&
+    !url.search &&
+    !url.hash &&
     CHATGPT_CALLBACK_PATHS.some(path => path.test(url.pathname))
   ) {
     return true
