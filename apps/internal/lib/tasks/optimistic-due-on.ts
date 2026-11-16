@@ -8,18 +8,26 @@ import { useSyncExternalStore } from 'react'
  * holds its own copy of the task, so the override lives here instead and the
  * card reads through it.
  *
- * Each entry remembers the due date the card held when it was set (`base`).
- * Once fresh data arrives the card's own value differs from `base` and the
- * entry stops applying, so a later edit from the sheet is never masked.
+ * Each entry remembers the dates the card may still hold while the save is
+ * in flight (`stale`: the date before, plus any earlier pick not yet
+ * refreshed). The card shows the override only while its own value is one of
+ * those; the saved date, or any other date (a sheet edit), ends it. A settled
+ * save also expires its entry after `SETTLED_TTL_MS`, so an entry never
+ * outlives a card that unmounted before the refresh landed.
  */
-type Override = { base: string | null; value: string | null }
+type Override = {
+  token: number
+  stale: ReadonlySet<string | null>
+  value: string | null
+}
+
+const SETTLED_TTL_MS = 10_000
 
 const overrides = new Map<string, Override>()
 const listeners = new Set<() => void>()
-let version = 0
+let nextToken = 0
 
 function emit() {
-  version += 1
   listeners.forEach(listener => listener())
 }
 
@@ -30,21 +38,43 @@ function subscribe(listener: () => void) {
   }
 }
 
-const getVersion = () => version
-
-/** Shows `value` on the task's cards until fresh data replaces `base`. */
+/**
+ * Shows `value` on the task's cards until fresh data arrives. `own` is the
+ * date the card holds now. Returns a token for `settleOptimisticDueOn`.
+ */
 export function setOptimisticDueOn(
   taskId: string,
-  base: string | null,
+  own: string | null,
   value: string | null
-) {
-  overrides.set(taskId, { base, value })
+): number {
+  const previous = overrides.get(taskId)
+  const stale = new Set(previous?.stale ?? [])
+  stale.add(own)
+  if (previous) stale.add(previous.value)
+  stale.delete(value)
+  const token = ++nextToken
+  overrides.set(taskId, { token, stale, value })
   emit()
+  return token
 }
 
-/** Drops the override (the save failed), so the card shows its own value. */
-export function clearOptimisticDueOn(taskId: string) {
-  if (overrides.delete(taskId)) emit()
+/**
+ * The save finished. A failure drops the entry at once (the card goes back to
+ * its own date); a success lets it run until fresh data replaces it, at most
+ * `SETTLED_TTL_MS`. A newer pick's entry is left alone either way.
+ */
+export function settleOptimisticDueOn(
+  taskId: string,
+  token: number,
+  ok: boolean
+) {
+  const drop = () => {
+    if (overrides.get(taskId)?.token !== token) return
+    overrides.delete(taskId)
+    emit()
+  }
+  if (ok) setTimeout(drop, SETTLED_TTL_MS)
+  else drop()
 }
 
 /** The task's due date as the card should show it. */
@@ -52,14 +82,10 @@ export function useOptimisticDueOn(task: {
   id: string
   due_on: string | null
 }): string | null {
-  useSyncExternalStore(subscribe, getVersion, getVersion)
-  const override = overrides.get(task.id)
+  // The entry itself is the snapshot (entries are replaced, never mutated),
+  // so React, and the React Compiler's memoisation, see every change.
+  const read = () => overrides.get(task.id)
+  const override = useSyncExternalStore(subscribe, read, read)
   const own = task.due_on ?? null
-  if (!override) return own
-  if (override.base === own && override.value !== own) return override.value
-  // Fresh data has arrived (the saved date, or a newer edit): the entry is
-  // spent. Dropping it without emitting is safe, since the card already
-  // shows its own value; it keeps a later return to `base` from reviving it.
-  overrides.delete(task.id)
-  return own
+  return override && override.stale.has(own) ? override.value : own
 }
