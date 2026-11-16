@@ -16,6 +16,20 @@ const bar = (page: Page) => page.getByRole('toolbar', { name: /Bulk actions/ })
 const selected = (page: Page) =>
   page.locator('[data-board-card][data-selected]')
 
+/**
+ * A card's top-left padding: the middle of a card can be a link (a lead's
+ * email), which takes the click for itself.
+ */
+const CORNER = { x: 10, y: 6 }
+
+/**
+ * A Ctrl-click as the page sees it. Sent as an event, since macOS turns a
+ * real Ctrl-click into a right click before the page gets it.
+ */
+async function ctrlClick(card: Locator) {
+  await card.dispatchEvent('click', { ctrlKey: true, bubbles: true })
+}
+
 /** Pretend to be a Mac or a Windows PC before the app reads the platform. */
 async function onPlatform(page: Page, platform: 'MacIntel' | 'Win32') {
   await page.addInitScript(value => {
@@ -87,20 +101,20 @@ for (const board of [
       test.skip(!cards, 'no column with two cards')
 
       const url = page.url()
-      await cards!.nth(0).click({ modifiers: ['Meta'] })
+      await cards!.nth(0).click({ modifiers: ['Meta'], position: CORNER })
       await expect(cards!.nth(0)).toHaveAttribute('data-selected', 'true')
       await expect(bar(page)).toContainText(`1 ${board.word} selected`)
       expect(page.url()).toBe(url)
       await expect(page.getByRole('dialog')).toHaveCount(0)
 
-      await cards!.nth(1).click({ modifiers: ['Meta'] })
+      await cards!.nth(1).click({ modifiers: ['Meta'], position: CORNER })
       await expect(bar(page)).toContainText(`2 ${board.word}s selected`)
 
       // ⌘ again drops it.
-      await cards!.nth(0).click({ modifiers: ['Meta'] })
+      await cards!.nth(0).click({ modifiers: ['Meta'], position: CORNER })
       await expect(cards!.nth(0)).not.toHaveAttribute('data-selected')
       await expect(bar(page)).toContainText(`1 ${board.word} selected`)
-      await cards!.nth(1).click({ modifiers: ['Meta'] })
+      await cards!.nth(1).click({ modifiers: ['Meta'], position: CORNER })
       await expect(bar(page)).toHaveCount(0)
     })
 
@@ -111,12 +125,12 @@ for (const board of [
       const cards = await columnWith(page, 3)
       test.skip(!cards, 'no column with three cards')
 
-      await cards!.nth(0).click({ modifiers: ['Shift'] })
-      await cards!.nth(2).click({ modifiers: ['Shift'] })
+      await cards!.nth(0).click({ modifiers: ['Shift'], position: CORNER })
+      await cards!.nth(2).click({ modifiers: ['Shift'], position: CORNER })
       await expect(selected(page)).toHaveCount(3)
       await expect(bar(page)).toContainText(`3 ${board.word}s selected`)
       // Shift on a selected card takes the range back off.
-      await cards!.nth(0).click({ modifiers: ['Shift'] })
+      await cards!.nth(0).click({ modifiers: ['Shift'], position: CORNER })
       await expect(selected(page)).toHaveCount(0)
       await expect(bar(page)).toHaveCount(0)
 
@@ -134,8 +148,8 @@ for (const board of [
       const other = await cardInAnotherColumn(page, cards!.first())
       test.skip(!other, 'only one column has cards')
 
-      await cards!.first().click({ modifiers: ['Shift'] })
-      await other!.click({ modifiers: ['Shift'] })
+      await cards!.first().click({ modifiers: ['Shift'], position: CORNER })
+      await other!.click({ modifiers: ['Shift'], position: CORNER })
       await expect(selected(page)).toHaveCount(2)
     })
 
@@ -146,8 +160,8 @@ for (const board of [
       const cards = await columnWith(page, 2)
       test.skip(!cards, 'no column with two cards')
 
-      await cards!.nth(0).click({ modifiers: ['Shift'] })
-      await cards!.nth(1).click({ modifiers: ['Shift'] })
+      await cards!.nth(0).click({ modifiers: ['Shift'], position: CORNER })
+      await cards!.nth(1).click({ modifiers: ['Shift'], position: CORNER })
       await expect(selected(page)).toHaveCount(2)
 
       await bar(page)
@@ -168,7 +182,7 @@ for (const board of [
       const cards = await columnWith(page, 1)
       test.skip(!cards, 'no cards')
 
-      await cards!.first().click()
+      await cards!.first().click({ position: CORNER })
       await expect(page.getByRole('dialog')).toBeVisible()
       await expect(page).toHaveURL(
         new RegExp(`[?&]${board.word}=[0-9a-f-]{36}`)
@@ -181,7 +195,7 @@ for (const board of [
       const cards = await columnWith(page, 1)
       test.skip(!cards, 'no cards')
 
-      await cards!.first().click({ button: 'right' })
+      await cards!.first().click({ button: 'right', position: CORNER })
       const menu = page.getByRole('menu')
       await expect(menu.getByRole('menuitem', { name: 'Edit' })).toBeVisible()
       await expect(menu.getByRole('menuitem', { name: /^Select/ })).toHaveCount(
@@ -199,7 +213,7 @@ test('on Windows, Ctrl-click adds a card', async ({ page }) => {
   test.skip(!cards, 'no cards')
 
   const url = page.url()
-  await cards!.first().click({ modifiers: ['Control'] })
+  await ctrlClick(cards!.first())
   await expect(selected(page)).toHaveCount(1)
   expect(page.url()).toBe(url)
 })
@@ -212,7 +226,7 @@ test('on a Mac, Ctrl-click never selects (it is a right click there)', async ({
   const cards = await columnWith(page, 1)
   test.skip(!cards, 'no cards')
 
-  await cards!.first().click({ modifiers: ['Control'] })
+  await ctrlClick(cards!.first())
   await expect(selected(page)).toHaveCount(0)
 })
 
@@ -223,7 +237,7 @@ test('the bulk bar offers assignee, due date and archive for tasks', async ({
   const cards = await columnWith(page, 1)
   test.skip(!cards, 'no cards')
 
-  await cards!.first().click({ modifiers: ['Shift'] })
+  await cards!.first().click({ modifiers: ['Shift'], position: CORNER })
   for (const name of [/Set assignee/, /Set due date/, /^Archive/]) {
     await expect(bar(page).getByRole('button', { name })).toBeVisible()
   }
@@ -256,7 +270,7 @@ test('the lead bulk bar has no due date', async ({ page }) => {
   const cards = await columnWith(page, 1)
   test.skip(!cards, 'no leads')
 
-  await cards!.first().click({ modifiers: ['Shift'] })
+  await cards!.first().click({ modifiers: ['Shift'], position: CORNER })
   await expect(
     bar(page).getByRole('button', { name: /Set assignee/ })
   ).toBeVisible()

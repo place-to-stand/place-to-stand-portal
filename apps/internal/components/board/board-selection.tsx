@@ -135,7 +135,8 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
     if (!active) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
-      // A sheet, dialog or menu over the board takes Escape for itself.
+      // A sheet, dialog (the archive confirmation too) or menu over the
+      // board takes Escape for itself.
       // Some menus stay mounted while closed (the user menu), so only an
       // overlay on screen counts.
       if (isOverlayOpen()) return
@@ -185,7 +186,9 @@ function isMac() {
 
 function isOverlayOpen() {
   return [
-    ...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="menu"]'),
+    ...document.querySelectorAll<HTMLElement>(
+      '[role="dialog"], [role="alertdialog"], [role="menu"]'
+    ),
   ].some(element =>
     typeof element.checkVisibility === 'function'
       ? element.checkVisibility()
