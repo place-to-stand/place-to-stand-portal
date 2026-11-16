@@ -170,13 +170,11 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       // rather than where the card slides to. The drop slot stays one card
       // tall, so the cards around it stay put.
       groupFrame.current = requestAnimationFrame(() => {
-        groupFrame.current = requestAnimationFrame(() => {
-          groupFrame.current = null
-          const current = draftRef.current
-          if (!current || !locateInDraft(current, id)) return
-          gathering.current = gatherGroup({ along: [...along] })
-          setDraft(withoutAlong(current))
-        })
+        groupFrame.current = null
+        const current = draftRef.current
+        if (!current || !locateInDraft(current, id)) return
+        gathering.current = gatherGroup({ along: [...along] })
+        setDraft(withoutAlong(current))
       })
     },
     [columns, groupOf, items, onDragStart, setDraft]

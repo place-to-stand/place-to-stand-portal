@@ -105,7 +105,8 @@ export function settleGroupDrop({
 }
 
 /** How long the group takes to gather under the pointer on pick-up. */
-const GATHER_MS = BOARD_DROP_ANIMATION_MS + 60
+const GATHER_MS = BOARD_DROP_ANIMATION_MS * 2
+const GATHER_STAGGER_MS = 40
 
 /**
  * Pick-up of a group: call just before the group's other cards leave the
@@ -181,7 +182,7 @@ export function gatherGroup({
       let flying = false
       copies.forEach(({ copy, rect, offset }, index) => {
         const t = Math.min(
-          Math.max((time - start - index * STAGGER_MS) / GATHER_MS, 0),
+          Math.max((time - start - index * GATHER_STAGGER_MS) / GATHER_MS, 0),
           1
         )
         if (t < 1) flying = true
@@ -189,7 +190,7 @@ export function gatherGroup({
         const toLeft = stack ? stack.left + offset : rect.left
         const toTop = stack ? stack.top + offset : rect.top
         copy.style.transform = `translate(${(toLeft - rect.left) * eased}px, ${(toTop - rect.top) * eased}px)`
-        copy.style.opacity = String(t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4)
+        copy.style.opacity = String(t < 0.8 ? 1 : 1 - (t - 0.8) / 0.2)
       })
       if (flying) frame = requestAnimationFrame(fly)
       else cleanup()

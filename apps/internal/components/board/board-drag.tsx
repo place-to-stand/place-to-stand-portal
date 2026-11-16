@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   defaultDropAnimationSideEffects,
   DragOverlay,
@@ -23,8 +23,15 @@ export function BoardDragOverlay({
   /** Cards the drag moves: two or more shows a stack with the count. */
   count?: number
 }) {
+  // The drop resets the drag (count back to 1, no children) in the same
+  // render that reads the drop animation, so a group's drop goes by the
+  // count it was dragged with: no overlay glide, since the cards themselves
+  // slide out of the stack (`settleGroupDrop`).
+  const [draggedCount, setDraggedCount] = useState(count)
+  if (children && count !== draggedCount) setDraggedCount(count)
+
   return (
-    <DragOverlay dropAnimation={count > 1 ? null : BOARD_DROP_ANIMATION}>
+    <DragOverlay dropAnimation={draggedCount > 1 ? null : BOARD_DROP_ANIMATION}>
       {children && count > 1 ? (
         // Marked so Escape cancels the drag, not the selection.
         <div className='relative' data-board-dragging='' ref={fadeInStack}>
