@@ -48,7 +48,7 @@ export function useGroupTaskMove({
         setFeedback('Unable to move tasks.')
         return
       }
-      if (!updates) return
+      if (!updates || leavesOrderAlone(updates, projectTasks)) return
 
       const byId = new Map(updates.map(update => [update.id, update]))
       const apply = (
@@ -138,5 +138,25 @@ export function useGroupTaskMove({
       startTransition,
       tasksByProject,
     ]
+  )
+}
+
+/** True when the drop changes no column and no card's place in its column. */
+function leavesOrderAlone(
+  updates: readonly GroupTaskUpdate[],
+  tasks: readonly TaskWithRelations[]
+) {
+  if (updates.some(update => update.statusChanged)) return false
+  const byId = new Map(updates.map(update => [update.id, update]))
+  const order = (rankOf: (task: TaskWithRelations) => string) =>
+    tasks
+      .filter(task => task.status === updates[0]!.status && !task.deleted_at)
+      .map(task => ({ id: task.id, rank: rankOf(task) }))
+      .sort((a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0))
+      .map(task => task.id)
+      .join()
+  return (
+    order(task => task.rank) ===
+    order(task => byId.get(task.id)?.rank ?? task.rank)
   )
 }

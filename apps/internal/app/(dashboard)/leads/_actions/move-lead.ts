@@ -18,6 +18,7 @@ import {
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
 import { normalizeRank } from '@/lib/rank'
+import { LEAD_NOT_FOUND_MESSAGE } from '@/lib/leads/move-messages'
 
 import { revalidateLeadsPath } from '@/lib/leads/revalidate'
 import type { LeadActionResult } from './types'
@@ -120,7 +121,7 @@ async function applyLeadMove(
         .for('update', { of: leads })
 
       if (!current) {
-        return { refused: 'Lead not found.' }
+        return { refused: LEAD_NOT_FOUND_MESSAGE }
       }
 
       // Decision 7: Won needs a company. The board reverts the card.

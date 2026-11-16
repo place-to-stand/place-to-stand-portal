@@ -14,6 +14,7 @@ import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
+import { LEAD_NOT_FOUND_MESSAGE } from '@/lib/leads/move-messages'
 
 import { moveLeads } from '../actions'
 import { produceLeadGroupMove } from '../_lib/lead-board-reorder'
@@ -98,14 +99,23 @@ export function useLeadGroupMove({
             setColumns(result.previousColumns)
             columnsRef.current = result.previousColumns
           }
+          const first = failed[0]!
+          const name = result.moved.find(({ lead }) => lead.id === first.leadId)
+            ?.lead.contactName
           toast({
             variant: 'destructive',
             title:
               failed.length === 1
-                ? 'Unable to move a lead'
+                ? `Unable to move ${name || 'a lead'}`
                 : `Unable to move ${failed.length} leads`,
-            description: failed[0]!.error,
-            link: toastLink('lead', failed[0]!.leadId),
+            description:
+              failed.length > 1 && name
+                ? `${name}: ${first.error}`
+                : first.error,
+            // A lead that's gone has nothing to open.
+            ...(first.error === LEAD_NOT_FOUND_MESSAGE
+              ? {}
+              : { link: toastLink('lead', first.leadId) }),
           })
           return
         }

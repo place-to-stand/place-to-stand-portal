@@ -29,9 +29,15 @@ export function BoardDragOverlay({
         // Marked so Escape cancels the drag, not the selection.
         <div className='relative' data-board-dragging=''>
           {/* The cards behind it, offset like a stack. */}
+          {count > 2 ? (
+            <div
+              aria-hidden
+              className='bg-card absolute inset-0 translate-x-4 translate-y-4 rounded-lg border shadow-sm'
+            />
+          ) : null}
           <div
             aria-hidden
-            className='bg-card absolute inset-0 translate-x-1.5 translate-y-1.5 rounded-lg border shadow-sm'
+            className='bg-card absolute inset-0 translate-x-2 translate-y-2 rounded-lg border shadow-sm'
           />
           <div className='relative'>{children}</div>
           <span
