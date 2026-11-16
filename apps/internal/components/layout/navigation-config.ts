@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { ENTITY_ICONS } from '@/lib/entity-accents'
 
-export type NavItem = {
+type NavItem = {
   href: string
   label: string
   icon: LucideIcon
