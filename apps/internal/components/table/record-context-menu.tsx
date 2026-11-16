@@ -106,6 +106,11 @@ export function RecordContextMenu({
   ...itemProps
 }: RecordContextMenuProps) {
   const actionsRef = useRef<MenuActions | null>(null)
+  const triggerRef = useRef<HTMLDivElement | null>(null)
+  // Send to top / bottom moves the card to the end of its column. Handing
+  // focus back the default way would scroll the column to follow it, so
+  // focus returns without scrolling and the column stays where it was.
+  const movedRef = useRef(false)
   return (
     <ContextMenu
       actionsRef={actionsRef}
@@ -116,13 +121,24 @@ export function RecordContextMenu({
         }
       }}
     >
-      <ContextMenuTrigger render={children} />
+      <ContextMenuTrigger ref={triggerRef} render={children} />
       {/* The menu is portaled, but React still bubbles its clicks to the
           row, whose own click would open the record too. */}
-      <ContextMenuContent onClick={event => event.stopPropagation()}>
+      <ContextMenuContent
+        onClick={event => event.stopPropagation()}
+        finalFocus={() => {
+          if (!movedRef.current) return true
+          movedRef.current = false
+          triggerRef.current?.focus({ preventScroll: true })
+          return false
+        }}
+      >
         <RecordContextMenuItems
           {...itemProps}
           closeMenu={() => actionsRef.current?.close()}
+          onMoved={() => {
+            movedRef.current = true
+          }}
         />
       </ContextMenuContent>
     </ContextMenu>
@@ -162,9 +178,12 @@ function RecordContextMenuItems({
   archiveDisabledReason = null,
   pending = false,
   closeMenu,
+  onMoved,
 }: Omit<RecordContextMenuProps, 'children' | 'draggable' | 'disabled'> & {
   /** Closes the menu from controls that aren't menu items (the calendar). */
   closeMenu: () => void
+  /** Send to top / bottom ran: the menu returns focus without scrolling. */
+  onMoved: () => void
 }) {
   const { open, duplicate } = useSheetParams()
   const canDuplicate = duplicable && isDuplicableSheetEntity(entity)
@@ -209,14 +228,20 @@ function RecordContextMenuItems({
           ) : null}
           <ContextMenuItem
             disabled={!move.toTop}
-            onClick={() => move.toTop?.()}
+            onClick={() => {
+              onMoved()
+              move.toTop?.()
+            }}
           >
             <ArrowUpToLine />
             Send to top
           </ContextMenuItem>
           <ContextMenuItem
             disabled={!move.toBottom}
-            onClick={() => move.toBottom?.()}
+            onClick={() => {
+              onMoved()
+              move.toBottom?.()
+            }}
           >
             <ArrowDownToLine />
             Send to bottom

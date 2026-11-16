@@ -111,10 +111,13 @@ export function KanbanColumn({
           ) : null}
         </div>
       </div>
+      {/* No scroll anchoring: a card sent to the top or bottom from its menu
+          keeps focus, and the browser would otherwise scroll the column
+          after it. */}
       <div
         ref={columnScrollRef}
         onScroll={onColumnScroll}
-        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'
+        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto [overflow-anchor:none]'
       >
         <SortableContext
           id={columnId}
