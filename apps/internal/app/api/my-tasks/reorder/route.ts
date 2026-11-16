@@ -22,7 +22,8 @@ import { roleCan } from '@/lib/auth/capabilities'
 
 const reorderPayloadSchema = z.object({
   taskId: z.string().uuid(),
-  assigneeId: z.string().uuid().optional(),
+  /** The viewed board's person, or 'all' (the everyone view). */
+  assigneeId: z.union([z.string().uuid(), z.literal('all')]).optional(),
   targetStatus: z.enum(MY_TASK_STATUS_VALUES),
   targetOrder: z.array(z.string().uuid()).min(1),
   sourceStatus: z.enum(MY_TASK_STATUS_VALUES).optional(),
@@ -85,8 +86,10 @@ export async function POST(request: Request) {
   }
 
   // Admins may reorder any board; ordering persists under the VIEWED
-  // assignee's rows, defaulting to self. Sales users reorder only their own
-  // board, and only tasks on projects they can work.
+  // assignee's rows, defaulting to self. In the everyone view ('all') it
+  // persists under the viewer's own rows, the order that view sorts by.
+  // Sales users reorder only their own board, and only tasks on projects
+  // they can work.
   if (
     !roleCan(user.role, 'projects.view_all') &&
     payload.assigneeId &&
@@ -97,7 +100,9 @@ export async function POST(request: Request) {
       { status: 403 }
     )
   }
-  const boardOwnerId = payload.assigneeId ?? user.id
+  const everyone = payload.assigneeId === 'all'
+  const boardOwnerId =
+    payload.assigneeId && !everyone ? payload.assigneeId : user.id
 
   const workableProjectIds = await listWorkableProjectIds(user)
   if (workableProjectIds !== null) {
@@ -126,7 +131,8 @@ export async function POST(request: Request) {
       )
     )
 
-  if (assigneeRows.length !== uniqueTaskIds.length) {
+  // The everyone view holds anyone's tasks (and unassigned ones).
+  if (!everyone && assigneeRows.length !== uniqueTaskIds.length) {
     return NextResponse.json(
       { error: "All tasks must be assigned to the viewed person's board." },
       { status: 403 }

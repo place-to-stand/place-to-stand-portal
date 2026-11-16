@@ -87,6 +87,7 @@ export async function POST(request: Request) {
   try {
     const slice = await listAssignedDoneSlice({
       userId: boardOwnerId,
+      orderFor: user.id,
       companyId: payload.companyId ?? null,
       hiddenProjectTypes: payload.hiddenProjectTypes ?? [],
       projectIds: workableProjectIds,

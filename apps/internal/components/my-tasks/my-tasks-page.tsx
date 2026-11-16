@@ -604,7 +604,6 @@ export function MyTasksPage({
             <ProjectsBoardEmpty message='No tasks match the current filters.' />
           ) : (
             <MyTasksBoard
-              canReorder={selectedAssigneeId !== 'all'}
               entries={visibleBoardEntries}
               hiddenTaskIds={hiddenTaskIds}
               taskLookup={taskLookup}

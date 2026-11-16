@@ -278,3 +278,26 @@ test('the lead bulk bar has no due date', async ({ page }) => {
     bar(page).getByRole('button', { name: /Set due date/ })
   ).toHaveCount(0)
 })
+
+test('My Tasks for everyone: cards select and keep their full menu', async ({
+  page,
+}) => {
+  await page.goto('/my/tasks/board?assignee=all')
+  await page.waitForLoadState('networkidle')
+  await expectHealthy(page)
+  const cards = await columnWith(page, 1)
+  test.skip(!cards, 'no tasks on anyone')
+
+  await cards!.first().click({ modifiers: ['Shift'], position: CORNER })
+  await expect(bar(page)).toContainText('1 task selected')
+  await page.keyboard.press('Escape')
+
+  // Every edit, reordering too (it saves the viewer's own order).
+  await cards!.first().click({ button: 'right', position: CORNER })
+  const menu = page.getByRole('menu')
+  await expect(
+    menu.getByRole('menuitem', { name: /Set assignee/ })
+  ).toBeVisible()
+  await expect(menu.getByRole('menuitem', { name: /Archive/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+})

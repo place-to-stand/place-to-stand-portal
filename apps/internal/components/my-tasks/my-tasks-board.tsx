@@ -44,11 +44,6 @@ type TaskLookupEntry = {
 export type TaskLookup = Map<string, TaskLookupEntry>
 
 type MyTasksBoardProps = {
-  /**
-   * Drag reordering persists per-person sort metadata, so the everyone
-   * view renders read-only cards (clicking still opens the sheet).
-   */
-  canReorder?: boolean
   entries: MyTasksInitialEntry[]
   /**
    * Entries the search hides. They stay in `entries` so a drag keeps their
@@ -87,7 +82,6 @@ export type MyTasksBoardReorderUpdate = {
 }
 
 export function MyTasksBoard({
-  canReorder = true,
   entries,
   hiddenTaskIds = NO_HIDDEN,
   taskLookup,
@@ -117,7 +111,6 @@ export function MyTasksBoard({
   const [recentlyMovedTaskId, setRecentlyMovedTaskId] = useState<string | null>(
     null
   )
-  const boardCanManage = canReorder
 
   const rowsByColumn = useMemo(
     () =>
@@ -137,7 +130,7 @@ export function MyTasksBoard({
         ),
       [rowsByColumn]
     ),
-    boardCanManage
+    true
   )
   const tasksIn = useCallback(
     (status: MyTaskStatus) =>
@@ -214,7 +207,7 @@ export function MyTasksBoard({
                         columnId={column.id}
                         label={column.label}
                         tasks={drag.itemsFor(column.id)}
-                        canManage={boardCanManage}
+                        canManage
                         onMoveTask={handleDrop}
                         renderAssignees={renderAssignees}
                         onEditTask={task => onOpenTask(task.id)}
