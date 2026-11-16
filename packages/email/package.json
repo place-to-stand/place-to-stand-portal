@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@pts/eslint-config": "^0.1.0",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "typescript": "^6.0.3"
   }
 }
