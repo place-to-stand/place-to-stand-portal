@@ -36,9 +36,8 @@ type State = {
 
 /**
  * Which cards of a board are selected, for the bulk bar. Shift-click picks
- * a range down one column, ⌘-click (Ctrl on Windows) adds or drops one card,
- * and the card menu's Select does the same as ⌘-click. A plain click still
- * opens the card. Escape clears the selection, and a card that leaves the
+ * a range down one column, and ⌘-click (Ctrl on Windows) adds or drops one
+ * card. A plain click still opens the card. Escape clears the selection, and a card that leaves the
  * board (a filter, a refresh) leaves it too.
  *
  * `columns` lists each column's card ids in board order.
@@ -236,7 +235,6 @@ export function useBoardCardSelection(id: string) {
     selected: selection.isSelected(id),
     /** For the card's onClick: true when the click selected. */
     click: (event: MouseEvent) => selection.click(id, event),
-    toggle: () => selection.toggle(id),
   }
 }
 
@@ -246,8 +244,8 @@ export type BoardCardSelection = NonNullable<
 
 /**
  * What a board card spreads on its root to join the selection: a click with
- * Shift, ⌘ or Ctrl selects instead of calling `open`, a shift-press doesn't
- * select text, and the card menu gets Select. `listeners` are the card's
+ * Shift, ⌘ or Ctrl selects instead of calling `open`, and a shift-press
+ * doesn't select text. `listeners` are the card's
  * dnd-kit listeners, whose mouse-down this keeps.
  */
 export function useSelectableCard(
@@ -262,10 +260,6 @@ export function useSelectableCard(
   )?.onMouseDown
   return {
     selected,
-    /** For the card's context menu. */
-    select: selection
-      ? { selected, toggle: selection.toggle }
-      : (undefined as undefined),
     /** Spread after the dnd-kit listeners. */
     props: {
       'data-selected': selected || undefined,

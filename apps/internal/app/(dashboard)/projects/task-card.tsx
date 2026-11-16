@@ -274,7 +274,6 @@ export function TaskCard({
       canManage={canManage}
       draggable={draggable}
       move={move}
-      select={card.select}
     >
       <div
         ref={setNodeRef}

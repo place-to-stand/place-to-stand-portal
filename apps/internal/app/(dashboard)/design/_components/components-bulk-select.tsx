@@ -171,7 +171,7 @@ function BoardSpecimen() {
   return (
     <Specimen
       label='useBoardSelection, BoardSelectionProvider, BoardBulkBar'
-      note='components/board. Shift-click a range down a column, ⌘-click (Ctrl) to add or drop one card, or right-click › Select. A plain click opens the card. Escape clears. Archive here only hides the cards.'
+      note='components/board. Shift-click a range down a column, or ⌘-click (Ctrl) to add or drop one card. A plain click opens the card. Escape clears. Archive here only hides the cards.'
       className='block'
     >
       <BoardSelectionProvider selection={selection}>

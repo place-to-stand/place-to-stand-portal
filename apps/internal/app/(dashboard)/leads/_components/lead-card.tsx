@@ -126,7 +126,6 @@ export const LeadCard = memo(function LeadCard({
       lead={lead}
       onEdit={() => onEditLead(lead)}
       canManage={canManage}
-      select={card.select}
     >
       <div
         ref={setNodeRef}
