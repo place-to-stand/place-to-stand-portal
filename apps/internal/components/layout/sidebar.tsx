@@ -162,10 +162,13 @@ export function Sidebar({ user, badges }: Props) {
                         tooltip={item.label}
                         className={cn(
                           'h-auto gap-2 rounded-sm px-2 py-1.5 text-xs leading-normal',
-                          // Snap between the full row and the icon square
-                          // rather than animating the row's width, which
-                          // squeezed each label to "Compan…" mid-animation.
-                          'transition-[color,background-color]',
+                          // No transitions at all. Width: snap between the
+                          // full row and the icon square, since animating it
+                          // squeezed each label to "Compan…". Colour: the
+                          // highlight jumps from item to item, since a fade
+                          // left the old item glowing beside the new one on
+                          // quick clicks.
+                          'transition-none',
                           'data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:font-normal',
                           // The primitive's hover swaps to the accent surface,
                           // inverting the active pill; just dim it instead.
