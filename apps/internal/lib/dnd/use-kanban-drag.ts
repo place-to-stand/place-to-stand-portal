@@ -15,6 +15,12 @@ import {
 
 import type { KanbanDropTarget } from './kanban'
 import {
+  findBoardCard,
+  groupSlotHeight,
+  measureBoardCards,
+  settleGroupDrop,
+} from './settle-group-drop'
+import {
   draftFromColumns,
   locateInDraft,
   moveInDraft,
@@ -86,6 +92,8 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const movedColumn = useRef(false)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [group, setGroup] = useState<readonly string[] | null>(null)
+  const groupFrame = useRef<number | null>(null)
+  const grownCard = useRef<HTMLElement | null>(null)
 
   const setDraft = useCallback((next: KanbanDraft<C> | null) => {
     draftRef.current = next
@@ -124,6 +132,14 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   )
 
   const reset = useCallback(() => {
+    if (groupFrame.current !== null) {
+      cancelAnimationFrame(groupFrame.current)
+      groupFrame.current = null
+    }
+    if (grownCard.current) {
+      grownCard.current.style.minHeight = ''
+      grownCard.current = null
+    }
     setDraft(null)
     setActiveId(null)
     setGroup(null)
@@ -139,17 +155,37 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       // drop in after the dragged one.
       const moving = groupOf?.(id) ?? null
       const along = new Set(moving?.filter(other => other !== id))
-      const start = draftFromColumns(columns, column =>
-        items(column)
-          .map(item => item.id)
-          .filter(itemId => !along.has(itemId))
+      const all = draftFromColumns(columns, column =>
+        items(column).map(item => item.id)
       )
-      originRef.current = locateInDraft(start, id)
+      const withoutAlong = (draft: KanbanDraft<C>) =>
+        along.size ? removeFromDraft(draft, along) : draft
+      originRef.current = locateInDraft(withoutAlong(all), id)
       lastOverId.current = null
-      setDraft(start)
+      setDraft(all)
       setActiveId(id)
       setGroup(moving)
       onDragStart?.(event)
+      if (!along.size) return
+
+      // The rest of the group leaves the board only once dnd-kit has
+      // measured the grabbed card, so the stack starts under the pointer
+      // rather than where the card slides to. The grabbed card's slot then
+      // grows to the whole group's height, so the drop makes no jump.
+      const slot = groupSlotHeight(moving!)
+      groupFrame.current = requestAnimationFrame(() => {
+        groupFrame.current = requestAnimationFrame(() => {
+          groupFrame.current = null
+          const current = draftRef.current
+          if (!current || !locateInDraft(current, id)) return
+          setDraft(withoutAlong(current))
+          const card = findBoardCard(id)
+          if (card && slot) {
+            card.style.minHeight = `${slot}px`
+            grownCard.current = card
+          }
+        })
+      })
     },
     [columns, groupOf, items, onDragStart, setDraft]
   )
@@ -203,7 +239,15 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       if (moving) {
         // The block's place counts the column without the group: the draft
         // holds only the dragged card of it.
+        const before = measureBoardCards()
+        const stack = event.active.rect.current.translated
         onDrop({ id, from, to, group: moving, event })
+        settleGroupDrop({
+          before,
+          stack: stack ? { top: stack.top, left: stack.left } : null,
+          dragged: id,
+          group: moving,
+        })
         return
       }
       if (from.columnId === to.columnId && from.index === to.index) return
@@ -279,4 +323,16 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
 const BOARD_AUTO_SCROLL: AutoScrollOptions = {
   threshold: { x: 0.08, y: 0.15 },
   acceleration: 6,
+}
+
+function removeFromDraft<C extends string>(
+  draft: KanbanDraft<C>,
+  ids: ReadonlySet<string>
+): KanbanDraft<C> {
+  return new Map(
+    [...draft].map(([column, cards]) => [
+      column,
+      cards.filter(card => !ids.has(card)),
+    ])
+  )
 }
