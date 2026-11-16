@@ -42,6 +42,7 @@ import {
 } from '@/lib/leads/won-rule'
 
 import { LeadColumn } from './lead-column'
+import { useLeadGroupMove } from './use-lead-group-move'
 import { LeadCardPreview } from './lead-card'
 
 type LeadsBoardProps = {
@@ -108,11 +109,24 @@ export function LeadsBoard({
     canManage
   )
 
+  const moveGroup = useLeadGroupMove({
+    columnsRef,
+    setColumns,
+    hiddenLeads,
+    canManage,
+    startTransition,
+    onMoved: id => {
+      setRecentlyMovedLeadId(id)
+      scheduleRecentlyMovedReset()
+    },
+    onLeadClosedWon,
+  })
+
   const handleDrop = useCallback(
     (drop: KanbanDrop<LeadStatusValue>) => {
       // Cards an archive is hiding still sit in `columns`: count them, so
       // the lead lands between the cards it was dropped between.
-      const { id: leadId, to: target } = dropAmongHidden(
+      const placed = dropAmongHidden(
         drop,
         columnId =>
           columnsRef.current
@@ -120,6 +134,11 @@ export function LeadsBoard({
             ?.leads.map(lead => lead.id) ?? [],
         selection.hidden
       )
+      if (placed.group) {
+        moveGroup({ ...placed, group: placed.group })
+        return
+      }
+      const { id: leadId, to: target } = placed
       const result = produceLeadReorder({
         columns: columnsRef.current,
         leadId,
@@ -200,6 +219,7 @@ export function LeadsBoard({
     [
       canManage,
       hiddenLeads,
+      moveGroup,
       onLeadClosedWon,
       onWonNeedsCompany,
       scheduleRecentlyMovedReset,
@@ -229,6 +249,7 @@ export function LeadsBoard({
     items: leadsIn,
     onDragStart: handleDragStart,
     onDrop: handleDrop,
+    groupOf: selection.dragGroup,
   })
   const draggingLead = drag.activeId
     ? findLeadById(columns, drag.activeId)
@@ -282,7 +303,7 @@ export function LeadsBoard({
                       )
                     })}
                   </div>
-                  <BoardDragOverlay>
+                  <BoardDragOverlay count={drag.activeCount}>
                     {draggingLead ? (
                       <LeadCardPreview lead={draggingLead} />
                     ) : null}

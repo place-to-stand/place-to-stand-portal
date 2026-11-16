@@ -56,7 +56,8 @@ export function dropAmongHidden<M extends KanbanMove<string>>(
 ): M {
   if (!hidden.size) return move
   const fromIndex = cardsIn(move.from.columnId).indexOf(move.id)
-  const target = cardsIn(move.to.columnId).filter(id => id !== move.id)
+  const moving = new Set(move.group ?? [move.id])
+  const target = cardsIn(move.to.columnId).filter(id => !moving.has(id))
   const shown = target.flatMap((id, at) => (hidden.has(id) ? [] : [at]))
   const index = Math.min(Math.max(move.to.index, 0), shown.length)
   const toIndex =

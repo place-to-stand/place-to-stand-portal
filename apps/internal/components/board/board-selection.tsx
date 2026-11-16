@@ -16,6 +16,7 @@ import {
   hasSelectModifier,
   type BoardColumns,
 } from '@/lib/dnd/board-selection'
+import { columnGroup, dragGroup } from '@/lib/dnd/kanban-group'
 
 /**
  * A selected card: the primary border and a ring around it, over whatever
@@ -131,6 +132,11 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
   }, [])
 
   const active = enabled && ids.size > 0
+  // Cards an archive is hiding don't move with the others.
+  const movable = useMemo(
+    () => (hidden.size ? new Set([...ids].filter(id => !hidden.has(id))) : ids),
+    [hidden, ids]
+  )
 
   useEffect(() => {
     if (!active) return
@@ -173,8 +179,23 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
       clear,
       hidden,
       hide,
+      /** The cards a drag of `id` moves with it, or null for one card. */
+      dragGroup: (id: string) => dragGroup(shownColumns, movable, id),
+      /** The cards a Send to top / bottom of `id` moves, or null. */
+      columnGroup: (id: string) => columnGroup(shownColumns, movable, id),
     }),
-    [enabled, ids, active, range, toggle, clear, hidden, hide]
+    [
+      enabled,
+      ids,
+      active,
+      range,
+      toggle,
+      clear,
+      hidden,
+      hide,
+      shownColumns,
+      movable,
+    ]
   )
 }
 
@@ -188,7 +209,8 @@ function isMac() {
 function isOverlayOpen() {
   return [
     ...document.querySelectorAll<HTMLElement>(
-      '[role="dialog"], [role="alertdialog"], [role="menu"]'
+      // A card being dragged: Escape cancels the drag.
+      '[role="dialog"], [role="alertdialog"], [role="menu"], [data-board-dragging]'
     ),
   ].some(element =>
     typeof element.checkVisibility === 'function'

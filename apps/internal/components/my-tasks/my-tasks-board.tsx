@@ -5,6 +5,7 @@ import { DndContext } from '@dnd-kit/core'
 
 import { KanbanColumn } from '@/app/(dashboard)/projects/_components/kanban-column'
 import { TaskDragOverlay } from '@/app/(dashboard)/projects/_components/task-drag-overlay'
+import { produceGroupReorderUpdate } from './my-tasks-group-move'
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { useScrollPersistence } from '@/hooks/use-scroll-persistence'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
@@ -142,18 +143,37 @@ export function MyTasksBoard({
   )
 
   const handleDrop = useCallback(
-    ({ id: taskId, to }: KanbanMove<MyTaskStatus>) => {
-      const change = produceReorderUpdate({
-        entries,
-        // Cards an archive is hiding count as filtered out, so a drop
-        // lands between the cards it was dropped between.
-        hiddenTaskIds: selection.hidden.size
-          ? new Set([...hiddenTaskIds, ...selection.hidden])
-          : hiddenTaskIds,
-        taskLookup,
-        taskId,
-        targetStatus: to.columnId,
-        targetIndex: to.index,
+    ({ id: taskId, to, group }: KanbanMove<MyTaskStatus>) => {
+      // Cards an archive is hiding count as filtered out, so a drop
+      // lands between the cards it was dropped between.
+      const hidden = selection.hidden.size
+        ? new Set([...hiddenTaskIds, ...selection.hidden])
+        : hiddenTaskIds
+      const change = group
+        ? produceGroupReorderUpdate({
+            entries,
+            hiddenTaskIds: hidden,
+            statusOf: id => {
+              const status = taskLookup.get(id)?.task.status
+              return status ? normalizeStatus(status) : null
+            },
+            taskId,
+            group,
+            targetStatus: to.columnId,
+            targetIndex: to.index,
+          })
+        : produceReorderUpdate({
+            entries,
+            hiddenTaskIds: hidden,
+            taskLookup,
+            taskId,
+            targetStatus: to.columnId,
+            targetIndex: to.index,
+          })
+      // The moved cards' columns, as the single move does.
+      group?.forEach(id => {
+        const meta = taskLookup.get(id)
+        if (change && meta) meta.task.status = to.columnId
       })
 
       if (!change) {
@@ -171,10 +191,14 @@ export function MyTasksBoard({
     [entries, hiddenTaskIds, onReorder, selection.hidden, taskLookup]
   )
 
+  // Send to top / bottom of a selected card moves the column's selection.
+  const sendTask = (move: KanbanMove<MyTaskStatus>) =>
+    handleDrop({ ...move, group: selection.columnGroup(move.id) ?? undefined })
   const drag = useKanbanDrag({
     columns: MY_TASK_COLUMN_IDS,
     items: tasksIn,
     onDrop: handleDrop,
+    groupOf: selection.dragGroup,
   })
   const draggingTask = drag.activeId
     ? (taskLookup.get(drag.activeId)?.task ?? null)
@@ -208,7 +232,7 @@ export function MyTasksBoard({
                         label={column.label}
                         tasks={drag.itemsFor(column.id)}
                         canManage
-                        onMoveTask={handleDrop}
+                        onMoveTask={sendTask}
                         renderAssignees={renderAssignees}
                         onEditTask={task => onOpenTask(task.id)}
                         activeTaskId={activeTaskId}
@@ -240,6 +264,7 @@ export function MyTasksBoard({
                 </div>
                 <TaskDragOverlay
                   draggingTask={draggingTask}
+                  count={drag.activeCount}
                   renderAssignees={renderAssignees}
                   getTaskCardOptions={getTaskCardOptions}
                 />

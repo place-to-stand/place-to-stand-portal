@@ -30,6 +30,12 @@ export type KanbanMove<C extends string> = {
   id: string
   from: KanbanDropTarget<C>
   to: KanbanDropTarget<C>
+  /**
+   * Several selected cards moving together, in board order (`id` among
+   * them). They land as one block at `to`, whose index then counts the
+   * column's cards without any of the group.
+   */
+  group?: readonly string[]
 }
 
 export type KanbanDrop<C extends string> = KanbanMove<C> & {
@@ -44,6 +50,11 @@ type UseKanbanDragArgs<C extends string, T extends { id: string }> = {
   /** Called once on drop, only when the card moved. */
   onDrop: (drop: KanbanDrop<C>) => void
   onDragCancel?: () => void
+  /**
+   * The cards a drag of `id` takes along (`id` included, in board order),
+   * or null for the card alone: the board's selection.
+   */
+  groupOf?: (id: string) => readonly string[] | null
 }
 
 /**
@@ -66,6 +77,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   onDragStart,
   onDrop,
   onDragCancel,
+  groupOf,
 }: UseKanbanDragArgs<C, T>) {
   const [draft, setDraftState] = useState<KanbanDraft<C> | null>(null)
   const draftRef = useRef<KanbanDraft<C> | null>(null)
@@ -73,6 +85,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const lastOverId = useRef<UniqueIdentifier | null>(null)
   const movedColumn = useRef(false)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [group, setGroup] = useState<readonly string[] | null>(null)
 
   const setDraft = useCallback((next: KanbanDraft<C> | null) => {
     draftRef.current = next
@@ -113,6 +126,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const reset = useCallback(() => {
     setDraft(null)
     setActiveId(null)
+    setGroup(null)
     originRef.current = null
     lastOverId.current = null
     movedColumn.current = false
@@ -121,16 +135,23 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const id = String(event.active.id)
+      // The other cards of a group leave the board while it moves, and
+      // drop in after the dragged one.
+      const moving = groupOf?.(id) ?? null
+      const along = new Set(moving?.filter(other => other !== id))
       const start = draftFromColumns(columns, column =>
-        items(column).map(item => item.id)
+        items(column)
+          .map(item => item.id)
+          .filter(itemId => !along.has(itemId))
       )
       originRef.current = locateInDraft(start, id)
       lastOverId.current = null
       setDraft(start)
       setActiveId(id)
+      setGroup(moving)
       onDragStart?.(event)
     },
-    [columns, items, onDragStart, setDraft]
+    [columns, groupOf, items, onDragStart, setDraft]
   )
 
   const handleDragOver = useCallback(
@@ -171,6 +192,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       const current = draftRef.current
       const from = originRef.current
       const id = String(event.active.id)
+      const moving = group
       const to =
         current && event.over
           ? settleDraft(current, id, String(event.over.id))
@@ -178,10 +200,16 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       reset()
 
       if (!from || !to) return
+      if (moving) {
+        // The block's place counts the column without the group: the draft
+        // holds only the dragged card of it.
+        onDrop({ id, from, to, group: moving, event })
+        return
+      }
       if (from.columnId === to.columnId && from.index === to.index) return
       onDrop({ id, from, to, event })
     },
-    [onDrop, reset]
+    [group, onDrop, reset]
   )
 
   const handleDragCancel = useCallback(() => {
@@ -227,6 +255,8 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
 
   return {
     activeId,
+    /** How many cards the drag moves (1 without a group). */
+    activeCount: group?.length ?? 1,
     /** The column the dragged card sits in now, or null when not dragging. */
     activeColumnId,
     itemsFor,

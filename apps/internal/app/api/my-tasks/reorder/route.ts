@@ -21,13 +21,25 @@ import { authorizeRoute } from '@/lib/auth/guard'
 import { roleCan } from '@/lib/auth/capabilities'
 
 const reorderPayloadSchema = z.object({
-  taskId: z.string().uuid(),
+  taskId: z.uuid(),
   /** The viewed board's person, or 'all' (the everyone view). */
-  assigneeId: z.union([z.string().uuid(), z.literal('all')]).optional(),
+  assigneeId: z.union([z.uuid(), z.literal('all')]).optional(),
   targetStatus: z.enum(MY_TASK_STATUS_VALUES),
-  targetOrder: z.array(z.string().uuid()).min(1),
+  targetOrder: z.array(z.uuid()).min(1),
   sourceStatus: z.enum(MY_TASK_STATUS_VALUES).optional(),
-  sourceOrder: z.array(z.string().uuid()).optional(),
+  sourceOrder: z.array(z.uuid()).optional(),
+  /** Several selected cards moved together (`taskId` among them). */
+  movedTaskIds: z.array(z.uuid()).min(1).max(500).optional(),
+  /** With `movedTaskIds`: the new order of each other column they left. */
+  otherOrders: z
+    .array(
+      z.object({
+        status: z.enum(MY_TASK_STATUS_VALUES),
+        order: z.array(z.uuid()),
+      })
+    )
+    .max(MY_TASK_STATUS_VALUES.length)
+    .optional(),
 })
 
 export async function POST(request: Request) {
@@ -74,8 +86,21 @@ export async function POST(request: Request) {
     )
   }
 
+  const movedTaskIds = payload.movedTaskIds ?? [payload.taskId]
+  if (movedTaskIds.some(id => !payload.targetOrder.includes(id))) {
+    return NextResponse.json(
+      { error: 'Target column ordering must include every moved task.' },
+      { status: 400 }
+    )
+  }
+  const otherOrders = payload.otherOrders ?? []
+
   const uniqueTaskIds = Array.from(
-    new Set([...payload.targetOrder, ...(payload.sourceOrder ?? [])])
+    new Set([
+      ...payload.targetOrder,
+      ...(payload.sourceOrder ?? []),
+      ...otherOrders.flatMap(column => column.order),
+    ])
   )
 
   if (!uniqueTaskIds.length) {
@@ -139,24 +164,23 @@ export async function POST(request: Request) {
     )
   }
 
-  const taskRecord = await db
+  const movedTasks = await db
     .select({
       id: tasksTable.id,
       status: tasksTable.status,
     })
     .from(tasksTable)
-    .where(eq(tasksTable.id, payload.taskId))
-    .limit(1)
+    .where(inArray(tasksTable.id, movedTaskIds))
 
-  const task = taskRecord[0]
-
-  if (!task) {
+  if (movedTasks.length !== new Set(movedTaskIds).size) {
     return NextResponse.json({ error: 'Task not found.' }, { status: 404 })
   }
 
-  if (task.status !== payload.targetStatus) {
+  // Each card that changed column, in the order they were moved.
+  for (const task of movedTasks) {
+    if (task.status === payload.targetStatus) continue
     const result = await changeTaskStatus({
-      taskId: payload.taskId,
+      taskId: task.id,
       status: payload.targetStatus as MyTaskStatus,
     })
 
@@ -182,6 +206,14 @@ export async function POST(request: Request) {
           client: tx,
           userId: boardOwnerId,
           taskIds: payload.sourceOrder,
+        })
+      }
+
+      for (const column of otherOrders) {
+        await upsertSortOrders({
+          client: tx,
+          userId: boardOwnerId,
+          taskIds: column.order,
         })
       }
     })

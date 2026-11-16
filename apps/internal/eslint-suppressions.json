@@ -440,11 +440,6 @@
       "count": 1
     }
   },
-  "app/api/my-tasks/reorder/route.ts": {
-    "@typescript-eslint/no-deprecated": {
-      "count": 4
-    }
-  },
   "app/api/notifications/route.ts": {
     "@typescript-eslint/no-deprecated": {
       "count": 1

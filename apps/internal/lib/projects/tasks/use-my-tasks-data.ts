@@ -14,6 +14,10 @@ export type MyTasksReorderPayload = {
   targetOrder: string[]
   sourceStatus?: MyTaskStatus
   sourceOrder?: string[]
+  /** Several selected cards moved together (`taskId` among them). */
+  movedTaskIds?: string[]
+  /** With `movedTaskIds`: the new order of each other column they left. */
+  otherOrders?: { status: MyTaskStatus; order: string[] }[]
 }
 
 export function useMyTasksReorderMutation() {

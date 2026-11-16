@@ -318,10 +318,6 @@ test('a card focused by closing its sheet still shows it is selected', async ({
   await card.click({ modifiers: ['Shift'], position: CORNER })
   await expect(card).toHaveAttribute('data-selected', 'true')
   // The selected border, not the focus ring's grey, and no browser outline.
-  const style = await card.evaluate(node => {
-    const css = getComputedStyle(node)
-    return { border: css.borderTopColor, outline: css.outlineStyle }
-  })
   const primary = await page.evaluate(() => {
     const probe = document.createElement('div')
     probe.className = 'border border-primary'
@@ -330,6 +326,40 @@ test('a card focused by closing its sheet still shows it is selected', async ({
     probe.remove()
     return color
   })
-  expect(style.border).toBe(primary)
-  expect(style.outline).toBe('none')
+  // Polled: the card's border colour eases in over a moment.
+  await expect
+    .poll(() => card.evaluate(node => getComputedStyle(node).borderTopColor))
+    .toBe(primary)
+  expect(await card.evaluate(node => getComputedStyle(node).outlineStyle)).toBe(
+    'none'
+  )
 })
+
+for (const board of [
+  { name: 'project board', open: openBoard },
+  { name: 'leads board', open: openLeads },
+]) {
+  test(`${board.name}: dragging a selected card carries the others, as a stack`, async ({
+    page,
+  }) => {
+    await board.open(page)
+    const cards = await columnWith(page, 3)
+    test.skip(!cards, 'no column with three cards')
+
+    await cards!.nth(0).click({ modifiers: ['Shift'], position: CORNER })
+    await cards!.nth(2).click({ modifiers: ['Shift'], position: CORNER })
+    await expect(selected(page)).toHaveCount(3)
+
+    // Pick up the middle card; the other two leave the column while it moves.
+    const box = (await cards!.nth(1).boundingBox())!
+    await page.mouse.move(box.x + 10, box.y + 6)
+    await page.mouse.down()
+    await page.mouse.move(box.x + 30, box.y + 40, { steps: 5 })
+    await expect(page.locator('[data-drag-count="3"]')).toBeVisible()
+
+    // Escape puts everything back without saving.
+    await page.keyboard.press('Escape')
+    await page.mouse.up()
+    await expect(selected(page)).toHaveCount(3)
+  })
+}

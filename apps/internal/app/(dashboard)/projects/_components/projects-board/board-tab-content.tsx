@@ -165,11 +165,15 @@ export function BoardTabContent(props: BoardTabContentProps) {
       ),
     [onTaskDrop, tasksByColumn, selection.hidden]
   )
+  // Send to top / bottom of a selected card moves the column's selection.
+  const sendTask = (move: KanbanMove<BoardColumnId>) =>
+    moveTask({ ...move, group: selection.columnGroup(move.id) ?? undefined })
   const drag = useKanbanDrag({
     columns: BOARD_COLUMN_IDS,
     items: tasksIn,
     onDragStart,
     onDrop: moveTask,
+    groupOf: selection.dragGroup,
   })
   const draggingTask = drag.activeId ? (findTask(drag.activeId) ?? null) : null
 
@@ -222,7 +226,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                               renderAssignees={renderAssignees}
                               onEditTask={onEditTask}
                               canManage={canManageTasks}
-                              onMoveTask={moveTask}
+                              onMoveTask={sendTask}
                               activeTaskId={activeSheetTaskId}
                               onCreateTask={onCreateTask}
                               isDropTarget={drag.activeColumnId === column.id}
@@ -250,6 +254,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                       </div>
                       <TaskDragOverlay
                         draggingTask={draggingTask}
+                        count={drag.activeCount}
                         renderAssignees={renderAssignees}
                       />
                     </DndContext>
