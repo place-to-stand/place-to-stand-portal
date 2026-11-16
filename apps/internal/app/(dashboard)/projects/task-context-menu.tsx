@@ -2,14 +2,18 @@
 
 import type { ReactElement } from 'react'
 
-import { RecordContextMenu } from '@/components/table/record-context-menu'
+import {
+  RecordContextMenu,
+  type TaskEdgeMoves,
+} from '@/components/table/record-context-menu'
 import { useRecordArchive } from '@/components/table/use-record-archive'
 import type { TaskWithRelations } from '@/lib/types'
 
-import { removeTask, setTaskAssignee } from './actions'
+import { changeTaskDueDate, removeTask, setTaskAssignee } from './actions'
 
 /**
- * Right-click on a task card: Edit, Duplicate, Set assignee, Archive.
+ * Right-click on a task card: Edit, Duplicate, Set assignee, Set due date,
+ * Send to top / bottom (board cards), Archive.
  * Archive confirms with the same dialog as the task sheet's. A viewer who
  * can't manage tasks gets Edit only (it opens the sheet read-only).
  */
@@ -19,7 +23,8 @@ export function TaskContextMenu({
   canManage,
   archivable = true,
   draggable = false,
-  onAssigned,
+  onChanged,
+  move,
   children,
 }: {
   task: TaskWithRelations
@@ -29,7 +34,9 @@ export function TaskContextMenu({
   archivable?: boolean
   draggable?: boolean
   /** Lists holding their own copy of the task (the lead sheet) refetch. */
-  onAssigned?: () => void
+  onChanged?: () => void
+  /** Send to top / bottom; boards pass it, other lists don't. */
+  move?: TaskEdgeMoves
   children: ReactElement<Record<string, unknown>>
 }) {
   const { requestArchive, isPending, dialog } = useRecordArchive({
@@ -53,10 +60,21 @@ export function TaskContextMenu({
                 set: assigneeId =>
                   setTaskAssignee({ taskId: task.id, assigneeId }),
                 name: task.title,
-                onAssigned,
+                onAssigned: onChanged,
               }
             : undefined
         }
+        dueDate={
+          canManage
+            ? {
+                current: task.due_on ?? null,
+                set: dueOn => changeTaskDueDate({ taskId: task.id, dueOn }),
+                name: task.title,
+                onChanged,
+              }
+            : undefined
+        }
+        move={canManage ? move : undefined}
         onArchive={
           canManage && archivable
             ? () => requestArchive({ id: task.id, name: task.title })

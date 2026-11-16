@@ -16,7 +16,7 @@ import { ProjectsBoardEmpty } from '../projects-board-empty'
 import { TaskDragOverlay } from '../task-drag-overlay'
 import { ProjectBoardFilters } from './project-board-filters'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
-import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
+import { useKanbanDrag, type KanbanMove } from '@/lib/dnd/use-kanban-drag'
 
 import {
   FEEDBACK_CLASSES,
@@ -69,7 +69,8 @@ export type BoardTabContentProps = {
   onCreateTask: () => void
   sensors: DndContextProps['sensors']
   onDragStart: () => void
-  onTaskDrop: (drop: KanbanDrop<BoardColumnId>) => void
+  /** Saves a drop, and the card menu's Send to top / bottom. */
+  onTaskDrop: (move: KanbanMove<BoardColumnId>) => void
   boardViewportRef: RefObject<HTMLDivElement | null>
   onBoardScroll: UIEventHandler<HTMLDivElement>
   activeSheetTaskId: string | null
@@ -182,6 +183,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                             renderAssignees={renderAssignees}
                             onEditTask={onEditTask}
                             canManage={canManageTasks}
+                            onMoveTask={onTaskDrop}
                             activeTaskId={activeSheetTaskId}
                             onCreateTask={onCreateTask}
                             isDropTarget={drag.activeColumnId === column.id}

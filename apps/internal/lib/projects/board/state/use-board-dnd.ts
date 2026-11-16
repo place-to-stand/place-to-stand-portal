@@ -11,7 +11,7 @@ import {
   type ReorderOutcome,
 } from './dnd-helpers'
 import type { TaskLookup } from './types'
-import type { KanbanDrop } from '@/lib/dnd/use-kanban-drag'
+import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
 
 type UseBoardDnDArgs = {
@@ -47,7 +47,7 @@ export const useBoardDnDState = ({
   }, [clearRecentlyMovedTimer, setRecentlyMovedTaskId])
 
   const handleTaskDrop = useCallback(
-    (drop: KanbanDrop<BoardColumnId>) => {
+    (drop: KanbanMove<BoardColumnId>) => {
       if (!canManageTasks || !activeProject) {
         return
       }
