@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Search } from 'lucide-react'
@@ -30,6 +30,7 @@ import { ShortcutKeys } from '@/components/keyboard/shortcut-keys'
 import { SHORTCUTS } from '@/lib/keyboard/shortcuts'
 
 import { UserMenu } from './user-menu'
+import { NavLinkPending } from './nav-link-pending'
 import { useCommandPalette } from './command-palette'
 import { NAV_GROUPS } from './navigation-config'
 import { filterNavGroupsForRole, homePathForRole } from '@/lib/auth/roles'
@@ -46,6 +47,16 @@ export function Sidebar({ user, badges }: Props) {
   const pathname = usePathname()
   const { state: sidebarState, setOpenMobile } = useSidebar()
   const { setOpen: setPaletteOpen } = useCommandPalette()
+  // The item whose page is on its way. It takes the highlight at the click
+  // rather than when the page lands, so the highlight never trails the
+  // click, and a page from an earlier click in a quick burst can't light
+  // its own item on the way through.
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+  const handlePendingChange = useCallback((href: string, pending: boolean) => {
+    setPendingHref(current =>
+      pending ? href : current === href ? null : current
+    )
+  }, [])
   const navGroups = useMemo(
     () => filterNavGroupsForRole(NAV_GROUPS, user.role),
     [user.role]
@@ -136,7 +147,11 @@ export function Sidebar({ user, badges }: Props) {
               <SidebarMenu className='gap-0.5'>
                 {group.items.map(item => {
                   const Icon = item.icon
-                  const isActive = isNavItemActive(pathname, item)
+                  // The page actually shown, for assistive tech.
+                  const isCurrentPage = isNavItemActive(pathname, item)
+                  const isActive = pendingHref
+                    ? item.href === pendingHref
+                    : isCurrentPage
                   const badgeCount = badges?.[item.href]
 
                   return (
@@ -161,8 +176,12 @@ export function Sidebar({ user, badges }: Props) {
                       >
                         <Link
                           href={item.href}
-                          aria-current={isActive ? 'page' : undefined}
+                          aria-current={isCurrentPage ? 'page' : undefined}
                         >
+                          <NavLinkPending
+                            href={item.href}
+                            onPendingChange={handlePendingChange}
+                          />
                           <Icon className='size-3.5 shrink-0' />
                           <span className='transition-opacity duration-200 group-data-[collapsible=icon]:opacity-0'>
                             {item.label}
