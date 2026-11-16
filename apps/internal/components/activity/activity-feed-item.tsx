@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { Badge } from '@pts/ui/badge'
 import { BADGE_TINTS } from '@pts/ui/badge-tints'
 import { ActivityChangeList } from '@/components/activity/activity-change-list'
+import { AgentBadge } from '@/components/activity/agent-badge'
 import { getActivityChanges } from '@/lib/activity/changes'
 import { getActorDisplayName } from '@/lib/activity/feed-highlights'
 import type { ActivityLogWithActor } from '@/lib/activity/types'
@@ -56,7 +57,7 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
 
   const { icon: Icon, tone } = getVerbPresentation(log.verb)
   const sourceBadge = SOURCE_BADGES[log.source]
-  const sourceLabel = getSourceLabel(log, sourceBadge?.label)
+  const agentName = getAgentName(log)
   const relativeLabel = formatRelativeTime(log.created_at)
   const absoluteLabel = formatCalendarDate(log.created_at, TIMESTAMP_STYLE)
 
@@ -88,9 +89,11 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
             {actorName}
           </span>
           <span className='text-foreground/90 min-w-0'>{summary}</span>
-          {sourceBadge ? (
+          {agentName ? (
+            <AgentBadge name={agentName} />
+          ) : sourceBadge ? (
             <Badge variant='outline' className={cn(sourceBadge.className)}>
-              {sourceLabel}
+              {sourceBadge.label}
             </Badge>
           ) : null}
           <time
@@ -118,20 +121,18 @@ export function ActivityFeedItem({ log }: ActivityFeedItemProps) {
 
 /**
  * MCP rows name the agent that acted for the human ("via Claude Code"), read
- * from the `metadata.agent` the logger stamps on them.
+ * from the `metadata.agent` the logger stamps on them. Rows without one keep
+ * the plain MCP badge.
  */
-function getSourceLabel(
-  log: ActivityLogWithActor,
-  fallback: string | undefined
-): string | undefined {
+function getAgentName(log: ActivityLogWithActor): string | null {
   if (log.source !== 'MCP') {
-    return fallback
+    return null
   }
 
   const metadata = log.metadata as { agent?: { name?: unknown } } | null
   const name = metadata?.agent?.name
 
-  return typeof name === 'string' && name ? `via ${name}` : fallback
+  return typeof name === 'string' && name ? name : null
 }
 
 /**

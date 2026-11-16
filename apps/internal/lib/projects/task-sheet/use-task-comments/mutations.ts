@@ -129,6 +129,7 @@ export function useCreateTaskCommentMutation({
         task_id: taskId,
         author_id: currentUserId,
         body,
+        agent_name: null,
         created_at: now,
         // Equal to created_at so the row doesn't render an "Edited" marker.
         updated_at: now,

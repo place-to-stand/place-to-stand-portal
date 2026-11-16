@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { Archive, MoreHorizontal, Pencil } from 'lucide-react'
 
 import { RowActionButton } from '@pts/ui/row-action-button'
+import { AgentBadge } from '@/components/activity/agent-badge'
 import { ArchiveConfirmDialog } from '@/components/sheets/archive-confirm-dialog'
 import {
   DropdownMenu,
@@ -164,6 +165,7 @@ export function LeadUpdateItem({
           </AvatarFallback>
         </Avatar>
         <span>{authorDisplay}</span>
+        {update.agentName ? <AgentBadge name={update.agentName} /> : null}
       </div>
 
       <ArchiveConfirmDialog

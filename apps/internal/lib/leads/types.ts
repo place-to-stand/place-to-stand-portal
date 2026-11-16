@@ -104,6 +104,8 @@ export type LeadUpdateRecord = {
   authorName: string | null
   authorEmail: string | null
   authorAvatarUrl: string | null
+  /** The AI app that logged it for its author ("via Claude"); null for a person. */
+  agentName: string | null
   createdAt: string
   updatedAt: string
 }

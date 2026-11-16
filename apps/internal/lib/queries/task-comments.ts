@@ -8,6 +8,7 @@ import {
   taskCommentDeletedEvent,
   taskCommentUpdatedEvent,
 } from '@/lib/activity/events'
+import { currentActivityAgent } from '@/lib/activity/agent-context'
 import { logActivity } from '@/lib/activity/logger'
 import { htmlToPlainText } from '@/lib/activity/text-diff'
 import type { AppUser } from '@/lib/auth/session'
@@ -39,6 +40,7 @@ type CommentSelection = {
   taskId: string
   authorId: string
   body: string
+  agentName: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -73,6 +75,7 @@ function mapCommentSelectionToTaskComment(
     task_id: selection.taskId,
     author_id: selection.authorId,
     body: selection.body,
+    agent_name: selection.agentName ?? null,
     created_at: selection.createdAt,
     updated_at: selection.updatedAt,
     deleted_at: selection.deletedAt,
@@ -99,6 +102,7 @@ async function getCommentSelectionById(
       taskId: taskComments.taskId,
       authorId: taskComments.authorId,
       body: taskComments.body,
+      agentName: taskComments.agentName,
       createdAt: taskComments.createdAt,
       updatedAt: taskComments.updatedAt,
       deletedAt: taskComments.deletedAt,
@@ -235,6 +239,7 @@ export async function listTaskComments(
       taskId: taskComments.taskId,
       authorId: taskComments.authorId,
       body: taskComments.body,
+      agentName: taskComments.agentName,
       createdAt: taskComments.createdAt,
       updatedAt: taskComments.updatedAt,
       deletedAt: taskComments.deletedAt,
@@ -288,6 +293,8 @@ export async function createTaskComment(
       taskId: input.taskId,
       authorId: user.id,
       body,
+      // Set while an MCP agent acts, so the thread can say "via Claude".
+      agentName: currentActivityAgent()?.name ?? null,
     })
     .returning({ id: taskComments.id })
 
@@ -346,10 +353,15 @@ export async function updateTaskComment(
     return
   }
 
+  // An agent's edit marks the comment as its own; a person's edit keeps the
+  // existing mark, since fixing a typo doesn't make an AI's comment human.
+  const agent = currentActivityAgent()
+
   await db
     .update(taskComments)
     .set({
       body,
+      ...(agent ? { agentName: agent.name } : {}),
       updatedAt: new Date().toISOString(),
     })
     .where(eq(taskComments.id, input.commentId))

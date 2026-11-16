@@ -82,7 +82,8 @@ export function ConnectedAppsCard() {
               Connected apps
             </CardTitle>
             <CardDescription>
-              Apps like Claude that you connected through MCP. They act as you.
+              Apps like Claude or ChatGPT that you connected through MCP. They
+              act as you.
             </CardDescription>
           </div>
         </CardHeader>

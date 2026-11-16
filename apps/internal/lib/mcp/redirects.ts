@@ -7,13 +7,26 @@ import 'server-only'
  * it — it can change their password, not just call MCP tools. Dynamic client
  * registration lets anyone register a client with any redirect URI, so
  * without this list a phished admin could hand an attacker's server a token
- * by clicking Connect. Codes only ever go to Claude or the admin's own
- * machine.
+ * by clicking Connect. Codes only ever go to Claude, ChatGPT or the admin's
+ * own machine.
  *
  * Admitting another MCP client means adding its OAuth callback host here;
  * until then its users see "App not allowed" at consent.
  */
 const HTTPS_HOSTS = new Set(['claude.ai', 'claude.com'])
+
+/**
+ * ChatGPT's MCP connectors, by exact callback path rather than whole host:
+ * chatgpt.com also serves custom-GPT OAuth callbacks (`/aip/<gpt>/oauth/...`)
+ * that any GPT author controls, so only the connector platform's own paths
+ * may receive a code. ChatGPT uses `/connector/oauth/<callback id>`, or the
+ * fixed `/connector_platform_oauth_redirect` for servers that send `iss`.
+ */
+const CHATGPT_HOST = 'chatgpt.com'
+const CHATGPT_CALLBACK_PATHS = [
+  /^\/connector_platform_oauth_redirect$/,
+  /^\/connector\/oauth\/[A-Za-z0-9_-]+$/,
+]
 
 /** Claude Code and MCP Inspector listen on a loopback port. */
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
@@ -28,6 +41,15 @@ export function isAllowedRedirect(uri: string): boolean {
   }
 
   if (url.protocol === 'https:' && HTTPS_HOSTS.has(url.hostname)) {
+    return true
+  }
+
+  if (
+    url.protocol === 'https:' &&
+    url.hostname === CHATGPT_HOST &&
+    !url.port &&
+    CHATGPT_CALLBACK_PATHS.some(path => path.test(url.pathname))
+  ) {
     return true
   }
 

@@ -114,7 +114,7 @@ export default async function OAuthConsentPage({
       <AuthShell
         label='Internal Portal'
         title='App not allowed'
-        description={`This app would send your access to ${redirectHost(target) ?? 'an unknown address'}. Only Claude (claude.ai, Claude Code) and apps on your own machine can be connected.`}
+        description={`This app would send your access to ${redirectHost(target) ?? 'an unknown address'}. Only Claude (claude.ai, Claude Code), ChatGPT and apps on your own machine can be connected.`}
         footer={
           <Link className={authLinkClass} href='/'>
             Back to the portal

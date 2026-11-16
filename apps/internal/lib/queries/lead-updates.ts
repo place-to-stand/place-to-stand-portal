@@ -33,6 +33,7 @@ export async function listLeadUpdates(
       authorName: personNameSql,
       authorEmail: users.email,
       authorAvatarUrl: personAvatarSql,
+      agentName: leadUpdates.agentName,
       createdAt: leadUpdates.createdAt,
       updatedAt: leadUpdates.updatedAt,
     })
