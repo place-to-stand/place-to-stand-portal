@@ -1,13 +1,15 @@
 /** Each column's card ids, in board order. */
 export type BoardColumns = readonly (readonly string[])[]
 
-/** Shift, ⌘ or Ctrl: a card click that selects instead of opening. */
-export function hasSelectModifier(event: {
-  shiftKey: boolean
-  metaKey: boolean
-  ctrlKey: boolean
-}) {
-  return event.shiftKey || event.metaKey || event.ctrlKey
+/**
+ * Shift, ⌘ or (off a Mac, where Ctrl-click is a right click) Ctrl: a card
+ * click that selects instead of opening.
+ */
+export function hasSelectModifier(
+  event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean },
+  isMac: boolean
+) {
+  return event.shiftKey || event.metaKey || (!isMac && event.ctrlKey)
 }
 
 /**
@@ -49,4 +51,17 @@ export function idsToPutBack(
   if (result.error) return ids
   const refused = new Set(result.failed.map(failure => failure.id))
   return ids.filter(id => refused.has(id))
+}
+
+/**
+ * What decides who can take a task: its project, or its lead for a lead's
+ * task.
+ */
+export function taskGroup(
+  task: { project_id?: string | null; lead_id?: string | null } | undefined
+) {
+  if (!task) return 'unknown'
+  return task.project_id
+    ? `project:${task.project_id}`
+    : `lead:${task.lead_id ?? ''}`
 }

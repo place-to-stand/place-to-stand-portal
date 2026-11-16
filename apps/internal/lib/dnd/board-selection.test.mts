@@ -6,6 +6,7 @@ import {
   boardRange,
   hasSelectModifier,
   idsToPutBack,
+  taskGroup,
   withoutHidden,
 } from './board-selection.ts'
 
@@ -27,10 +28,15 @@ test('no range across columns or for a card off the board', () => {
 
 test('Shift, ⌘ or Ctrl select; a plain click opens', () => {
   const plain = { shiftKey: false, metaKey: false, ctrlKey: false }
-  assert.equal(hasSelectModifier(plain), false)
-  assert.equal(hasSelectModifier({ ...plain, shiftKey: true }), true)
-  assert.equal(hasSelectModifier({ ...plain, metaKey: true }), true)
-  assert.equal(hasSelectModifier({ ...plain, ctrlKey: true }), true)
+  assert.equal(hasSelectModifier(plain, false), false)
+  assert.equal(hasSelectModifier({ ...plain, shiftKey: true }, true), true)
+  assert.equal(hasSelectModifier({ ...plain, metaKey: true }, true), true)
+  assert.equal(hasSelectModifier({ ...plain, ctrlKey: true }, false), true)
+})
+
+test('on a Mac, Ctrl-click is left to the right-click menu', () => {
+  const ctrl = { shiftKey: false, metaKey: false, ctrlKey: true }
+  assert.equal(hasSelectModifier(ctrl, true), false)
 })
 
 test('hidden cards leave the column, the rest keep their order', () => {
@@ -50,4 +56,10 @@ test('refused cards go back; a failed call puts back every card', () => {
     ['y']
   )
   assert.deepEqual(idsToPutBack(ids, { failed: [], error: 'Timed out' }), ids)
+})
+
+test('a task is grouped by its project, else its lead', () => {
+  assert.equal(taskGroup({ project_id: 'p', lead_id: null }), 'project:p')
+  assert.equal(taskGroup({ project_id: null, lead_id: 'l' }), 'lead:l')
+  assert.equal(taskGroup(undefined), 'unknown')
 })

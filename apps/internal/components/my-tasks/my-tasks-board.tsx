@@ -29,7 +29,7 @@ import {
   BoardSelectionProvider,
   useBoardSelection,
 } from '@/components/board/board-selection'
-import { withoutHidden } from '@/lib/dnd/board-selection'
+import { taskGroup, withoutHidden } from '@/lib/dnd/board-selection'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -253,6 +253,7 @@ export function MyTasksBoard({
               selection={selection}
               nameOf={id => taskLookup.get(id)?.task.title}
               dueOnOf={id => taskLookup.get(id)?.task.due_on ?? null}
+              groupOf={id => taskGroup(taskLookup.get(id)?.task)}
             />
           </div>
         </div>

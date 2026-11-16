@@ -19,7 +19,7 @@ import {
   BoardSelectionProvider,
   useBoardSelection,
 } from '@/components/board/board-selection'
-import { withoutHidden } from '@/lib/dnd/board-selection'
+import { taskGroup, withoutHidden } from '@/lib/dnd/board-selection'
 import { PagePanel } from '@/components/layout/page-panel'
 import { DoneWindowFooter } from '../done-window-footer'
 import { KanbanColumn } from '../kanban-column'
@@ -241,6 +241,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                     selection={selection}
                     nameOf={id => findTask(id)?.title}
                     dueOnOf={id => findTask(id)?.due_on ?? null}
+                    groupOf={id => taskGroup(findTask(id))}
                   />
                 </div>
               </div>

@@ -6,9 +6,12 @@ import { removeTask } from '../projects/actions/remove-task'
 import { restoreTask } from '../projects/actions/restore-task'
 import type { BulkArchiveConfig } from './bulk-archive-registry'
 
-/** Boards act on the cards picked; they never ask for every match. */
+/**
+ * Boards act on the cards picked and never ask for every match; a call that
+ * does anyway matches nothing.
+ */
 async function boardHasNoMatching(): Promise<string[]> {
-  throw new Error('Boards select cards, not list filters.')
+  return []
 }
 
 /**

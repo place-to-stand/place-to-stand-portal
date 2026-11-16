@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries } from '@tanstack/react-query'
 import { parseISO } from 'date-fns'
 import { CalendarDays, CalendarX2, ChevronDown, UserRoundX } from 'lucide-react'
 
@@ -53,6 +53,8 @@ type BoardBulkBarProps = {
       entity: 'task'
       /** A task's due date as the board holds it (for the instant change). */
       dueOnOf: (id: string) => string | null
+      /** The task's project (or lead): who can take it depends on it. */
+      groupOf: (id: string) => string
     }
   | { entity: 'lead' }
 )
@@ -83,12 +85,10 @@ export function BoardBulkBar(props: BoardBulkBarProps) {
         <>
           <AssigneeMenu
             entity={entity}
-            // Who can take a task depends on its project; the first card's
-            // list is offered, and a card the pick can't take is refused.
-            optionsUrl={
-              entity === 'lead'
-                ? '/api/leads/assignee-options'
-                : `/api/tasks/${[...selection.ids][0]}/assignee-options`
+            optionsUrls={
+              props.entity === 'lead'
+                ? ['/api/leads/assignee-options']
+                : taskOptionsUrls(selection.ids, props.groupOf)
             }
             run={run}
             disabled={pending}
@@ -102,25 +102,61 @@ export function BoardBulkBar(props: BoardBulkBarProps) {
   )
 }
 
+/**
+ * Who can take a task depends on its project (or lead), so the menu asks
+ * once per project among the selected tasks and offers the people who can
+ * take all of them.
+ */
+function taskOptionsUrls(
+  ids: ReadonlySet<string>,
+  groupOf: (id: string) => string
+) {
+  const oneTaskPerGroup = new Map<string, string>()
+  ids.forEach(id => {
+    const group = groupOf(id)
+    if (!oneTaskPerGroup.has(group)) oneTaskPerGroup.set(group, id)
+  })
+  return [...oneTaskPerGroup.values()]
+    .sort()
+    .map(id => `/api/tasks/${id}/assignee-options`)
+}
+
+/** The people every list offers, in the first list's order. */
+function peopleInAll(lists: AssigneeOption[][]) {
+  const [first = [], ...rest] = lists
+  return first.filter(person =>
+    rest.every(list => list.some(other => other.id === person.id))
+  )
+}
+
 const UserIcon = ENTITY_ICONS.user
 
 function AssigneeMenu({
   entity,
-  optionsUrl,
+  optionsUrls,
   run,
   disabled,
 }: {
   entity: 'task' | 'lead'
-  optionsUrl: string
+  optionsUrls: string[]
   run: RunBulkAction
   disabled: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const options = useQuery<AssigneeOption[]>({
-    queryKey: ['assigneeOptions', optionsUrl],
-    queryFn: () => getJson<AssigneeOption[]>(optionsUrl),
-    staleTime: 30_000,
-    enabled: open,
+  const options = useQueries({
+    queries: optionsUrls.map(url => ({
+      queryKey: ['assigneeOptions', url],
+      queryFn: () => getJson<AssigneeOption[]>(url),
+      staleTime: 30_000,
+      enabled: open,
+    })),
+    combine: results => ({
+      isPending: results.some(result => result.isPending),
+      isError: results.some(result => result.isError),
+      data: results.every(result => result.data)
+        ? peopleInAll(results.map(result => result.data ?? []))
+        : [],
+    }),
   })
   const save = entity === 'lead' ? bulkSetLeadAssignee : bulkSetTaskAssignee
 

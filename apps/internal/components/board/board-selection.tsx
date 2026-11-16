@@ -51,16 +51,23 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
   })
 
   const onBoard = useMemo(() => new Set(columns.flat()), [columns])
-  // Derived, so a card a filter hides drops out without an effect; a
-  // hidden card stays hidden until fresh data takes it off the board.
-  const ids = useMemo(
-    () => keepOnBoard(state.ids, onBoard, state.hidden),
-    [state.ids, onBoard, state.hidden]
-  )
-  const hidden = useMemo(
-    () => keepOnBoard(state.hidden, onBoard, EMPTY),
-    [state.hidden, onBoard]
-  )
+  // A card that leaves the board (a filter, a refresh after an archive)
+  // leaves the selection and the hidden set for good, so undoing the filter
+  // doesn't bring back a forgotten selection, and a card restored later
+  // shows again. A board the viewer can't act on keeps nothing selected.
+  const keptIds = enabled ? keepOnBoard(state.ids, onBoard, EMPTY) : EMPTY
+  const keptHidden = keepOnBoard(state.hidden, onBoard, EMPTY)
+  if (keptIds !== state.ids || keptHidden !== state.hidden) {
+    setState(previous => ({
+      ids: enabled ? keepOnBoard(previous.ids, onBoard, EMPTY) : EMPTY,
+      anchor: enabled ? previous.anchor : null,
+      hidden: keepOnBoard(previous.hidden, onBoard, EMPTY),
+    }))
+  }
+  // Cards an archive is taking off stay selected until it lands, so the
+  // bar stays up showing the save, and refused cards come back selected.
+  const ids = keptIds
+  const hidden = keptHidden
   const shownColumns = useMemo(
     () =>
       hidden.size
@@ -130,7 +137,9 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return
       // A sheet, dialog or menu over the board takes Escape for itself.
-      if (document.querySelector('[role="dialog"], [role="menu"]')) return
+      // Some menus stay mounted while closed (the user menu), so only an
+      // overlay on screen counts.
+      if (isOverlayOpen()) return
       clear()
     }
     document.addEventListener('keydown', onKeyDown)
@@ -154,7 +163,7 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
        * Returns true when it did.
        */
       click: (id: string, event: MouseEvent) => {
-        if (!enabled || !hasSelectModifier(event)) return false
+        if (!enabled || !hasSelectModifier(event, isMac())) return false
         if (event.shiftKey) range(id)
         else toggle(id)
         return true
@@ -169,6 +178,21 @@ export function useBoardSelection(columns: BoardColumns, enabled: boolean) {
 }
 
 export type BoardSelection = ReturnType<typeof useBoardSelection>
+
+/** On a Mac, Ctrl-click is a right click: only ⌘ adds a card there. */
+function isMac() {
+  return /Mac|iPhone|iPad/.test(navigator.platform)
+}
+
+function isOverlayOpen() {
+  return [
+    ...document.querySelectorAll<HTMLElement>('[role="dialog"], [role="menu"]'),
+  ].some(element =>
+    typeof element.checkVisibility === 'function'
+      ? element.checkVisibility()
+      : !element.closest('[hidden]')
+  )
+}
 
 function keepOnBoard(
   ids: ReadonlySet<string>,
