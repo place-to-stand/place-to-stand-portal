@@ -78,6 +78,27 @@
   },
   {
     "type": "action",
+    "name": "bulkSetTaskAssignee",
+    "file": "apps/internal/app/(dashboard)/_actions/board-bulk.ts",
+    "kind": "capability",
+    "capability": "projects.view_member"
+  },
+  {
+    "type": "action",
+    "name": "bulkSetTaskDueDate",
+    "file": "apps/internal/app/(dashboard)/_actions/board-bulk.ts",
+    "kind": "capability",
+    "capability": "projects.view_member"
+  },
+  {
+    "type": "action",
+    "name": "bulkSetLeadAssignee",
+    "file": "apps/internal/app/(dashboard)/_actions/board-bulk.ts",
+    "kind": "capability",
+    "capability": "leads.manage"
+  },
+  {
+    "type": "action",
     "name": "bulkSetArchived",
     "file": "apps/internal/app/(dashboard)/_actions/bulk-archive.ts",
     "kind": "capability",

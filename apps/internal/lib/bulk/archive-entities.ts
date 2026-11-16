@@ -15,6 +15,8 @@ export const BULK_ARCHIVE_ENTITIES = {
     plural: 'hour blocks',
     list: 'active hour blocks',
   },
+  // Boards: cards picked on the board, never "every match".
+  lead: { singular: 'lead', plural: 'leads', list: 'the board' },
   invoice: {
     singular: 'invoice',
     plural: 'invoices',
@@ -25,6 +27,7 @@ export const BULK_ARCHIVE_ENTITIES = {
     plural: 'projects',
     list: 'active projects',
   },
+  task: { singular: 'task', plural: 'tasks', list: 'the board' },
   submission: {
     singular: 'submission',
     plural: 'submissions',

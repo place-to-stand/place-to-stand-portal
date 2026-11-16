@@ -17,6 +17,14 @@ import {
   SelectRowCell,
   useRowSelection,
 } from '@/components/table/bulk-select'
+import {
+  BOARD_CARD_SELECTED_CLASS,
+  BoardSelectionProvider,
+  useBoardSelection,
+  useSelectableCard,
+} from '@/components/board/board-selection'
+import { ENTITY_ACCENTS } from '@/lib/entity-accents'
+import { withoutHidden } from '@/lib/dnd/board-selection'
 import { CLICKABLE_ROW_CLASS } from '@/lib/table/clickable-row'
 import { UNREAD_ROW_CLASS } from '@/lib/table/unread-row'
 import { cn } from '@/lib/utils'
@@ -128,6 +136,94 @@ export function ComponentsBulkSelect() {
           }}
         />
       </Specimen>
+      <BoardSpecimen />
     </DesignSection>
+  )
+}
+
+const SAMPLE_COLUMNS = [
+  {
+    label: 'On deck',
+    cards: [
+      { id: 't1', title: 'Update the homepage copy' },
+      { id: 't2', title: 'Fix the cart drawer on Safari' },
+      { id: 't3', title: 'Add order notes to the export' },
+    ],
+  },
+  {
+    label: 'In progress',
+    cards: [
+      { id: 't4', title: 'Move the blog to the new CMS' },
+      { id: 't5', title: 'Speed up the product page' },
+    ],
+  },
+]
+
+/** A board's cards: shift, ⌘ or Ctrl to select, and the same bulk bar. */
+function BoardSpecimen() {
+  const [columns, setColumns] = useState(SAMPLE_COLUMNS)
+  const selection = useBoardSelection(
+    columns.map(column => column.cards.map(card => card.id)),
+    true
+  )
+  const all = columns.flatMap(column => column.cards)
+
+  return (
+    <Specimen
+      label='useBoardSelection, BoardSelectionProvider, BoardBulkBar'
+      note='components/board. Shift-click a range down a column, ⌘-click (Ctrl) to add or drop one card, or right-click › Select. A plain click opens the card. Escape clears. Archive here only hides the cards.'
+      className='block'
+    >
+      <BoardSelectionProvider selection={selection}>
+        <div className='grid max-w-xl grid-cols-2 gap-4'>
+          {columns.map(column => (
+            <div key={column.label} className='space-y-2'>
+              <p className='text-muted-foreground text-xs font-medium'>
+                {column.label}
+              </p>
+              {withoutHidden(column.cards, selection.hidden).map(card => (
+                <SpecimenCard key={card.id} id={card.id} title={card.title} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </BoardSelectionProvider>
+      <BulkActionBar
+        selection={selection}
+        entity='task'
+        mode='active'
+        nameOf={id => all.find(card => card.id === id)?.title}
+        onDone={() => undefined}
+        runAction={async ({ selection: input }) => {
+          const ids = input.kind === 'ids' ? input.ids : []
+          setColumns(current =>
+            current.map(column => ({
+              ...column,
+              cards: column.cards.filter(card => !ids.includes(card.id)),
+            }))
+          )
+          return { done: ids.length, failed: [], warnings: [] }
+        }}
+      />
+    </Specimen>
+  )
+}
+
+function SpecimenCard({ id, title }: { id: string; title: string }) {
+  const card = useSelectableCard(id, () => undefined, undefined)
+  return (
+    <div
+      role='button'
+      tabIndex={0}
+      {...card.props}
+      className={cn(
+        'bg-card rounded-lg border p-4 text-sm font-semibold shadow-sm transition-[color,background-color,border-color,box-shadow] select-none',
+        ENTITY_ACCENTS.task.card,
+        card.selected && BOARD_CARD_SELECTED_CLASS
+      )}
+    >
+      {title}
+      {card.note}
+    </div>
   )
 }

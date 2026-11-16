@@ -8,6 +8,8 @@ import {
   Copy,
   Pencil,
   RefreshCw,
+  SquareCheck,
+  SquareX,
 } from 'lucide-react'
 
 import {
@@ -38,6 +40,12 @@ export type TaskEdgeMoves = {
   toBottom: (() => void) | null
 }
 
+/**
+ * Select / Deselect on a board card: the same as ⌘-clicking it, for people
+ * who don't know the shortcut, and from the keyboard (the menu key).
+ */
+export type CardSelectConfig = { selected: boolean; toggle: () => void }
+
 type MenuActions = { close: () => void; unmount: () => void }
 
 type RecordContextMenuProps = {
@@ -63,6 +71,8 @@ type RecordContextMenuProps = {
   duplicable?: boolean
   /** Replaces the default duplicate (the /design specimen). */
   onDuplicate?: () => void
+  /** Adds Select (or Deselect) for the board's bulk bar (board cards). */
+  select?: CardSelectConfig
   /**
    * Adds "Set assignee ›" (tasks and leads): a submenu of the people who can
    * take the record, then "Clear assignee". Omit for viewers who can't edit.
@@ -94,7 +104,8 @@ type RecordContextMenuProps = {
 
 /**
  * The right-click menu on every record row and card: Edit, Duplicate (for
- * records that can be copied, see `DUPLICABLE_SHEET_ENTITIES`), Set assignee
+ * records that can be copied, see `DUPLICABLE_SHEET_ENTITIES`), Select
+ * (board cards), Set assignee
  * (tasks and leads), Set due date (tasks), Send to top / bottom (board
  * cards), then Archive or Restore. Each action is the same one the row's buttons and the sheet
  * already run, so the menu adds a way in, never a second behaviour.
@@ -154,6 +165,7 @@ function RecordContextMenuItems({
   editable = true,
   duplicable = true,
   onDuplicate,
+  select,
   assign,
   dueDate,
   move,
@@ -191,6 +203,12 @@ function RecordContextMenuItems({
           Duplicate
         </ContextMenuItem>
       ) : null}
+      {select ? (
+        <ContextMenuItem onClick={select.toggle}>
+          {select.selected ? <SquareX /> : <SquareCheck />}
+          {select.selected ? 'Deselect' : 'Select'}
+        </ContextMenuItem>
+      ) : null}
       {assign && isSheetEntityKey(entity) ? (
         <AssigneeSubmenu entity={entity} id={id} {...assign} />
       ) : null}
@@ -204,7 +222,7 @@ function RecordContextMenuItems({
       ) : null}
       {move ? (
         <>
-          {editable || canDuplicate || assign || dueDate ? (
+          {editable || canDuplicate || select || assign || dueDate ? (
             <ContextMenuSeparator />
           ) : null}
           <ContextMenuItem
@@ -223,7 +241,7 @@ function RecordContextMenuItems({
           </ContextMenuItem>
         </>
       ) : null}
-      {(editable || canDuplicate || assign || dueDate || move) &&
+      {(editable || canDuplicate || select || assign || dueDate || move) &&
       (onArchive || onRestore) ? (
         <ContextMenuSeparator />
       ) : null}

@@ -12,6 +12,12 @@ import {
 
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { BoardDragOverlay } from '@/components/board/board-drag'
+import { BoardBulkBar } from '@/components/board/board-bulk-bar'
+import {
+  BoardSelectionProvider,
+  useBoardSelection,
+} from '@/components/board/board-selection'
+import { withoutHidden } from '@/lib/dnd/board-selection'
 import {
   BOARD_GRID_CLASS,
   boardGridStyle,
@@ -186,10 +192,20 @@ export function LeadsBoard({
   )
 
   const columnIds = useMemo(() => columns.map(column => column.id), [columns])
+  const selection = useBoardSelection(
+    useMemo(
+      () => columns.map(column => column.leads.map(lead => lead.id)),
+      [columns]
+    ),
+    canManage
+  )
   const leadsIn = useCallback(
     (columnId: LeadStatusValue) =>
-      columns.find(column => column.id === columnId)?.leads ?? NO_LEADS,
-    [columns]
+      withoutHidden(
+        columns.find(column => column.id === columnId)?.leads ?? NO_LEADS,
+        selection.hidden
+      ),
+    [columns, selection.hidden]
   )
   const handleDragStart = useCallback(() => {
     setRecentlyMovedLeadId(null)
@@ -223,42 +239,49 @@ export function LeadsBoard({
               className='h-full min-h-0 overflow-x-auto'
               onScroll={handleBoardScroll}
             >
-              <DndContext sensors={sensors} {...drag.dndContextProps}>
-                <div
-                  className={BOARD_GRID_CLASS}
-                  style={boardGridStyle(columns.length)}
-                >
-                  {columns.map(column => {
-                    const handleCreateForColumn =
-                      canManage && onCreateLead
-                        ? () => onCreateLead(column.id)
-                        : undefined
+              <BoardSelectionProvider selection={selection}>
+                <DndContext sensors={sensors} {...drag.dndContextProps}>
+                  <div
+                    className={BOARD_GRID_CLASS}
+                    style={boardGridStyle(columns.length)}
+                  >
+                    {columns.map(column => {
+                      const handleCreateForColumn =
+                        canManage && onCreateLead
+                          ? () => onCreateLead(column.id)
+                          : undefined
 
-                    return (
-                      <LeadColumn
-                        key={column.id}
-                        columnId={column.id}
-                        label={column.label}
-                        leads={drag.itemsFor(column.id)}
-                        canManage={canManage && !isPending}
-                        enableCreateButton={canManage}
-                        onEditLead={onEditLead}
-                        onCreateLead={handleCreateForColumn}
-                        activeLeadId={activeLeadId}
-                        isDropTarget={drag.activeColumnId === column.id}
-                        recentlyMovedLeadId={recentlyMovedLeadId}
-                        columnScrollRef={getColumnRef(column.id)}
-                        onColumnScroll={getScrollHandler(column.id)}
-                      />
-                    )
-                  })}
-                </div>
-                <BoardDragOverlay>
-                  {draggingLead ? (
-                    <LeadCardPreview lead={draggingLead} />
-                  ) : null}
-                </BoardDragOverlay>
-              </DndContext>
+                      return (
+                        <LeadColumn
+                          key={column.id}
+                          columnId={column.id}
+                          label={column.label}
+                          leads={drag.itemsFor(column.id)}
+                          canManage={canManage && !isPending}
+                          enableCreateButton={canManage}
+                          onEditLead={onEditLead}
+                          onCreateLead={handleCreateForColumn}
+                          activeLeadId={activeLeadId}
+                          isDropTarget={drag.activeColumnId === column.id}
+                          recentlyMovedLeadId={recentlyMovedLeadId}
+                          columnScrollRef={getColumnRef(column.id)}
+                          onColumnScroll={getScrollHandler(column.id)}
+                        />
+                      )
+                    })}
+                  </div>
+                  <BoardDragOverlay>
+                    {draggingLead ? (
+                      <LeadCardPreview lead={draggingLead} />
+                    ) : null}
+                  </BoardDragOverlay>
+                </DndContext>
+              </BoardSelectionProvider>
+              <BoardBulkBar
+                entity='lead'
+                selection={selection}
+                nameOf={id => findLeadById(columns, id)?.contactName}
+              />
             </div>
           </div>
         </div>

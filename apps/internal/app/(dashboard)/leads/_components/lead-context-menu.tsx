@@ -2,7 +2,10 @@
 
 import type { ReactElement } from 'react'
 
-import { RecordContextMenu } from '@/components/table/record-context-menu'
+import {
+  RecordContextMenu,
+  type CardSelectConfig,
+} from '@/components/table/record-context-menu'
 import { useRecordArchive } from '@/components/table/use-record-archive'
 import type { LeadRecord } from '@/lib/leads/types'
 
@@ -10,19 +13,22 @@ import { archiveLead } from '../_actions/archive-lead'
 import { setLeadAssignee } from '../_actions/set-lead-assignee'
 
 /**
- * Right-click on a lead card: Edit, Duplicate, Set assignee, Archive.
+ * Right-click on a lead card: Edit, Duplicate, Select, Set assignee, Archive.
  * Archive confirms with the same dialog as the lead sheet's.
  */
 export function LeadContextMenu({
   lead,
   onEdit,
   canManage,
+  select,
   children,
 }: {
   lead: LeadRecord
   onEdit: () => void
   /** Managers drag cards (so no long-press menu); others get no menu. */
   canManage: boolean
+  /** Select for the board's bulk bar. */
+  select?: CardSelectConfig
   children: ReactElement<Record<string, unknown>>
 }) {
   const { requestArchive, isPending, dialog } = useRecordArchive({
@@ -40,6 +46,7 @@ export function LeadContextMenu({
         entity='lead'
         id={lead.id}
         onEdit={onEdit}
+        select={select}
         assign={{
           currentId: lead.assigneeId ?? null,
           optionsUrl: '/api/leads/assignee-options',

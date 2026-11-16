@@ -1,8 +1,8 @@
 'use client'
 
-import { useTransition, type KeyboardEvent } from 'react'
+import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { addDays, nextMonday, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import { CalendarDays, CalendarX2 } from 'lucide-react'
 
 import { Calendar } from '@pts/ui/calendar'
@@ -22,6 +22,8 @@ import {
   WEEK_STARTS_ON,
 } from '@/lib/dates/calendar-date'
 import type { SheetEntityKey } from '@/lib/sheets/entities'
+
+import { keepCalendarKeys, quickDueDates } from './due-date-picks'
 import {
   setOptimisticDueOn,
   settleOptimisticDueOn,
@@ -102,19 +104,11 @@ export function DueDateSubmenu({
         Set due date
       </ContextMenuSubTrigger>
       <ContextMenuSubContent className='min-w-48'>
-        <ContextMenuItem onClick={() => choose(toCalendarDate(today))}>
-          Today
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() => choose(toCalendarDate(addDays(today, 1)))}
-        >
-          Tomorrow
-        </ContextMenuItem>
-        <ContextMenuItem
-          onClick={() => choose(toCalendarDate(nextMonday(today)))}
-        >
-          Next Monday
-        </ContextMenuItem>
+        {quickDueDates(today).map(pick => (
+          <ContextMenuItem key={pick.label} onClick={() => choose(pick.value)}>
+            {pick.label}
+          </ContextMenuItem>
+        ))}
         <ContextMenuSeparator />
         {/* The calendar keeps its own arrow keys: stopping them here, after
             the day buttons have handled them, keeps the menu from taking
@@ -141,8 +135,4 @@ export function DueDateSubmenu({
       </ContextMenuSubContent>
     </ContextMenuSub>
   )
-}
-
-function keepCalendarKeys(event: KeyboardEvent<HTMLDivElement>) {
-  if (event.key !== 'Escape' && event.key !== 'Tab') event.stopPropagation()
 }

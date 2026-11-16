@@ -1,4 +1,9 @@
-import { useCallback, type RefObject, type UIEventHandler } from 'react'
+import {
+  useCallback,
+  useMemo,
+  type RefObject,
+  type UIEventHandler,
+} from 'react'
 import type { ProjectIntegrationLinkSummary } from '@/lib/types/integrations'
 import { DndContext, type DndContextProps } from '@dnd-kit/core'
 import { useSearchParams } from 'next/navigation'
@@ -9,6 +14,12 @@ import {
   BOARD_PANEL_CLASS,
   boardGridStyle,
 } from '@/components/board/board-column'
+import { BoardBulkBar } from '@/components/board/board-bulk-bar'
+import {
+  BoardSelectionProvider,
+  useBoardSelection,
+} from '@/components/board/board-selection'
+import { withoutHidden } from '@/lib/dnd/board-selection'
 import { PagePanel } from '@/components/layout/page-panel'
 import { DoneWindowFooter } from '../done-window-footer'
 import { KanbanColumn } from '../kanban-column'
@@ -119,21 +130,30 @@ export function BoardTabContent(props: BoardTabContentProps) {
     columnIds: BOARD_COLUMNS.map(col => col.id),
   })
 
-  const tasksIn = useCallback(
-    (columnId: BoardColumnId) => tasksByColumn.get(columnId) ?? NO_TASKS,
-    [tasksByColumn]
+  const selection = useBoardSelection(
+    useMemo(
+      () =>
+        BOARD_COLUMN_IDS.map(columnId =>
+          (tasksByColumn.get(columnId) ?? NO_TASKS).map(task => task.id)
+        ),
+      [tasksByColumn]
+    ),
+    canManageTasks && isActive
   )
+  const tasksIn = useCallback(
+    (columnId: BoardColumnId) =>
+      withoutHidden(tasksByColumn.get(columnId) ?? NO_TASKS, selection.hidden),
+    [tasksByColumn, selection.hidden]
+  )
+  const findTask = (id: string) =>
+    BOARD_COLUMN_IDS.flatMap(tasksIn).find(task => task.id === id)
   const drag = useKanbanDrag({
     columns: BOARD_COLUMN_IDS,
     items: tasksIn,
     onDragStart,
     onDrop: onTaskDrop,
   })
-  const draggingTask = drag.activeId
-    ? (BOARD_COLUMN_IDS.flatMap(tasksIn).find(
-        task => task.id === drag.activeId
-      ) ?? null)
-    : null
+  const draggingTask = drag.activeId ? (findTask(drag.activeId) ?? null) : null
 
   if (!isActive) {
     return null
@@ -166,54 +186,62 @@ export function BoardTabContent(props: BoardTabContentProps) {
                   className='h-full min-h-0 overflow-x-auto'
                   onScroll={onBoardScroll}
                 >
-                  <DndContext sensors={sensors} {...drag.dndContextProps}>
-                    <div
-                      className={BOARD_GRID_CLASS}
-                      style={boardGridStyle(BOARD_COLUMNS.length)}
-                    >
-                      {BOARD_COLUMNS.map(column => {
-                        const columnTasks = drag.itemsFor(column.id)
+                  <BoardSelectionProvider selection={selection}>
+                    <DndContext sensors={sensors} {...drag.dndContextProps}>
+                      <div
+                        className={BOARD_GRID_CLASS}
+                        style={boardGridStyle(BOARD_COLUMNS.length)}
+                      >
+                        {BOARD_COLUMNS.map(column => {
+                          const columnTasks = drag.itemsFor(column.id)
 
-                        return (
-                          <KanbanColumn
-                            key={column.id}
-                            columnId={column.id}
-                            label={column.label}
-                            tasks={columnTasks}
-                            renderAssignees={renderAssignees}
-                            onEditTask={onEditTask}
-                            canManage={canManageTasks}
-                            onMoveTask={onTaskDrop}
-                            activeTaskId={activeSheetTaskId}
-                            onCreateTask={onCreateTask}
-                            isDropTarget={drag.activeColumnId === column.id}
-                            recentlyMovedTaskId={recentlyMovedTaskId}
-                            columnScrollRef={getColumnRef(column.id)}
-                            onColumnScroll={getScrollHandler(column.id)}
-                            footerSlot={
-                              // Same rule as the My Tasks board: an empty column
-                              // with nothing hidden has no filtering to explain.
-                              column.id === 'DONE' &&
-                              (columnTasks.length > 0 ||
-                                hiddenDoneCount > 0) ? (
-                                <DoneWindowFooter
-                                  doneWeeks={doneWeeks}
-                                  hiddenCount={hiddenDoneCount}
-                                  onWiden={onWidenDoneWindow}
-                                  isLoading={false}
-                                  error={null}
-                                />
-                              ) : undefined
-                            }
-                          />
-                        )
-                      })}
-                    </div>
-                    <TaskDragOverlay
-                      draggingTask={draggingTask}
-                      renderAssignees={renderAssignees}
-                    />
-                  </DndContext>
+                          return (
+                            <KanbanColumn
+                              key={column.id}
+                              columnId={column.id}
+                              label={column.label}
+                              tasks={columnTasks}
+                              renderAssignees={renderAssignees}
+                              onEditTask={onEditTask}
+                              canManage={canManageTasks}
+                              onMoveTask={onTaskDrop}
+                              activeTaskId={activeSheetTaskId}
+                              onCreateTask={onCreateTask}
+                              isDropTarget={drag.activeColumnId === column.id}
+                              recentlyMovedTaskId={recentlyMovedTaskId}
+                              columnScrollRef={getColumnRef(column.id)}
+                              onColumnScroll={getScrollHandler(column.id)}
+                              footerSlot={
+                                // Same rule as the My Tasks board: an empty column
+                                // with nothing hidden has no filtering to explain.
+                                column.id === 'DONE' &&
+                                (columnTasks.length > 0 ||
+                                  hiddenDoneCount > 0) ? (
+                                  <DoneWindowFooter
+                                    doneWeeks={doneWeeks}
+                                    hiddenCount={hiddenDoneCount}
+                                    onWiden={onWidenDoneWindow}
+                                    isLoading={false}
+                                    error={null}
+                                  />
+                                ) : undefined
+                              }
+                            />
+                          )
+                        })}
+                      </div>
+                      <TaskDragOverlay
+                        draggingTask={draggingTask}
+                        renderAssignees={renderAssignees}
+                      />
+                    </DndContext>
+                  </BoardSelectionProvider>
+                  <BoardBulkBar
+                    entity='task'
+                    selection={selection}
+                    nameOf={id => findTask(id)?.title}
+                    dueOnOf={id => findTask(id)?.due_on ?? null}
+                  />
                 </div>
               </div>
             </div>
@@ -225,4 +253,4 @@ export function BoardTabContent(props: BoardTabContentProps) {
 }
 
 const BOARD_COLUMN_IDS = BOARD_COLUMNS.map(column => column.id)
-const NO_TASKS: TaskWithRelations[] = []
+const NO_TASKS: readonly TaskWithRelations[] = []

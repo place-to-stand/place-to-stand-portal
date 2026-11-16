@@ -4,6 +4,7 @@ import type { ReactElement } from 'react'
 
 import {
   RecordContextMenu,
+  type CardSelectConfig,
   type TaskEdgeMoves,
 } from '@/components/table/record-context-menu'
 import { useRecordArchive } from '@/components/table/use-record-archive'
@@ -13,8 +14,8 @@ import type { TaskWithRelations } from '@/lib/types'
 import { changeTaskDueDate, removeTask, setTaskAssignee } from './actions'
 
 /**
- * Right-click on a task card: Edit, Duplicate, Set assignee, Set due date,
- * Send to top / bottom (board cards), Archive.
+ * Right-click on a task card: Edit, Duplicate, Select (board cards), Set
+ * assignee, Set due date, Send to top / bottom (board cards), Archive.
  * Archive confirms with the same dialog as the task sheet's. A viewer who
  * can't manage tasks gets Edit only (it opens the sheet read-only).
  */
@@ -26,6 +27,7 @@ export function TaskContextMenu({
   draggable = false,
   onChanged,
   move,
+  select,
   children,
 }: {
   task: TaskWithRelations
@@ -38,6 +40,8 @@ export function TaskContextMenu({
   onChanged?: () => void
   /** Send to top / bottom; boards pass it, other lists don't. */
   move?: TaskEdgeMoves
+  /** Select for the board's bulk bar; boards pass it, other lists don't. */
+  select?: CardSelectConfig
   children: ReactElement<Record<string, unknown>>
 }) {
   const { toast } = useToast()
@@ -67,6 +71,7 @@ export function TaskContextMenu({
         id={task.id}
         onEdit={onEdit}
         duplicable={canManage}
+        select={canManage ? select : undefined}
         assign={
           canManage
             ? {

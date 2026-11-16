@@ -131,7 +131,7 @@ export function AssigneeSubmenu({
 }
 
 /** The same small avatar the assignee pickers show beside each name. */
-function PersonAvatar({ person }: { person: AssigneeOption }) {
+export function PersonAvatar({ person }: { person: AssigneeOption }) {
   return (
     <Avatar size='xs' className='ring-border shrink-0 ring-1'>
       {person.avatarUrl ? (

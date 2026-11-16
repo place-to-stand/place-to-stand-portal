@@ -27,6 +27,10 @@ import { TaskContextMenu } from './task-context-menu'
 import type { TaskEdgeMoves } from '@/components/table/record-context-menu'
 import { useOptimisticDueOn } from '@/lib/tasks/optimistic-due-on'
 import { BOARD_CARD_GHOST_CLASS } from '@/components/board/board-drag'
+import {
+  BOARD_CARD_SELECTED_CLASS,
+  useSelectableCard,
+} from '@/components/board/board-selection'
 import { cn } from '@/lib/utils'
 import type {
   ProjectTypeValue,
@@ -234,6 +238,7 @@ export function TaskCard({
       onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void
     }
   ).onKeyDown
+  const card = useSelectableCard(task.id, () => onEdit(task), listeners)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
@@ -269,6 +274,7 @@ export function TaskCard({
       canManage={canManage}
       draggable={draggable}
       move={move}
+      select={card.select}
     >
       <div
         ref={setNodeRef}
@@ -279,7 +285,7 @@ export function TaskCard({
         // dnd-kit's attributes set this too; stated so the focus rule sees it.
         tabIndex={0}
         role='button'
-        onClick={() => onEdit(task)}
+        {...card.props}
         onKeyDown={event => {
           draggableKeyDown?.(event)
           if (event.defaultPrevented) {
@@ -303,10 +309,12 @@ export function TaskCard({
           !isActive &&
             !isDragging &&
             isCompleted &&
-            'hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md'
+            'hover:border-muted-foreground/30 hover:bg-muted/20 hover:shadow-md',
+          card.selected && !isDragging && BOARD_CARD_SELECTED_CLASS
         )}
       >
         <CardContent task={task} assignees={assignees} context={context} />
+        {card.note}
       </div>
     </TaskContextMenu>
   )
