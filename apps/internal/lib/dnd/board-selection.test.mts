@@ -4,6 +4,7 @@ import { test } from 'node:test'
 
 import {
   boardRange,
+  dropAmongHidden,
   hasSelectModifier,
   idsToPutBack,
   taskGroup,
@@ -62,4 +63,63 @@ test('a task is grouped by its project, else its lead', () => {
   assert.equal(taskGroup({ project_id: 'p', lead_id: null }), 'project:p')
   assert.equal(taskGroup({ project_id: null, lead_id: 'l' }), 'lead:l')
   assert.equal(taskGroup(undefined), 'unknown')
+})
+
+test('a drop past a hidden card lands between the cards it was dropped between', () => {
+  const cards: Record<string, string[]> = {
+    a: ['a1', 'h1', 'a2', 'a3'],
+    b: ['b1', 'h2', 'b2'],
+  }
+  const cardsIn = (column: string) => cards[column]
+  const hidden = new Set(['h1', 'h2'])
+  // Shown a: a1 a2 a3. a3 dropped between a1 and a2 (shown index 1).
+  assert.deepEqual(
+    dropAmongHidden(
+      {
+        id: 'a3',
+        from: { columnId: 'a', index: 2 },
+        to: { columnId: 'a', index: 1 },
+      },
+      cardsIn,
+      hidden
+    ),
+    {
+      id: 'a3',
+      from: { columnId: 'a', index: 3 },
+      to: { columnId: 'a', index: 2 },
+    }
+  )
+  // Into b, between b1 and b2 (shown index 1): just before b2.
+  assert.deepEqual(
+    dropAmongHidden(
+      {
+        id: 'a1',
+        from: { columnId: 'a', index: 0 },
+        to: { columnId: 'b', index: 1 },
+      },
+      cardsIn,
+      hidden
+    ).to,
+    { columnId: 'b', index: 2 }
+  )
+  // At the end of b: after the last shown card.
+  assert.deepEqual(
+    dropAmongHidden(
+      {
+        id: 'a1',
+        from: { columnId: 'a', index: 0 },
+        to: { columnId: 'b', index: 2 },
+      },
+      cardsIn,
+      hidden
+    ).to,
+    { columnId: 'b', index: 3 }
+  )
+  // Nothing hidden: unchanged.
+  const move = {
+    id: 'a1',
+    from: { columnId: 'a', index: 0 },
+    to: { columnId: 'b', index: 1 },
+  }
+  assert.equal(dropAmongHidden(move, cardsIn, new Set()), move)
 })

@@ -152,7 +152,11 @@ export function MyTasksBoard({
     ({ id: taskId, to }: KanbanMove<MyTaskStatus>) => {
       const change = produceReorderUpdate({
         entries,
-        hiddenTaskIds,
+        // Cards an archive is hiding count as filtered out, so a drop
+        // lands between the cards it was dropped between.
+        hiddenTaskIds: selection.hidden.size
+          ? new Set([...hiddenTaskIds, ...selection.hidden])
+          : hiddenTaskIds,
         taskLookup,
         taskId,
         targetStatus: to.columnId,
@@ -171,7 +175,7 @@ export function MyTasksBoard({
       })
       setTimeout(() => setRecentlyMovedTaskId(null), 300)
     },
-    [entries, hiddenTaskIds, onReorder, taskLookup]
+    [entries, hiddenTaskIds, onReorder, selection.hidden, taskLookup]
   )
 
   const drag = useKanbanDrag({

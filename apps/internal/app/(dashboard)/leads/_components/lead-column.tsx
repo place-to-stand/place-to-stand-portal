@@ -56,6 +56,7 @@ export function LeadColumn({
   return (
     <div
       ref={setNodeRef}
+      data-board-column={columnId}
       className={boardColumnClass(
         getLeadStatusHue(columnId) ?? 'neutral',
         isDropTarget

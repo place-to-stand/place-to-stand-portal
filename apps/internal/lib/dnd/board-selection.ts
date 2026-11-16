@@ -1,3 +1,5 @@
+import type { KanbanMove } from './use-kanban-drag'
+
 /** Each column's card ids, in board order. */
 export type BoardColumns = readonly (readonly string[])[]
 
@@ -37,6 +39,40 @@ export function withoutHidden<T extends { id: string }>(
   hidden: ReadonlySet<string>
 ): readonly T[] {
   return hidden.size ? items.filter(item => !hidden.has(item.id)) : items
+}
+
+/**
+ * A drop counts only the cards on screen, but cards an archive is hiding
+ * are still in the board's lists, which its save reads. Turns the drop's
+ * indexes into places among all the column's cards: the dragged card's own
+ * place, and just before the shown card it was dropped above (or just after
+ * the last shown card), so it lands between the cards it was dropped
+ * between.
+ */
+export function dropAmongHidden<M extends KanbanMove<string>>(
+  move: M,
+  cardsIn: (columnId: M['to']['columnId']) => readonly string[],
+  hidden: ReadonlySet<string>
+): M {
+  if (!hidden.size) return move
+  const fromIndex = cardsIn(move.from.columnId).indexOf(move.id)
+  const target = cardsIn(move.to.columnId).filter(id => id !== move.id)
+  const shown = target.flatMap((id, at) => (hidden.has(id) ? [] : [at]))
+  const index = Math.min(Math.max(move.to.index, 0), shown.length)
+  const toIndex =
+    index < shown.length
+      ? shown[index]
+      : shown.length
+        ? shown[shown.length - 1] + 1
+        : target.length
+  return {
+    ...move,
+    from: {
+      ...move.from,
+      index: fromIndex === -1 ? move.from.index : fromIndex,
+    },
+    to: { ...move.to, index: toIndex },
+  }
 }
 
 /**

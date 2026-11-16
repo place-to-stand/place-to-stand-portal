@@ -263,6 +263,8 @@ export function useSelectableCard(
     /** Spread after the dnd-kit listeners. */
     props: {
       'data-selected': selected || undefined,
+      /** The card's id, for browser tests. */
+      'data-board-card': id,
       onMouseDown: (event: MouseEvent) => {
         dragMouseDown?.(event)
         if (event.shiftKey && selection) event.preventDefault()

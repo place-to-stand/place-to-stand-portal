@@ -17,7 +17,7 @@ import {
   BoardSelectionProvider,
   useBoardSelection,
 } from '@/components/board/board-selection'
-import { withoutHidden } from '@/lib/dnd/board-selection'
+import { dropAmongHidden, withoutHidden } from '@/lib/dnd/board-selection'
 import {
   BOARD_GRID_CLASS,
   boardGridStyle,
@@ -100,8 +100,26 @@ export function LeadsBoard({
     setColumns(cloneColumns(initialColumns))
   }
 
+  const selection = useBoardSelection(
+    useMemo(
+      () => columns.map(column => column.leads.map(lead => lead.id)),
+      [columns]
+    ),
+    canManage
+  )
+
   const handleDrop = useCallback(
-    ({ id: leadId, to: target }: KanbanDrop<LeadStatusValue>) => {
+    (drop: KanbanDrop<LeadStatusValue>) => {
+      // Cards an archive is hiding still sit in `columns`: count them, so
+      // the lead lands between the cards it was dropped between.
+      const { id: leadId, to: target } = dropAmongHidden(
+        drop,
+        columnId =>
+          columnsRef.current
+            .find(column => column.id === columnId)
+            ?.leads.map(lead => lead.id) ?? [],
+        selection.hidden
+      )
       const result = produceLeadReorder({
         columns: columnsRef.current,
         leadId,
@@ -185,6 +203,7 @@ export function LeadsBoard({
       onLeadClosedWon,
       onWonNeedsCompany,
       scheduleRecentlyMovedReset,
+      selection.hidden,
       setRecentlyMovedLeadId,
       startTransition,
       toast,
@@ -192,13 +211,6 @@ export function LeadsBoard({
   )
 
   const columnIds = useMemo(() => columns.map(column => column.id), [columns])
-  const selection = useBoardSelection(
-    useMemo(
-      () => columns.map(column => column.leads.map(lead => lead.id)),
-      [columns]
-    ),
-    canManage
-  )
   const leadsIn = useCallback(
     (columnId: LeadStatusValue) =>
       withoutHidden(

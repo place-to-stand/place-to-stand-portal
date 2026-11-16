@@ -19,7 +19,11 @@ import {
   BoardSelectionProvider,
   useBoardSelection,
 } from '@/components/board/board-selection'
-import { taskGroup, withoutHidden } from '@/lib/dnd/board-selection'
+import {
+  dropAmongHidden,
+  taskGroup,
+  withoutHidden,
+} from '@/lib/dnd/board-selection'
 import { PagePanel } from '@/components/layout/page-panel'
 import { DoneWindowFooter } from '../done-window-footer'
 import { KanbanColumn } from '../kanban-column'
@@ -147,11 +151,25 @@ export function BoardTabContent(props: BoardTabContentProps) {
   )
   const findTask = (id: string) =>
     BOARD_COLUMN_IDS.flatMap(tasksIn).find(task => task.id === id)
+  // A card dropped while an archive hides others lands between the cards
+  // it was dropped between.
+  const moveTask = useCallback(
+    (move: KanbanMove<BoardColumnId>) =>
+      onTaskDrop(
+        dropAmongHidden(
+          move,
+          columnId =>
+            (tasksByColumn.get(columnId) ?? NO_TASKS).map(task => task.id),
+          selection.hidden
+        )
+      ),
+    [onTaskDrop, tasksByColumn, selection.hidden]
+  )
   const drag = useKanbanDrag({
     columns: BOARD_COLUMN_IDS,
     items: tasksIn,
     onDragStart,
-    onDrop: onTaskDrop,
+    onDrop: moveTask,
   })
   const draggingTask = drag.activeId ? (findTask(drag.activeId) ?? null) : null
 
@@ -204,7 +222,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                               renderAssignees={renderAssignees}
                               onEditTask={onEditTask}
                               canManage={canManageTasks}
-                              onMoveTask={onTaskDrop}
+                              onMoveTask={moveTask}
                               activeTaskId={activeSheetTaskId}
                               onCreateTask={onCreateTask}
                               isDropTarget={drag.activeColumnId === column.id}

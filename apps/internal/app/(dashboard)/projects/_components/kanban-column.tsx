@@ -107,6 +107,7 @@ export function KanbanColumn({
         setNodeRef(node)
         columnRef.current = node
       }}
+      data-board-column={columnId}
       className={boardColumnClass(getTaskStatusHue(columnId), isDropTarget)}
     >
       <div className='flex items-center justify-between gap-2'>
