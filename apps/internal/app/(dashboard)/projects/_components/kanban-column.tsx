@@ -1,4 +1,9 @@
-import type { MutableRefObject, ReactNode, UIEventHandler } from 'react'
+import {
+  useRef,
+  type MutableRefObject,
+  type ReactNode,
+  type UIEventHandler,
+} from 'react'
 import { Plus } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -7,6 +12,7 @@ import { Badge } from '@pts/ui/badge'
 import { RowActionButton } from '@pts/ui/row-action-button'
 import type { BoardColumnId } from '@/lib/projects/board/board-constants'
 import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
+import { useFlipOnMove } from '@/lib/dnd/use-flip-on-move'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations } from '@/lib/types'
 import {
@@ -79,6 +85,15 @@ export function KanbanColumn({
       columnId,
     },
   })
+  const columnRef = useRef<HTMLDivElement | null>(null)
+  // Send to top / bottom slides the cards, as a drag would show the move.
+  const captureFlip = useFlipOnMove(columnRef, tasks)
+  const moveTask = onMoveTask
+    ? (move: KanbanMove<BoardColumnId>) => {
+        captureFlip()
+        onMoveTask(move)
+      }
+    : undefined
   const statusToken = getTaskStatusToken(columnId)
   const statusLabel = getTaskStatusLabel(columnId)
   const displayLabel = label || statusLabel
@@ -88,7 +103,10 @@ export function KanbanColumn({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={node => {
+        setNodeRef(node)
+        columnRef.current = node
+      }}
       className={boardColumnClass(getTaskStatusHue(columnId), isDropTarget)}
     >
       <div className='flex items-center justify-between gap-2'>
@@ -111,9 +129,9 @@ export function KanbanColumn({
           ) : null}
         </div>
       </div>
-      {/* No scroll anchoring: a card sent to the top or bottom from its menu
-          keeps focus, and the browser would otherwise scroll the column
-          after it. */}
+      {/* No scroll anchoring: when a card sent to the top or bottom from its
+          menu was the column's scroll anchor, the browser would scroll the
+          column after it. */}
       <div
         ref={columnScrollRef}
         onScroll={onColumnScroll}
@@ -136,8 +154,8 @@ export function KanbanColumn({
               disableDropTransition={task.id === recentlyMovedTaskId}
               context={getTaskCardOptions?.(task)?.context}
               move={
-                canManage && onMoveTask
-                  ? columnEdgeMoves(columnId, tasks, index, task.id, onMoveTask)
+                canManage && moveTask
+                  ? columnEdgeMoves(columnId, tasks, index, task.id, moveTask)
                   : undefined
               }
             />

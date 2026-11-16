@@ -273,6 +273,7 @@ export function TaskCard({
       <div
         ref={setNodeRef}
         style={style}
+        data-flip-id={task.id}
         {...(isMounted ? attributes : cleanedAttributes)}
         {...listenersMap}
         // dnd-kit's attributes set this too; stated so the focus rule sees it.
