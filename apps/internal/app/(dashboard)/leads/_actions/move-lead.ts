@@ -37,12 +37,49 @@ type MoveOutcome =
       statusChange: { contactName: string; fromStatus: LeadStatusValue } | null
     }
 
+// permission: leads.manage — assertCrmAccess
 export async function moveLead(
   input: MoveLeadInput
 ): Promise<LeadActionResult> {
   const user = await requireCrmUser()
   assertCrmAccess(user)
 
+  const result = await applyLeadMove(user, input)
+  if (result.success) revalidateLeadsPath()
+  return result
+}
+
+/**
+ * Several selected leads dropped together: each moves as `moveLead` would,
+ * in order, and the board refreshes once. The leads the move refused come
+ * back by id, so the board puts back only those.
+ */
+// permission: leads.manage — assertCrmAccess
+export async function moveLeads(input: {
+  moves: MoveLeadInput[]
+}): Promise<{ failed: { leadId: string; error: string }[] }> {
+  const user = await requireCrmUser()
+  assertCrmAccess(user)
+
+  const moves = Array.isArray(input?.moves) ? input.moves.slice(0, 500) : []
+  const failed: { leadId: string; error: string }[] = []
+  for (const move of moves) {
+    const result = await applyLeadMove(user, move)
+    if (!result.success) {
+      failed.push({
+        leadId: String(move?.leadId ?? ''),
+        error: result.error ?? 'Unable to move lead.',
+      })
+    }
+  }
+  if (failed.length < moves.length) revalidateLeadsPath()
+  return { failed }
+}
+
+async function applyLeadMove(
+  user: Awaited<ReturnType<typeof requireCrmUser>>,
+  input: MoveLeadInput
+): Promise<LeadActionResult> {
   const parsed = moveLeadSchema.safeParse(input)
 
   if (!parsed.success) {
@@ -165,6 +202,5 @@ export async function moveLead(
     }
   }
 
-  revalidateLeadsPath()
   return { success: true }
 }

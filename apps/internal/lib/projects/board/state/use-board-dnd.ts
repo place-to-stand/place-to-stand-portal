@@ -47,6 +47,13 @@ export const useBoardDnDState = ({
     clearRecentlyMovedTimer()
   }, [clearRecentlyMovedTimer, setRecentlyMovedTaskId])
 
+  const markMoved = useCallback(
+    (id: string) => {
+      setRecentlyMovedTaskId(id)
+      scheduleRecentlyMovedReset()
+    },
+    [scheduleRecentlyMovedReset, setRecentlyMovedTaskId]
+  )
   const moveGroup = useGroupTaskMove({
     activeProject,
     tasksByProject,
@@ -54,10 +61,7 @@ export const useBoardDnDState = ({
     startTransition,
     setFeedback,
     filterColumnTasks,
-    onMoved: id => {
-      setRecentlyMovedTaskId(id)
-      scheduleRecentlyMovedReset()
-    },
+    onMoved: markMoved,
   })
 
   const handleTaskDrop = useCallback(

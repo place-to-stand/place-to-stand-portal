@@ -473,6 +473,9 @@ export function MyTasksPage({
           router.refresh()
         } catch {
           setEntries(update.previousEntries)
+          // Cards' columns were moved on screen and some may have saved:
+          // reload the board as saved.
+          router.refresh()
         }
       })
     },

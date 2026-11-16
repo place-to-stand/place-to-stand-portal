@@ -109,16 +109,20 @@ export function LeadsBoard({
     canManage
   )
 
+  const markMoved = useCallback(
+    (id: string) => {
+      setRecentlyMovedLeadId(id)
+      scheduleRecentlyMovedReset()
+    },
+    [scheduleRecentlyMovedReset, setRecentlyMovedLeadId]
+  )
   const moveGroup = useLeadGroupMove({
     columnsRef,
     setColumns,
     hiddenLeads,
     canManage,
     startTransition,
-    onMoved: id => {
-      setRecentlyMovedLeadId(id)
-      scheduleRecentlyMovedReset()
-    },
+    onMoved: markMoved,
     onLeadClosedWon,
   })
 

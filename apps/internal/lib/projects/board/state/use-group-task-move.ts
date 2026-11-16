@@ -12,8 +12,8 @@ import type { TaskLookup } from './types'
 /**
  * Moves several selected cards on the project board at once (a drag or
  * Send to top / bottom of a selected card): they show in place at once,
- * each saves through the one-card reorder endpoint, and all go back if one
- * save fails.
+ * each saves through the one-card reorder endpoint, and any card a save
+ * refuses goes back.
  */
 export function useGroupTaskMove({
   activeProject,
@@ -76,43 +76,56 @@ export function useGroupTaskMove({
       onMoved(drop.id)
 
       startTransition(async () => {
-        try {
-          const saved = await Promise.all(
-            updates.map(async update => {
-              const response = await fetch(
-                `/api/v1/tasks/${update.id}/reorder`,
-                {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(
-                    update.statusChanged
-                      ? { rank: update.rank, status: update.status }
-                      : { rank: update.rank }
-                  ),
-                }
-              )
-              if (!response.ok) {
-                throw new Error(`Request failed with status ${response.status}`)
-              }
-              const json = await response.json().catch(() => null)
-              return [update.id, json?.task ?? null] as const
+        const results = await Promise.allSettled(
+          updates.map(async update => {
+            const response = await fetch(`/api/v1/tasks/${update.id}/reorder`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(
+                update.statusChanged
+                  ? { rank: update.rank, status: update.status }
+                  : { rank: update.rank }
+              ),
             })
-          )
-          const fromServer = new Map(saved)
-          setProjectTasks(id => {
-            const task = fromServer.get(id)
-            return task
-              ? {
-                  status: task.status,
-                  rank: task.rank,
-                  ...(task.updated_at ? { updated_at: task.updated_at } : {}),
-                }
-              : null
+            if (!response.ok) {
+              throw new Error(`Request failed with status ${response.status}`)
+            }
+            const json = await response.json().catch(() => null)
+            return json?.task ?? null
           })
-        } catch (error) {
-          console.error('Task group move failed', error)
-          setFeedback('Unable to move tasks.')
-          setTasksByProject(prev => new Map(prev).set(projectId, projectTasks))
+        )
+        // Saved cards take the server's values; refused ones go back to
+        // where they were, so the board matches what was saved.
+        const before = new Map(projectTasks.map(task => [task.id, task]))
+        const outcome = new Map(
+          updates.map((update, index) => [update.id, results[index]!])
+        )
+        setProjectTasks(id => {
+          const result = outcome.get(id)
+          if (!result) return null
+          if (result.status === 'rejected') {
+            const original = before.get(id)
+            return original
+              ? { status: original.status, rank: original.rank }
+              : null
+          }
+          const task = result.value
+          return task
+            ? {
+                status: task.status,
+                rank: task.rank,
+                ...(task.updated_at ? { updated_at: task.updated_at } : {}),
+              }
+            : null
+        })
+        const refused = results.filter(result => result.status === 'rejected')
+        if (refused.length) {
+          console.error('Task group move failed', refused[0])
+          setFeedback(
+            refused.length === 1
+              ? 'Unable to move one task.'
+              : `Unable to move ${refused.length} tasks.`
+          )
         }
       })
     },

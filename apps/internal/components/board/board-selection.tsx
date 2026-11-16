@@ -250,6 +250,11 @@ export function BoardSelectionProvider({
   )
 }
 
+/** The board's selection, or null off a board. */
+export function useBoardSelectionContext() {
+  return useContext(BoardSelectionContext)
+}
+
 /**
  * One card's part of its board's selection; null off a board (the lead
  * sheet's task cards) or for a viewer who can't act on the cards.

@@ -170,13 +170,16 @@ export async function POST(request: Request) {
       status: tasksTable.status,
     })
     .from(tasksTable)
-    .where(inArray(tasksTable.id, movedTaskIds))
+    .where(
+      and(inArray(tasksTable.id, movedTaskIds), isNull(tasksTable.deletedAt))
+    )
 
   if (movedTasks.length !== new Set(movedTaskIds).size) {
     return NextResponse.json({ error: 'Task not found.' }, { status: 404 })
   }
 
-  // Each card that changed column, in the order they were moved.
+  // Every moved task exists and may be worked (checked above) before any
+  // changes column, so a refusal here is rare; each change saves on its own.
   for (const task of movedTasks) {
     if (task.status === payload.targetStatus) continue
     const result = await changeTaskStatus({

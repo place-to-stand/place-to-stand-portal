@@ -15,14 +15,15 @@ import {
   breaksWonNeedsCompany,
 } from '@/lib/leads/won-rule'
 
-import { moveLead } from '../actions'
+import { moveLeads } from '../actions'
 import { produceLeadGroupMove } from '../_lib/lead-board-reorder'
 
 /**
  * Several selected leads dragged together: they show in their new place at
- * once, each saves through the one-lead move, and all go back if one is
- * refused. Won needs a company, so a group with a lead that has none stays
- * put.
+ * once and save in one request, each as the one-lead move would. When some
+ * are refused, the board's refresh after the save shows what really moved
+ * (or, when none moved, the leads go back). Won needs a company, so a group
+ * with a lead that has none stays put.
  */
 export function useLeadGroupMove({
   columnsRef,
@@ -77,21 +78,34 @@ export function useLeadGroupMove({
       }
 
       startTransition(async () => {
-        const responses = await Promise.all(
-          result.moved.map(({ lead, rank }) =>
-            moveLead({ leadId: lead.id, targetStatus: status, rank })
-          )
-        )
-        const failed = responses.findIndex(response => !response.success)
-        if (failed !== -1) {
-          // Saved ones come back in the refresh that follows every save.
-          setColumns(result.previousColumns)
-          columnsRef.current = result.previousColumns
+        const response = await moveLeads({
+          moves: result.moved.map(({ lead, rank }) => ({
+            leadId: lead.id,
+            targetStatus: status,
+            rank,
+          })),
+        }).catch(() => null)
+        const failed =
+          response?.failed ??
+          result.moved.map(({ lead }) => ({
+            leadId: lead.id,
+            error: 'Please try again.',
+          }))
+        if (failed.length) {
+          // None moved: put them back. Some moved: the refresh that follows
+          // a save shows the board as saved.
+          if (failed.length === result.moved.length) {
+            setColumns(result.previousColumns)
+            columnsRef.current = result.previousColumns
+          }
           toast({
             variant: 'destructive',
-            title: 'Unable to move leads',
-            description: responses[failed]?.error ?? 'Please try again.',
-            link: toastLink('lead', result.moved[failed]!.lead.id),
+            title:
+              failed.length === 1
+                ? 'Unable to move a lead'
+                : `Unable to move ${failed.length} leads`,
+            description: failed[0]!.error,
+            link: toastLink('lead', failed[0]!.leadId),
           })
           return
         }
