@@ -16,6 +16,7 @@ import {
 import type { KanbanDropTarget } from './kanban'
 import {
   findBoardCard,
+  gatherGroup,
   groupSlotHeight,
   measureBoardCards,
   settleGroupDrop,
@@ -94,6 +95,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const [group, setGroup] = useState<readonly string[] | null>(null)
   const groupFrame = useRef<number | null>(null)
   const grownCard = useRef<HTMLElement | null>(null)
+  const gathering = useRef<(() => void) | null>(null)
 
   const setDraft = useCallback((next: KanbanDraft<C> | null) => {
     draftRef.current = next
@@ -136,6 +138,8 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       cancelAnimationFrame(groupFrame.current)
       groupFrame.current = null
     }
+    gathering.current?.()
+    gathering.current = null
     if (grownCard.current) {
       grownCard.current.style.minHeight = ''
       grownCard.current = null
@@ -178,6 +182,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
           groupFrame.current = null
           const current = draftRef.current
           if (!current || !locateInDraft(current, id)) return
+          gathering.current = gatherGroup({ along: [...along] })
           setDraft(withoutAlong(current))
           const card = findBoardCard(id)
           if (card && slot) {

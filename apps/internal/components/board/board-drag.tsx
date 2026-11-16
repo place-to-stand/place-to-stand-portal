@@ -27,7 +27,7 @@ export function BoardDragOverlay({
     <DragOverlay dropAnimation={count > 1 ? null : BOARD_DROP_ANIMATION}>
       {children && count > 1 ? (
         // Marked so Escape cancels the drag, not the selection.
-        <div className='relative' data-board-dragging=''>
+        <div className='relative' data-board-dragging='' ref={fadeInStack}>
           {/* The cards behind it, offset like a stack. */}
           {count > 2 ? (
             <div
@@ -37,11 +37,13 @@ export function BoardDragOverlay({
           ) : null}
           <div
             aria-hidden
+            data-stack-layer=''
             className='bg-card absolute inset-0 translate-x-2 translate-y-2 rounded-lg border shadow-sm'
           />
           <div className='relative'>{children}</div>
           <span
             data-drag-count={count}
+            data-stack-layer=''
             className='bg-primary text-primary-foreground absolute -top-2 -right-2 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums shadow-sm'
           >
             {count}
@@ -52,6 +54,24 @@ export function BoardDragOverlay({
       ) : null}
     </DragOverlay>
   )
+}
+
+/**
+ * The cards behind the stack and its count show as the group's cards fly
+ * in (`gatherGroup`), not before they arrive.
+ */
+function fadeInStack(node: HTMLDivElement | null) {
+  if (!node || typeof node.animate !== 'function') return
+  for (const layer of node.querySelectorAll<HTMLElement>(
+    '[data-stack-layer]'
+  )) {
+    layer.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: BOARD_DROP_ANIMATION_MS,
+      delay: BOARD_DROP_ANIMATION_MS,
+      easing: 'ease-out',
+      fill: 'backwards',
+    })
+  }
 }
 
 const BOARD_DROP_ANIMATION: DropAnimation = {

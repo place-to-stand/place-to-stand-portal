@@ -120,3 +120,102 @@ export function settleGroupDrop({
     }
   })
 }
+
+/** How long the group takes to gather under the pointer on pick-up. */
+const GATHER_MS = BOARD_DROP_ANIMATION_MS + 60
+
+/**
+ * Pick-up of a group: call just before the group's other cards leave the
+ * board. Each flies from its slot to the stack under the pointer (a copy,
+ * since the card itself is gone) and fades into it, a beat apart, and the
+ * cards they leave behind close the gap gently. Returns a cancel for a drag
+ * that ends first.
+ */
+export function gatherGroup({
+  along,
+}: {
+  /** The group's other cards, in board order. */
+  along: readonly string[]
+}): () => void {
+  if (
+    typeof window === 'undefined' ||
+    typeof Element.prototype.animate !== 'function' ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  ) {
+    return () => {}
+  }
+  const before = measureBoardCards()
+  const leaving = new Set(along)
+  const copies = along.flatMap((id, index) => {
+    const card = findBoardCard(id)
+    if (!card) return []
+    const rect = card.getBoundingClientRect()
+    const copy = card.cloneNode(true) as HTMLElement
+    copy.removeAttribute('data-board-card')
+    copy.removeAttribute('id')
+    copy.setAttribute('aria-hidden', 'true')
+    Object.assign(copy.style, {
+      position: 'fixed',
+      top: `${rect.top}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      margin: '0',
+      transform: 'none',
+      transition: 'none',
+      pointerEvents: 'none',
+      zIndex: '998',
+    })
+    document.body.appendChild(copy)
+    return [{ copy, rect, offset: Math.min(index + 1, 2) * STACK_OFFSET_PX }]
+  })
+
+  let frame = requestAnimationFrame(function first() {
+    // The gap the cards left: everything that moved glides from its old spot.
+    for (const card of document.querySelectorAll<HTMLElement>(
+      '[data-board-card]'
+    )) {
+      const id = card.dataset.boardCard!
+      if (leaving.has(id)) continue
+      const was = before.get(id)
+      if (!was) continue
+      const now = card.getBoundingClientRect()
+      const dx = was.left - now.left
+      const dy = was.top - now.top
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue
+      card.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
+        { duration: GATHER_MS, easing: EASING }
+      )
+    }
+
+    // The copies chase the stack, which follows the pointer.
+    const start = performance.now()
+    frame = requestAnimationFrame(function fly(time) {
+      const stack = document
+        .querySelector('[data-board-dragging]')
+        ?.getBoundingClientRect()
+      let flying = false
+      copies.forEach(({ copy, rect, offset }, index) => {
+        const t = Math.min(
+          Math.max((time - start - index * STAGGER_MS) / GATHER_MS, 0),
+          1
+        )
+        if (t < 1) flying = true
+        const eased = 1 - (1 - t) ** 3
+        const toLeft = stack ? stack.left + offset : rect.left
+        const toTop = stack ? stack.top + offset : rect.top
+        copy.style.transform = `translate(${(toLeft - rect.left) * eased}px, ${(toTop - rect.top) * eased}px)`
+        copy.style.opacity = String(t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4)
+      })
+      if (flying) frame = requestAnimationFrame(fly)
+      else cleanup()
+    })
+  })
+
+  function cleanup() {
+    cancelAnimationFrame(frame)
+    for (const { copy } of copies) copy.remove()
+  }
+  return cleanup
+}
