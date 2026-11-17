@@ -242,6 +242,7 @@ export function ComponentsButtons() {
             move={{
               toTop: noop,
               toBottom: null,
+              count: 1,
               name: 'Update the homepage copy',
             }}
             onArchive={noop}

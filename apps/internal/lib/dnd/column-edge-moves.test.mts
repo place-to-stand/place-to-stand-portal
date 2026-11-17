@@ -49,4 +49,7 @@ test('a selected group is at an end only when it fills that end', () => {
   assert.notEqual(top.toBottom, null)
   const bottom = columnEdgeMoves('col', ids, 3, onMove, ['c', 'd'])
   assert.equal(bottom.toBottom, null)
+  // The toast counts the group.
+  assert.equal(bottom.count, 2)
+  assert.equal(columnEdgeMoves('col', ids, 1, onMove, null).count, 1)
 })
