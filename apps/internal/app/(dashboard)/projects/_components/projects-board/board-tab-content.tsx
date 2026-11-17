@@ -32,6 +32,7 @@ import { TaskDragOverlay } from '../task-drag-overlay'
 import { ProjectBoardFilters } from './project-board-filters'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
 import { useKanbanDrag, type KanbanMove } from '@/lib/dnd/use-kanban-drag'
+import { useMarkDone } from '@/components/board/use-mark-done'
 
 import {
   FEEDBACK_CLASSES,
@@ -168,6 +169,15 @@ export function BoardTabContent(props: BoardTabContentProps) {
   // Send to top / bottom of a selected card moves the column's selection.
   const sendTask = (move: KanbanMove<BoardColumnId>) =>
     moveTask({ ...move, group: selection.columnGroup(move.id) ?? undefined })
+  // Mark as done of a selected card marks the whole selection.
+  const markDone = useMarkDone({
+    columns: BOARD_COLUMN_IDS,
+    idsIn: columnId => tasksIn(columnId).map(task => task.id),
+    done: 'DONE',
+    onMove: moveTask,
+    nameOf: id => findTask(id)?.title,
+  })
+  const markDoneFor = (id: string) => markDone(selection.dragGroup(id) ?? [id])
   const drag = useKanbanDrag({
     columns: BOARD_COLUMN_IDS,
     items: tasksIn,
@@ -227,6 +237,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                               onEditTask={onEditTask}
                               canManage={canManageTasks}
                               onMoveTask={sendTask}
+                              markDoneFor={markDoneFor}
                               activeTaskId={activeSheetTaskId}
                               onCreateTask={onCreateTask}
                               isDropTarget={drag.activeColumnId === column.id}
@@ -265,6 +276,7 @@ export function BoardTabContent(props: BoardTabContentProps) {
                     nameOf={id => findTask(id)?.title}
                     dueOnOf={id => findTask(id)?.due_on ?? null}
                     groupOf={id => taskGroup(findTask(id))}
+                    markDoneFor={markDoneFor}
                   />
                 </div>
               </div>

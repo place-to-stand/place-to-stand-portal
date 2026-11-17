@@ -67,6 +67,8 @@ type TaskCardProps = {
   context?: TaskContextDetails
   /** Send to top / bottom in the right-click menu (boards only). */
   move?: CardEdgeMoves
+  /** Mark as done in the right-click menu (task boards only). */
+  markDone?: () => (() => void) | null
 }
 
 function CardContent({
@@ -214,6 +216,7 @@ export function TaskCard({
   disableDropTransition = false,
   context,
   move,
+  markDone,
 }: TaskCardProps) {
   const {
     attributes,
@@ -274,6 +277,7 @@ export function TaskCard({
       canManage={canManage}
       draggable={draggable}
       move={move}
+      markDone={markDone}
     >
       <div
         ref={setNodeRef}

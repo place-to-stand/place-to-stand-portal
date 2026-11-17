@@ -222,7 +222,7 @@ export function ComponentsButtons() {
         label='Right-click menu'
         note='RecordContextMenu, on @pts/ui/context-menu'
       >
-        <Example caption='Right-click the card: Edit, Duplicate, Set assignee and Set due date (hover for the submenus), Send to top / bottom, Archive'>
+        <Example caption='Right-click the card: Edit, Duplicate, Set assignee and Set due date (hover for the submenus), Mark as done, Send to top / bottom, Archive'>
           <RecordContextMenu
             entity='task'
             id='00000000-0000-4000-8000-000000000000'
@@ -239,6 +239,7 @@ export function ComponentsButtons() {
               set: async () => ({}),
               name: 'Update the homepage copy',
             }}
+            markDone={() => noop}
             move={{
               toTop: noop,
               toBottom: null,

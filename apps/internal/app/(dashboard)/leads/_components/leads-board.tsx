@@ -1,14 +1,7 @@
 'use client'
 
 import { DndContext } from '@dnd-kit/core'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { BoardDragOverlay } from '@/components/board/board-drag'
@@ -28,7 +21,6 @@ import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { EmptyState } from '@pts/ui/empty-state'
 import { toastLink, useToast } from '@/components/ui/use-toast'
-import { moveLead } from '../actions'
 import {
   cloneColumns,
   findLeadById,
@@ -43,6 +35,7 @@ import {
 
 import { LeadColumn } from './lead-column'
 import { useLeadGroupMove } from './use-lead-group-move'
+import { useLeadMoveSave } from './use-lead-move-save'
 import { LeadCardPreview } from './lead-card'
 
 type LeadsBoardProps = {
@@ -80,7 +73,6 @@ export function LeadsBoard({
   })
   const [columns, setColumns] = useState(() => cloneColumns(initialColumns))
   const columnsRef = useRef(columns)
-  const [isPending, startTransition] = useTransition()
   const { toast } = useToast()
   const {
     recentlyMovedId: recentlyMovedLeadId,
@@ -121,10 +113,11 @@ export function LeadsBoard({
     setColumns,
     hiddenLeads,
     canManage,
-    startTransition,
     onMoved: markMoved,
     onLeadClosedWon,
   })
+
+  const saveMove = useLeadMoveSave({ columnsRef, setColumns, onLeadClosedWon })
 
   const handleDrop = useCallback(
     (drop: KanbanMove<LeadStatusValue>) => {
@@ -151,9 +144,7 @@ export function LeadsBoard({
         hiddenLeads,
       })
 
-      if (!result) {
-        return
-      }
+      if (!result) return
 
       // Decision 7: Won needs a company. Leave the card where it was rather
       // than flash it into Won and back; the server enforces it too.
@@ -179,57 +170,24 @@ export function LeadsBoard({
         return
       }
 
+      // The ref, not the effect, so a drag right after this one starts here.
       setColumns(result.nextColumns)
+      columnsRef.current = result.nextColumns
       setRecentlyMovedLeadId(leadId)
       scheduleRecentlyMovedReset()
+      if (!canManage) return
 
-      if (!canManage) {
-        columnsRef.current = result.nextColumns
-        return
-      }
-
-      startTransition(async () => {
-        const response = await moveLead({
-          leadId,
-          targetStatus: result.targetColumnId,
-          rank: result.rank,
-        })
-
-        if (!response.success) {
-          setColumns(result.previousColumns)
-          columnsRef.current = result.previousColumns
-          toast({
-            variant: 'destructive',
-            title: 'Unable to move lead',
-            description: response.error ?? 'Please try again.',
-            link: toastLink('lead', leadId),
-          })
-        } else {
-          columnsRef.current = result.nextColumns
-
-          // Just won (not a reorder inside Won): billing is the next step.
-          if (
-            result.targetColumnId === 'CLOSED_WON' &&
-            draggedLead &&
-            draggedLead.status !== 'CLOSED_WON' &&
-            draggedLead.companyId &&
-            onLeadClosedWon
-          ) {
-            onLeadClosedWon(draggedLead)
-          }
-        }
-      })
+      saveMove(result, leadId, draggedLead)
     },
     [
       canManage,
       hiddenLeads,
       moveGroup,
-      onLeadClosedWon,
       onWonNeedsCompany,
+      saveMove,
       scheduleRecentlyMovedReset,
       selection.hidden,
       setRecentlyMovedLeadId,
-      startTransition,
       toast,
     ]
   )
@@ -298,7 +256,7 @@ export function LeadsBoard({
                           columnId={column.id}
                           label={column.label}
                           leads={drag.itemsFor(column.id)}
-                          canManage={canManage && !isPending}
+                          canManage={canManage}
                           enableCreateButton={canManage}
                           onEditLead={onEditLead}
                           onCreateLead={handleCreateForColumn}

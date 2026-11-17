@@ -1,10 +1,7 @@
 'use client'
 
-import {
-  useCallback,
-  type RefObject,
-  type TransitionStartFunction,
-} from 'react'
+import { startTransition, useCallback, type RefObject } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
@@ -18,6 +15,8 @@ import { LEAD_NOT_FOUND_MESSAGE } from '@/lib/leads/move-messages'
 
 import { moveLeads } from '../actions'
 import { produceLeadGroupMove } from '../_lib/lead-board-reorder'
+import { undoLeadMoves } from '@/lib/leads/undo-lead-moves'
+import { isLatestLeadMove, markLeadMove } from '@/lib/leads/lead-move-tokens'
 
 /**
  * Several selected leads dragged together: they show in their new place at
@@ -31,7 +30,6 @@ export function useLeadGroupMove({
   setColumns,
   hiddenLeads,
   canManage,
-  startTransition,
   onMoved,
   onLeadClosedWon,
 }: {
@@ -39,12 +37,12 @@ export function useLeadGroupMove({
   setColumns: (columns: LeadBoardColumnData[]) => void
   hiddenLeads: LeadRecord[]
   canManage: boolean
-  startTransition: TransitionStartFunction
   /** The dragged lead, for the board's just-moved styling. */
   onMoved: (id: string) => void
   onLeadClosedWon?: (lead: LeadRecord) => void
 }) {
   const { toast } = useToast()
+  const router = useRouter()
 
   return useCallback(
     (move: KanbanMove<LeadStatusValue> & { group: readonly string[] }) => {
@@ -71,13 +69,16 @@ export function useLeadGroupMove({
         return
       }
 
+      // The ref, not the board's effect, so a drag right after starts here.
       setColumns(result.nextColumns)
+      columnsRef.current = result.nextColumns
       onMoved(move.id)
-      if (!canManage) {
-        columnsRef.current = result.nextColumns
-        return
-      }
+      if (!canManage) return
 
+      const token = markLeadMove(
+        columnsRef,
+        result.moved.map(({ lead }) => lead.id)
+      )
       startTransition(async () => {
         const response = await moveLeads({
           moves: result.moved.map(({ lead, rank }) => ({
@@ -93,12 +94,23 @@ export function useLeadGroupMove({
             error: 'Please try again.',
           }))
         if (failed.length) {
-          // None moved: put them back. Some moved: the refresh that follows
-          // a save shows the board as saved.
-          if (failed.length === result.moved.length) {
-            setColumns(result.previousColumns)
-            columnsRef.current = result.previousColumns
-          }
+          // Put back the leads that didn't move (unless moved again since).
+          // Moves dropped while this one saved stay where they are.
+          const undone = undoLeadMoves(
+            columnsRef.current,
+            result.previousColumns,
+            result.moved
+              .filter(({ lead }) =>
+                failed.some(({ leadId }) => leadId === lead.id)
+              )
+              .map(({ lead, rank }) => ({ leadId: lead.id, rank })),
+            status
+          )
+          setColumns(undone)
+          columnsRef.current = undone
+          // A failed save doesn't refresh the board: ask the server where
+          // everything is (shown once the other saves have landed).
+          router.refresh()
           const first = failed[0]!
           const name = result.moved.find(({ lead }) => lead.id === first.leadId)
             ?.lead.contactName
@@ -117,16 +129,13 @@ export function useLeadGroupMove({
               ? {}
               : { link: toastLink('lead', first.leadId) }),
           })
-          return
         }
-        columnsRef.current = result.nextColumns
-
-        // Just won: billing is the next step, for the first won lead.
+        // Just won (the server says this save took it into Won): billing
+        // is the next step, for the first won lead not dropped again since.
         const won = result.moved.find(
           ({ lead }) =>
-            status === 'CLOSED_WON' &&
-            lead.status !== 'CLOSED_WON' &&
-            lead.companyId
+            response?.won.includes(lead.id) &&
+            isLatestLeadMove(columnsRef, lead.id, token)
         )
         if (won) onLeadClosedWon?.(won.lead)
       })
@@ -137,8 +146,8 @@ export function useLeadGroupMove({
       hiddenLeads,
       onLeadClosedWon,
       onMoved,
+      router,
       setColumns,
-      startTransition,
       toast,
     ]
   )
