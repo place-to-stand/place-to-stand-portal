@@ -158,7 +158,7 @@ export async function POST(
           tax_amount: taxAmountCents.toString(),
           tax_rate_percent: taxRatePercent,
         },
-        payment_method_types: ['card'],
+        allowed_payment_method_types: ['card'],
       },
       {
         // Two clicks at once read the same row, so they get the same intent
