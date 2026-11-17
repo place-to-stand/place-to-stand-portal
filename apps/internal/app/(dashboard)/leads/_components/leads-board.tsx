@@ -34,7 +34,7 @@ import {
   findLeadById,
   produceLeadReorder,
 } from '../_lib/lead-board-reorder'
-import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
+import { useKanbanDrag, type KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
 import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
@@ -127,7 +127,7 @@ export function LeadsBoard({
   })
 
   const handleDrop = useCallback(
-    (drop: KanbanDrop<LeadStatusValue>) => {
+    (drop: KanbanMove<LeadStatusValue>) => {
       // Cards an archive is hiding still sit in `columns`: count them, so
       // the lead lands between the cards it was dropped between.
       const placed = dropAmongHidden(
@@ -234,6 +234,10 @@ export function LeadsBoard({
     ]
   )
 
+  // Send to top / bottom of a selected card moves the column's selection.
+  const sendLead = (move: KanbanMove<LeadStatusValue>) =>
+    handleDrop({ ...move, group: selection.columnGroup(move.id) ?? undefined })
+
   const columnIds = useMemo(() => columns.map(column => column.id), [columns])
   const leadsIn = useCallback(
     (columnId: LeadStatusValue) =>
@@ -298,6 +302,7 @@ export function LeadsBoard({
                           enableCreateButton={canManage}
                           onEditLead={onEditLead}
                           onCreateLead={handleCreateForColumn}
+                          onMoveLead={sendLead}
                           activeLeadId={activeLeadId}
                           isDropTarget={drag.activeColumnId === column.id}
                           recentlyMovedLeadId={recentlyMovedLeadId}
