@@ -53,19 +53,22 @@ export async function moveLead(
 /**
  * Several selected leads dropped together: each moves as `moveLead` would,
  * in order, and the board refreshes once. The leads the move refused come
- * back by id, so the board puts back only those.
+ * back by id, so the board puts back only those, and so do the leads it
+ * took into Won.
  */
 // permission: leads.manage — assertCrmAccess
 export async function moveLeads(input: {
   moves: MoveLeadInput[]
-}): Promise<{ failed: { leadId: string; error: string }[] }> {
+}): Promise<{ failed: { leadId: string; error: string }[]; won: string[] }> {
   const user = await requireCrmUser()
   assertCrmAccess(user)
 
   const moves = Array.isArray(input?.moves) ? input.moves.slice(0, 500) : []
   const failed: { leadId: string; error: string }[] = []
+  const won: string[] = []
   for (const move of moves) {
     const result = await applyLeadMove(user, move)
+    if (result.won) won.push(move.leadId)
     if (!result.success) {
       failed.push({
         leadId: String(move?.leadId ?? ''),
@@ -74,7 +77,7 @@ export async function moveLeads(input: {
     }
   }
   if (failed.length < moves.length) revalidateLeadsPath()
-  return { failed }
+  return { failed, won }
 }
 
 async function applyLeadMove(
@@ -203,5 +206,8 @@ async function applyLeadMove(
     }
   }
 
-  return { success: true }
+  return {
+    success: true,
+    won: outcome.statusChange !== null && targetStatus === 'CLOSED_WON',
+  }
 }

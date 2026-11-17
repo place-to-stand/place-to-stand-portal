@@ -87,13 +87,13 @@ export function useLeadGroupMove({
             error: 'Please try again.',
           }))
         if (failed.length) {
-          // Put back the leads that didn't move. Moves dropped while this
-          // one saved stay where they are.
+          // Put back the leads that didn't move (unless moved again since).
+          // Moves dropped while this one saved stay where they are.
           const undone = undoLeadMoves(
             columnsRef.current,
             result.previousColumns,
-            failed.map(({ leadId }) => leadId),
-            status
+            result.nextColumns,
+            failed.map(({ leadId }) => leadId)
           )
           setColumns(undone)
           columnsRef.current = undone
@@ -115,16 +115,13 @@ export function useLeadGroupMove({
               ? {}
               : { link: toastLink('lead', first.leadId) }),
           })
-          return
         }
-        // Just won: billing is the next step, for the first won lead
-        // (unless it has been moved on since).
+        // Just won (the server says this save took it into Won): billing
+        // is the next step, for the first won lead still in Won.
         const won = result.moved.find(
           ({ lead }) =>
-            status === 'CLOSED_WON' &&
-            isInColumn(columnsRef.current, 'CLOSED_WON', lead.id) &&
-            lead.status !== 'CLOSED_WON' &&
-            lead.companyId
+            response?.won.includes(lead.id) &&
+            isInColumn(columnsRef.current, 'CLOSED_WON', lead.id)
         )
         if (won) onLeadClosedWon?.(won.lead)
       })

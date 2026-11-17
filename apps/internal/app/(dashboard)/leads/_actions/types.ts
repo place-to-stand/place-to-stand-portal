@@ -8,4 +8,9 @@ export type LeadActionResult = {
   updatedAt?: string
   /** Set when someone else saved first and nothing was written. */
   conflict?: SaveConflict
+  /**
+   * A board move that took the lead into Won (not a reorder within Won):
+   * billing is the next step.
+   */
+  won?: boolean
 }
