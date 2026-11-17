@@ -24,7 +24,7 @@
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.59.0",
     "nanoid": "^6.0.2",
-    "next": "^16.4.3",
+    "next": "^16.4.6",
     "postgres": "^3.4.9",
     "posthog-js": "^1.438.12",
     "posthog-node": "^5.56.2",
