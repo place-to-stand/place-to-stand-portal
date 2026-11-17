@@ -9,7 +9,7 @@
   "jsxSingleQuote": true,
   "printWidth": 80,
   "sortPackageJson": false,
-  "sortTailwindcss": {},
+  "sortTailwindcss": { "functions": ["cn", "clsx"] },
   "ignorePatterns": [
     "docs/design-system/tokens.json",
     "apps/internal/lib/auth/permissions-manifest.json",

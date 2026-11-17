@@ -45,7 +45,7 @@ function BreadcrumbLink({
     render: asChild ? (children as React.ReactElement) : undefined,
     props: mergeProps<'a'>(
       {
-        className: cn('transition-colors hover:text-foreground', className),
+        className: cn('hover:text-foreground transition-colors', className),
       },
       asChild ? props : { ...props, children }
     ),

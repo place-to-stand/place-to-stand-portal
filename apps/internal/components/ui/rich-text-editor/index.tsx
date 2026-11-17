@@ -241,9 +241,9 @@ export function RichTextEditor({
   const wrapperClasses = useMemo(
     () =>
       cn(
-        'rich-text-editor group flex w-full min-w-0 flex-shrink-0 flex-col overflow-hidden contain-inline-size rounded-md border bg-background shadow-xs transition select-text',
+        'rich-text-editor group bg-background flex w-full min-w-0 flex-shrink-0 flex-col overflow-hidden rounded-md border shadow-xs transition contain-inline-size select-text',
         !disabled &&
-          'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+          'focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]',
         disabled && 'opacity-60',
         className
       ),
@@ -256,7 +256,7 @@ export function RichTextEditor({
         'w-full flex-1 text-sm',
         contentMinHeightClassName,
         '[&_.ProseMirror]:px-3 [&_.ProseMirror]:py-2',
-        '[&_.ProseMirror]:leading-relaxed [&_.ProseMirror]:text-foreground [&_.ProseMirror]:bg-transparent',
+        '[&_.ProseMirror]:text-foreground [&_.ProseMirror]:bg-transparent [&_.ProseMirror]:leading-relaxed',
         '[&_.ProseMirror]:outline-none [&_.ProseMirror]:focus:outline-none',
         '[&_.ProseMirror]:select-text',
         '[&_.ProseMirror_p]:my-2',
