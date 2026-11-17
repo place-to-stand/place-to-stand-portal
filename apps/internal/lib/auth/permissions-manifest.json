@@ -707,6 +707,20 @@
     "capability": "reports.view"
   },
   {
+    "type": "action",
+    "name": "saveBusinessSettings",
+    "file": "apps/internal/app/(dashboard)/settings/business/actions.ts",
+    "kind": "capability",
+    "capability": "settings.business"
+  },
+  {
+    "type": "page",
+    "name": "/settings/business",
+    "file": "apps/internal/app/(dashboard)/settings/business/page.tsx",
+    "kind": "capability",
+    "capability": "settings.business"
+  },
+  {
     "type": "page",
     "name": "/settings/integrations",
     "file": "apps/internal/app/(dashboard)/settings/integrations/page.tsx",
@@ -1495,6 +1509,13 @@
     "name": "POST /api/projects/[projectId]/time-logs",
     "file": "apps/internal/app/api/projects/[projectId]/time-logs/route.ts",
     "kind": "admin",
+    "capability": null
+  },
+  {
+    "type": "route",
+    "name": "GET /api/public/business/[kind]",
+    "file": "apps/internal/app/api/public/business/[kind]/route.ts",
+    "kind": "delegated",
     "capability": null
   },
   {
