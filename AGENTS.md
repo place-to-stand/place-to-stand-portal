@@ -49,7 +49,7 @@
 ### **1.3 Tooling & Testing**
 
 - **Linting:** Oxlint runs the Next.js recommended rules plus our custom rules, all defined in `packages/lint-config`
-- **Formatting:** Prettier (project config)
+- **Formatting:** oxfmt (`.oxfmtrc.json`)
 - **Unit & Integration Tests:** Vitest + Testing Library (React)
 - **End-to-End Tests:** Playwright
 - **Static Analysis:** TypeScript `tsc --noEmit`, optional `spectral` or custom scripts when available

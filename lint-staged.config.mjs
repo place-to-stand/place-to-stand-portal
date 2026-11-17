@@ -8,8 +8,8 @@ export default {
   '{apps,packages}/**/*.{ts,tsx,mjs,js}': [
     // Per workspace, so each one's config and lint-suppressions.json apply.
     'node scripts/lint-staged-lint.mjs',
-    'prettier --write --ignore-unknown',
+    'oxfmt --no-error-on-unmatched-pattern',
   ],
-  '{scripts,e2e}/**/*.{ts,mjs}': 'prettier --write --ignore-unknown',
-  '*.{json,css}': 'prettier --write --ignore-unknown',
+  '{scripts,e2e}/**/*.{ts,mjs}': 'oxfmt --no-error-on-unmatched-pattern',
+  '*.{json,css}': 'oxfmt --no-error-on-unmatched-pattern',
 }

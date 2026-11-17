@@ -6,7 +6,8 @@ import {
 } from '@/lib/auth/throttle'
 
 export type SignInAttemptResult =
-  { allowed: true } | { allowed: false; error: string }
+  | { allowed: true }
+  | { allowed: false; error: string }
 
 /**
  * Counts one password sign-in attempt before the browser sends it to Supabase.

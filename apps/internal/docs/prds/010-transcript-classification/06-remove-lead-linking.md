@@ -69,7 +69,11 @@ export type LeadActionType =
 
 // AFTER:
 export type LeadActionType =
-  'FOLLOW_UP' | 'REPLY' | 'SCHEDULE_CALL' | 'SEND_PROPOSAL' | 'ADVANCE_STATUS'
+  | 'FOLLOW_UP'
+  | 'REPLY'
+  | 'SCHEDULE_CALL'
+  | 'SEND_PROPOSAL'
+  | 'ADVANCE_STATUS'
 ```
 
 Remove from `SuggestedContent` union type:

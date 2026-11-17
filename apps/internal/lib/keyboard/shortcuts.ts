@@ -14,7 +14,11 @@
  */
 
 export type ShortcutGroup =
-  'Anywhere' | 'Sheets' | 'Project board' | 'Planning chat' | 'Text editor'
+  | 'Anywhere'
+  | 'Sheets'
+  | 'Project board'
+  | 'Planning chat'
+  | 'Text editor'
 
 export type Shortcut = {
   /** Primary combination, e.g. `mod+s`. */

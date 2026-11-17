@@ -55,7 +55,7 @@ enums in a migration (D6 — data drops too; source documents remain in Google D
   pass-throughs `scopeHref` L159, `scopeDisabled` L163 (L160–162 are the other tabs' — keep).
 - `_components/projects-board/projects-board-tabs-section.tsx` — remove `'scopeHref'` (~L13) /
   `'scopeDisabled'` (~L17) from `NavigationProps`, the `ScopeProps` type (~L73–76), `scope:
-ScopeProps` (~L86), destructured `scope` (~L102), `{...scope}` spread (~L115).
+  ScopeProps` (~L86), destructured `scope` (~L102), `{...scope}` spread (~L115).
 - `_hooks/use-projects-board-navigation.ts` — remove `scopeHref` (~L14) / `scopeDisabled` (~L18)
   from `ProjectsBoardNavigation`. **(W7) The computation block is also non-contiguous:** delete
   `scopeHref` **L58–60** and `scopeDisabled` **L64** only — **L61–63 are

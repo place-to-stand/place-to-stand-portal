@@ -13,7 +13,9 @@ import type {
 const ACTIVITY_FEED_QUERY_KEY = 'activity-feed' as const
 
 type ActivityFeedQueryTarget =
-  ActivityTargetType | string | ReadonlyArray<ActivityTargetType | string>
+  | ActivityTargetType
+  | string
+  | ReadonlyArray<ActivityTargetType | string>
 
 export type UseActivityFeedOptions = {
   targetType: ActivityFeedQueryTarget
@@ -119,7 +121,8 @@ export function useActivityFeed(
 
   const logs = useMemo(() => {
     const data = query.data as
-      InfiniteData<ActivityApiResponse, string | null> | undefined
+      | InfiniteData<ActivityApiResponse, string | null>
+      | undefined
 
     if (!data) {
       return []

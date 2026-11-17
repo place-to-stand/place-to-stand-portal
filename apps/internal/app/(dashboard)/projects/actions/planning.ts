@@ -30,7 +30,8 @@ const startThreadSchema = z.object({
 })
 
 type StartThreadResult =
-  { sessionId: string; thread: PlanThreadData } | { error: string }
+  | { sessionId: string; thread: PlanThreadData }
+  | { error: string }
 
 /**
  * The first write planning makes, and only on an explicit action (Start

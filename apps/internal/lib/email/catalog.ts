@@ -24,7 +24,10 @@ type EmailTemplateStatus = 'active' | 'disabled'
 
 /** The flow an email belongs to; the list is sectioned by it. */
 export type EmailTemplateGroup =
-  'accounts' | 'contact-form' | 'audit' | 'client'
+  | 'accounts'
+  | 'contact-form'
+  | 'audit'
+  | 'client'
 
 export type EmailTemplateEntry = {
   id: string

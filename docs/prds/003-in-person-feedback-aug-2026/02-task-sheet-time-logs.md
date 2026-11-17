@@ -124,7 +124,7 @@ non-optional), which both My Tasks (`projects` prop) and the board already hold 
   (inline JSX props on `<ProjectTimeLogDialog>`), NOT in `use-board-time-log-dialogs.ts` (that hook
   is open/close/mode state only). Extract a helper in `lib/projects/time-log/` with signature
   roughly `(project: ProjectWithRelations, extras: { tasks, currentUserId, admins }) =>
-ProjectTimeLogDialogParams`. Note the board passes `tasks` from `activeProjectTasks` (wired in
+  ProjectTimeLogDialogParams`. Note the board passes `tasks` from `activeProjectTasks` (wired in
   `use-projects-board-view-model.ts` ~L201–209), which may be view-filtered — from the task sheet
   pass `taskProject.tasks` and verify the divergence is acceptable.
 - **(W4) Build the params LAZILY, inside the `props.task &&` branch.** The lead overlay's

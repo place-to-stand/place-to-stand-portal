@@ -268,7 +268,8 @@ export function CompanySheet({
 
   // What the form was seeded with (reset values), not the live query data.
   const seededTitles = form.formState.defaultValues?.titles as
-    Record<string, string> | undefined
+    | Record<string, string>
+    | undefined
   const seededPrimaryContactId =
     form.formState.defaultValues?.primaryContactId ?? null
   const seededTags = form.formState.defaultValues?.tags as string[] | undefined

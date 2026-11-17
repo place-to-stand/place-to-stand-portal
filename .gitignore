@@ -40,9 +40,6 @@ next-env.d.ts
 # turbo
 .turbo
 
-# prettier --cache (npm run format, format:check)
-.cache
-
 # supabase
 supabase/seed.sql
 supabase/.temp/

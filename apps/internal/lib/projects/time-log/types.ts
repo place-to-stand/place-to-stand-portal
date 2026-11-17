@@ -22,7 +22,11 @@ export type ProjectTimeLogDialogParams = {
 }
 
 export type TimeLogFormField =
-  'hours' | 'loggedOn' | 'user' | 'note' | 'general'
+  | 'hours'
+  | 'loggedOn'
+  | 'user'
+  | 'note'
+  | 'general'
 
 export type TimeLogFormErrors = Partial<Record<TimeLogFormField, string>>
 

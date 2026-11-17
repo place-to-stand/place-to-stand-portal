@@ -167,7 +167,9 @@ export function useRecentActivitySummary(
 
         const responseCacheStatus =
           (response.headers.get('x-activity-overview-cache') as
-            'hit' | 'miss' | null) ?? null
+            | 'hit'
+            | 'miss'
+            | null) ?? null
 
         setCacheMeta({
           cacheStatus: responseCacheStatus,

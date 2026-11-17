@@ -35,7 +35,8 @@ const emailInvoiceSchema = contentSchema.extend({
 export type EmailInvoiceInput = z.infer<typeof emailInvoiceSchema>
 
 type Result<T> =
-  { ok: true; data: T; error?: undefined } | { ok: false; error: string }
+  | { ok: true; data: T; error?: undefined }
+  | { ok: false; error: string }
 
 function failure(
   error: unknown,

@@ -6,7 +6,11 @@ import type { SheetEntityKey } from '@/lib/sheets/entities'
  * `destructive` is a failure ("Unable to …").
  */
 export type ToastVariant =
-  'default' | 'success' | 'info' | 'warning' | 'destructive'
+  | 'default'
+  | 'success'
+  | 'info'
+  | 'warning'
+  | 'destructive'
 
 /**
  * The record a toast is about. The toast shows a link that opens its sheet
