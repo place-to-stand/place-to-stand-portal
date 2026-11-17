@@ -2,7 +2,7 @@ import { BOARD_DROP_ANIMATION_MS } from './kanban'
 
 /** A group lands at the single drop's pace, one card a beat after another. */
 const SETTLE_MS = BOARD_DROP_ANIMATION_MS + 30
-const STAGGER_MS = 25
+const STAGGER_MS = 40
 const EASING = 'ease-out'
 /** The stack's offset behind the dragged card (`BoardDragOverlay`). */
 const STACK_OFFSET_PX = 8
@@ -76,7 +76,7 @@ export function settleGroupDrop({
         const offset = grabbed ? 0 : Math.min(++behind, 2) * STACK_OFFSET_PX
         const dx = stack.left + offset - now.left
         const dy = stack.top + offset - now.top
-        const copy = floatingCopy(card, now, grabbed ? 1001 : 1000 - place)
+        const copy = floatingCopy(card, now, grabbed ? 1001 : 1000 - behind)
         const shown = card.style.visibility
         card.style.visibility = 'hidden'
         const land = () => {
@@ -91,7 +91,7 @@ export function settleGroupDrop({
             ],
             {
               duration: SETTLE_MS,
-              delay: place * STAGGER_MS,
+              delay: grabbed ? 0 : behind * STAGGER_MS,
               easing: EASING,
               fill: 'backwards',
             }
