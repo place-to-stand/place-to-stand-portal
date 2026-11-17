@@ -69,14 +69,21 @@ export function settleGroupDrop({
       const now = card.getBoundingClientRect()
       const place = order.get(id)
       if (place !== undefined) {
-        // Opaque, and under the grabbed card, so they come out from behind
-        // it rather than showing through.
+        // A copy above the page makes the trip, since the columns clip
+        // anything moving across them; the card shows once it lands. The
+        // others slide out from under the grabbed card, opaque.
         const grabbed = id === dragged
         const offset = grabbed ? 0 : Math.min(++behind, 2) * STACK_OFFSET_PX
         const dx = stack.left + offset - now.left
         const dy = stack.top + offset - now.top
-        const lift = raise(card, grabbed ? 2 : 1)
-        card
+        const copy = floatingCopy(card, now, grabbed ? 1001 : 1000 - place)
+        const shown = card.style.visibility
+        card.style.visibility = 'hidden'
+        const land = () => {
+          card.style.visibility = shown
+          copy.remove()
+        }
+        copy
           .animate(
             [
               { transform: `translate(${dx}px, ${dy}px)` },
@@ -89,7 +96,7 @@ export function settleGroupDrop({
               fill: 'backwards',
             }
           )
-          .finished.then(lift, lift)
+          .finished.then(land, land)
         continue
       }
       const was = before.get(id)
@@ -135,23 +142,7 @@ export function gatherGroup({
     const card = findBoardCard(id)
     if (!card) return []
     const rect = card.getBoundingClientRect()
-    const copy = card.cloneNode(true) as HTMLElement
-    copy.removeAttribute('data-board-card')
-    copy.removeAttribute('id')
-    copy.setAttribute('aria-hidden', 'true')
-    Object.assign(copy.style, {
-      position: 'fixed',
-      top: `${rect.top}px`,
-      left: `${rect.left}px`,
-      width: `${rect.width}px`,
-      height: `${rect.height}px`,
-      margin: '0',
-      transform: 'none',
-      transition: 'none',
-      pointerEvents: 'none',
-      zIndex: '998',
-    })
-    document.body.appendChild(copy)
+    const copy = floatingCopy(card, rect, 998)
     return [{ copy, rect, offset: Math.min(index + 1, 2) * STACK_OFFSET_PX }]
   })
 
@@ -205,15 +196,33 @@ export function gatherGroup({
   return cleanup
 }
 
-/** Lifts a card above its neighbours for an animation; returns the undo. */
-function raise(card: HTMLElement, zIndex: number) {
-  const { position, zIndex: before } = card.style
-  if (getComputedStyle(card).position === 'static') {
-    card.style.position = 'relative'
-  }
-  card.style.zIndex = String(zIndex)
-  return () => {
-    card.style.position = position
-    card.style.zIndex = before
-  }
+/**
+ * A look-alike of a board card, fixed over the page at `rect`, for a move
+ * the board's scrolling columns would clip.
+ */
+function floatingCopy(
+  card: HTMLElement,
+  rect: DOMRect,
+  zIndex: number
+): HTMLElement {
+  const copy = card.cloneNode(true) as HTMLElement
+  copy.removeAttribute('data-board-card')
+  copy.removeAttribute('id')
+  copy.setAttribute('aria-hidden', 'true')
+  Object.assign(copy.style, {
+    position: 'fixed',
+    top: `${rect.top}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    margin: '0',
+    transform: 'none',
+    transition: 'none',
+    visibility: 'visible',
+    opacity: '1',
+    pointerEvents: 'none',
+    zIndex: String(zIndex),
+  })
+  document.body.appendChild(copy)
+  return copy
 }
