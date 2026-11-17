@@ -80,7 +80,7 @@ export function LeadsBoard({
   })
   const [columns, setColumns] = useState(() => cloneColumns(initialColumns))
   const columnsRef = useRef(columns)
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const { toast } = useToast()
   const {
     recentlyMovedId: recentlyMovedLeadId,
@@ -294,7 +294,7 @@ export function LeadsBoard({
                           columnId={column.id}
                           label={column.label}
                           leads={drag.itemsFor(column.id)}
-                          canManage={canManage && !isPending}
+                          canManage={canManage}
                           enableCreateButton={canManage}
                           onEditLead={onEditLead}
                           onCreateLead={handleCreateForColumn}
