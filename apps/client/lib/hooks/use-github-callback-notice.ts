@@ -26,7 +26,7 @@ export function useGitHubCallbackNotice(redirectPath: string): {
     if (!github) return
 
     if (github === 'installed') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing component state with the URL (an external system)
+      // oxlint-disable-next-line react-compiler/set-state-in-effect -- syncing component state with the URL (an external system)
       setNotice('GitHub connected.')
     } else if (github === 'error') {
       const reason = searchParams.get('reason')
@@ -39,7 +39,7 @@ export function useGitHubCallbackNotice(redirectPath: string): {
 
     router.replace(redirectPath, { scroll: false })
     // Only run once per param — router.replace clears them on the next render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per param: router.replace clears them on the next render
+    // oxlint-disable-next-line react/exhaustive-deps -- once per param: router.replace clears them on the next render
   }, [searchParams])
 
   return { notice, error }

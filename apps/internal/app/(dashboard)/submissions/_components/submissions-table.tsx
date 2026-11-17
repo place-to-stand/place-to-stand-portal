@@ -237,7 +237,7 @@ export function SubmissionsTable({
     (searchParams.get('q') ?? '').trim().length > 0 ||
     isFormSubmissionKind(searchParams.get('kind') ?? undefined) ||
     isFormSubmissionStatus(searchParams.get('status') ?? undefined) ||
-    // eslint-disable-next-line pts/sheets -- the has-contact filter (yes/no), not a person sheet
+    // oxlint-disable-next-line pts/sheets -- the has-contact filter (yes/no), not a person sheet
     isContactFilterValue(searchParams.get('contact') ?? '') ||
     (mode === 'active' && searchParams.get('unacknowledged') === '1')
 
@@ -433,7 +433,7 @@ export function SubmissionsTable({
                 <SelectAllHead />
                 {sortHead('received', 'Received', 'w-[13%]')}
                 {sortHead('form', 'Form', 'w-[12%]')}
-                {/* eslint-disable-next-line pts/copy -- the visitor's contact details, not a person record */}
+                {/* oxlint-disable-next-line pts/copy -- the visitor's contact details, not a person record */}
                 {sortHead('contact', 'Contact', '')}
                 {sortHead('company', 'Company', columnClasses.company)}
                 {sortHead('outcome', 'Outcome', columnClasses.outcome)}

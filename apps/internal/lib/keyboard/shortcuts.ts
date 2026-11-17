@@ -4,7 +4,7 @@
  * The keyboard shortcuts dialog (`?`) lists this registry, and the handlers
  * match against it with `matchesShortcut` (`./match.ts`), so a shortcut's keys
  * live only here: change them here and the handler, the tooltips and the list
- * all follow. Adding a shortcut means adding an entry here first; eslint
+ * all follow. Adding a shortcut means adding an entry here first; lint
  * (`pts/shortcut-registry`) rejects a handler that reads `metaKey`/`ctrlKey`
  * by hand.
  *
@@ -14,7 +14,11 @@
  */
 
 export type ShortcutGroup =
-  'Anywhere' | 'Sheets' | 'Project board' | 'Planning chat' | 'Text editor'
+  | 'Anywhere'
+  | 'Sheets'
+  | 'Project board'
+  | 'Planning chat'
+  | 'Text editor'
 
 export type Shortcut = {
   /** Primary combination, e.g. `mod+s`. */

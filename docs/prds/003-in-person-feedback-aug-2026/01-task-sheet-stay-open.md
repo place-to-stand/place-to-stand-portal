@@ -106,7 +106,7 @@ Specifics:
   on the `task` prop).
 - **(W1, R1) Double-submit guard — there is NO existing `isSubmitting` guard, and `isPending` is
   NOT sufficient.** The only protection today is `submitDisabled = isPending || !canManage ||
-isUploading` (~L328) gating the button and ⌘S (`canSave`) — but `isPending` is **render state**:
+  isUploading` (~L328) gating the button and ⌘S (`canSave`) — but `isPending` is **render state**:
   two submit callbacks firing in the same render window both observe it as `false`, and
   `createdTaskIdRef` is set only after the first request succeeds — too late to stop a second
   in-flight request. Use a **synchronous in-flight ref**: set `submitLockRef.current = true` as the

@@ -71,7 +71,8 @@ export function getEnv() {
 }
 
 let _gitHubAppEnv:
-  (z.infer<typeof schema> & z.infer<typeof githubAppSchema>) | undefined
+  | (z.infer<typeof schema> & z.infer<typeof githubAppSchema>)
+  | undefined
 
 /** Core env plus the GitHub App credentials. Throws if either set is missing. */
 export function getGitHubAppEnv() {

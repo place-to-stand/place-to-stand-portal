@@ -1,0 +1,72 @@
+{
+  "app/(auth)/force-reset-password/force-reset-form.tsx": {
+    "typescript/no-deprecated": {
+      "count": 1
+    },
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "app/(auth)/forgot-password/page.tsx": {
+    "typescript/no-deprecated": {
+      "count": 1
+    },
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "app/(auth)/sign-in/page.tsx": {
+    "typescript/no-deprecated": {
+      "count": 1
+    },
+    "typescript/no-misused-promises": {
+      "count": 2
+    }
+  },
+  "app/(portal)/_actions/set-view-as-contact.ts": {
+    "typescript/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/admin/preview-contact/route.ts": {
+    "typescript/no-deprecated": {
+      "count": 1
+    }
+  },
+  "app/api/github/link/route.ts": {
+    "typescript/no-deprecated": {
+      "count": 3
+    }
+  },
+  "app/api/github/webhook/route.ts": {
+    "typescript/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
+  "app/api/invoices/[id]/pdf/route.ts": {
+    "typescript/no-deprecated": {
+      "count": 1
+    }
+  },
+  "components/auth/google-sign-in-button.tsx": {
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "components/onboarding/onboarding-wizard.tsx": {
+    "typescript/no-deprecated": {
+      "count": 1
+    },
+    "typescript/no-misused-promises": {
+      "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "lib/env.ts": {
+    "typescript/no-deprecated": {
+      "count": 1
+    }
+  }
+}

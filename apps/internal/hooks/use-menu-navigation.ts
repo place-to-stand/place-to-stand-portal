@@ -188,7 +188,7 @@ export function useMenuNavigation<T>({
 
     const newIndex = autoSelectFirstItem && items.length > 0 ? 0 : -1
     // Reset selected index when query changes - necessary for proper UX
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Required to reset selection when search query changes
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- Required to reset selection when search query changes
     setSelectedIndex(prevIndex => {
       // Only update if the value actually needs to change
       return prevIndex !== newIndex ? newIndex : prevIndex

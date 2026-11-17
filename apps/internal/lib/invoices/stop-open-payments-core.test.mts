@@ -10,7 +10,8 @@ import {
 type Fake = {
   intent?: { id: string; status: string } | 'missing' | 'down'
   session?:
-    { id: string; status: string | null; payment_status: string } | 'missing'
+    | { id: string; status: string | null; payment_status: string }
+    | 'missing'
   cancelFails?: boolean
 }
 

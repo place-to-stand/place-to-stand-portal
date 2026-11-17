@@ -3,7 +3,7 @@
 import { type ReactNode } from 'react'
 import { XIcon } from 'lucide-react'
 
-// Relative: the sheet chrome parts are off limits everywhere else (eslint).
+// Relative: the sheet chrome parts are off limits everywhere else (lint).
 import { SheetClose, SheetHeader, SheetTitle } from '../ui/sheet'
 import {
   ENTITY_ACCENTS,

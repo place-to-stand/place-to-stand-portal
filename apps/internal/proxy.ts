@@ -91,7 +91,8 @@ async function checkSupabaseAuth(req: NextRequest): Promise<{
 
   const claims = claimsError ? null : data?.claims
   const userMetadata = claims?.user_metadata as
-    { must_reset_password?: unknown } | undefined
+    | { must_reset_password?: unknown }
+    | undefined
 
   return {
     isAuthenticated: Boolean(claims?.sub),

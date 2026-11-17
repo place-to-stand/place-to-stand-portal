@@ -6,7 +6,8 @@ import { roleCan, type Capability } from '@/lib/auth/capabilities'
 import { getCurrentUser, type AppUser } from '@/lib/auth/session'
 
 type RouteAuth =
-  { user: AppUser; denied: null } | { user: null; denied: NextResponse }
+  | { user: AppUser; denied: null }
+  | { user: null; denied: NextResponse }
 
 /**
  * The API route guard. Answers JSON, never a redirect, so a `fetch` caller

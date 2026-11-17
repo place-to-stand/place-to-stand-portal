@@ -8,7 +8,13 @@
  */
 
 export type AttributionChannel =
-  'paid' | 'organic' | 'referral' | 'social' | 'email' | 'campaign' | 'direct'
+  | 'paid'
+  | 'organic'
+  | 'referral'
+  | 'social'
+  | 'email'
+  | 'campaign'
+  | 'direct'
 
 export type AttributionInput = {
   utmSource: string | null

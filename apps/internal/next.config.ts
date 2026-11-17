@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@pts/ui'],
   cacheComponents: false,
   reactCompiler: true,
+  typescript: {
+    // CI type-checks in a job of its own (TypeScript 7, `npm run
+    // type-check`), so its build skips Next's slower second pass. Vercel
+    // builds don't set this and still type-check.
+    ignoreBuildErrors: process.env.CI_SKIP_BUILD_TYPECHECK === '1',
+  },
   reactStrictMode: true,
   experimental: {
     // Dev only: prunes unreachable work from .next/dev's persistent cache.

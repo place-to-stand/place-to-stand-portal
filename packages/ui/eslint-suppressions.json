@@ -1,7 +1,0 @@
-{
-  "src/dropdown-menu.tsx": {
-    "max-lines": {
-      "count": 1
-    }
-  }
-}

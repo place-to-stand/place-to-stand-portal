@@ -1,7 +1,0 @@
-{
-  "src/schema.ts": {
-    "max-lines": {
-      "count": 1
-    }
-  }
-}

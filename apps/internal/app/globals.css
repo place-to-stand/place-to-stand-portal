@@ -2,8 +2,8 @@
 @source '../../../packages/ui/src';
 @import 'tw-animate-css';
 @plugin '@tailwindcss/typography';
-@import '../styles/_variables.scss';
-@import '../styles/_keyframe-animations.scss';
+@import '../styles/variables.css';
+@import '../styles/keyframe-animations.css';
 
 @import '../../../packages/ui/src/styles/theme.css';
 

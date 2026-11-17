@@ -7,11 +7,11 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "lint": "eslint --max-warnings=0"
+    "type-check": "tsc7 --noEmit",
+    "lint": "pts-lint"
   },
   "devDependencies": {
-    "@pts/eslint-config": "^0.1.0",
+    "@pts/lint-config": "^0.1.0",
     "@types/node": "^26.6.6",
     "typescript": "^6.0.3"
   },

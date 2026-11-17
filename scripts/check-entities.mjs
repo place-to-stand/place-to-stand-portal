@@ -11,8 +11,8 @@
  * And fails when a status colour (success, warning, destructive) sits within
  * ΔE_OK 0.06 of any entity colour in either theme, so a green check never
  * reads as a client badge (and a red error never reads as a person).
- * Imports of entity icons outside the registry are blocked by eslint
- * (apps/internal/eslint.config.mjs reads the same icon list).
+ * Imports of entity icons outside the registry are blocked by lint
+ * (packages/lint-config/next.mjs reads the same icon list).
  */
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

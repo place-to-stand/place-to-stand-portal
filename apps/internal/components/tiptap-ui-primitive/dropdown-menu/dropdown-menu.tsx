@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Menu as MenuPrimitive } from '@base-ui/react/menu'
 import { cn } from '@/lib/tiptap-utils'
-import '@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss'
+import '@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.css'
 
 /**
  * Vendored TipTap primitive, rebased from Radix onto Base UI. The export

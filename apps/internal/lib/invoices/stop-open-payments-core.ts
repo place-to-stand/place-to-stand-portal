@@ -28,7 +28,10 @@ const CANCELLABLE_INTENT_STATUSES = new Set([
  * - `unreachable`: Stripe couldn't confirm either way.
  */
 export type StopPaymentsOutcome =
-  'clear' | 'in_progress' | 'paid' | 'unreachable'
+  | 'clear'
+  | 'in_progress'
+  | 'paid'
+  | 'unreachable'
 
 /** Why an invoice can't leave Sent yet, for each outcome but `clear`. */
 export function stopPaymentsRefusal(

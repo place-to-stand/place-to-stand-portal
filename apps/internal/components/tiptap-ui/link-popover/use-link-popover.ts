@@ -111,7 +111,7 @@ export function useLinkHandler(props: LinkHandlerProps) {
 
     // Sync URL state with editor state when editor or link state changes
     if (linkActive && url === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Necessary to sync external editor state with component state
+      // oxlint-disable-next-line react-compiler/set-state-in-effect -- Necessary to sync external editor state with component state
       setUrl(href || '')
     } else if (!linkActive && url !== null) {
       setUrl(null)

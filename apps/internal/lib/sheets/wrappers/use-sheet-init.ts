@@ -25,7 +25,8 @@ const fetchSheetInit = async (entity: string, value: string) => {
     `/api/sheets/init?entity=${entity}&id=${encodeURIComponent(value)}`
   )
   const result = (await response.json()) as
-    { ok: true; data: unknown } | { ok: false; error?: string }
+    | { ok: true; data: unknown }
+    | { ok: false; error?: string }
 
   if (!result.ok) {
     throw new Error(result.error ?? 'Unable to load sheet data')

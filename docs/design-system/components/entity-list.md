@@ -32,7 +32,7 @@ A sheet's list of related records: a section heading with the + on its right, th
 
 ## Rules
 
-- **The +, the list and the empty state come together.** Never a `SectionAddButton` beside a hand-built heading, and never a clickable empty state without the + above it. (guard: eslint `no-restricted-imports`)
+- **The +, the list and the empty state come together.** Never a `SectionAddButton` beside a hand-built heading, and never a clickable empty state without the + above it. (guard: lint `no-restricted-imports`)
 - **The empty state is the action.** When adding is allowed, clicking the dashed box does what the + does. When it isn't, both are disabled and the + says why. (guard: review)
 - **8px under the heading.** The heading sits 8px above the cards or the empty state, the same as a field label over its control. The + overlaps the heading row, so it never adds height. (guard: review)
 - **Rows are preview cards.** `SheetRecordRow` (and its entity variants) by default; any card that reads as one record is fine (time log rows, line items). Cards stack 8px apart. A status badge goes in the card's `badge` prop, never in `actions`: it sits on the right inside the click target, so clicking it opens the record like the name does. `actions` is for controls only (star, remove). (guard: review)

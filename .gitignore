@@ -58,3 +58,6 @@ Screenshot*.png
 **/scripts/migrate/data/
 **/scripts/migrate/data-transformed/
 **/scripts/migrate/validation/
+
+# lint-config tests write temporary configs here while they run
+packages/lint-config/tests/.tmp-*

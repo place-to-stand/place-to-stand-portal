@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover'
 import { cn } from '@/lib/tiptap-utils'
-import '@/components/tiptap-ui-primitive/popover/popover.scss'
+import '@/components/tiptap-ui-primitive/popover/popover.css'
 
 /**
  * Vendored TipTap primitive, rebased from Radix onto Base UI. The export

@@ -642,7 +642,7 @@ function SidebarMenuSkeleton({
   // Random width between 50 to 90% (state initializer keeps the impure call
   // out of render for the React Compiler).
   const [width] = React.useState(
-    () => `${Math.floor(Math.random() * 40) + 50}%` // eslint-disable-line pts/copy -- a CSS width, not a figure
+    () => `${Math.floor(Math.random() * 40) + 50}%` // oxlint-disable-line pts/copy -- a CSS width, not a figure
   )
 
   return (

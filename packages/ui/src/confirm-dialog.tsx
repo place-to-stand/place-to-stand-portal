@@ -13,7 +13,12 @@ import {
 } from './alert-dialog'
 
 type ButtonVariant =
-  'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  | 'default'
+  | 'destructive'
+  | 'outline'
+  | 'secondary'
+  | 'ghost'
+  | 'link'
 
 type ConfirmDialogProps = {
   open: boolean

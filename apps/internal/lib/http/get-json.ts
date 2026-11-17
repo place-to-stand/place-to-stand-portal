@@ -7,7 +7,9 @@
 export async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { headers: { accept: 'application/json' } })
   const body = (await response.json().catch(() => null)) as
-    { ok: true; data: T } | { ok: false; error?: string } | null
+    | { ok: true; data: T }
+    | { ok: false; error?: string }
+    | null
 
   if (!response.ok || !body?.ok) {
     throw new Error(
