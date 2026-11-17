@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { generateInvoicePdf } from '@pts/pdf'
 
 import { getInvoiceByShareToken } from '@/lib/queries/invoices'
+import { getBusinessIdentity, invoiceIssuerFor } from '@/lib/business/identity'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,10 @@ export async function GET(
 
   let pdf: Buffer
   try {
-    pdf = await generateInvoicePdf(invoice)
+    pdf = await generateInvoicePdf(
+      invoice,
+      invoiceIssuerFor(await getBusinessIdentity())
+    )
   } catch (error) {
     console.error(
       '[api/public/invoices/pdf] Failed to generate PDF for invoice',

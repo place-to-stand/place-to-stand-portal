@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { requirePage } from '@/lib/auth/session'
 
 import { PageShell } from '@/components/layout/page-shell'
+import { getEmailSender } from '@/lib/business/identity'
 import { buildEmailTemplateCatalog } from '@/lib/email/catalog'
 import { crumbsForNav } from '@/lib/navigation/breadcrumbs'
 
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 
 export default async function EmailTemplatesPage() {
   await requirePage('settings.templates')
-  const entries = buildEmailTemplateCatalog()
+  const entries = buildEmailTemplateCatalog(await getEmailSender())
 
   return (
     <PageShell

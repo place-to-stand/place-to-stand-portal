@@ -1,5 +1,5 @@
 import { renderBlocks, type EmailBlock } from '../blocks'
-import { renderRichEmail, type RenderedEmail } from '../layout'
+import { renderRichEmail, type EmailBrand, type RenderedEmail } from '../layout'
 
 export type InvoiceEmailArgs = {
   subject: string
@@ -17,6 +17,8 @@ export type InvoiceEmailArgs = {
   /** The public share page, where the client views and pays. */
   viewUrl: string
   replyTo: string
+  /** Sender identity; Place To Stand when left out. */
+  brand?: EmailBrand
 }
 
 export const INVOICE_EMAIL_BUTTON_LABEL = 'View and pay invoice'
@@ -35,6 +37,7 @@ export function invoiceEmail({
   message,
   viewUrl,
   replyTo,
+  brand,
 }: InvoiceEmailArgs): RenderedEmail {
   const paragraphs = message
     .split(/\n\s*\n/)
@@ -63,5 +66,6 @@ export function invoiceEmail({
     action: { label: INVOICE_EMAIL_BUTTON_LABEL, url: viewUrl },
     footerLead: 'Questions about this invoice? Reply to this email or write to',
     replyTo,
+    brand,
   })
 }

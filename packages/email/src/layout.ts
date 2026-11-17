@@ -12,10 +12,24 @@
  * rewrite dark message backgrounds in dark mode, and a light body prints clean.
  */
 
-/** Wordmark. Kept here so no template hard-codes the brand. */
-const BRAND = 'Place To Stand'
-const SITE_URL = 'https://placetostandagency.com'
-const SITE_LABEL = 'placetostandagency.com'
+/**
+ * Who the mail is from, as printed in the masthead and footer. Each install
+ * passes its own (Settings → Business); the default is Place To Stand, which
+ * every install starts with. Templates take it too, so none hard-codes a name.
+ */
+export type EmailBrand = {
+  name: string
+  /** Full URL for the footer link; null prints the name alone. */
+  siteUrl: string | null
+  /** The URL as printed, without scheme. */
+  siteLabel: string | null
+}
+
+export const DEFAULT_EMAIL_BRAND: EmailBrand = {
+  name: 'Place To Stand',
+  siteUrl: 'https://placetostandagency.com',
+  siteLabel: 'placetostandagency.com',
+}
 
 /**
  * Brand hex values, restated from `@pts/ui/brand` because this package carries
@@ -105,6 +119,8 @@ export type EmailLayoutArgs = {
   footerLead?: string
   /** Address a confused recipient should write to. */
   replyTo: string
+  /** Sender identity; Place To Stand when left out. */
+  brand?: EmailBrand
 }
 
 const DEFAULT_FOOTER_LEAD =
@@ -135,6 +151,7 @@ export function renderEmail(
     note,
     footerLead,
     replyTo,
+    brand,
   }: EmailLayoutArgs
 ): RenderedEmail {
   return {
@@ -156,6 +173,7 @@ export function renderEmail(
       note,
       footerLead,
       replyTo,
+      brand,
     }),
   }
 }
@@ -167,7 +185,7 @@ function renderText({
   note,
   footerLead,
   replyTo,
-}: Omit<EmailLayoutArgs, 'preheader' | 'label'>): string {
+}: Omit<EmailLayoutArgs, 'preheader' | 'label' | 'brand'>): string {
   const lines = [heading, '', ...paragraphs.flatMap(p => [p, ''])]
 
   if (action) {
@@ -192,6 +210,7 @@ function renderHtml({
   note,
   footerLead,
   replyTo,
+  brand,
 }: EmailLayoutArgs): string {
   const body = paragraphs
     .map(
@@ -216,6 +235,7 @@ function renderHtml({
                 ${smallPrint}`,
     footerLead,
     replyTo,
+    brand,
   })
 }
 
@@ -263,12 +283,29 @@ const MARK = `<table role="presentation" cellpadding="0" cellspacing="0" width="
                   </tr>
                 </table>`
 
-const LOGO = `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+/**
+ * Mark and wordmark. The blueprint mark is Place To Stand's own, so another
+ * business's mail shows its name alone.
+ */
+function renderLogo(brand: EmailBrand): string {
+  const isDefault = brand.name === DEFAULT_EMAIL_BRAND.name
+  const mark = isDefault
+    ? `<td width="20" style="width:20px;padding:0 10px 0 0;vertical-align:middle;line-height:0;font-size:0;">${MARK}</td>`
+    : ''
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
-                    <td width="20" style="width:20px;padding:0;vertical-align:middle;line-height:0;font-size:0;">${MARK}</td>
-                    <td style="padding-left:10px;vertical-align:middle;white-space:nowrap;font-family:${F.head};font-size:18px;line-height:1;font-weight:700;letter-spacing:-0.025em;color:${C.mastheadText};">${BRAND}</td>
+                    ${mark}
+                    <td style="vertical-align:middle;white-space:nowrap;font-family:${F.head};font-size:18px;line-height:1;font-weight:700;letter-spacing:-0.025em;color:${C.mastheadText};">${escapeHtml(brand.name)}</td>
                   </tr>
                 </table>`
+}
+
+function renderSiteLine(brand: EmailBrand): string {
+  const name = escapeHtml(brand.name)
+  if (!brand.siteUrl) return name
+  const label = escapeHtml(brand.siteLabel ?? brand.siteUrl)
+  return `${name} · <a href="${escapeHtml(brand.siteUrl)}" style="color:${C.faint};text-decoration:none;">${label}</a>`
+}
 
 type ShellArgs = {
   preheader: string
@@ -277,6 +314,7 @@ type ShellArgs = {
   inner: string
   footerLead?: string
   replyTo: string
+  brand?: EmailBrand
 }
 
 /**
@@ -290,6 +328,7 @@ function renderShell({
   inner,
   footerLead,
   replyTo,
+  brand = DEFAULT_EMAIL_BRAND,
 }: ShellArgs): string {
   const tag = label
     ? `<td align="right" style="vertical-align:middle;font-family:${F.mono};font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:${C.accent};">${escapeHtml(label)}</td>`
@@ -314,7 +353,7 @@ function renderShell({
               <td style="background:${C.ink};padding:20px 36px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="vertical-align:middle;">${LOGO}</td>
+                    <td style="vertical-align:middle;">${renderLogo(brand)}</td>
                     ${tag}
                   </tr>
                 </table>
@@ -332,7 +371,7 @@ function renderShell({
             </tr>
           </table>
           <p style="margin:20px 0 0;font-family:${F.mono};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${C.faint};">
-            ${BRAND} · <a href="${SITE_URL}" style="color:${C.faint};text-decoration:none;">${SITE_LABEL}</a>
+            ${renderSiteLine(brand)}
           </p>
         </td>
       </tr>
@@ -380,6 +419,8 @@ export type RichEmailLayoutArgs = {
   action?: EmailAction
   footerLead?: string
   replyTo: string
+  /** Sender identity; Place To Stand when left out. */
+  brand?: EmailBrand
 }
 
 /**
@@ -420,6 +461,7 @@ export function renderRichEmail(
     action,
     footerLead,
     replyTo,
+    brand,
   }: RichEmailLayoutArgs
 ): RenderedEmail {
   const { button, fallback } = renderAction(action)
@@ -440,6 +482,7 @@ export function renderRichEmail(
       inner: `${inlineStyles(bodyHtml, classStyles)}${button}${fallback}`,
       footerLead,
       replyTo,
+      brand,
     }),
   }
 }

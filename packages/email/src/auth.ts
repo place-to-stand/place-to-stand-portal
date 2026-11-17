@@ -1,4 +1,8 @@
-import type { RenderedEmail } from './layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  type EmailBrand,
+  type RenderedEmail,
+} from './layout'
 import { magicLinkEmail } from './templates/magic-link'
 import { passwordChangedEmail } from './templates/password-changed'
 import { passwordResetEmail } from './templates/password-reset'
@@ -10,13 +14,15 @@ import { passwordResetEmail } from './templates/password-reset'
  */
 export const AUTH_LINK_EXPIRY_MINUTES = 60
 
-/** How each portal is named in its sign-in mail. */
-export const PORTAL_NAMES = {
-  internal: 'the Place To Stand internal portal',
-  client: 'the Place To Stand client portal',
-} as const
+export type PortalName = 'internal' | 'client'
 
-export type PortalName = keyof typeof PORTAL_NAMES
+/** How each portal is named in its sign-in mail. */
+export function portalDisplayName(
+  portal: PortalName,
+  brand: EmailBrand = DEFAULT_EMAIL_BRAND
+): string {
+  return `the ${brand.name} ${portal} portal`
+}
 
 export type AuthEmail =
   | { kind: 'password-reset' | 'magic-link'; actionLink: string }
@@ -29,11 +35,12 @@ export type AuthEmail =
 export function renderAuthEmail(
   email: AuthEmail,
   portal: PortalName,
-  replyTo: string
+  replyTo: string,
+  brand: EmailBrand = DEFAULT_EMAIL_BRAND
 ): RenderedEmail {
-  const destination = PORTAL_NAMES[portal]
+  const destination = portalDisplayName(portal, brand)
   if (email.kind === 'password-changed') {
-    return passwordChangedEmail({ destination, replyTo })
+    return passwordChangedEmail({ destination, replyTo, brand })
   }
   const template =
     email.kind === 'password-reset' ? passwordResetEmail : magicLinkEmail
@@ -42,5 +49,6 @@ export function renderAuthEmail(
     destination,
     expiresInMinutes: AUTH_LINK_EXPIRY_MINUTES,
     replyTo,
+    brand,
   })
 }

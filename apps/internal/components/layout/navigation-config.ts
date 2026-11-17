@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 
 import type { Capability } from '@/lib/auth/capabilities'
 import {
+  IdCard,
   FileText,
   Home as HomeIcon,
   Palette,
@@ -123,6 +124,12 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Settings',
     items: [
+      {
+        href: '/settings/business',
+        capability: 'settings.business',
+        label: 'Business',
+        icon: IdCard,
+      },
       {
         href: '/settings/integrations',
         capability: 'integrations.manage',

@@ -4,6 +4,7 @@ import { generateInvoicePdf } from '@pts/pdf'
 
 import { buildSampleInvoice } from '@/lib/pdf/sample-invoice'
 import type { TemplateAudience } from '@/lib/templates/audience'
+import { getBusinessIdentity, invoiceIssuerFor } from '@/lib/business/identity'
 
 type PdfTemplateVariant = {
   /** Stable key used in the preview URL. */
@@ -107,5 +108,8 @@ export async function renderSamplePdf(
       : {}
   )
 
-  return generateInvoicePdf(invoice)
+  return generateInvoicePdf(
+    invoice,
+    invoiceIssuerFor(await getBusinessIdentity())
+  )
 }

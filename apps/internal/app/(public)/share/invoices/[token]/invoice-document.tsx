@@ -13,6 +13,8 @@ type Props = {
   invoice: InvoiceWithLineItems
   isPaid: boolean
   isVoid: boolean
+  /** Legal name and website, as the PDF footer prints them. */
+  issuerLine: string
 }
 
 /**
@@ -20,7 +22,12 @@ type Props = {
  * the PDF prints (`packages/pdf/src/invoice-pdf.ts`), so what a client sees
  * online matches what they download.
  */
-export function InvoiceDocument({ invoice, isPaid, isVoid }: Props) {
+export function InvoiceDocument({
+  invoice,
+  isPaid,
+  isVoid,
+  issuerLine,
+}: Props) {
   const lineItems = invoice.line_items.filter(item => !item.deleted_at)
   const hasTax = Boolean(invoice.tax_rate && Number(invoice.tax_rate) > 0)
   const issued = formatDate(invoice.issued_date)
@@ -105,7 +112,7 @@ export function InvoiceDocument({ invoice, isPaid, isVoid }: Props) {
       ) : null}
 
       <div className='border-email-rule text-email-muted text-micro sm:text-overline mt-7 flex justify-between border-t pt-3 font-mono tracking-[0.1em] uppercase sm:mt-12 sm:pt-3.5'>
-        <span>Place To Stand · placetostandagency.com</span>
+        <span>{issuerLine}</span>
         <span className='hidden sm:inline'>{invoice.invoice_number}</span>
       </div>
     </article>

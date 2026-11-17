@@ -3,8 +3,10 @@ import { cookies } from 'next/headers'
 
 import { AppShell } from '@/components/layout/app-shell'
 import { AvatarPreloader } from '@/components/layout/avatar-preloader'
+import { BusinessSetupBanner } from '@/components/layout/business-setup-banner'
 import { roleCan } from '@/lib/auth/capabilities'
 import { requirePage } from '@/lib/auth/session'
+import { brandPropsFor, getBusinessIdentity } from '@/lib/business/identity'
 import { fetchUnacknowledgedSubmissionCount } from '@/lib/data/form-submissions'
 import { listStaffWithPhotos } from '@/lib/queries/users'
 import { presenceRoomKey } from '@/lib/sheets/presence/room-key'
@@ -20,6 +22,7 @@ export default async function DashboardLayout({
   const user = await requirePage('portal.sign_in')
   // Started now so it runs alongside the reads below.
   const staffWithPhotosPromise = listStaffWithPhotos()
+  const businessPromise = getBusinessIdentity()
   // D6 (PRD 001): server-fetched unacknowledged count; refreshed via
   // revalidatePath('/', 'layout') from the submissions actions. Submissions
   // are admin-only, so SALES users get no badge.
@@ -33,6 +36,10 @@ export default async function DashboardLayout({
   // mode on first paint (the ui/sidebar primitive writes this cookie on toggle).
   const cookieStore = await cookies()
   const staffWithPhotos = await staffWithPhotosPromise
+  const business = await businessPromise
+  // Until an admin saves Settings → Business, the seeded details stand in.
+  const showSetupBanner =
+    !business.confirmedAt && roleCan(user.role, 'settings.business')
   const sidebarDefaultOpen = cookieStore.get('sidebar_state')?.value !== 'false'
 
   return (
@@ -41,6 +48,8 @@ export default async function DashboardLayout({
       unacknowledgedSubmissionsCount={unacknowledgedSubmissionsCount}
       sidebarDefaultOpen={sidebarDefaultOpen}
       presenceKey={presenceRoomKey()}
+      brand={brandPropsFor(business)}
+      banner={showSetupBanner ? <BusinessSetupBanner /> : null}
     >
       {children}
       <AvatarPreloader staff={staffWithPhotos} />

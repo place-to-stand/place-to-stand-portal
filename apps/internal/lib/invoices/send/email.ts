@@ -2,6 +2,7 @@ import 'server-only'
 
 import {
   invoiceEmail,
+  type EmailBrand,
   type InvoiceEmailArgs,
   type RenderedEmail,
 } from '@pts/email'
@@ -13,7 +14,11 @@ import { logActivity } from '@/lib/activity/logger'
 import { assertAdmin } from '@/lib/auth/permissions'
 import type { AppUser } from '@/lib/auth/session'
 import { sendEmail } from '@/lib/email/send'
-import { serverEnv } from '@/lib/env.server'
+import {
+  emailBrandFor,
+  getBusinessIdentity,
+  getEmailSender,
+} from '@/lib/business/identity'
 import { BadRequestError, NotFoundError } from '@/lib/errors/http'
 import { resolvePortalOrigin } from '@/lib/form-submissions/delivery/addresses'
 import {
@@ -111,9 +116,10 @@ export async function buildInvoiceEmailDraft(
   assertAdmin(user)
 
   const invoice = await loadEmailableInvoice(invoiceId)
-  const [clientContacts, staff] = await Promise.all([
+  const [clientContacts, staff, business] = await Promise.all([
     fetchContactsForClient(invoice.companyId),
     fetchActiveStaff(),
+    getBusinessIdentity(),
   ])
   // Only contacts with an email can be sent the invoice.
   const contacts = clientContacts.filter(
@@ -122,7 +128,7 @@ export async function buildInvoiceEmailDraft(
 
   const addressed = defaultRecipients(contacts)
   const greeting = firstName(addressed[0]?.name) ?? 'there'
-  const signOff = firstName(user.full_name) ?? 'Place To Stand'
+  const signOff = firstName(user.full_name) ?? business.name
   const amount = formatCurrency(invoice.total)
   const isResend = invoice.status !== 'DRAFT'
 
@@ -135,7 +141,12 @@ export async function buildInvoiceEmailDraft(
     clientName: invoice.clientName ?? 'Client',
     amountDue: amount,
     // A draft has no live link yet; the preview's button only needs an href.
-    facts: emailFacts(user, invoice, invoice.shareToken ?? 'preview'),
+    facts: emailFacts(
+      user,
+      invoice,
+      invoice.shareToken ?? 'preview',
+      emailBrandFor(business)
+    ),
     senderEmail: user.email.toLowerCase(),
     isResend,
     contacts: contacts.map(contact => ({
@@ -151,8 +162,8 @@ export async function buildInvoiceEmailDraft(
     // Resend leaves no copy in anyone's Sent folder, so the sender is copied.
     cc: [user.email.toLowerCase()],
     subject: isResend
-      ? `Reminder: invoice ${invoice.invoiceNumber} from Place To Stand`
-      : `Invoice ${invoice.invoiceNumber} from Place To Stand`,
+      ? `Reminder: invoice ${invoice.invoiceNumber} from ${business.name}`
+      : `Invoice ${invoice.invoiceNumber} from ${business.name}`,
     message: `Hi ${greeting},\n\n${opening}\n\nThanks,\n${signOff}`,
   }
 }
@@ -160,7 +171,8 @@ export async function buildInvoiceEmailDraft(
 function emailFacts(
   user: AppUser,
   invoice: SendableInvoice & { invoiceNumber: string },
-  shareToken: string
+  shareToken: string,
+  brand: EmailBrand
 ): InvoiceEmailFacts {
   return {
     clientName: invoice.clientName ?? 'Client',
@@ -170,6 +182,7 @@ function emailFacts(
     issuedDate: formatCalendarDate(invoice.issuedDate ?? todayIsoDate()) ?? '',
     viewUrl: `${resolvePortalOrigin()}/share/invoices/${shareToken}`,
     replyTo: user.email,
+    brand,
   }
 }
 
@@ -177,9 +190,13 @@ function renderFor(
   user: AppUser,
   invoice: SendableInvoice & { invoiceNumber: string },
   input: Pick<InvoiceEmailInput, 'subject' | 'message'>,
-  shareToken: string
+  shareToken: string,
+  brand: EmailBrand
 ): RenderedEmail {
-  return invoiceEmail({ ...emailFacts(user, invoice, shareToken), ...input })
+  return invoiceEmail({
+    ...emailFacts(user, invoice, shareToken, brand),
+    ...input,
+  })
 }
 
 /**
@@ -206,11 +223,12 @@ export async function emailInvoice(
 
   const invoice = await loadEmailableInvoice(invoiceId)
   const shareToken = await reserveShareToken(invoice)
-  const rendered = renderFor(user, invoice, input, shareToken)
+  const sender = await getEmailSender()
+  const rendered = renderFor(user, invoice, input, shareToken, sender.brand)
   const recipients = { to: input.to, cc: input.cc }
 
   await sendEmail({
-    from: `Place To Stand <${serverEnv.RESEND_FROM_EMAIL}>`,
+    from: sender.from,
     to: input.to,
     cc: input.cc.filter(email => !input.to.includes(email)),
     replyTo: user.email,

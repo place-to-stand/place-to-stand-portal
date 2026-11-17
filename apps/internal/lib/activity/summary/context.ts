@@ -55,7 +55,7 @@ export function formatActivityLog(
   context: ActivityContext
 ): string {
   const { project, client } = resolveProjectClientLabels(log, context)
-  // formatCalendarDate pins timestamps to the company timezone (Pacific).
+  // formatCalendarDate pins timestamps to the company timezone (Settings → Business).
   const formattedTimestamp = `${formatCalendarDate(log.created_at, {
     month: 'short',
     day: 'numeric',

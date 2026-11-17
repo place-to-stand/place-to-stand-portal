@@ -2025,6 +2025,56 @@ export const productCatalogItems = pgTable(
   ]
 )
 
+/**
+ * The install's own business: one row, read through `@pts/db/business`.
+ * The display name stays on the staff company (`companies.is_staff`); this
+ * holds everything else the portal prints about the business. Every install
+ * starts with Place To Stand's details; `confirmed_at` stays empty until an
+ * admin saves the Business page, and the portal shows a banner until then.
+ * Logo and icon are small images kept as data URLs, served by the app, so an
+ * install needs no storage bucket for them.
+ */
+export const businessSettings = pgTable(
+  'business_settings',
+  {
+    id: boolean().primaryKey().default(true).notNull(),
+    legalName: text('legal_name'),
+    website: text(),
+    addressLine1: text('address_line1'),
+    addressLine2: text('address_line2'),
+    city: text(),
+    region: text(),
+    postalCode: text('postal_code'),
+    country: text(),
+    phone: text(),
+    inboxEmail: text('inbox_email'),
+    sendingEmail: text('sending_email'),
+    bookingUrl: text('booking_url'),
+    timeZone: text('time_zone').default('America/Chicago').notNull(),
+    logoDataUrl: text('logo_data_url'),
+    iconDataUrl: text('icon_data_url'),
+    confirmedAt: timestamp('confirmed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    updatedBy: uuid('updated_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .default(sql`now()`)
+      .notNull(),
+  },
+  table => [
+    check('business_settings_single_row', sql`${table.id}`),
+    foreignKey({
+      columns: [table.updatedBy],
+      foreignColumns: [users.id],
+      name: 'business_settings_updated_by_fkey',
+    }),
+  ]
+)
+
 export const taxRates = pgTable('tax_rates', {
   id: uuid().defaultRandom().primaryKey().notNull(),
   state: varchar({ length: 2 }).notNull().unique(),

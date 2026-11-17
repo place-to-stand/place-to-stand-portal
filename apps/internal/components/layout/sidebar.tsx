@@ -37,13 +37,20 @@ import { filterNavGroupsForRole, homePathForRole } from '@/lib/auth/roles'
 
 const isDev = process.env.NODE_ENV === 'development'
 
+export type SidebarBrand = {
+  name: string
+  logoSrc: string | null
+  iconSrc: string | null
+}
+
 type Props = {
   user: AppUser
+  brand: SidebarBrand
   /** Count pills keyed by nav item href (e.g. unread submissions). */
   badges?: Record<string, number>
 }
 
-export function Sidebar({ user, badges }: Props) {
+export function Sidebar({ user, badges, brand }: Props) {
   const pathname = usePathname()
   const { state: sidebarState, setOpenMobile } = useSidebar()
   const { setOpen: setPaletteOpen } = useCommandPalette()
@@ -77,15 +84,18 @@ export function Sidebar({ user, badges }: Props) {
         <div className='flex flex-col items-center group-data-[collapsible=icon]:px-0'>
           <Link
             href={homePathForRole(user.role)}
-            aria-label='Place To Stand — home'
+            aria-label={`${brand.name} — home`}
             className='block'
           >
             <BrandLogo
               size='md'
               className='group-data-[collapsible=icon]:hidden'
+              {...brand}
             />
             <BrandLogoMark
               size={20}
+              name={brand.name}
+              iconSrc={brand.iconSrc}
               className='mx-auto hidden group-data-[collapsible=icon]:flex'
             />
           </Link>

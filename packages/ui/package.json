@@ -24,6 +24,7 @@
     "./confirm-dialog": "./src/confirm-dialog.tsx",
     "./context-menu": "./src/context-menu.tsx",
     "./dates": "./src/dates.ts",
+    "./company-time-zone": "./src/company-time-zone.tsx",
     "./dialog": "./src/dialog.tsx",
     "./dropdown-menu": "./src/dropdown-menu.tsx",
     "./empty-state": "./src/empty-state.tsx",

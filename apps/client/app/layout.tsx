@@ -2,9 +2,11 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Space_Grotesk } from 'next/font/google'
 import '@/styles/globals.css'
 
+import { CompanyTimeZone } from '@pts/ui/company-time-zone'
 import { TooltipProvider } from '@pts/ui/tooltip'
 
 import { ThemeProvider } from '@/components/providers/theme-provider'
+import { getBusinessOrNull } from '@/lib/business'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -34,11 +36,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Sets the business time zone for the server's date formatters too.
+  const business = await getBusinessOrNull()
+
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
@@ -62,6 +67,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} font-sans antialiased`}
       >
         <ThemeProvider>
+          {business ? <CompanyTimeZone timeZone={business.timeZone} /> : null}
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
       </body>

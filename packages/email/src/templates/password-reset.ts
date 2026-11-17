@@ -1,4 +1,10 @@
-import { formatExpiryWindow, renderEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  formatExpiryWindow,
+  renderEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 
 export type PasswordResetEmailArgs = {
   /** One-time link from `admin.generateLink({ type: 'recovery' })`. */
@@ -8,6 +14,8 @@ export type PasswordResetEmailArgs = {
   /** Mirrors Supabase's `otp_expiry`, so the copy can't promise the wrong window. */
   expiresInMinutes: number
   replyTo: string
+  /** Sender identity; Place To Stand when left out. */
+  brand?: EmailBrand
 }
 
 export function passwordResetEmail({
@@ -15,8 +23,9 @@ export function passwordResetEmail({
   destination,
   expiresInMinutes,
   replyTo,
+  brand = DEFAULT_EMAIL_BRAND,
 }: PasswordResetEmailArgs): RenderedEmail {
-  return renderEmail('Reset your Place To Stand password', {
+  return renderEmail(`Reset your ${brand.name} password`, {
     preheader: `Choose a new password for ${destination}.`,
     label: 'Password reset',
     heading: 'Reset your password',
@@ -32,5 +41,6 @@ export function passwordResetEmail({
     // hours later — so the copy says what to do next, not only when it dies.
     note: `This link works once and expires in ${formatExpiryWindow(expiresInMinutes)}. If it has already expired, request a new one from the sign-in page.`,
     replyTo,
+    brand,
   })
 }

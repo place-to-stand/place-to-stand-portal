@@ -6,7 +6,9 @@ import {
   magicLinkEmail,
   passwordChangedEmail,
   passwordResetEmail,
+  portalDisplayName,
   portalInviteEmail,
+  type EmailBrand,
   type RenderedEmail,
 } from '@pts/email'
 import { serverEnv } from '@/lib/env.server'
@@ -56,8 +58,6 @@ export type EmailTemplateEntry = {
  * `otp_expiry` (3600s) so the copy states the window the token actually has.
  */
 const LINK_EXPIRY_MINUTES = 60
-const INTERNAL_DESTINATION = 'the Place To Stand internal portal'
-const CLIENT_DESTINATION = 'the Place To Stand client portal'
 
 const INTERNAL_SDK_DELIVERY =
   'Resend SDK through lib/email/send.ts; routed to Mailpit outside production'
@@ -69,9 +69,15 @@ const CLIENT_HTTP_DELIVERY =
  * show exactly what recipients get. Sample values are obviously fake on
  * purpose — nothing here should be mistaken for a real link or credential.
  */
-export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
-  const from = `Place To Stand <${serverEnv.RESEND_FROM_EMAIL}>`
-  const replyTo = serverEnv.RESEND_REPLY_TO_EMAIL
+export function buildEmailTemplateCatalog({
+  from,
+  replyTo,
+  brand,
+}: {
+  from: string
+  replyTo: string
+  brand: EmailBrand
+}): EmailTemplateEntry[] {
   const internalOrigin = new URL(serverEnv.GOOGLE_REDIRECT_URI).origin
   const clientOrigin = serverEnv.CLIENT_PORTAL_URL
 
@@ -80,11 +86,11 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
   ): EmailTemplateVariant[] => [
     {
       audience: 'team',
-      sample: render(INTERNAL_DESTINATION, internalOrigin),
+      sample: render(portalDisplayName('internal', brand), internalOrigin),
     },
     {
       audience: 'client',
-      sample: render(CLIENT_DESTINATION, clientOrigin),
+      sample: render(portalDisplayName('client', brand), clientOrigin),
     },
   ]
 
@@ -111,6 +117,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
           destination,
           expiresInMinutes: LINK_EXPIRY_MINUTES,
           replyTo,
+          brand,
         })
       ),
     },
@@ -135,6 +142,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
           destination,
           expiresInMinutes: LINK_EXPIRY_MINUTES,
           replyTo,
+          brand,
         })
       ),
     },
@@ -157,7 +165,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
       attachments: null,
       source: 'packages/email/src/templates/password-changed.ts',
       variants: authVariants(destination =>
-        passwordChangedEmail({ destination, replyTo })
+        passwordChangedEmail({ destination, replyTo, brand })
       ),
     },
     {
@@ -187,6 +195,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
             signInUrl: `${clientOrigin}/sign-in`,
             expiresInMinutes: LINK_EXPIRY_MINUTES,
             replyTo,
+            brand,
           }),
         },
       ],
@@ -217,6 +226,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
             temporaryPassword: 'sample-temporary-password',
             signInUrl: `${internalOrigin}/sign-in`,
             replyTo,
+            brand,
           }),
         },
       ],
@@ -245,7 +255,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
         {
           audience: 'client',
           sample: invoiceEmail({
-            subject: 'Invoice INV-0042 from Place To Stand',
+            subject: `Invoice INV-0042 from ${brand.name}`,
             clientName: 'Sample Co',
             invoiceNumber: 'INV-0042',
             amountDue: '$1,000.00',
@@ -254,6 +264,7 @@ export function buildEmailTemplateCatalog(): EmailTemplateEntry[] {
               "Hi Jordan,\n\nHere's invoice INV-0042 for $1,000.00. You can view the details and pay online with the button below.\n\nThanks,\nAlex",
             viewUrl: `${internalOrigin}/share/invoices/sample-token`,
             replyTo: 'admin@example.com',
+            brand,
           }),
         },
       ],

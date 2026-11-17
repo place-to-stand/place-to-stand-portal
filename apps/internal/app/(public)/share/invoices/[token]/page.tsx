@@ -7,6 +7,7 @@ import {
   recordInvoiceView,
 } from '@/lib/queries/invoices'
 import { getSession } from '@/lib/auth/session'
+import { getBusinessIdentity } from '@/lib/business/identity'
 import { invoiceViewedEvent } from '@/lib/activity/events'
 import { logActivity } from '@/lib/activity/logger'
 
@@ -16,14 +17,17 @@ export async function generateMetadata({
   params,
 }: PageProps<'/share/invoices/[token]'>): Promise<Metadata> {
   const { token } = await params
-  const invoice = await getInvoiceByShareToken(token)
+  const [invoice, business] = await Promise.all([
+    getInvoiceByShareToken(token),
+    getBusinessIdentity(),
+  ])
 
   return {
     // Absolute: a client-facing page, so no "Portal" suffix from the template.
     title: {
       absolute: invoice?.invoice_number
-        ? `Invoice ${invoice.invoice_number} | Place To Stand`
-        : 'Invoice | Place To Stand',
+        ? `Invoice ${invoice.invoice_number} | ${business.name}`
+        : `Invoice | ${business.name}`,
     },
     robots: { index: false, follow: false },
   }

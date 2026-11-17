@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/session'
+import { getBusiness, invoiceIssuerFor } from '@/lib/business'
 import { fetchClientInvoiceForPdf } from '@/lib/data/invoices'
 import { generateInvoicePdf } from '@pts/pdf'
 
@@ -65,7 +66,10 @@ export async function GET(
   try {
     // No shareUrl: the PDF's "View and pay online" footer is for the emailed
     // copy, and is noise for a reader who is already signed into the portal.
-    pdf = await generateInvoicePdf(invoice)
+    pdf = await generateInvoicePdf(
+      invoice,
+      invoiceIssuerFor(await getBusiness())
+    )
   } catch (error) {
     console.error(
       '[invoice-pdf] Failed to generate PDF for invoice',

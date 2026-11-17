@@ -5,6 +5,7 @@ export {
   type EmailListItem,
 } from './blocks'
 export {
+  DEFAULT_EMAIL_BRAND,
   EMAIL_COLORS,
   EMAIL_FONTS,
   escapeHtml,
@@ -12,6 +13,7 @@ export {
   renderEmail,
   renderRichEmail,
   type EmailAction,
+  type EmailBrand,
   type EmailLayoutArgs,
   type RichEmailLayoutArgs,
   type RenderedEmail,
@@ -24,8 +26,9 @@ export {
 export * from './templates/index'
 export {
   AUTH_LINK_EXPIRY_MINUTES,
-  PORTAL_NAMES,
+  portalDisplayName,
   renderAuthEmail,
   type AuthEmail,
   type PortalName,
 } from './auth'
+export { formatSender, quoteDisplayName } from './sender'

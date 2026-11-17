@@ -38,8 +38,22 @@ const formatDate = (date: string | null): string | null =>
 const formatStampDate = (timestamp: string | null): string | null =>
   formatCalendarDate(timestamp)
 
+/** The business the invoice is from (Settings → Business). */
+export type InvoiceIssuer = {
+  name: string
+  legalName: string
+  websiteLabel: string | null
+}
+
+export const DEFAULT_INVOICE_ISSUER: InvoiceIssuer = {
+  name: 'Place To Stand',
+  legalName: 'Place To Stand',
+  websiteLabel: 'placetostandagency.com',
+}
+
 export async function generateInvoicePdf(
-  invoice: InvoiceWithLineItems
+  invoice: InvoiceWithLineItems,
+  issuer: InvoiceIssuer = DEFAULT_INVOICE_ISSUER
 ): Promise<Buffer> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -72,7 +86,10 @@ export async function generateInvoicePdf(
   // Header: logo, then the invoice number with any status stamp beside it
   // ---------------------------------------------------------------------------
 
-  drawLogo(doc, MARGIN_X, y)
+  drawLogo(doc, MARGIN_X, y, {
+    name: issuer.name,
+    showMark: issuer.name === DEFAULT_INVOICE_ISSUER.name,
+  })
   y += (24 + 56) * PX
 
   setType(doc, FONTS.label, 11, COLORS.accentInk)
@@ -280,7 +297,7 @@ export async function generateInvoicePdf(
 
     drawLabel(
       doc,
-      'Place To Stand · placetostandagency.com',
+      [issuer.legalName, issuer.websiteLabel].filter(Boolean).join(' · '),
       MARGIN_X,
       baseline
     )

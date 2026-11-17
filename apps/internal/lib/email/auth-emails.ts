@@ -2,7 +2,7 @@ import 'server-only'
 
 import { renderAuthEmail, type AuthEmail, type PortalName } from '@pts/email'
 
-import { serverEnv } from '@/lib/env.server'
+import { getEmailSender } from '@/lib/business/identity'
 import { sendEmail } from '@/lib/email/send'
 
 /** Which portal the link opens: an admin can reset a client's password here. */
@@ -36,10 +36,10 @@ async function deliver(
   auth: AuthEmail,
   portal: PortalName = 'internal'
 ) {
-  const replyTo = serverEnv.RESEND_REPLY_TO_EMAIL
-  const email = renderAuthEmail(auth, portal, replyTo)
+  const { from, replyTo, brand } = await getEmailSender()
+  const email = renderAuthEmail(auth, portal, replyTo, brand)
   await sendEmail({
-    from: `Place To Stand <${serverEnv.RESEND_FROM_EMAIL}>`,
+    from,
     to,
     replyTo,
     subject: email.subject,

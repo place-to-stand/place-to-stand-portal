@@ -5,6 +5,8 @@ import { Analytics } from '@vercel/analytics/react'
 import { AppProviders } from '@/components/providers/app-providers'
 import { SupabaseListener } from '@/components/providers/supabase-listener'
 import { ViewportScrollReset } from '@/components/layout/viewport-scroll-reset'
+import { CompanyTimeZone } from '@pts/ui/company-time-zone'
+import { getBusinessIdentityOrDefaults } from '@/lib/business/identity'
 import { cn } from '@/lib/utils'
 import { serverEnv } from '@/lib/env.server'
 
@@ -41,6 +43,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Sets the business time zone for the server's date formatters too.
+  const business = await getBusinessIdentityOrDefaults()
+
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
@@ -74,6 +79,7 @@ export default async function RootLayout({
         )}
       >
         <AppProviders>
+          {business ? <CompanyTimeZone timeZone={business.timeZone} /> : null}
           <SupabaseListener />
           <ViewportScrollReset />
           {children}

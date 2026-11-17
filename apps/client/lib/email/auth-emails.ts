@@ -1,12 +1,14 @@
 import 'server-only'
 
 import {
+  formatSender,
   renderAuthEmail,
   sendEmail,
   type AuthEmail,
   type TransportConfig,
 } from '@pts/email'
 
+import { emailBrandFor, getBusiness } from '@/lib/business'
 import { getEnv } from '@/lib/env.server'
 
 export async function sendPasswordResetEmail(
@@ -47,12 +49,21 @@ export function assertAuthEmailConfigured(): void {
 }
 
 async function deliver(to: string, auth: AuthEmail): Promise<void> {
-  const { from, replyTo, transport } = resolveMailConfig()
-  const email = renderAuthEmail(auth, 'client', replyTo)
+  const { from, replyTo: envReplyTo, transport } = resolveMailConfig()
+  const business = await getBusiness()
+  // Same rule as the internal portal: the Business page's addresses win.
+  const replyTo = business.inboxEmail ?? envReplyTo
+  const sender = business.sendingEmail ?? from
+  const email = renderAuthEmail(
+    auth,
+    'client',
+    replyTo,
+    emailBrandFor(business)
+  )
 
   await sendEmail(
     {
-      from: `Place To Stand <${from}>`,
+      from: formatSender(business.name, sender),
       to,
       replyTo,
       subject: email.subject,

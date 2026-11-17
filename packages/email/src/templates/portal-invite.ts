@@ -1,4 +1,10 @@
-import { formatExpiryWindow, renderEmail, type RenderedEmail } from '../layout'
+import {
+  DEFAULT_EMAIL_BRAND,
+  formatExpiryWindow,
+  renderEmail,
+  type EmailBrand,
+  type RenderedEmail,
+} from '../layout'
 
 export type PortalInviteEmailArgs = {
   fullName?: string | null
@@ -9,6 +15,8 @@ export type PortalInviteEmailArgs = {
   /** Mirrors Supabase's `otp_expiry`, so the copy can't promise the wrong window. */
   expiresInMinutes: number
   replyTo: string
+  /** Sender identity; Place To Stand when left out. */
+  brand?: EmailBrand
 }
 
 /**
@@ -25,15 +33,16 @@ export function portalInviteEmail({
   signInUrl,
   expiresInMinutes,
   replyTo,
+  brand = DEFAULT_EMAIL_BRAND,
 }: PortalInviteEmailArgs): RenderedEmail {
   const greeting = fullName?.trim() ? `Hi ${fullName.trim()}, you've` : "You've"
 
-  return renderEmail("You're invited to the Place To Stand portal", {
-    preheader: 'Your sign-in link for the Place To Stand client portal.',
+  return renderEmail(`You're invited to the ${brand.name} portal`, {
+    preheader: `Your sign-in link for the ${brand.name} client portal.`,
     label: 'Client portal',
     heading: "You're invited to the client portal",
     paragraphs: [
-      `${greeting} been invited to the Place To Stand client portal. Use the button below to sign in — no password needed.`,
+      `${greeting} been invited to the ${brand.name} client portal. Use the button below to sign in — no password needed.`,
       "Once you're in, you can choose how you'd like to sign in from then on: a password, your Google account, or an emailed link each time.",
     ],
     action: {
@@ -45,5 +54,6 @@ export function portalInviteEmail({
     // link" issues a fresh one — the account already exists by this point.
     note: `This link works once and expires in ${formatExpiryWindow(expiresInMinutes)}. If it has, go to ${signInUrl} and choose "Email me a sign-in link" for a fresh one.`,
     replyTo,
+    brand,
   })
 }

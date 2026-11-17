@@ -290,6 +290,14 @@ export const CAPABILITIES = {
   },
 
   // Settings
+  'settings.business': {
+    area: 'Settings',
+    label: 'Business settings',
+    description:
+      'Name, logo, address, email addresses and time zone the portal uses.',
+    roles: ADMIN_ONLY,
+    surfaces: ['app'],
+  },
   'settings.users': {
     area: 'Settings',
     label: 'Manage users and roles',
