@@ -24,6 +24,7 @@ import {
   BOARD_GRID_CLASS,
   boardGridStyle,
 } from '@/components/board/board-column'
+import { useMarkDone } from '@/components/board/use-mark-done'
 import { useKanbanDrag, type KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { BoardBulkBar } from '@/components/board/board-bulk-bar'
 import {
@@ -194,6 +195,15 @@ export function MyTasksBoard({
   // Send to top / bottom of a selected card moves the column's selection.
   const sendTask = (move: KanbanMove<MyTaskStatus>) =>
     handleDrop({ ...move, group: selection.columnGroup(move.id) ?? undefined })
+  // Mark as done of a selected card marks the whole selection.
+  const markDone = useMarkDone({
+    columns: MY_TASK_COLUMN_IDS,
+    idsIn: status => tasksIn(status).map(task => task.id),
+    done: 'DONE',
+    onMove: handleDrop,
+    nameOf: id => taskLookup.get(id)?.task.title,
+  })
+  const markDoneFor = (id: string) => markDone(selection.dragGroup(id) ?? [id])
   const drag = useKanbanDrag({
     columns: MY_TASK_COLUMN_IDS,
     items: tasksIn,
@@ -233,6 +243,7 @@ export function MyTasksBoard({
                         tasks={drag.itemsFor(column.id)}
                         canManage
                         onMoveTask={sendTask}
+                        markDoneFor={markDoneFor}
                         renderAssignees={renderAssignees}
                         onEditTask={task => onOpenTask(task.id)}
                         activeTaskId={activeTaskId}
@@ -276,6 +287,7 @@ export function MyTasksBoard({
               nameOf={id => taskLookup.get(id)?.task.title}
               dueOnOf={id => taskLookup.get(id)?.task.due_on ?? null}
               groupOf={id => taskGroup(taskLookup.get(id)?.task)}
+              markDoneFor={markDoneFor}
             />
           </div>
         </div>

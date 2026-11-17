@@ -3,7 +3,13 @@
 import { useState } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { parseISO } from 'date-fns'
-import { CalendarDays, CalendarX2, ChevronDown, UserRoundX } from 'lucide-react'
+import {
+  CalendarDays,
+  CalendarX2,
+  ChevronDown,
+  CircleCheck,
+  UserRoundX,
+} from 'lucide-react'
 
 import { Button } from '@pts/ui/button'
 import { Calendar } from '@pts/ui/calendar'
@@ -55,6 +61,11 @@ type BoardBulkBarProps = {
       dueOnOf: (id: string) => string | null
       /** The task's project (or lead): who can take it depends on it. */
       groupOf: (id: string) => string
+      /**
+       * Mark as done for a card and the selection it belongs to (the
+       * board's `useMarkDone`); null when they are all done already.
+       */
+      markDoneFor?: (id: string) => (() => void) | null
     }
   | { entity: 'lead' }
 )
@@ -96,9 +107,49 @@ export function BoardBulkBar(props: BoardBulkBarProps) {
           {props.entity === 'task' ? (
             <DueDateMenu run={run} disabled={pending} dueOnOf={props.dueOnOf} />
           ) : null}
+          {props.entity === 'task' && props.markDoneFor ? (
+            <MarkDoneButton
+              markDone={firstOf(selection.ids, props.markDoneFor)}
+              disabled={pending}
+            />
+          ) : null}
         </>
       )}
     />
+  )
+}
+
+/** The action for the selection, through its first card. */
+function firstOf(
+  ids: ReadonlySet<string>,
+  markDoneFor: (id: string) => (() => void) | null
+) {
+  const [first] = ids
+  return first ? markDoneFor(first) : null
+}
+
+/**
+ * Moves the selected tasks to the top of Done, as dragging them there
+ * would. Disabled when they are all done already.
+ */
+function MarkDoneButton({
+  markDone,
+  disabled,
+}: {
+  markDone: (() => void) | null
+  disabled: boolean
+}) {
+  return (
+    <Button
+      type='button'
+      variant='outline'
+      size='sm'
+      disabled={disabled || !markDone}
+      onClick={() => markDone?.()}
+    >
+      <CircleCheck />
+      Mark as done
+    </Button>
   )
 }
 

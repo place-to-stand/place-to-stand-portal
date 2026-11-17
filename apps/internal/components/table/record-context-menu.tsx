@@ -1,10 +1,11 @@
 'use client'
 
-import { useRef, type ReactElement } from 'react'
+import { useRef, useState, type ReactElement } from 'react'
 import {
   Archive,
   ArrowDownToLine,
   ArrowUpToLine,
+  CircleCheck,
   Copy,
   Pencil,
   RefreshCw,
@@ -83,6 +84,12 @@ type RecordContextMenuProps = {
    * date". Omit for viewers who can't edit.
    */
   dueDate?: DueDateMenuConfig
+  /**
+   * Adds "Mark as done" (task board cards): the same move as dragging the
+   * card, or the selection it belongs to, to the top of Done. Read when the
+   * menu opens; null there disables the item (already done).
+   */
+  markDone?: () => (() => void) | null
   /** Adds Send to top and Send to bottom (cards on a board). */
   move?: EdgeMoveMenuConfig
   /** The list's archive handler (its confirm dialog). Omit when archived. */
@@ -166,6 +173,7 @@ function RecordContextMenuItems({
   onDuplicate,
   assign,
   dueDate,
+  markDone,
   move,
   onArchive,
   onRestore,
@@ -222,9 +230,10 @@ function RecordContextMenuItems({
           onPicked={closeMenu}
         />
       ) : null}
+      {markDone ? <MarkDoneItem markDone={markDone} /> : null}
       {move ? (
         <>
-          {editable || canDuplicate || assign || dueDate ? (
+          {editable || canDuplicate || assign || dueDate || markDone ? (
             <ContextMenuSeparator />
           ) : null}
           <ContextMenuItem
@@ -243,7 +252,7 @@ function RecordContextMenuItems({
           </ContextMenuItem>
         </>
       ) : null}
-      {(editable || canDuplicate || assign || dueDate || move) &&
+      {(editable || canDuplicate || assign || dueDate || markDone || move) &&
       (onArchive || onRestore) ? (
         <ContextMenuSeparator />
       ) : null}
@@ -269,5 +278,16 @@ function RecordContextMenuItems({
         </p>
       ) : null}
     </>
+  )
+}
+
+/** Read once per opening, so a card already in Done shows it disabled. */
+function MarkDoneItem({ markDone }: { markDone: () => (() => void) | null }) {
+  const [run] = useState(() => markDone())
+  return (
+    <ContextMenuItem disabled={!run} onClick={() => run?.()}>
+      <CircleCheck />
+      Mark as done
+    </ContextMenuItem>
   )
 }

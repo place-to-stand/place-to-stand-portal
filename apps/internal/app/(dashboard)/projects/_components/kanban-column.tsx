@@ -40,6 +40,8 @@ type KanbanColumnProps = {
    * to bottom to each card's right-click menu (with `canManage`).
    */
   onMoveTask?: (move: KanbanMove<BoardColumnId>) => void
+  /** A card's Mark as done (task boards): null when it is done already. */
+  markDoneFor?: (id: string) => (() => void) | null
   renderAssignees: (
     task: TaskWithRelations
   ) => Array<{ id: string; name: string; avatarUrl: string | null }>
@@ -67,6 +69,7 @@ export function KanbanColumn({
   tasks,
   canManage,
   onMoveTask,
+  markDoneFor,
   renderAssignees,
   onEditTask,
   activeTaskId,
@@ -166,6 +169,11 @@ export function KanbanColumn({
                       moveTask,
                       selection?.columnGroup(task.id) ?? null
                     )
+                  : undefined
+              }
+              markDone={
+                canManage && markDoneFor
+                  ? () => markDoneFor(task.id)
                   : undefined
               }
             />
