@@ -61,7 +61,7 @@ const SERVICES: Record<
   },
   marketing_forms: {
     name: 'Website forms',
-    // eslint-disable-next-line pts/copy -- the website's contact form
+    // oxlint-disable-next-line pts/copy -- the website's contact form
     purpose: 'Contact, audit and subscribe submissions',
     icon: <FileInput className='size-4' />,
   },

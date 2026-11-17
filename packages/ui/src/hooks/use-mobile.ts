@@ -15,7 +15,7 @@ export function useIsMobile(breakpoint = 768) {
       setIsMobile(window.innerWidth < breakpoint)
     }
     mql.addEventListener('change', onChange)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- the width is only known after hydration (see above)
+    // oxlint-disable-next-line react-compiler/set-state-in-effect -- the width is only known after hydration (see above)
     setIsMobile(window.innerWidth < breakpoint)
     return () => mql.removeEventListener('change', onChange)
   }, [breakpoint])

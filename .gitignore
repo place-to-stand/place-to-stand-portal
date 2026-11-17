@@ -40,6 +40,9 @@ next-env.d.ts
 # turbo
 .turbo
 
+# prettier --cache (npm run format, format:check)
+.cache
+
 # supabase
 supabase/seed.sql
 supabase/.temp/
@@ -58,3 +61,6 @@ Screenshot*.png
 **/scripts/migrate/data/
 **/scripts/migrate/data-transformed/
 **/scripts/migrate/validation/
+
+# lint-config tests write temporary configs here while they run
+packages/lint-config/tests/.tmp-*

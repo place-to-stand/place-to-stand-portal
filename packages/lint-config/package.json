@@ -1,0 +1,30 @@
+{
+  "name": "@pts/lint-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": "./base.mjs",
+    "./next": "./next.mjs",
+    "./plugin": "./plugin.mjs",
+    "./to-oxlint": "./to-oxlint.mjs",
+    "./presets": "./presets.mjs"
+  },
+  "scripts": {
+    "lint": "pts-lint && node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@next/eslint-plugin-next": "^16.4.3",
+    "@typescript-eslint/eslint-plugin": "^8.72.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2006",
+    "typescript-7": "npm:typescript@^7.0.2"
+  },
+  "bin": {
+    "pts-lint": "./bin/lint.mjs",
+    "tsc7": "./bin/tsc7.mjs"
+  }
+}

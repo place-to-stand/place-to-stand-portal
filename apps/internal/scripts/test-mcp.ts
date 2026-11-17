@@ -74,7 +74,7 @@ function base64url(buffer: Buffer): string {
  * Tool output is asserted field by field below, so a loose shape keeps those
  * reads short; the server's own types are the contract, not this script.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- tool output is asserted field by field; the server's types are the contract
+// oxlint-disable-next-line ts-js/no-explicit-any -- tool output is asserted field by field; the server's types are the contract
 type Loose = any
 
 /** Every OAuth client this run registers, deleted in cleanup. */

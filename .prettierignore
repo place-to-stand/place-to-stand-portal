@@ -8,5 +8,5 @@ package-lock.json
 
 # Written by tools at run time.
 .claude/pts-session-log.json
-# Written by eslint --prune-suppressions, in its own layout.
-**/eslint-suppressions.json
+# Written by pts-lint --prune-suppressions, in its own layout.
+**/lint-suppressions.json

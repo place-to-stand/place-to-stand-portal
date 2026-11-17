@@ -7,20 +7,20 @@
  * **Rules** paragraph or bullet list in docs/design-system/components/*.md,
  * and fails on a rule that doesn't end with a guard:
  *
- *   (guard: eslint `pts/class-names`)
+ *   (guard: lint `pts/class-names`)
  *   (guard: scripts/check-entities.mjs)
- *   (guard: eslint `pts/copy`; review)
+ *   (guard: lint `pts/copy`; review)
  *   (guard: types)             ← a component's props make it impossible
  *   (guard: review)            ← can't be automated: allowed, but explicit
  *
- * A `pts/*` rule must exist in packages/eslint-config/plugin.mjs, and a
+ * A `pts/*` rule must exist in packages/lint-config/plugin.mjs, and a
  * script path must exist on disk.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { pts } from '../packages/eslint-config/plugin.mjs'
+import { pts } from '../packages/lint-config/plugin.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const docs = join(root, 'docs/design-system')
@@ -78,17 +78,17 @@ for (const { where, text } of rules) {
   const match = text.trim().match(GUARD)
   if (!match) {
     errors.push(
-      `${where}: no guard. End it with (guard: eslint \`rule-id\`), (guard: types), (guard: scripts/<check>.mjs) or (guard: review).`
+      `${where}: no guard. End it with (guard: lint \`rule-id\`), (guard: types), (guard: scripts/<check>.mjs) or (guard: review).`
     )
     continue
   }
   for (const part of match[1].split(';').map(p => p.trim())) {
-    const eslint = part.match(/^eslint `([^`]+)`$/)
-    if (eslint) {
-      const id = eslint[1]
+    const lint = part.match(/^lint `([^`]+)`$/)
+    if (lint) {
+      const id = lint[1]
       if (id.startsWith('pts/') && !pts.rules[id.slice(4)]) {
         errors.push(
-          `${where}: eslint rule ${id} doesn't exist in packages/eslint-config/plugin.mjs`
+          `${where}: lint rule ${id} doesn't exist in packages/lint-config/plugin.mjs`
         )
       }
     } else if (/^scripts\/[\w-]+\.mjs$/.test(part)) {
@@ -96,7 +96,7 @@ for (const { where, text } of rules) {
         errors.push(`${where}: ${part} doesn't exist`)
     } else if (part !== 'review' && part !== 'types') {
       errors.push(
-        `${where}: unknown guard "${part}" (use eslint \`id\`, types, scripts/<check>.mjs or review)`
+        `${where}: unknown guard "${part}" (use lint \`id\`, types, scripts/<check>.mjs or review)`
       )
     }
   }

@@ -12,7 +12,7 @@ export type FormSubmissionStatus =
 
 export const FORM_SUBMISSION_KIND_LABELS: Record<FormSubmissionKind, string> = {
   audit: 'Audit',
-  contact: 'Contact', // eslint-disable-line pts/copy -- the website's contact form
+  contact: 'Contact', // oxlint-disable-line pts/copy -- the website's contact form
   subscribe: 'Subscribe',
 }
 

@@ -12,8 +12,8 @@
     "./throttle": "./src/throttle.ts"
   },
   "scripts": {
-    "type-check": "tsc --noEmit",
-    "lint": "eslint --max-warnings=0"
+    "type-check": "tsc7 --noEmit",
+    "lint": "pts-lint"
   },
   "dependencies": {
     "@pts/db": "*"
@@ -24,7 +24,7 @@
     "next": "^16.4.3"
   },
   "devDependencies": {
-    "@pts/eslint-config": "^0.1.0",
+    "@pts/lint-config": "^0.1.0",
     "@types/node": "^26.6.5",
     "typescript": "^6.0.3"
   }

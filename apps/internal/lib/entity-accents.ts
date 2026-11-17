@@ -2,7 +2,7 @@
  * The entity registry: the one place each kind of record gets its name, its
  * icon and its colour. The sidebar, sheets, badges, list cells, the activity
  * feed and /design all read from here; nothing else imports an entity icon
- * from lucide-react or writes an entity colour (eslint and
+ * from lucide-react or writes an entity colour (lint and
  * scripts/check-entities.mjs enforce it). Documented in
  * docs/design-system/README.md and components/sheet.md.
  *
@@ -12,7 +12,7 @@
  * written out literally (never interpolated) so Tailwind's scanner sees them.
  */
 
-/* eslint-disable no-restricted-imports -- the registry owns these icons */
+/* oxlint-disable no-restricted-imports -- the registry owns these icons */
 import {
   Building2,
   Clock,
@@ -26,7 +26,7 @@ import {
   Receipt,
   type LucideIcon,
 } from 'lucide-react'
-/* eslint-enable no-restricted-imports -- closes the registry-owned icon import above */
+/* oxlint-enable no-restricted-imports -- closes the registry-owned icon import above */
 
 import { withStateMark } from './entity-state-icon'
 
