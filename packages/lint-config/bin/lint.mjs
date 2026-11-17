@@ -19,8 +19,8 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join, matchesGlob, relative, resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 export const SUPPRESSIONS_FILE = 'lint-suppressions.json'
 
@@ -96,6 +96,51 @@ export function suppressionsFor(problems) {
   )
 }
 
+// A disable comment that names no rule. The eslint-comments rules that ban it
+// run as a JS plugin, so the comment would switch them off along with
+// everything else: it is caught here instead, outside Oxlint.
+const BLANKET_DISABLE =
+  /^[\t ]*\{?\/(?:\*|\/)\s*(?:eslint|oxlint)-disable(?=\s*(?:\*\/|--|$))/gm
+const SOURCE = /\.(?:[cm]?[jt]sx?)$/
+
+/** Problems for every blanket disable comment in the files Oxlint lints. */
+export function blanketDisables(file, text) {
+  const problems = []
+  for (const match of text.matchAll(BLANKET_DISABLE)) {
+    const before = text.slice(0, match.index).split('\n')
+    problems.push({
+      file,
+      line: before.length,
+      column: match[0].indexOf('/') + 1,
+      ruleId: 'pts/no-unlimited-disable',
+      severity: 'error',
+      message: 'Name the rules this comment disables.',
+    })
+  }
+  return problems
+}
+
+async function scanBlanketDisables(cwd, files) {
+  const { default: config } = await import(
+    pathToFileURL(join(cwd, 'oxlint.config.mjs')).href
+  )
+  const ignores = config.ignorePatterns ?? []
+  const candidates = files.length
+    ? files
+    : spawnSync('git', ['ls-files', '-co', '--exclude-standard', '.'], {
+        cwd,
+        encoding: 'utf8',
+      })
+        .stdout.split('\n')
+        .filter(Boolean)
+  return candidates
+    .filter(file => SOURCE.test(file) && existsSync(join(cwd, file)))
+    .filter(file => !ignores.some(glob => matchesGlob(file, glob)))
+    .flatMap(file =>
+      blanketDisables(file, readFileSync(join(cwd, file), 'utf8'))
+    )
+}
+
 function oxlintBin() {
   const pkg = require.resolve('oxlint/package.json')
   const { bin } = JSON.parse(readFileSync(pkg, 'utf8'))
@@ -112,6 +157,8 @@ function runOxlint(cwd, args) {
       '--type-aware',
       '--report-unused-disable-directives-severity=error',
       '--format=json',
+      // Pre-commit may hand over only files the config ignores.
+      '--no-error-on-unmatched-pattern',
       ...args,
     ],
     { cwd, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 }
@@ -145,7 +192,7 @@ function format({ file, line, column, ruleId, message, help }) {
   return `${where}  ${ruleId ?? 'oxlint'}  ${message}${tail}`
 }
 
-function main(argv) {
+async function main(argv) {
   const cwd = process.cwd()
   const flags = new Set(argv.filter(arg => arg.startsWith('--')))
   const files = argv
@@ -162,7 +209,10 @@ function main(argv) {
   const suppressions = existsSync(path)
     ? JSON.parse(readFileSync(path, 'utf8'))
     : {}
-  const problems = runOxlint(cwd, [...passThrough, ...files])
+  const problems = [
+    ...runOxlint(cwd, [...passThrough, ...files]),
+    ...(await scanBlanketDisables(cwd, files)),
+  ]
 
   if (flags.has('--suppress-all') || flags.has('--prune-suppressions')) {
     if (files.length)
@@ -219,7 +269,7 @@ const isMain =
   realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) {
   try {
-    process.exitCode = main(process.argv.slice(2))
+    process.exitCode = await main(process.argv.slice(2))
   } catch (error) {
     console.error(error.message)
     process.exitCode = 2

@@ -1,7 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { applySuppressions, ruleIdOf, suppressionsFor } from '../bin/lint.mjs'
+import {
+  applySuppressions,
+  blanketDisables,
+  ruleIdOf,
+  suppressionsFor,
+} from '../bin/lint.mjs'
 
 const problem = (file, ruleId, line = 1) => ({ file, ruleId, line })
 
@@ -64,4 +69,18 @@ test('suppressionsFor counts problems by file and rule, sorted', () => {
       'b.ts': { 'pts/copy': { count: 1 } },
     }
   )
+})
+
+test('a disable comment that names no rule is reported, whatever its form', () => {
+  const lines = text =>
+    blanketDisables('a.ts', text).map(({ line, column }) => [line, column])
+  assert.deepEqual(lines('/* eslint-disable */\nconst a = 1'), [[1, 1]])
+  assert.deepEqual(lines('x\n  /* oxlint-disable -- why */'), [[2, 3]])
+  assert.deepEqual(lines('// eslint-disable\n'), [[1, 1]])
+  assert.deepEqual(lines('<div>\n{/* eslint-disable */}'), [[2, 2]])
+  // Named rules, the line forms (caught by pts/no-unlimited-disable) and
+  // text inside strings pass.
+  assert.deepEqual(lines('/* eslint-disable no-console -- why */'), [])
+  assert.deepEqual(lines('// oxlint-disable-next-line\n'), [])
+  assert.deepEqual(lines("const s = '/* eslint-disable */'"), [])
 })
