@@ -23,6 +23,8 @@ import {
 import { myTaskHref } from '@/lib/sheets/hrefs'
 import { companyCalendarDate } from '@pts/ui/dates'
 
+import { getBusinessIdentity } from '@/lib/business/identity'
+
 import type {
   NotificationFeed,
   NotificationFilter,
@@ -124,6 +126,9 @@ const DUE_SYNC_INTERVAL_MS = 15 * 60_000
 const lastDueSync = new Map<string, { at: number; date: string }>()
 
 async function syncDueTaskNotificationsThrottled(user: AppUser) {
+  // The feed is a route handler, which skips the root layout: load the
+  // business time zone before reading today's date.
+  await getBusinessIdentity()
   const now = Date.now()
   const date = companyCalendarDate()
   const last = lastDueSync.get(user.id)

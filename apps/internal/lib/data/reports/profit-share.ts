@@ -19,11 +19,11 @@ import {
 import { fetchUsersByEmail } from '@/lib/queries/reports/profit-share-partners'
 
 /**
- * The instant a month ends in the company time zone (see
- * companyMonthEndCutoff in @pts/ui/dates).
+ * The instant a month ends for the profit share: midnight in the policy's
+ * fixed time zone (see companyMonthEndCutoff in @pts/ui/dates).
  */
 export function monthEndCutoff(year: number, month: number): Date {
-  return companyMonthEndCutoff(year, month)
+  return companyMonthEndCutoff(year, month, PROFIT_SHARE_POLICY.timeZone)
 }
 
 function lastDayOfMonth(year: number, month: number): string {

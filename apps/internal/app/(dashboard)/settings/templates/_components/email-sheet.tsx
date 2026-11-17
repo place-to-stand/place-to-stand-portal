@@ -86,7 +86,7 @@ function EmailSheetBody({ entry }: { entry: EmailTemplateEntry }) {
             label: 'From',
             value: (
               <>
-                Place To Stand{' '}
+                {displayNameOf(entry.from)}{' '}
                 <code className='text-muted-foreground text-xs'>
                   &lt;{stripDisplayName(entry.from)}&gt;
                 </code>
@@ -143,6 +143,12 @@ function EmailSheetBody({ entry }: { entry: EmailTemplateEntry }) {
 }
 
 /** `Place To Stand <addr>` → `addr`; a bare address passes through. */
+/** The sender name before the address, unquoted. */
+function displayNameOf(from: string): string {
+  const name = from.split('<')[0].trim()
+  return name.replace(/^"(.*)"$/, '$1').replace(/\\(.)/g, '$1')
+}
+
 function stripDisplayName(from: string): string {
   const match = from.match(/<([^>]+)>/)
   return match ? match[1] : from

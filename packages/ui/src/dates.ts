@@ -18,21 +18,29 @@
 /** Used until an app sets the business's own (and when it is invalid). */
 export const DEFAULT_COMPANY_TIME_ZONE = 'America/Chicago'
 
-let companyTimeZone = DEFAULT_COMPANY_TIME_ZONE
+/**
+ * Kept on globalThis, not in this module: Next bundles server code into
+ * several module graphs (instrumentation, route handlers, pages), and each
+ * would otherwise hold its own copy, so a zone set in one would be missing in
+ * the others.
+ */
+const store = globalThis as typeof globalThis & {
+  __ptsCompanyTimeZone?: string
+}
 
 /** The business's time zone (Settings → Business). */
 export function getCompanyTimeZone(): string {
-  return companyTimeZone
+  return store.__ptsCompanyTimeZone ?? DEFAULT_COMPANY_TIME_ZONE
 }
 
 /** Sets the business's time zone; an unknown name falls back to the default. */
 export function setCompanyTimeZone(timeZone: string | null | undefined) {
-  if (!timeZone || timeZone === companyTimeZone) return
+  if (!timeZone || timeZone === store.__ptsCompanyTimeZone) return
   try {
     new Intl.DateTimeFormat('en-US', { timeZone })
-    companyTimeZone = timeZone
+    store.__ptsCompanyTimeZone = timeZone
   } catch {
-    companyTimeZone = DEFAULT_COMPANY_TIME_ZONE
+    store.__ptsCompanyTimeZone = DEFAULT_COMPANY_TIME_ZONE
   }
 }
 
@@ -81,7 +89,7 @@ export function formatCalendarDate(
   }
   const parsed = typeof value === 'string' ? new Date(value) : value
   if (Number.isNaN(parsed.getTime())) return null
-  return getFormatter(style, companyTimeZone).format(parsed)
+  return getFormatter(style, getCompanyTimeZone()).format(parsed)
 }
 
 const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
@@ -126,7 +134,7 @@ export function formatRelativeTime(
 export function companyCalendarDate(now: Date = new Date()): string {
   // en-CA renders as YYYY-MM-DD.
   return new Intl.DateTimeFormat('en-CA', {
-    timeZone: companyTimeZone,
+    timeZone: getCompanyTimeZone(),
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -166,9 +174,13 @@ function zoneOffsetMs(utcMs: number, timeZone: string): number {
  * first of the next month (in Chicago, Aug 31 ends at Sep 1 05:00Z). `month` is
  * 1-indexed. Two passes settle the offset across a DST change.
  */
-export function companyMonthEndCutoff(year: number, month: number): Date {
+export function companyMonthEndCutoff(
+  year: number,
+  month: number,
+  timeZone: string = getCompanyTimeZone()
+): Date {
   const naive = Date.UTC(year, month, 1) // month is 1-indexed → next month
-  let utc = naive - zoneOffsetMs(naive, companyTimeZone)
-  utc = naive - zoneOffsetMs(utc, companyTimeZone)
+  let utc = naive - zoneOffsetMs(naive, timeZone)
+  utc = naive - zoneOffsetMs(utc, timeZone)
   return new Date(utc)
 }

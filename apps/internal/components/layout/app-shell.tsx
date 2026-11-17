@@ -5,6 +5,7 @@ import { useMemo, type ReactNode } from 'react'
 
 import type { AppUser } from '@/lib/auth/session'
 import { SidebarProvider } from '@/components/ui/sidebar'
+import { BusinessNameProvider } from '@/components/providers/business-name'
 import { ViewerAccessProvider } from '@/components/providers/viewer-access-provider'
 
 import { KeyboardShortcutsProvider } from '@/components/keyboard/keyboard-shortcuts-dialog'
@@ -61,21 +62,23 @@ export function AppShell({
       hasPhoto={Boolean(user.avatar_url)}
       presenceKey={presenceKey}
     >
-      <KeyboardShortcutsProvider>
-        <CommandPaletteProvider>
-          <SidebarProvider
-            defaultOpen={sidebarDefaultOpen}
-            style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
-            className='bg-muted h-dvh min-h-0 overflow-hidden'
-          >
-            <Sidebar user={user} badges={navBadges} brand={brand} />
-            <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
-              {banner}
-              <ListRefreshProvider>{children}</ListRefreshProvider>
-            </div>
-          </SidebarProvider>
-        </CommandPaletteProvider>
-      </KeyboardShortcutsProvider>
+      <BusinessNameProvider name={brand.name}>
+        <KeyboardShortcutsProvider>
+          <CommandPaletteProvider>
+            <SidebarProvider
+              defaultOpen={sidebarDefaultOpen}
+              style={{ '--sidebar-width': '13rem' } as React.CSSProperties}
+              className='bg-muted h-dvh min-h-0 overflow-hidden'
+            >
+              <Sidebar user={user} badges={navBadges} brand={brand} />
+              <div className='flex h-dvh min-h-0 min-w-0 flex-1 flex-col'>
+                {banner}
+                <ListRefreshProvider>{children}</ListRefreshProvider>
+              </div>
+            </SidebarProvider>
+          </CommandPaletteProvider>
+        </KeyboardShortcutsProvider>
+      </BusinessNameProvider>
     </ViewerAccessProvider>
   )
 }

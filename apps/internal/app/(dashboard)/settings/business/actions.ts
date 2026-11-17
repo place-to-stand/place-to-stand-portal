@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 import { isValidTimeZone } from '@pts/db/business'
 import { businessSettings, companies } from '@pts/db/schema'
@@ -54,7 +54,10 @@ export async function saveBusinessSettings(
   }
   const values = parsed.data
 
-  if (!isValidTimeZone(values.timeZone)) {
+  if (
+    !isValidTimeZone(values.timeZone) ||
+    !(await databaseKnowsTimeZone(values.timeZone))
+  ) {
     return {
       ok: false,
       error: 'Check the highlighted fields.',
@@ -178,7 +181,10 @@ async function readCurrent() {
     db
       .select({ id: companies.id, name: companies.name })
       .from(companies)
-      .where(and(eq(companies.isStaff, true), isNull(companies.deletedAt)))
+      // Archived or not, as findStaffCompany does: there is only ever one
+      // (uq_companies_staff), so inserting another would fail.
+      .where(eq(companies.isStaff, true))
+      .orderBy(sql`${companies.deletedAt} is not null`)
       .limit(1),
     db
       .select({
@@ -221,5 +227,18 @@ async function readCurrent() {
     staffCompanyId: staff?.id ?? null,
     sendingEmail: values.sendingEmail,
     values,
+  }
+}
+
+/**
+ * Postgres's time zone list can differ from the runtime's, and the zone is
+ * also used in SQL (time-log month totals), so both must know it.
+ */
+async function databaseKnowsTimeZone(timeZone: string): Promise<boolean> {
+  try {
+    await db.execute(sql`select now() at time zone ${timeZone}`)
+    return true
+  } catch {
+    return false
   }
 }

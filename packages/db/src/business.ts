@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 import type { DbClient } from './client'
 import { businessSettings, companies } from './schema'
@@ -110,11 +110,13 @@ function fallbackIdentity(name: string): BusinessIdentity {
   }
 }
 
+/** The staff company's name, archived or not: it is still the business. */
 async function readStaffCompanyName(db: DbClient): Promise<string | null> {
   const [row] = await db
     .select({ name: companies.name })
     .from(companies)
-    .where(and(eq(companies.isStaff, true), isNull(companies.deletedAt)))
+    .where(eq(companies.isStaff, true))
+    .orderBy(sql`${companies.deletedAt} is not null`)
     .limit(1)
   return blank(row?.name)
 }

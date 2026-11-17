@@ -60,3 +60,33 @@ function distinctIdFromCookie(
     return undefined
   }
 }
+
+/**
+ * Loads the business time zone (Settings → Business) once when the server
+ * starts, before any request. Route handlers, server actions and pages that
+ * render beside the root layout format dates without reading it themselves;
+ * the root layout keeps it current after that.
+ */
+export async function register() {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return
+  if (process.env.NEXT_PHASE === 'phase-production-build') return
+  const databaseUrl = process.env.DATABASE_URL
+  if (!databaseUrl) return
+
+  try {
+    const [{ createDb }, { readBusinessIdentity }, { setCompanyTimeZone }] =
+      await Promise.all([
+        import('@pts/db/client'),
+        import('@pts/db/business'),
+        import('@pts/ui/dates'),
+      ])
+    const db = createDb(databaseUrl)
+    try {
+      setCompanyTimeZone((await readBusinessIdentity(db)).timeZone)
+    } finally {
+      await db.$client.end({ timeout: 5 })
+    }
+  } catch (error) {
+    console.error('Business time zone could not be loaded at start.', error)
+  }
+}

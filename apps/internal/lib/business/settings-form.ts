@@ -45,7 +45,11 @@ export const businessSettingsSchema = z.object({
     .string()
     .trim()
     .min(1, 'Enter the business name.')
-    .max(120, 'Keep this under 120 characters.'),
+    .max(120, 'Keep this under 120 characters.')
+    // It is the email sender name: a line break would break every From header.
+    .refine(value => !/[\u0000-\u001f\u007f]/.test(value), {
+      message: 'Keep the name on one line.',
+    }),
   legalName: optionalText(160),
   website: optionalUrl,
   addressLine1: optionalText(160),

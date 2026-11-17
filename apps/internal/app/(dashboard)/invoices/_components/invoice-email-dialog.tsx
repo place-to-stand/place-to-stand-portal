@@ -19,6 +19,7 @@ import {
   type RecipientOption,
 } from '@/components/email/recipient-field'
 import { toastLink, useToast } from '@/components/ui/use-toast'
+import { useBusinessName } from '@/components/providers/business-name'
 import { useUnsavedChangesWarning } from '@/lib/hooks/use-unsaved-changes-warning'
 import type { InvoiceEmailDraft } from '@/lib/invoices/send/email'
 
@@ -109,6 +110,7 @@ function InvoiceEmailForm({
   onCancel: () => void
   onSent: InvoiceEmailDialogProps['onSent']
 }) {
+  const businessName = useBusinessName()
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [to, setTo] = useState<string[]>([])
@@ -333,7 +335,7 @@ function InvoiceEmailForm({
 
       <DialogFooter className='items-center border-t px-6 py-4 sm:justify-between'>
         <p className='text-muted-foreground text-xs'>
-          From Place To Stand · replies go to you
+          From {businessName} · replies go to you
         </p>
         <div className='flex gap-2'>
           <Button

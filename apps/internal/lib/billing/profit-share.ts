@@ -17,6 +17,12 @@
 export const PROFIT_SHARE_POLICY = {
   /** First month (YYYY-MM-01) the profit share applies to. */
   effectiveFrom: '2026-08-01',
+  /**
+   * The month-end Mercury balance is read at midnight here. Fixed, not the
+   * Business time zone: closed months froze their profit share at this
+   * cutoff, so a time zone change must not move it.
+   */
+  timeZone: 'America/Los_Angeles',
   minimumBalance: 10_000,
   /** Partners who split the profit share, matched to users by email. */
   partnerEmails: [

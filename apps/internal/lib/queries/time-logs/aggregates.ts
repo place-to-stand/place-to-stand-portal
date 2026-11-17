@@ -2,8 +2,7 @@ import 'server-only'
 
 import { and, inArray, isNull, sql } from 'drizzle-orm'
 
-import { getCompanyTimeZone } from '@pts/ui/dates'
-
+import { getBusinessIdentity } from '@/lib/business/identity'
 import { db } from '@/lib/db'
 import { timeLogs } from '@/lib/db/schema'
 import type { TimeLogSummary } from '@/lib/data/projects/types'
@@ -22,7 +21,8 @@ export async function getTimeLogSummariesForProjects(
     return new Map()
   }
 
-  const startOfCurrentMonth = sql`DATE_TRUNC('month', timezone(${getCompanyTimeZone()}, now()))::date`
+  const { timeZone } = await getBusinessIdentity()
+  const startOfCurrentMonth = sql`DATE_TRUNC('month', timezone(${timeZone}, now()))::date`
 
   const rows = (await db
     .select({

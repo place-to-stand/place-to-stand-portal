@@ -33,6 +33,12 @@ export async function GET(
       'Content-Security-Policy':
         "default-src 'none'; style-src 'unsafe-inline'",
       'X-Content-Type-Options': 'nosniff',
+      // Opened directly, an SVG downloads instead of rendering as a page, so
+      // nothing in it can run on this domain whatever other CSP applies.
+      // <img> ignores this header.
+      ...(decoded.contentType === 'image/svg+xml'
+        ? { 'Content-Disposition': 'attachment; filename="' + kind + '.svg"' }
+        : {}),
     },
   })
 }
