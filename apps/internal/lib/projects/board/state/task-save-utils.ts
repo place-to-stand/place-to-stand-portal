@@ -29,13 +29,9 @@ export function updateTask(
 
 type SavedTask = TaskPlace & { updated_at?: string | null }
 
-/**
- * `useTaskSaves`, outside React (see there). `onRefused` runs after a
- * refused save, for the board to ask the server where its cards are.
- */
+/** `useTaskSaves`, outside React (see there). */
 export function createTaskSaves(
-  setTasksByProject: Dispatch<SetStateAction<TaskLookup>>,
-  onRefused: () => void = () => {}
+  setTasksByProject: Dispatch<SetStateAction<TaskLookup>>
 ) {
   const queues = new Map<string, Promise<unknown>>()
   const confirmed = new Map<string, TaskPlace>()
@@ -91,7 +87,6 @@ export function createTaskSaves(
         console.error('Task reorder failed', error)
         settle(confirmed.get(id) ?? before)
         done()
-        onRefused()
         return false
       }
     )

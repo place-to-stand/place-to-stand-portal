@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import type { Dispatch, SetStateAction } from 'react'
 
 import { createTaskSaves } from './task-save-utils'
@@ -16,17 +15,16 @@ import type { TaskLookup } from './types'
  *   leaves it alone;
  * - a refused move puts the card back where the last accepted save left it
  *   (not where it was when this move started, which may be a move that was
- *   itself refused), and only its status and rank, so other edits stay;
- *   then the board refreshes from the server.
+ *   itself refused), and only its status and rank, so other edits stay.
+ *   (No refresh after a refusal: these saves aren't server actions, so a
+ *   refresh isn't held until the other saves land, and its older data
+ *   could overwrite cards they have settled.)
  *
  * Resolves true when the save was accepted.
  */
 export function useTaskSaves(
   setTasksByProject: Dispatch<SetStateAction<TaskLookup>>
 ) {
-  const router = useRouter()
-  const [save] = useState(() =>
-    createTaskSaves(setTasksByProject, () => router.refresh())
-  )
+  const [save] = useState(() => createTaskSaves(setTasksByProject))
   return save
 }

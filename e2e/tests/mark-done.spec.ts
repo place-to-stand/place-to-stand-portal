@@ -68,6 +68,9 @@ test('the card menu marks a task done, at the top of Done', async ({
 
   // It saved: a reload still shows it done.
   expect((await saved).ok()).toBe(true)
+  // Let the board's own refresh after the save finish first: Firefox
+  // aborts a reload that overlaps it.
+  await page.waitForLoadState('networkidle')
   await page.reload()
   await expect(cardIn(page, 'DONE', name!)).toHaveCount(1)
 
@@ -159,6 +162,9 @@ test('the project board marks a task done too', async ({ page }) => {
     column(page, 'DONE').locator('[data-board-card]').first()
   ).toContainText(name)
   expect((await saved).ok()).toBe(true)
+  // Let the board's own refresh after the save finish first: Firefox
+  // aborts a reload that overlaps it.
+  await page.waitForLoadState('networkidle')
   await page.reload()
   await expect(cardIn(page, 'DONE', name)).toHaveCount(1)
   await putBack(page, [name])
