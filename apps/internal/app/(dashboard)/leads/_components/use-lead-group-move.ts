@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  useCallback,
-  type RefObject,
-  type TransitionStartFunction,
-} from 'react'
+import { startTransition, useCallback, type RefObject } from 'react'
 
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
@@ -32,7 +28,6 @@ export function useLeadGroupMove({
   setColumns,
   hiddenLeads,
   canManage,
-  startTransition,
   onMoved,
   onLeadClosedWon,
 }: {
@@ -40,7 +35,6 @@ export function useLeadGroupMove({
   setColumns: (columns: LeadBoardColumnData[]) => void
   hiddenLeads: LeadRecord[]
   canManage: boolean
-  startTransition: TransitionStartFunction
   /** The dragged lead, for the board's just-moved styling. */
   onMoved: (id: string) => void
   onLeadClosedWon?: (lead: LeadRecord) => void
@@ -98,7 +92,8 @@ export function useLeadGroupMove({
           const undone = undoLeadMoves(
             columnsRef.current,
             result.previousColumns,
-            failed.map(({ leadId }) => leadId)
+            failed.map(({ leadId }) => leadId),
+            status
           )
           setColumns(undone)
           columnsRef.current = undone
@@ -141,7 +136,6 @@ export function useLeadGroupMove({
       onLeadClosedWon,
       onMoved,
       setColumns,
-      startTransition,
       toast,
     ]
   )

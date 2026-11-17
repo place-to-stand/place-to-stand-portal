@@ -7,7 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
+  startTransition,
 } from 'react'
 
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
@@ -82,7 +82,6 @@ export function LeadsBoard({
   })
   const [columns, setColumns] = useState(() => cloneColumns(initialColumns))
   const columnsRef = useRef(columns)
-  const [, startTransition] = useTransition()
   const { toast } = useToast()
   const {
     recentlyMovedId: recentlyMovedLeadId,
@@ -123,7 +122,6 @@ export function LeadsBoard({
     setColumns,
     hiddenLeads,
     canManage,
-    startTransition,
     onMoved: markMoved,
     onLeadClosedWon,
   })
@@ -198,7 +196,8 @@ export function LeadsBoard({
           const undone = undoLeadMoves(
             columnsRef.current,
             result.previousColumns,
-            [leadId]
+            [leadId],
+            result.targetColumnId
           )
           setColumns(undone)
           columnsRef.current = undone
@@ -233,7 +232,6 @@ export function LeadsBoard({
       scheduleRecentlyMovedReset,
       selection.hidden,
       setRecentlyMovedLeadId,
-      startTransition,
       toast,
     ]
   )

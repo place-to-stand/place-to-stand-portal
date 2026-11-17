@@ -3,14 +3,20 @@ import type { LeadBoardColumnData } from './types'
 /**
  * A lead move whose save failed, taken back on the board as it is now:
  * only those leads return to where they were before that move. Other
- * moves dropped while it was saving stay where they are.
+ * moves dropped while it was saving stay where they are, and so does a
+ * lead moved again since (no longer in `movedTo`, the move's column).
  */
 export function undoLeadMoves(
   current: LeadBoardColumnData[],
   before: LeadBoardColumnData[],
-  leadIds: readonly string[]
+  leadIds: readonly string[],
+  movedTo: string
 ): LeadBoardColumnData[] {
-  const undo = new Set(leadIds)
+  const stillThere = new Set(
+    current.find(column => column.id === movedTo)?.leads.map(lead => lead.id) ??
+      []
+  )
+  const undo = new Set(leadIds.filter(id => stillThere.has(id)))
   const next = current.map(column => ({
     ...column,
     leads: column.leads.filter(lead => !undo.has(lead.id)),

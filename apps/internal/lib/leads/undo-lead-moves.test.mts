@@ -20,7 +20,7 @@ test('puts back only the failed lead, keeping a later move', () => {
   const before = board({ NEW: ['a', 'b', 'c'], SENT: [] })
   // a moved to SENT (failed), then b moved to SENT (saving).
   const now = board({ NEW: ['c'], SENT: ['b', 'a'] })
-  assert.deepEqual(ids(undoLeadMoves(now, before, ['a'])), {
+  assert.deepEqual(ids(undoLeadMoves(now, before, ['a'], 'SENT')), {
     NEW: ['a', 'c'],
     SENT: ['b'],
   })
@@ -29,13 +29,17 @@ test('puts back only the failed lead, keeping a later move', () => {
 test('returns a lead under its old neighbour', () => {
   const before = board({ NEW: ['a', 'b', 'c'], SENT: [] })
   const now = board({ NEW: ['a', 'c'], SENT: ['b'] })
-  assert.deepEqual(ids(undoLeadMoves(now, before, ['b'])).NEW, ['a', 'b', 'c'])
+  assert.deepEqual(ids(undoLeadMoves(now, before, ['b'], 'SENT')).NEW, [
+    'a',
+    'b',
+    'c',
+  ])
 })
 
 test('puts a group back, each where it was', () => {
   const before = board({ NEW: ['a', 'b', 'c', 'd'], SENT: ['x'] })
   const now = board({ NEW: ['a', 'd'], SENT: ['b', 'c', 'x'] })
-  assert.deepEqual(ids(undoLeadMoves(now, before, ['b', 'c'])), {
+  assert.deepEqual(ids(undoLeadMoves(now, before, ['b', 'c'], 'SENT')), {
     NEW: ['a', 'b', 'c', 'd'],
     SENT: ['x'],
   })
@@ -44,6 +48,17 @@ test('puts a group back, each where it was', () => {
 test('keeps the old record (status and rank) for the lead it puts back', () => {
   const before = board({ NEW: ['a'], SENT: [] })
   const now = board({ NEW: [], SENT: ['a'] })
-  const [newColumn] = undoLeadMoves(now, before, ['a'])
+  const [newColumn] = undoLeadMoves(now, before, ['a'], 'SENT')
   assert.equal(newColumn!.leads[0]!.status, 'NEW')
+})
+
+test('leaves a lead that was moved again since', () => {
+  const before = board({ NEW: ['a'], SENT: [], ICE: [] })
+  // a went to SENT (this move, failed), then on to ICE (saving).
+  const now = board({ NEW: [], SENT: [], ICE: ['a'] })
+  assert.deepEqual(ids(undoLeadMoves(now, before, ['a'], 'SENT')), {
+    NEW: [],
+    SENT: [],
+    ICE: ['a'],
+  })
 })
