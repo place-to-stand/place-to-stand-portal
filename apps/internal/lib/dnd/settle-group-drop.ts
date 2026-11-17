@@ -223,6 +223,36 @@ function floatingCopy(
     pointerEvents: 'none',
     zIndex: String(zIndex),
   })
+  // A selected card's fill is a see-through tint over its column; off the
+  // column the copy would show what's behind it, so lay the tint over the
+  // column's own solid colour.
+  const tint = getComputedStyle(card).backgroundColor
+  copy.style.backgroundImage = `linear-gradient(${tint}, ${tint})`
+  copy.style.backgroundColor = solidBackdrop(card)
   document.body.appendChild(copy)
   return copy
+}
+
+/** The first solid background behind `element`, else the page's. */
+function solidBackdrop(element: HTMLElement): string {
+  for (
+    let node: HTMLElement | null = element;
+    node;
+    node = node.parentElement
+  ) {
+    const color = getComputedStyle(node).backgroundColor
+    if (isSolid(color)) return color
+  }
+  return getComputedStyle(document.body).backgroundColor
+}
+
+function isSolid(color: string) {
+  if (!color || color === 'transparent') return false
+  // rgb(a) "rgba(r, g, b, a)" or "rgb(r g b / a)", or color(…/ a), oklch(… / a)
+  const alpha = color.match(/[,/]\s*([\d.]+%?)\s*\)$/)?.[1]
+  if (!alpha) return true
+  const value = alpha.endsWith('%')
+    ? parseFloat(alpha) / 100
+    : parseFloat(alpha)
+  return value >= 0.999
 }

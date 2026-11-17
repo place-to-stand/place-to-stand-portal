@@ -48,7 +48,7 @@ export function BoardDragOverlay({
             data-stack-layer=''
             className='bg-card absolute inset-0 translate-x-2 translate-y-2 rounded-lg border shadow-sm'
           />
-          <div className='relative'>{children}</div>
+          <div className={`relative ${SOLID_BACKING_CLASS}`}>{children}</div>
           <span
             data-drag-count={count}
             data-stack-layer=''
@@ -58,7 +58,9 @@ export function BoardDragOverlay({
           </span>
         </div>
       ) : children ? (
-        <div data-board-dragging=''>{children}</div>
+        <div data-board-dragging='' className={SOLID_BACKING_CLASS}>
+          {children}
+        </div>
       ) : null}
     </DragOverlay>
   )
@@ -96,3 +98,9 @@ const BOARD_DROP_ANIMATION: DropAnimation = {
  */
 export const BOARD_CARD_GHOST_CLASS =
   'border-primary/25 bg-primary/3 border-dashed shadow-none *:invisible'
+
+/**
+ * A selected card's fill is a see-through tint: lifted off its column it
+ * would show the board through it, so it rides on a solid card colour.
+ */
+const SOLID_BACKING_CLASS = 'bg-card rounded-lg'
