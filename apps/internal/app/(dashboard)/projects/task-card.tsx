@@ -270,7 +270,7 @@ export function TaskCard({
   return (
     <TaskContextMenu
       task={task}
-      onEdit={() => onEdit(task)}
+      onEdit={card.open}
       canManage={canManage}
       draggable={draggable}
       move={move}
@@ -292,7 +292,7 @@ export function TaskCard({
           }
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
-            onEdit(task)
+            card.open()
           }
         }}
         className={cn(

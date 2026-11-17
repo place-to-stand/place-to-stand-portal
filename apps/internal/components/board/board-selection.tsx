@@ -296,6 +296,10 @@ export function useBoardCardSelection(id: string) {
     selected: selection.isSelected(id),
     /** For the card's onClick: true when the click selected. */
     click: (event: MouseEvent) => selection.click(id, event),
+    /** Opening a card outside the selection lets go of it. */
+    release: () => {
+      if (selection.active && !selection.isSelected(id)) selection.clear()
+    },
   }
 }
 
@@ -321,6 +325,14 @@ export function useSelectableCard(
   )?.onMouseDown
   return {
     selected,
+    /**
+     * Opens the card from anywhere (Enter, the menu's Edit), letting go of
+     * a selection it isn't part of, as a plain click does.
+     */
+    open: () => {
+      selection?.release()
+      open()
+    },
     /** Spread after the dnd-kit listeners. */
     props: {
       'data-selected': selected || undefined,

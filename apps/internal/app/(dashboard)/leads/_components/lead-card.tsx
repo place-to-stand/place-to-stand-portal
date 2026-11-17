@@ -122,11 +122,7 @@ export const LeadCard = memo(function LeadCard({
   }
 
   return (
-    <LeadContextMenu
-      lead={lead}
-      onEdit={() => onEditLead(lead)}
-      canManage={canManage}
-    >
+    <LeadContextMenu lead={lead} onEdit={card.open} canManage={canManage}>
       <div
         ref={setNodeRef}
         style={style}
@@ -143,7 +139,7 @@ export const LeadCard = memo(function LeadCard({
           }
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
-            onEditLead(lead)
+            card.open()
           }
         }}
         className={cn(

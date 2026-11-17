@@ -169,12 +169,17 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       // measured the grabbed card, so the stack starts under the pointer
       // rather than where the card slides to. The drop slot stays one card
       // tall, so the cards around it stay put.
+      // Two frames: dnd-kit measures the grabbed card in the frame after
+      // the drag starts, and one frame was too soon (the stack started where
+      // the card slid to).
       groupFrame.current = requestAnimationFrame(() => {
-        groupFrame.current = null
-        const current = draftRef.current
-        if (!current || !locateInDraft(current, id)) return
-        gathering.current = gatherGroup({ along: [...along] })
-        setDraft(withoutAlong(current))
+        groupFrame.current = requestAnimationFrame(() => {
+          groupFrame.current = null
+          const current = draftRef.current
+          if (!current || !locateInDraft(current, id)) return
+          gathering.current = gatherGroup({ along: [...along] })
+          setDraft(withoutAlong(current))
+        })
       })
     },
     [columns, groupOf, items, onDragStart, setDraft]

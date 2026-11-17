@@ -34,7 +34,7 @@ export function measureBoardCards(): Map<string, Rect> {
  * group lands, and glide there. A group drop has no overlay glide: the stack vanishes and the board
  * re-renders with every card of the group in its slot. On the next frame
  * (laid out, not yet painted) each one glides there from the stack, the
- * grabbed card from the top of it and the others fading in from behind, a
+ * grabbed card from the top of it and the others sliding out from under it, a
  * beat apart in board order. Any other card the drop shifted glides from
  * where it was.
  */
@@ -69,26 +69,27 @@ export function settleGroupDrop({
       const now = card.getBoundingClientRect()
       const place = order.get(id)
       if (place !== undefined) {
+        // Opaque, and under the grabbed card, so they come out from behind
+        // it rather than showing through.
         const grabbed = id === dragged
         const offset = grabbed ? 0 : Math.min(++behind, 2) * STACK_OFFSET_PX
         const dx = stack.left + offset - now.left
         const dy = stack.top + offset - now.top
-        card.animate(
-          [
+        const lift = raise(card, grabbed ? 2 : 1)
+        card
+          .animate(
+            [
+              { transform: `translate(${dx}px, ${dy}px)` },
+              { transform: 'none' },
+            ],
             {
-              transform: `translate(${dx}px, ${dy}px)`,
-              opacity: grabbed ? 1 : 0,
-              zIndex: grabbed ? 2 : 1,
-            },
-            { transform: 'none', opacity: 1, zIndex: grabbed ? 2 : 1 },
-          ],
-          {
-            duration: SETTLE_MS,
-            delay: place * STAGGER_MS,
-            easing: EASING,
-            fill: 'backwards',
-          }
-        )
+              duration: SETTLE_MS,
+              delay: place * STAGGER_MS,
+              easing: EASING,
+              fill: 'backwards',
+            }
+          )
+          .finished.then(lift, lift)
         continue
       }
       const was = before.get(id)
@@ -202,4 +203,17 @@ export function gatherGroup({
     for (const { copy } of copies) copy.remove()
   }
   return cleanup
+}
+
+/** Lifts a card above its neighbours for an animation; returns the undo. */
+function raise(card: HTMLElement, zIndex: number) {
+  const { position, zIndex: before } = card.style
+  if (getComputedStyle(card).position === 'static') {
+    card.style.position = 'relative'
+  }
+  card.style.zIndex = String(zIndex)
+  return () => {
+    card.style.position = position
+    card.style.zIndex = before
+  }
 }
