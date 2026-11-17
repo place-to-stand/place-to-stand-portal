@@ -22,7 +22,8 @@
  * - Oxlint runs every rule at the severity it's given; `--max-warnings=0`
  *   made every warning fail, so `warn` becomes `error`.
  */
-import { matchesGlob } from 'node:path'
+import { createRequire } from 'node:module'
+import { join, matchesGlob } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import tsPlugin from '@typescript-eslint/eslint-plugin'
@@ -252,6 +253,25 @@ function inheritOptions(rules, files, earlierObjects) {
 }
 
 /** Flat config objects → one Oxlint config. */
+/**
+ * `react.version: 'detect'` as eslint-plugin-react resolves it (the React
+ * installed where lint runs), since Oxlint only takes a version number.
+ */
+function detectReactVersion(settings) {
+  if (settings.react?.version !== 'detect') return settings
+  let version
+  try {
+    const require = createRequire(join(process.cwd(), 'package.json'))
+    version = require('react/package.json').version
+  } catch {
+    // No React here: drop the setting, as the plugin would fall back.
+    const react = { ...settings.react }
+    delete react.version
+    return { ...settings, react }
+  }
+  return { ...settings, react: { ...settings.react, version } }
+}
+
 export function toOxlint(flatConfig, { settings } = {}) {
   const objects = flatConfig.flat(Infinity)
   const ignorePatterns = []
@@ -264,8 +284,10 @@ export function toOxlint(flatConfig, { settings } = {}) {
       ignorePatterns.push(...object.ignores)
       return
     }
-    if (object.settings?.next) {
-      mergedSettings.next = { ...mergedSettings.next, ...object.settings.next }
+    // Settings apply everywhere in Oxlint (ESLint scopes them to `files`,
+    // but every preset sets them for all files): react.version, next.rootDir.
+    for (const [key, value] of Object.entries(object.settings ?? {})) {
+      mergedSettings[key] = { ...mergedSettings[key], ...value }
     }
     if (!object.rules || Object.keys(object.rules).length === 0) return
     const rules = convertRules(object.rules)
@@ -306,7 +328,7 @@ export function toOxlint(flatConfig, { settings } = {}) {
     },
     plugins: ['typescript', 'react', 'import', 'unicorn', 'oxc'],
     jsPlugins: JS_PLUGINS,
-    settings: { ...mergedSettings, ...settings },
+    settings: detectReactVersion({ ...mergedSettings, ...settings }),
     ignorePatterns,
     rules: {},
     overrides,

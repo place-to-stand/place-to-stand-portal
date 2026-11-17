@@ -145,3 +145,18 @@ test('objects keep their order; ignored files get earlier values back', () => {
     { files: ['**/*.test.*'], rules: { 'max-lines': 'off' } },
   ])
 })
+
+test("settings carry over, with react.version 'detect' resolved", () => {
+  const { settings } = toOxlint([
+    {
+      settings: { react: { version: 'detect' } },
+      rules: { 'no-console': 'error' },
+    },
+    {
+      settings: { next: { rootDir: 'apps/x' } },
+      rules: { 'no-debugger': 'error' },
+    },
+  ])
+  assert.match(settings.react.version, /^\d+\.\d+\.\d+/)
+  assert.deepEqual(settings.next, { rootDir: 'apps/x' })
+})
