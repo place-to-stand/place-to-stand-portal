@@ -60,6 +60,11 @@ test('the card menu marks a task done, at the top of Done', async ({
       response.url().includes('/reorder') &&
       response.request().method() !== 'GET'
   )
+  // My Tasks refreshes its data after the save; Firefox aborts a reload
+  // that overlaps that refresh, so the reload waits for it.
+  const refreshed = page.waitForResponse(
+    response => response.request().headers()['rsc'] === '1'
+  )
   await page.getByRole('menuitem', { name: 'Mark as done' }).click()
 
   const done = column(page, 'DONE').locator('[data-board-card]')
@@ -68,9 +73,7 @@ test('the card menu marks a task done, at the top of Done', async ({
 
   // It saved: a reload still shows it done.
   expect((await saved).ok()).toBe(true)
-  // Let the board's own refresh after the save finish first: Firefox
-  // aborts a reload that overlaps it.
-  await page.waitForLoadState('networkidle')
+  await refreshed
   await page.reload()
   await expect(cardIn(page, 'DONE', name!)).toHaveCount(1)
 
@@ -162,9 +165,6 @@ test('the project board marks a task done too', async ({ page }) => {
     column(page, 'DONE').locator('[data-board-card]').first()
   ).toContainText(name)
   expect((await saved).ok()).toBe(true)
-  // Let the board's own refresh after the save finish first: Firefox
-  // aborts a reload that overlaps it.
-  await page.waitForLoadState('networkidle')
   await page.reload()
   await expect(cardIn(page, 'DONE', name)).toHaveCount(1)
   await putBack(page, [name])
