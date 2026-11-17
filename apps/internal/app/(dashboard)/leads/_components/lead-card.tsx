@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
-import { MetaLink } from '@/components/ui/meta-link'
+import { AnchorRow } from './lead-card-anchor-row'
 import { LeadContextMenu } from './lead-context-menu'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -31,6 +31,10 @@ import {
 } from '@/lib/leads/constants'
 import type { LeadRecord } from '@/lib/leads/types'
 import { BOARD_CARD_GHOST_CLASS } from '@/components/board/board-drag'
+import {
+  BOARD_CARD_SELECTED_CLASS,
+  useSelectableCard,
+} from '@/components/board/board-selection'
 import { cn } from '@/lib/utils'
 import { formatPhoneUS } from '@/lib/utils/phone-format'
 
@@ -90,6 +94,7 @@ export const LeadCard = memo(function LeadCard({
       onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void
     }
   ).onKeyDown
+  const card = useSelectableCard(lead.id, () => onEditLead(lead), listeners)
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
@@ -117,11 +122,7 @@ export const LeadCard = memo(function LeadCard({
   }
 
   return (
-    <LeadContextMenu
-      lead={lead}
-      onEdit={() => onEditLead(lead)}
-      canManage={canManage}
-    >
+    <LeadContextMenu lead={lead} onEdit={card.open} canManage={canManage}>
       <div
         ref={setNodeRef}
         style={style}
@@ -130,7 +131,7 @@ export const LeadCard = memo(function LeadCard({
         // dnd-kit's attributes set this too; stated so the focus rule sees it.
         tabIndex={0}
         role='button'
-        onClick={() => onEditLead(lead)}
+        {...card.props}
         onKeyDown={event => {
           draggableKeyDown?.(event)
           if (event.defaultPrevented) {
@@ -138,7 +139,7 @@ export const LeadCard = memo(function LeadCard({
           }
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
-            onEditLead(lead)
+            card.open()
           }
         }}
         className={cn(
@@ -150,10 +151,12 @@ export const LeadCard = memo(function LeadCard({
             'pointer-coarse:select-none pointer-coarse:[-webkit-touch-callout:none]',
           isDragging && BOARD_CARD_GHOST_CLASS,
           isActive && !isDragging && 'border-primary/50 bg-primary/5 shadow-md',
-          !isActive && !isDragging && ENTITY_ACCENTS.lead.card
+          !isActive && !isDragging && ENTITY_ACCENTS.lead.card,
+          card.selected && !isDragging && BOARD_CARD_SELECTED_CLASS
         )}
       >
         <LeadCardContent lead={lead} />
+        {card.note}
       </div>
     </LeadContextMenu>
   )
@@ -292,25 +295,6 @@ function LeadCardContent({ lead }: { lead: LeadRecord }) {
         />
       </div>
     </>
-  )
-}
-
-type AnchorRowProps = {
-  icon: typeof Mail
-  value: string
-  href: string
-}
-
-function AnchorRow({ icon: Icon, value, href }: AnchorRowProps) {
-  return (
-    <MetaLink
-      href={href}
-      onClick={event => event.stopPropagation()}
-      title={value}
-      icon={<Icon className='h-3.5 w-3.5 shrink-0' aria-hidden />}
-    >
-      {value}
-    </MetaLink>
   )
 }
 

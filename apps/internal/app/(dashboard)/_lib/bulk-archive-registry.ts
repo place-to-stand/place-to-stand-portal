@@ -41,6 +41,7 @@ import { archiveInvoice, restoreInvoice } from '../invoices/actions'
 import { archiveSubmission } from '../submissions/actions/archive-submission'
 import { restoreSubmission } from '../submissions/actions/restore-submission'
 import type { RowOutcome } from './run-bulk'
+import { BOARD_BULK_ARCHIVE } from './bulk-archive-board'
 import { parseProjectsLandingSearchParams } from '../projects/_lib/parse-projects-search-params'
 import { parseProjectsSearchParams } from '../projects/_lib/parse-projects-search-params'
 
@@ -246,6 +247,7 @@ export const BULK_ARCHIVE_REGISTRY: Record<
     apply: (_user, id, archive) =>
       outcome(archive ? softDeleteProject({ id }) : restoreProject({ id })),
   },
+  ...BOARD_BULK_ARCHIVE,
   submission: {
     capability: 'submissions.manage',
     matchingIds: (user, params, archived, limit) => {

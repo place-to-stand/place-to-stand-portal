@@ -86,6 +86,25 @@ function assigneeJoinCondition(userId: string | null) {
 }
 
 /**
+ * Whose drag order sorts the board: the person's own, or in the everyone
+ * view (`userId` null) the viewer's (`orderFor`), whose drags there save to
+ * their own order. Without either, each assignee's order, as before.
+ */
+function sortOrderJoinCondition(
+  userId: string | null,
+  orderFor?: string | null
+) {
+  const owner = userId ?? orderFor ?? null
+  return and(
+    eq(taskAssigneeMetadataTable.taskId, tasksTable.id),
+    owner
+      ? eq(taskAssigneeMetadataTable.userId, owner)
+      : eq(taskAssigneeMetadataTable.userId, taskAssigneesTable.userId),
+    isNull(taskAssigneeMetadataTable.deletedAt)
+  )
+}
+
+/**
  * Scope shared by every My Tasks query: an optional single client, and
  * project types the board is hiding. A client selection already implies
  * CLIENT-type projects, so the type exclusion only bites in the all-clients
@@ -145,6 +164,8 @@ const STATUS_PRIORITY_SQL = sql`
 type FetchAssignedTasksSummaryOptions = {
   /** Null = tasks assigned to ANYONE (the board's "All tasks" view). */
   userId: string | null
+  /** With `userId` null: whose drag order sorts the columns (the viewer). */
+  orderFor?: string | null
   /** Restrict to one client's projects (null/undefined = every client). */
   companyId?: string | null
   /** Project types to withhold (e.g. PERSONAL, INTERNAL); empty = show all. */
@@ -175,6 +196,7 @@ type FetchAssignedTasksSummaryOptions = {
 
 async function loadAssignedTaskSummaries({
   userId,
+  orderFor = null,
   companyId = null,
   hiddenProjectTypes = [],
   projectIds = null,
@@ -279,11 +301,7 @@ async function loadAssignedTaskSummaries({
     )
     .leftJoin(
       taskAssigneeMetadataTable,
-      and(
-        eq(taskAssigneeMetadataTable.taskId, tasksTable.id),
-        eq(taskAssigneeMetadataTable.userId, taskAssigneesTable.userId),
-        isNull(taskAssigneeMetadataTable.deletedAt)
-      )
+      sortOrderJoinCondition(userId, orderFor)
     )
     .where(whereClause)
     .orderBy(...orderExpressions)
@@ -413,6 +431,7 @@ export type AssignedDoneSliceResult = {
  */
 export async function listAssignedDoneSlice({
   userId,
+  orderFor = null,
   companyId = null,
   hiddenProjectTypes = [],
   projectIds = null,
@@ -420,6 +439,8 @@ export async function listAssignedDoneSlice({
   before,
 }: {
   userId: string | null
+  /** With `userId` null: whose drag order sorts the slice (the viewer). */
+  orderFor?: string | null
   companyId?: string | null
   hiddenProjectTypes?: readonly ProjectTypeValue[]
   projectIds?: readonly string[] | null
@@ -463,11 +484,7 @@ export async function listAssignedDoneSlice({
     )
     .leftJoin(
       taskAssigneeMetadataTable,
-      and(
-        eq(taskAssigneeMetadataTable.taskId, tasksTable.id),
-        eq(taskAssigneeMetadataTable.userId, taskAssigneesTable.userId),
-        isNull(taskAssigneeMetadataTable.deletedAt)
-      )
+      sortOrderJoinCondition(userId, orderFor)
     )
     .where(
       and(

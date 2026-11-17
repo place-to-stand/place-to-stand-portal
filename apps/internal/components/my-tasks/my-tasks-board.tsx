@@ -5,6 +5,7 @@ import { DndContext } from '@dnd-kit/core'
 
 import { KanbanColumn } from '@/app/(dashboard)/projects/_components/kanban-column'
 import { TaskDragOverlay } from '@/app/(dashboard)/projects/_components/task-drag-overlay'
+import { produceGroupReorderUpdate } from './my-tasks-group-move'
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { useScrollPersistence } from '@/hooks/use-scroll-persistence'
 import { useColumnScrollPersistence } from '@/hooks/use-column-scroll-persistence'
@@ -24,6 +25,12 @@ import {
   boardGridStyle,
 } from '@/components/board/board-column'
 import { useKanbanDrag, type KanbanMove } from '@/lib/dnd/use-kanban-drag'
+import { BoardBulkBar } from '@/components/board/board-bulk-bar'
+import {
+  BoardSelectionProvider,
+  useBoardSelection,
+} from '@/components/board/board-selection'
+import { taskGroup, withoutHidden } from '@/lib/dnd/board-selection'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -38,11 +45,6 @@ type TaskLookupEntry = {
 export type TaskLookup = Map<string, TaskLookupEntry>
 
 type MyTasksBoardProps = {
-  /**
-   * Drag reordering persists per-person sort metadata, so the everyone
-   * view renders read-only cards (clicking still opens the sheet).
-   */
-  canReorder?: boolean
   entries: MyTasksInitialEntry[]
   /**
    * Entries the search hides. They stay in `entries` so a drag keeps their
@@ -81,7 +83,6 @@ export type MyTasksBoardReorderUpdate = {
 }
 
 export function MyTasksBoard({
-  canReorder = true,
   entries,
   hiddenTaskIds = NO_HIDDEN,
   taskLookup,
@@ -111,7 +112,6 @@ export function MyTasksBoard({
   const [recentlyMovedTaskId, setRecentlyMovedTaskId] = useState<string | null>(
     null
   )
-  const boardCanManage = canReorder
 
   const rowsByColumn = useMemo(
     () =>
@@ -123,21 +123,57 @@ export function MyTasksBoard({
       ),
     [entries, hiddenTaskIds, taskLookup]
   )
+  const selection = useBoardSelection(
+    useMemo(
+      () =>
+        MY_TASK_COLUMN_IDS.map(status =>
+          (rowsByColumn.get(status) ?? []).map(row => row.task.id)
+        ),
+      [rowsByColumn]
+    ),
+    true
+  )
   const tasksIn = useCallback(
     (status: MyTaskStatus) =>
-      (rowsByColumn.get(status) ?? []).map(row => row.task),
-    [rowsByColumn]
+      withoutHidden(
+        (rowsByColumn.get(status) ?? []).map(row => row.task),
+        selection.hidden
+      ),
+    [rowsByColumn, selection.hidden]
   )
 
   const handleDrop = useCallback(
-    ({ id: taskId, to }: KanbanMove<MyTaskStatus>) => {
-      const change = produceReorderUpdate({
-        entries,
-        hiddenTaskIds,
-        taskLookup,
-        taskId,
-        targetStatus: to.columnId,
-        targetIndex: to.index,
+    ({ id: taskId, to, group }: KanbanMove<MyTaskStatus>) => {
+      // Cards an archive is hiding count as filtered out, so a drop
+      // lands between the cards it was dropped between.
+      const hidden = selection.hidden.size
+        ? new Set([...hiddenTaskIds, ...selection.hidden])
+        : hiddenTaskIds
+      const change = group
+        ? produceGroupReorderUpdate({
+            entries,
+            hiddenTaskIds: hidden,
+            statusOf: id => {
+              const status = taskLookup.get(id)?.task.status
+              return status ? normalizeStatus(status) : null
+            },
+            taskId,
+            group,
+            targetStatus: to.columnId,
+            targetIndex: to.index,
+          })
+        : produceReorderUpdate({
+            entries,
+            hiddenTaskIds: hidden,
+            taskLookup,
+            taskId,
+            targetStatus: to.columnId,
+            targetIndex: to.index,
+          })
+      // The moved cards' columns, as the single move does.
+      group?.forEach(id => {
+        const meta = taskLookup.get(id)
+        if (change && meta) meta.task.status = to.columnId
       })
 
       if (!change) {
@@ -152,13 +188,17 @@ export function MyTasksBoard({
       })
       setTimeout(() => setRecentlyMovedTaskId(null), 300)
     },
-    [entries, hiddenTaskIds, onReorder, taskLookup]
+    [entries, hiddenTaskIds, onReorder, selection.hidden, taskLookup]
   )
 
+  // Send to top / bottom of a selected card moves the column's selection.
+  const sendTask = (move: KanbanMove<MyTaskStatus>) =>
+    handleDrop({ ...move, group: selection.columnGroup(move.id) ?? undefined })
   const drag = useKanbanDrag({
     columns: MY_TASK_COLUMN_IDS,
     items: tasksIn,
     onDrop: handleDrop,
+    groupOf: selection.dragGroup,
   })
   const draggingTask = drag.activeId
     ? (taskLookup.get(drag.activeId)?.task ?? null)
@@ -173,60 +213,70 @@ export function MyTasksBoard({
             className='h-full min-h-0 overflow-x-auto'
             onScroll={handleBoardScroll}
           >
-            <DndContext sensors={sensors} {...drag.dndContextProps}>
-              <div
-                className={BOARD_GRID_CLASS}
-                style={boardGridStyle(MY_TASK_BOARD_COLUMNS.length)}
-              >
-                {MY_TASK_BOARD_COLUMNS.map(column => {
-                  const rows = rowsByColumn.get(column.id) ?? []
-                  const handleCreateForColumn = onCreateTask
-                    ? () => onCreateTask(column.id)
-                    : undefined
+            <BoardSelectionProvider selection={selection}>
+              <DndContext sensors={sensors} {...drag.dndContextProps}>
+                <div
+                  className={BOARD_GRID_CLASS}
+                  style={boardGridStyle(MY_TASK_BOARD_COLUMNS.length)}
+                >
+                  {MY_TASK_BOARD_COLUMNS.map(column => {
+                    const rows = rowsByColumn.get(column.id) ?? []
+                    const handleCreateForColumn = onCreateTask
+                      ? () => onCreateTask(column.id)
+                      : undefined
 
-                  return (
-                    <KanbanColumn
-                      key={column.id}
-                      columnId={column.id}
-                      label={column.label}
-                      tasks={drag.itemsFor(column.id)}
-                      canManage={boardCanManage}
-                      onMoveTask={handleDrop}
-                      renderAssignees={renderAssignees}
-                      onEditTask={task => onOpenTask(task.id)}
-                      activeTaskId={activeTaskId}
-                      onCreateTask={handleCreateForColumn}
-                      enableCreateButton={Boolean(onCreateTask)}
-                      isDropTarget={drag.activeColumnId === column.id}
-                      recentlyMovedTaskId={recentlyMovedTaskId}
-                      getTaskCardOptions={getTaskCardOptions}
-                      columnScrollRef={getColumnRef(column.id)}
-                      onColumnScroll={getScrollHandler(column.id)}
-                      footerSlot={
-                        // Nothing done and nothing hidden means there's no
-                        // filtering to explain -- an empty column shouldn't
-                        // carry a caption about tasks it never had.
-                        column.id === 'DONE' &&
-                        (rows.length > 0 || olderDoneCount > 0) ? (
-                          <DoneWindowFooter
-                            doneWeeks={doneWeeks}
-                            hiddenCount={olderDoneCount}
-                            onWiden={onLoadOlderDone}
-                            isLoading={isLoadingOlderDone}
-                            error={doneWindowError}
-                          />
-                        ) : undefined
-                      }
-                    />
-                  )
-                })}
-              </div>
-              <TaskDragOverlay
-                draggingTask={draggingTask}
-                renderAssignees={renderAssignees}
-                getTaskCardOptions={getTaskCardOptions}
-              />
-            </DndContext>
+                    return (
+                      <KanbanColumn
+                        key={column.id}
+                        columnId={column.id}
+                        label={column.label}
+                        tasks={drag.itemsFor(column.id)}
+                        canManage
+                        onMoveTask={sendTask}
+                        renderAssignees={renderAssignees}
+                        onEditTask={task => onOpenTask(task.id)}
+                        activeTaskId={activeTaskId}
+                        onCreateTask={handleCreateForColumn}
+                        enableCreateButton={Boolean(onCreateTask)}
+                        isDropTarget={drag.activeColumnId === column.id}
+                        recentlyMovedTaskId={recentlyMovedTaskId}
+                        getTaskCardOptions={getTaskCardOptions}
+                        columnScrollRef={getColumnRef(column.id)}
+                        onColumnScroll={getScrollHandler(column.id)}
+                        footerSlot={
+                          // Nothing done and nothing hidden means there's no
+                          // filtering to explain -- an empty column shouldn't
+                          // carry a caption about tasks it never had.
+                          column.id === 'DONE' &&
+                          (rows.length > 0 || olderDoneCount > 0) ? (
+                            <DoneWindowFooter
+                              doneWeeks={doneWeeks}
+                              hiddenCount={olderDoneCount}
+                              onWiden={onLoadOlderDone}
+                              isLoading={isLoadingOlderDone}
+                              error={doneWindowError}
+                            />
+                          ) : undefined
+                        }
+                      />
+                    )
+                  })}
+                </div>
+                <TaskDragOverlay
+                  draggingTask={draggingTask}
+                  count={drag.activeCount}
+                  renderAssignees={renderAssignees}
+                  getTaskCardOptions={getTaskCardOptions}
+                />
+              </DndContext>
+            </BoardSelectionProvider>
+            <BoardBulkBar
+              entity='task'
+              selection={selection}
+              nameOf={id => taskLookup.get(id)?.task.title}
+              dueOnOf={id => taskLookup.get(id)?.task.due_on ?? null}
+              groupOf={id => taskGroup(taskLookup.get(id)?.task)}
+            />
           </div>
         </div>
       </div>

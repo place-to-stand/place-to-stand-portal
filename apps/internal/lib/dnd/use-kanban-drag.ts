@@ -15,6 +15,11 @@ import {
 
 import type { KanbanDropTarget } from './kanban'
 import {
+  gatherGroup,
+  measureBoardCards,
+  settleGroupDrop,
+} from './settle-group-drop'
+import {
   draftFromColumns,
   locateInDraft,
   moveInDraft,
@@ -30,6 +35,12 @@ export type KanbanMove<C extends string> = {
   id: string
   from: KanbanDropTarget<C>
   to: KanbanDropTarget<C>
+  /**
+   * Several selected cards moving together, in board order (`id` among
+   * them). They land as one block at `to`, whose index then counts the
+   * column's cards without any of the group.
+   */
+  group?: readonly string[]
 }
 
 export type KanbanDrop<C extends string> = KanbanMove<C> & {
@@ -44,6 +55,11 @@ type UseKanbanDragArgs<C extends string, T extends { id: string }> = {
   /** Called once on drop, only when the card moved. */
   onDrop: (drop: KanbanDrop<C>) => void
   onDragCancel?: () => void
+  /**
+   * The cards a drag of `id` takes along (`id` included, in board order),
+   * or null for the card alone: the board's selection.
+   */
+  groupOf?: (id: string) => readonly string[] | null
 }
 
 /**
@@ -66,6 +82,7 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   onDragStart,
   onDrop,
   onDragCancel,
+  groupOf,
 }: UseKanbanDragArgs<C, T>) {
   const [draft, setDraftState] = useState<KanbanDraft<C> | null>(null)
   const draftRef = useRef<KanbanDraft<C> | null>(null)
@@ -73,6 +90,9 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const lastOverId = useRef<UniqueIdentifier | null>(null)
   const movedColumn = useRef(false)
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [group, setGroup] = useState<readonly string[] | null>(null)
+  const groupFrame = useRef<number | null>(null)
+  const gathering = useRef<(() => void) | null>(null)
 
   const setDraft = useCallback((next: KanbanDraft<C> | null) => {
     draftRef.current = next
@@ -111,8 +131,15 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   )
 
   const reset = useCallback(() => {
+    if (groupFrame.current !== null) {
+      cancelAnimationFrame(groupFrame.current)
+      groupFrame.current = null
+    }
+    gathering.current?.()
+    gathering.current = null
     setDraft(null)
     setActiveId(null)
+    setGroup(null)
     originRef.current = null
     lastOverId.current = null
     movedColumn.current = false
@@ -121,16 +148,41 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const id = String(event.active.id)
-      const start = draftFromColumns(columns, column =>
+      // The other cards of a group leave the board while it moves, and
+      // drop in after the dragged one.
+      const moving = groupOf?.(id) ?? null
+      const along = new Set(moving?.filter(other => other !== id))
+      const all = draftFromColumns(columns, column =>
         items(column).map(item => item.id)
       )
-      originRef.current = locateInDraft(start, id)
+      const withoutAlong = (draft: KanbanDraft<C>) =>
+        along.size ? removeFromDraft(draft, along) : draft
+      originRef.current = locateInDraft(withoutAlong(all), id)
       lastOverId.current = null
-      setDraft(start)
+      setDraft(all)
       setActiveId(id)
+      setGroup(moving)
       onDragStart?.(event)
+      if (!along.size) return
+
+      // The rest of the group leaves the board only once dnd-kit has
+      // measured the grabbed card, so the stack starts under the pointer
+      // rather than where the card slides to. The drop slot stays one card
+      // tall, so the cards around it stay put.
+      // Two frames: dnd-kit measures the grabbed card in the frame after
+      // the drag starts, and one frame was too soon (the stack started where
+      // the card slid to).
+      groupFrame.current = requestAnimationFrame(() => {
+        groupFrame.current = requestAnimationFrame(() => {
+          groupFrame.current = null
+          const current = draftRef.current
+          if (!current || !locateInDraft(current, id)) return
+          gathering.current = gatherGroup({ along: [...along] })
+          setDraft(withoutAlong(current))
+        })
+      })
     },
-    [columns, items, onDragStart, setDraft]
+    [columns, groupOf, items, onDragStart, setDraft]
   )
 
   const handleDragOver = useCallback(
@@ -171,17 +223,38 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
       const current = draftRef.current
       const from = originRef.current
       const id = String(event.active.id)
+      const moving = group
+      // A drop before the group left the draft (a flick within one frame)
+      // still counts the column without it, and never lands on its own card.
+      const along = new Set(moving?.filter(other => other !== id))
+      const draft =
+        current && along.size ? removeFromDraft(current, along) : current
+      const overId = event.over ? String(event.over.id) : null
       const to =
-        current && event.over
-          ? settleDraft(current, id, String(event.over.id))
+        draft && overId
+          ? settleDraft(draft, id, along.has(overId) ? id : overId)
           : null
       reset()
 
       if (!from || !to) return
+      if (moving) {
+        // The block's place counts the column without the group: the draft
+        // holds only the dragged card of it.
+        const before = measureBoardCards()
+        const stack = event.active.rect.current.translated
+        onDrop({ id, from, to, group: moving, event })
+        settleGroupDrop({
+          before,
+          stack: stack ? { top: stack.top, left: stack.left } : null,
+          dragged: id,
+          group: moving,
+        })
+        return
+      }
       if (from.columnId === to.columnId && from.index === to.index) return
       onDrop({ id, from, to, event })
     },
-    [onDrop, reset]
+    [group, onDrop, reset]
   )
 
   const handleDragCancel = useCallback(() => {
@@ -227,6 +300,8 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
 
   return {
     activeId,
+    /** How many cards the drag moves (1 without a group). */
+    activeCount: group?.length ?? 1,
     /** The column the dragged card sits in now, or null when not dragging. */
     activeColumnId,
     itemsFor,
@@ -249,4 +324,16 @@ export function useKanbanDrag<C extends string, T extends { id: string }>({
 const BOARD_AUTO_SCROLL: AutoScrollOptions = {
   threshold: { x: 0.08, y: 0.15 },
   acceleration: 6,
+}
+
+function removeFromDraft<C extends string>(
+  draft: KanbanDraft<C>,
+  ids: ReadonlySet<string>
+): KanbanDraft<C> {
+  return new Map(
+    [...draft].map(([column, cards]) => [
+      column,
+      cards.filter(card => !ids.has(card)),
+    ])
+  )
 }

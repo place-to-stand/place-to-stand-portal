@@ -39,8 +39,47 @@ export type BulkBarAction = BulkVerb & {
   run: (selection: BulkSelectionInput) => Promise<BulkActionResult>
 }
 
+/**
+ * Shows a change before the save lands (a board: archived cards leave, due
+ * dates change). Gets the ids about to change and returns what to do once
+ * the result is in, so refused ids can be put back.
+ */
+export type BulkOptimistic = (
+  ids: readonly string[]
+) => (result: BulkActionResult) => void
+
+/**
+ * Runs one bulk action from the bar, for controls a list adds itself (a
+ * board's Set assignee and Set due date menus): same chunks, toasts and
+ * refresh as the bar's own buttons.
+ */
+export type RunBulkAction = (
+  verb: BulkVerb,
+  label: string,
+  action: (input: BulkSelectionInput) => Promise<BulkActionResult>,
+  optimistic?: BulkOptimistic,
+  /**
+   * Keeps the rows ticked after the change lands, for an edit that leaves
+   * them on screen (a board's Set assignee and Set due date).
+   */
+  options?: { keepSelection?: boolean }
+) => void
+
+/** What the bar reads of a selection: a list's ticks or a board's cards. */
+export type BulkBarSelection = Pick<
+  RowSelection,
+  | 'ids'
+  | 'allMatching'
+  | 'count'
+  | 'matchingCount'
+  | 'active'
+  | 'canSelectAllMatching'
+  | 'selectAllMatching'
+  | 'clear'
+>
+
 type BulkActionBarProps = {
-  selection: RowSelection
+  selection: BulkBarSelection
   entity: BulkArchiveEntity
   /** The active list archives; its Archive tab restores. */
   mode: 'active' | 'archive'
@@ -57,6 +96,13 @@ type BulkActionBarProps = {
   onDone?: () => void
   /** The list's own actions, shown before Archive or Restore. */
   actions?: BulkBarAction[]
+  /**
+   * Controls of the list's own, shown before its actions (a board's Set
+   * assignee and Set due date menus); `run` runs one like the bar's buttons.
+   */
+  controls?: (run: RunBulkAction, pending: boolean) => ReactNode
+  /** Shows Archive before it saves (a board takes the cards off). */
+  optimisticArchive?: BulkOptimistic
   /** Stands in for the server actions (the /design demo). */
   runAction?: typeof bulkSetArchived
   resolveMatching?: typeof resolveBulkMatchingIds
@@ -77,6 +123,8 @@ export function BulkActionBar({
   nameOf,
   onDone,
   actions = [],
+  controls,
+  optimisticArchive,
   runAction = bulkSetArchived,
   resolveMatching = resolveBulkMatchingIds,
 }: BulkActionBarProps) {
@@ -93,11 +141,7 @@ export function BulkActionBar({
 
   const selected = countLabel(entity, selection.count)
 
-  const runWith = (
-    verb: BulkVerb,
-    label: string,
-    action: (input: BulkSelectionInput) => Promise<BulkActionResult>
-  ) => {
+  const runWith: RunBulkAction = (verb, label, action, optimistic, options) => {
     const params = {
       ...presetParams,
       ...Object.fromEntries(
@@ -108,6 +152,7 @@ export function BulkActionBar({
     }
     const allMatching = selection.allMatching
     const pageIds = [...selection.ids]
+    const settle = !allMatching && optimistic ? optimistic(pageIds) : null
 
     setPendingLabel(label)
     startTransition(async () => {
@@ -127,6 +172,7 @@ export function BulkActionBar({
       } catch {
         result = { done: 0, failed: [], warnings: [], error: CHUNK_FAILED }
       }
+      settle?.(result)
       setConfirming(false)
       setPendingLabel(null)
       for (const message of describeBulkResult({
@@ -139,7 +185,7 @@ export function BulkActionBar({
       }
       // Rows done before a failure changed too, so the list refreshes.
       if (result.done > 0 || result.error === CHUNK_FAILED) {
-        selection.clear()
+        if (!options?.keepSelection) selection.clear()
         if (onDone) onDone()
         else router.refresh()
       }
@@ -152,7 +198,8 @@ export function BulkActionBar({
         ? { verb: 'archive', past: 'archived' }
         : { verb: 'restore', past: 'restored' },
       archive ? 'archive' : 'restore',
-      input => runAction({ entity, archive, selection: input })
+      input => runAction({ entity, archive, selection: input }),
+      archive ? optimisticArchive : undefined
     )
 
   // The bar renders into <body>: as the list card's last child it would
@@ -184,6 +231,7 @@ export function BulkActionBar({
               </Button>
             ) : null}
             <div className='flex items-center gap-2'>
+              {controls?.(runWith, isPending)}
               {actions.map(action => (
                 <Button
                   key={action.label}

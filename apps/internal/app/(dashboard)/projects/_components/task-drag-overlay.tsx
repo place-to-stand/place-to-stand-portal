@@ -12,6 +12,8 @@ type TaskDragOverlayProps = {
     task: TaskWithRelations
   ) => Array<{ id: string; name: string; avatarUrl: string | null }>
   variant?: 'board' | 'calendar'
+  /** Cards the drag moves (the board's selection), shown as a stack. */
+  count?: number
   getTaskCardOptions?: (task: TaskWithRelations) =>
     | {
         context?: TaskContextDetails
@@ -23,6 +25,7 @@ export function TaskDragOverlay({
   draggingTask,
   renderAssignees,
   variant = 'board',
+  count = 1,
   getTaskCardOptions,
 }: TaskDragOverlayProps) {
   const assignees = draggingTask ? renderAssignees(draggingTask) : []
@@ -39,7 +42,7 @@ export function TaskDragOverlay({
   }
 
   return (
-    <BoardDragOverlay>
+    <BoardDragOverlay count={count}>
       {draggingTask ? (
         <TaskCardPreview
           task={draggingTask}

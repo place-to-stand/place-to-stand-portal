@@ -1,5 +1,5 @@
 export { saveLead } from './save-lead'
-export { moveLead } from './move-lead'
+export { moveLead, moveLeads } from './move-lead'
 export { archiveLead } from './archive-lead'
 export { restoreLead } from './restore-lead'
 export { setLeadAssignee } from './set-lead-assignee'

@@ -135,6 +135,8 @@ export default async function MyTasksViewRoute({
 
   const assignedSummaries = await listAssignedTaskSummaries({
     userId: selectedAssigneeId === 'all' ? null : selectedAssigneeId,
+    // Everyone's tasks sort by the viewer's own order, which drags there save.
+    orderFor: user.id,
     companyId: selectedClientId,
     hiddenProjectTypes,
     projectIds: workableProjectIds,

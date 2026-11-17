@@ -473,6 +473,9 @@ export function MyTasksPage({
           router.refresh()
         } catch {
           setEntries(update.previousEntries)
+          // Cards' columns were moved on screen and some may have saved:
+          // reload the board as saved.
+          router.refresh()
         }
       })
     },
@@ -604,7 +607,6 @@ export function MyTasksPage({
             <ProjectsBoardEmpty message='No tasks match the current filters.' />
           ) : (
             <MyTasksBoard
-              canReorder={selectedAssigneeId !== 'all'}
               entries={visibleBoardEntries}
               hiddenTaskIds={hiddenTaskIds}
               taskLookup={taskLookup}

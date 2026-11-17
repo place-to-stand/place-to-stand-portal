@@ -24,6 +24,7 @@ import {
 import { TaskCard, type TaskContextDetails } from '../task-card'
 import type { TaskEdgeMoves } from '@/components/table/record-context-menu'
 import { boardColumnClass } from '@/components/board/board-column'
+import { useBoardSelectionContext } from '@/components/board/board-selection'
 
 type TaskCardOptions = {
   context?: TaskContextDetails
@@ -86,6 +87,7 @@ export function KanbanColumn({
     },
   })
   const columnRef = useRef<HTMLDivElement | null>(null)
+  const selection = useBoardSelectionContext()
   // Send to top / bottom slides the cards, as a drag would show the move.
   const captureFlip = useFlipOnMove(columnRef, tasks)
   const moveTask = onMoveTask
@@ -107,6 +109,7 @@ export function KanbanColumn({
         setNodeRef(node)
         columnRef.current = node
       }}
+      data-board-column={columnId}
       className={boardColumnClass(getTaskStatusHue(columnId), isDropTarget)}
     >
       <div className='flex items-center justify-between gap-2'>
@@ -155,7 +158,14 @@ export function KanbanColumn({
               context={getTaskCardOptions?.(task)?.context}
               move={
                 canManage && moveTask
-                  ? columnEdgeMoves(columnId, tasks, index, task.id, moveTask)
+                  ? columnEdgeMoves(
+                      columnId,
+                      tasks,
+                      index,
+                      task.id,
+                      moveTask,
+                      selection?.columnGroup(task.id) ?? null
+                    )
                   : undefined
               }
             />
@@ -169,14 +179,16 @@ export function KanbanColumn({
 
 /**
  * Send to top / bottom for the card at `index`: the same move as dragging it
- * to that end of its column. Null where the card already sits there.
+ * to that end of its column. Null where the card already sits there, or for
+ * a selected card, where the column's selected cards already sit together.
  */
 function columnEdgeMoves(
   columnId: BoardColumnId,
   tasks: readonly TaskWithRelations[],
   index: number,
   id: string,
-  onMoveTask: (move: KanbanMove<BoardColumnId>) => void
+  onMoveTask: (move: KanbanMove<BoardColumnId>) => void,
+  group: readonly string[] | null
 ): TaskEdgeMoves {
   const last = tasks.length - 1
   const moveTo = (to: number) => () =>
@@ -185,8 +197,15 @@ function columnEdgeMoves(
       from: { columnId, index },
       to: { columnId, index: to },
     })
+  const ids = tasks.map(task => task.id)
+  const sitsAt = (end: readonly string[]) =>
+    group ? end.join() === group.join() : true
+  const atTop = group ? sitsAt(ids.slice(0, group.length)) : index === 0
+  const atBottom = group
+    ? sitsAt(ids.slice(ids.length - group.length))
+    : index === last
   return {
-    toTop: index > 0 ? moveTo(0) : null,
-    toBottom: index < last ? moveTo(last) : null,
+    toTop: atTop ? null : moveTo(0),
+    toBottom: atBottom ? null : moveTo(last),
   }
 }

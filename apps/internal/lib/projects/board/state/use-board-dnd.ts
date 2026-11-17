@@ -10,6 +10,7 @@ import {
   type ColumnTaskFilter,
   type ReorderOutcome,
 } from './dnd-helpers'
+import { useGroupTaskMove } from './use-group-task-move'
 import type { TaskLookup } from './types'
 import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
@@ -46,9 +47,31 @@ export const useBoardDnDState = ({
     clearRecentlyMovedTimer()
   }, [clearRecentlyMovedTimer, setRecentlyMovedTaskId])
 
+  const markMoved = useCallback(
+    (id: string) => {
+      setRecentlyMovedTaskId(id)
+      scheduleRecentlyMovedReset()
+    },
+    [scheduleRecentlyMovedReset, setRecentlyMovedTaskId]
+  )
+  const moveGroup = useGroupTaskMove({
+    activeProject,
+    tasksByProject,
+    setTasksByProject,
+    startTransition,
+    setFeedback,
+    filterColumnTasks,
+    onMoved: markMoved,
+  })
+
   const handleTaskDrop = useCallback(
     (drop: KanbanMove<BoardColumnId>) => {
       if (!canManageTasks || !activeProject) {
+        return
+      }
+
+      if (drop.group) {
+        moveGroup({ ...drop, group: drop.group })
         return
       }
 
@@ -176,6 +199,7 @@ export const useBoardDnDState = ({
       activeProject,
       canManageTasks,
       filterColumnTasks,
+      moveGroup,
       setFeedback,
       setTasksByProject,
       scheduleRecentlyMovedReset,

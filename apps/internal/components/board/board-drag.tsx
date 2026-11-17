@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   defaultDropAnimationSideEffects,
   DragOverlay,
@@ -15,10 +15,73 @@ import { BOARD_DROP_ANIMATION_MS } from '@/lib/dnd/kanban'
  * (`w-full`) and never change width on drop. On drop it glides into the
  * card's new slot.
  */
-export function BoardDragOverlay({ children }: { children: ReactNode }) {
+export function BoardDragOverlay({
+  children,
+  count = 1,
+}: {
+  children: ReactNode
+  /** Cards the drag moves: two or more shows a stack with the count. */
+  count?: number
+}) {
+  // The drop resets the drag (count back to 1, no children) in the same
+  // render that reads the drop animation, so a group's drop goes by the
+  // count it was dragged with: no overlay glide, since the cards themselves
+  // slide out of the stack (`settleGroupDrop`).
+  const [draggedCount, setDraggedCount] = useState(count)
+  if (children && count !== draggedCount) setDraggedCount(count)
+
   return (
-    <DragOverlay dropAnimation={BOARD_DROP_ANIMATION}>{children}</DragOverlay>
+    <DragOverlay dropAnimation={draggedCount > 1 ? null : BOARD_DROP_ANIMATION}>
+      {children && count > 1 ? (
+        // Marked so Escape cancels the drag, not the selection.
+        <div className='relative' data-board-dragging='' ref={fadeInStack}>
+          {/* The cards behind it, offset like a stack. */}
+          {count > 2 ? (
+            <div
+              aria-hidden
+              data-stack-layer=''
+              className='bg-card absolute inset-0 translate-x-4 translate-y-4 rounded-lg border shadow-sm'
+            />
+          ) : null}
+          <div
+            aria-hidden
+            data-stack-layer=''
+            className='bg-card absolute inset-0 translate-x-2 translate-y-2 rounded-lg border shadow-sm'
+          />
+          <div className={`relative ${SOLID_BACKING_CLASS}`}>{children}</div>
+          <span
+            data-drag-count={count}
+            data-stack-layer=''
+            className='bg-primary text-primary-foreground absolute -top-2.5 -right-2.5 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-semibold tabular-nums shadow-sm'
+          >
+            {count}
+          </span>
+        </div>
+      ) : children ? (
+        <div data-board-dragging='' className={SOLID_BACKING_CLASS}>
+          {children}
+        </div>
+      ) : null}
+    </DragOverlay>
   )
+}
+
+/**
+ * The cards behind the stack and its count show as the group's cards fly
+ * in (`gatherGroup`), not before they arrive.
+ */
+function fadeInStack(node: HTMLDivElement | null) {
+  if (!node || typeof node.animate !== 'function') return
+  for (const layer of node.querySelectorAll<HTMLElement>(
+    '[data-stack-layer]'
+  )) {
+    layer.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: BOARD_DROP_ANIMATION_MS,
+      delay: BOARD_DROP_ANIMATION_MS,
+      easing: 'ease-out',
+      fill: 'backwards',
+    })
+  }
 }
 
 const BOARD_DROP_ANIMATION: DropAnimation = {
@@ -35,3 +98,9 @@ const BOARD_DROP_ANIMATION: DropAnimation = {
  */
 export const BOARD_CARD_GHOST_CLASS =
   'border-primary/25 bg-primary/3 border-dashed shadow-none *:invisible'
+
+/**
+ * A selected card's fill is a see-through tint: lifted off its column it
+ * would show the board through it, so it rides on a solid card colour.
+ */
+const SOLID_BACKING_CLASS = 'bg-card rounded-lg'
