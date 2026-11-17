@@ -187,9 +187,23 @@ export const useBoardDnDState = ({
         } catch (error) {
           console.error('Task reorder failed', error)
           setFeedback('Unable to reorder task.')
+          // Put back only this card, and only if nothing moved it since:
+          // other moves made while it saved keep their place.
+          const before = rollbackTasks.find(task => task.id === taskId)
           setTasksByProject(prev => {
+            const tasks = prev.get(projectId)
+            if (!tasks || !before) return prev
             const next = new Map(prev)
-            next.set(projectId, rollbackTasks)
+            next.set(
+              projectId,
+              tasks.map(task =>
+                task.id === taskId &&
+                task.status === destinationStatus &&
+                task.rank === nextRank
+                  ? before
+                  : task
+              )
+            )
             return next
           })
         }
