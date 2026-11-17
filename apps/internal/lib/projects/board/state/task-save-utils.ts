@@ -12,28 +12,15 @@ export const placeOf = (task: TaskPlace): TaskPlace => ({
   rank: task.rank,
 })
 
-/**
- * The board with `fields` applied to one card, only while that card still
- * sits at `placed` (a newer move hasn't taken it elsewhere). Returns the
- * same map when nothing changes.
- */
-export function updateIfStillPlaced(
+/** The board with `fields` applied to one card (same map if it's gone). */
+export function updateTask(
   lookup: TaskLookup,
   projectId: string,
   taskId: string,
-  placed: TaskPlace,
   fields: Partial<TaskWithRelations>
 ): TaskLookup {
   const tasks = lookup.get(projectId)
-  const task = tasks?.find(item => item.id === taskId)
-  if (
-    !tasks ||
-    !task ||
-    task.status !== placed.status ||
-    task.rank !== placed.rank
-  ) {
-    return lookup
-  }
+  if (!tasks?.some(item => item.id === taskId)) return lookup
   return new Map(lookup).set(
     projectId,
     tasks.map(item => (item.id === taskId ? { ...item, ...fields } : item))
@@ -42,12 +29,18 @@ export function updateIfStillPlaced(
 
 type SavedTask = TaskPlace & { updated_at?: string | null }
 
-/** `useTaskSaves`, outside React (see there). */
+/**
+ * `useTaskSaves`, outside React (see there). `onRefused` runs after a
+ * refused save, for the board to ask the server where its cards are.
+ */
 export function createTaskSaves(
-  setTasksByProject: Dispatch<SetStateAction<TaskLookup>>
+  setTasksByProject: Dispatch<SetStateAction<TaskLookup>>,
+  onRefused: () => void = () => {}
 ) {
   const queues = new Map<string, Promise<unknown>>()
   const confirmed = new Map<string, TaskPlace>()
+  const latest = new Map<string, number>()
+  let moves = 0
 
   return (
     projectId: string,
@@ -55,22 +48,28 @@ export function createTaskSaves(
     request: () => Promise<SavedTask | null>
   ): Promise<boolean> => {
     const { id, before, placed } = move
+    const token = ++moves
+    latest.set(id, token)
     if (!confirmed.has(id)) confirmed.set(id, before)
     const run = (queues.get(id) ?? Promise.resolve())
       .catch(() => undefined)
       .then(request)
     queues.set(id, run)
 
-    const settle = (fields: Partial<TaskWithRelations>) =>
-      setTasksByProject(prev =>
-        updateIfStillPlaced(prev, projectId, id, placed, fields)
-      )
+    // Only the card's newest move settles it: wherever the board shows it
+    // now (a refresh may have put it back meanwhile), that save's answer is
+    // where it really is.
+    const settle = (fields: Partial<TaskWithRelations>) => {
+      if (latest.get(id) !== token) return
+      setTasksByProject(prev => updateTask(prev, projectId, id, fields))
+    }
     const done = () => {
       // Nothing else queued for this card: forget its last saved place, so
       // a later move starts from the board (which a refresh updates).
       if (queues.get(id) === run) {
         queues.delete(id)
         confirmed.delete(id)
+        latest.delete(id)
       }
     }
 
@@ -83,7 +82,7 @@ export function createTaskSaves(
                 ...placeOf(saved),
                 ...(saved.updated_at ? { updated_at: saved.updated_at } : {}),
               }
-            : {}
+            : placed
         )
         done()
         return true
@@ -92,6 +91,7 @@ export function createTaskSaves(
         console.error('Task reorder failed', error)
         settle(confirmed.get(id) ?? before)
         done()
+        onRefused()
         return false
       }
     )

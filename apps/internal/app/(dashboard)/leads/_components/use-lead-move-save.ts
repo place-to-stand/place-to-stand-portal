@@ -7,16 +7,16 @@ import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
 import { undoLeadMoves } from '@/lib/leads/undo-lead-moves'
+import { isLatestLeadMove, markLeadMove } from '@/lib/leads/lead-move-tokens'
 
 import { moveLead } from '../actions'
-import { isInColumn } from '../_lib/lead-board-reorder'
 
 /**
  * Saves one lead's move, already on the board. Moves can overlap (the
  * board doesn't wait for a save), so a failure puts back only this lead,
  * against the board as it is now, and only if it hasn't moved since. The
  * Won billing prompt follows the server: it shows when this save took the
- * lead into Won, unless the lead has moved out of Won since.
+ * lead into Won, unless a later drop has moved the lead since.
  */
 export function useLeadMoveSave({
   columnsRef,
@@ -40,6 +40,7 @@ export function useLeadMoveSave({
       leadId: string,
       draggedLead: LeadRecord | null
     ) => {
+      const token = markLeadMove(columnsRef, [leadId])
       startTransition(async () => {
         const response = await moveLead({
           leadId,
@@ -68,9 +69,9 @@ export function useLeadMoveSave({
           })
         } else if (
           // Just won (the server says this save took it into Won), and not
-          // since moved out: billing is the next step.
+          // dropped again since: billing is the next step.
           response.won &&
-          isInColumn(columnsRef.current, 'CLOSED_WON', leadId) &&
+          isLatestLeadMove(columnsRef, leadId, token) &&
           draggedLead &&
           onLeadClosedWon
         ) {

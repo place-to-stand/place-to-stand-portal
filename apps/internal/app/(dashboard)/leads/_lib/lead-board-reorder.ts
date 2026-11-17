@@ -28,19 +28,6 @@ export function findLeadById(
   return null
 }
 
-/** Whether the board shows the lead in that column now. */
-export function isInColumn(
-  columns: LeadBoardColumnData[],
-  columnId: LeadStatusValue,
-  leadId: string
-) {
-  return Boolean(
-    columns
-      .find(column => column.id === columnId)
-      ?.leads.some(lead => lead.id === leadId)
-  )
-}
-
 export function produceLeadReorder({
   columns,
   leadId,

@@ -14,8 +14,9 @@ import {
 import { LEAD_NOT_FOUND_MESSAGE } from '@/lib/leads/move-messages'
 
 import { moveLeads } from '../actions'
-import { isInColumn, produceLeadGroupMove } from '../_lib/lead-board-reorder'
+import { produceLeadGroupMove } from '../_lib/lead-board-reorder'
 import { undoLeadMoves } from '@/lib/leads/undo-lead-moves'
+import { isLatestLeadMove, markLeadMove } from '@/lib/leads/lead-move-tokens'
 
 /**
  * Several selected leads dragged together: they show in their new place at
@@ -74,6 +75,10 @@ export function useLeadGroupMove({
       onMoved(move.id)
       if (!canManage) return
 
+      const token = markLeadMove(
+        columnsRef,
+        result.moved.map(({ lead }) => lead.id)
+      )
       startTransition(async () => {
         const response = await moveLeads({
           moves: result.moved.map(({ lead, rank }) => ({
@@ -126,11 +131,11 @@ export function useLeadGroupMove({
           })
         }
         // Just won (the server says this save took it into Won): billing
-        // is the next step, for the first won lead still in Won.
+        // is the next step, for the first won lead not dropped again since.
         const won = result.moved.find(
           ({ lead }) =>
             response?.won.includes(lead.id) &&
-            isInColumn(columnsRef.current, 'CLOSED_WON', lead.id)
+            isLatestLeadMove(columnsRef, lead.id, token)
         )
         if (won) onLeadClosedWon?.(won.lead)
       })

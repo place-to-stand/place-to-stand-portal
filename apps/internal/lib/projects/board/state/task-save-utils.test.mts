@@ -204,3 +204,51 @@ test("other cards' saves don't wait, and don't touch each other", async () => {
   assert.deepEqual(place('x'), { status: 'B', rank: 'a' })
   slow.answer(null)
 })
+
+test('the newest move settles its card even after a refresh put it back', async () => {
+  const { saves, show, pending, place } = setup({
+    x: { status: 'A', rank: 'a' },
+  })
+  const save = pending('save')
+  show('x', { status: 'B', rank: 'b' })
+  const one = saves(
+    'p',
+    {
+      id: 'x',
+      before: { status: 'A', rank: 'a' },
+      placed: { status: 'B', rank: 'b' },
+    },
+    save.request
+  )
+  // A refresh from before the save lands: the board shows A again.
+  show('x', { status: 'A', rank: 'a' })
+  save.answer({ status: 'B', rank: 'b' })
+  await one
+  assert.deepEqual(place('x'), { status: 'B', rank: 'b' })
+})
+
+test('a refused save asks for a refresh', async () => {
+  const restore = quiet()
+  let refreshed = 0
+  let lookup: TaskLookup = new Map([
+    ['p', [{ id: 'x', status: 'B', rank: 'b' }] as never],
+  ])
+  const saves = createTaskSaves(
+    (update => {
+      lookup = typeof update === 'function' ? update(lookup) : update
+    }) as never,
+    () => refreshed++
+  )
+  await saves(
+    'p',
+    {
+      id: 'x',
+      before: { status: 'A', rank: 'a' },
+      placed: { status: 'B', rank: 'b' },
+    },
+    () => Promise.reject(new Error('no'))
+  )
+  assert.equal(refreshed, 1)
+  assert.equal(lookup.get('p')![0]!.status, 'A')
+  restore()
+})
