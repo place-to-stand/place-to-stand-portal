@@ -13,7 +13,12 @@ export function columnEdgeMoves<C extends string>(
   index: number,
   onMove: (move: KanbanMove<C>) => void,
   group: readonly string[] | null
-): { toTop: (() => void) | null; toBottom: (() => void) | null } {
+): {
+  toTop: (() => void) | null
+  toBottom: (() => void) | null
+  /** How many cards a send moves (the group, or the one card). */
+  count: number
+} {
   const id = ids[index]!
   const last = ids.length - 1
   const moveTo = (to: number) => () =>
@@ -31,5 +36,6 @@ export function columnEdgeMoves<C extends string>(
   return {
     toTop: atTop ? null : moveTo(0),
     toBottom: atBottom ? null : moveTo(last),
+    count: group?.length ?? 1,
   }
 }

@@ -158,12 +158,14 @@ export async function POST(
           tax_amount: taxAmountCents.toString(),
           tax_rate_percent: taxRatePercent,
         },
-        payment_method_types: ['card'],
+        allowed_payment_method_types: ['card'],
       },
       {
         // Two clicks at once read the same row, so they get the same intent
         // instead of two. Any later write to the invoice changes the key.
-        idempotencyKey: `invoice-checkout:${invoice.id}:${totalCents}:${invoice.stripePaymentIntentId ?? 'none'}:${invoice.updatedAt}`,
+        // v2: Stripe 23 sends allowed_payment_method_types, and Stripe refuses
+        // a key it saw with other params, so keys from before stay unused.
+        idempotencyKey: `invoice-checkout:v2:${invoice.id}:${totalCents}:${invoice.stripePaymentIntentId ?? 'none'}:${invoice.updatedAt}`,
       }
     )
 

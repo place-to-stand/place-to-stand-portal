@@ -38,6 +38,8 @@ import { DueDateSubmenu, type DueDateMenuConfig } from './due-date-submenu'
 export type CardEdgeMoves = {
   toTop: (() => void) | null
   toBottom: (() => void) | null
+  /** Selected cards moving together; the toast counts them. */
+  count: number
 }
 
 /** The menu's Send to top / bottom: the moves, and the card's name. */
@@ -186,14 +188,21 @@ function RecordContextMenuItems({
 }) {
   const { open, duplicate } = useSheetParams()
   const { toast } = useToast()
-  const sendTo = (run: (() => void) | null, title: string) => () => {
+  const sendTo = (run: (() => void) | null, end: 'top' | 'bottom') => () => {
     if (!run || !move) return
     run()
-    toast({
-      title,
-      description: move.name,
-      ...(isSheetEntityKey(entity) ? { link: toastLink(entity, id) } : {}),
-    })
+    // A group names how many moved; one card names itself and links to it.
+    toast(
+      move.count > 1
+        ? { title: `Moved ${move.count} ${entity}s to ${end}` }
+        : {
+            title: `Moved to ${end}`,
+            description: move.name,
+            ...(isSheetEntityKey(entity)
+              ? { link: toastLink(entity, id) }
+              : {}),
+          }
+    )
   }
   const canDuplicate = duplicable && isDuplicableSheetEntity(entity)
   const lifecycleDisabled = pending || Boolean(archiveDisabledReason)
@@ -238,14 +247,14 @@ function RecordContextMenuItems({
           ) : null}
           <ContextMenuItem
             disabled={!move.toTop}
-            onClick={sendTo(move.toTop, 'Moved to top')}
+            onClick={sendTo(move.toTop, 'top')}
           >
             <ArrowUpToLine />
             Send to top
           </ContextMenuItem>
           <ContextMenuItem
             disabled={!move.toBottom}
-            onClick={sendTo(move.toBottom, 'Moved to bottom')}
+            onClick={sendTo(move.toBottom, 'bottom')}
           >
             <ArrowDownToLine />
             Send to bottom

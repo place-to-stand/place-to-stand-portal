@@ -19,12 +19,15 @@ import {
 import { columnGroup, dragGroup } from '@/lib/dnd/kanban-group'
 
 /**
- * A selected card: the primary border and a ring around it, over whatever
+ * A selected card: the primary border and a ring inside it, over whatever
  * the card shows otherwise (open, done, focused: closing a sheet hands focus
- * back to its card), so it reads at a glance. Focused, the ring is wider.
+ * back to its card), so it reads at a glance. The ring is inset because a
+ * column's scroll pane clips anything drawn outside its full-width cards,
+ * which cut the ring off down the sides (board cards draw their focus
+ * ring inside for the same reason). Focused, the ring is wider.
  */
 export const BOARD_CARD_SELECTED_CLASS =
-  'border-primary hover:border-primary ring-primary bg-primary/5 ring-1 focus-visible:border-primary focus-visible:ring-primary'
+  'border-primary hover:border-primary ring-primary bg-primary/5 ring-1 ring-inset focus-visible:border-primary focus-visible:ring-primary focus-visible:ring-2'
 
 const EMPTY: ReadonlySet<string> = new Set()
 
