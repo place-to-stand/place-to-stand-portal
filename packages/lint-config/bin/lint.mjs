@@ -101,23 +101,49 @@ export function suppressionsFor(problems) {
 // everything else: it is caught here instead, outside Oxlint.
 const BLANKET_DISABLE =
   /^[\t ]*\{?\/(?:\*|\/)\s*(?:eslint|oxlint)-disable(?=\s*(?:\*\/|--|$))/gm
+// An inline rule config (`/* eslint no-console: off */`), which Oxlint
+// ignores: ESLint's reportUnusedInlineConfigs used to flag the stale ones.
+const INLINE_CONFIG = /^[\t ]*\{?\/\*\s*(?:eslint|oxlint)\s+[\w@/-]+\s*:/gm
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/
 
-/** Problems for every blanket disable comment in the files Oxlint lints. */
+const COMMENT_CHECKS = [
+  [
+    BLANKET_DISABLE,
+    'pts/no-unlimited-disable',
+    'Name the rules this comment disables.',
+  ],
+  [
+    INLINE_CONFIG,
+    'pts/no-inline-config',
+    'Oxlint ignores inline rule config: set the rule in the lint config instead.',
+  ],
+]
+
+/** Problems for disable and config comments Oxlint can't police itself. */
 export function blanketDisables(file, text) {
   const problems = []
-  for (const match of text.matchAll(BLANKET_DISABLE)) {
-    const before = text.slice(0, match.index).split('\n')
-    problems.push({
-      file,
-      line: before.length,
-      column: match[0].indexOf('/') + 1,
-      ruleId: 'pts/no-unlimited-disable',
-      severity: 'error',
-      message: 'Name the rules this comment disables.',
-    })
+  for (const [pattern, ruleId, message] of COMMENT_CHECKS) {
+    for (const match of text.matchAll(pattern)) {
+      problems.push({
+        file,
+        line: text.slice(0, match.index).split('\n').length,
+        column: match[0].indexOf('/') + 1,
+        ruleId,
+        severity: 'error',
+        message,
+      })
+    }
   }
   return problems
+}
+
+/** 1-based line and column of a byte offset into a file. */
+function lineAt(cwd, file, offset) {
+  const before = Buffer.from(readFileSync(resolve(cwd, file)))
+    .subarray(0, offset)
+    .toString('utf8')
+    .split('\n')
+  return { line: before.length, column: before.at(-1).length + 1 }
 }
 
 async function scanBlanketDisables(cwd, files) {
@@ -174,10 +200,15 @@ function runOxlint(cwd, args) {
   if (result.stderr.trim()) process.stderr.write(result.stderr)
   return parsed.diagnostics.map(d => {
     const span = d.labels?.[0]?.span
+    // Type-aware diagnostics carry only a byte offset.
+    const at =
+      span?.line == null && span?.offset != null
+        ? lineAt(cwd, d.filename, span.offset)
+        : { line: span?.line ?? 0, column: span?.column ?? 0 }
     return {
       file: d.filename,
-      line: span?.line ?? 0,
-      column: span?.column ?? 0,
+      line: at.line,
+      column: at.column,
       ruleId: ruleIdOf(d.code),
       severity: d.severity,
       message: d.message,

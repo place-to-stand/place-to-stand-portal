@@ -84,3 +84,11 @@ test('a disable comment that names no rule is reported, whatever its form', () =
   assert.deepEqual(lines('// oxlint-disable-next-line\n'), [])
   assert.deepEqual(lines("const s = '/* eslint-disable */'"), [])
 })
+
+test('inline rule config, which Oxlint ignores, is reported', () => {
+  const ids = text => blanketDisables('a.ts', text).map(p => p.ruleId)
+  assert.deepEqual(ids('/* eslint no-console: off */'), [
+    'pts/no-inline-config',
+  ])
+  assert.deepEqual(ids('/* eslint-disable no-console -- why */'), [])
+})
