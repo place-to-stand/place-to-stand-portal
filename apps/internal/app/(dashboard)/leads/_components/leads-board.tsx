@@ -32,8 +32,10 @@ import { moveLead } from '../actions'
 import {
   cloneColumns,
   findLeadById,
+  isInColumn,
   produceLeadReorder,
 } from '../_lib/lead-board-reorder'
+import { undoLeadMoves } from '@/lib/leads/undo-lead-moves'
 import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
 import {
@@ -151,9 +153,7 @@ export function LeadsBoard({
         hiddenLeads,
       })
 
-      if (!result) {
-        return
-      }
+      if (!result) return
 
       // Decision 7: Won needs a company. Leave the card where it was rather
       // than flash it into Won and back; the server enforces it too.
@@ -179,25 +179,29 @@ export function LeadsBoard({
         return
       }
 
+      // The ref, not the effect, so a drag right after this one starts here.
       setColumns(result.nextColumns)
+      columnsRef.current = result.nextColumns
       setRecentlyMovedLeadId(leadId)
       scheduleRecentlyMovedReset()
-
-      if (!canManage) {
-        columnsRef.current = result.nextColumns
-        return
-      }
+      if (!canManage) return
 
       startTransition(async () => {
         const response = await moveLead({
           leadId,
           targetStatus: result.targetColumnId,
           rank: result.rank,
-        })
+        }).catch(() => ({ success: false, error: undefined }))
 
         if (!response.success) {
-          setColumns(result.previousColumns)
-          columnsRef.current = result.previousColumns
+          // Moves dropped while this one saved stay where they are.
+          const undone = undoLeadMoves(
+            columnsRef.current,
+            result.previousColumns,
+            [leadId]
+          )
+          setColumns(undone)
+          columnsRef.current = undone
           toast({
             variant: 'destructive',
             title: 'Unable to move lead',
@@ -205,11 +209,11 @@ export function LeadsBoard({
             link: toastLink('lead', leadId),
           })
         } else {
-          columnsRef.current = result.nextColumns
-
-          // Just won (not a reorder inside Won): billing is the next step.
+          // Just won (not a reorder inside Won, and not since moved on):
+          // billing is the next step.
           if (
             result.targetColumnId === 'CLOSED_WON' &&
+            isInColumn(columnsRef.current, 'CLOSED_WON', leadId) &&
             draggedLead &&
             draggedLead.status !== 'CLOSED_WON' &&
             draggedLead.companyId &&

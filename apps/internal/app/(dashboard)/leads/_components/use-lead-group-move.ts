@@ -17,7 +17,8 @@ import {
 import { LEAD_NOT_FOUND_MESSAGE } from '@/lib/leads/move-messages'
 
 import { moveLeads } from '../actions'
-import { produceLeadGroupMove } from '../_lib/lead-board-reorder'
+import { isInColumn, produceLeadGroupMove } from '../_lib/lead-board-reorder'
+import { undoLeadMoves } from '@/lib/leads/undo-lead-moves'
 
 /**
  * Several selected leads dragged together: they show in their new place at
@@ -71,12 +72,11 @@ export function useLeadGroupMove({
         return
       }
 
+      // The ref, not the board's effect, so a drag right after starts here.
       setColumns(result.nextColumns)
+      columnsRef.current = result.nextColumns
       onMoved(move.id)
-      if (!canManage) {
-        columnsRef.current = result.nextColumns
-        return
-      }
+      if (!canManage) return
 
       startTransition(async () => {
         const response = await moveLeads({
@@ -93,12 +93,15 @@ export function useLeadGroupMove({
             error: 'Please try again.',
           }))
         if (failed.length) {
-          // None moved: put them back. Some moved: the refresh that follows
-          // a save shows the board as saved.
-          if (failed.length === result.moved.length) {
-            setColumns(result.previousColumns)
-            columnsRef.current = result.previousColumns
-          }
+          // Put back the leads that didn't move. Moves dropped while this
+          // one saved stay where they are.
+          const undone = undoLeadMoves(
+            columnsRef.current,
+            result.previousColumns,
+            failed.map(({ leadId }) => leadId)
+          )
+          setColumns(undone)
+          columnsRef.current = undone
           const first = failed[0]!
           const name = result.moved.find(({ lead }) => lead.id === first.leadId)
             ?.lead.contactName
@@ -119,12 +122,12 @@ export function useLeadGroupMove({
           })
           return
         }
-        columnsRef.current = result.nextColumns
-
-        // Just won: billing is the next step, for the first won lead.
+        // Just won: billing is the next step, for the first won lead
+        // (unless it has been moved on since).
         const won = result.moved.find(
           ({ lead }) =>
             status === 'CLOSED_WON' &&
+            isInColumn(columnsRef.current, 'CLOSED_WON', lead.id) &&
             lead.status !== 'CLOSED_WON' &&
             lead.companyId
         )
