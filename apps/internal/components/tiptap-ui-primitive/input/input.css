@@ -18,23 +18,20 @@
   background: none;
   appearance: none;
   outline: none;
-
-  &::placeholder {
-    color: var(--tiptap-input-placeholder);
-  }
+}
+.tiptap-input::placeholder {
+  color: var(--tiptap-input-placeholder);
 }
 
 .tiptap-input-clamp {
   min-width: 12rem;
   padding-right: 0;
-
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  &:focus {
-    text-overflow: clip;
-    overflow: visible;
-  }
+}
+.tiptap-input-clamp:focus {
+  text-overflow: clip;
+  overflow: visible;
 }
 
 .tiptap-input-group {

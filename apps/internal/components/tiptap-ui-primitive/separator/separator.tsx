@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef } from 'react'
-import '@/components/tiptap-ui-primitive/separator/separator.scss'
+import '@/components/tiptap-ui-primitive/separator/separator.css'
 import { cn } from '@/lib/tiptap-utils'
 
 export type Orientation = 'horizontal' | 'vertical'

@@ -26,7 +26,7 @@ import {
 // --- Lib ---
 import { sanitizeUrl } from '@/lib/tiptap-utils'
 
-import './link-floating-menu.scss'
+import './link-floating-menu.css'
 
 export interface LinkFloatingMenuProps {
   editor?: Editor | null

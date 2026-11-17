@@ -11,9 +11,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
 import { KeyCaps } from '@/components/keyboard/shortcut-keys'
 import { cn } from '@/lib/tiptap-utils'
 
-import '@/components/tiptap-ui-primitive/button/button-colors.scss'
-import '@/components/tiptap-ui-primitive/button/button-group.scss'
-import '@/components/tiptap-ui-primitive/button/button.scss'
+import '@/components/tiptap-ui-primitive/button/button-colors.css'
+import '@/components/tiptap-ui-primitive/button/button-group.css'
+import '@/components/tiptap-ui-primitive/button/button.css'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string
