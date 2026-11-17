@@ -22,6 +22,8 @@ import {
 
 import { CardAssigneeAvatars } from '@/components/cards/card-assignee-avatars'
 import { AnchorRow } from './lead-card-anchor-row'
+import type { CardEdgeMoves } from '@/components/table/record-context-menu'
+
 import { LeadContextMenu } from './lead-context-menu'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@pts/ui/tooltip'
@@ -56,6 +58,8 @@ type LeadCardProps = {
   onEditLead: (lead: LeadRecord) => void
   disableDropTransition?: boolean
   isActive?: boolean
+  /** Send to top / bottom in the card's menu. */
+  move?: CardEdgeMoves
 }
 
 export const LeadCard = memo(function LeadCard({
@@ -65,6 +69,7 @@ export const LeadCard = memo(function LeadCard({
   onEditLead,
   disableDropTransition = false,
   isActive = false,
+  move,
 }: LeadCardProps) {
   const {
     attributes,
@@ -122,10 +127,16 @@ export const LeadCard = memo(function LeadCard({
   }
 
   return (
-    <LeadContextMenu lead={lead} onEdit={card.open} canManage={canManage}>
+    <LeadContextMenu
+      lead={lead}
+      onEdit={card.open}
+      canManage={canManage}
+      move={move}
+    >
       <div
         ref={setNodeRef}
         style={style}
+        data-flip-id={lead.id}
         {...(isMounted ? attributes : cleanedAttributes)}
         {...listenersMap}
         // dnd-kit's attributes set this too; stated so the focus rule sees it.

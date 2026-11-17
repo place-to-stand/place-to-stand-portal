@@ -1,14 +1,7 @@
 'use client'
 
 import { DndContext } from '@dnd-kit/core'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  startTransition,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useProjectsBoardSensors } from '@/app/(dashboard)/projects/_hooks/use-projects-board-sensors'
 import { BoardDragOverlay } from '@/components/board/board-drag'
@@ -28,15 +21,12 @@ import type { LeadBoardColumnData, LeadRecord } from '@/lib/leads/types'
 import type { LeadStatusValue } from '@/lib/leads/constants'
 import { EmptyState } from '@pts/ui/empty-state'
 import { toastLink, useToast } from '@/components/ui/use-toast'
-import { moveLead } from '../actions'
 import {
   cloneColumns,
   findLeadById,
-  isInColumn,
   produceLeadReorder,
 } from '../_lib/lead-board-reorder'
-import { undoLeadMoves } from '@/lib/leads/undo-lead-moves'
-import { useKanbanDrag, type KanbanDrop } from '@/lib/dnd/use-kanban-drag'
+import { useKanbanDrag, type KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
 import {
   LEAD_WON_NEEDS_COMPANY_MESSAGE,
@@ -45,6 +35,7 @@ import {
 
 import { LeadColumn } from './lead-column'
 import { useLeadGroupMove } from './use-lead-group-move'
+import { useLeadMoveSave } from './use-lead-move-save'
 import { LeadCardPreview } from './lead-card'
 
 type LeadsBoardProps = {
@@ -126,8 +117,10 @@ export function LeadsBoard({
     onLeadClosedWon,
   })
 
+  const saveMove = useLeadMoveSave({ columnsRef, setColumns, onLeadClosedWon })
+
   const handleDrop = useCallback(
-    (drop: KanbanDrop<LeadStatusValue>) => {
+    (drop: KanbanMove<LeadStatusValue>) => {
       // Cards an archive is hiding still sit in `columns`: count them, so
       // the lead lands between the cards it was dropped between.
       const placed = dropAmongHidden(
@@ -184,57 +177,24 @@ export function LeadsBoard({
       scheduleRecentlyMovedReset()
       if (!canManage) return
 
-      startTransition(async () => {
-        const response = await moveLead({
-          leadId,
-          targetStatus: result.targetColumnId,
-          rank: result.rank,
-        }).catch(() => ({ success: false, error: undefined }))
-
-        if (!response.success) {
-          // Moves dropped while this one saved stay where they are.
-          const undone = undoLeadMoves(
-            columnsRef.current,
-            result.previousColumns,
-            [leadId],
-            result.targetColumnId
-          )
-          setColumns(undone)
-          columnsRef.current = undone
-          toast({
-            variant: 'destructive',
-            title: 'Unable to move lead',
-            description: response.error ?? 'Please try again.',
-            link: toastLink('lead', leadId),
-          })
-        } else {
-          // Just won (not a reorder inside Won, and not since moved on):
-          // billing is the next step.
-          if (
-            result.targetColumnId === 'CLOSED_WON' &&
-            isInColumn(columnsRef.current, 'CLOSED_WON', leadId) &&
-            draggedLead &&
-            draggedLead.status !== 'CLOSED_WON' &&
-            draggedLead.companyId &&
-            onLeadClosedWon
-          ) {
-            onLeadClosedWon(draggedLead)
-          }
-        }
-      })
+      saveMove(result, leadId, draggedLead)
     },
     [
       canManage,
       hiddenLeads,
       moveGroup,
-      onLeadClosedWon,
       onWonNeedsCompany,
+      saveMove,
       scheduleRecentlyMovedReset,
       selection.hidden,
       setRecentlyMovedLeadId,
       toast,
     ]
   )
+
+  // Send to top / bottom of a selected card moves the column's selection.
+  const sendLead = (move: KanbanMove<LeadStatusValue>) =>
+    handleDrop({ ...move, group: selection.columnGroup(move.id) ?? undefined })
 
   const columnIds = useMemo(() => columns.map(column => column.id), [columns])
   const leadsIn = useCallback(
@@ -300,6 +260,7 @@ export function LeadsBoard({
                           enableCreateButton={canManage}
                           onEditLead={onEditLead}
                           onCreateLead={handleCreateForColumn}
+                          onMoveLead={sendLead}
                           activeLeadId={activeLeadId}
                           isDropTarget={drag.activeColumnId === column.id}
                           recentlyMovedLeadId={recentlyMovedLeadId}

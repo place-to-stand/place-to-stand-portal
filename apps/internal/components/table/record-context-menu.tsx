@@ -24,6 +24,7 @@ import {
   type SheetEntityKey,
 } from '@/lib/sheets/entities'
 import { useSheetParams } from '@/lib/sheets/use-sheet-params'
+import { toastLink, useToast } from '@/components/ui/use-toast'
 
 import { AssigneeSubmenu, type AssigneeMenuConfig } from './assignee-submenu'
 import { DueDateSubmenu, type DueDateMenuConfig } from './due-date-submenu'
@@ -33,9 +34,18 @@ import { DueDateSubmenu, type DueDateMenuConfig } from './due-date-submenu'
  * to that end of its column. Null disables the item (the card is already
  * there).
  */
-export type TaskEdgeMoves = {
+export type CardEdgeMoves = {
   toTop: (() => void) | null
   toBottom: (() => void) | null
+}
+
+/** The menu's Send to top / bottom: the moves, and the card's name. */
+export type EdgeMoveMenuConfig = CardEdgeMoves & {
+  /**
+   * Named in the toast. The column stays where it is (no scrolling after
+   * the card), so the toast says where the card went.
+   */
+  name: string
 }
 
 type MenuActions = { close: () => void; unmount: () => void }
@@ -74,7 +84,7 @@ type RecordContextMenuProps = {
    */
   dueDate?: DueDateMenuConfig
   /** Adds Send to top and Send to bottom (cards on a board). */
-  move?: TaskEdgeMoves
+  move?: EdgeMoveMenuConfig
   /** The list's archive handler (its confirm dialog). Omit when archived. */
   onArchive?: () => void
   /** The archive list's restore handler. */
@@ -167,6 +177,16 @@ function RecordContextMenuItems({
   closeMenu: () => void
 }) {
   const { open, duplicate } = useSheetParams()
+  const { toast } = useToast()
+  const sendTo = (run: (() => void) | null, title: string) => () => {
+    if (!run || !move) return
+    run()
+    toast({
+      title,
+      description: move.name,
+      ...(isSheetEntityKey(entity) ? { link: toastLink(entity, id) } : {}),
+    })
+  }
   const canDuplicate = duplicable && isDuplicableSheetEntity(entity)
   const lifecycleDisabled = pending || Boolean(archiveDisabledReason)
 
@@ -209,14 +229,14 @@ function RecordContextMenuItems({
           ) : null}
           <ContextMenuItem
             disabled={!move.toTop}
-            onClick={() => move.toTop?.()}
+            onClick={sendTo(move.toTop, 'Moved to top')}
           >
             <ArrowUpToLine />
             Send to top
           </ContextMenuItem>
           <ContextMenuItem
             disabled={!move.toBottom}
-            onClick={() => move.toBottom?.()}
+            onClick={sendTo(move.toBottom, 'Moved to bottom')}
           >
             <ArrowDownToLine />
             Send to bottom

@@ -1,6 +1,6 @@
 'use client'
 
-import type { MutableRefObject, UIEventHandler } from 'react'
+import { useRef, type MutableRefObject, type UIEventHandler } from 'react'
 import { Plus } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -11,8 +11,13 @@ import { RowActionButton } from '@pts/ui/row-action-button'
 
 import { LeadStatusBadge } from '@/components/leads/lead-status-badge'
 
-import { LeadCard } from './lead-card'
 import { boardColumnClass } from '@/components/board/board-column'
+import { useBoardSelectionContext } from '@/components/board/board-selection'
+import { columnEdgeMoves } from '@/lib/dnd/column-edge-moves'
+import { useFlipOnMove } from '@/lib/dnd/use-flip-on-move'
+import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
+
+import { LeadCard } from './lead-card'
 
 type LeadColumnProps = {
   columnId: LeadStatusValue
@@ -23,6 +28,11 @@ type LeadColumnProps = {
   enableCreateButton?: boolean
   onEditLead: (lead: LeadRecord) => void
   onCreateLead?: (status: LeadStatusValue) => void
+  /**
+   * Saves a move the way the board saves a drop. Adds Send to top and Send
+   * to bottom to each card's right-click menu (with `canManage`).
+   */
+  onMoveLead?: (move: KanbanMove<LeadStatusValue>) => void
   /** The dragged card is in this column now. */
   isDropTarget?: boolean
   recentlyMovedLeadId?: string | null
@@ -39,6 +49,7 @@ export function LeadColumn({
   enableCreateButton,
   onEditLead,
   onCreateLead,
+  onMoveLead,
   isDropTarget = false,
   recentlyMovedLeadId = null,
   activeLeadId = null,
@@ -52,10 +63,24 @@ export function LeadColumn({
       columnId,
     },
   })
+  const columnRef = useRef<HTMLDivElement | null>(null)
+  const selection = useBoardSelectionContext()
+  // Send to top / bottom slides the cards, as a drag would show the move.
+  const captureFlip = useFlipOnMove(columnRef, leads)
+  const moveLead = onMoveLead
+    ? (move: KanbanMove<LeadStatusValue>) => {
+        captureFlip()
+        onMoveLead(move)
+      }
+    : undefined
+  const leadIds = leads.map(lead => lead.id)
 
   return (
     <div
-      ref={setNodeRef}
+      ref={node => {
+        setNodeRef(node)
+        columnRef.current = node
+      }}
       data-board-column={columnId}
       className={boardColumnClass(
         getLeadStatusHue(columnId) ?? 'neutral',
@@ -80,17 +105,20 @@ export function LeadColumn({
           ) : null}
         </div>
       </div>
+      {/* No scroll anchoring: when a card sent to the top or bottom from its
+          menu was the column's scroll anchor, the browser would scroll the
+          column after it. */}
       <div
         ref={columnScrollRef}
         onScroll={onColumnScroll}
-        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto'
+        className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto [overflow-anchor:none]'
       >
         <SortableContext
           id={columnId}
-          items={leads.map(lead => lead.id)}
+          items={leadIds}
           strategy={verticalListSortingStrategy}
         >
-          {leads.map(lead => (
+          {leads.map((lead, index) => (
             <LeadCard
               key={lead.id}
               lead={lead}
@@ -99,6 +127,17 @@ export function LeadColumn({
               onEditLead={onEditLead}
               disableDropTransition={lead.id === recentlyMovedLeadId}
               isActive={lead.id === activeLeadId}
+              move={
+                canManage && moveLead
+                  ? columnEdgeMoves(
+                      columnId,
+                      leadIds,
+                      index,
+                      moveLead,
+                      selection?.columnGroup(lead.id) ?? null
+                    )
+                  : undefined
+              }
             />
           ))}
         </SortableContext>
