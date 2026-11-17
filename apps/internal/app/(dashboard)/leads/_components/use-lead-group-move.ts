@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, useCallback, type RefObject } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
@@ -40,6 +41,7 @@ export function useLeadGroupMove({
   onLeadClosedWon?: (lead: LeadRecord) => void
 }) {
   const { toast } = useToast()
+  const router = useRouter()
 
   return useCallback(
     (move: KanbanMove<LeadStatusValue> & { group: readonly string[] }) => {
@@ -92,11 +94,18 @@ export function useLeadGroupMove({
           const undone = undoLeadMoves(
             columnsRef.current,
             result.previousColumns,
-            result.nextColumns,
-            failed.map(({ leadId }) => leadId)
+            result.moved
+              .filter(({ lead }) =>
+                failed.some(({ leadId }) => leadId === lead.id)
+              )
+              .map(({ lead, rank }) => ({ leadId: lead.id, rank })),
+            status
           )
           setColumns(undone)
           columnsRef.current = undone
+          // A failed save doesn't refresh the board: ask the server where
+          // everything is (shown once the other saves have landed).
+          router.refresh()
           const first = failed[0]!
           const name = result.moved.find(({ lead }) => lead.id === first.leadId)
             ?.lead.contactName
@@ -132,6 +141,7 @@ export function useLeadGroupMove({
       hiddenLeads,
       onLeadClosedWon,
       onMoved,
+      router,
       setColumns,
       toast,
     ]

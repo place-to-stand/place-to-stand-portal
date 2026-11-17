@@ -290,11 +290,14 @@ function RecordContextMenuItems({
   )
 }
 
-/** Read once per opening, so a card already in Done shows it disabled. */
+/**
+ * Checked once per opening, so a card already in Done shows it disabled;
+ * the move itself is read again on the click, from the board as it is then.
+ */
 function MarkDoneItem({ markDone }: { markDone: () => (() => void) | null }) {
-  const [run] = useState(() => markDone())
+  const [enabled] = useState(() => markDone() !== null)
   return (
-    <ContextMenuItem disabled={!run} onClick={() => run?.()}>
+    <ContextMenuItem disabled={!enabled} onClick={() => markDone()?.()}>
       <CircleCheck />
       Mark as done
     </ContextMenuItem>

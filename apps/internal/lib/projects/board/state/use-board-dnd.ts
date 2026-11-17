@@ -11,6 +11,8 @@ import {
   type ReorderOutcome,
 } from './dnd-helpers'
 import { useGroupTaskMove } from './use-group-task-move'
+import { useTaskSaves } from './use-task-saves'
+import { placeOf } from './task-save-utils'
 import type { TaskLookup } from './types'
 import type { KanbanMove } from '@/lib/dnd/use-kanban-drag'
 import { useRecentlyMovedItem } from '@/lib/dnd/use-recently-moved-item'
@@ -54,7 +56,9 @@ export const useBoardDnDState = ({
     },
     [scheduleRecentlyMovedReset, setRecentlyMovedTaskId]
   )
+  const saveTask = useTaskSaves(setTasksByProject)
   const moveGroup = useGroupTaskMove({
+    saveTask,
     activeProject,
     tasksByProject,
     setTasksByProject,
@@ -142,71 +146,34 @@ export const useBoardDnDState = ({
       }
 
       startTransition(async () => {
-        try {
-          const response = await fetch(`/api/v1/tasks/${taskId}/reorder`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-          })
-
-          if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}`)
-          }
-
-          const json = await response.json().catch(() => null)
-          const updatedRank = json?.task?.rank ?? nextRank
-          const updatedStatus = json?.task?.status ?? destinationStatus
-          const updatedAt = json?.task?.updated_at ?? null
-
-          setTasksByProject(prev => {
-            const next = new Map(prev)
-            const tasks = next.get(projectId)
-
-            if (!tasks) {
-              return prev
-            }
-
-            const updated = tasks.map(task => {
-              if (task.id !== taskId) {
-                return task
+        const saved = await saveTask(
+          projectId,
+          {
+            id: taskId,
+            before: placeOf(
+              rollbackTasks.find(task => task.id === taskId) ?? {
+                status: destinationStatus,
+                rank: nextRank,
               }
-
-              return {
-                ...task,
-                status: updatedStatus,
-                rank: updatedRank,
-                updated_at: updatedAt ?? task.updated_at,
-              }
+            ),
+            placed: { status: destinationStatus, rank: nextRank },
+          },
+          async () => {
+            const response = await fetch(`/api/v1/tasks/${taskId}/reorder`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
             })
-
-            next.set(projectId, updated)
-            return next
-          })
-        } catch (error) {
-          console.error('Task reorder failed', error)
-          setFeedback('Unable to reorder task.')
-          // Put back only this card, and only if nothing moved it since:
-          // other moves made while it saved keep their place.
-          const before = rollbackTasks.find(task => task.id === taskId)
-          setTasksByProject(prev => {
-            const tasks = prev.get(projectId)
-            if (!tasks || !before) return prev
-            const next = new Map(prev)
-            next.set(
-              projectId,
-              tasks.map(task =>
-                task.id === taskId &&
-                task.status === destinationStatus &&
-                task.rank === nextRank
-                  ? before
-                  : task
-              )
-            )
-            return next
-          })
-        }
+            if (!response.ok) {
+              throw new Error(`Request failed with status ${response.status}`)
+            }
+            const json = await response.json().catch(() => null)
+            return json?.task ?? null
+          }
+        )
+        if (!saved) setFeedback('Unable to reorder task.')
       })
     },
     [
@@ -214,6 +181,7 @@ export const useBoardDnDState = ({
       canManageTasks,
       filterColumnTasks,
       moveGroup,
+      saveTask,
       setFeedback,
       setTasksByProject,
       scheduleRecentlyMovedReset,

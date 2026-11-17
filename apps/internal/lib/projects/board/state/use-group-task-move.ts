@@ -8,14 +8,17 @@ import type { BoardColumnId } from '../board-constants'
 import type { ColumnTaskFilter } from './dnd-helpers'
 import { planGroupMove, type GroupTaskUpdate } from './group-move'
 import type { TaskLookup } from './types'
+import type { useTaskSaves } from './use-task-saves'
 
 /**
  * Moves several selected cards on the project board at once (a drag or
  * Send to top / bottom of a selected card): they show in place at once,
- * each saves through the one-card reorder endpoint, and any card a save
- * refuses goes back.
+ * each saves through the one-card reorder endpoint (`useTaskSaves`, so a
+ * card moved again while this saves keeps its newer place), and any card a
+ * save refuses goes back.
  */
 export function useGroupTaskMove({
+  saveTask,
   activeProject,
   tasksByProject,
   setTasksByProject,
@@ -24,6 +27,7 @@ export function useGroupTaskMove({
   filterColumnTasks,
   onMoved,
 }: {
+  saveTask: ReturnType<typeof useTaskSaves>
   activeProject: ProjectWithRelations | null
   tasksByProject: TaskLookup
   setTasksByProject: Dispatch<SetStateAction<TaskLookup>>
@@ -76,51 +80,46 @@ export function useGroupTaskMove({
       onMoved(drop.id)
 
       startTransition(async () => {
-        const results = await Promise.allSettled(
-          updates.map(async update => {
-            const response = await fetch(`/api/v1/tasks/${update.id}/reorder`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(
-                update.statusChanged
-                  ? { rank: update.rank, status: update.status }
-                  : { rank: update.rank }
-              ),
-            })
-            if (!response.ok) {
-              throw new Error(`Request failed with status ${response.status}`)
-            }
-            const json = await response.json().catch(() => null)
-            return json?.task ?? null
+        const before = new Map(projectTasks.map(task => [task.id, task]))
+        const results = await Promise.all(
+          updates.map(update => {
+            const original = before.get(update.id)
+            const placed = { status: update.status, rank: update.rank }
+            return saveTask(
+              projectId,
+              {
+                id: update.id,
+                before: original
+                  ? { status: original.status, rank: original.rank }
+                  : placed,
+                placed,
+              },
+              async () => {
+                const response = await fetch(
+                  `/api/v1/tasks/${update.id}/reorder`,
+                  {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(
+                      update.statusChanged
+                        ? { rank: update.rank, status: update.status }
+                        : { rank: update.rank }
+                    ),
+                  }
+                )
+                if (!response.ok) {
+                  throw new Error(
+                    `Request failed with status ${response.status}`
+                  )
+                }
+                const json = await response.json().catch(() => null)
+                return json?.task ?? null
+              }
+            )
           })
         )
-        // Saved cards take the server's values; refused ones go back to
-        // where they were, so the board matches what was saved.
-        const before = new Map(projectTasks.map(task => [task.id, task]))
-        const outcome = new Map(
-          updates.map((update, index) => [update.id, results[index]!])
-        )
-        setProjectTasks(id => {
-          const result = outcome.get(id)
-          if (!result) return null
-          if (result.status === 'rejected') {
-            const original = before.get(id)
-            return original
-              ? { status: original.status, rank: original.rank }
-              : null
-          }
-          const task = result.value
-          return task
-            ? {
-                status: task.status,
-                rank: task.rank,
-                ...(task.updated_at ? { updated_at: task.updated_at } : {}),
-              }
-            : null
-        })
-        const refused = results.filter(result => result.status === 'rejected')
+        const refused = results.filter(saved => !saved)
         if (refused.length) {
-          console.error('Task group move failed', refused[0])
           setFeedback(
             refused.length === 1
               ? 'Unable to move one task.'
@@ -130,6 +129,7 @@ export function useGroupTaskMove({
       })
     },
     [
+      saveTask,
       activeProject,
       filterColumnTasks,
       onMoved,

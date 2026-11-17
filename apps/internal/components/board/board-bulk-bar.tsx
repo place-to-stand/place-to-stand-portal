@@ -119,13 +119,19 @@ export function BoardBulkBar(props: BoardBulkBarProps) {
   )
 }
 
-/** The action for the selection, through its first card. */
+/**
+ * The action for the selection, through its first card still on the board
+ * (one being archived has left it, and gives none).
+ */
 function firstOf(
   ids: ReadonlySet<string>,
   markDoneFor: (id: string) => (() => void) | null
 ) {
-  const [first] = ids
-  return first ? markDoneFor(first) : null
+  for (const id of ids) {
+    const run = markDoneFor(id)
+    if (run) return run
+  }
+  return null
 }
 
 /**

@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, useCallback, type RefObject } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { toastLink, useToast } from '@/components/ui/use-toast'
 import type { LeadStatusValue } from '@/lib/leads/constants'
@@ -27,12 +28,12 @@ export function useLeadMoveSave({
   onLeadClosedWon?: (lead: LeadRecord) => void
 }) {
   const { toast } = useToast()
+  const router = useRouter()
 
   return useCallback(
     (
       result: {
         previousColumns: LeadBoardColumnData[]
-        nextColumns: LeadBoardColumnData[]
         rank: string
         targetColumnId: LeadStatusValue
       },
@@ -51,11 +52,14 @@ export function useLeadMoveSave({
           const undone = undoLeadMoves(
             columnsRef.current,
             result.previousColumns,
-            result.nextColumns,
-            [leadId]
+            [{ leadId, rank: result.rank }],
+            result.targetColumnId
           )
           setColumns(undone)
           columnsRef.current = undone
+          // A failed save doesn't refresh the board: ask the server where
+          // everything is (shown once the other saves have landed).
+          router.refresh()
           toast({
             variant: 'destructive',
             title: 'Unable to move lead',
@@ -74,6 +78,6 @@ export function useLeadMoveSave({
         }
       })
     },
-    [columnsRef, onLeadClosedWon, setColumns, toast]
+    [columnsRef, onLeadClosedWon, router, setColumns, toast]
   )
 }
