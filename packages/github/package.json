@@ -15,11 +15,11 @@
     "lint": "pts-lint"
   },
   "dependencies": {
-    "jose": "^6.2.12"
+    "jose": "^6.2.17"
   },
   "devDependencies": {
     "@pts/lint-config": "^0.1.0",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "typescript": "^6.0.3"
   }
 }

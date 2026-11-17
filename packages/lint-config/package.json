@@ -14,8 +14,8 @@
     "lint": "pts-lint && node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@next/eslint-plugin-next": "^16.4.3",
-    "@typescript-eslint/eslint-plugin": "^8.72.0",
+    "@next/eslint-plugin-next": "^16.4.6",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",

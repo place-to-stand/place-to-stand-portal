@@ -16,12 +16,12 @@
   },
   "devDependencies": {
     "@pts/lint-config": "^0.1.0",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "tsup": "^9.0.0",
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.118.0",
-    "commander": "^15.0.0"
+    "@supabase/supabase-js": "^2.119.0",
+    "commander": "^15.1.0"
   }
 }
