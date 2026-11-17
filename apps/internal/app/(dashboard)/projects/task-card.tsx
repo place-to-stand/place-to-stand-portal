@@ -24,7 +24,7 @@ import { CONCEPT_ICONS } from '@/lib/concept-icons'
 import { ENTITY_ACCENTS, ENTITY_ICONS } from '@/lib/entity-accents'
 import { MUTED_STATE_MARK_CLASS } from '@/lib/entity-state-icon'
 import { TaskContextMenu } from './task-context-menu'
-import type { TaskEdgeMoves } from '@/components/table/record-context-menu'
+import type { CardEdgeMoves } from '@/components/table/record-context-menu'
 import { useOptimisticDueOn } from '@/lib/tasks/optimistic-due-on'
 import { BOARD_CARD_GHOST_CLASS } from '@/components/board/board-drag'
 import {
@@ -66,7 +66,7 @@ type TaskCardProps = {
   disableDropTransition?: boolean
   context?: TaskContextDetails
   /** Send to top / bottom in the right-click menu (boards only). */
-  move?: TaskEdgeMoves
+  move?: CardEdgeMoves
 }
 
 function CardContent({
@@ -297,7 +297,7 @@ export function TaskCard({
         }}
         className={cn(
           // The same focus ring as a lead card, not the browser's outline.
-          'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition-[color,background-color,border-color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none',
+          'group bg-card focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border p-4 text-left shadow-sm transition-[color,background-color,border-color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-none focus-visible:ring-inset',
           draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
           // A touch drag starts on press-and-hold; keep iOS from selecting the
           // card's text or opening its callout menu first.

@@ -239,7 +239,12 @@ export function ComponentsButtons() {
               set: async () => ({}),
               name: 'Update the homepage copy',
             }}
-            move={{ toTop: noop, toBottom: null }}
+            move={{
+              toTop: noop,
+              toBottom: null,
+              count: 1,
+              name: 'Update the homepage copy',
+            }}
             onArchive={noop}
           >
             <div className='bg-card w-64 rounded-lg border p-4 text-sm font-semibold shadow-sm'>
